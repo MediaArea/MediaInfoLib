@@ -820,39 +820,20 @@ void File_MpegPs::Bitrate_Calc()
 bool File_MpegPs::Synchronize()
 {
     //Synchronizing
-    while (Buffer_Offset+4<=Buffer_Size && (Buffer[Buffer_Offset  ]!=0x00
-                                         || Buffer[Buffer_Offset+1]!=0x00
-                                         || Buffer[Buffer_Offset+2]!=0x01
-                                         || Buffer[Buffer_Offset+3]< 0xB9))
+    while (Buffer_Size - Buffer_Offset >= 4)
     {
-        Buffer_Offset+=2;
-        while(Buffer_Offset<Buffer_Size && Buffer[Buffer_Offset]!=0x00)
-            Buffer_Offset+=2;
-        if (Buffer_Offset>=Buffer_Size || Buffer[Buffer_Offset-1]==0x00)
-            Buffer_Offset--;
+        if (!Synchronize_0x000001())
+            return false;
+        if (Buffer[Buffer_Offset + 3] >= 0xB9)
+        {
+            //Synched is OK
+            return true;
+        }
+
+        Buffer_Offset++;
     }
 
-    //Parsing last bytes if needed
-    if (Buffer_Offset+4==Buffer_Size && (Buffer[Buffer_Offset  ]!=0x00
-                                      || Buffer[Buffer_Offset+1]!=0x00
-                                      || Buffer[Buffer_Offset+2]!=0x01
-                                      || Buffer[Buffer_Offset+3]< 0xB9))
-        Buffer_Offset++;
-    if (Buffer_Offset+3==Buffer_Size && (Buffer[Buffer_Offset  ]!=0x00
-                                      || Buffer[Buffer_Offset+1]!=0x00
-                                      || Buffer[Buffer_Offset+2]!=0x01))
-        Buffer_Offset++;
-    if (Buffer_Offset+2==Buffer_Size && (Buffer[Buffer_Offset  ]!=0x00
-                                      || Buffer[Buffer_Offset+1]!=0x00))
-        Buffer_Offset++;
-    if (Buffer_Offset+1==Buffer_Size &&  Buffer[Buffer_Offset  ]!=0x00)
-        Buffer_Offset++;
-
-    if (Buffer_Offset+3>Buffer_Size)
-        return false;
-
-    //Synched is OK
-    return true;
+    return false;
 }
 
 //---------------------------------------------------------------------------
@@ -880,7 +861,7 @@ bool File_MpegPs::Synched_Test()
     {
         Frame_Count=(int64u)-1;
         Frame_Count_NotParsedIncluded=(int64u)-1;
-        if (Streams[stream_id].TimeStamp_End.PTS.TimeStamp!=(int64u)-1 && Streams[stream_id].TimeStamp_Start.PTS.TimeStamp!=(int64u)-1)
+        if (!Streams.empty() && Streams[stream_id].TimeStamp_End.PTS.TimeStamp!=(int64u)-1 && Streams[stream_id].TimeStamp_Start.PTS.TimeStamp!=(int64u)-1)
             FrameInfo.PTS=(Streams[stream_id].TimeStamp_End.PTS.TimeStamp-Streams[stream_id].TimeStamp_Start.PTS.TimeStamp)*100000/9;
         SynchLost("MPEG-PS");
         Frame_Count=0;
@@ -4395,7 +4376,7 @@ bool File_MpegPs::Header_Parser_QuickSearch()
     if (Buffer_Offset+4<=Buffer_Size)
         Trusted_IsNot("MPEG-PS, Synchronisation lost");
     Synched=false;
-    return Synchronize();
+    return Buffer_Offset < Buffer_Size ? Synchronize() : false;
 }
 
 //***************************************************************************

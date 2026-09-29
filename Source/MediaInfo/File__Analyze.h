@@ -1402,7 +1402,7 @@ protected :
 
     bool FileHeader_Begin_0x000001();
     bool FileHeader_Begin_XML(tinyxml2::XMLDocument &Document);
-    bool Synchronize_0x000001();
+    bool Synchronize_0x000001(bool NeedFour = false);
 public:
     #if defined(MEDIAINFO_FILE_YES)
     void TestContinuousFileNames(size_t CountOfFiles=24, Ztring FileExtension=Ztring(), bool SkipComputeDelay=false);

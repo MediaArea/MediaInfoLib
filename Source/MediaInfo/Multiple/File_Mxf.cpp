@@ -5941,39 +5941,33 @@ bool File_Mxf::FileHeader_Begin()
 //---------------------------------------------------------------------------
 bool File_Mxf::Synchronize()
 {
+    static const int8u Sync_Pattern[4] = { 0x06, 0x0E, 0x2B, 0x34 };
+
     //Synchronizing
-    while (Buffer_Offset+4<=Buffer_Size && (Buffer[Buffer_Offset  ]!=0x06
-                                         || Buffer[Buffer_Offset+1]!=0x0E
-                                         || Buffer[Buffer_Offset+2]!=0x2B
-                                         || Buffer[Buffer_Offset+3]!=0x34))
+    while (Buffer_Size - Buffer_Offset >= 4)
     {
+        const size_t Candidate_End = Buffer_Size - 3;
+        const int8u* Sync = (const int8u*)memchr(Buffer + Buffer_Offset, Sync_Pattern[0], Candidate_End - Buffer_Offset);
+        if (!Sync)
+        {
+            Buffer_Offset = Candidate_End;
+            break;
+        }
+        Buffer_Offset = (size_t)(Sync - Buffer);
+
+        if (!memcmp(Sync + 1, Sync_Pattern + 1, 3))
+        {
+            //Synched is OK
+            return true;
+        }
+
         Buffer_Offset++;
-        while (Buffer_Offset<Buffer_Size && Buffer[Buffer_Offset]!=0x06)
-            Buffer_Offset++;
     }
-
-
-    while (Buffer_Offset+4<=Buffer_Size
-        && CC4(Buffer+Buffer_Offset)!=0x060E2B34)
-        Buffer_Offset++;
 
     //Parsing last bytes if needed
-    if (Buffer_Offset+4>Buffer_Size)
-    {
-        if (Buffer_Offset+3==Buffer_Size && CC3(Buffer+Buffer_Offset)!=0x060E2B)
-            Buffer_Offset++;
-        if (Buffer_Offset+2==Buffer_Size && CC2(Buffer+Buffer_Offset)!=0x060E)
-            Buffer_Offset++;
-        if (Buffer_Offset+1==Buffer_Size && CC1(Buffer+Buffer_Offset)!=0x06)
-            Buffer_Offset++;
-        return false;
-    }
-
-    if (IsSub && !Status[IsAccepted])
-        Accept();
-
-    //Synched is OK
-    return true;
+    while (Buffer_Offset < Buffer_Size && memcmp(Buffer + Buffer_Offset, Sync_Pattern, Buffer_Size - Buffer_Offset))
+        Buffer_Offset++;
+    return false;
 }
 
 //---------------------------------------------------------------------------

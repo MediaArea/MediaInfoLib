@@ -2014,37 +2014,37 @@ void File__Analyze::Buffer_Clear()
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-bool File__Analyze::Synchronize_0x000001()
+bool File__Analyze::Synchronize_0x000001(bool NeedFour)
 {
-    //Synchronizing
-    while(Buffer_Offset+3<=Buffer_Size && (Buffer[Buffer_Offset  ]!=0x00
-                                        || Buffer[Buffer_Offset+1]!=0x00
-                                        || Buffer[Buffer_Offset+2]!=0x01))
+    constexpr size_t Sync_Pos = 2;
+    constexpr size_t Frame_Size = 3;
+    const size_t Required_Size = Frame_Size + NeedFour;
+
+    // Synchronizing
+    while (Buffer_Size - Buffer_Offset >= Required_Size)
     {
-        Buffer_Offset+=2;
-        while(Buffer_Offset<Buffer_Size && Buffer[Buffer_Offset]!=0x00)
-            Buffer_Offset+=2;
-        if ((Buffer_Offset<Buffer_Size && Buffer[Buffer_Offset-1]==0x00) || Buffer_Offset>=Buffer_Size)
-            Buffer_Offset--;
+        const size_t Candidate_End = Buffer_Size - Frame_Size + 1;
+        const size_t Search_Begin = Buffer_Offset + Sync_Pos;
+        const int8u* Sync = (const int8u*)memchr(Buffer + Search_Begin, 0x01, Buffer_Size - Search_Begin);
+        if (!Sync)
+        {
+            Buffer_Offset = Candidate_End - NeedFour;
+            break;
+        }
+        Buffer_Offset = (size_t)(Sync - Buffer) - Sync_Pos;
+
+        if (Buffer[Buffer_Offset] == 0x00
+            && Buffer[Buffer_Offset + 1] == 0x00)
+        {
+            if (NeedFour && Buffer_Offset && Buffer[Buffer_Offset - 1] == 0x00)
+                Buffer_Offset--;
+            return true;
+        }
+
+        Buffer_Offset++;
     }
 
-    //Parsing last bytes if needed
-    if (Buffer_Offset+3==Buffer_Size && (Buffer[Buffer_Offset  ]!=0x00
-                                      || Buffer[Buffer_Offset+1]!=0x00
-                                      || Buffer[Buffer_Offset+2]!=0x01))
-        Buffer_Offset++;
-    if (Buffer_Offset+2==Buffer_Size && (Buffer[Buffer_Offset  ]!=0x00
-                                      || Buffer[Buffer_Offset+1]!=0x00))
-        Buffer_Offset++;
-    if (Buffer_Offset+1==Buffer_Size &&  Buffer[Buffer_Offset  ]!=0x00)
-        Buffer_Offset++;
-
-    if (Buffer_Offset+3>Buffer_Size)
-        return false;
-
-    //Synched is OK
-    Synched=true;
-    return true;
+    return false;
 }
 
 //---------------------------------------------------------------------------
@@ -2052,7 +2052,15 @@ bool File__Analyze::FileHeader_Begin_0x000001()
 {
     // No need to check if inside a container
     if (IsSub)
+    {
+        if (!MustSynchronize)
+        {
+            Synched_Init();
+            Buffer_TotalBytes_FirstSynched=0;
+            File_Offset_FirstSynched=File_Offset;
+        }
         return true;
+    }
 
     //Element_Size
     if (Buffer_Size<192*4)

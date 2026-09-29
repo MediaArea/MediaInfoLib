@@ -395,11 +395,12 @@ bool File_Nsv::Synchronize()
     //Synchronizing
     if (Buffer_Size-Buffer_Offset<4)
         return false;
-    auto sync_hdr0=BigEndian2int32u(Buffer+Buffer_Offset);
-    bool Accepted=Status[IsAccepted];
-    auto Buffer_Size_m4=Buffer_Size-4;
+    const bool Accepted=Status[IsAccepted];
+    const auto Buffer_Size_m4=Buffer_Size-4;
     for (;;)
     {
+        auto sync_hdr0 = BigEndian2int32u(Buffer + Buffer_Offset);
+
         // Check sync
         auto IsMainSync=sync_hdr0==Elements::NSVs;
         if (IsMainSync || (Accepted && (sync_hdr0>>16)==0xEFBE))
@@ -427,8 +428,16 @@ bool File_Nsv::Synchronize()
         // Next byte
         if (Buffer_Offset<Buffer_Size_m4)
         {
-            sync_hdr0=(sync_hdr0<<8)|Buffer[Buffer_Offset+4];
-            Buffer_Offset++;
+            size_t SearchLen = Buffer_Size_m4 - Buffer_Offset;
+            const uint8_t* Base = Buffer + Buffer_Offset + 1;
+            const uint8_t* Next = (const uint8_t*)memchr(Base, 'N', SearchLen);
+            if (Accepted)
+            {
+                const uint8_t* EF_pos = (const uint8_t*)memchr(Base, 0xEF, SearchLen);
+                if (EF_pos && (!Next || EF_pos < Next))
+                    Next = EF_pos;
+            }
+            Buffer_Offset = Next ? (size_t)(Next - Buffer) : Buffer_Size_m4;
             continue;
         }
 

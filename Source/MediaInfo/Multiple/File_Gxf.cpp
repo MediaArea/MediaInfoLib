@@ -568,61 +568,53 @@ void File_Gxf::Streams_Finish_PerStream(size_t StreamID, stream &Temp)
 //---------------------------------------------------------------------------
 bool File_Gxf::Synchronize()
 {
-    //Synchronizing
-    while (Buffer_Offset+16<=Buffer_Size)
+    while (Buffer_Size - Buffer_Offset >= 16)
     {
-        while (Buffer_Offset+16<=Buffer_Size && (Buffer[Buffer_Offset  ]!=0x00
-                                              || Buffer[Buffer_Offset+1]!=0x00
-                                              || Buffer[Buffer_Offset+2]!=0x00
-                                              || Buffer[Buffer_Offset+3]!=0x00
-                                              || Buffer[Buffer_Offset+4]!=0x01
-                                              || Buffer[Buffer_Offset+14]!=0xE1
-                                              || Buffer[Buffer_Offset+15]!=0xE2))
+        const size_t Candidate_End = Buffer_Size - 15;
+        const size_t Search_Begin = Buffer_Offset + 4;
+        const size_t Search_End = Candidate_End + 4;
+        const int8u* Sync = (const int8u*)memchr(Buffer + Search_Begin, 0x01, Search_End - Search_Begin);
+        if (!Sync)
         {
-            Buffer_Offset+=4;
-            while (Buffer_Offset<Buffer_Size && Buffer[Buffer_Offset]!=0x00)
-                Buffer_Offset+=4;
-            for (int8u Pos=0; Pos<3; Pos++)
-                if (Buffer_Offset>=Buffer_Size || Buffer[Buffer_Offset-1]==0x00)
-                    Buffer_Offset--;
+            Buffer_Offset = Candidate_End;
+            return false;
+        }
+        Buffer_Offset = (size_t)(Sync - Buffer) - 4;
+
+        if (BigEndian2int32u(Buffer + Buffer_Offset) == 0x00000000
+            && BigEndian2int16u(Buffer + Buffer_Offset + 14) == 0xE1E2)
+        {
+            const auto Size = BigEndian2int32u(Buffer + Buffer_Offset + 6);
+            if (Size >= 16)
+            {
+                if (Buffer_Size - Buffer_Offset - 16 < Size)
+                    return false; //Need more data
+                const auto Buffer_NextOffset = Buffer_Offset + Size;
+                if (BigEndian2int32u(Buffer + Buffer_NextOffset) == 0x00000000
+                    && BigEndian2int16u(Buffer + Buffer_NextOffset + 14) == 0xE1E2)
+                {
+                    //Synched is OK
+                    return true;
+                }
+            }
         }
 
-        if (Buffer_Offset+16<=Buffer_Size) //Testing if size is coherant
-        {
-            //Retrieving some info
-            int32u Size=BigEndian2int32u(Buffer+Buffer_Offset+6);
-
-            //Testing
-            if (Buffer_Offset+Size+16>Buffer_Size)
-                return false; //Need more data
-            if (Buffer[Buffer_Offset+Size  ]!=0x00
-             || Buffer[Buffer_Offset+Size+1]!=0x00
-             || Buffer[Buffer_Offset+Size+2]!=0x00
-             || Buffer[Buffer_Offset+Size+3]!=0x00
-             || Buffer[Buffer_Offset+Size+4]!=0x01
-             || Buffer[Buffer_Offset+Size+14]!=0xE1
-             || Buffer[Buffer_Offset+Size+15]!=0xE2)
-                 Buffer_Offset++;
-            else
-                break;
-        }
+        Buffer_Offset++;
     }
 
-    //Parsing last bytes if needed
-    if (Buffer_Offset+16>Buffer_Size)
-    {
-        return false;
-    }
+    return false;
+}
 
+
+//---------------------------------------------------------------------------
+void File_Gxf::Synched_Init()
+{
     if (!Status[IsAccepted])
     {
         Accept("GXF");
         Fill(Stream_General, 0, General_Format, "GXF");
         Streams.resize(0x40);
     }
-
-    //Synched is OK
-    return true;
 }
 
 //---------------------------------------------------------------------------
