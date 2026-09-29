@@ -176,6 +176,9 @@ HEADERS += \
         ../../Source/MediaInfo/Multiple/File_Ivf.h \
         ../../Source/MediaInfo/Multiple/File_Lxf.h \
         ../../Source/MediaInfo/Multiple/File_Mk.h \
+        ../../Source/MediaInfo/Multiple/File_MmtTlv.h \
+        ../../Source/MediaInfo/Multiple/File_Mmt.h \
+        ../../Source/MediaInfo/Multiple/File_Mmt_Descriptors.h \
         ../../Source/MediaInfo/Multiple/File_Mpeg4.h \
         ../../Source/MediaInfo/Multiple/File_Mpeg4_Descriptors.h \
         ../../Source/MediaInfo/Multiple/File_Mpeg4_TimeCode.h \
@@ -426,6 +429,9 @@ SOURCES += \
         ../../Source/MediaInfo/Multiple/File_Lxf.cpp \
         ../../Source/MediaInfo/Multiple/File_Mk.cpp \
         ../../Source/MediaInfo/Multiple/File_MiXml.cpp \
+        ../../Source/MediaInfo/Multiple/File_MmtTlv.cpp \
+        ../../Source/MediaInfo/Multiple/File_Mmt.cpp \
+        ../../Source/MediaInfo/Multiple/File_Mmt_Descriptors.cpp \
         ../../Source/MediaInfo/Multiple/File_Mpeg4.cpp \
         ../../Source/MediaInfo/Multiple/File_Mpeg4_Descriptors.cpp \
         ../../Source/MediaInfo/Multiple/File_Mpeg4_Elements.cpp \
