@@ -848,6 +848,7 @@ public :
     void Get_C6 (int64u &Info, const char* Name);
     void Get_C7 (int64u &Info, const char* Name);
     void Get_C8 (int64u &Info, const char* Name);
+    void Get_C12(int128u &Info, const char* Name);
     void Skip_C1(              const char* Name);
     void Skip_C2(              const char* Name);
     void Skip_C3(              const char* Name);
@@ -856,6 +857,7 @@ public :
     void Skip_C6(              const char* Name);
     void Skip_C7(              const char* Name);
     void Skip_C8(              const char* Name);
+    void Skip_C12(             const char* Name);
     #define Info_C1(_INFO, _NAME) int8u  _INFO; Get_C1(_INFO, _NAME)
     #define Info_C2(_INFO, _NAME) int16u _INFO; Get_C2(_INFO, _NAME)
     #define Info_C3(_INFO, _NAME) int32u _INFO; Get_C3(_INFO, _NAME)
@@ -864,6 +866,7 @@ public :
     #define Info_C6(_INFO, _NAME) int64u _INFO; Get_C6(_INFO, _NAME)
     #define Info_C7(_INFO, _NAME) int64u _INFO; Get_C7(_INFO, _NAME)
     #define Info_C8(_INFO, _NAME) int64u _INFO; Get_C8(_INFO, _NAME)
+    #define Info_C12(_INFO, _NAME) int64u _INFO; Get_C12(_INFO, _NAME)
 
     //***************************************************************************
     // Text

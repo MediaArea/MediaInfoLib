@@ -1167,6 +1167,16 @@ void File__Analyze::Get_C8(int64u &Info)
     Element_Offset+=8;
 }
 
+
+//---------------------------------------------------------------------------
+void File__Analyze::Get_C12(int128u& Info)
+{
+    INTEGRITY_SIZE_ATLEAST_INT(12);
+    Info.hi=CC4(Buffer+Buffer_Offset+(size_t)Element_Offset);
+    Info.lo=CC8(Buffer+Buffer_Offset+(size_t)Element_Offset+4);
+    Element_Offset+=12;
+}
+
 //***************************************************************************
 // Text
 //***************************************************************************
