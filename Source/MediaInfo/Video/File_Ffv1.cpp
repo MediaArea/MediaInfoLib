@@ -905,8 +905,8 @@ void File_Ffv1::Read_Buffer_Continue()
     if (!BuggySlices && version>=3 && slices && (ParseCompletely || Trace_Activated))
     {
         vector<size_t> SlicesPlaces;
-        size_t SlicesPlaces_Size=num_h_slices*num_v_slices;
-        SlicesPlaces.resize(num_h_slices*num_v_slices);
+        size_t SlicesPlaces_Size=(size_t)num_h_slices*num_v_slices;
+        SlicesPlaces.resize(SlicesPlaces_Size);
         Slice* Slice_Max=slices+SlicesPlaces_Size;
         current_slice=slices;
         while (current_slice<Slice_Max)
@@ -1078,6 +1078,12 @@ void File_Ffv1::Parameters()
         }
         num_h_slices++;
         num_v_slices++;
+        if (num_v_slices && num_h_slices>((size_t)-1)/num_v_slices)
+        {
+            Param_Error("FFV1-HEADER-slices:1");
+            Element_End0();
+            return;
+        }
         Get_RU (States, quant_table_count,                      "quant_table_count");
         if (quant_table_count>8)
         {
@@ -1186,7 +1192,7 @@ void File_Ffv1::Parameters()
         //Slices
         if (!slices)
         {
-            slices=new Slice[num_h_slices*num_v_slices];
+            slices=new Slice[(size_t)num_h_slices*num_v_slices];
             current_slice=&slices[0];
         }
         if (version<=1)
@@ -1364,7 +1370,7 @@ bool File_Ffv1::SliceHeader(states &States)
     }
 
     Get_RU (States, slice_y,                                "slice_y");
-    if (slice_y >= num_h_slices)
+    if (slice_y >= num_v_slices)
     {
         Param_Error("FFV1-SLICE-slice_xywh:1");
         Element_End0();
@@ -1372,8 +1378,7 @@ bool File_Ffv1::SliceHeader(states &States)
     }
 
     Get_RU (States, slice_width_minus1,                     "slice_width_minus1");
-    int32u slice_x2 = slice_x + slice_width_minus1 + 1; //right boundary
-    if (slice_x2 > num_h_slices)
+    if (slice_width_minus1 >= num_h_slices-slice_x)
     {
         Param_Error("FFV1-SLICE-slice_xywh:1");
         Element_End0();
@@ -1381,15 +1386,16 @@ bool File_Ffv1::SliceHeader(states &States)
     }
 
     Get_RU (States, slice_height_minus1,                    "slice_height_minus1");
-    int32u slice_y2 = slice_y + slice_height_minus1 + 1; //bottom boundary
-    if (slice_y2 > num_v_slices)
+    if (slice_height_minus1 >= num_v_slices-slice_y)
     {
         Param_Error("FFV1-SLICE-slice_xywh:1");
         Element_End0();
         return false;
     }
 
-    current_slice = &slices[slice_x + slice_y * num_h_slices];
+    int32u slice_x2 = slice_x + slice_width_minus1 + 1; //right boundary
+    int32u slice_y2 = slice_y + slice_height_minus1 + 1; //bottom boundary
+    current_slice = &slices[(size_t)slice_x + (size_t)slice_y * num_h_slices];
     current_slice->slice_x = slice_x;
     current_slice->slice_y = slice_y;
     current_slice->slice_w = slice_x2;
