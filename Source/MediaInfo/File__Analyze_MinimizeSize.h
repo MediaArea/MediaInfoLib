@@ -694,6 +694,7 @@ public :
     void Get_C6 (int64u &Info);
     void Get_C7 (int64u &Info);
     void Get_C8 (int64u &Info);
+    void Get_C12(int128u &Info);
     inline void Get_C1 (int8u  &Info, const char*) {Get_C1(Info);}
     inline void Get_C2 (int16u &Info, const char*) {Get_C2(Info);}
     inline void Get_C3 (int32u &Info, const char*) {Get_C3(Info);}
@@ -702,6 +703,7 @@ public :
     inline void Get_C6 (int64u &Info, const char*) {Get_C6(Info);}
     inline void Get_C7 (int64u &Info, const char*) {Get_C7(Info);}
     inline void Get_C8 (int64u &Info, const char*) {Get_C8(Info);}
+    inline void Get_C12(int128u& Info, const char*) {Get_C12(Info);}
     inline void Skip_C1(              const char*) {if (Element_Offset+1>Element_Size) {Trusted_IsNot(); return;} Element_Offset+=1;}
     inline void Skip_C2(              const char*) {if (Element_Offset+2>Element_Size) {Trusted_IsNot(); return;} Element_Offset+=2;}
     inline void Skip_C3(              const char*) {if (Element_Offset+3>Element_Size) {Trusted_IsNot(); return;} Element_Offset+=3;}
@@ -710,6 +712,7 @@ public :
     inline void Skip_C6(              const char*) {if (Element_Offset+6>Element_Size) {Trusted_IsNot(); return;} Element_Offset+=6;}
     inline void Skip_C7(              const char*) {if (Element_Offset+7>Element_Size) {Trusted_IsNot(); return;} Element_Offset+=7;}
     inline void Skip_C8(              const char*) {if (Element_Offset+8>Element_Size) {Trusted_IsNot(); return;} Element_Offset+=8;}
+    inline void Skip_C12(             const char*) {if (Element_Offset+12>Element_Size) {Trusted_IsNot(); return;} Element_Offset+=12;}
     #define Info_C1(_INFO, _NAME) int8u  _INFO; Get_C1(_INFO, _NAME)
     #define Info_C2(_INFO, _NAME) int16u _INFO; Get_C2(_INFO, _NAME)
     #define Info_C3(_INFO, _NAME) int32u _INFO; Get_C3(_INFO, _NAME)
@@ -718,6 +721,7 @@ public :
     #define Info_C6(_INFO, _NAME) int64u _INFO; Get_C6(_INFO, _NAME)
     #define Info_C7(_INFO, _NAME) int64u _INFO; Get_C7(_INFO, _NAME)
     #define Info_C8(_INFO, _NAME) int64u _INFO; Get_C8(_INFO, _NAME)
+    #define Info_C12(_INFO, _NAME) int64u _INFO; Get_C12(_INFO, _NAME)
 
     //***************************************************************************
     // Text

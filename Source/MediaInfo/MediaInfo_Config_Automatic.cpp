@@ -1557,6 +1557,7 @@ void MediaInfo_Config_Format (InfoMap &Info)
     "Mach-O Universal;;;C;MachO;;o dylib kext\n"
     "MZ;;;C;Mz;;exe dll efi\n"
     "RAR;;;C;Rar;From Rarlabs;rar;application/x-rar-compressed;http://rarlabs.com\n"
+    "TAR;;;C;Tar;;tar\n"
     "ZIP;;;C;Zip;;zip docx odt xlsx ods;application/zip;http://winzip.com\n"
     "Adobe encore DVD;;;T;Other;;txt;;http://www.adobe.fr/products/encore/;Lossless\n"
     "AQTitle;;;T;Other;;aqt;;http://www.volny.cz/aberka/czech/aqt.html;Lossless\n"

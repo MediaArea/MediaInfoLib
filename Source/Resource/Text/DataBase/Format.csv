@@ -128,6 +128,7 @@ Vorbis;;;A;;;;audio/vorbis;http://www.vorbis.com/;Lossy
 Wave;;;A;Riff;;act at9 wav;audio/vnd.wave;;
 Wave64;;;A;Riff;;w64;;;
 WavPack;;;A;Wvpk;;wv wvc;;http://www.wavpack.com;
+Amiga Icon;;;I;AmigaIcon;Amiga Workbench Icon;info;image/x-amiga-icon;;Lossless
 APNG;;;I;Png;Animated Portable Network Graphic;apng png pns;image/apng;http://www.w3.org/TR/png/;Lossless
 Arri Raw;;;I;ArriRaw;;ari;;;
 ARW;;;I;Tiff;Sony Alpha RAW;arw;image/x-sony-arw;http://www.sony.com/;
@@ -162,6 +163,7 @@ Mach-O;;;C;MachO;;o dylib kext;;;
 Mach-O Universal;;;C;MachO;;o dylib kext;;;
 MZ;;;C;Mz;;exe dll efi;;;
 RAR;;;C;Rar;From Rarlabs;rar;application/x-rar-compressed;http://rarlabs.com;
+TAR;;;C;Tar;;tar;;
 ZIP;;;C;Zip;;zip docx odt xlsx ods;application/zip;http://winzip.com;
 Adobe encore DVD;;;T;Other;;txt;;http://www.adobe.fr/products/encore/;Lossless
 AQTitle;;;T;Other;;aqt;;http://www.volny.cz/aberka/czech/aqt.html;Lossless

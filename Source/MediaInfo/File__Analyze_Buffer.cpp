@@ -1595,6 +1595,16 @@ void File__Analyze::Get_C8(int64u &Info, const char* Name)
 }
 
 //---------------------------------------------------------------------------
+void File__Analyze::Get_C12(int128u& Info, const char* Name)
+{
+    INTEGRITY_SIZE_ATLEAST_INT(12);
+    Info.hi=CC4(Buffer+Buffer_Offset+(size_t)Element_Offset);
+    Info.lo=CC8(Buffer+Buffer_Offset+(size_t)Element_Offset+4);
+    if (Trace_Activated) Param_CC(Name, Buffer+Buffer_Offset+(size_t)Element_Offset, 12);
+    Element_Offset+=12;
+}
+
+//---------------------------------------------------------------------------
 void File__Analyze::Skip_C1(const char* Name)
 {
     INTEGRITY_SIZE_ATLEAST(1);
