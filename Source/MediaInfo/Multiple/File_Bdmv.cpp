@@ -1228,6 +1228,7 @@ void File_Bdmv::Mpls_PlayList_PlayItem_STN_table()
     if (End>Element_Size)
     {
         Skip_XX(Element_Size-Element_Offset,                "Problem");
+        Element_End0();
         return;
     }
     Skip_B2(                                                "unknown");
