@@ -3099,7 +3099,6 @@ void Item_Struct::AddError(error_Type Error_Type, int8u AttEle, E Error_Value, f
     }
     else {
         Tips_Size = 255;
-        Tips[255].clear();
     }
     AddError(Error_Type, AttEle, Error_Value, (int8u)Tips_Size, Source);
 }
