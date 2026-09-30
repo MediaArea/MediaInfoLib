@@ -2882,8 +2882,16 @@ void File_DolbyE::mgi_payload()
         int32u num_target_device_configs_m1;
         Get_V4 (2, num_target_device_configs_m1,                "num_target_device_configs_m1");
         Get_V4 (2, P.default_target_device_config,              "default_target_device_config"); Param_Info1(default_target_device_config_Value(P.default_target_device_config));
+        if (num_target_device_configs_m1>=Data_BS_Remain()/4)
+        {
+            Trusted_IsNot("Too many target device configurations");
+            Skip_BS(Data_BS_Remain(),                           "Invalid data");
+            Element_End0();
+            Element_End0();
+            return;
+        }
         P.target_device_configs.resize(num_target_device_configs_m1+1);
-        for (int32u j=0; j<=num_target_device_configs_m1; j++)
+        for (size_t j=0; j<P.target_device_configs.size(); j++)
         {
             preset::target_device_config& T=P.target_device_configs[j];
             Element_Begin1("target_device_config");
