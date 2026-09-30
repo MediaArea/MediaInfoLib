@@ -2087,6 +2087,13 @@ void File_Hevc::seq_parameter_set()
     profile_tier_level(p, true, max_sub_layers_minus1);
     }
     Get_UE (   sps_seq_parameter_set_id,                        "sps_seq_parameter_set_id");
+    if (sps_seq_parameter_set_id>=16)
+    {
+        Param_Error("sps_seq_parameter_set_id");
+        Skip_BS(Data_BS_Remain(),                               "Data");
+        BS_End();
+        return;
+    }
     if (MustParse_VPS_SPS_PPS_FromFlv)
     {
         BS_End();
