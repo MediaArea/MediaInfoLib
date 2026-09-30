@@ -1249,9 +1249,10 @@ void File_SmpteSt0337::Data_Parse()
                 }
                 else if (format_type==1)
                 {
-                    int8u* Compressed=new int8u[Data_BS_Remain()/8];
+                    size_t Compressed_Size=Data_BS_Remain()/8;
+                    int8u* Compressed=new int8u[Compressed_Size];
                     size_t Compressed_Offset=0;
-                    while (Data_BS_Remain())
+                    while (Data_BS_Remain()>=Stream_Bits*2)
                     {
                         int64u Data;
                         Get_S6(Stream_Bits*2, Data, "Data");
@@ -1260,6 +1261,8 @@ void File_SmpteSt0337::Data_Parse()
                             Compressed[Compressed_Offset++]=(int8u)(Data>>((Stream_Bits/4-i-1)*8));
                         }
                     }
+                    if (Data_BS_Remain())
+                        Skip_BS(Data_BS_Remain(),                "Padding");
                     BS_End();
 
                     // Adapting
