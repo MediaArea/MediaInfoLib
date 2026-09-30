@@ -190,7 +190,7 @@ protected :
     //Temp
     int8u   numSubFrames;
     int8u   numProgram;
-    int8u   numLayer;
+    int8u   numLayer[16];
     int8u   numChunk;
     bool    audioMuxVersionA;
     int8u   streamID[16][8];

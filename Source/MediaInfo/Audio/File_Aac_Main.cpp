@@ -969,8 +969,8 @@ void File_Aac::StreamMuxConfig()
 
         for (int8u prog=0; prog<=numProgram; prog++)
         {
-            Get_S1(3,numLayer,                                  "numLayer");
-            for (int8u lay=0; lay<=numLayer; lay++)
+            Get_S1(3,numLayer[prog],                            "numLayer");
+            for (int8u lay=0; lay<=numLayer[prog]; lay++)
             {
                 progSIndx[streamCnt]=prog;
                 laySIndx[streamCnt]=lay;
@@ -1094,7 +1094,7 @@ void File_Aac::PayloadLengthInfo()
     {
         for (int8u prog=0; prog<=numProgram; prog++)
         {
-            for (int8u lay=0; lay<=numLayer; lay++)
+            for (int8u lay=0; lay<=numLayer[prog]; lay++)
             {
                 if (frameLengthType[streamID[prog][lay]]==0)
                 {
@@ -1154,7 +1154,7 @@ void File_Aac::PayloadMux()
     if (allStreamsSameTimeFraming)
     {
         for (int8u prog=0; prog<=numProgram; prog++)
-            for (int8u lay=0; lay<=numLayer; lay++)
+            for (int8u lay=0; lay<=numLayer[prog]; lay++)
             {
                 switch(frameLengthType[streamID[prog][lay]])
                 {
