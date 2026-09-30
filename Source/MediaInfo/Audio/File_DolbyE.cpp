@@ -2001,8 +2001,10 @@ void File_DolbyE::metadata_segment()
 void File_DolbyE::guard_band()
 {
     int8u* NewBuffer=NULL;
+    const int8u* Buffer_Save;
     size_t Buffer_Offset_Save;
     size_t Buffer_Size_Save;
+    int64u File_Offset_Save;
     int64u Element_Offset_Save;
     int64u Element_Size_Save;
 
@@ -2046,11 +2048,13 @@ void File_DolbyE::guard_band()
         }
         if (NewBuffer)
         {
-            Buffer=NewBuffer;
+            Buffer_Save=Buffer;
             Buffer_Offset_Save=Buffer_Offset;
-            Buffer_Size_Save=Buffer_Offset;
+            Buffer_Size_Save=Buffer_Size;
+            File_Offset_Save=File_Offset;
             Element_Offset_Save=Element_Offset;
             Element_Size_Save=Element_Size;
+            Buffer=NewBuffer;
             File_Offset+=Buffer_Offset+Element_Offset;
             Buffer_Offset=0;
             Buffer_Size=Element_Size-Element_Offset;
@@ -2109,12 +2113,13 @@ void File_DolbyE::guard_band()
 
     if (NewBuffer)
     {
-        delete[] Buffer;
+        Buffer=Buffer_Save;
         Buffer_Offset=Buffer_Offset_Save;
-        Buffer_Size=Buffer_Offset_Save;
+        Buffer_Size=Buffer_Size_Save;
+        File_Offset=File_Offset_Save;
         Element_Offset=Element_Offset_Save;
         Element_Size=Element_Size_Save;
-        File_Offset-=Buffer_Offset+Element_Offset;
+        delete[] NewBuffer;
     }
 }
 
