@@ -921,7 +921,11 @@ void File_Aac::AudioMuxElement()
     {
         for (int8u i=0; i<=numSubFrames; i++)
         {
-            PayloadLengthInfo();
+            if (!PayloadLengthInfo())
+            {
+                Element_End0();
+                return;
+            }
             PayloadMux();
         }
         if (otherDataLenBits)
@@ -960,7 +964,7 @@ void File_Aac::StreamMuxConfig()
             //taraBufferFullness=LatmGetValue();
         }
 
-        int8u streamCnt = 0;
+        streamCnt=0;
         bool useSameConfig;
 
         Get_SB (allStreamsSameTimeFraming,                      "allStreamsSameTimeFraming");
@@ -1086,7 +1090,7 @@ int32u File_Aac::LatmGetValue()
 }
 
 //---------------------------------------------------------------------------
-void File_Aac::PayloadLengthInfo()
+bool File_Aac::PayloadLengthInfo()
 {
     Element_Begin1("PayloadLengthInfo");
     int8u tmp;
@@ -1123,6 +1127,13 @@ void File_Aac::PayloadLengthInfo()
         for (int chunkCnt=0; chunkCnt<=numChunk; chunkCnt++)
         {
             Get_S1(4,streamIndx,                                "streamIndx");
+            if (streamIndx>=streamCnt)
+            {
+                Trusted_IsNot("Invalid stream index");
+                Skip_BS(Data_BS_Remain(),                       "Invalid data");
+                Element_End0();
+                return false;
+            }
             prog=progCIndx[chunkCnt]=progSIndx[streamIndx];
             lay=layCIndx[chunkCnt]=laySIndx[streamIndx];
             if (frameLengthType[streamID[prog][lay]]==0)
@@ -1145,6 +1156,7 @@ void File_Aac::PayloadLengthInfo()
         }
     }
     Element_End0();
+    return true;
 }
 
 //---------------------------------------------------------------------------
