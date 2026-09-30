@@ -610,6 +610,7 @@ bool File_DashMpd::FileHeader_Begin()
                         if (string(Period_Item->Value())=="Representation")
                         {
                             sequence* Sequence=new sequence;
+                            bool HasSegmentInfo=false;
 
                             //Attributes - mineType
                             Attribute=Period_Item->Attribute("mimeType");
@@ -632,6 +633,7 @@ bool File_DashMpd::FileHeader_Begin()
                                 //SegmentInfo
                                 if (string(AdaptationSet_Item->Value())=="SegmentInfo")
                                 {
+                                    HasSegmentInfo=true;
                                     //Sub
                                     for (XMLElement* SegmentInfo_Item=AdaptationSet_Item->FirstChildElement(); SegmentInfo_Item; SegmentInfo_Item=SegmentInfo_Item->NextSiblingElement())
                                     {
@@ -651,10 +653,12 @@ bool File_DashMpd::FileHeader_Begin()
                                                 Sequence->AddFileName(BaseURL+Ztring().From_UTF8(Attribute));
                                         }
                                     }
-
-                                    ReferenceFiles->AddSequence(Sequence);
                                 }
                             }
+                            if (HasSegmentInfo)
+                                ReferenceFiles->AddSequence(Sequence);
+                            else
+                                delete Sequence;
                         }
                     }
                 }
