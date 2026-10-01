@@ -1778,8 +1778,11 @@ void File_Avc::Read_Buffer_Unsynched()
                     default: Trusted_IsNot("Not supported"); return;
                 }
 
-                TemporalReferences.resize(4*MaxNumber);
-                TemporalReferences_Reserved=MaxNumber;
+                if (MaxNumber>TemporalReferences_Reserved)
+                {
+                    TemporalReferences.resize(4*MaxNumber);
+                    TemporalReferences_Reserved=MaxNumber;
+                }
             }
     }
     else
