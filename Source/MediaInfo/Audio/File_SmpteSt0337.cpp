@@ -1252,7 +1252,7 @@ void File_SmpteSt0337::Data_Parse()
                     size_t Compressed_Size=Data_BS_Remain()/8;
                     int8u* Compressed=new int8u[Compressed_Size];
                     size_t Compressed_Offset=0;
-                    while (Data_BS_Remain()>=Stream_Bits*2)
+                    while (Data_BS_Remain()>=(size_t)Stream_Bits*2)
                     {
                         int64u Data;
                         Get_S6(Stream_Bits*2, Data, "Data");

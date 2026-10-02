@@ -230,7 +230,7 @@ bool File__Duplicate_MpegTs::Manage_PMT (const int8u* ToAdd, size_t ToAdd_Size)
     if (FromTS.Offset+4>FromTS.End)
         return false;
     const int16u program_info_length=CC2(FromTS.Buffer+FromTS.Offset+2)&0x0FFF;
-    if (program_info_length>FromTS.End-FromTS.Offset-4 || PMT[StreamID].Offset>PMT[StreamID].Size || 4+program_info_length>PMT[StreamID].Size-PMT[StreamID].Offset)
+    if (program_info_length>FromTS.End-FromTS.Offset-4 || PMT[StreamID].Offset>PMT[StreamID].Size || (size_t)4+program_info_length>PMT[StreamID].Size-PMT[StreamID].Offset)
         return false;
     std::memcpy(PMT[StreamID].Buffer+PMT[StreamID].Offset, FromTS.Buffer+FromTS.Offset, 4+program_info_length);
     FromTS.Offset+=4+program_info_length;
@@ -246,7 +246,7 @@ bool File__Duplicate_MpegTs::Manage_PMT (const int8u* ToAdd, size_t ToAdd_Size)
             return false;
         if (Wanted_elementary_PIDs.empty() || Wanted_elementary_PIDs.find(elementary_PID)!=Wanted_elementary_PIDs.end())
         {
-            if (PMT[StreamID].Offset>PMT[StreamID].Size || 5+ES_info_length>PMT[StreamID].Size-PMT[StreamID].Offset)
+            if (PMT[StreamID].Offset>PMT[StreamID].Size || (size_t)5+ES_info_length>PMT[StreamID].Size-PMT[StreamID].Offset)
                 return false;
             //Integrating it
             elementary_PIDs[elementary_PID]=1;
