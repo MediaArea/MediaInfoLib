@@ -111,6 +111,7 @@
 #endif //defined(MEDIAINFO_REFERENCES_YES)
 #include "ZenLib/Format/Http/Http_Utils.h"
 #include <algorithm>
+#include <array>
 #include <cfloat>
 #include <cmath>
 #if MEDIAINFO_ADVANCED
@@ -12786,10 +12787,27 @@ void File_Mxf::PartitionMetadata()
 
     Fill(Stream_General, 0, General_Format_Version, Ztring::ToZtring(MajorVersion)+__T('.')+Ztring::ToZtring(MinorVersion), true);
 
+    auto PartitionStatus_ToString = [](const int128u& Code) {
+        array<string, 2> PartitionStatus;
+        int8u PartitionStatusI = (Code.lo >> 8) & 0xFF;
+        if (PartitionStatusI && PartitionStatusI <= 4)
+        {
+            PartitionStatusI--;
+            PartitionStatus[0] = (PartitionStatusI & 0x1) ? "Closed" : "Open";
+            PartitionStatus[1] = (PartitionStatusI & 0x2) ? "Complete" : "Incomplete";
+        }
+        return PartitionStatus;
+    };
+
     if ((Code.lo&0xFF0000)==0x020000) //If Header Partition Pack
+    {
+        auto PartitionStatus = PartitionStatus_ToString(Code);
+        Fill(Stream_General, 0, General_Format_Settings, PartitionStatus[0], true, true);
+        Fill(Stream_General, 0, General_Format_Settings, PartitionStatus[1]);
         switch ((Code.lo>>8)&0xFF)
         {
-            case 0x01 : Fill(Stream_General, 0, General_Format_Settings, "Open / Incomplete"  , Unlimited, true, true);
+            case 0x01 :
+            case 0x03 :
                         if (Config->ParseSpeed>=1.0)
                         {
                             Config->File_IsGrowing=true;
@@ -12798,23 +12816,10 @@ void File_Mxf::PartitionMetadata()
                                 delete Hash; Hash=NULL;
                             #endif //MEDIAINFO_HASH
                         }
-                        break;
-            case 0x02 : Fill(Stream_General, 0, General_Format_Settings, "Closed / Incomplete", Unlimited, true, true);
-                        break;
-            case 0x03 : Fill(Stream_General, 0, General_Format_Settings, "Open / Complete"    , Unlimited, true, true);
-                        if (Config->ParseSpeed>=1.0)
-                        {
-                            Config->File_IsGrowing=true;
-                            HeaderPartition_IsOpen=true;
-                            #if MEDIAINFO_HASH
-                                delete Hash; Hash=NULL;
-                            #endif //MEDIAINFO_HASH
-                        }
-                        break;
-            case 0x04 : Fill(Stream_General, 0, General_Format_Settings, "Closed / Complete"  , Unlimited, true, true);
                         break;
             default   : ;
         }
+    }
 
     if ((Code.lo&0xFF0000)==0x030000 && (Code.lo&0x00FF00)<=0x000400) //If Body Partition Pack
     {
@@ -12835,18 +12840,29 @@ void File_Mxf::PartitionMetadata()
         }
     }
 
-    if ((Code.lo&0xFF0000)==0x040000) //If Footer Partition Pack
+    if ((Code.lo & 0xFF0000) == 0x040000) //If Footer Partition Pack
     {
-        switch ((Code.lo>>8)&0xFF)
+        ZtringList PartitionStatus_Header;
+        PartitionStatus_Header.Separator_Set(0, __T(" / "));
+        PartitionStatus_Header.Write(Retrieve_Const(Stream_General, 0, General_Format_Settings));
+        auto PartitionStatus = PartitionStatus_ToString(Code.lo);
+        if (PartitionStatus_Header.size() == 2)
         {
-            case 0x02 : Fill(Stream_General, 0, General_Format_Settings, "Closed / Incomplete", Unlimited, true, true);
-                        Config->File_IsGrowing=false;
-                        break;
-            case 0x04 : Fill(Stream_General, 0, General_Format_Settings, "Closed / Complete"  , Unlimited, true, true);
-                        Config->File_IsGrowing=false;
-                        break;
-            default   : ;
+            for (size_t i = 0; i < 2; i++)
+            {
+                string Value = PartitionStatus_Header[i].To_UTF8();
+                if (Value.find(" (header: ") != string::npos)
+                    PartitionStatus[i] = Value; //TODO: check why footer is sometimes parsed twice
+                else if (Value != PartitionStatus[i])
+                {
+                    PartitionStatus[i] += " (header: ";
+                    PartitionStatus[i] += Value;
+                    PartitionStatus[i] += ')';
+                }
+            }
         }
+        Fill(Stream_General, 0, General_Format_Settings, PartitionStatus[0], true, true);
+        Fill(Stream_General, 0, General_Format_Settings, PartitionStatus[1]);
 
         #if MEDIAINFO_ADVANCED
             if (Footer_Position==(int64u)-1)
