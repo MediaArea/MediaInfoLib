@@ -2879,6 +2879,25 @@ void File_Mxf::Streams_Finish()
     Streams_Finish_CommercialNames();
 
     Streams_Finish_Conformance();
+
+    //Timecode coherency
+    for (const auto& TimecodeCache : TimecodeCaches)
+    {
+        if (TimecodeCache.second.StreamPos == (size_t)-1 || TimecodeCache.second.Values.size() <= 1 || TimecodeCache.second.Values[0].Value == TimecodeCache.second.Values[1].Value)
+            continue;
+        const auto& TimeCodeInfo = Components.find(TimecodeCache.first);
+        if (TimeCodeInfo == Components.end())
+            continue;
+        TimeCode TC0((int64_t)(TimecodeCache.second.Values[0].Value + Config->File_IgnoreEditsBefore), TimeCodeInfo->second.MxfTimeCode.RoundedTimecodeBase - 1, TimeCode::DropFrame(TimeCodeInfo->second.MxfTimeCode.DropFrame).FPS1001(TimeCodeInfo->second.MxfTimeCode.DropFrame));
+        TimeCode TC1((int64_t)(TimecodeCache.second.Values[1].Value + Config->File_IgnoreEditsBefore), TimeCodeInfo->second.MxfTimeCode.RoundedTimecodeBase - 1, TimeCode::DropFrame(TimeCodeInfo->second.MxfTimeCode.DropFrame).FPS1001(TimeCodeInfo->second.MxfTimeCode.DropFrame));
+        Fill(Stream_Other, TimecodeCache.second.StreamPos, Other_TimeCode_FirstFrame, TC1.ToString(), true, true);
+        Frame_Count = 0;
+        Frame_Count_NotParsedIncluded = 0;
+        File_Offset = TimecodeCache.second.Values[0].Offset;
+        Fill_Conformance(BuildConformanceName(ParserName, "MXF", "Timecode").c_str(), "Header timecode is not same as footer timecode (actual " + TC0.ToString() + ", expected " + TC1.ToString() + ")", {}, Conformance_Warning);
+        Merge_Conformance();
+        Streams_Finish_Conformance(Stream_Other, TimecodeCache.second.StreamPos);
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -4659,6 +4678,7 @@ void File_Mxf::Streams_Finish_Component_ForTimeCode(const int128u ComponentUID, 
                 Fill(Stream_Other, StreamPos_Last, Other_FrameRate, Component2->second.MxfTimeCode.RoundedTimecodeBase/(Is1001?1.001:1.000));
             TC.Set1001fps(Is1001);
             Fill(Stream_Other, StreamPos_Last, Other_TimeCode_FirstFrame, TC.ToString().c_str());
+            TimecodeCaches[Component2->first].StreamPos = StreamPos_Last;
             if (Component2->second.Duration && Component2->second.Duration!=(int64u)-1)
             {
                 Fill(Stream_Other, StreamPos_Last, Other_FrameCount, Component2->second.Duration);
@@ -13410,6 +13430,7 @@ void File_Mxf::TimecodeGroup_StartTimecode()
 
         Components[InstanceUID].MxfTimeCode.InstanceUID=InstanceUID;
         Components[InstanceUID].MxfTimeCode.StartTimecode=Data;
+        TimecodeCaches[InstanceUID].Values.emplace_back(File_Offset + Buffer_Offset, Data);
     FILLING_END();
 }
 
