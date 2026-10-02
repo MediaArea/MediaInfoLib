@@ -669,8 +669,14 @@ void File_Rm::RJMD()
 }
 
 //---------------------------------------------------------------------------
-void File_Rm::RJMD_property(std::string Name)
+void File_Rm::RJMD_property(std::string Name, int8u Depth)
 {
+    if (Depth>=32)
+    {
+        Trusted_IsNot("Too many nested metadata properties");
+        Skip_XX(Element_Size-Element_Offset,                    "Metadata properties");
+        return;
+    }
     //Element_Name("Property");
 
     //Parsing
@@ -768,7 +774,7 @@ void File_Rm::RJMD_property(std::string Name)
     }
     for (int32u Pos=0; Pos<num_subproperties; Pos++)
     {
-        RJMD_property(Name);
+        RJMD_property(Name, Depth+1);
     }
 
     Element_End0();

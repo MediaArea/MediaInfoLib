@@ -2001,10 +2001,6 @@ void File_DolbyE::metadata_segment()
 void File_DolbyE::guard_band()
 {
     int8u* NewBuffer=NULL;
-    size_t Buffer_Offset_Save;
-    size_t Buffer_Size_Save;
-    int64u Element_Offset_Save;
-    int64u Element_Size_Save;
 
     Element_Begin1("guard_band (with data)");
     int16u element_length;
@@ -2044,25 +2040,28 @@ void File_DolbyE::guard_band()
                 NewBuffer[i+1-Element_Offset]=0x78;
             }
         }
-        if (NewBuffer)
-        {
-            Buffer=NewBuffer;
-            Buffer_Offset_Save=Buffer_Offset;
-            Buffer_Size_Save=Buffer_Offset;
-            Element_Offset_Save=Element_Offset;
-            Element_Size_Save=Element_Size;
-            File_Offset+=Buffer_Offset+Element_Offset;
-            Buffer_Offset=0;
-            Buffer_Size=Element_Size-Element_Offset;
-            Element_Offset=0;
-            Element_Size=Buffer_Size;
-        }
     }
     else
     {
         Skip_S2(12,                                             "escape_code");
         BS_End();
     }
+    const int8u* Buffer_Save=Buffer;
+    size_t Buffer_Offset_Save=Buffer_Offset;
+    size_t Buffer_Size_Save=Buffer_Size;
+    int64u File_Offset_Save=File_Offset;
+    int64u Element_Offset_Save=Element_Offset;
+    int64u Element_Size_Save=Element_Size;
+    if (NewBuffer)
+    {
+        Buffer=NewBuffer;
+        File_Offset+=Buffer_Offset+Element_Offset;
+        Buffer_Offset=0;
+        Buffer_Size=Element_Size-Element_Offset;
+        Element_Offset=0;
+        Element_Size=Buffer_Size;
+    }
+
     Get_B1 (    element_id,                                     "element_id");
     Get_B2 (    element_length,                                 "element_length");
     int64u After=Element_Offset+element_length;
@@ -2109,12 +2108,13 @@ void File_DolbyE::guard_band()
 
     if (NewBuffer)
     {
-        delete[] Buffer;
+        Buffer=Buffer_Save;
         Buffer_Offset=Buffer_Offset_Save;
-        Buffer_Size=Buffer_Offset_Save;
+        Buffer_Size=Buffer_Size_Save;
+        File_Offset=File_Offset_Save;
         Element_Offset=Element_Offset_Save;
         Element_Size=Element_Size_Save;
-        File_Offset-=Buffer_Offset+Element_Offset;
+        delete[] NewBuffer;
     }
 }
 
@@ -2877,8 +2877,16 @@ void File_DolbyE::mgi_payload()
         int32u num_target_device_configs_m1;
         Get_V4 (2, num_target_device_configs_m1,                "num_target_device_configs_m1");
         Get_V4 (2, P.default_target_device_config,              "default_target_device_config"); Param_Info1(default_target_device_config_Value(P.default_target_device_config));
+        if (num_target_device_configs_m1>=Data_BS_Remain()/4)
+        {
+            Trusted_IsNot("Too many target device configurations");
+            Skip_BS(Data_BS_Remain(),                           "Invalid data");
+            Element_End0();
+            Element_End0();
+            return;
+        }
         P.target_device_configs.resize(num_target_device_configs_m1+1);
-        for (int32u j=0; j<=num_target_device_configs_m1; j++)
+        for (size_t j=0; j<P.target_device_configs.size(); j++)
         {
             preset::target_device_config& T=P.target_device_configs[j];
             Element_Begin1("target_device_config");

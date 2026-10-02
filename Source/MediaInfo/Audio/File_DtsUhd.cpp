@@ -548,6 +548,12 @@ int File_DtsUhd::ExtractMDChunkObjIDList(MD01* MD01)
     {
         constexpr int8u Table[4] = {3, 4, 6, 8};
         Get_VR (Table, MD01->NumObjects,                        "NumObjects");
+        if (MD01->NumObjects>sizeof(MD01->ObjectList)/sizeof(*MD01->ObjectList))
+        {
+            Param_Error("NumObjects");
+            Element_End0();
+            return 1;
+        }
         for (int32u i=0; i<MD01->NumObjects; i++)
         {
             bool NumBitsforObjID_b;

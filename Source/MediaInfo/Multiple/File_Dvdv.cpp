@@ -513,7 +513,11 @@ void File_Dvdv::VMG()
 
         if (Version>0x001F)
             return;
-        Sectors.resize(Sector_Pointer_LastSector+1);
+        if (File_Size==(int64u)-1
+         || Sector_Pointer_LastSector==(int32u)-1
+         || Sector_Pointer_LastSector>=File_Size/2048)
+            return;
+        Sectors.resize((size_t)Sector_Pointer_LastSector+1);
         if (Sector_Pointer_TT_SRPT<=Sector_Pointer_LastSector)
             Sectors[Sector_Pointer_TT_SRPT]=Sector_TT_SRPT;
         if (Sector_Pointer_VMGM_PGCI_UT<=Sector_Pointer_LastSector)

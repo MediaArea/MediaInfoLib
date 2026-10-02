@@ -819,7 +819,7 @@ void File__Analyze::Open_Buffer_Init (int64u File_Size_)
             SubFile_IDs.Separator_Set(0, EOL);
             SubFile_IDs.Separator_Set(1, __T(","));
             SubFile_IDs.Write(Config->SubFile_IDs_Get());
-            if (!SubFile_IDs.empty())
+            if (!SubFile_IDs.empty() && SubFile_IDs.size()<sizeof(StreamIDs)/sizeof(*StreamIDs)-1)
             {
                 StreamIDs_Size=1+SubFile_IDs.size();
                 StreamIDs[SubFile_IDs.size()]=StreamSource==IsStream?(int64u)-1:StreamIDs[0];
@@ -856,6 +856,7 @@ void File__Analyze::Open_Buffer_Init (File__Analyze* Sub, int64u File_Size_)
     if (Sub==NULL
         #if MEDIAINFO_EVENTS
                 || StreamIDs_Size==0
+                || StreamIDs_Size>=sizeof(StreamIDs)/sizeof(*StreamIDs)-1
         #endif
                 )
         return;
