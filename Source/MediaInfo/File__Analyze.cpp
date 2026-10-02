@@ -4506,12 +4506,17 @@ void File__Analyze::Merge_Conformance(bool FromConfig)
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_CONFORMANCE
-void File__Analyze::Streams_Finish_Conformance()
+void File__Analyze::Streams_Finish_Conformance(stream_t StreamKind, size_t StreamPos)
 {
     if (!Conformance_Data) {
         return;
     }
     auto& Data = *(conformance_data*)Conformance_Data;
+    if (StreamKind != Stream_Max && StreamPos != (size_t)-1)
+    {
+        Data.StreamKind_Last = StreamKind;
+        Data.StreamPos_Last = StreamPos;
+    }
     if (IsSub)
     {
         for (size_t StreamKind = Stream_General + 1; StreamKind < Stream_Max; StreamKind++) {

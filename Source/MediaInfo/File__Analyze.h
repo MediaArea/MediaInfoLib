@@ -1557,7 +1557,7 @@ public :
         void                Fill_Conformance(const char* Field, const string& Value, uint8_t Flags = {}, conformance_type Level = Conformance_Error) { Fill_Conformance(Field, Value.c_str(), Flags, Level); }
         void                Clear_Conformance();
         void                Merge_Conformance(bool FromConfig = false);
-        void                Streams_Finish_Conformance();
+        void                Streams_Finish_Conformance(stream_t StreamKind = Stream_Max, size_t StreamPos = (size_t)-1);
         virtual string      CreateElementName();
         string              BuildConformanceName(const string& ParserName, const char* Prefix, const char* Suffix);
         void                IsTruncated(int64u ExpectedSize = (int64u)-1, bool MoreThan = false, const char* Prefix = nullptr);
@@ -1569,7 +1569,7 @@ public :
         void                Fill_Conformance(const char* Field, const string& Value, uint8_t Flags = {}, conformance_type Level = Conformance_Error) { Fill_Conformance(Field, Value.c_str(), Flags, Level); }
         void                Clear_Conformance() {}
         void                Merge_Conformance(bool FromConfig = false) {}
-        void                Streams_Finish_Conformance() {}
+        void                Streams_Finish_Conformance(stream_t = Stream_Max, size_t = (size_t)-1) {}
         string              CreateElementName() { return {}; }
         string              BuildConformanceName(const string& ParserName, const char* Prefix, const char* Suffix) { return {}; }
         void                IsTruncated(int64u ExpectedSize = (int64u)-1, bool MoreThan = false, const char* = nullptr) {}

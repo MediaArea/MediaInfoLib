@@ -1098,6 +1098,25 @@ protected :
     typedef std::map<int128u, component> components; //Key is InstanceUID of the component
     components Components;
 
+    //Timecode comparison
+    struct timecodecache
+    {
+        struct value
+        {
+            int64u Offset;
+            int64u Value;
+
+            value(int64u Offset = 0, int64u Value = 0)
+                : Offset(Offset)
+                , Value(Value)
+            {}
+        };
+        std::vector<value> Values;
+        size_t StreamPos = (size_t)-1;
+    };
+    typedef std::map<int128u, timecodecache> timecodecaches; //Key is InstanceUID of the timecode
+    timecodecaches TimecodeCaches;
+
     //Descriptive Metadata - DescriptiveMarkers
     struct dmsegment
     {
