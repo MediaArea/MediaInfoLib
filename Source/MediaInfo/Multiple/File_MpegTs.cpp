@@ -2709,18 +2709,20 @@ void File_MpegTs::Header_Parse_AdaptationField()
     else
     {
     #endif //MEDIAINFO_TRACE
+        if (Element_Size>=BDAV_Size+5)
+        {
         int8u adaptation_field_length=Buffer[Buffer_Offset+BDAV_Size+4];
+        if (adaptation_field_length>188-(4+1)) //TS size - header - adaptation_field_length
+            adaptation_field_length=188-(4+1);
         #ifdef MEDIAINFO_MPEGTS_PCR_YES
-            if (adaptation_field_length>188-4-1) //TS size - header - adaptation_field_length
-                adaptation_field_length=188-4-1;
-            else if (adaptation_field_length)
+            if (adaptation_field_length)
             {
                 bool discontinuity_indicator=(Buffer[Buffer_Offset+BDAV_Size+5]&0x80)!=0;
                 bool PCR_flag=(Buffer[Buffer_Offset+BDAV_Size+5]&0x10)!=0;
                 bool OPCR_flag=(Buffer[Buffer_Offset+BDAV_Size+5]&0x08)!=0;
                 bool splicing_point_flag=(Buffer[Buffer_Offset+BDAV_Size+5]&0x04)!=0;
                 bool transport_private_data_flag=(Buffer[Buffer_Offset+BDAV_Size+5]&0x02)!=0;
-                if (PCR_flag)
+                if (PCR_flag && adaptation_field_length>=6)
                 {
                     int64u program_clock_reference=(  (((int64u)Buffer[Buffer_Offset+BDAV_Size+6])<<25)
                                                     | (((int64u)Buffer[Buffer_Offset+BDAV_Size+7])<<17)
@@ -2866,13 +2868,14 @@ void File_MpegTs::Header_Parse_AdaptationField()
                         }
                     }
                 }
-                if (transport_private_data_flag && adaptation_field_length>1+(PCR_flag?6:0)+(OPCR_flag?6:0)+(splicing_point_flag?1:0)+1)
+                auto adaptation_field_length_Min=1+(PCR_flag?6:0)+(OPCR_flag?6:0)+(splicing_point_flag?1:0);
+                if (transport_private_data_flag && adaptation_field_length>adaptation_field_length_Min+1)
                 {
-                    int8u transport_private_data_length=Buffer[Buffer_Offset+BDAV_Size+5+1+(PCR_flag?6:0)+(OPCR_flag?6:0)+(splicing_point_flag?1:0)];
-                    if (1+(PCR_flag?6:0)+(OPCR_flag?6:0)+(splicing_point_flag?1:0)+1+transport_private_data_length<=adaptation_field_length)
+                    int8u transport_private_data_length=Buffer[Buffer_Offset+BDAV_Size+5+adaptation_field_length_Min];
+                    if (transport_private_data_length<=adaptation_field_length-(adaptation_field_length_Min+1))
                     {
                         int64u Element_Offset_Save=Element_Offset;
-                        Element_Offset=5+1+(PCR_flag?6:0)+(OPCR_flag?6:0)+(splicing_point_flag?1:0)+1;
+                        Element_Offset=5+adaptation_field_length_Min+1;
                         transport_private_data(transport_private_data_length);
                         Element_Offset=Element_Offset_Save;
                     }
@@ -2880,6 +2883,7 @@ void File_MpegTs::Header_Parse_AdaptationField()
             }
         #endif //MEDIAINFO_MPEGTS_PCR_YES
         Element_Offset+=1+adaptation_field_length;
+        }
     #if MEDIAINFO_TRACE
     }
     #endif //MEDIAINFO_TRACE
