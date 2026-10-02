@@ -311,7 +311,12 @@ void File_Tar::Header()
         if (const std::string* v = GetBoth("uname"))    UserName  = *v;
         if (const std::string* v = GetBoth("gname"))    GroupName = *v;
         if (const std::string* v = GetBoth("size"))
-        { try { Size = std::stoull(*v); } catch (...) {} }
+        {
+            char* End = nullptr;
+            auto Value = strtoul(v->c_str(), &End, 10);
+            if (End != v->c_str() && *End == '\0')
+                Size = Value;
+        }
 
         // Apply GNU long-name / long-link overrides
         if (!Pending_GNULongName.empty()) FullName = Pending_GNULongName;
