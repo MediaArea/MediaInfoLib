@@ -339,3 +339,24 @@ jobs:
             echo "::endgroup::"
           done
           exit ${Status}
+
+  check-line-endings:
+    name: Consistent Line Endings
+    runs-on: ubuntu-slim
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Check for mixed line endings using git ls-files
+        run: |
+          echo "Checking tracked files for mixed line endings..."
+          # git ls-files --eol outputs lines like: i/lf w/crlf attr/text=auto path/to/file
+          MIXED_FILES=$(git ls-files --eol | grep -E '^i/mixed')
+          if [ -n "$MIXED_FILES" ]; then
+            # Escape newlines to %0A so GitHub renders the full file list in the annotation
+            ESCAPED_FILES="${MIXED_FILES//'%'/'%25'}"
+            ESCAPED_FILES="${ESCAPED_FILES//$'\n'/'%0A'}"
+            echo "::error::Found files with mixed line endings in git index:%0A$ESCAPED_FILES"
+            exit 1
+          else
+            echo "No mixed line endings detected."
+          fi
