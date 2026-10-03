@@ -1503,6 +1503,15 @@ void File_Dts::Streams_Fill()
             if (!Data[ChannelPositions2].back().empty())
                 DtsXBedChannelPositions2=Data[ChannelPositions2].back()+__T(".4");
             DtsXBedChannelCount=Data[Channels].back().To_int64u()+DtsXSupplementalChannelCount;
+
+            for (int8u pos = 0; pos < (Presence[presence_Extended_IMAX] ? 2 : 1); ++pos) {
+                Data[Channels].Write(Ztring::ToZtring(DtsXBedChannelCount, 10), pos);
+                Data[ChannelLayout].Write(DtsXBedChannelConfiguration, pos);
+                if (!DtsXBedChannelPositions.empty())
+                    Data[ChannelPositions].Write(DtsXBedChannelPositions, pos);
+                if (!DtsXBedChannelPositions2.empty())
+                    Data[ChannelPositions2].Write(DtsXBedChannelPositions2, pos);
+            }
         }
         if (DtsXObjectCount)
         {
@@ -1636,22 +1645,6 @@ void File_Dts::Streams_Fill()
     Fill(Stream_General, 0, General_OverallBitRate_Mode, Retrieve(Stream_Audio, 0, Audio_BitRate_Mode));
     Fill(Stream_Audio, 0, Audio_Compression_Mode, LegacyStreamDisplay?Data[Compression_Mode].Read():Data[Compression_Mode].Read(0), true);
     Fill(Stream_Audio, 0, "NumberOfDynamicObjects", LegacyStreamDisplay?Data[NumberOfDynamicObjects].Read():Data[NumberOfDynamicObjects].Read(0), true);
-    if (DtsXBedChannelCount)
-    {
-        Ztring DtsXChannelLayout=DtsXBedChannelConfiguration;
-        Ztring DtsXChannelPositions=DtsXBedChannelPositions;
-        Ztring DtsXChannelPositions2=DtsXBedChannelPositions2;
-        if (DtsXObjectCount)
-        {
-            Data[NumberOfDynamicObjects] = Ztring::ToZtring(DtsXObjectCount);
-        }
-        Fill(Stream_Audio, 0, Audio_Channel_s_, DtsXBedChannelCount, 10, true);
-        Fill(Stream_Audio, 0, Audio_ChannelLayout, DtsXChannelLayout, true);
-        if (!DtsXChannelPositions.empty())
-            Fill(Stream_Audio, 0, Audio_ChannelPositions, DtsXChannelPositions, true);
-        if (!DtsXChannelPositions2.empty())
-            Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, DtsXChannelPositions2, true);
-    }
 
     // Cleanup up
     for (size_t Pos=0; Pos<10; ++Pos)
