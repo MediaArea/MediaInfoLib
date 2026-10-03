@@ -1127,6 +1127,15 @@ void File_Wm::Header_ExtendedContentDescription()
         Get_UTF16L(Name_Length, Name,                           "Name");
         Get_L2 (Value_Type,                                     "Value Data Type");
         Get_L2 (Value_Length,                                   "Value Length");
+        if (Element_Offset>Element_Size || Value_Length>Element_Size-Element_Offset
+         || Buffer_Offset>Buffer_Size || Element_Offset>Buffer_Size-Buffer_Offset
+         || Value_Length>Buffer_Size-Buffer_Offset-Element_Offset)
+        {
+            Trusted_IsNot("Invalid content descriptor length");
+            Element_End0();
+            return;
+        }
+        int64u Value_End=Element_Offset+Value_Length;
         switch (Value_Type)
         {
             case 0x00 : Get_UTF16L(Value_Length, Value,         "Value"); break;
@@ -1136,22 +1145,44 @@ void File_Wm::Header_ExtendedContentDescription()
                             Ztring Mime, Description;
                             int32u Data_Size;
                             int8u PictureType;
+                            if (Value_Length<5)
+                            {
+                                Trusted_IsNot("Invalid picture length");
+                                Element_End0();
+                                return;
+                            }
                             Get_L1 (PictureType,                                    "Picture Ttype"); Element_Info1(Id3v2_PictureType(PictureType));
                             Get_L4 (Data_Size,                                      "Data size");
-                            if (Value_Length<5 || Data_Size>Value_Length-5U)
-                                return; //There is a problem
                             int64u End = Element_Offset;
-                            while (End + 1 < Element_Size && *(int16u*)(Buffer + Buffer_Offset + End)) {
+                            while (End + 1 < Value_End && (Buffer[Buffer_Offset+End] || Buffer[Buffer_Offset+End+1])) {
                                 End += 2;
+                            }
+                            if (End+1>=Value_End)
+                            {
+                                Trusted_IsNot("Unterminated picture text");
+                                Element_End0();
+                                return;
                             }
                             Get_UTF16L (End-Element_Offset, Mime,                   "Mime Type");
                             Skip_L2(                                                "Zero");
                             End = Element_Offset;
-                            while (End + 1 < Element_Size && *(int16u*)(Buffer + Buffer_Offset + End)) {
+                            while (End + 1 < Value_End && (Buffer[Buffer_Offset+End] || Buffer[Buffer_Offset+End+1])) {
                                 End += 2;
+                            }
+                            if (End+1>=Value_End)
+                            {
+                                Trusted_IsNot("Unterminated picture text");
+                                Element_End0();
+                                return;
                             }
                             Get_UTF16L (End-Element_Offset, Description,            "Description");
                             Skip_L2(                                                "Zero");
+                            if (Data_Size>Value_End-Element_Offset)
+                            {
+                                Trusted_IsNot("Invalid picture data size");
+                                Element_End0();
+                                return;
+                            }
                             auto Element_Size_Save = Element_Size;
                             Element_Size = Element_Offset + Data_Size;
                             Attachment("WM/Picture", Description, Id3v2_PictureType(PictureType).c_str(), Mime, true);
