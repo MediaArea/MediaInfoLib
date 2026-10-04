@@ -163,10 +163,15 @@ static jint JNI_Open_Buffer_Continue(JNIEnv* _env, jobject _this, jbyteArray buf
     if (mi == NULL)
         return (jint)-1;
 
+    if (buffer == NULL || bufferSize < 0 || bufferSize > _env->GetArrayLength(buffer))
+        return (jint)-1;
+
     int8u*  buff = (int8u*)_env->GetByteArrayElements(buffer, JNI_FALSE);
+    if (buff == NULL)
+        return (jint)-1;
     jint toReturn = (jint)mi->Open_Buffer_Continue(buff, (size_t)bufferSize).to_ulong();
 
-    _env->ReleaseByteArrayElements(buffer, (jbyte*)buff, 0);
+    _env->ReleaseByteArrayElements(buffer, (jbyte*)buff, JNI_ABORT);
 
     return toReturn;
 }
