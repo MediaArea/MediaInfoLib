@@ -1493,12 +1493,15 @@ bool File_Mpega::Header_VBRI()
 //---------------------------------------------------------------------------
 bool File_Mpega::Header_Encoders()
 {
+    if (Buffer_Offset>Buffer_Size || Element_Size>Buffer_Size-Buffer_Offset)
+        return false;
+
     std::string BufferS((const char*)(Buffer+Buffer_Offset), (size_t)Element_Size);
     size_t Buffer_Pos;
 
     //Lame
     Buffer_Pos=BufferS.find("LAME");
-    if (Buffer_Pos!=std::string::npos && Buffer_Pos<=Element_Size-8)
+    if (Buffer_Pos!=std::string::npos && Element_Size>=8 && Buffer_Pos<=Element_Size-8)
     {
         Element_Info1("With tag (Lame)");
         Element_Offset=Buffer_Pos;
@@ -1525,21 +1528,21 @@ bool File_Mpega::Header_Encoders()
 
     //RCA
     Buffer_Pos=BufferS.find("RCA mp3PRO Encoder");
-    if (Buffer_Pos!=std::string::npos && Buffer_Pos<Element_Size-23)
+    if (Buffer_Pos!=std::string::npos && Element_Size>=23 && Buffer_Pos<=Element_Size-23)
     {
         Element_Info1("With tag (RCA)");
         Encoded_Library="RCA ";
-        Encoded_Library+=string((const char*)(Buffer+Buffer_Offset+18), 5);
+        Encoded_Library+=string((const char*)(Buffer+Buffer_Offset+Buffer_Pos+18), 5);
         return true;
     }
 
     //Thomson
     Buffer_Pos=BufferS.find("THOMSON mp3PRO Encoder");
-    if (Buffer_Pos!=std::string::npos && Buffer_Pos<Element_Size-29)
+    if (Buffer_Pos!=std::string::npos && Element_Size>=28 && Buffer_Pos<=Element_Size-28)
     {
         Element_Info1("With tag (Thomson)");
         Encoded_Library="Thomson ";
-        Encoded_Library+=string((const char*)(Buffer+Buffer_Offset+22), 6);
+        Encoded_Library+=string((const char*)(Buffer+Buffer_Offset+Buffer_Pos+22), 6);
         return true;
     }
 
