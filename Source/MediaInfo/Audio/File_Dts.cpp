@@ -1300,7 +1300,7 @@ void File_Dts::Streams_Fill_Extension()
     if (HD_TotalNumberChannels!=(int8u)-1)
     {
         int8u i=HD_TotalNumberChannels;
-        int8u Core_Core_Channels=DTS_Channels[Core_Core_AMODE];
+        int8u Core_Core_Channels=Presence[presence_Core_Core] && Core_Core_AMODE<sizeof(DTS_Channels)?DTS_Channels[Core_Core_AMODE]:0;
         if (Presence[presence_Core_Core] && Core_Core_LFF)
             Core_Core_Channels++;
 
@@ -1358,12 +1358,12 @@ void File_Dts::Streams_Fill_Extension()
     {
         Data[BitDepth].push_back(Ztring());
     }
-    if (HD_MaximumSampleRate_Real!=(int8u)-1)
+    if (HD_MaximumSampleRate_Real<sizeof(DTS_HD_MaximumSampleRate)/sizeof(*DTS_HD_MaximumSampleRate))
     {
         Data[SamplingRate].push_back(Ztring::ToZtring(DTS_HD_MaximumSampleRate[HD_MaximumSampleRate_Real]));
         Data[SamplesPerFrame].push_back(Ztring::ToZtring(HD_ExSSFrameDurationCode<<(7+DTS_HD_SamplePerFrames_Factor[HD_MaximumSampleRate_Real])));
     }
-    else if (HD_MaximumSampleRate!=(int8u)-1)
+    else if (HD_MaximumSampleRate<sizeof(DTS_HD_MaximumSampleRate)/sizeof(*DTS_HD_MaximumSampleRate))
     {
         Data[SamplingRate].push_back(Ztring::ToZtring(DTS_HD_MaximumSampleRate[HD_MaximumSampleRate]));
         Data[SamplesPerFrame].push_back(Ztring::ToZtring(HD_ExSSFrameDurationCode<<(7+DTS_HD_SamplePerFrames_Factor[HD_MaximumSampleRate])));
@@ -1442,8 +1442,8 @@ void File_Dts::Streams_Fill_Core(bool With96k)
         Data[ChannelPositions2].push_back(Ztring(__T("User Defined"))+(Core_Core_LFF?__T(".1"):__T(".0")));
         Data[ChannelLayout].push_back(Ztring(__T("User Defined"))+(Core_Core_LFF?__T(" LFE"):__T("")));
     }
-    Data[BitDepth].push_back(Ztring::ToZtring(DTS_Resolution[bits_per_sample]));
-    Data[SamplingRate].push_back(Ztring::ToZtring(DTS_SamplingRate[sample_frequency]*(1+With96k)));
+    Data[BitDepth].push_back(bits_per_sample<sizeof(DTS_Resolution)?Ztring::ToZtring(DTS_Resolution[bits_per_sample]):Ztring());
+    Data[SamplingRate].push_back(sample_frequency<sizeof(DTS_SamplingRate)/sizeof(*DTS_SamplingRate)?Ztring::ToZtring(DTS_SamplingRate[sample_frequency]*(1+With96k)):Ztring());
     Data[SamplesPerFrame].push_back(Ztring::ToZtring(Number_Of_PCM_Sample_Blocks*32*(1+With96k)));
     Data[BitRate].push_back(Core_BitRate);
     Data[BitRate_Mode].push_back(__T("CBR"));
@@ -2851,7 +2851,10 @@ void File_Dts::XLL()
         Element_End0();
     }
     size_t Count=(1<<SegmentsInFrame)*NumChSetsInFrame;
-    if (DTS_HD_MaximumSampleRate[HD_MaximumSampleRate_Real]>DTS_SamplingRate[sample_frequency])
+    if (Presence[presence_Core_Core]
+     && sample_frequency<sizeof(DTS_SamplingRate)/sizeof(*DTS_SamplingRate)
+     && HD_MaximumSampleRate_Real<sizeof(DTS_HD_MaximumSampleRate)/sizeof(*DTS_HD_MaximumSampleRate)
+     && DTS_HD_MaximumSampleRate[HD_MaximumSampleRate_Real]>DTS_SamplingRate[sample_frequency])
     {
         Count*=2;
         if (DTS_HD_MaximumSampleRate[HD_MaximumSampleRate_Real]>DTS_SamplingRate[sample_frequency]*2)
@@ -3176,11 +3179,11 @@ float64 File_Dts::BitRate_Get(bool WithHD)
         float64 BitRate;
         if (Presence[presence_Extended_LBR])
             BitRate=0; //No core bitrate
-        else if (DTS_SamplingRate[sample_frequency])
+        else if (sample_frequency<sizeof(DTS_SamplingRate)/sizeof(*DTS_SamplingRate) && DTS_SamplingRate[sample_frequency] && Number_Of_PCM_Sample_Blocks)
             BitRate=((float64)Primary_Frame_Byte_Size)*8/(Number_Of_PCM_Sample_Blocks*32)*DTS_SamplingRate[sample_frequency]; //(float64)DTS_BitRate[bit_rate];
         else
             BitRate=0; //Problem
-        if (WithHD && HD_ExSSFrameDurationCode!=(int8u)-1)
+        if (WithHD && HD_ExSSFrameDurationCode && HD_ExSSFrameDurationCode!=(int8u)-1 && HD_MaximumSampleRate<sizeof(DTS_HD_MaximumSampleRate)/sizeof(*DTS_HD_MaximumSampleRate))
         {
             int32u SamplesPerFrame_Temp=HD_ExSSFrameDurationCode<<(7+DTS_HD_SamplePerFrames_Factor[HD_MaximumSampleRate]);
             BitRate+=((float64)HD_size)*8*DTS_HD_MaximumSampleRate[HD_MaximumSampleRate]/SamplesPerFrame_Temp;
