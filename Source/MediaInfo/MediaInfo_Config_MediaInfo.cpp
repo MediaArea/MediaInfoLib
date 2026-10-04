@@ -2329,7 +2329,8 @@ Ztring MediaInfo_Config_MediaInfo::File_Duplicate_Set (const Ztring &Value_In)
             else if (ToRemove)
             {
                 //Exists yet but Removal is wanted
-                File__Duplicate_Memory_Indexes[Memory_Pos].clear();
+                if (Memory_Pos!=Error)
+                    File__Duplicate_Memory_Indexes[Memory_Pos].clear();
                 Memory_Pos=(size_t)-1;
             }
 
