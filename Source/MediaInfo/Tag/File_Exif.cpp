@@ -1937,7 +1937,7 @@ void File_Exif::Streams_Finish()
             case IFDMakernoteNikon::Quality:
                 ParameterC = "Quality";
                 Value = Item.second.Read();
-                while (Value.back() == __T(' ')) Value.pop_back();
+                while (!Value.empty() && Value.back() == __T(' ')) Value.pop_back();
                 break;
             }
             FillMetadata(Value, Item, Parameter, ParameterC, ParameterS);
