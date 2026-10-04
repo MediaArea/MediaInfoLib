@@ -1112,6 +1112,22 @@ void File_DolbyE::Streams_Fill_ED2()
         Fill(Stream_Audio, StreamPos_Last, Audio_Channel_s_, ChannelCount);
     Streams_Fill_PerProgram(StreamPos_Last);
 
+    if (BedInstances.size()>nonstd_bed_channel_assignment_masks.size()
+     || DynObjects.size()>substream_mappings.size()
+     || BedInstances.size()>substream_mappings.size()-DynObjects.size())
+        return; //Incomplete metadata
+    size_t BedObjects=0;
+    for (size_t p=0; p<BedInstances.size(); p++)
+    {
+        size_t Count=BedChannelConfiguration_ChannelCount(nonstd_bed_channel_assignment_masks[p]);
+        if (Count>ObjectElements.size()-BedObjects)
+            return; //Incomplete metadata
+        for (size_t o=0; o<Count; o++)
+            if (ObjectElements[BedObjects+o].Alts.empty())
+                return; //Incomplete metadata
+        BedObjects+=Count;
+    }
+
     if (!Presets.empty())
     {
         Fill(Stream_Audio, 0, "NumberOfPresentations", Presets.size());
