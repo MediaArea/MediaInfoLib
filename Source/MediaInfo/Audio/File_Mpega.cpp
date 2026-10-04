@@ -310,6 +310,14 @@ File_Mpega::File_Mpega()
     CalculateDelay=false;
 
     //Temp - BitStream info
+    ID=0;
+    layer=0;
+    bitrate_index=0;
+    sampling_frequency=0;
+    padding_bit=false;
+    mode=0;
+    mode_extension=0;
+    emphasis=0;
     Surround_Frames=0;
     Block_Count[0]=0;
     Block_Count[1]=0;
@@ -957,6 +965,8 @@ bool File_Mpega::Synched_Test()
 #if MEDIAINFO_DEMUX
 bool File_Mpega::Demux_UnpacketizeContainer_Test()
 {
+    if (Buffer_Offset>Buffer_Size || Buffer_Size-Buffer_Offset<4)
+        return false;
     //Retrieving some info
     int8u ID0                =(CC1(Buffer+Buffer_Offset+1)>>3)&0x03;
     int8u layer0             =(CC1(Buffer+Buffer_Offset+1)>>1)&0x03;
@@ -964,7 +974,7 @@ bool File_Mpega::Demux_UnpacketizeContainer_Test()
     int8u sampling_frequency0=(CC1(Buffer+Buffer_Offset+2)>>2)&0x03;
     int8u padding_bit0       =(CC1(Buffer+Buffer_Offset+2)>>1)&0x01;
 
-    if (Mpega_SamplingRate[ID][sampling_frequency]==0 || Mpega_Coefficient[ID][layer]==0 || Mpega_BitRate[ID][layer][bitrate_index]==0 || Mpega_SlotSize[layer]==0)
+    if (Mpega_SamplingRate[ID0][sampling_frequency0]==0 || Mpega_Coefficient[ID0][layer0]==0 || Mpega_BitRate[ID0][layer0][bitrate_index0]==0 || Mpega_SlotSize[layer0]==0)
         return true; //Synhro issue
 
     #if MEDIAINFO_ADVANCED
