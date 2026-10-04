@@ -2164,7 +2164,7 @@ void File_Dts::Data_Parse()
             Element_End0();
             return;
         }
-        auto CRC=Dts_CRC_CCIT_Compute(Buffer+Buffer_Offset+Element_Offset, ExtSSHeaderSize-4);
+        auto CRC=CRC_Compute(ExtSSHeaderSize-4);
         if (CRC)
         {
             Element_Info1("CRC NOK");
@@ -2583,8 +2583,25 @@ void File_Dts::Extensions_Resynch(bool Known)
 }
 
 //---------------------------------------------------------------------------
+int16u File_Dts::CRC_Compute(size_t Size)
+{
+    if (Element_Offset>Element_Size || Size>Element_Size-Element_Offset
+     || Buffer_Offset>Buffer_Size || Element_Offset>Buffer_Size-Buffer_Offset
+     || Size>Buffer_Size-Buffer_Offset-Element_Offset)
+        return 1; //Invalid range
+
+    return Dts_CRC_CCIT_Compute(Buffer+Buffer_Offset+(size_t)Element_Offset, Size);
+}
+
+//---------------------------------------------------------------------------
 void File_Dts::Extensions_Padding()
 {
+    if (Element_Offset>Element_Size || Buffer_Offset>Buffer_Size
+     || Element_Size>Buffer_Size-Buffer_Offset)
+    {
+        Trusted_IsNot("Invalid padding range");
+        return;
+    }
     auto Begin=Buffer+Buffer_Offset+(size_t)Element_Offset;
     auto Current=Begin;
     auto Size=Element_Size-Element_Offset;
@@ -2606,8 +2623,7 @@ void File_Dts::Extensions_Padding()
         Current+=PaddingBytes;
     }
     
-    auto End=decltype(Begin)((((size_t)Current+Size)>>2)<<2);
-    while (Current<End)
+    while (Size-(Current-Begin)>=4)
     {
         if (BigEndian2int32u(Current))
             break;
@@ -2640,7 +2656,7 @@ void File_Dts::X96()
         int8u HeaderSize=Begin>>2;
         if (HeaderSize<=3)
             return;
-        auto CRC=Dts_CRC_CCIT_Compute(Buffer+Buffer_Offset+Element_Offset, HeaderSize-3);
+        auto CRC=CRC_Compute(HeaderSize-3);
         if (CRC)
         {
             Element_Info1("CRC NOK");
@@ -2699,7 +2715,7 @@ void File_Dts::XLL()
     int8u HeaderSize=Begin>>4;
     if (HeaderSize<8)
         return;
-    auto CRC=Dts_CRC_CCIT_Compute(Buffer+Buffer_Offset+Element_Offset, HeaderSize-3);
+    auto CRC=CRC_Compute(HeaderSize-3);
     if (CRC)
     {
         Element_Info1("CRC NOK");
@@ -2767,7 +2783,7 @@ void File_Dts::XLL()
         int16u Begin;
         Peek_B2(Begin);
         int8u ChSetHeaderSize=Begin>>6;
-        auto CRC=Dts_CRC_CCIT_Compute(Buffer+Buffer_Offset+Element_Offset, ChSetHeaderSize+1);
+        auto CRC=CRC_Compute(ChSetHeaderSize+1);
         if (CRC)
         {
             Skip_XX(Element_Size-Element_Offset,                "(Unknown)");
@@ -2829,7 +2845,15 @@ void File_Dts::XLL()
             Count*=2;
     }
     size_t NaviByteCount=(Count*Bits4SSize+7)/8+2;
-    CRC=Dts_CRC_CCIT_Compute(Buffer+Buffer_Offset+Element_Offset, NaviByteCount);
+    if (Element_Offset>Element_Size || NaviByteCount>Element_Size-Element_Offset
+     || Buffer_Offset>Buffer_Size || Element_Offset>Buffer_Size-Buffer_Offset
+     || NaviByteCount>Buffer_Size-Buffer_Offset-(size_t)Element_Offset)
+    {
+        Trusted_IsNot("Invalid navigation size");
+        Element_Size=Element_Size_Save;
+        return;
+    }
+    CRC=CRC_Compute(NaviByteCount);
     if (CRC)
     {
         auto Buffer_Temp=Buffer+Buffer_Offset+Element_Offset+NaviByteCount;
@@ -2851,7 +2875,7 @@ void File_Dts::XLL()
         Element_Size=Element_Size_Save;
         return;
     }
-    CRC=Dts_CRC_CCIT_Compute(Buffer+Buffer_Offset+Element_Offset, SegmentSize_Size);
+    CRC=CRC_Compute(SegmentSize_Size);
     if (CRC)
     {
         Skip_XX(Element_Size-Element_Offset,                    "(Unknown)");
@@ -2899,7 +2923,7 @@ void File_Dts::XXCH()
     int8u HeaderSize=Begin>>2;
     if (HeaderSize<8)
         return;
-    auto CRC=Dts_CRC_CCIT_Compute(Buffer+Buffer_Offset+Element_Offset, HeaderSize-3);
+    auto CRC=CRC_Compute(HeaderSize-3);
     if (CRC)
     {
         Element_Info1("CRC NOK");
@@ -2965,7 +2989,7 @@ void File_Dts::XXCH()
         int8u XXCHChSetHeaderSize=Begin>>1;
         if (bCRCPresent4ChSetHeaderXXCH)
         {
-            auto CRC=Dts_CRC_CCIT_Compute(Buffer+Buffer_Offset+Element_Offset, XXCHChSetHeaderSize+1);
+            auto CRC=CRC_Compute(XXCHChSetHeaderSize+1);
             if (CRC)
             {
                 Skip_XX(Element_Size-Element_Offset,            "(Unknown)");
@@ -3038,7 +3062,7 @@ void File_Dts::XBR()
     int8u HeaderSize=Begin>>2;
     if (HeaderSize<8)
         return;
-    auto CRC=Dts_CRC_CCIT_Compute(Buffer+Buffer_Offset+Element_Offset, HeaderSize-3);
+    auto CRC=CRC_Compute(HeaderSize-3);
     if (CRC)
     {
         Element_Info1("CRC NOK");
