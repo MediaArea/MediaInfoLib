@@ -2635,7 +2635,7 @@ void File_DolbyE::object_basic_info(int8u object_basic_info_array, int8u blk)
                     }
                     break;
             default:
-                    if (ObjectElements.size()>=2)
+                    if (ObjectElements.size()>=2 && blk<ObjectElements[ObjectElements.size()-2].Alts.size())
                         A.obj_gain_db=ObjectElements[ObjectElements.size()-2].Alts[blk].obj_gain_db;
                     else
                         A.obj_gain_db=0;
