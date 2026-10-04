@@ -727,6 +727,13 @@ void File_Mpegh3da::mpegh3daConfig()
             usacSamplingFrequency=0;
     }
     Get_S1 (3, coreSbrFrameLengthIndex,                         "coreSbrFrameLengthIndex");
+    if (coreSbrFrameLengthIndex>=coreSbrFrameLengthIndex_Mapping_Size)
+    {
+        Trusted_IsNot("Invalid frame length index");
+        BS_End();
+        Element_End0();
+        return;
+    }
     Skip_SB(                                                    "cfg_reserved");
     Skip_SB(                                                    "receiverDelayCompensation");
     SpeakerConfig3d(referenceLayout);
