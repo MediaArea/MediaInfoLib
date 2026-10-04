@@ -853,7 +853,9 @@ void File_StarDiva::Read_Buffer_Continue()
         Element_Begin1("Header");
             int32u JL_TotalSize;
             Get_B4 (JL_TotalSize,                               "Time line data total size");
-            if (JL_TotalSize<16 && JL_TotalSize>0x49000)
+            if (JL_TotalSize<16 || JL_TotalSize>0x49000
+             || JL_TotalSize>Element_Size || Buffer_Offset>Buffer_Size
+             || JL_TotalSize>Buffer_Size-Buffer_Offset)
             {
                 Element_End0();
                 Element_End0();
@@ -920,7 +922,7 @@ void File_StarDiva::Read_Buffer_Continue()
         vector<string> Times;
         Element_Begin1("Times");
             Element_Offset=8;
-            while (Buffer[Element_Offset]!=0x99 && Buffer[Element_Offset]!=0x09)
+            while (Element_Offset<JL_End && Buffer[Buffer_Offset+Element_Offset]!=0x99 && Buffer[Buffer_Offset+Element_Offset]!=0x09)
             {
                 string Time;
                 Get_String(8, Time,                             "Time");
@@ -1173,8 +1175,15 @@ void File_StarDiva::Read_Buffer_Continue()
                 }
                 Begin=Element_Offset;
                 End=Element_Offset;
-                while (Buffer[End])
+                while (End<JL_End && Buffer[Buffer_Offset+End])
                     End++;
+                if (End>=JL_End)
+                {
+                    Trusted_IsNot("Unterminated agenda");
+                    Element_End0();
+                    Element_End0();
+                    return;
+                }
                 Element_Offset=Begin;
                 string SeqAgenda;
                 Get_String(End-Begin, SeqAgenda,                "Seq + Agenda");
@@ -1336,8 +1345,15 @@ void File_StarDiva::Read_Buffer_Continue()
                     }
                     Begin=Element_Offset;
                     End=Element_Offset;
-                    while (Buffer[End])
+                    while (End<JL_End && Buffer[Buffer_Offset+End])
                         End++;
+                    if (End>=JL_End)
+                    {
+                        Trusted_IsNot("Unterminated speaker");
+                        Element_End0();
+                        Element_End0();
+                        return;
+                    }
                     Element_Offset=Begin;
                     string Speaker;
                     Get_String(End-Begin, Speaker,                  "Speaker");
