@@ -166,7 +166,7 @@ bool File_DvbSubtitle::Synched_Test()
     if (MustFindDvbHeader)
     {
         //Must have enough buffer for having header
-        if (Buffer_Offset+1>Buffer_Size)
+        if (Buffer_Offset>Buffer_Size || Buffer_Size-Buffer_Offset<2)
             return false;
 
         if (CC2(Buffer+Buffer_Offset)!=0x2000)
