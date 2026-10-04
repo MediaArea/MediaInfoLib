@@ -1010,15 +1010,34 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
             }
             if (AES)
             {
+                if (ToAdd_Size%16 || ToAdd_Size>0x7FFFFFFF)
+                {
+                    Reject();
+                    return;
+                }
                 if (AES_Decrypted_Size<ToAdd_Size)
                 {
-                    delete [] AES_Decrypted; AES_Decrypted=new int8u[ToAdd_Size*2];
-                    AES_Decrypted_Size=ToAdd_Size*2;
+                    delete [] AES_Decrypted; AES_Decrypted=new int8u[ToAdd_Size];
+                    AES_Decrypted_Size=ToAdd_Size;
                 }
-                AES->cbc_decrypt(ToAdd, AES_Decrypted, (int)ToAdd_Size, AES_IV);    //TODO: handle the case where ToAdd_Size is more than 2GB
+                if (AES->cbc_decrypt(ToAdd, AES_Decrypted, (int)ToAdd_Size, AES_IV))
+                {
+                    Reject();
+                    return;
+                }
                 if (File_Offset+Buffer_Size+ToAdd_Size>=Config->File_Current_Size)
                 {
                     int8u LastByte=AES_Decrypted[ToAdd_Size-1];
+                    bool InvalidPadding=!LastByte || LastByte>16;
+                    for (size_t i=0; i<16; i++)
+                        InvalidPadding|=(i<LastByte) & (AES_Decrypted[ToAdd_Size-1-i]!=LastByte);
+                    if (InvalidPadding || LastByte>Config->File_Current_Size
+                     || (Config->File_Names_Pos && Config->File_Names_Pos-1<Config->File_Sizes.size()
+                      && LastByte>Config->File_Sizes[Config->File_Names_Pos-1]))
+                    {
+                        Reject();
+                        return;
+                    }
                     ToAdd_Size-=LastByte;
                     if (Config->File_Names_Pos && Config->File_Names_Pos-1<Config->File_Sizes.size())
                         Config->File_Sizes[Config->File_Names_Pos-1]-=LastByte;
