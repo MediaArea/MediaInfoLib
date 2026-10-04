@@ -1117,11 +1117,11 @@ void File_Riff::Header_Parse()
     }
 
     //Integrity
-    if (Name==0x00000000)
+    if (Size==0 && Name==0x00000000)
     {
         //Filling
         Header_Fill_Code(0, "Junk");
-        Header_Fill_Size(File_Size-(File_Offset+Buffer_Offset));
+        Header_Fill_Size(Element_TotalSize_Get());
         Alignement_ExtraByte=0;
         return;
     }
