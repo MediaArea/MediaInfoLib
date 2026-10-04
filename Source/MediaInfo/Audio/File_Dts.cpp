@@ -1895,7 +1895,18 @@ bool File_Dts_Common::Header_Begin()
         for (int i=0; i<8; i++)
             ToShow.append(1, (ZenLib::Char)((Name>>(56-i*8)))&0xFF);
         Element_Name(ToShow);
+        if (Element_Offset>Element_Size || Size>Element_Size-Element_Offset
+         || Buffer_Offset>Buffer_Size || Element_Offset>Buffer_Size-Buffer_Offset
+         || Size>Buffer_Size-Buffer_Offset-Element_Offset)
+        {
+            Trusted_IsNot("Invalid footer size");
+            Element_End0();
+            Element_End0();
+            return false;
+        }
         auto End=Element_Offset+Size;
+        auto Element_Size_Save=Element_Size;
+        Element_Size=End;
         switch (Name)
         {
             case CHUNK_BUILDVER:
@@ -1937,7 +1948,9 @@ bool File_Dts_Common::Header_Begin()
                 break;
             }
         }
-        Skip_XX(End-Element_Offset,                             End-Element_Offset<=3?"Dword_Align":"(Unknown)");
+        if (Element_Offset<End)
+            Skip_XX(End-Element_Offset,                         End-Element_Offset<=3?"Dword_Align":"(Unknown)");
+        Element_Size=Element_Size_Save;
         Element_Offset=End;
         Element_End0();
     }
