@@ -2275,7 +2275,7 @@ bool File_Mpegv::Header_Parser_QuickSearch()
         }
     }
 
-    Trusted_IsNot("MPEG Video, Synchronisation lost");
+    Trusted_IsNot("MPEG Video, Synchronization lost");
     return Synchronize();
 }
 

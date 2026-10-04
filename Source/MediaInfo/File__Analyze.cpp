@@ -2516,7 +2516,7 @@ bool File__Analyze::Synchro_Manage_Test()
         else
         {
             Element[Element_Level].IsComplete=true; //Else the trusting algo will think it
-            Trusted_IsNot("Synchronisation lost");
+            Trusted_IsNot("Synchronization lost");
             while (Element_Level)
                 Element_End();
         }
@@ -4651,21 +4651,23 @@ void File__Analyze::SynchLost(const char* Prefix, int64u CountOfBytes, bool AreZ
 {
     Synched=false;
     const auto Name = BuildConformanceName(ParserName, Prefix, "GeneralCompliance");
-    string Content = "Bitstream synchronisation is lost";
+    string Content = "Bitstream synchronization is lost";
     auto Type = conformance_type::Conformance_Error;
     if (CountOfBytes) {
         if (AreZero) {
             Content += ", zeroed bytes";
-            if (File_Offset + Buffer_Offset + CountOfBytes >= File_Size) {
-                Content += " at the end";
-                Type = Conformance_Information;
-            }
+        }
+        if (File_Offset + Buffer_Offset + CountOfBytes >= File_Size) {
+            if (!AreZero)
+                Content += ',';
+            Content += " at the end";
+            Type = Conformance_Information;
         }
         Content += " (count " + to_string_with_percent(CountOfBytes, File_Size) + ")";
     }
     File_Offset-=CountOfBytes;
     Fill_Conformance(Name.c_str(), Content, {}, Type);
-    Trusted_IsNot("Synchronisation lost");
+    Trusted_IsNot("Synchronization lost");
     File_Offset+=CountOfBytes;
     Merge_Conformance();
 }

@@ -4377,7 +4377,7 @@ bool File_MpegPs::Header_Parser_QuickSearch()
     if (Buffer_Offset+3==Buffer_Size)
         return false; //Sync is OK, but stream_id is not available
     if (Buffer_Offset+4<=Buffer_Size)
-        Trusted_IsNot("MPEG-PS, Synchronisation lost");
+        Trusted_IsNot("MPEG-PS, Synchronization lost");
     Synched=false;
     return Buffer_Offset < Buffer_Size ? Synchronize() : false;
 }
