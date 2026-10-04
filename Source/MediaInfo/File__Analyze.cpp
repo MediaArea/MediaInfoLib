@@ -4656,10 +4656,12 @@ void File__Analyze::SynchLost(const char* Prefix, int64u CountOfBytes, bool AreZ
     if (CountOfBytes) {
         if (AreZero) {
             Content += ", zeroed bytes";
-            if (File_Offset + Buffer_Offset + CountOfBytes >= File_Size) {
-                Content += " at the end";
-                Type = Conformance_Information;
-            }
+        }
+        if (File_Offset + Buffer_Offset + CountOfBytes >= File_Size) {
+            if (!AreZero)
+                Content += ',';
+            Content += " at the end";
+            Type = Conformance_Information;
         }
         Content += " (count " + to_string_with_percent(CountOfBytes, File_Size) + ")";
     }
