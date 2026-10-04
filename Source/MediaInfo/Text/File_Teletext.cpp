@@ -238,6 +238,13 @@ void File_Teletext::Read_Buffer_Continue()
                 int8u data_unit_id, data_unit_length;
                 Get_B1 (data_unit_id,                           "data_unit_id");
                 Get_B1 (data_unit_length,                       "data_unit_length");
+                if (!Element_IsOK() || Element_Offset>Element_Size || data_unit_length>Element_Size-Element_Offset
+                 || Buffer_Offset>Buffer_Size || Element_Offset>Buffer_Size-Buffer_Offset
+                 || data_unit_length>Buffer_Size-Buffer_Offset-(size_t)Element_Offset)
+                {
+                    Trusted_IsNot("Truncated teletext unit");
+                    return;
+                }
                 if (data_unit_length)
                 {
                 Skip_B1(                                        "field/line");
