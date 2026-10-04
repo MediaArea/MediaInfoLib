@@ -71,7 +71,21 @@ static jlong JNI_Init(JNIEnv*, jobject)
 //------------------------------------------------------------------------------
 static jint JNI_Destroy(JNIEnv* _env, jobject _this)
 {
-    delete GetMiObj(_env, _this);
+    if (_env->MonitorEnter(_this) != JNI_OK)
+        return (jint)-1;
+
+    jclass cls = _env->GetObjectClass(_this);
+    jfieldID miId = cls == NULL ? NULL : _env->GetFieldID(cls, "mi", "J");
+    if (miId == NULL)
+    {
+        _env->MonitorExit(_this);
+        return (jint)-1;
+    }
+
+    MediaInfo_Internal* mi = (MediaInfo_Internal*)_env->GetLongField(_this, miId);
+    _env->SetLongField(_this, miId, 0);
+    delete mi;
+    _env->MonitorExit(_this);
 
     return 0;
 }
