@@ -6992,9 +6992,14 @@ void File_Mxf::Data_Parse()
                 else
                 {
                     //Checking if we need to add SPS/PPS
-                    size_t CheckMax=0x10; //SPS uses to be in the first bytes only
-                    if (CheckMax>Element_Size-4)
-                        CheckMax=Element_Size-4;
+                    size_t CheckMax=0;
+                    if (Element_Offset<=Element_Size && Element_Size-Element_Offset>=4
+                     && Buffer_Offset<=Buffer_Size && Element_Offset<=Buffer_Size-Buffer_Offset
+                     && Buffer_Size-Buffer_Offset-Element_Offset>=4)
+                    {
+                        int64u Remaining=std::min(Element_Size-Element_Offset, (int64u)(Buffer_Size-Buffer_Offset-Element_Offset));
+                        CheckMax=(size_t)std::min((int64u)0x10, Remaining-3);
+                    }
                     ShouldDemux=false;
                     const int8u* Buffer_Temp=Buffer+(size_t)(Buffer_Offset+Element_Offset);
                     for (size_t i=0; i<CheckMax; i++)
