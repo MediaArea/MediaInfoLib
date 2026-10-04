@@ -1391,7 +1391,7 @@ bool File_Hevc::Header_Parser_QuickSearch()
         }
     }
 
-    Trusted_IsNot("HEVC, Synchronisation lost");
+    Trusted_IsNot("HEVC, Synchronization lost");
     return Synchronize();
 }
 

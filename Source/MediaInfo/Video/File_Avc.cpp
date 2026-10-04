@@ -1965,7 +1965,7 @@ bool File_Avc::Header_Parser_QuickSearch()
         }
     }
 
-    Trusted_IsNot("AVC, Synchronisation lost");
+    Trusted_IsNot("AVC, Synchronization lost");
     return Synchronize();
 }
 
