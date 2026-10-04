@@ -16455,6 +16455,12 @@ void File_Mxf::ChooseParser_ChannelGrouping(const essences::iterator &Essence, c
 //---------------------------------------------------------------------------
 void File_Mxf::ChooseParser_ChannelSplitting(const essences::iterator &Essence, const descriptors::iterator &Descriptor)
 {
+    if (Descriptor==Descriptors.end() || Descriptor->second.ChannelCount<2 || Descriptor->second.ChannelCount>255)
+    {
+        ChooseParser_Pcm(Essence, Descriptor);
+        return;
+    }
+
     Essence->second.StreamKind=Stream_Audio;
 
     //Filling
