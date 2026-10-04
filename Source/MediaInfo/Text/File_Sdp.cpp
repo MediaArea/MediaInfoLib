@@ -219,6 +219,13 @@ void File_Sdp::Data_Parse()
     {
         if (FieldLines[Pos])
         {
+            if (Element_Offset>Element_Size || Element_Size-Element_Offset<45
+             || Buffer_Offset>Buffer_Size || Element_Offset>Buffer_Size-Buffer_Offset
+             || Buffer_Size-Buffer_Offset-(size_t)Element_Offset<45)
+            {
+                Trusted_IsNot("Truncated teletext field");
+                return;
+            }
             Element_Code=(int64u)-1;
             stream &Stream=Streams[0];
             if (Stream.Parser==NULL)
