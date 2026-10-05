@@ -2675,6 +2675,8 @@ bool File__Analyze::Header_Manage()
     {
         Trusted_IsNot("Too many nested elements");
         Buffer_Offset=Buffer_Size;
+        Element_Offset=0;
+        Element_Size=0;
         return false;
     }
 
