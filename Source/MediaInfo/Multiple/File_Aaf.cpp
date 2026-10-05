@@ -260,7 +260,7 @@ void File_Aaf::Data_Parse()
         else if (Step==Step_Directory)
         {
             Step=Step_Stream;
-            if (Streams.empty())
+            if (Streams.empty() || Streams[0]->StreamOffsets.empty())
                 Finish();
             else
             {
