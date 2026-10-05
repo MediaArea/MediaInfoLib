@@ -57,7 +57,7 @@ bool File_Ptx::FileHeader_Begin()
     }
 
     //Element_Size
-    if (11>Buffer_Size)
+    if (17>Buffer_Size)
         return false; //Must wait for more data
 
     if (Buffer[ 0x0]!=0x03

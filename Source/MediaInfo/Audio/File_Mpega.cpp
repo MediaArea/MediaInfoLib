@@ -310,6 +310,14 @@ File_Mpega::File_Mpega()
     CalculateDelay=false;
 
     //Temp - BitStream info
+    ID=0;
+    layer=0;
+    bitrate_index=0;
+    sampling_frequency=0;
+    padding_bit=false;
+    mode=0;
+    mode_extension=0;
+    emphasis=0;
     Surround_Frames=0;
     Block_Count[0]=0;
     Block_Count[1]=0;
@@ -957,6 +965,8 @@ bool File_Mpega::Synched_Test()
 #if MEDIAINFO_DEMUX
 bool File_Mpega::Demux_UnpacketizeContainer_Test()
 {
+    if (Buffer_Offset>Buffer_Size || Buffer_Size-Buffer_Offset<4)
+        return false;
     //Retrieving some info
     int8u ID0                =(CC1(Buffer+Buffer_Offset+1)>>3)&0x03;
     int8u layer0             =(CC1(Buffer+Buffer_Offset+1)>>1)&0x03;
@@ -964,7 +974,7 @@ bool File_Mpega::Demux_UnpacketizeContainer_Test()
     int8u sampling_frequency0=(CC1(Buffer+Buffer_Offset+2)>>2)&0x03;
     int8u padding_bit0       =(CC1(Buffer+Buffer_Offset+2)>>1)&0x01;
 
-    if (Mpega_SamplingRate[ID][sampling_frequency]==0 || Mpega_Coefficient[ID][layer]==0 || Mpega_BitRate[ID][layer][bitrate_index]==0 || Mpega_SlotSize[layer]==0)
+    if (Mpega_SamplingRate[ID0][sampling_frequency0]==0 || Mpega_Coefficient[ID0][layer0]==0 || Mpega_BitRate[ID0][layer0][bitrate_index0]==0 || Mpega_SlotSize[layer0]==0)
         return true; //Synhro issue
 
     #if MEDIAINFO_ADVANCED
@@ -1483,12 +1493,15 @@ bool File_Mpega::Header_VBRI()
 //---------------------------------------------------------------------------
 bool File_Mpega::Header_Encoders()
 {
+    if (Buffer_Offset>Buffer_Size || Element_Size>Buffer_Size-Buffer_Offset)
+        return false;
+
     std::string BufferS((const char*)(Buffer+Buffer_Offset), (size_t)Element_Size);
     size_t Buffer_Pos;
 
     //Lame
     Buffer_Pos=BufferS.find("LAME");
-    if (Buffer_Pos!=std::string::npos && Buffer_Pos<=Element_Size-8)
+    if (Buffer_Pos!=std::string::npos && Element_Size>=8 && Buffer_Pos<=Element_Size-8)
     {
         Element_Info1("With tag (Lame)");
         Element_Offset=Buffer_Pos;
@@ -1515,21 +1528,21 @@ bool File_Mpega::Header_Encoders()
 
     //RCA
     Buffer_Pos=BufferS.find("RCA mp3PRO Encoder");
-    if (Buffer_Pos!=std::string::npos && Buffer_Pos<Element_Size-23)
+    if (Buffer_Pos!=std::string::npos && Element_Size>=23 && Buffer_Pos<=Element_Size-23)
     {
         Element_Info1("With tag (RCA)");
         Encoded_Library="RCA ";
-        Encoded_Library+=string((const char*)(Buffer+Buffer_Offset+18), 5);
+        Encoded_Library+=string((const char*)(Buffer+Buffer_Offset+Buffer_Pos+18), 5);
         return true;
     }
 
     //Thomson
     Buffer_Pos=BufferS.find("THOMSON mp3PRO Encoder");
-    if (Buffer_Pos!=std::string::npos && Buffer_Pos<Element_Size-29)
+    if (Buffer_Pos!=std::string::npos && Element_Size>=28 && Buffer_Pos<=Element_Size-28)
     {
         Element_Info1("With tag (Thomson)");
         Encoded_Library="Thomson ";
-        Encoded_Library+=string((const char*)(Buffer+Buffer_Offset+22), 6);
+        Encoded_Library+=string((const char*)(Buffer+Buffer_Offset+Buffer_Pos+22), 6);
         return true;
     }
 

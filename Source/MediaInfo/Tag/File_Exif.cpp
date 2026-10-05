@@ -1937,7 +1937,7 @@ void File_Exif::Streams_Finish()
             case IFDMakernoteNikon::Quality:
                 ParameterC = "Quality";
                 Value = Item.second.Read();
-                while (Value.back() == __T(' ')) Value.pop_back();
+                while (!Value.empty() && Value.back() == __T(' ')) Value.pop_back();
                 break;
             }
             FillMetadata(Value, Item, Parameter, ParameterC, ParameterS);
@@ -2924,7 +2924,13 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
             switch (IfdItem.Tag) {
             case IFDMPF::MPEntry:
             {
-                int32u num_imgs{ Infos.find(Kind_MPF)->second.find(IFDMPF::NumberOfImages)->second.Read().To_int32u() };
+                auto Mpf=Infos.find(Kind_MPF);
+                if (Mpf==Infos.end())
+                    break;
+                auto NumberOfImages=Mpf->second.find(IFDMPF::NumberOfImages);
+                if (NumberOfImages==Mpf->second.end())
+                    break;
+                int32u num_imgs{ NumberOfImages->second.Read().To_int32u() };
                 for (int32u i = 0; i < num_imgs; ++i) {
                     Element_Begin1(("MP Entry " + std::to_string(i + 1)).c_str());
                     mp_entry entry{};
@@ -2940,7 +2946,13 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
             }
             case IFDMPF::ImageUIDList:
             {
-                int32u num_imgs{ Infos.find(Kind_MPF)->second.find(IFDMPF::NumberOfImages)->second.Read().To_int32u() };
+                auto Mpf=Infos.find(Kind_MPF);
+                if (Mpf==Infos.end())
+                    break;
+                auto NumberOfImages=Mpf->second.find(IFDMPF::NumberOfImages);
+                if (NumberOfImages==Mpf->second.end())
+                    break;
+                int32u num_imgs{ NumberOfImages->second.Read().To_int32u() };
                 for (int32u i = 0; i < num_imgs; ++i) {
                     string Data;
                     Get_String(33, Data,                        "Individual Image Unique ID"); Element_Info1(Data.c_str());

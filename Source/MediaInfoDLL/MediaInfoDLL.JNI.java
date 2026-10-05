@@ -114,21 +114,20 @@ class MediaInfo
         public int getValue(int value) {return value;}
     }
 
-     public void dispose()
+     public synchronized void dispose()
     {
         Destroy();
-        mi = 0;
     }
 
     @Override
-    protected void finalize() throws Throwable
+    protected synchronized void finalize() throws Throwable
     {
         Destroy();
     }
 
-    public native long Init();
+    public synchronized native long Init();
 
-    public native int Destroy();
+    private synchronized native int Destroy();
 
     //File
     /**
@@ -137,9 +136,9 @@ class MediaInfo
      * @param file full name of the file to open
      * @return 1 if file was opened, 0 if file was not not opened
      */
-    public native int Open(String name);
+    public synchronized native int Open(String name);
 
-    public native int Open_Buffer_Init(long fileSize, long fileOffset);
+    public synchronized native int Open_Buffer_Init(long fileSize, long fileOffset);
 
     /**
      *  Open a stream and collect information about it (technical information and tags) (By buffer, Continue)
@@ -154,18 +153,18 @@ class MediaInfo
                 bit 4-15: Reserved
                 bit 16-31: User defined
      */
-    public native int Open_Buffer_Continue(byte[] buffer, long bufferSize);
+    public synchronized native int Open_Buffer_Continue(byte[] buffer, long bufferSize);
 
 
-    public native long Open_Buffer_Continue_GoTo_Get();
+    public synchronized native long Open_Buffer_Continue_GoTo_Get();
 
-    public native long Open_Buffer_Finalize();
+    public synchronized native long Open_Buffer_Finalize();
 
     /**
      * Close a file opened before with Open().
      *
      */
-    public native int Close();
+    public synchronized native int Close();
 
     //Information
     /**
@@ -173,11 +172,11 @@ class MediaInfo
      *
      * @return All details about a file in one string
      */
-    public native String Inform();
+    public synchronized native String Inform();
 
-    private native String GetI(int streamKind, int streamNumber, int parameter, int infoKind); 
+    private synchronized native String GetI(int streamKind, int streamNumber, int parameter, int infoKind);
 
-    private native String GetS(int streamKind, int streamNumber, String parameter, int infoKind, int searchKind);
+    private synchronized native String GetS(int streamKind, int streamNumber, String parameter, int infoKind, int searchKind);
 
     /**
      * Get a piece of information about a file (parameter is an integer).
@@ -252,7 +251,7 @@ class MediaInfo
      * @param Value The value of option
      * @return Depends on the option: by default "" (nothing) means No, other means Yes
      */
-    public native String Option(String option, String value);
+    public synchronized native String Option(String option, String value);
 
     /**
      * Configure or get information about MediaInfo.
@@ -293,9 +292,9 @@ class MediaInfo
      * Gets the state of the library
      * @return                                state of the library (between 0 and 10000)
     */
-    public native int State_Get();
+    public synchronized native int State_Get();
 
-    private native int Count_Get(int streamKind, int streamNumber);
+    private synchronized native int Count_Get(int streamKind, int streamNumber);
 
     /**
      * Count of Streams of a Stream kind (StreamNumber not filled), or count of piece of

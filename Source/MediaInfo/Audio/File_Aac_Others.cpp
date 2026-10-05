@@ -393,6 +393,16 @@ void File_Aac::ALSSpecificConfig()
     int32u header_size,trailer_size;
     Get_B4(header_size,                                         "header_size");
     Get_B4(trailer_size,                                        "trailer_size");
+    if (!Trusted_Get() || Element_IsWaitingForMoreData()
+     || Element_Offset>Element_Size || header_size>Element_Size-Element_Offset
+     || Buffer_Offset>Buffer_Size || Element_Offset>Buffer_Size-Buffer_Offset
+     || header_size>Buffer_Size-Buffer_Offset-Element_Offset)
+    {
+        Trusted_IsNot("Invalid original header size");
+        Element_End0();
+        BS_Begin();
+        return;
+    }
     #ifdef MEDIAINFO_RIFF_YES
     if (file_type==1) //WAVE file
     {

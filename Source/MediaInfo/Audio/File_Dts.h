@@ -87,6 +87,7 @@ private :
 
     //Buffer
     bool FrameSynchPoint_Test();
+    int16u CRC_Compute(size_t Size);
     const int8u* Save_Buffer;
     size_t Save_Buffer_Offset;
     size_t Save_Buffer_Size;

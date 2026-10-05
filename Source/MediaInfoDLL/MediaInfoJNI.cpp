@@ -71,7 +71,21 @@ static jlong JNI_Init(JNIEnv*, jobject)
 //------------------------------------------------------------------------------
 static jint JNI_Destroy(JNIEnv* _env, jobject _this)
 {
-    delete GetMiObj(_env, _this);
+    if (_env->MonitorEnter(_this) != JNI_OK)
+        return (jint)-1;
+
+    jclass cls = _env->GetObjectClass(_this);
+    jfieldID miId = cls == NULL ? NULL : _env->GetFieldID(cls, "mi", "J");
+    if (miId == NULL)
+    {
+        _env->MonitorExit(_this);
+        return (jint)-1;
+    }
+
+    MediaInfo_Internal* mi = (MediaInfo_Internal*)_env->GetLongField(_this, miId);
+    _env->SetLongField(_this, miId, 0);
+    delete mi;
+    _env->MonitorExit(_this);
 
     return 0;
 }
@@ -163,10 +177,15 @@ static jint JNI_Open_Buffer_Continue(JNIEnv* _env, jobject _this, jbyteArray buf
     if (mi == NULL)
         return (jint)-1;
 
+    if (buffer == NULL || bufferSize < 0 || bufferSize > _env->GetArrayLength(buffer))
+        return (jint)-1;
+
     int8u*  buff = (int8u*)_env->GetByteArrayElements(buffer, JNI_FALSE);
+    if (buff == NULL)
+        return (jint)-1;
     jint toReturn = (jint)mi->Open_Buffer_Continue(buff, (size_t)bufferSize).to_ulong();
 
-    _env->ReleaseByteArrayElements(buffer, (jbyte*)buff, 0);
+    _env->ReleaseByteArrayElements(buffer, (jbyte*)buff, JNI_ABORT);
 
     return toReturn;
 }

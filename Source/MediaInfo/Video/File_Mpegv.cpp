@@ -4062,6 +4062,13 @@ void File_Mpegv::sequence_end()
 // Packet "B8"
 void File_Mpegv::group_start()
 {
+    if (Element_Offset>Element_Size || Element_Size-Element_Offset<4
+     || Buffer_Offset>Buffer_Size || Element_Offset>Buffer_Size-Buffer_Offset
+     || Buffer_Size-Buffer_Offset-Element_Offset<4)
+    {
+        Trusted_IsNot("Truncated GOP header");
+        return;
+    }
     if (!Status[IsAccepted])
     {
         if (!NextCode_Test())

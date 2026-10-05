@@ -339,6 +339,7 @@ protected :
 
 protected :
     //Element - Common
+    bool   Element_Begin_Common();
     void   Element_End_Common_Flush();
 public :
 
@@ -1262,6 +1263,7 @@ protected :
 
     //Elements
     size_t Element_Level;           //Current level
+    size_t Element_Level_Overflow;  //Begins beyond the element stack capacity
     bool   Element_WantNextLevel;   //Want to go to the next leavel instead of the same level
 
     //Element

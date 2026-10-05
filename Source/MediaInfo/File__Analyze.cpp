@@ -685,6 +685,7 @@ File__Analyze::File__Analyze ()
     #endif //MEDIAINFO_TRACE
     Element_Level_Base=0;
     Element_Level=0;
+    Element_Level_Overflow=0;
 
     //BitStream
     BS=new BitStream_Fast;
@@ -1009,15 +1010,34 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
             }
             if (AES)
             {
+                if (ToAdd_Size%16 || ToAdd_Size>0x7FFFFFFF)
+                {
+                    Reject();
+                    return;
+                }
                 if (AES_Decrypted_Size<ToAdd_Size)
                 {
-                    delete [] AES_Decrypted; AES_Decrypted=new int8u[ToAdd_Size*2];
-                    AES_Decrypted_Size=ToAdd_Size*2;
+                    delete [] AES_Decrypted; AES_Decrypted=new int8u[ToAdd_Size];
+                    AES_Decrypted_Size=ToAdd_Size;
                 }
-                AES->cbc_decrypt(ToAdd, AES_Decrypted, (int)ToAdd_Size, AES_IV);    //TODO: handle the case where ToAdd_Size is more than 2GB
+                if (AES->cbc_decrypt(ToAdd, AES_Decrypted, (int)ToAdd_Size, AES_IV))
+                {
+                    Reject();
+                    return;
+                }
                 if (File_Offset+Buffer_Size+ToAdd_Size>=Config->File_Current_Size)
                 {
                     int8u LastByte=AES_Decrypted[ToAdd_Size-1];
+                    bool InvalidPadding=!LastByte || LastByte>16;
+                    for (size_t i=0; i<16; i++)
+                        InvalidPadding|=(i<LastByte) & (AES_Decrypted[ToAdd_Size-1-i]!=LastByte);
+                    if (InvalidPadding || LastByte>Config->File_Current_Size
+                     || (Config->File_Names_Pos && Config->File_Names_Pos-1<Config->File_Sizes.size()
+                      && LastByte>Config->File_Sizes[Config->File_Names_Pos-1]))
+                    {
+                        Reject();
+                        return;
+                    }
                     ToAdd_Size-=LastByte;
                     if (Config->File_Names_Pos && Config->File_Names_Pos-1<Config->File_Sizes.size())
                         Config->File_Sizes[Config->File_Names_Pos-1]-=LastByte;
@@ -2651,6 +2671,15 @@ bool File__Analyze::Header_Manage()
     if (Buffer_Offset>=Buffer_Size)
         return false;
 
+    if (Element_Level_Overflow || Element_Level>=Element.size()-2)
+    {
+        Trusted_IsNot("Too many nested elements");
+        Buffer_Offset=Buffer_Size;
+        Element_Offset=0;
+        Element_Size=0;
+        return false;
+    }
+
     //Header begin
     auto& Elem = Element[Element_Level];
     auto& Elem1 = Element[Element_Level + 1];
@@ -3117,6 +3146,9 @@ void File__Analyze::Data_GoToFromEnd (int64u GoToFromEnd, const char* ParserName
 //---------------------------------------------------------------------------
 void File__Analyze::Element_Begin()
 {
+    if (!Element_Begin_Common())
+        return;
+
     //Level
     auto& Elem1 = Element[Element_Level];
     Element_Level++;
@@ -3144,6 +3176,9 @@ void File__Analyze::Element_Begin()
 #if MEDIAINFO_TRACE
 void File__Analyze::Element_Begin(const Ztring &Name)
 {
+    if (!Element_Begin_Common())
+        return;
+
     //Level
     auto& Elem1 = Element[Element_Level];
     Element_Level++;
@@ -3171,6 +3206,9 @@ void File__Analyze::Element_Begin(const Ztring &Name)
 #if MEDIAINFO_TRACE
 void File__Analyze::Element_Begin(const char* Name)
 {
+    if (!Element_Begin_Common())
+        return;
+
     //Level
     auto& Elem1 = Element[Element_Level];
     Element_Level++;
@@ -3321,6 +3359,12 @@ element_details::Element_Node *File__Analyze::Get_Trace_Node(size_t level)
 #if MEDIAINFO_TRACE
 void File__Analyze::Element_End(const Ztring &Name)
 {
+    if (Element_Level_Overflow)
+    {
+        Element_End_Common_Flush();
+        return;
+    }
+
     //TraceNode
     if (Trace_Activated)
     {
@@ -3339,8 +3383,27 @@ void File__Analyze::Element_End(const Ztring &Name)
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+bool File__Analyze::Element_Begin_Common()
+{
+    if (Element_Level_Overflow || Element_Level>=Element.size()-1)
+    {
+        Element_Level_Overflow++;
+        Trusted_IsNot("Too many nested elements");
+        return false;
+    }
+
+    return true;
+}
+
+//---------------------------------------------------------------------------
 void File__Analyze::Element_End_Common_Flush()
 {
+    if (Element_Level_Overflow)
+    {
+        Element_Level_Overflow--;
+        return;
+    }
+
     auto& Elem1 = Element[Element_Level];
 
     #if MEDIAINFO_TRACE

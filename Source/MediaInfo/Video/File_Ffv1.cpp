@@ -768,6 +768,12 @@ void File_Ffv1::Read_Buffer_Continue()
     int32u tail = (version >= 3) ? 3 : 0;
     tail += ec == 1 ? 5 : 0;
 
+    if (Buffer_Offset>Buffer_Size || Element_Size>Buffer_Size-Buffer_Offset)
+    {
+        Trusted_IsNot("Invalid frame range");
+        Skip_Frame();
+        return;
+    }
     vector<int32u> Slices_BufferSizes;
     if (version>=3)
     {
@@ -777,8 +783,9 @@ void File_Ffv1::Read_Buffer_Continue()
             if (Slices_BufferPos<tail)
             {
                 //There is a problem
-                Slices_BufferSizes.clear();
-                break;
+                Trusted_IsNot("Invalid slice footer");
+                Skip_Frame();
+                return;
             }
 
             int32u Size=BigEndian2int24u(Buffer+Buffer_Offset+(size_t)Slices_BufferPos-tail);
@@ -787,8 +794,9 @@ void File_Ffv1::Read_Buffer_Continue()
             if (Size>Slices_BufferPos)
             {
                 //There is a problem
-                Slices_BufferSizes.clear();
-                break;
+                Trusted_IsNot("Invalid slice footer");
+                Skip_Frame();
+                return;
             }
             Slices_BufferPos-=Size;
 
@@ -804,7 +812,24 @@ void File_Ffv1::Read_Buffer_Continue()
         int64u Element_Offset_Begin=Element_Offset;
         int64u Element_Size_Save=Element_Size;
         if (Pos<Slices_BufferSizes.size())
+        {
+            if (Element_Offset>Element_Size || Slices_BufferSizes[Pos]>Element_Size-Element_Offset)
+            {
+                Trusted_IsNot("Invalid slice size");
+                Element_End0();
+                Skip_Frame();
+                return;
+            }
             Element_Size=Element_Offset+Slices_BufferSizes[Pos];
+        }
+        if (Element_Offset>Element_Size || tail>Element_Size-Element_Offset)
+        {
+            Trusted_IsNot("Truncated slice footer");
+            Element_Size=Element_Size_Save;
+            Element_End0();
+            Skip_Frame();
+            return;
+        }
         int32u crc_left=0;
         if (ec == 1)
             crc_left=FFv1_CRC_Compute(Buffer+Buffer_Offset+(size_t)Element_Offset, (size_t)(Element_Size-Element_Offset));

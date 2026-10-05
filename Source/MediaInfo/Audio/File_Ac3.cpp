@@ -1948,7 +1948,7 @@ bool File_Ac3::Synched_Test()
         return true;
 
     //Must have enough buffer for having header
-    if (Buffer_Offset+(TimeStamp_IsPresent?16:0)+6>Buffer_Size)
+    if (Buffer_Offset>Buffer_Size || Buffer_Size-Buffer_Offset<(TimeStamp_IsPresent?16U:0U)+8)
         return false;
 
     //TimeStamp

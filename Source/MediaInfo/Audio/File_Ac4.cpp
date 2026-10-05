@@ -2137,11 +2137,32 @@ void File_Ac4::raw_ac4_frame_substreams()
     int64u Substreams_StartOffset=Element_Offset;
 
     //Check integrity
+    if (Substreams_StartOffset>Element_Size
+     || Buffer_Offset>Buffer_Size || Element_Size>Buffer_Size-Buffer_Offset)
+    {
+        Trusted_IsNot("Invalid substream range");
+        Substream_Size.clear();
+        return;
+    }
     if (Substream_Size.empty())
         Substream_Size.push_back(Element_Size-Substreams_StartOffset); // 1 substream only
-    size_t Substreams_EndOffset=Substreams_StartOffset;
+    if (n_substreams>Substream_Size.size())
+    {
+        Trusted_IsNot("Missing substream sizes");
+        Substream_Size.clear();
+        return;
+    }
+    int64u Substreams_EndOffset=Substreams_StartOffset;
     for (size_t i=0; i<Substream_Size.size(); i++)
+    {
+        if (Substream_Size[i]>Element_Size-Substreams_EndOffset)
+        {
+            Trusted_IsNot("Invalid substream size");
+            Substream_Size.clear();
+            return;
+        }
         Substreams_EndOffset+=Substream_Size[i];
+    }
 
     //Parsing presentation substreams first
     if (bitstream_version>=2)
