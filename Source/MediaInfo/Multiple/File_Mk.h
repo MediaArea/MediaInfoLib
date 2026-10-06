@@ -331,7 +331,7 @@ private :
     void Segment_Chapters_EditionEntry_ChapterAtom_ChapterDisplay();
     void Segment_Chapters_EditionEntry_ChapterAtom_ChapterDisplay_ChapString();
     void Segment_Chapters_EditionEntry_ChapterAtom_ChapterDisplay_ChapLanguage();
-    void Segment_Chapters_EditionEntry_ChapterAtom_ChapterDisplay_ChapLanguageIETF(){Segment_Chapters_EditionEntry_ChapterAtom_ChapterDisplay_ChapLanguage();};
+    void Segment_Chapters_EditionEntry_ChapterAtom_ChapterDisplay_ChapLanguageIETF();
     void Segment_Chapters_EditionEntry_ChapterAtom_ChapterDisplay_ChapCountry(){String_Info();};
     void Segment_Chapters_EditionEntry_ChapterAtom_ChapProcess(){};
     void Segment_Chapters_EditionEntry_ChapterAtom_ChapProcess_ChapProcessCodecID(){UInteger_Info();};
@@ -545,6 +545,7 @@ private :
     {
         Ztring ChapLanguage;
         Ztring ChapString;
+        bool HasChapLanguageIETF{};
     };
     struct chapteratom
     {
