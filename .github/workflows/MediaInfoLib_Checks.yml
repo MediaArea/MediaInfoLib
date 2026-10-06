@@ -65,7 +65,7 @@ jobs:
       RUN_TESTS: ${{ matrix.RUN_TESTS }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Dependencies
         env:
           HOMEBREW_NO_REQUIRE_TAP_TRUST: 1 # Prevent Homebrew third-party trust warnings due to GitHub's pre-installed taps
@@ -137,17 +137,17 @@ jobs:
       fail-fast: false
     steps:
       - name: Checkout zlib
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: MediaArea/zlib
           path: zlib
       - name: Checkout ZenLib
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: MediaArea/ZenLib
           path: ZenLib
       - name: Checkout MediaInfoLib
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           path: MediaInfoLib
       - name: Add msbuild to PATH
@@ -156,3 +156,24 @@ jobs:
           msbuild-architecture: x64
       - name: Build
         run: msbuild -p:Configuration=Release -p:Platform=${{ matrix.architecture }} ${{ github.workspace }}\MediaInfoLib\Project\MSVC2026\MediaInfoLib.slnx -verbosity:quiet -warnaserror
+
+  check-line-endings:
+    name: Consistent Line Endings
+    runs-on: ubuntu-slim
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+      - name: Check for mixed line endings using git ls-files
+        run: |
+          echo "Checking tracked files for mixed line endings..."
+          # git ls-files --eol outputs lines like: i/lf w/crlf attr/text=auto path/to/file
+          MIXED_FILES=$(git ls-files --eol | grep -E '^i/mixed')
+          if [ -n "$MIXED_FILES" ]; then
+            # Escape newlines to %0A so GitHub renders the full file list in the annotation
+            ESCAPED_FILES="${MIXED_FILES//'%'/'%25'}"
+            ESCAPED_FILES="${ESCAPED_FILES//$'\n'/'%0A'}"
+            echo "::error::Found files with mixed line endings in git index:%0A$ESCAPED_FILES"
+            exit 1
+          else
+            echo "No mixed line endings detected."
+          fi
