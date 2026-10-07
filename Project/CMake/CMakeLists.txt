@@ -475,6 +475,20 @@ endif()
 include(EnableLatestCXX)
 enable_latest_cxx(mediainfo)
 
+option(MEDIAINFO_BUILD_TESTS "Build count localization regression tests" OFF)
+if(MEDIAINFO_BUILD_TESTS)
+  if(BUILD_SHARED_LIBS)
+    message(FATAL_ERROR "Count localization tests require BUILD_SHARED_LIBS=OFF")
+  endif()
+  enable_testing()
+  add_executable(count_localization ${MediaInfoLib_SOURCES_PATH}/Tests/CountLocalization.cpp)
+  target_include_directories(count_localization PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../../ZenLib/Source)
+  target_link_libraries(count_localization mediainfo)
+  set(MEDIAINFO_LANGUAGE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../MediaInfo/Source/Resource/Plugin/Language"
+      CACHE PATH "MediaInfo CSV catalogs for count localization integration tests")
+  add_test(NAME count_localization COMMAND count_localization "${MEDIAINFO_LANGUAGE_DIR}")
+endif()
+
 install(TARGETS mediainfo EXPORT mediainfo-export
   RUNTIME DESTINATION ${BIN_INSTALL_DIR}
   ARCHIVE DESTINATION ${LIB_INSTALL_DIR}
