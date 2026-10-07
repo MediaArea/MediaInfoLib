@@ -27,6 +27,7 @@
 #include "ZenLib/CriticalSection.h"
 #include "ZenLib/ZtringListList.h"
 #include "ZenLib/Translation.h"
+#include "MediaInfo/CountMessages.h"
 #include "ZenLib/InfoMap.h"
 #include <set>
 #include <bitset>
@@ -199,6 +200,7 @@ public :
 
           void      Language_Set (const ZtringListList &NewLanguage);
           Ztring    Language_Get ();
+          Ztring    Language_Format (const ZtringListList &Request);
           Ztring    Language_Get (const Ztring &Value);
           Ztring    Language_Get_Translate(const Ztring &Par, const Ztring &Value);
           Ztring    Language_Get (const Ztring &Count, const Ztring &Value, bool ValueIsAlwaysSame=false);
@@ -512,6 +514,10 @@ private :
     Ztring          ThousandsPoint;
     Ztring          CarriageReturnReplace;
     Translation     Language; //ex. : "KB;Ko"
+    Translation     Language_Count_Default;
+    Translation     Language_Count_Selected; // Unmerged catalog: preserves fallback provenance.
+    CountMessages::CatalogRules Language_Count_DefaultRules;
+    CountMessages::CatalogRules Language_Count_SelectedRules;
     ZtringListList  Custom_View; //Definition of "General", "Video", "Audio", "Text", "Other", "Image"
     ZtringListList  Custom_View_Replace; //ToReplace;ReplaceBy
     #if MEDIAINFO_FLAG1

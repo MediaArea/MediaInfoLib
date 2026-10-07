@@ -993,6 +993,11 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
         Language_Set(Language);
         return Ztring();
     }
+    if (Option_Lower==__T("language_format"))
+    {
+        if (Value.empty()) return __T("1"); // Interface version, also usable with older DLLs.
+        return Language_Format(ZtringListList(Value));
+    }
     if (Option_Lower==__T("language_get"))
     {
         return Language_Get();
@@ -2364,6 +2369,21 @@ void MediaInfo_Config::Language_Set (const ZtringListList &NewValue)
 {
     CriticalSectionLocker CSL(CS);
 
+    Language_Count_Selected.clear();
+    for (size_t Pos=0; Pos<NewValue.size(); ++Pos)
+        if (NewValue[Pos].size()>=2 && !NewValue[Pos][1].empty())
+            Language_Count_Selected[NewValue[Pos][0]]=NewValue[Pos][1];
+    // An empty thousands separator is intentional, unlike an empty translation.
+    for (size_t Pos=0; Pos<NewValue.size(); ++Pos)
+        if (!NewValue[Pos].empty() && NewValue[Pos][0]==__T("  Config_Text_ThousandsSeparator"))
+            Language_Count_Selected[NewValue[Pos][0]]=NewValue[Pos].size()>1?NewValue[Pos][1]:Ztring();
+    Language_Count_SelectedRules.Load(Language_Count_Selected);
+    if (Language_Count_Default.empty())
+    {
+        MediaInfo_Config_DefaultLanguage(Language_Count_Default);
+        Language_Count_DefaultRules.Load(Language_Count_Default);
+    }
+
     //Which language to choose?
     //-Raw
          if (NewValue.size()==1 && NewValue[0].size()==1 && NewValue[0][0]==__T("raw"))
@@ -2477,100 +2497,18 @@ Ztring MediaInfo_Config::Language_Get (const Ztring &Value)
 //---------------------------------------------------------------------------
 Ztring MediaInfo_Config::Language_Get (const Ztring &Count, const Ztring &Value, bool ValueIsAlwaysSame)
 {
-    //Integrity
+    CriticalSectionLocker CSL(CS);
     if (Count.empty() || Count.find_first_not_of(__T("0123456789.+-/*() "))!=string::npos)
         return Count;
+    if (Language_Raw)
+        return Count+Value;
+    return CountMessages::FormatUnit(Language_Count_Selected, Language_Count_Default, Language_Count_SelectedRules, Language_Count_DefaultRules, Count, Value, ValueIsAlwaysSame);
+}
 
-    //Different Plurals are available or not?
-    Ztring Value1=Value+__T('1');
-    if (!ValueIsAlwaysSame && Language_Get(Value1)==Value1)
-        ValueIsAlwaysSame=true;
-
-    //Detecting plural form for multiple plurals
-    int8u  Form=(int8u)-1;
-
-    if (!ValueIsAlwaysSame)
-    {
-        //Polish has 2 plurial, Algorithm of Polish
-        size_t CountI=Count.To_int32u();
-        size_t Pos3=CountI/100;
-        int8u  Pos2=(int8u)((CountI-Pos3*100)/10);
-        int8u  Pos1=(int8u)(CountI-Pos3*100-Pos2*10);
-        if (Pos3==0)
-        {
-            if (Pos2==0)
-            {
-                     if (Pos1==0 && Count.size()==1) //Only "0", not "0.xxx"
-                    Form=0; //000 to 000 kanal?
-                else if (Pos1<=1)
-                    Form=1; //001 to 001 kanal
-                else if (Pos1<=4)
-                    Form=2; //002 to 004 kanaly
-                else //if (Pos1>=5)
-                    Form=3; //005 to 009 kanalow
-            }
-            else if (Pos2==1)
-                    Form=3; //010 to 019 kanalow
-            else //if (Pos2>=2)
-            {
-                     if (Pos1<=1)
-                    Form=3; //020 to 021, 090 to 091 kanalow
-                else if (Pos1<=4)
-                    Form=2; //022 to 024, 092 to 094 kanali
-                else //if (Pos1>=5)
-                    Form=3; //025 to 029, 095 to 099 kanalow
-            }
-        }
-        else //if (Pos3>=1)
-        {
-            if (Pos2==0)
-            {
-                     if (Pos1<=1)
-                    Form=3; //100 to 101 kanalow
-                else if (Pos1<=4)
-                    Form=2; //102 to 104 kanaly
-                else //if (Pos1>=5)
-                    Form=3; //105 to 109 kanalow
-            }
-            else if (Pos2==1)
-                    Form=3; //110 to 119 kanalow
-            else //if (Pos2>=2)
-            {
-                     if (Pos1<=1)
-                    Form=3; //120 to 121, 990 to 991 kanalow
-                else if (Pos1<=4)
-                    Form=2; //122 to 124, 992 to 994 kanali
-                else //if (Pos1>=5)
-                    Form=3; //125 to 129, 995 to 999 kanalow
-            }
-        }
-    }
-
-    //Replace dot and thousand separator
-    Ztring ToReturn=Count;
-    Ztring DecimalPoint=Ztring().From_Number(0.0, 1).substr(1, 1); //Getting Decimal point
-    size_t DotPos=ToReturn.find(DecimalPoint);
-    if (DotPos!=string::npos)
-        ToReturn.FindAndReplace(DecimalPoint, Language_Get(__T("  Config_Text_FloatSeparator")), DotPos);
-    else
-        DotPos=ToReturn.size();
-    if (DotPos>3 && ToReturn[0]==__T('-'))
-        DotPos--;
-    if (DotPos>3)
-        ToReturn.insert(DotPos-3, Language_Get(__T("  Config_Text_ThousandsSeparator")));
-
-    //Selecting the form
-         if (Form==0)
-        ToReturn =Language_Get(Value+__T("0")); //Only the translation
-    else if (Form==1)
-        ToReturn+=Language_Get(Value+__T("1"));
-    else if (Form==2)
-        ToReturn+=Language_Get(Value+__T("2"));
-    else if (Form==3)
-        ToReturn+=Language_Get(Value+__T("3"));
-    else
-        ToReturn+=Language_Get(Value);
-    return ToReturn;
+Ztring MediaInfo_Config::Language_Format (const ZtringListList &Request)
+{
+    CriticalSectionLocker CSL(CS);
+    return CountMessages::Format(Language_Count_Selected, Language_Count_Default, Language_Count_SelectedRules, Language_Count_DefaultRules, Request);
 }
 
 //---------------------------------------------------------------------------
