@@ -12,6 +12,7 @@
 //---------------------------------------------------------------------------
 #include "MediaInfo/File__Analyze.h"
 #include "MediaInfo/TimeCode.h"
+#include <memory>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -75,6 +76,8 @@ private :
     void emdf_container();
     void emdf_payload_config();
     void emdf_protection();
+    void loudness_data();
+    void programme_information();
     void object_audio_metadata_payload();
     void program_assignment();
     void joc();
@@ -99,17 +102,17 @@ private :
 
     //Buffer
     const int8u* Save_Buffer;
-    size_t Save_Buffer_Offset;
-    size_t Save_Buffer_Size;
+    size_t Save_Buffer_Offset{};
+    size_t Save_Buffer_Size{};
 
     //Temp EMDF
-    size_t EMDF_RemainPos;
-    size_t RemainAfterEMDF;
+    size_t EMDF_RemainPos{};
+    size_t RemainAfterEMDF{};
 
     //Temp JOC
-    int8u joc_num_objects;
+    int8u joc_num_objects{};
     std::map<int8u, size_t> joc_num_objects_map;
-    int8u joc_ext_config_idx;
+    int8u joc_ext_config_idx{};
     
     //Temp
     struct dolby
@@ -143,49 +146,52 @@ private :
     int32u nonstd_bed_channel_assignment_mask;
     int16u chanmap_Max[8][9];
     int16u frmsizplus1_Max[8][9];
-    int16u HD_BitRate_Max;
-    int16u HD_Channels2;
-    int16u HD_flags;
+    int16u HD_BitRate_Max{};
+    int16u HD_Channels2{};
+    int16u HD_flags{};
     int8u  num_dynamic_objects;
+    int32u num_bed_objects{};
+    int8u  num_isf_objects{};
     int8u  fscod;
     int8u  fscod2;
     int8u  frmsizecod;
-    int8u  bsid;
+    int8u  bsid{};
     int8u  bsid_Max;
     int8u  bsmod_Max[8][9];
     int8u  acmod_Max[8][9];
     int8u  cmixlev_Max[8][9];
     int8u  surmixlev_Max[8][9];
-    int8u  mixlevel_Max[8][9];
+    int8u  mixlevel_Max[8][9]{};
     int8u  roomtyp_Max[8][9];
     int8u  dsurmod_Max[8][9];
     int8u  dmixmod_Max[8][9];
-    int8u  ltrtcmixlev_Max[8][9];
-    int8u  ltrtsurmixlev_Max[8][9];
-    int8u  lorocmixlev_Max[8][9];
-    int8u  lorosurmixlev_Max[8][9];
-    bool   adconvtyp_Max[8][9];
+    int8u  ltrtcmixlev_Max[8][9]{};
+    int8u  ltrtsurmixlev_Max[8][9]{};
+    int8u  lorocmixlev_Max[8][9]{};
+    int8u  lorosurmixlev_Max[8][9]{};
+    bool   adconvtyp_Max[8][9]{};
     int8u  numblkscod;
     int8u  dsurexmod;
     int8u  dheadphonmod;
-    int8u  HD_StreamType;
-    int8u  HD_SubStreams_Count;
-    int8u  HD_SamplingRate1;
-    int8u  HD_SamplingRate2;
-    int8u  HD_Channels1;
-    int8u  HD_Resolution1;
-    int8u  HD_Resolution2;
+    int8u  HD_StreamType{};
+    int8u  HD_SubStreams_Count{};
+    int8u  HD_SamplingRate1{};
+    int8u  HD_SamplingRate2{};
+    int8u  HD_Channels1{};
+    int8u  HD_Resolution1{};
+    int8u  HD_Resolution2{};
     int8u  substreamid_Independant_Current;
     int8u  substreams_Count;
     int8u  joc_complexity_index_Container;
     int8u  joc_complexity_index_Stream;
-    bool   b_lfe_present;
+    int8u  dynrngprof{};
+    int8u  comprprof{};
     bool   lfeon_Max[8][9];
     bool   dxc3_Parsed;
     bool   HD_MajorSync_Parsed;
-    bool   HD_NoRestart;
-    bool   HD_ExtraParity;
-    bool   HD_IsVBR;
+    bool   HD_NoRestart{};
+    bool   HD_ExtraParity{};
+    bool   HD_IsVBR{};
     bool   HD_HasAtmos;
     bool   Core_IsPresent;
     bool   HD_IsPresent;
@@ -196,10 +202,32 @@ private :
     bool   TimeStamp_Parsed;
     bool   BigEndian;
     bool   IgnoreCrc_Done;
-    bool   IgnoreCrc;
+    bool   IgnoreCrc{};
     TimeCode TimeStamp_FirstFrame;
-    int16u   TimeStamp_FirstFrame_SampleNumber;
+    int16u   TimeStamp_FirstFrame_SampleNumber{};
     size_t TimeStamp_Count;
+
+    // TrueHD
+    std::unique_ptr<int16u[]> CRC_16_Table_HD;
+    std::unique_ptr<int8u[]> CRC_8_Table_HD;
+    std::unique_ptr<int8u[]> CRC_8_1D_Table_HD;
+    struct Presentation {
+        int16u ch_assign{};
+        bool control_enabled{};
+        int8u elements{};
+        int8u modifier{};
+        int8u presentation{};
+        int8u dialogue_norm{};
+        int8u mix_level{};
+    };
+    enum presentation_ids {
+        p_2ch,
+        p_6ch,
+        p_8ch,
+        p_16ch,
+        p_max
+    };
+    std::vector<Presentation> presentations{ std::vector<Presentation>(p_max) };
 };
 
 } //NameSpace
