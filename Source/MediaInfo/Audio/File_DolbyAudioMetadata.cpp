@@ -326,7 +326,7 @@ void File_DolbyAudioMetadata::Dolby_Atmos_Metadata_Segment()
                 first_action_time_HH=(int8u)((-((int8s)first_action_time_HH)));
             const int32u FrameRate = 100000;
             TimeCode TC(first_action_time_HH, first_action_time_MM, first_action_time_SS/FrameRate, first_action_time_SS%FrameRate, FrameRate-1, TimeCode::Timed().Negative(IsNegative));
-            Merge_FillTimeCode(*this, "Dolby_Atmos_Metadata FirstFrameOfAction", TC, frames_per_second_Values[frames_per_second], frames_per_second==4, TimeCode::Ceil, 48000);
+            Merge_FillTimeCode(*this, "Dolby_Atmos_Metadata FirstFrameOfAction", TC, frames_per_second<frames_per_second_Size?frames_per_second_Values[frames_per_second]:0, frames_per_second==4, TimeCode::Ceil, 48000);
         }
         FILLING_END()
 }
