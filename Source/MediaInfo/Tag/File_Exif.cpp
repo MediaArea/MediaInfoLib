@@ -1706,11 +1706,11 @@ void File_Exif::Streams_Finish()
                 else {
                     ShutterSpeed_Time = std::to_string(exposure_time);
                     ShutterSpeed_Time.erase(ShutterSpeed_Time.find_last_not_of('0') + 1);
-                    if (ShutterSpeed_Time.back() == '.')
+                    if (!ShutterSpeed_Time.empty() && ShutterSpeed_Time.back() == '.')
                         ShutterSpeed_Time.pop_back();
                 }
                 Value = Item.second.Read();
-                ParameterS = ShutterSpeed_Time + " s";
+                ParameterS = !ShutterSpeed_Time.empty() ? ShutterSpeed_Time + " s" : "";
                 break;
             }
             case IFDExif::FNumber: ParameterC = "IrisFNumber"; Value.From_Number(Item.second.Read().To_float64(), 1); break;
