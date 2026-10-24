@@ -835,7 +835,8 @@ void File_Riff::AIFF_COMT()
     //Parsing
     int16u numComments;
     Get_B2(numComments,                                         "numComments");
-    for (int16u Pos=0; Pos<=numComments; Pos++)
+    Loop_CheckValue(numComments, 10, "numComments");
+    for (int16u Pos=0; Pos<numComments; Pos++)
     {
         Ztring text;
         int16u count;
@@ -1212,6 +1213,7 @@ void File_Riff::AVI__hdlr_strl_indx_FieldIndex(int32u Entry_Count, int32u)
     //Parsing
     Skip_L8(                                                    "Offset");
     Skip_L4(                                                    "Reserved2");
+    Loop_CheckValue(Entry_Count, 12, "Entry_Count");
     for (int32u Pos=0; Pos<Entry_Count; Pos++)
     {
         Element_Begin1("Index");
@@ -1233,6 +1235,7 @@ void File_Riff::AVI__hdlr_strl_indx_SuperIndex(int32u Entry_Count, int32u ChunkI
     Skip_L4(                                                    "Reserved1");
     Skip_L4(                                                    "Reserved2");
     stream& StreamItem = Stream[Stream_ID];
+    Loop_CheckValue(Entry_Count, 16, "Entry_Count");
     for (int32u Pos=0; Pos<Entry_Count; Pos++)
     {
         int32u Duration;
@@ -3718,7 +3721,7 @@ void File_Riff::WAVE_axml()
                 break;
 
             //Check if we need to stop
-            if (strm.avail_out || inflate_Result)
+            if (strm.avail_out || inflate_Result || strm.total_out>=0x4000000) //Arbitrary limit of 64 MiB
                 break;
 
             //Need to increase buffer
@@ -3986,6 +3989,7 @@ void File_Riff::WAVE_cue_()
     //Parsing
     int32u numCuePoints;
     Get_L4(numCuePoints,                                        "numCuePoints");
+    Loop_CheckValue(numCuePoints, 24, "numCuePoints");
     for (int32u Pos=0; Pos<numCuePoints; Pos++)
     {
         Element_Begin1("Cue point");
@@ -4092,6 +4096,7 @@ void File_Riff::WAVE_ds64()
     if (Element_Offset<Element_Size)
     {
         Get_L4 (tableLength,                                    "tableLength");
+        Loop_CheckValue(tableLength, 12, "tableLength");
         DS64_Table.resize(tableLength);
         for (int32u Pos=0; Pos<tableLength; Pos++)
         {
