@@ -525,8 +525,9 @@ void File_Icc::Skip_curv(int32u Size)
 {
     int32u Count;
     Get_B4 (Count,                                              "Count");
-    if (4+4*((Count+1)/2)!=Size)
+    if (4+4*(((int64u)Count+1)/2)!=Size)
         return;
+    Loop_CheckValue(Count, 2, "Count");
     for (int32u i=0; i<Count; i++)
         Skip_B2(                                                "Value");
     if (Count%2)
