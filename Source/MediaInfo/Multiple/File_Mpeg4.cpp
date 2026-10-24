@@ -1718,7 +1718,7 @@ void File_Mpeg4::Read_Buffer_Unsynched()
     mdat_Pos_Temp=&mdat_Pos[0];
     while (mdat_Pos_Temp!=mdat_Pos_Max && mdat_Pos_Temp->Offset<File_GoTo)
         mdat_Pos_Temp++;
-    if (mdat_Pos_Temp!=mdat_Pos_Max && mdat_Pos_Temp->Offset>File_GoTo)
+    if (mdat_Pos_Temp!=mdat_Pos_Max && mdat_Pos_Temp!=&mdat_Pos[0] && mdat_Pos_Temp->Offset>File_GoTo)
         mdat_Pos_Temp--; //Previous frame
     if (mdat_Pos_Temp==mdat_Pos_Max)
     {
@@ -1874,6 +1874,8 @@ size_t File_Mpeg4::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
                                 case Stream_Text  :
                                                     {
                                                         //Searching the corresponding chunk offset
+                                                        if (Stream->second.stco.empty())
+                                                            break;
                                                         std::vector<int64u>::iterator Stco=Stream->second.stco.begin();
                                                         if (Value<*Stco)
                                                             return Read_Buffer_Seek(3, 0, ID);
@@ -1933,7 +1935,7 @@ size_t File_Mpeg4::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
                                                         //Searching the corresponding frame
                                                         for (stream::stts_durations::iterator stts_Duration=Stream->second.stts_Durations.begin(); stts_Duration!=Stream->second.stts_Durations.end(); ++stts_Duration)
                                                         {
-                                                            if (Value2>=stts_Duration->DTS_Begin && Value2<stts_Duration->DTS_End)
+                                                            if (Value2>=stts_Duration->DTS_Begin && Value2<stts_Duration->DTS_End && stts_Duration->SampleDuration)
                                                             {
                                                                 int64u FrameNumber=stts_Duration->Pos_Begin+(Value2-stts_Duration->DTS_Begin)/stts_Duration->SampleDuration;
 
@@ -1960,9 +1962,12 @@ size_t File_Mpeg4::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
                                                                         SamplePos+=CountOfSamples;
                                                                     else
                                                                     {
+                                                                        if (!Stsc->SamplesPerChunk)
+                                                                            return 2; //Invalid FrameNumber
                                                                         int64u CountOfChunks=(FrameNumber-SamplePos)/Stsc->SamplesPerChunk;
                                                                         size_t stco_Pos=(size_t)(Stsc->FirstChunk-1+CountOfChunks); //-1 because first chunk is number 1
-                                                                        if (stco_Pos>Stream->second.stco.size())
+                                                                        if (stco_Pos>=Stream->second.stco.size())
+
                                                                             return 2; //Invalid FrameNumber
                                                                         if (JumpTo>Stream->second.stco[stco_Pos])
                                                                             JumpTo=Stream->second.stco[stco_Pos];
@@ -2639,7 +2644,7 @@ bool File_Mpeg4::BookMark_Needed()
                                     mdat_Pos_Type mdat_Pos_Temp2;
                                     mdat_Pos_Temp2.Offset = *stco_Current + Chunk_Offset;
                                     mdat_Pos_Temp2.StreamID = Temp->first;
-                                    if (stsz_Current2 && stsz_Current2 <= stsz_Max2 && *stsz_Current2)
+                                    if (stsz_Current2 && stsz_Current2 < stsz_Max2 && *stsz_Current2)
                                         mdat_Pos_Temp2.Size = *stsz_Current2;
                                     else
                                         mdat_Pos_Temp2.Size = *stsz_Current;
@@ -2804,7 +2809,7 @@ bool File_Mpeg4::BookMark_Needed()
                 int64u LastStco_Begin=(int64u)-1;
                 for (streams::iterator Stream=Streams.begin(); Stream!=Streams.end(); Stream++)
                 {
-                    if (!Stream->second.stco.empty() && !Stream->second.IsPriorityStream)
+                    if (!Stream->second.stco.empty() && !Stream->second.stsc.empty() && !Stream->second.stts_Durations.empty() && !Stream->second.IsPriorityStream)
                     {
                         if (Stream->second.stco[0]>FirstStco_Last)
                             FirstStco_Last=Stream->second.stco[0];
@@ -2867,7 +2872,11 @@ bool File_Mpeg4::BookMark_Needed()
                                 Time=Temp_Time;
                         }
                         for (std::vector<int32u>::iterator Temp=Audios.begin(); Temp!=Audios.end(); Temp++)
-                            if (StreamsTemp[*Temp].stco_Pos<Streams[*Temp].stco.size() && StreamsTemp[*Temp].DTS_Offset+((float64)StreamsTemp[*Temp].stts_Current)/Streams[*Temp].mdhd_TimeScale<Time+0.001) // 1ms margin in order to be a bit more logcial with 1/1.001 frame rates
+                            if (StreamsTemp[*Temp].stco_Pos<Streams[*Temp].stco.size()
+                             && StreamsTemp[*Temp].stts_Durations_Pos<Streams[*Temp].stts_Durations.size()
+                             && (Streams[*Temp].stsz.empty() || StreamsTemp[*Temp].stsz_Pos<Streams[*Temp].stsz.size())
+                             && StreamsTemp[*Temp].DTS_Offset+
+((float64)StreamsTemp[*Temp].stts_Current)/Streams[*Temp].mdhd_TimeScale<Time+0.001) // 1ms margin in order to be a bit more logcial with 1/1.001 frame rates
                             {
                                 int64u NextPos=Streams[*Temp].stco[StreamsTemp[*Temp].stco_Pos]+StreamsTemp[*Temp].stsc_SampleSizeOffset;
                                 if (CurrentPos!=NextPos)

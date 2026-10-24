@@ -2345,6 +2345,7 @@ void File_Mpeg4::mdat_xxxx()
                         memcpy(Buffer_Temp_Data, AvcIntraHeader.Data, AvcIntraHeader.Size);
                     memcpy(Buffer_Temp_Data+AvcIntraHeader.Size, Buffer+Buffer_Offset+Stream_Temp.Demux_Offset, (size_t)(Element_Size-Stream_Temp.Demux_Offset));
                     Demux(Buffer_Temp_Data, Buffer_Temp_Size, ContentType_MainStream);
+                    delete[] Buffer_Temp_Data;
                     Open_Buffer_Continue(Stream_Temp.Parsers[0], AvcIntraHeader.Data, AvcIntraHeader.Size);
                     ShouldDemux = false;
                 }
@@ -3288,6 +3289,7 @@ void File_Mpeg4::mfra_tfra()
     Get_S1 (2, length_size_of_sample_num,                       "length_size_of_sample_num");
     BS_End();
     Get_B4(number_of_entry,                                     "number_of_entry");
+    Loop_CheckValue(number_of_entry, (Version==1?16:8)+length_size_of_traf_num+length_size_of_trun_num+length_size_of_sample_num+3, "number_of_entry");
     for(int32u Pos=0; Pos<number_of_entry; Pos++)
     {
         Element_Begin1("entry");
@@ -3476,6 +3478,8 @@ void File_Mpeg4::moof_traf_trun()
         Get_Flags (Flags, 10, sample_flags_present,             "sample-flags-present");
         Get_Flags (Flags, 11, sample_composition_time_offset_present, "sample-composition-time-offsets-present");
     Get_B4 (sample_count,                                       "sample_count");
+    if (!sample_size_present)
+        Loop_CheckValue(sample_count, File_Size, moof_traf_default_sample_size?moof_traf_default_sample_size:1, "sample_count"); //Samples are not in this box, but they are in the file
     int64u data_offset_Final=moof_traf_base_data_offset!=(int64u)-1?moof_traf_base_data_offset:moof_base_data_offset;
     if (data_offset_present)
     {
@@ -3670,6 +3674,11 @@ void File_Mpeg4::moov_cmov_cmvd_zlib()
         //Sizes
         unsigned long Source_Size=(unsigned long)(Element_Size-Element_Offset);
         unsigned long Dest_Size=Dest_Size32;
+        if (!Dest_Size || Dest_Size>0x10000000 || Dest_Size/1032>Source_Size) // 1032 is the maximum zlib compression ratio
+        {
+            Skip_XX(Element_Size-Element_Offset,                "Problem during the decompression");
+            return;
+        }
 
         //Uncompressing
         int8u* Dest=new int8u[Dest_Size];
@@ -5349,6 +5358,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_co64()
     int32u Count;
     Get_B4 (Count,                                              "Number of entries");
 
+    Loop_CheckValue(Count, 8, "entry_count");
     if (Count==0)
         return;
 
@@ -5357,7 +5367,6 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_co64()
     stco.resize((Count<FrameCount_MaxPerStream || HandleAllContent)?Count:FrameCount_MaxPerStream);
     int64u* stco_Data=&stco[0];
 
-    Loop_CheckValue(Count, 8, "entry_count");
     for (int32u Pos=0; Pos<Count; Pos++)
     {
         //Too much slow
@@ -8988,7 +8997,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_mshp()
 
             if (inflateInit2(&strm, -15) == Z_OK) { // windowBits = -15 means raw deflate (no zlib/gzip header)
                 size_t Data_Size = 0x10000;
-                std::unique_ptr<Bytef> Data(new Bytef[Data_Size]);
+                std::unique_ptr<Bytef[]> Data(new Bytef[Data_Size]);
                 size_t Processed = 0;
                 for (;;) {
                     strm.next_out = Data.get() + Processed;
@@ -9003,7 +9012,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_mshp()
                         break;
                     }
                     Data_Size *= 2;
-                    std::unique_ptr<Bytef> New_Data(new Bytef[Data_Size]);
+                    std::unique_ptr<Bytef[]> New_Data(new Bytef[Data_Size]);
                     memcpy(New_Data.get(), Data.get(), Processed);
                     Data = std::move(New_Data);
                 }
@@ -9046,7 +9055,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_mshp_mesh()
         return;
     }
     Element_Begin1("coordinates");
-    std::unique_ptr<float32> coordinates(new float32[coordinate_count]);
+    std::unique_ptr<float32[]> coordinates(new float32[coordinate_count]);
     auto coordinates_Cur = coordinates.get();
     for (int32u i = 0; i < coordinate_count; ++i) {
         Get_BF4(*coordinates_Cur++,                             "coordinate");
@@ -9081,7 +9090,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_mshp_mesh()
                 return;
             }
             int32s index_delta = index_delta_zigzag & 1 ? (-int32s((index_delta_zigzag + 1) >> 1)) : (index_delta_zigzag >> 1);
-            if (index_delta >= (int32s)(coordinate_count - Index) || -index_delta > (int32s)coordinate_count) {
+            if (index_delta >= (int32s)(coordinate_count - Index) || -index_delta > (int32s)Index) {
                 Index = (int32u)-1;
                 return;
             }
@@ -9153,7 +9162,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_sv3d_proj_mshp_mesh()
                     return;
                 }
                 int32s index_delta = index_delta_zigzag & 1 ? (-int32s((index_delta_zigzag + 1) >> 1)) : (index_delta_zigzag >> 1);
-                if (index_delta >= (int32s)(vertex_count - Index) || -index_delta > (int32s)vertex_count) {
+                if (index_delta >= (int32s)(vertex_count - Index) || -index_delta > (int32s)Index) {
                     Index = (int32u)-1;
                     return;
                 }
