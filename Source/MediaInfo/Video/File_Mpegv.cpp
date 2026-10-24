@@ -1234,6 +1234,7 @@ File_Mpegv::~File_Mpegv()
     #if defined(MEDIAINFO_AFDBARDATA_YES)
         delete DTG1_Parser; //DTG1_Parser=NULL;
         delete GA94_06_Parser; //GA94_06_Parser=NULL;
+        delete AfdBarData_Parser; //AfdBarData_Parser=NULL;
     #endif //defined(MEDIAINFO_AFDBARDATA_YES)
 
     //Macroblocks
@@ -3163,9 +3164,21 @@ void File_Mpegv::slice_start_macroblock_block(int8u i)
 
     for (;;)
     {
+        if (!Data_BS_Remain())
+        {
+            Trusted_IsNot("dct_coefficient not valid"); //No end of block
+            Element_Trace_End0();
+            return;
+        }
         Element_Trace_Begin1("dct_coefficient");
         size_t dct_coefficient;
         Get_VL(*Mpegv_dct_coefficients2, dct_coefficient, "dct_coefficient");
+        if (!Trusted_Get())
+        {
+            Element_Trace_End0();
+            Element_Trace_End0();
+            return; //Already reported
+        }
         switch (Mpegv_dct_coefficients[dct_coefficient].mapped_to1)
         {
             case 1 :
