@@ -66,6 +66,16 @@ struct stream
     int32u          len=0;
     int32u          codecid=0;
     vector<buffer>  Buffers;
+
+    stream() = default;
+    stream(const stream&) = delete;
+    stream& operator=(const stream&) = delete;
+    ~stream()
+    {
+        delete Parser;
+        for (const auto& Buffer : Buffers)
+            delete[] Buffer.Data;
+    }
 };
 
 class Private
