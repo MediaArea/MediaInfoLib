@@ -2048,7 +2048,9 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
                     Value2.append(1, ValueChar);
                 }
                 Value_NotBOM_Pos=Value2.find_first_not_of(__T('\xFEFF')); // Avoid deep recursivity
-                if (Value_NotBOM_Pos)
+                if (Value_NotBOM_Pos==string::npos)
+                    Value2.clear(); //Only BOMs
+                else if (Value_NotBOM_Pos)
                     Value2=Value2.substr(Value_NotBOM_Pos);
                 return Fill(StreamKind, StreamPos, Parameter, Value2, Replace);
             }
@@ -2064,6 +2066,8 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
                 Value_NotBOM_Pos+=3;
         #endif //defined(UNICODE) || defined (_UNICODE)
 
+        if (Value_NotBOM_Pos==string::npos)
+            return Fill(StreamKind, StreamPos, Parameter, Ztring(), Replace); //Only BOMs
         if (Value_NotBOM_Pos)
             return Fill(StreamKind, StreamPos, Parameter, Value.substr(Value_NotBOM_Pos), Replace);
     }
