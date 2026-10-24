@@ -1533,7 +1533,8 @@ void File_Bdmv::Mpls_ExtensionData_SubPath_entries()
     Get_B4 (length,                                             "length");
     int64u End=Element_Offset+length;
     Get_B2 (number_of_SubPath_extensions,                       "number_of_SubPath_extensions");
-    for (int8u SubPath_extension=0; SubPath_extension<number_of_SubPath_extensions; SubPath_extension++)
+    Loop_CheckValue(number_of_SubPath_extensions, 6, "number_of_SubPath_extensions");
+    for (int16u SubPath_extension=0; SubPath_extension<number_of_SubPath_extensions; SubPath_extension++)
     {
         Element_Begin1("SubPath_extension");
         int32u SubPath_extension_length;
