@@ -1035,6 +1035,7 @@ void File_Wm::Header_Marker()
     Get_L2 (Name_Length,                                        "Name Length");
     if (Name_Length>0)
         Skip_UTF16L(Name_Length,                                "Name");
+    Loop_CheckValue(Markers_Count, 30, "Markers_Count");
 
     //Filling
     if (Markers_Count>0)
@@ -1866,8 +1867,9 @@ void File_Wm::TimecodeIndex()
             Element_End0();
         }
     Element_End0();
+    Loop_CheckValue(IndexBlocksCount, 6+8*IndexSpecifiersCount, "IndexBlocksCount");
     Element_Begin1("Index Blocks");
-        for (int16u Pos=0; Pos<IndexBlocksCount; ++Pos)
+        for (int32u Pos=0; Pos<IndexBlocksCount; ++Pos)
         {
             Element_Begin1("Index Block");
             int32u IndexEntryCount;
@@ -1877,6 +1879,7 @@ void File_Wm::TimecodeIndex()
                 for (int16u Pos=0; Pos<IndexSpecifiersCount; ++Pos)
                     Skip_L8(                                        "Block Position");
             Element_End0();
+            Loop_CheckValue(IndexEntryCount, 4+4*IndexSpecifiersCount, "IndexEntryCount");
             Element_Begin1("Index Entries");
                 for (int32u Pos=0; Pos<IndexEntryCount; ++Pos)
                 {
