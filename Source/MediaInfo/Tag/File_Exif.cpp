@@ -1840,7 +1840,7 @@ void File_Exif::Streams_Finish()
                 const auto GPSLongitudeRef = Infos_GPS.find(IFDGPS::GPSLongitudeRef);
                 const auto GPSAltitudeRef = Infos_GPS.find(IFDGPS::GPSAltitudeRef);
                 const auto GPSAltitude = Infos_GPS.find(IFDGPS::GPSAltitude);
-                if (GPSLatitude->second.size() == 3 && GPSLatitudeRef != Infos_GPS.end() && GPSLongitude != Infos_GPS.end() && GPSLongitude->second.size() == 3 && GPSLongitudeRef != Infos_GPS.end()) {
+                if (GPSLatitude->second.size() == 3 && GPSLatitudeRef != Infos_GPS.end() && !GPSLatitudeRef->second.empty() && GPSLongitude != Infos_GPS.end() && GPSLongitude->second.size() == 3 && GPSLongitudeRef != Infos_GPS.end() && !GPSLongitudeRef->second.empty()) {
                     Value = GPSLatitude->second.at(0) + Ztring().From_UTF8("\xC2\xB0");
                     if (GPSLatitude->second.at(1) != __T("0") || GPSLatitude->second.at(0).find(__T('.')) == string::npos) {
                         Value += GPSLatitude->second.at(1) + __T('\'');
