@@ -485,6 +485,7 @@ void File__ReferenceFilesHelper::DetectSameReels(vector<size_t> &ReelCount)
                 if (Sequence_Pos!=Sequence_Pos_First)
                 {
                     Sequences[Sequence_Pos_First]->Resources.insert(Sequences[Sequence_Pos_First]->Resources.end(), Sequences[Sequence_Pos]->Resources.begin(), Sequences[Sequence_Pos]->Resources.end());
+                    Sequences[Sequence_Pos]->Resources.clear(); //Ownership transfered
                     Sequence_Pos_toDelete.push_back(Sequence_Pos);
                 }
             }
