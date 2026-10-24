@@ -768,6 +768,7 @@ void File_Iamf::ia_mix_presentation()
         Reject();
         return;
     }
+    Loop_CheckValue(count_label, 2, "count_label"); // annotations_language and localized_presentation_annotations
     for (int64u i = 0; i < count_label; ++i) {
         Skip_UTF8(SizeUpTo0(),                              "annotations_language");
         Skip_B1(                                            "zero");
@@ -781,6 +782,7 @@ void File_Iamf::ia_mix_presentation()
         Reject();
         return;
     }
+    Loop_CheckValue(num_sub_mixes, 2, "num_sub_mixes"); // num_audio_elements and num_layouts
     for (int64u i = 0; i < num_sub_mixes; ++i) {
         int64u num_audio_elements;
         Get_leb128(     num_audio_elements,                 "num_audio_elements");
@@ -788,6 +790,7 @@ void File_Iamf::ia_mix_presentation()
             Reject();
             return;
         }
+        Loop_CheckValue(num_audio_elements, 1 + count_label, "num_audio_elements"); // audio_element_id and localized_element_annotations
         for (int64u j = 0; j < num_audio_elements; ++j) {
             int64u audio_element_id;
             Get_leb128( audio_element_id,                   "audio_element_id");
@@ -811,6 +814,7 @@ void File_Iamf::ia_mix_presentation()
             Reject();
             return;
         }
+        Loop_CheckValue(num_layouts, 6, "num_layouts"); // loudness_layout and loudness
         for (int64u j = 0; j < num_layouts; ++j) {
             Element_Begin1("loudness_layout");
                 int8u layout_type;
