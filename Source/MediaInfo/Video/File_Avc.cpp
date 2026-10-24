@@ -1594,10 +1594,24 @@ bool File_Avc::Demux_UnpacketizeContainer_Test()
         }
     }
 
+    auto Buffer_Restore=[&]()
+    {
+        if (Buffer_Temp)
+        {
+            delete[] Buffer;
+            Buffer=Buffer_Temp;
+            Buffer_Size=Buffer_Temp_Size;
+            Buffer_Temp=NULL;
+        }
+    };
+
     if (!Status[IsAccepted])
     {
         if (Config->Demux_EventWasSent)
+        {
+            Buffer_Restore();
             return false;
+        }
         File_Avc* MI=new File_Avc;
         Element_Code=(int64u)-1;
         Open_Buffer_Init(MI);
@@ -1612,7 +1626,10 @@ bool File_Avc::Demux_UnpacketizeContainer_Test()
         bool IsOk=MI->Status[IsAccepted];
         delete MI;
         if (!IsOk)
+        {
+            Buffer_Restore();
             return false;
+        }
     }
 
     if (IFrame_Count || RandomAccess)
@@ -4053,7 +4070,7 @@ void File_Avc::pic_parameter_set()
         {
             int32u pic_size_in_map_units_minus1;
             Get_UE (pic_size_in_map_units_minus1,               "pic_size_in_map_units_minus1");
-            if(pic_size_in_map_units_minus1>((*seq_parameter_set_Item)->pic_width_in_mbs_minus1+1)*((*seq_parameter_set_Item)->pic_height_in_map_units_minus1+1))
+            if(pic_size_in_map_units_minus1>=((int64u)(*seq_parameter_set_Item)->pic_width_in_mbs_minus1+1)*((int64u)(*seq_parameter_set_Item)->pic_height_in_map_units_minus1+1))
             {
                 Trusted_IsNot("pic_size_in_map_units_minus1 too high");
                 return;
@@ -4063,6 +4080,7 @@ void File_Avc::pic_parameter_set()
             #else
                 int32u slice_group_id_Size=(int32u)(std::ceil(std::log((float32)(num_slice_groups_minus1+1))/std::log((float32)10))); //std::log is natural logarithm
             #endif
+            Loop_CheckValue_BS(pic_size_in_map_units_minus1, slice_group_id_Size, "pic_size_in_map_units_minus1");
             for (int32u Pos=0; Pos<=pic_size_in_map_units_minus1; Pos++)
                 Skip_BS(slice_group_id_Size,                    "slice_group_id");
         }
@@ -4810,6 +4828,12 @@ void File_Avc::SPS_PPS()
                             Element_Begin1("sequenceParameterSetExtNALUnit");
                             int16u Size;
                             Get_B2 (Size,                       "sequenceParameterSetExtLength");
+                            if (!Size || Size>Element_Size-Element_Offset)
+                            {
+                                Param_Error("Incoherent sequenceParameterSetExtLength");
+                                Element_End0();
+                                break; //There is an error
+                            }
                             BS_Begin();
                             Mark_0 ();
                             Skip_S1( 2,                         "nal_ref_idc");
