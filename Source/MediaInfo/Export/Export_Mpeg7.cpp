@@ -2772,6 +2772,7 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI, size_t Version)
 
     //Transform
     Ztring ToReturn=Ztring().From_UTF8(To_XML(*Node_Mpeg7, 0, true, true).c_str());
+    delete Node_Mpeg7;
 
     //Find and replace
     ZtringListList ToReplace=MediaInfoLib::Config.Inform_Replace_Get_All();
