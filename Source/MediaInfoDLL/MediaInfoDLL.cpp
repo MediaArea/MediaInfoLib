@@ -606,7 +606,7 @@ void*           __stdcall MediaInfo_New_Quick (const wchar_t* File, const wchar_
     if (MediaInfo_Open(Handle, File)==0)
     {
         //No valid files, return NULL
-        delete (MediaInfo*)Handle;
+        MediaInfo_Delete(Handle);
         return NULL;
     }
     return Handle;
@@ -897,7 +897,7 @@ void*           __stdcall MediaInfoList_New_Quick (const wchar_t* File, const wc
     if (MediaInfoList_Open(Handle, File, MediaInfo_FileOption_Nothing)==0)
     {
         //No valid files, return NULL
-        delete (MediaInfoList*)Handle;
+        MediaInfoList_Delete(Handle);
         return NULL;
     }
     return Handle;
