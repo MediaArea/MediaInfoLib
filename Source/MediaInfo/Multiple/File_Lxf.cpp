@@ -576,6 +576,14 @@ size_t File_Lxf::Read_Buffer_Seek (size_t Method, int64u Value, int64u)
 
                         if (TimeOffset->second.TimeStamp_Begin>SeekRequest_Maxi) //Testing if too far
                         {
+                            if (TimeOffset==TimeOffsets.begin())
+                            {
+                                //No known frame before, seeking to the first known frame
+                                Open_Buffer_Unsynch();
+                                GoTo(TimeOffset->first);
+                                SeekRequest=(int64u)-1;
+                                return 1;
+                            }
                             time_offsets::iterator Previous=TimeOffset; --Previous;
                             int64u ReferenceOffset;
                             if (File_Offset+Buffer_Offset==TimeOffset->first && TimeOffset->second.TimeStamp_Begin>SeekRequest) //If current frame is already too far
@@ -586,7 +594,8 @@ size_t File_Lxf::Read_Buffer_Seek (size_t Method, int64u Value, int64u)
                             {
                                 SeekRequest=Previous->second.TimeStamp_Begin-(float64_int64s(TimeStamp_Rate/1000)+1); //1ms+1, so we are sure to not synch on the current frame again
                                 ReferenceOffset=Previous->first;
-                                --Previous;
+                                if (Previous!=TimeOffsets.begin())
+                                    --Previous;
                                 SeekRequest_Divider=2;
                             }
                             Open_Buffer_Unsynch();
