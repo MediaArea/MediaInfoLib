@@ -629,6 +629,7 @@ void File_Avs3V::reference_picture_list_set(int8u list, int32u rpls)
         Get_SB(reference_to_library_enable_flag,                "reference_to_library_enable_flag");
 
     Get_UE(num_of_ref_pic,                                      "num_of_ref_pic");
+    Loop_CheckValue_BS(num_of_ref_pic, 1, "num_of_ref_pic");
     for (i = 0; i < num_of_ref_pic; i++) {
         bool library_index_flag = false;
         string indexStr = fmt::format("[{}][{}][{}]", list, rpls, i);
@@ -716,12 +717,14 @@ void File_Avs3V::video_sequence_start()
     Mark_1 ();
 
     Get_UE (     num_ref_pic_list_set[0],                       "num_ref_pic_list_set[0]");
+    Loop_CheckValue_BS(num_ref_pic_list_set[0], 1, "num_ref_pic_list_set");
    
      for (j=0; j<num_ref_pic_list_set[0]; j++)
         reference_picture_list_set(0, j);
 
      if (!rpl1_same_as_rpl0_flag) {
         Get_UE(    num_ref_pic_list_set[1],                     "num_ref_pic_list_set[1]");
+        Loop_CheckValue_BS(num_ref_pic_list_set[1], 1, "num_ref_pic_list_set");
         for (j=0; j<num_ref_pic_list_set[1]; j++)
             reference_picture_list_set(1, j);
     }
