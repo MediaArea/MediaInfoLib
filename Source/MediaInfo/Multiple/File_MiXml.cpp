@@ -304,7 +304,10 @@ bool File_MiXml::FileHeader_Begin()
                                     {
                                         string Name(Element->Name());
                                              if (Name == "Format_Version")
-                                            Fill(StreamKind_Last, StreamPos_Last, Element->Name(), string("Version ")+Element->GetText(), true, true);
+                                        {
+                                            if (Element->GetText())
+                                                Fill(StreamKind_Last, StreamPos_Last, Element->Name(), string("Version ")+Element->GetText(), true, true);
+                                        }
                                         else if (MediaInfoLib::Config.Info_Get(StreamKind_Last).Read(Ztring().From_UTF8(Element->Name()), Info_Measure) == __T(" ms"))
                                         {
                                             //Converting seconds to milliseconds while keeping precision
