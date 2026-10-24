@@ -272,7 +272,7 @@ static std::array<char, 12> DvDif_Time2String(int32u Value, bool DSF = false)
     unsigned FU = Value & 0xF;
     Value >>= 4;
     unsigned FT = Value & 0x3;
-    std::array<char, 12> Result;
+    std::array<char, 12> Result{};
     if (HU >= 10 || MU >= 10 || SU >= 10 || HH >= 0x24 || MM >= 0x60 || SS >= 0x60) {
         Result[0] = '\0';
         return Result;
@@ -648,7 +648,7 @@ void File_DvDif::Streams_Finish()
         if (Date[0]) {
             string Recorded_Date(Date.data(), sizeof(Date));
             const auto Time = DvDif_Time2String(Recorded_Date_Time, DSF);
-            if (!Time.empty()) {
+            if (Time[0]) {
                 Recorded_Date += ' ';
                 Recorded_Date.append(Time.data(), Time[8] ? sizeof(Time) : 8);
             }
