@@ -1300,7 +1300,7 @@ void File_SmpteSt0337::Data_Parse()
                             break;
 
                         //Check if we need to stop
-                        if (strm.avail_out || inflate_Result)
+                        if (strm.avail_out || inflate_Result || strm.total_out>=0x4000000) //Arbitrary limit of 64 MiB
                             break;
 
                         //Need to increase buffer
@@ -1314,6 +1314,7 @@ void File_SmpteSt0337::Data_Parse()
                     UncompressedData=strm.next_out-strm.total_out;
                     UncompressedData_Size=strm.total_out;
                     inflateEnd(&strm);
+                    delete[] Compressed;
                     // Adapting
                     Buffer=Save_Buffer;
                     Buffer_Offset=Save_Buffer_Offset;

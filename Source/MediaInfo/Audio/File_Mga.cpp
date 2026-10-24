@@ -269,7 +269,7 @@ void File_Mga::SerialAudioDefinitionModelMetadataPayload(int64u Length)
                 break;
 
             //Check if we need to stop
-            if (strm.avail_out || inflate_Result)
+            if (strm.avail_out || inflate_Result || strm.total_out>=0x4000000) //Arbitrary limit of 64 MiB
                 break;
 
             //Need to increase buffer
