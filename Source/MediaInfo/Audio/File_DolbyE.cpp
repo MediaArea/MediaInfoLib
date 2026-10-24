@@ -2801,6 +2801,7 @@ void File_DolbyE::mgi_payload()
         int32u num_dyn_obj_alt_md;
         Get_V4 (2, num_dyn_obj_alt_md,                          "num_dyn_obj_alt_md");
         Get_S1 (2, D.sound_category,                            "sound_category"); Param_Info1(sound_category_Values[D.sound_category]);
+        Loop_CheckValue_BS(num_dyn_obj_alt_md, 8, "num_dyn_obj_alt_md"); //object_info_mask and object_info_size_bytes
         D.Alts.resize(num_dyn_obj_alt_md);
         for (int32u j=0; j<num_dyn_obj_alt_md; j++)
         {
@@ -2861,8 +2862,9 @@ void File_DolbyE::mgi_payload()
         Element_Begin1("bed_instance");
         int32u num_bed_alt_md;
         Get_V4 (2, num_bed_alt_md,                              "num_bed_alt_md");
+        Loop_CheckValue_BS(num_bed_alt_md, 6, "num_bed_alt_md"); //bed_info_mask and bed_info_size_bytes
         B.Alts.resize(num_bed_alt_md);
-        for (int8u j=0; j<num_bed_alt_md; j++)
+        for (int32u j=0; j<num_bed_alt_md; j++)
         {
             bed_instance::bed_alt& A=B.Alts[j];
             Element_Begin1("bed_alt_md");
@@ -3107,6 +3109,11 @@ void File_DolbyE::Get_V4(int8u Bits, int32u& Info, const char* Name)
                 Count+=1+Bits;
                 if (!BS->GetB())
                     break;
+                if (!BS->Remain())
+                {
+                    Trusted_IsNot("Variable length value not valid");
+                    break;
+                }
                 Info<<=Bits;
                 Info+=(1<<Bits);
             }
@@ -3122,6 +3129,11 @@ void File_DolbyE::Get_V4(int8u Bits, int32u& Info, const char* Name)
                 Info+=BS->Get4(Bits);
                 if (!BS->GetB())
                     break;
+                if (!BS->Remain())
+                {
+                    Trusted_IsNot("Variable length value not valid");
+                    break;
+                }
                 Info<<=Bits;
                 Info+=(1<<Bits);
             }
@@ -3142,6 +3154,11 @@ void File_DolbyE::Skip_V4(int8u  Bits, const char* Name)
                 Count+=1+Bits;
                 if (!BS->GetB())
                     break;
+                if (!BS->Remain())
+                {
+                    Trusted_IsNot("Variable length value not valid");
+                    break;
+                }
                 Info<<=Bits;
                 Info+=(1<<Bits);
             }
@@ -3157,6 +3174,11 @@ void File_DolbyE::Skip_V4(int8u  Bits, const char* Name)
                 BS->Skip(Bits);
                 if (!BS->GetB())
                     break;
+                if (!BS->Remain())
+                {
+                    Trusted_IsNot("Variable length value not valid");
+                    break;
+                }
             }
         }
 }
@@ -3537,7 +3559,7 @@ void File_DolbyE::ac3_metadata_subsegment(bool xbsi)
 {
     for (int8u program=0; program<DolbyE_Programs[program_config]; program++)
     {
-        int8u meta[ac3_max];
+        int8u meta[ac3_max]{};
         Element_Begin1("per program");
         Get_S1 (5, meta[ac3_datarate],                      "ac3_datarate"); Param_Info2C(meta[ac3_datarate]<19, AC3_BitRate[meta[ac3_datarate]], " kbps");
         Get_S1 (3, meta[ac3_bsmod],                         "ac3_bsmod"); Param_Info1(AC3_Mode_String[meta[ac3_bsmod]]);
@@ -3583,7 +3605,7 @@ void File_DolbyE::ac3_metadata_subsegment(bool xbsi)
         Get_S1 (1, meta[ac3_suratton],                      "ac3_suratton");
         Get_S1 (1, meta[ac3_rfpremphon],                    "ac3_rfpremphon");
         Get_S1 (1, meta[ac3_compre],                        "ac3_compre");
-        Get_S1 (8, meta[ac3_compr1],                        "ac3_compr1"); Param_Info2C(meta[ac3_compre], Ztring::ToZtring(meta[ac3_dynrng1]?(AC3_compr[meta[ac3_compr1]>>4]+20*std::log10(((float)(0x10+(meta[ac3_compr1]&0x0F)))/32)):0, 2), " dB");
+        Get_S1 (8, meta[ac3_compr1],                        "ac3_compr1"); Param_Info2C(meta[ac3_compre], Ztring::ToZtring(meta[ac3_compr1]?(AC3_compr[meta[ac3_compr1]>>4]+20*std::log10(((float)(0x10+(meta[ac3_compr1]&0x0F)))/32)):0, 2), " dB");
         Get_S1 (1, meta[ac3_dynrnge],                       "ac3_dynrnge");
         Get_S1 (8, meta[ac3_dynrng1],                       "ac3_dynrng1"); Param_Info2C(meta[ac3_dynrnge], Ztring::ToZtring(meta[ac3_dynrng1]?(AC3_dynrng[meta[ac3_dynrng1]>>5]+20*std::log10(((float)(0x20+(meta[ac3_dynrng1]&0x1F)))/64)):0, 2), " dB");
         Get_S1 (8, meta[ac3_dynrng2],                       "ac3_dynrng2"); Param_Info2C(meta[ac3_dynrnge], Ztring::ToZtring(meta[ac3_dynrng2]?(AC3_dynrng[meta[ac3_dynrng2]>>5]+20*std::log10(((float)(0x20+(meta[ac3_dynrng2]&0x1F)))/64)):0, 2), " dB");
