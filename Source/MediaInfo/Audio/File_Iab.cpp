@@ -317,9 +317,9 @@ void File_Iab::Streams_Fill_ForAdm()
             Fill(Stream_Audio, 0, O.c_str(), "Yes");
             Fill(Stream_Audio, 0, (O + " Pos").c_str(), numberOfChannelFormats);
             Fill_SetOptions(Stream_Audio, 0, (O + " Pos").c_str(), "N NIY");
-            if (Iab_SampleRate[SampleRate])
+            if (SampleRate<4 && Iab_SampleRate[SampleRate])
                 Fill(Stream_Audio, 0, (O+" SamplingRate").c_str(), Iab_SampleRate[SampleRate]);
-            if (Iab_BitDepth[BitDepth])
+            if (BitDepth<4 && Iab_BitDepth[BitDepth])
                 Fill(Stream_Audio, 0, (O+" BitDepth").c_str(), Iab_BitDepth[BitDepth]);
             auto PackFormat=O+" LinkedTo_PackFormat_Pos";
             Fill(Stream_Audio, 0, PackFormat.c_str(), i);
@@ -341,9 +341,9 @@ void File_Iab::Streams_Fill_ForAdm()
                 Fill(Stream_Audio, 0, O.c_str(), "Yes");
                 Fill(Stream_Audio, 0, (O + " Pos").c_str(), numberOfChannelFormats);
                 Fill_SetOptions(Stream_Audio, 0, (O + " Pos").c_str(), "N NIY");
-                if (Iab_SampleRate[SampleRate])
+                if (SampleRate<4 && Iab_SampleRate[SampleRate])
                     Fill(Stream_Audio, 0, (O+" SamplingRate").c_str(), Iab_SampleRate[SampleRate]);
-                if (Iab_BitDepth[BitDepth])
+                if (BitDepth<4 && Iab_BitDepth[BitDepth])
                     Fill(Stream_Audio, 0, (O+" BitDepth").c_str(), Iab_BitDepth[BitDepth]);
                 auto PackFormat=O+" LinkedTo_PackFormat_Pos";
                 Fill(Stream_Audio, 0, PackFormat.c_str(), i);
@@ -468,11 +468,11 @@ void File_Iab::Streams_Fill()
     Fill(Stream_Audio, 0, Audio_Format, "IAB");
     Fill(Stream_Audio, 0, Audio_Format_Info, "Immersive Audio Bitstream");
     Fill(Stream_Audio, 0, Audio_Format_Version, __T("Version ")+Ztring::ToZtring(Version));
-    if (Iab_SampleRate[SampleRate])
+    if (SampleRate<4 && Iab_SampleRate[SampleRate])
         Fill(Stream_Audio, 0, Audio_SamplingRate, Iab_SampleRate[SampleRate]);
-    if (Iab_BitDepth[BitDepth])
+    if (BitDepth<4 && Iab_BitDepth[BitDepth])
         Fill(Stream_Audio, 0, Audio_BitDepth, Iab_BitDepth[BitDepth]);
-    if (Iab_FrameRate[FrameRate])
+    if (FrameRate<16 && Iab_FrameRate[FrameRate])
         Fill(Stream_Audio, 0, Audio_FrameRate, Iab_FrameRate[FrameRate]);
 }
 
@@ -789,7 +789,7 @@ void File_Iab::Get_Plex(int8u Bits, int32u& Info, const char* Name)
     for (;;)
     {
         Peek_BS(Bits, Info);
-        if (Info!=(1<<Bits)-1 || Bits>=32)
+        if (Bits>=32 || Info!=(1u<<Bits)-1)
         {
             Get_BS(Bits, Info, Name);
             return;
