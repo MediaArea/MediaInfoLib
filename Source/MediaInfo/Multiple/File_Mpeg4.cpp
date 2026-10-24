@@ -2983,9 +2983,11 @@ bool File_Mpeg4::BookMark_Needed()
                     {
                         ((File_Mpeg4_TimeCode*)StreamTemp.Parsers[0])->AllFramesParsed=false;
                         auto StreamID=Temp->StreamID;
-                        for (int j=mdat_Pos.size()-1; j>=0; j--)
-                            if (StreamID==mdat_Pos[j].StreamID && mdat_Pos[j].Offset!=stco_ToFind && mdat_Pos[j].Offset!=StreamTemp.FirstUsedOffset && mdat_Pos[j].Offset!=StreamTemp.LastUsedOffset)
-                                mdat_Pos.erase(mdat_Pos.begin()+j);
+                        const auto FirstUsedOffset=StreamTemp.FirstUsedOffset;
+                        const auto LastUsedOffset=StreamTemp.LastUsedOffset;
+                        mdat_Pos.erase(std::remove_if(mdat_Pos.begin(), mdat_Pos.end(), [&](const mdat_Pos_Type& Item) { //In one pass, erasing items one by one is too slow with a lot of items
+                            return StreamID==Item.StreamID && Item.Offset!=stco_ToFind && Item.Offset!=FirstUsedOffset && Item.Offset!=LastUsedOffset;
+                        }), mdat_Pos.end());
                         if (mdat_Pos.empty())
                         {
                             mdat_Pos_Temp=nullptr;
