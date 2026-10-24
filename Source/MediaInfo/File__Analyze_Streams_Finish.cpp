@@ -2516,6 +2516,7 @@ void File__Analyze::Streams_Finish_Global()
     Streams_Finish_StreamOnly_General_Curate(0);
 
     Config->File_ExpandSubs_Update((void**)(&Stream_More));
+    Stream_More_Index.List=nullptr; // Names may be modified
 
     if (!IsSub && !Config->File_IsReferenced_Get() && MediaInfoLib::Config.ReadByHuman_Get())
         Streams_Finish_HumanReadable();

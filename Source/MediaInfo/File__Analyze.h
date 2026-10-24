@@ -1242,6 +1242,19 @@ public :
     void Fill_SetOptions(stream_t StreamKind, size_t StreamPos, const char* Parameter, const char* Options);
     vector<fill_temp_item> Fill_Temp[Stream_Max+1]; // +1 because Fill_Temp[Stream_Max] is used when StreamKind is unknown
     map<string, string> Fill_Temp_Options[Stream_Max+1]; // +1 because Fill_Temp[Stream_Max] is used when StreamKind is unknown
+    struct stream_more_index // Positions of unknown parameters per name, in order to avoid scanning all of them for each new value
+    {
+        const ZtringListList*   List=nullptr;
+        const ZtringList*       Data=nullptr;
+        size_t                  Size=0;
+        map<Ztring, size_t>     Positions; // Value is the index in Lines
+        vector<size_t>          Lines; // Position of the line, contiguous for quick update when a line is inserted
+    };
+    stream_more_index Stream_More_Index;
+    size_t Stream_More_Find(const ZtringListList& List, const Ztring& Name);
+    void Stream_More_Index_Insert(const ZtringListList& List, size_t Pos);
+    void Stream_More_Index_Erase(const ZtringListList& List, size_t Pos, const Ztring& Name);
+    bool Stream_More_IsEmpty(stream_t StreamKind, size_t StreamPos, const Ztring& Name);
     void Fill_Flush ();
     static size_t Fill_Parameter(stream_t StreamKind, generic StreamPos);
 

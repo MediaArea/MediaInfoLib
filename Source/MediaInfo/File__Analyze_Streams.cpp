@@ -3090,9 +3090,12 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, const char* Par
     {
         if (Replace)
         {
-            const size_t Pos_ToReplace= Stream_More_Item.Find(Parameter_ISO, Info_Name);
+            const size_t Pos_ToReplace= Stream_More_Find(Stream_More_Item, Parameter_ISO);
             if (Pos_ToReplace!=(size_t)-1)
+            {
                 Stream_More_Item.erase(Stream_More_Item.begin()+Pos_ToReplace); //Empty value --> remove the line
+                Stream_More_Index_Erase(Stream_More_Item, Pos_ToReplace, Parameter_ISO);
+            }
         }
     }
     else
@@ -3102,16 +3105,25 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, const char* Par
         if (Space!=string::npos)
         {
             Ztring ToSearch=Parameter_ISO.substr(0, Space);
-            for (size_t i=0; i<Stream_More_Item.size(); i++)
+            if (Stream_More_Find(Stream_More_Item, Parameter_ISO)==(size_t)-1) // Also updates the index
             {
-                const auto& Item=Stream_More_Item[i][Info_Name];
-                if (Item==Parameter_ISO)
+                // Is there a line with the same prefix
+                const auto& Positions=Stream_More_Index.Positions;
+                const auto ToSearch_Space=ToSearch+__T(' ');
+                const auto Group=Positions.lower_bound(ToSearch_Space);
+                if (Positions.find(ToSearch)!=Positions.end() || (Group!=Positions.end() && !Group->first.compare(0, ToSearch_Space.size(), ToSearch_Space)))
                 {
-                    LastFound=(size_t)-1;
-                    break;
+                    // Last line with the same prefix, searching from the end as it is usually there
+                    for (size_t i=Stream_More_Item.size(); i--;)
+                    {
+                        const auto& Item=Stream_More_Item[i][Info_Name];
+                        if (Item.rfind(ToSearch, 0)==0 && (Item.size()==ToSearch.size() || Item[ToSearch.size()]==__T(' ')))
+                        {
+                            LastFound=i;
+                            break;
+                        }
+                    }
                 }
-                if (Item.rfind(ToSearch, 0)==0 && (Item.size()==ToSearch.size() || Item[ToSearch.size()]==__T(' ')))
-                    LastFound=i;
             }
             if (LastFound!=(size_t)-1)
             {
@@ -3121,13 +3133,13 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, const char* Par
                 Line[Info_Text]=Value;
                 Line[Info_Options]=__T("Y NT");
                 Line[Info_Name_Text]=MediaInfoLib::Config.Language_Get(Parameter_Local);
+                Stream_More_Index_Insert(Stream_More_Item, LastFound+1);
                 return;
             }
         }
 
-        auto TargetFind=[&Parameter_ISO](const ZtringList& Line) { return !Line.empty() && Line[0] == Parameter_ISO; };
-        auto Target=find_if(Stream_More_Item.begin(), Stream_More_Item.end(), TargetFind);
-        if (Target==Stream_More_Item.end())
+        auto Target=Stream_More_Find(Stream_More_Item, Parameter_ISO);
+        if (Target==(size_t)-1)
         {
             size_t Pos=Stream_More_Item.size();
             Stream_More_Item.resize(Pos+1);
@@ -3137,10 +3149,11 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, const char* Par
             Line[Info_Text]=Value;
             Line[Info_Options]=__T("Y NT");
             Line[Info_Name_Text]=MediaInfoLib::Config.Language_Get(Parameter_Local);
+            Stream_More_Index_Insert(Stream_More_Item, Pos);
         }
         else
         {
-            auto& Item=(*Target)(Info_Text);
+            auto& Item=Stream_More_Item[Target](Info_Text);
             if (Item.empty() || Replace)
             {
                 Item=Value;
@@ -3183,6 +3196,96 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, const char* Par
 }
 
 //---------------------------------------------------------------------------
+// Same as Get(StreamKind, StreamPos, Name).empty() but using the index for unknown parameters
+bool File__Analyze::Stream_More_IsEmpty(stream_t StreamKind, size_t StreamPos, const Ztring& Name)
+{
+    if (MediaInfoLib::Config.Info_Get(StreamKind).Find(Name)!=Error)
+        return Get(StreamKind, StreamPos, Name).empty();
+    auto& Stream_More_Item=(*Stream_More)[StreamKind][StreamPos];
+    const auto Target=Stream_More_Find(Stream_More_Item, Name);
+    return Target==(size_t)-1 || Stream_More_Item[Target](Info_Text).empty();
+}
+
+//---------------------------------------------------------------------------
+// Position of the first line with this name, the index is rebuilt if the list changed outside of Fill()
+size_t File__Analyze::Stream_More_Find(const ZtringListList& List, const Ztring& Name)
+{
+    const ZtringList* Data=List.empty()?nullptr:&List[0];
+    if (Stream_More_Index.List!=&List || Stream_More_Index.Data!=Data || Stream_More_Index.Size!=List.size())
+    {
+        Stream_More_Index.List=&List;
+        Stream_More_Index.Data=Data;
+        Stream_More_Index.Size=List.size();
+        Stream_More_Index.Positions.clear();
+        Stream_More_Index.Lines.clear();
+        for (size_t Pos=0; Pos<List.size(); Pos++)
+            if (!List[Pos].empty() && Stream_More_Index.Positions.emplace(List[Pos][0], Stream_More_Index.Lines.size()).second) // First one is kept
+                Stream_More_Index.Lines.push_back(Pos);
+    }
+
+    auto It=Stream_More_Index.Positions.find(Name);
+    if (It==Stream_More_Index.Positions.end())
+        return (size_t)-1;
+    const auto Line=Stream_More_Index.Lines[It->second];
+    if (Line<List.size() && !List[Line].empty() && List[Line][0]==Name)
+        return Line;
+
+    // Not coherent, list was modified elsewhere
+    Stream_More_Index.List=nullptr;
+    return Stream_More_Find(List, Name);
+}
+
+//---------------------------------------------------------------------------
+// Update of the index after a line was inserted at Pos, the index is rebuilt later if it was not coherent with the list before the insertion
+void File__Analyze::Stream_More_Index_Insert(const ZtringListList& List, size_t Pos)
+{
+    if (Stream_More_Index.List!=&List || Stream_More_Index.Size+1!=List.size())
+    {
+        Stream_More_Index.List=nullptr;
+        return;
+    }
+    if (Pos<Stream_More_Index.Size)
+        for (auto& Line : Stream_More_Index.Lines)
+            if (Line>=Pos)
+                Line++;
+    const auto Position=Stream_More_Index.Positions.emplace(List[Pos][0], Stream_More_Index.Lines.size());
+    if (Position.second)
+        Stream_More_Index.Lines.push_back(Pos);
+    else if (Stream_More_Index.Lines[Position.first->second]>Pos)
+        Stream_More_Index.Lines[Position.first->second]=Pos; // First one is kept
+    Stream_More_Index.Data=&List[0];
+    Stream_More_Index.Size++;
+}
+
+//---------------------------------------------------------------------------
+// Update of the index after the line at Pos with this name was erased, the index is rebuilt later if it was not coherent with the list before the erasure
+void File__Analyze::Stream_More_Index_Erase(const ZtringListList& List, size_t Pos, const Ztring& Name)
+{
+    if (Stream_More_Index.List!=&List || Stream_More_Index.Size!=List.size()+1)
+    {
+        Stream_More_Index.List=nullptr;
+        return;
+    }
+    for (auto& Line : Stream_More_Index.Lines)
+        if (Line>Pos)
+            Line--;
+    const auto Position=Stream_More_Index.Positions.find(Name);
+    if (Position!=Stream_More_Index.Positions.end() && Stream_More_Index.Lines[Position->second]==Pos)
+    {
+        // Next line with the same name becomes the first one
+        size_t Next=Pos;
+        while (Next<List.size() && (List[Next].empty() || List[Next][0]!=Name))
+            Next++;
+        if (Next<List.size())
+            Stream_More_Index.Lines[Position->second]=Next;
+        else
+            Stream_More_Index.Positions.erase(Position);
+    }
+    Stream_More_Index.Data=List.empty()?nullptr:&List[0];
+    Stream_More_Index.Size--;
+}
+
+//---------------------------------------------------------------------------
 void File__Analyze::Fill_SetOptions(stream_t StreamKind, size_t StreamPos, const char* Parameter, const char* Options)
 {
     //Integrity
@@ -3204,7 +3307,16 @@ void File__Analyze::Fill_SetOptions(stream_t StreamKind, size_t StreamPos, const
         return;
     }
 
-    (*Stream_More)[StreamKind][StreamPos](Ztring().From_ISO_8859_1(Parameter), Info_Options).From_UTF8(Options);
+    auto& Stream_More_Item=(*Stream_More)[StreamKind][StreamPos];
+    const Ztring Parameter_ISO=Ztring().From_ISO_8859_1(Parameter);
+    const auto Target=Stream_More_Find(Stream_More_Item, Parameter_ISO);
+    if (Target!=(size_t)-1)
+        Stream_More_Item[Target](Info_Options).From_UTF8(Options);
+    else
+    {
+        Stream_More_Item(Parameter_ISO, Info_Options).From_UTF8(Options);
+        Stream_More_Index_Insert(Stream_More_Item, Stream_More_Item.size()-1);
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -3291,7 +3403,7 @@ const Ztring &File__Analyze::Retrieve_Const (stream_t StreamKind, size_t StreamP
         }
         if (StreamPos>=(*Stream)[StreamKind].size())
             return MediaInfoLib::Config.EmptyString_Get();
-        Parameter_Pos=(*Stream_More)[StreamKind][StreamPos].Find(Parameter_Local);
+        Parameter_Pos=Stream_More_Find((*Stream_More)[StreamKind][StreamPos], Parameter_Local);
         if (Parameter_Pos==Error)
             return MediaInfoLib::Config.EmptyString_Get();
         return (*Stream_More)[StreamKind][StreamPos](Parameter_Pos, 1);
@@ -3317,7 +3429,7 @@ Ztring File__Analyze::Retrieve (stream_t StreamKind, size_t StreamPos, const cha
     size_t Parameter_Pos=MediaInfoLib::Config.Info_Get(StreamKind).Find(Parameter_Local);
     if (Parameter_Pos==Error)
     {
-        Parameter_Pos=(*Stream_More)[StreamKind][StreamPos].Find(Parameter_Local);
+        Parameter_Pos=Stream_More_Find((*Stream_More)[StreamKind][StreamPos], Parameter_Local);
         if (Parameter_Pos==Error)
             return MediaInfoLib::Config.EmptyString_Get();
         return (*Stream_More)[StreamKind][StreamPos](Parameter_Pos, 1);
@@ -3351,7 +3463,7 @@ void File__Analyze::Clear (stream_t StreamKind, size_t StreamPos, const char* Pa
     size_t Parameter_Pos=MediaInfoLib::Config.Info_Get(StreamKind).Find(Parameter_Local);
     if (Parameter_Pos==Error)
     {
-        Parameter_Pos=(*Stream_More)[StreamKind][StreamPos].Find(Parameter_Local);
+        Parameter_Pos=Stream_More_Find((*Stream_More)[StreamKind][StreamPos], Parameter_Local);
         if (Parameter_Pos==Error)
             return;
         (*Stream_More)[StreamKind][StreamPos](Parameter_Pos, 1).clear();
@@ -3656,7 +3768,7 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
         {
             //Ignore
         }
-        else if (!ToFill_Value.empty() && (Erase || (Pos < Size_NotExtra && Get(StreamKind, StreamPos_To, Pos).empty()) || (Pos >= Size_NotExtra && Get(StreamKind, StreamPos_To, ToAdd.Get(StreamKind, StreamPos_From, Pos, Info_Name)).empty())))
+        else if (!ToFill_Value.empty() && (Erase || (Pos < Size_NotExtra && Get(StreamKind, StreamPos_To, Pos).empty()) || (Pos >= Size_NotExtra && Stream_More_IsEmpty(StreamKind, StreamPos_To, ToAdd.Get(StreamKind, StreamPos_From, Pos, Info_Name)))))
         {
             if (Pos<MediaInfoLib::Config.Info_Get(StreamKind).size())
                 Fill(StreamKind, StreamPos_To, Pos, ToFill_Value, true);
