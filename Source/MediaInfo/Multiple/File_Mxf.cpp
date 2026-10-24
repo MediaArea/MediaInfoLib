@@ -5852,15 +5852,23 @@ size_t File_Mxf::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
                         {
                             if (Value>=IndexTables[Pos].IndexStartPosition && Value<IndexTables[Pos].IndexStartPosition+IndexTables[Pos].IndexDuration)
                             {
-                                while (Value>=IndexTables[Pos].IndexStartPosition && IndexTables[Pos].Entries[(size_t)(Value-IndexTables[Pos].IndexStartPosition)].Type)
+                                auto IsInIndex=[&]() {return Value>=IndexTables[Pos].IndexStartPosition && Value-IndexTables[Pos].IndexStartPosition<IndexTables[Pos].Entries.size();};
+                                if (!IsInIndex())
+                                    return 2; //Invalid value
+                                while (IndexTables[Pos].Entries[(size_t)(Value-IndexTables[Pos].IndexStartPosition)].Type)
                                 {
                                     Value--;
                                     if (Value<IndexTables[Pos].IndexStartPosition)
                                     {
                                         if (Pos==0)
+                                        {
+                                            Value++;
                                             break; //There is a problem
+                                        }
                                         Pos--; //In previous index
                                     }
+                                    if (!IsInIndex())
+                                        return 2; //Invalid value
                                 }
 
                                 int64u StreamOffset=IndexTables[Pos].Entries[(size_t)(Value-IndexTables[Pos].IndexStartPosition)].StreamOffset;
@@ -7022,6 +7030,7 @@ void File_Mxf::Data_Parse()
                         memcpy(Buffer_Temp_Data, AvcIntraHeader.Data, AvcIntraHeader.Size);
                     memcpy(Buffer_Temp_Data+AvcIntraHeader.Size, Buffer+Buffer_Offset, (size_t)(Element_Size));
                     Demux(Buffer_Temp_Data, Buffer_Temp_Size, ContentType_MainStream);
+                    delete[] Buffer_Temp_Data;
                     Open_Buffer_Continue(Essence->second.Parsers[0], AvcIntraHeader.Data, AvcIntraHeader.Size);
                 }
 
@@ -11869,6 +11878,7 @@ void File_Mxf::IndexTableSegment_DeltaEntryArray()
     int32u NDE, Length;
     Get_B4(NDE,                                                 "NDE");
     Get_B4(Length,                                              "Length");
+    Loop_CheckValue(NDE, 6, "NDE");
     for (int32u Pos=0; Pos<NDE; Pos++)
     {
         Element_Begin1("Delta Entry");
@@ -11886,6 +11896,7 @@ void File_Mxf::IndexTableSegment_IndexEntryArray()
     int32u NIE, Length;
     Get_B4(NIE,                                                 "NIE");
     Get_B4(Length,                                              "Length");
+    Loop_CheckValue(NIE, 11+4*IndexTable_NSL+4*IndexTable_NPE, "NIE");
     for (int32u Pos=0; Pos<NIE; Pos++)
     {
         #if MEDIAINFO_SEEK
@@ -17032,7 +17043,7 @@ int32u File_Mxf::Vector(int32u ExpectedLength)
     Get_B4 (Count,                                              "Count");
     Get_B4 (Length,                                             "Length");
 
-    if (Count*Length>Element_Size-Element_Offset)
+    if ((int64u)Count*Length>Element_Size-Element_Offset || (Count && !Length))
     {
         Param_Error("Incoherent Count*Length");
         return (int32u)-1;
