@@ -52,11 +52,22 @@ Ztring Fims_XML_Encode (const Ztring& Data)
             case __T('&'): Result+=__T("&amp;"); break;
             case __T('\''): Result+=__T("&apos;"); break;
             case __T('<'): Result+=__T("&lt;"); break;
-            case __T('>'): Result+=__T("&lg;"); break;
+            case __T('>'): Result+=__T("&gt;"); break;
             default: Result+=Data[Pos];
         }
     }
      return Result;
+}
+
+//---------------------------------------------------------------------------
+Ztring Fims_XML_Comment_Encode (const Ztring& Data)
+{
+    //"--" is not permitted inside a comment and a comment can not end with "-"
+    Ztring Result=Fims_XML_Encode(Data);
+    for (size_t Pos=0; Pos<Result.size(); Pos++)
+        if (Result[Pos]==__T('-') && (Pos+1==Result.size() || Result[Pos+1]==__T('-')))
+            Result.insert(++Pos, 1, __T(' '));
+    return Result;
 }
 
 //---------------------------------------------------------------------------
@@ -460,7 +471,7 @@ Ztring Fims_Transform_Video(Ztring &ToReturn, MediaInfo_Internal &MI, size_t Str
     //    ToReturn+=__T(" videoFormatId=\"")+MI.Get(Stream_Video, StreamPos, Video_ID)+__T("\"");
     ToReturn+=__T(">");
     if (!MI.Get(Stream_Video, StreamPos, Video_Format_Version).empty())
-        ToReturn+=__T(" <!-- videoFormatVersionId=\"")+MI.Get(Stream_Video, StreamPos, Video_Format_Version)+__T("\" -->");
+        ToReturn+=__T(" <!-- videoFormatVersionId=\"")+Fims_XML_Comment_Encode(MI.Get(Stream_Video, StreamPos, Video_Format_Version))+__T("\" -->");
     ToReturn+=__T("\n");
 
     ToReturn+=__T("\t\t\t\t\t<bms:resourceID/>\n");
@@ -471,72 +482,72 @@ Ztring Fims_Transform_Video(Ztring &ToReturn, MediaInfo_Internal &MI, size_t Str
 
     //technicalAttributeString - ActiveFormatDescription
     if (!MI.Get(Stream_Video, StreamPos, Video_ActiveFormatDescription).empty())
-        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"ActiveFormatDescription\">")+MI.Get(Stream_Video, StreamPos, Video_ActiveFormatDescription)+__T("</bms:technicalAttribute>\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"ActiveFormatDescription\">")+Fims_XML_Encode(MI.Get(Stream_Video, StreamPos, Video_ActiveFormatDescription))+__T("</bms:technicalAttribute>\n");
 
     //technicalAttributeString - Standard
     if (!MI.Get(Stream_Video, StreamPos, Video_Standard).empty())
     {
-        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"Standard\">")+MI.Get(Stream_Video, StreamPos, Video_Standard)+__T("</bms:technicalAttribute>\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"Standard\">")+Fims_XML_Encode(MI.Get(Stream_Video, StreamPos, Video_Standard))+__T("</bms:technicalAttribute>\n");
     }
 
     //technicalAttributeString - ColorSpace
     if (!MI.Get(Stream_Video, StreamPos, Video_ColorSpace).empty())
     {
-        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"ColorSpace\">")+MI.Get(Stream_Video, StreamPos, Video_ColorSpace)+__T("</bms:technicalAttribute>\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"ColorSpace\">")+Fims_XML_Encode(MI.Get(Stream_Video, StreamPos, Video_ColorSpace))+__T("</bms:technicalAttribute>\n");
     }
 
     //technicalAttributeString - ChromaSubsampling
     if (!MI.Get(Stream_Video, StreamPos, Video_ChromaSubsampling).empty())
     {
-        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"ChromaSubsampling\">")+MI.Get(Stream_Video, StreamPos, Video_ChromaSubsampling)+__T("</bms:technicalAttribute>\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"ChromaSubsampling\">")+Fims_XML_Encode(MI.Get(Stream_Video, StreamPos, Video_ChromaSubsampling))+__T("</bms:technicalAttribute>\n");
     }
 
     //technicalAttributeString - colour_primaries
     if (!MI.Get(Stream_Video, StreamPos, __T("colour_primaries")).empty())
     {
-        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"colour_primaries\">")+MI.Get(Stream_Video, StreamPos, __T("colour_primaries"))+__T("</bms:technicalAttribute>\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"colour_primaries\">")+Fims_XML_Encode(MI.Get(Stream_Video, StreamPos, __T("colour_primaries")))+__T("</bms:technicalAttribute>\n");
     }
 
     //technicalAttributeString - transfer_characteristics
     if (!MI.Get(Stream_Video, StreamPos, __T("transfer_characteristics")).empty())
     {
-        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"transfer_characteristics\">")+MI.Get(Stream_Video, StreamPos, __T("transfer_characteristics"))+__T("</bms:technicalAttribute>\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"transfer_characteristics\">")+Fims_XML_Encode(MI.Get(Stream_Video, StreamPos, __T("transfer_characteristics")))+__T("</bms:technicalAttribute>\n");
     }
 
     //technicalAttributeString - matrix_coefficients
     if (!MI.Get(Stream_Video, StreamPos, __T("matrix_coefficients")).empty())
     {
-        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"matrix_coefficients\">")+MI.Get(Stream_Video, StreamPos, __T("matrix_coefficients"))+__T("</bms:technicalAttribute>\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"matrix_coefficients\">")+Fims_XML_Encode(MI.Get(Stream_Video, StreamPos, __T("matrix_coefficients")))+__T("</bms:technicalAttribute>\n");
     }
 
     //technicalAttributeString - colour_range
     if (!MI.Get(Stream_Video, StreamPos, __T("colour_range")).empty())
     {
-        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"colour_range\">")+MI.Get(Stream_Video, StreamPos, __T("colour_range"))+__T("</bms:technicalAttribute>\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"colour_range\">")+Fims_XML_Encode(MI.Get(Stream_Video, StreamPos, __T("colour_range")))+__T("</bms:technicalAttribute>\n");
     }
 
     //technicalAttributeString - StreamSize
     if (!MI.Get(Stream_Video, StreamPos, Video_StreamSize).empty())
     {
-        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"integer\" typeLabel=\"StreamSize\"")+(Version>=Export_Fims::Version_1_2?Ztring(__T(" unit=\"byte\"")):Ztring())+__T(">")+MI.Get(Stream_Video, StreamPos, Video_StreamSize)+__T("</bms:technicalAttribute>")+(Version<Export_Fims::Version_1_2?Ztring(__T(" <!-- unit=\"byte\" -->")):Ztring())+__T("\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"integer\" typeLabel=\"StreamSize\"")+(Version>=Export_Fims::Version_1_2?Ztring(__T(" unit=\"byte\"")):Ztring())+__T(">")+Fims_XML_Encode(MI.Get(Stream_Video, StreamPos, Video_StreamSize))+__T("</bms:technicalAttribute>")+(Version<Export_Fims::Version_1_2?Ztring(__T(" <!-- unit=\"byte\" -->")):Ztring())+__T("\n");
     }
 
     //technicalAttributeString - BitDepth
     if (!MI.Get(Stream_Video, StreamPos, Video_BitDepth).empty())
     {
-        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"integer\" typeLabel=\"BitDepth\"")+(Version>=Export_Fims::Version_1_2?Ztring(__T(" unit=\"bit\"")):Ztring())+__T(">")+MI.Get(Stream_Video, StreamPos, Video_BitDepth)+__T("</bms:technicalAttribute>")+(Version<Export_Fims::Version_1_2?Ztring(__T(" <!-- unit=\"bit\" -->")):Ztring())+__T("\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"integer\" typeLabel=\"BitDepth\"")+(Version>=Export_Fims::Version_1_2?Ztring(__T(" unit=\"bit\"")):Ztring())+__T(">")+Fims_XML_Encode(MI.Get(Stream_Video, StreamPos, Video_BitDepth))+__T("</bms:technicalAttribute>")+(Version<Export_Fims::Version_1_2?Ztring(__T(" <!-- unit=\"bit\" -->")):Ztring())+__T("\n");
     }
 
     //technicalAttributeString
     if (As11_UkDpp_Pos!=(size_t)-1 && !MI.Get(Stream_Other, As11_UkDpp_Pos, __T("FpaManufacturer")).empty())
     {
-        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"FPAManufacturer\">")+MI.Get(Stream_Other, As11_UkDpp_Pos, __T("FpaManufacturer"))+__T("</bms:technicalAttribute>\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"FPAManufacturer\">")+Fims_XML_Encode(MI.Get(Stream_Other, As11_UkDpp_Pos, __T("FpaManufacturer")))+__T("</bms:technicalAttribute>\n");
     }
 
     //technicalAttributeString
     if (As11_UkDpp_Pos!=(size_t)-1 && !MI.Get(Stream_Other, As11_UkDpp_Pos, __T("FpaVersion")).empty())
     {
-        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"FPAVersion\">")+MI.Get(Stream_Other, As11_UkDpp_Pos, __T("FpaVersion"))+__T("</bms:technicalAttribute>\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"FPAVersion\">")+Fims_XML_Encode(MI.Get(Stream_Other, As11_UkDpp_Pos, __T("FpaVersion")))+__T("</bms:technicalAttribute>\n");
     }
 
     //technicalAttributeBoolean - Format_Settings_CABAC
@@ -560,7 +571,7 @@ Ztring Fims_Transform_Video(Ztring &ToReturn, MediaInfo_Internal &MI, size_t Str
     //technicalAttributeString - VideoComments
     if (As11_UkDpp_Pos!=(size_t)-1 && !MI.Get(Stream_Other, As11_UkDpp_Pos, __T("VideoComments")).empty())
     {
-        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"VideoComments\">")+MI.Get(Stream_Other, As11_UkDpp_Pos, __T("VideoComments"))+__T("</bms:technicalAttribute>\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"VideoComments\">")+Fims_XML_Encode(MI.Get(Stream_Other, As11_UkDpp_Pos, __T("VideoComments")))+__T("</bms:technicalAttribute>\n");
     }
 
     //width
@@ -571,7 +582,7 @@ Ztring Fims_Transform_Video(Ztring &ToReturn, MediaInfo_Internal &MI, size_t Str
             Width=MI.Get(Stream_Video, StreamPos, Video_Width_Original);
         else
             Width=MI.Get(Stream_Video, StreamPos, Video_Width);
-        ToReturn+=__T("\t\t\t\t\t<bms:displayWidth unit=\"pixel\">")+MI.Get(Stream_Video, StreamPos, Video_Width)+__T("</bms:displayWidth>\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:displayWidth unit=\"pixel\">")+Fims_XML_Encode(MI.Get(Stream_Video, StreamPos, Video_Width))+__T("</bms:displayWidth>\n");
     }
 
     //height
@@ -582,7 +593,7 @@ Ztring Fims_Transform_Video(Ztring &ToReturn, MediaInfo_Internal &MI, size_t Str
             Height=MI.Get(Stream_Video, StreamPos, Video_Height_Original);
         else
             Height=MI.Get(Stream_Video, StreamPos, Video_Height);
-        ToReturn+=__T("\t\t\t\t\t<bms:displayHeight unit=\"pixel\">")+Height+__T("</bms:displayHeight>\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:displayHeight unit=\"pixel\">")+Fims_XML_Encode(Height)+__T("</bms:displayHeight>\n");
     }
 
     //frameRate
@@ -611,8 +622,8 @@ Ztring Fims_Transform_Video(Ztring &ToReturn, MediaInfo_Internal &MI, size_t Str
             factorDenominator=__T("1000");
         }
         ToReturn+=__T("\t\t\t\t\t<bms:frameRate");
-        ToReturn+=__T(" numerator=\"")+factorNumerator+__T("\"");
-        ToReturn+=__T(" denominator=\"")+factorDenominator+__T("\"");
+        ToReturn+=__T(" numerator=\"")+Fims_XML_Encode(factorNumerator)+__T("\"");
+        ToReturn+=__T(" denominator=\"")+Fims_XML_Encode(factorDenominator)+__T("\"");
         ToReturn+=__T(">")+Ztring::ToZtring(FrameRateString.To_float64(), 0);
         ToReturn+=__T("</bms:frameRate>\n");
     }
@@ -634,8 +645,8 @@ Ztring Fims_Transform_Video(Ztring &ToReturn, MediaInfo_Internal &MI, size_t Str
             factorDenominator=__T("1000");
         }
         ToReturn+=__T("\t\t\t\t\t<bms:aspectRatio");
-        ToReturn+=__T(" numerator=\"")+factorNumerator+__T("\"");
-        ToReturn+=__T(" denominator=\"")+factorDenominator+__T("\"");
+        ToReturn+=__T(" numerator=\"")+Fims_XML_Encode(factorNumerator)+__T("\"");
+        ToReturn+=__T(" denominator=\"")+Fims_XML_Encode(factorDenominator)+__T("\"");
         ToReturn+=__T(">")+Ztring::ToZtring(MI.Get(Stream_Video, StreamPos, Video_DisplayAspectRatio).To_float64(), 0);
         ToReturn+=__T("</bms:aspectRatio>\n");
     }
@@ -663,16 +674,16 @@ Ztring Fims_Transform_Video(Ztring &ToReturn, MediaInfo_Internal &MI, size_t Str
         }
         else
             typeLabel=MI.Get(Stream_Video, StreamPos, Video_Format_Profile);
-        ToReturn+=__T("\t\t\t\t\t<bms:videoEncoding typeLabel=\"")+typeLabel+__T("\"");
+        ToReturn+=__T("\t\t\t\t\t<bms:videoEncoding typeLabel=\"")+Fims_XML_Encode(typeLabel)+__T("\"");
         ToReturn+=__T(">\n");
         if (!MI.Get(Stream_Video, StreamPos, Video_Format).empty())
-            ToReturn+=__T("\t\t\t\t\t\t<bms:family>")+MI.Get(Stream_Video, StreamPos, Video_Format)+__T("</bms:family>\n");
+            ToReturn+=__T("\t\t\t\t\t\t<bms:family>")+Fims_XML_Encode(MI.Get(Stream_Video, StreamPos, Video_Format))+__T("</bms:family>\n");
         if (!MI.Get(Stream_Video, StreamPos, Video_CodecID).empty())
         {
-            ToReturn+=__T("\t\t\t\t\t\t<!-- <bms:identifier>")+MI.Get(Stream_Video, StreamPos, Video_CodecID)+__T("</dc:identifier> -->\n");
+            ToReturn+=__T("\t\t\t\t\t\t<!-- <bms:identifier>")+Fims_XML_Comment_Encode(MI.Get(Stream_Video, StreamPos, Video_CodecID))+__T("</dc:identifier> -->\n");
         }
         if (!MI.Get(Stream_Video, StreamPos, Video_Format_Commercial_IfAny).empty())
-            ToReturn+=__T("\t\t\t\t\t\t<!-- <ebucore:name>")+MI.Get(Stream_Video, StreamPos, Video_Format_Commercial_IfAny)+__T("</ebucore:name> -->\n");
+            ToReturn+=__T("\t\t\t\t\t\t<!-- <ebucore:name>")+Fims_XML_Comment_Encode(MI.Get(Stream_Video, StreamPos, Video_Format_Commercial_IfAny))+__T("</ebucore:name> -->\n");
         ToReturn+=__T("\t\t\t\t\t</bms:videoEncoding>\n");
     }
 
@@ -681,20 +692,20 @@ Ztring Fims_Transform_Video(Ztring &ToReturn, MediaInfo_Internal &MI, size_t Str
     {
         ToReturn+=__T("\t\t\t\t\t<bms:videoTrack");
         if (!MI.Get(Stream_Video, StreamPos, Video_Title).empty())
-            ToReturn+=__T(" trackName=\"")+MI.Get(Stream_Video, StreamPos, Video_Title)+__T("\"");
+            ToReturn+=__T(" trackName=\"")+Fims_XML_Encode(MI.Get(Stream_Video, StreamPos, Video_Title))+__T("\"");
         ToReturn+=__T("/>");
         if (!MI.Get(Stream_Video, StreamPos, Video_ID).empty())
-            ToReturn+=__T(" <!-- trackId=\"")+MI.Get(Stream_Video, StreamPos, Video_ID)+__T("\" -->");
+            ToReturn+=__T(" <!-- trackId=\"")+Fims_XML_Comment_Encode(MI.Get(Stream_Video, StreamPos, Video_ID))+__T("\" -->");
         ToReturn+=__T("\n");
     }
 
     //bitRate
     if (!MI.Get(Stream_Video, StreamPos, Video_BitRate).empty())
-        ToReturn+=__T("\t\t\t\t\t<bms:bitRate>")+MI.Get(Stream_Video, StreamPos, Video_BitRate)+__T("</bms:bitRate>\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:bitRate>")+Fims_XML_Encode(MI.Get(Stream_Video, StreamPos, Video_BitRate))+__T("</bms:bitRate>\n");
 
     //bitRateMax
     if (!MI.Get(Stream_Video, StreamPos, Video_BitRate_Maximum).empty())
-        ToReturn+=__T("\t\t\t\t\t <!-- <bms:bitRateMax>")+MI.Get(Stream_Video, StreamPos, Video_BitRate_Maximum)+__T("</bms:bitRateMax> -->\n");
+        ToReturn+=__T("\t\t\t\t\t <!-- <bms:bitRateMax>")+Fims_XML_Comment_Encode(MI.Get(Stream_Video, StreamPos, Video_BitRate_Maximum))+__T("</bms:bitRateMax> -->\n");
 
     //bitRateMode
     if (!MI.Get(Stream_Video, StreamPos, Video_BitRate_Mode).empty())
@@ -704,12 +715,12 @@ Ztring Fims_Transform_Video(Ztring &ToReturn, MediaInfo_Internal &MI, size_t Str
             bitRateMode=__T("constant");
         if (bitRateMode==__T("VBR"))
             bitRateMode=__T("variable");
-        ToReturn+=__T("\t\t\t\t\t<bms:bitRateMode>")+bitRateMode+__T("</bms:bitRateMode>\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:bitRateMode>")+Fims_XML_Encode(bitRateMode)+__T("</bms:bitRateMode>\n");
     }
 
     //lines
     if (!MI.Get(Stream_Video, StreamPos, Video_Height_Original).empty())
-        ToReturn+=__T("\t\t\t\t<bms:lines>")+MI.Get(Stream_Video, StreamPos, Video_Height_Original)+__T("</bms:lines>\n");
+        ToReturn+=__T("\t\t\t\t<bms:lines>")+Fims_XML_Encode(MI.Get(Stream_Video, StreamPos, Video_Height_Original))+__T("</bms:lines>\n");
 
     //scanningFormat
     if (!MI.Get(Stream_Video, StreamPos, Video_ScanType).empty())
@@ -718,7 +729,7 @@ Ztring Fims_Transform_Video(Ztring &ToReturn, MediaInfo_Internal &MI, size_t Str
         if (ScanType==__T("MBAFF"))
             ScanType=__T("Interlaced");
         ScanType.MakeLowerCase();
-        ToReturn+=__T("\t\t\t\t\t<bms:scanningFormat>")+ScanType+__T("</bms:scanningFormat>\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:scanningFormat>")+Fims_XML_Encode(ScanType)+__T("</bms:scanningFormat>\n");
      }
 
     //scanningOrder
@@ -731,7 +742,7 @@ Ztring Fims_Transform_Video(Ztring &ToReturn, MediaInfo_Internal &MI, size_t Str
             ScanOrder=__T("bottom");
         if (ScanOrder.find(__T("Pulldown"))!=string::npos)
             ScanOrder=__T("pulldown");
-        ToReturn+=__T("\t\t\t\t\t<bms:scanningOrder>")+ScanOrder+__T("</bms:scanningOrder>\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:scanningOrder>")+Fims_XML_Encode(ScanOrder)+__T("</bms:scanningOrder>\n");
     }
 
     ToReturn+=__T("\t\t\t\t</bms:videoFormat>\n");
@@ -758,7 +769,7 @@ Ztring Fims_Transform_Audio(Ztring &ToReturn, MediaInfo_Internal &MI, size_t Str
     //    ToReturn+=__T(" audioFormatId=\"")+MI.Get(Stream_Audio, StreamPos, Audio_ID)+__T("\"");
     ToReturn+=__T(">");
     if (!MI.Get(Stream_Audio, StreamPos, Audio_Format_Version).empty())
-        ToReturn+=__T(" <!-- audioFormatVersionId=\"")+MI.Get(Stream_Audio, StreamPos, Audio_Format_Version)+__T("\" -->");
+        ToReturn+=__T(" <!-- audioFormatVersionId=\"")+Fims_XML_Comment_Encode(MI.Get(Stream_Audio, StreamPos, Audio_Format_Version))+__T("\" -->");
     ToReturn+=__T("\n");
 
     ToReturn+=__T("\t\t\t\t\t<bms:resourceID/>\n");
@@ -766,42 +777,42 @@ Ztring Fims_Transform_Audio(Ztring &ToReturn, MediaInfo_Internal &MI, size_t Str
     //format - technicalAttributeString - ChannelPositions
     if (!MI.Get(Stream_Audio, StreamPos, Audio_ChannelPositions).empty())
     {
-        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"ChannelPositions\">")+MI.Get(Stream_Audio, StreamPos, Audio_ChannelPositions)+__T("</bms:technicalAttribute>\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"ChannelPositions\">")+Fims_XML_Encode(MI.Get(Stream_Audio, StreamPos, Audio_ChannelPositions))+__T("</bms:technicalAttribute>\n");
     }
 
     //format - technicalAttributeString - ChannelLayout
     if (!MI.Get(Stream_Audio, StreamPos, Audio_ChannelLayout).empty())
     {
-        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"ChannelLayout\">")+MI.Get(Stream_Audio, StreamPos, Audio_ChannelLayout)+__T("</bms:technicalAttribute>\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"ChannelLayout\">")+Fims_XML_Encode(MI.Get(Stream_Audio, StreamPos, Audio_ChannelLayout))+__T("</bms:technicalAttribute>\n");
     }
 
     //technicalAttributeString - Format_Settings_Endianness
     if (!MI.Get(Stream_Audio, StreamPos, Audio_Format_Settings_Endianness).empty())
     {
-        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"Endianness\">")+MI.Get(Stream_Audio, StreamPos, Audio_Format_Settings_Endianness)+__T("</bms:technicalAttribute>\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"Endianness\">")+Fims_XML_Encode(MI.Get(Stream_Audio, StreamPos, Audio_Format_Settings_Endianness))+__T("</bms:technicalAttribute>\n");
     }
 
     //technicalAttributeString - Format_Settings_Wrapping
     if (!MI.Get(Stream_Audio, StreamPos, Audio_Format_Settings_Wrapping).empty())
     {
-        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"Wrapping\">")+MI.Get(Stream_Audio, StreamPos, Audio_Format_Settings_Wrapping)+__T("</bms:technicalAttribute>\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"Wrapping\">")+Fims_XML_Encode(MI.Get(Stream_Audio, StreamPos, Audio_Format_Settings_Wrapping))+__T("</bms:technicalAttribute>\n");
     }
 
     //technicalAttributeString - StreamSize
     if (!MI.Get(Stream_Audio, StreamPos, Audio_StreamSize).empty())
     {
-        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"integer\" typeLabel=\"StreamSize\"")+(Version>=Export_Fims::Version_1_2?Ztring(__T(" unit=\"byte\"")):Ztring())+__T(">")+MI.Get(Stream_Audio, StreamPos, Audio_StreamSize)+__T("</bms:technicalAttribute>")+(Version<Export_Fims::Version_1_2?Ztring(__T(" <!-- unit=\"byte\" -->")):Ztring())+__T("\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"integer\" typeLabel=\"StreamSize\"")+(Version>=Export_Fims::Version_1_2?Ztring(__T(" unit=\"byte\"")):Ztring())+__T(">")+Fims_XML_Encode(MI.Get(Stream_Audio, StreamPos, Audio_StreamSize))+__T("</bms:technicalAttribute>")+(Version<Export_Fims::Version_1_2?Ztring(__T(" <!-- unit=\"byte\" -->")):Ztring())+__T("\n");
     }
 
     //technicalAttributeString
     if (As11_UkDpp_Pos!=(size_t)-1 && !MI.Get(Stream_Other, As11_UkDpp_Pos, __T("AudioComments")).empty())
     {
-        ToReturn+=__T("\t\t\t\t\t<bms:comment typeLabel=\"AudioComments\">")+MI.Get(Stream_Other, As11_UkDpp_Pos, __T("AudioComments"))+__T("</bms:comment>\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:comment typeLabel=\"AudioComments\">")+Fims_XML_Encode(MI.Get(Stream_Other, As11_UkDpp_Pos, __T("AudioComments")))+__T("</bms:comment>\n");
     }
 
     //samplingRate
     if (!MI.Get(Stream_Audio, StreamPos, Audio_SamplingRate).empty())
-        ToReturn+=__T("\t\t\t\t\t<bms:samplingRate>")+MI.Get(Stream_Audio, StreamPos, Audio_SamplingRate)+__T("</bms:samplingRate>\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:samplingRate>")+Fims_XML_Encode(MI.Get(Stream_Audio, StreamPos, Audio_SamplingRate))+__T("</bms:samplingRate>\n");
 
     //audioEncoding
     //if (!MI.Get(Stream_Audio, StreamPos, Audio_Format_Profile).empty())
@@ -826,22 +837,22 @@ Ztring Fims_Transform_Audio(Ztring &ToReturn, MediaInfo_Internal &MI, size_t Str
         }
         else
             typeLabel=MI.Get(Stream_Audio, StreamPos, Audio_Format_Profile);
-        ToReturn+=__T("\t\t\t\t\t<bms:audioEncoding typeLabel=\"")+typeLabel+__T("\">\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:audioEncoding typeLabel=\"")+Fims_XML_Encode(typeLabel)+__T("\">\n");
         if (!MI.Get(Stream_Audio, StreamPos, Audio_Format).empty())
-            ToReturn+=__T("\t\t\t\t\t\t<bms:family>")+MI.Get(Stream_Audio, StreamPos, Audio_Format)+__T("</bms:family>\n");
+            ToReturn+=__T("\t\t\t\t\t\t<bms:family>")+Fims_XML_Encode(MI.Get(Stream_Audio, StreamPos, Audio_Format))+__T("</bms:family>\n");
         if (!MI.Get(Stream_Audio, StreamPos, Audio_CodecID).empty())
         {
-            ToReturn+=__T("\t\t\t\t\t\t<!-- <dc:identifier>")+MI.Get(Stream_Audio, StreamPos, Audio_CodecID)+__T("</dc:identifier> -->\n");
+            ToReturn+=__T("\t\t\t\t\t\t<!-- <dc:identifier>")+Fims_XML_Comment_Encode(MI.Get(Stream_Audio, StreamPos, Audio_CodecID))+__T("</dc:identifier> -->\n");
         }
         if (!MI.Get(Stream_Audio, StreamPos, Audio_Format_Commercial_IfAny).empty())
-            ToReturn+=__T("\t\t\t\t\t\t<!-- <ebucore:name>")+MI.Get(Stream_Audio, StreamPos, Audio_Format_Commercial_IfAny)+__T("</ebucore:name> -->\n");
+            ToReturn+=__T("\t\t\t\t\t\t<!-- <ebucore:name>")+Fims_XML_Comment_Encode(MI.Get(Stream_Audio, StreamPos, Audio_Format_Commercial_IfAny))+__T("</ebucore:name> -->\n");
         ToReturn+=__T("\t\t\t\t\t</bms:audioEncoding>\n");
     }
 
     //audioTrackConfiguration
     if (As11_Core_Pos!=(size_t)-1 && !MI.Get(Stream_Other, As11_Core_Pos, __T("AudioTrackLayout")).empty())
     {
-        ToReturn+=__T("\t\t\t\t\t<bms:trackConfiguration typeLabel=\"")+MI.Get(Stream_Other, As11_Core_Pos, __T("AudioTrackLayout"))+__T("\"/>\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:trackConfiguration typeLabel=\"")+Fims_XML_Encode(MI.Get(Stream_Other, As11_Core_Pos, __T("AudioTrackLayout")))+__T("\"/>\n");
     }
 
     //audioTrack
@@ -849,28 +860,28 @@ Ztring Fims_Transform_Audio(Ztring &ToReturn, MediaInfo_Internal &MI, size_t Str
     {
         ToReturn+=__T("\t\t\t\t\t<bms:audioTrack");
         if (!MI.Get(Stream_Audio, StreamPos, Audio_Language).empty())
-            ToReturn+=__T(" trackLanguage=\"")+MI.Get(Stream_Audio, StreamPos, Audio_Language)+__T("\"");
+            ToReturn+=__T(" trackLanguage=\"")+Fims_XML_Encode(MI.Get(Stream_Audio, StreamPos, Audio_Language))+__T("\"");
         ToReturn+=__T("/>");
         if (!MI.Get(Stream_Audio, StreamPos, Audio_ID).empty())
         {
             Ztring ID=MI.Get(Stream_Audio, StreamPos, Audio_ID);
             ID.FindAndReplace(__T(" / "), __T("_"));
-            ToReturn+=__T(" <!-- trackId=\"")+ID+__T("\" -->");
+            ToReturn+=__T(" <!-- trackId=\"")+Fims_XML_Comment_Encode(ID)+__T("\" -->");
         }
         ToReturn+=__T("\n");
    }
 
     //channels
     if (!MI.Get(Stream_Audio, StreamPos, Audio_Channel_s_).empty())
-        ToReturn+=__T("\t\t\t\t\t<bms:channels>")+MI.Get(Stream_Audio, StreamPos, Audio_Channel_s_)+__T("</bms:channels>\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:channels>")+Fims_XML_Encode(MI.Get(Stream_Audio, StreamPos, Audio_Channel_s_))+__T("</bms:channels>\n");
 
     //bitRate
     if (!MI.Get(Stream_Audio, StreamPos, Audio_BitRate).empty())
-        ToReturn+=__T("\t\t\t\t\t<bms:bitRate>")+MI.Get(Stream_Audio, StreamPos, Audio_BitRate)+__T("</bms:bitRate>\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:bitRate>")+Fims_XML_Encode(MI.Get(Stream_Audio, StreamPos, Audio_BitRate))+__T("</bms:bitRate>\n");
 
     //bitRateMax
     if (!MI.Get(Stream_Audio, StreamPos, Audio_BitRate_Maximum).empty())
-        ToReturn+=__T("\t\t\t\t\t<-- <bms:bitRateMax>")+MI.Get(Stream_Audio, StreamPos, Audio_BitRate_Maximum)+__T("</bms:bitRateMax> -->\n");
+        ToReturn+=__T("\t\t\t\t\t<!-- <bms:bitRateMax>")+Fims_XML_Comment_Encode(MI.Get(Stream_Audio, StreamPos, Audio_BitRate_Maximum))+__T("</bms:bitRateMax> -->\n");
 
     //bitRateMode
     if (!MI.Get(Stream_Audio, StreamPos, Audio_BitRate_Mode).empty())
@@ -880,12 +891,12 @@ Ztring Fims_Transform_Audio(Ztring &ToReturn, MediaInfo_Internal &MI, size_t Str
             bitRateMode=__T("constant");
         if (bitRateMode==__T("VBR"))
             bitRateMode=__T("variable");
-        ToReturn+=__T("\t\t\t\t\t<bms:bitRateMode>")+bitRateMode+__T("</bms:bitRateMode>\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:bitRateMode>")+Fims_XML_Encode(bitRateMode)+__T("</bms:bitRateMode>\n");
     }
 
     //sampleSize
     if (!MI.Get(Stream_Audio, StreamPos, Audio_BitDepth).empty())
-        ToReturn+=__T("\t\t\t\t\t<bms:sampleSize>")+MI.Get(Stream_Audio, StreamPos, Audio_BitDepth)+__T("</bms:sampleSize>\n");
+        ToReturn+=__T("\t\t\t\t\t<bms:sampleSize>")+Fims_XML_Encode(MI.Get(Stream_Audio, StreamPos, Audio_BitDepth))+__T("</bms:sampleSize>\n");
 
     ToReturn+=__T("\t\t\t\t</bms:audioFormat>\n");
 
@@ -901,24 +912,24 @@ Ztring Fims_Transform_Text(Ztring &ToReturn, MediaInfo_Internal &MI, size_t Stre
     //if (!MI.Get(Stream_Text, StreamPos, Text_ID).empty())
     //    ToReturn+=__T(" dataFormatId=\"")+MI.Get(Stream_Text, StreamPos, Text_ID)+__T("\"");
     if (!MI.Get(Stream_Text, StreamPos, Text_Format_Version).empty())
-        ToReturn+=__T(" dataFormatVersionId=\"")+MI.Get(Stream_Text, StreamPos, Text_Format_Version)+__T("\"");
+        ToReturn+=__T(" dataFormatVersionId=\"")+Fims_XML_Encode(MI.Get(Stream_Text, StreamPos, Text_Format_Version))+__T("\"");
     if (!MI.Get(Stream_Text, StreamPos, Text_Format).empty())
-        ToReturn+=__T(" dataFormatName=\"")+MI.Get(Stream_Text, StreamPos, Text_Format)+__T("\"");
+        ToReturn+=__T(" dataFormatName=\"")+Fims_XML_Encode(MI.Get(Stream_Text, StreamPos, Text_Format))+__T("\"");
     if (!MI.Get(Stream_Text, StreamPos, Text_ID).empty())
-        ToReturn+=__T(" dataTrackId=\"")+MI.Get(Stream_Text, StreamPos, Text_ID)+__T("\"");
+        ToReturn+=__T(" dataTrackId=\"")+Fims_XML_Encode(MI.Get(Stream_Text, StreamPos, Text_ID))+__T("\"");
     ToReturn+=__T(">\n");
 
     //subtitlingTrack
     {
         ToReturn+=__T("\t\t\t\t\t<ebucore:captioningFormat");
         if (!MI.Get(Stream_Text, StreamPos, Text_Format).empty())
-            ToReturn+=__T(" captioningFormatName=\"")+MI.Get(Stream_Text, StreamPos, Text_Format)+__T("\"");
+            ToReturn+=__T(" captioningFormatName=\"")+Fims_XML_Encode(MI.Get(Stream_Text, StreamPos, Text_Format))+__T("\"");
         if (!MI.Get(Stream_Text, StreamPos, Text_ID).empty())
-            ToReturn+=__T(" trackId=\"")+MI.Get(Stream_Text, StreamPos, Text_ID)+__T("\"");
+            ToReturn+=__T(" trackId=\"")+Fims_XML_Encode(MI.Get(Stream_Text, StreamPos, Text_ID))+__T("\"");
         if (!MI.Get(Stream_Text, StreamPos, Text_Title).empty())
-            ToReturn+=__T(" typeLabel=\"")+MI.Get(Stream_Text, StreamPos, Text_Title)+__T("\"");
+            ToReturn+=__T(" typeLabel=\"")+Fims_XML_Encode(MI.Get(Stream_Text, StreamPos, Text_Title))+__T("\"");
         if (!MI.Get(Stream_Text, StreamPos, Text_Language).empty())
-            ToReturn+=__T(" language=\"")+MI.Get(Stream_Text, StreamPos, Text_Language)+__T("\"");
+            ToReturn+=__T(" language=\"")+Fims_XML_Encode(MI.Get(Stream_Text, StreamPos, Text_Language))+__T("\"");
         ToReturn+=__T("/>\n");
         if (!MI.Get(Stream_Text, StreamPos, Text_CodecID).empty() || !MI.Get(Stream_Text, StreamPos, Text_Format_Commercial_IfAny).empty())
         {
@@ -926,11 +937,11 @@ Ztring Fims_Transform_Text(Ztring &ToReturn, MediaInfo_Internal &MI, size_t Stre
             if (!MI.Get(Stream_Text, StreamPos, Text_CodecID).empty())
             {
                 ToReturn+=__T("\t\t\t\t\t\t<ebucore:codecIdentifier>\n");
-                ToReturn+=__T("\t\t\t\t\t\t\t<dc:identifier>")+MI.Get(Stream_Text, StreamPos, Text_CodecID)+__T("</dc:identifier>\n");
+                ToReturn+=__T("\t\t\t\t\t\t\t<dc:identifier>")+Fims_XML_Encode(MI.Get(Stream_Text, StreamPos, Text_CodecID))+__T("</dc:identifier>\n");
                 ToReturn+=__T("\t\t\t\t\t\t</ebucore:codecIdentifier>\n");
             }
             if (!MI.Get(Stream_Text, StreamPos, Text_Format_Commercial_IfAny).empty())
-                ToReturn+=__T("\t\t\t\t\t\t<ebucore:name>")+MI.Get(Stream_Text, StreamPos, Text_Format_Commercial_IfAny)+__T("</ebucore:name>\n");
+                ToReturn+=__T("\t\t\t\t\t\t<ebucore:name>")+Fims_XML_Encode(MI.Get(Stream_Text, StreamPos, Text_Format_Commercial_IfAny))+__T("</ebucore:name>\n");
             ToReturn+=__T("\t\t\t\t\t</ebucore:codec>\n");
         }
     }
@@ -950,13 +961,13 @@ Ztring Fims_Transform_TimeCode(Ztring &ToReturn, MediaInfo_Internal &MI, size_t 
 
     ToReturn+=__T("\t\t\t\t<ebucore:timecodeFormat");
     if (!MI.Get(Stream_Other, StreamPos, Other_Format).empty())
-        ToReturn+=__T(" timecodeFormatName=\"")+MI.Get(Stream_Other, StreamPos, Other_Format)+__T("\"");
+        ToReturn+=__T(" timecodeFormatName=\"")+Fims_XML_Encode(MI.Get(Stream_Other, StreamPos, Other_Format))+__T("\"");
     ToReturn+=__T(">\n");
 
     //start
     {
         ToReturn+=__T("\t\t\t\t\t<ebucore:timecodeStart>\n");
-        ToReturn+=__T("\t\t\t\t\t\t<ebucore:timecode>")+MI.Get(Stream_Other, StreamPos, Other_TimeCode_FirstFrame)+__T("</ebucore:timecode>\n");
+        ToReturn+=__T("\t\t\t\t\t\t<ebucore:timecode>")+Fims_XML_Encode(MI.Get(Stream_Other, StreamPos, Other_TimeCode_FirstFrame))+__T("</ebucore:timecode>\n");
         ToReturn+=__T("\t\t\t\t\t</ebucore:timecodeStart>\n");
     }
 
@@ -969,18 +980,18 @@ Ztring Fims_Transform_TimeCode(Ztring &ToReturn, MediaInfo_Internal &MI, size_t 
             if (MI.Get(Stream_Other, StreamPos, Other_ID).find(__T("-Material"))!=string::npos)
             {
                 ID.FindAndReplace(__T("-Material"), Ztring());
-                ToReturn+=__T(" trackId=\"")+ID+__T("\"")+__T(" typeLabel=\"Material\"");
+                ToReturn+=__T(" trackId=\"")+Fims_XML_Encode(ID)+__T("\"")+__T(" typeLabel=\"Material\"");
             }
             else if (MI.Get(Stream_Other, StreamPos, Other_ID).find(__T("-Source"))!=string::npos)
             {
                 ID.FindAndReplace(__T("-Source"), Ztring());
-                ToReturn+=__T(" trackId=\"")+ID+__T("\"")+__T(" typeLabel=\"Source\"");
+                ToReturn+=__T(" trackId=\"")+Fims_XML_Encode(ID)+__T("\"")+__T(" typeLabel=\"Source\"");
             }
             else
-                ToReturn+=__T(" trackId=\"")+ID+__T("\"");
+                ToReturn+=__T(" trackId=\"")+Fims_XML_Encode(ID)+__T("\"");
         }
         if (!MI.Get(Stream_Other, StreamPos, Other_Title).empty())
-            ToReturn+=__T(" trackName=\"")+MI.Get(Stream_Other, StreamPos, Other_Title)+__T("\"");
+            ToReturn+=__T(" trackName=\"")+Fims_XML_Encode(MI.Get(Stream_Other, StreamPos, Other_Title))+__T("\"");
         ToReturn+=__T("/>\n");
     }
 
@@ -1003,16 +1014,16 @@ Ztring Fims_Transform_Metadata(Ztring &ToReturn, MediaInfo_Internal &MI, size_t 
 
     ToReturn+=__T("\t\t\t\t<ebucore:metadataFormat");
     if (!MI.Get(Stream_Other, StreamPos, Other_Format).empty())
-        ToReturn+=__T(" metadataFormatName=\"")+MI.Get(Stream_Other, StreamPos, Other_Format)+__T("\"");
+        ToReturn+=__T(" metadataFormatName=\"")+Fims_XML_Encode(MI.Get(Stream_Other, StreamPos, Other_Format))+__T("\"");
     ToReturn+=__T(">\n");
 
     if (!MI.Get(Stream_Other, StreamPos, Other_ID).empty() || !MI.Get(Stream_Other, StreamPos, Other_Title).empty())
     {
         ToReturn+=__T("\t\t\t\t\t<ebucore:metadataTrack");
         if (!MI.Get(Stream_Other, StreamPos, Other_ID).empty())
-            ToReturn+=__T(" trackId=\"")+MI.Get(Stream_Other, StreamPos, Other_ID)+__T("\"");
+            ToReturn+=__T(" trackId=\"")+Fims_XML_Encode(MI.Get(Stream_Other, StreamPos, Other_ID))+__T("\"");
         if (!MI.Get(Stream_Other, StreamPos, Other_Title).empty())
-            ToReturn+=__T(" trackName=\"")+MI.Get(Stream_Other, StreamPos, Other_Title)+__T("\"");
+            ToReturn+=__T(" trackName=\"")+Fims_XML_Encode(MI.Get(Stream_Other, StreamPos, Other_Title))+__T("\"");
         ToReturn+=__T("/>\n");
     }
 
@@ -1056,7 +1067,7 @@ Ztring Export_Fims::Transform(MediaInfo_Internal &MI, version Version)
         TimeS.FindAndReplace(__T(" "), __T("T"));
         TimeS+=__T('Z');
         ToReturn+=__T(" at ");
-        ToReturn+=TimeS;
+        ToReturn+=Fims_XML_Encode(TimeS);
     }
     ToReturn+=__T(" by ");
     ToReturn+=MediaInfoLib::Config.Info_Version_Get();
@@ -1080,7 +1091,7 @@ Ztring Export_Fims::Transform(MediaInfo_Internal &MI, version Version)
     {
         Encoded_Date.FindAndReplace(__T(" UTC"), __T("Z"));
         Encoded_Date.FindAndReplace(__T(" "), __T("T"));
-        ToReturn+=__T("\t\t\t<bms:resourceCreationDate>")+Encoded_Date+__T("Z</bms:resourceCreationDate>\n");
+        ToReturn+=__T("\t\t\t<bms:resourceCreationDate>")+Fims_XML_Encode(Encoded_Date)+__T("Z</bms:resourceCreationDate>\n");
     }
 
     //bmContentFormats - dateModified
@@ -1089,7 +1100,7 @@ Ztring Export_Fims::Transform(MediaInfo_Internal &MI, version Version)
     {
         Tagged_Date.FindAndReplace(__T(" UTC"), __T("Z"));
         Tagged_Date.FindAndReplace(__T(" "), __T("T"));
-        ToReturn+=__T("\t\t\t<bms:resourceModifiedDate>")+Tagged_Date+__T("Z</bms:resourceModifiedDate>\n");
+        ToReturn+=__T("\t\t\t<bms:resourceModifiedDate>")+Fims_XML_Encode(Tagged_Date)+__T("Z</bms:resourceModifiedDate>\n");
     }
 
     //bmContentFormats - bmEssenceLocators
@@ -1192,51 +1203,51 @@ Ztring Export_Fims::Transform(MediaInfo_Internal &MI, version Version)
         ToReturn+=__T("\t\t\t\t<bms:containerFormat");
         ToReturn+=__T(">");
         if (!MI.Get(Stream_General, 0, General_ID).empty())
-            ToReturn+=__T(" <!-- containerFormatId=\"")+MI.Get(Stream_General, 0, General_ID)+__T("\" -->");
+            ToReturn+=__T(" <!-- containerFormatId=\"")+Fims_XML_Comment_Encode(MI.Get(Stream_General, 0, General_ID))+__T("\" -->");
         ToReturn+=__T("\n");
         ToReturn+=__T("\t\t\t\t\t<bms:resourceID/>\n");
 
         //format - containerFormat - technicalAttribute formatLabel=\"string\" - AS11ShimName
         if (As11_Core_Pos!=(size_t)-1 && !MI.Get(Stream_Other, As11_Core_Pos, __T("ShimName")).empty())
         {
-            ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"AS11ShimName\">")+MI.Get(Stream_Other, As11_Core_Pos, __T("ShimName"))+__T("</bms:technicalAttribute>\n");
+            ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"AS11ShimName\">")+Fims_XML_Encode(MI.Get(Stream_Other, As11_Core_Pos, __T("ShimName")))+__T("</bms:technicalAttribute>\n");
         }
 
         //format - containerFormat - technicalAttribute formatLabel=\"string\" - AS11ShimVersion
         if (As11_Core_Pos!=(size_t)-1 && !MI.Get(Stream_Other, As11_Core_Pos, __T("ShimVersion")).empty())
         {
-            ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"AS11ShimVersion\">")+MI.Get(Stream_Other, As11_Core_Pos, __T("ShimVersion"))+__T("</bms:technicalAttribute>\n");
+            ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"AS11ShimVersion\">")+Fims_XML_Encode(MI.Get(Stream_Other, As11_Core_Pos, __T("ShimVersion")))+__T("</bms:technicalAttribute>\n");
         }
 
         //format - containerFormat - technicalAttribute formatLabel=\"string\" - Format_Profile
         if (!MI.Get(Stream_General, 0, __T("Format_Profile")).empty())
         {
-            ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"FormatProfile\">")+MI.Get(Stream_General, 0, __T("Format_Profile"))+__T("</bms:technicalAttribute>\n");
+            ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"FormatProfile\">")+Fims_XML_Encode(MI.Get(Stream_General, 0, __T("Format_Profile")))+__T("</bms:technicalAttribute>\n");
         }
 
         //format - containerFormat - technicalAttribute formatLabel=\"string\" - Format_Settings
         if (!MI.Get(Stream_General, 0, __T("Format_Profile")).empty())
         {
-            ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"FormatSettings\">")+MI.Get(Stream_General, 0, __T("Format_Settings"))+__T("</bms:technicalAttribute>\n");
+            ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"FormatSettings\">")+Fims_XML_Encode(MI.Get(Stream_General, 0, __T("Format_Settings")))+__T("</bms:technicalAttribute>\n");
         }
 
         //format - containerFormat - technicalAttribute formatLabel=\"string\" - Encoded_Application
         if (!MI.Get(Stream_General, 0, __T("Encoded_Application")).empty())
         {
-            ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"WritingApplication\">")+MI.Get(Stream_General, 0, __T("Encoded_Application"))+__T("</bms:technicalAttribute>\n");
+            ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"WritingApplication\">")+Fims_XML_Encode(MI.Get(Stream_General, 0, __T("Encoded_Application")))+__T("</bms:technicalAttribute>\n");
         }
 
         //format - containerFormat - technicalAttribute formatLabel=\"string\" - Encoded_Library
         if (!MI.Get(Stream_General, 0, __T("Encoded_Library/String")).empty())
         {
-            ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"WritingLibrary\">")+MI.Get(Stream_General, 0, __T("Encoded_Library/String"))+__T("</bms:technicalAttribute>\n");
+            ToReturn+=__T("\t\t\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"WritingLibrary\">")+Fims_XML_Encode(MI.Get(Stream_General, 0, __T("Encoded_Library/String")))+__T("</bms:technicalAttribute>\n");
         }
 
         //format - containerFormat
         {
             ToReturn+=__T("\t\t\t\t\t<bms:containerFormat");
             if (!MI.Get(Stream_General, 0, General_Format).empty())
-                ToReturn+=__T(" formatLabel=\"")+MI.Get(Stream_General, 0, General_Format)+__T("\"");
+                ToReturn+=__T(" formatLabel=\"")+Fims_XML_Encode(MI.Get(Stream_General, 0, General_Format))+__T("\"");
             //if (Version>=Version_1_1 && !MI.Get(Stream_General, 0, General_Format_Profile).empty())
             //    ToReturn+=__T(" containeFormatProfile=\"")+MI.Get(Stream_General, 0, General_Format_Profile)+__T("\"");
             ToReturn+=__T("/>\n");
@@ -1252,7 +1263,7 @@ Ztring Export_Fims::Transform(MediaInfo_Internal &MI, version Version)
     {
         ToReturn+=__T("\t\t\t<!-- Not valid in XSD\n");
         ToReturn+=__T("\t\t\t<ebucore:start typeLabel=\"LineUpStart\">\n");
-        ToReturn+=__T("\t\t\t\t<ebucore:timecode>")+MI.Get(Stream_Other, As11_UkDpp_Pos, __T("LineUpStart"))+__T("</ebucore:timecode>\n");
+        ToReturn+=__T("\t\t\t\t<ebucore:timecode>")+Fims_XML_Encode(MI.Get(Stream_Other, As11_UkDpp_Pos, __T("LineUpStart")))+__T("</ebucore:timecode>\n");
         ToReturn+=__T("\t\t\t</ebucore:start>\n");
         ToReturn+=__T("\t\t\t-->\n");
     }
@@ -1262,7 +1273,7 @@ Ztring Export_Fims::Transform(MediaInfo_Internal &MI, version Version)
     {
         ToReturn+=__T("\t\t\t<!-- Not valid in XSD\n");
         ToReturn+=__T("\t\t\t<ebucore:start typeLabel=\"IdentClockStart\">\n");
-        ToReturn+=__T("\t\t\t\t<ebucore:timecode>")+MI.Get(Stream_Other, As11_UkDpp_Pos, __T("IdentClockStart"))+__T("</ebucore:timecode>\n");
+        ToReturn+=__T("\t\t\t\t<ebucore:timecode>")+Fims_XML_Encode(MI.Get(Stream_Other, As11_UkDpp_Pos, __T("IdentClockStart")))+__T("</ebucore:timecode>\n");
         ToReturn+=__T("\t\t\t</ebucore:start>\n");
         ToReturn+=__T("\t\t\t-->\n");
     }
@@ -1283,7 +1294,7 @@ Ztring Export_Fims::Transform(MediaInfo_Internal &MI, version Version)
             Duration+=Ztring::ToZtring(DurationM)+__T('M');
         Duration+=Ztring::ToZtring(DurationS, 3)+__T('S');
         ToReturn+=__T("\t\t\t<bms:duration>\n");
-        ToReturn+=__T("\t\t\t\t<tim:normalPlayTime>PT")+Duration+__T("</tim:normalPlayTime>\n");
+        ToReturn+=__T("\t\t\t\t<tim:normalPlayTime>PT")+Fims_XML_Encode(Duration)+__T("</tim:normalPlayTime>\n");
         ToReturn+=__T("\t\t\t</bms:duration>\n");
         durationDone=true;
     }
@@ -1294,7 +1305,7 @@ Ztring Export_Fims::Transform(MediaInfo_Internal &MI, version Version)
         if (Version<Version_1_2 && durationDone)
             ToReturn+=__T("\t\t\t<!-- Not valid in XSD\n");
         ToReturn+=__T("\t\t\t<bms:duration typeLabel=\"TotalProgrammeDuration\">\n");
-        ToReturn+=__T("\t\t\t\t<tim:timecode>")+MI.Get(Stream_Other, As11_UkDpp_Pos, __T("TotalProgrammeDuration"))+__T("</tim:timecode>\n");
+        ToReturn+=__T("\t\t\t\t<tim:timecode>")+Fims_XML_Encode(MI.Get(Stream_Other, As11_UkDpp_Pos, __T("TotalProgrammeDuration")))+__T("</tim:timecode>\n");
         ToReturn+=__T("\t\t\t</bms:duration>\n");
         if (Version<Version_1_2 && durationDone)
             ToReturn+=__T("\t\t\t-->\n");
@@ -1302,7 +1313,7 @@ Ztring Export_Fims::Transform(MediaInfo_Internal &MI, version Version)
 
     //fileSize
     if (!MI.Get(Stream_General, 0, General_FileSize).empty())
-        ToReturn+=__T("\t\t\t<bms:packageSize>")+MI.Get(Stream_General, 0, General_FileSize)+__T("</bms:packageSize>\n");
+        ToReturn+=__T("\t\t\t<bms:packageSize>")+Fims_XML_Encode(MI.Get(Stream_General, 0, General_FileSize))+__T("</bms:packageSize>\n");
 
     if (As11_UkDpp_Pos!=(size_t)-1)
     {
@@ -1312,19 +1323,19 @@ Ztring Export_Fims::Transform(MediaInfo_Internal &MI, version Version)
         //format - technicalAttribute formatLabel=\"string\" - AudioLoudnessStandard
         if (!MI.Get(Stream_Other, As11_UkDpp_Pos, __T("AudioLoudnessStandard")).empty())
         {
-            ToReturn+=__T("\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"AudioLoudnessStandard\">")+MI.Get(Stream_Other, As11_UkDpp_Pos, __T("AudioLoudnessStandard"))+__T("</bms:technicalAttribute>\n");
+            ToReturn+=__T("\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"AudioLoudnessStandard\">")+Fims_XML_Encode(MI.Get(Stream_Other, As11_UkDpp_Pos, __T("AudioLoudnessStandard")))+__T("</bms:technicalAttribute>\n");
         }
 
         //format - technicalAttribute formatLabel=\"string\" - AudioDescriptionType
         if (!MI.Get(Stream_Other, As11_UkDpp_Pos, __T("AudioDescriptionType")).empty())
         {
-            ToReturn+=__T("\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"AudioDescriptionType\">")+MI.Get(Stream_Other, As11_UkDpp_Pos, __T("AudioDescriptionType"))+__T("</bms:technicalAttribute>\n");
+            ToReturn+=__T("\t\t\t<bms:technicalAttribute formatLabel=\"string\" typeLabel=\"AudioDescriptionType\">")+Fims_XML_Encode(MI.Get(Stream_Other, As11_UkDpp_Pos, __T("AudioDescriptionType")))+__T("</bms:technicalAttribute>\n");
         }
 
         //format - technicalAttribute formatLabel=\"string\" - overallBitRate
         if (!MI.Get(Stream_General, 0, General_OverallBitRate).empty())
         {
-            ToReturn+=__T("\t\t\t<bms:technicalAttribute formatLabel=\"integer\" typeLabel=\"OverallBitRate\" unit=\"bps\">")+MI.Get(Stream_General, 0, General_OverallBitRate)+__T("</bms:technicalAttribute>\n");
+            ToReturn+=__T("\t\t\t<bms:technicalAttribute formatLabel=\"integer\" typeLabel=\"OverallBitRate\" unit=\"bps\">")+Fims_XML_Encode(MI.Get(Stream_General, 0, General_OverallBitRate))+__T("</bms:technicalAttribute>\n");
         }
 
         //format - technicalAttribute formatLabel=\"string\" - ProgrammeHasText
@@ -1358,27 +1369,27 @@ Ztring Export_Fims::Transform(MediaInfo_Internal &MI, version Version)
         //title
         if (As11_Core_Pos!=(size_t)-1 && !MI.Get(Stream_Other, As11_Core_Pos, __T("ProgrammeTitle")).empty())
         {
-            ToReturn+=__T("\t\t\t\t<desc:title>")+(Version>=Version_1_2?Ztring(__T(" typeLabel=\"PROGRAMME TITLE\"")):Ztring())+MI.Get(Stream_Other, As11_Core_Pos, __T("ProgrammeTitle"))+__T("</desc:title>")+(Version<Version_1_2?Ztring(__T(" <!-- typeLabel=\"PROGRAMME TITLE\" -->")):Ztring())+__T("\n");
+            ToReturn+=__T("\t\t\t\t<desc:title>")+(Version>=Version_1_2?Ztring(__T(" typeLabel=\"PROGRAMME TITLE\"")):Ztring())+Fims_XML_Encode(MI.Get(Stream_Other, As11_Core_Pos, __T("ProgrammeTitle")))+__T("</desc:title>")+(Version<Version_1_2?Ztring(__T(" <!-- typeLabel=\"PROGRAMME TITLE\" -->")):Ztring())+__T("\n");
         }
         else if (As11_Core_Pos!=(size_t)-1 && !MI.Get(Stream_Other, As11_Core_Pos, __T("EpisodeTitleNumber")).empty())
         {
-            ToReturn+=__T("\t\t\t\t<desc:title>")+MI.Get(Stream_Other, As11_Core_Pos, __T("EpisodeTitleNumber"))+__T("</desc:title> <!-- typeLabel=\"EPISODE TITLE NUMBER\" -->\n");
+            ToReturn+=__T("\t\t\t\t<desc:title>")+Fims_XML_Encode(MI.Get(Stream_Other, As11_Core_Pos, __T("EpisodeTitleNumber")))+__T("</desc:title> <!-- typeLabel=\"EPISODE TITLE NUMBER\" -->\n");
         }
 
         //alternativeTitle
         if (As11_Core_Pos!=(size_t)-1 && !MI.Get(Stream_Other, As11_Core_Pos, __T("SeriesTitle")).empty())
         {
-            ToReturn+=__T("\t\t\t\t<desc:alternativeTitle typeLabel=\"SERIES TITLE\">")+MI.Get(Stream_Other, As11_Core_Pos, __T("SeriesTitle"))+__T("</desc:alternativeTitle>\n");
+            ToReturn+=__T("\t\t\t\t<desc:alternativeTitle typeLabel=\"SERIES TITLE\">")+Fims_XML_Encode(MI.Get(Stream_Other, As11_Core_Pos, __T("SeriesTitle")))+__T("</desc:alternativeTitle>\n");
         }
         if (As11_Core_Pos!=(size_t)-1 && !MI.Get(Stream_Other, As11_Core_Pos, __T("EpisodeTitleNumber")).empty() && !MI.Get(Stream_Other, As11_Core_Pos, __T("ProgrammeTitle")).empty())
         {
-            ToReturn+=__T("\t\t\t\t<desc:alternativeTitle typeLabel=\"EPISODE TITLE NUMBER\">")+MI.Get(Stream_Other, As11_Core_Pos, __T("EpisodeTitleNumber"))+__T("</desc:alternativeTitle>\n");
+            ToReturn+=__T("\t\t\t\t<desc:alternativeTitle typeLabel=\"EPISODE TITLE NUMBER\">")+Fims_XML_Encode(MI.Get(Stream_Other, As11_Core_Pos, __T("EpisodeTitleNumber")))+__T("</desc:alternativeTitle>\n");
         }
 
         //description
         if (As11_UkDpp_Pos!=(size_t)-1 && !MI.Get(Stream_Other, As11_UkDpp_Pos, __T("Synopsis")).empty())
         {
-            ToReturn+=__T("\t\t\t\t<desc:description typeLabel=\"SYNOPSIS\">")+MI.Get(Stream_Other, As11_UkDpp_Pos, __T("Synopsis"))+__T("</desc:description>\n");
+            ToReturn+=__T("\t\t\t\t<desc:description typeLabel=\"SYNOPSIS\">")+Fims_XML_Encode(MI.Get(Stream_Other, As11_UkDpp_Pos, __T("Synopsis")))+__T("</desc:description>\n");
         }
 
         //ProductPlacement
@@ -1419,7 +1430,7 @@ Ztring Export_Fims::Transform(MediaInfo_Internal &MI, version Version)
         {
             ToReturn+=__T("\t\t\t\t<desc:contributor>\n");
             ToReturn+=__T("\t\t\t\t\t<desc:organisationDetails>\n");
-            ToReturn+=__T("\t\t\t\t\t\t<desc:organisationName>")+MI.Get(Stream_Other, As11_UkDpp_Pos, __T("Distributor"))+__T("</desc:organisationName>\n");
+            ToReturn+=__T("\t\t\t\t\t\t<desc:organisationName>")+Fims_XML_Encode(MI.Get(Stream_Other, As11_UkDpp_Pos, __T("Distributor")))+__T("</desc:organisationName>\n");
             ToReturn+=__T("\t\t\t\t\t</desc:organisationDetails>\n");
             ToReturn+=__T("\t\t\t\t\t<desc:role typeLabel=\"distributor\"/>\n");
             ToReturn+=__T("\t\t\t\t</desc:contributor>\n");
@@ -1429,7 +1440,7 @@ Ztring Export_Fims::Transform(MediaInfo_Internal &MI, version Version)
         if (As11_UkDpp_Pos!=(size_t)-1 && !MI.Get(Stream_Other, As11_UkDpp_Pos, __T("CopyrightYear")).empty())
         {
             ToReturn+=__T("\t\t\t\t<desc:date>\n");
-            ToReturn+=__T("\t\t\t\t\t<desc:alternative typeLabel=\"copyrighted\" startYear=\"")+MI.Get(Stream_Other, As11_UkDpp_Pos, __T("CopyrightYear"))+__T("\"/>\n");
+            ToReturn+=__T("\t\t\t\t\t<desc:alternative typeLabel=\"copyrighted\" startYear=\"")+Fims_XML_Encode(MI.Get(Stream_Other, As11_UkDpp_Pos, __T("CopyrightYear")))+__T("\"/>\n");
             ToReturn+=__T("\t\t\t\t</desc:date>\n");
         }
 
@@ -1437,46 +1448,46 @@ Ztring Export_Fims::Transform(MediaInfo_Internal &MI, version Version)
         if (As11_UkDpp_Pos!=(size_t)-1 && !MI.Get(Stream_Other, As11_UkDpp_Pos, __T("Genre")).empty())
         {
             ToReturn+=__T("\t\t\t\t<desc:type>\n");
-            ToReturn+=__T("\t\t\t\t\t<desc:genre typeDefinition=\"")+MI.Get(Stream_Other, As11_UkDpp_Pos, __T("Genre"))+__T("\"/>\n");
+            ToReturn+=__T("\t\t\t\t\t<desc:genre typeDefinition=\"")+Fims_XML_Encode(MI.Get(Stream_Other, As11_UkDpp_Pos, __T("Genre")))+__T("\"/>\n");
             ToReturn+=__T("\t\t\t\t</desc:type>\n");
         }
 
         //identifier
         if (As11_UkDpp_Pos!=(size_t)-1 && !MI.Get(Stream_Other, As11_UkDpp_Pos, __T("ProductionNumber")).empty())
         {
-            ToReturn+=__T("\t\t\t\t<desc:identifier typeLabel=\"PRODUCTION NUMBER\">")+MI.Get(Stream_Other, As11_UkDpp_Pos, __T("ProductionNumber"))+__T("</desc:identifier>\n");
+            ToReturn+=__T("\t\t\t\t<desc:identifier typeLabel=\"PRODUCTION NUMBER\">")+Fims_XML_Encode(MI.Get(Stream_Other, As11_UkDpp_Pos, __T("ProductionNumber")))+__T("</desc:identifier>\n");
         }
         if (As11_UkDpp_Pos!=(size_t)-1 && !MI.Get(Stream_Other, As11_UkDpp_Pos, __T("OtherIdentifier")).empty())
         {
-            ToReturn+=__T("\t\t\t\t<desc:identifier typeLabel=\"INTERNAL IDENTIFIER\">")+MI.Get(Stream_Other, As11_UkDpp_Pos, __T("OtherIdentifier"))+__T("</desc:identifier>\n");
+            ToReturn+=__T("\t\t\t\t<desc:identifier typeLabel=\"INTERNAL IDENTIFIER\">")+Fims_XML_Encode(MI.Get(Stream_Other, As11_UkDpp_Pos, __T("OtherIdentifier")))+__T("</desc:identifier>\n");
         }
         if (As11_UkDpp_Pos!=(size_t)-1 && !MI.Get(Stream_Other, As11_UkDpp_Pos, __T("OtherIdentifierType")).empty())
         {
-            ToReturn+=__T("\t\t\t\t<desc:identifier typeLabel=\"INTERNAL IDENTIFIER TYPE\">")+MI.Get(Stream_Other, As11_UkDpp_Pos, __T("OtherIdentifierType"))+__T("</desc:identifier>\n");
+            ToReturn+=__T("\t\t\t\t<desc:identifier typeLabel=\"INTERNAL IDENTIFIER TYPE\">")+Fims_XML_Encode(MI.Get(Stream_Other, As11_UkDpp_Pos, __T("OtherIdentifierType")))+__T("</desc:identifier>\n");
         }
 
         //format - PrimaryAudioLanguage
         if (As11_Core_Pos!=(size_t)-1 && !MI.Get(Stream_Other, As11_Core_Pos, __T("PrimaryAudioLanguage")).empty())
         {
-            ToReturn+=__T("\t\t\t\t<desc:language typeLabel=\"PrimaryAudioLanguage\" xml:lang=\"")+MI.Get(Stream_Other, As11_Core_Pos, __T("PrimaryAudioLanguage"))+__T("\"/>\n");
+            ToReturn+=__T("\t\t\t\t<desc:language typeLabel=\"PrimaryAudioLanguage\" xml:lang=\"")+Fims_XML_Encode(MI.Get(Stream_Other, As11_Core_Pos, __T("PrimaryAudioLanguage")))+__T("\"/>\n");
         }
 
         //format - SecondaryAudioLanguage
         if (As11_UkDpp_Pos!=(size_t)-1 && !MI.Get(Stream_Other, As11_UkDpp_Pos, __T("SecondaryAudioLanguage")).empty())
         {
-            ToReturn+=__T("\t\t\t\t<desc:language typeLabel=\"SecondaryAudioLanguage\" xml:lang=\">")+MI.Get(Stream_Other, As11_UkDpp_Pos, __T("SecondaryAudioLanguage"))+__T("<\"/>\n");
+            ToReturn+=__T("\t\t\t\t<desc:language typeLabel=\"SecondaryAudioLanguage\" xml:lang=\"")+Fims_XML_Encode(MI.Get(Stream_Other, As11_UkDpp_Pos, __T("SecondaryAudioLanguage")))+__T("\"/>\n");
         }
 
         //format - TertiaryAudioLanguage
         if (As11_UkDpp_Pos!=(size_t)-1 && !MI.Get(Stream_Other, As11_UkDpp_Pos, __T("TertiaryAudioLanguage")).empty())
         {
-            ToReturn+=__T("\t\t\t\t<desc:language typeLabel=\"TertiaryAudioLanguage\" xml:lang=\">")+MI.Get(Stream_Other, As11_UkDpp_Pos, __T("TertiaryAudioLanguage"))+__T("\"/>\n");
+            ToReturn+=__T("\t\t\t\t<desc:language typeLabel=\"TertiaryAudioLanguage\" xml:lang=\"")+Fims_XML_Encode(MI.Get(Stream_Other, As11_UkDpp_Pos, __T("TertiaryAudioLanguage")))+__T("\"/>\n");
         }
 
         //language
         if (As11_UkDpp_Pos!=(size_t)-1 && !MI.Get(Stream_Other, As11_UkDpp_Pos, __T("ProgrammeTextLanguage")).empty())
         {
-            ToReturn+=__T("\t\t\t\t<desc:language typeLabel=\"ProgrammeTextLanguage\" xml:lang=\"")+MI.Get(Stream_Other, As11_UkDpp_Pos, __T("ProgrammeTextLanguage"))+__T("\"/>\n");
+            ToReturn+=__T("\t\t\t\t<desc:language typeLabel=\"ProgrammeTextLanguage\" xml:lang=\"")+Fims_XML_Encode(MI.Get(Stream_Other, As11_UkDpp_Pos, __T("ProgrammeTextLanguage")))+__T("\"/>\n");
         }
 
         //part
@@ -1492,12 +1503,12 @@ Ztring Export_Fims::Transform(MediaInfo_Internal &MI, version Version)
                 Ztring Begin=Content.SubString(Ztring(), __T(" + "));
                 Ztring Duration=Content.SubString(__T(" + "), __T(" = "));
 
-                ToReturn+=__T("\t\t\t\t<desc:part partNumber=\"")+Ztring::ToZtring(Pos)+__T("\" partTotalNumber=\"")+MI.Get(Stream_Other, As11_Segmentation_Pos, __T("PartTotal"))+__T("\">\n");
+                ToReturn+=__T("\t\t\t\t<desc:part partNumber=\"")+Ztring::ToZtring(Pos)+__T("\" partTotalNumber=\"")+Fims_XML_Encode(MI.Get(Stream_Other, As11_Segmentation_Pos, __T("PartTotal")))+__T("\">\n");
                 ToReturn+=__T("\t\t\t\t\t<desc:partStartTime>\n");
-                ToReturn+=__T("\t\t\t\t\t\t<tim:timecode>")+Begin+__T("</tim:timecode>\n");
+                ToReturn+=__T("\t\t\t\t\t\t<tim:timecode>")+Fims_XML_Encode(Begin)+__T("</tim:timecode>\n");
                 ToReturn+=__T("\t\t\t\t\t</desc:partStartTime>\n");
                 ToReturn+=__T("\t\t\t\t\t<desc:partDuration>\n");
-                ToReturn+=__T("\t\t\t\t\t\t<tim:timecode>")+Duration+__T("</tim:timecode>\n");
+                ToReturn+=__T("\t\t\t\t\t\t<tim:timecode>")+Fims_XML_Encode(Duration)+__T("</tim:timecode>\n");
                 ToReturn+=__T("\t\t\t\t\t</desc:partDuration>\n");
                 ToReturn+=__T("\t\t\t\t</desc:part>\n");
 
