@@ -47,6 +47,7 @@ const char* FieldsToOffset[] =
 #include "MediaInfo/Archive/File_Iso9660.h"
 #include "MediaInfo/MediaInfo_Config.h"
 #include "MediaInfo/MediaInfo_Internal.h"
+#include <memory>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -61,6 +62,9 @@ File_Iso9660::~File_Iso9660()
 {
     for (const auto& MI_Item : MI_MasterFiles)
         delete MI_Item.second; //MI_Item.second=NULL;
+    for (const auto& MI_Item : MI_DataFiles)
+        delete MI_Item.second; //MI_Item.second=NULL;
+    delete MI_Current; //MI_Current=NULL;
 }
 
 //***************************************************************************
@@ -87,7 +91,7 @@ void File_Iso9660::Streams_Finish()
     Fill(Stream_General, 0, General_Format, __T("ISO 9660 / ")+Format, true);
     Fill(Stream_General, 0, General_FileSize, FileSizeS, true);
     Clear(Stream_General, 0, General_OverallBitRate);
-    auto MI_Offsets=new sizes[MI_MasterFiles.size()];
+    std::unique_ptr<sizes[]> MI_Offsets(new sizes[MI_MasterFiles.size()]);
     size_t i=0;
     for (auto& MI_MasterFile : MI_MasterFiles)
     {
@@ -130,7 +134,6 @@ void File_Iso9660::Streams_Finish()
                 Merge(*MI_DataFile.second->Info, (stream_t)StreamKind, Pos, MI_Offsets[i][StreamKind]+Pos);
         i++;
     }
-    delete[] MI_Offsets;
 }
 
 //***************************************************************************
@@ -447,6 +450,11 @@ void File_Iso9660::Directory_Record(int32u Size, const char* Name)
             Len_FileID--;
         }
     }
+    if (Len_FileID>Element_Size-Element_Offset)
+    {
+        Trusted_IsNot("Length of File Identifier not valid");
+        Len_FileID=(int8u)(Element_Size-Element_Offset);
+    }
     if (Len_FileID)
     {
         bool IsUnicode=false;
@@ -586,6 +594,8 @@ void File_Iso9660::Manage_DataFiles()
             int64u Duration=MI_Item.second->Get(Stream_General, 0, General_Duration).To_int64u();
             if (Duration && Duration>=MaxDuration)
                 MI_MasterFiles2[MI_Item.first]=MI_Item.second;
+            else
+                delete MI_Item.second;
         }
         MI_MasterFiles=std::move(MI_MasterFiles2);
     }

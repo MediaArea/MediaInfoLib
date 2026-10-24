@@ -77,7 +77,7 @@ private :
     file_infos MI_DataFileInfos;
     std::map<Ztring, MediaInfo_Internal*> MI_MasterFiles; // Key is complete file name
     std::map<Ztring, MediaInfo_Internal*> MI_DataFiles; // Key is complete file name
-    MediaInfo_Internal* MI_Current;
+    MediaInfo_Internal* MI_Current=nullptr;
     int64u MI_Current_StartOffset;
     int64u MI_Current_EndOffset;
     int32u Root_Location;
