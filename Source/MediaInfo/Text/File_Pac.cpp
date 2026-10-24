@@ -538,7 +538,7 @@ void File_Pac::Data_Parse()
                 if (Line.rfind(__T("FRAME "), 0) == 0 && Line.find_first_not_of(__T("0123456789"), 6) == string::npos) {
                     IsFrameNumber = true;
                     if (!Delay) {
-                        Delay = stoul(Line.substr(6));
+                        Delay = Ztring(Line.substr(6)).To_int64u(); //No exception in case of empty or too big value
                         Time_Delay = Time_Start_Command_Temp;
                     }
                 }
