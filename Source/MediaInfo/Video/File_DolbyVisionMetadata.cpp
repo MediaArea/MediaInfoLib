@@ -69,7 +69,10 @@ bool File_DolbyVisionMetadata::FileHeader_Begin()
         for (DolbyVisionGlobalData = DolbyVisionGlobalData->FirstChildElement(); DolbyVisionGlobalData; DolbyVisionGlobalData = DolbyVisionGlobalData->NextSiblingElement())
         {
             if (!strcmp(DolbyVisionGlobalData->Name(), "gsp:Version"))
-                Version = DolbyVisionGlobalData->GetText();
+            {
+                if (const char* Text = DolbyVisionGlobalData->GetText())
+                    Version = Text;
+            }
             if (!strcmp(DolbyVisionGlobalData->Name(), "gsp:Track"))
             {
                 MasterElements[1]=DolbyVisionGlobalData;
@@ -83,7 +86,10 @@ bool File_DolbyVisionMetadata::FileHeader_Begin()
         for (DolbyVisionGlobalData = DolbyVisionGlobalData->FirstChildElement(); DolbyVisionGlobalData; DolbyVisionGlobalData = DolbyVisionGlobalData->NextSiblingElement())
         {
             if (!strcmp(DolbyVisionGlobalData->Name(), "dvmd-int:Version"))
-                Version = DolbyVisionGlobalData->GetText();
+            {
+                if (const char* Text = DolbyVisionGlobalData->GetText())
+                    Version = Text;
+            }
             if (!strcmp(DolbyVisionGlobalData->Name(), "dvmd-int:DolbyVisionGlobalData"))
             {
                 for (DolbyVisionGlobalData = DolbyVisionGlobalData->FirstChildElement(); DolbyVisionGlobalData; DolbyVisionGlobalData = DolbyVisionGlobalData->NextSiblingElement())
