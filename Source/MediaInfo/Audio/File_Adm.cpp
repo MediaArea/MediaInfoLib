@@ -4482,7 +4482,7 @@ void coefficient_Check(file_adm_private* File_Adm_Private) {
         char* End;
         auto Float = strtod(Value.c_str(), &End);
         if (End - Value.c_str() != Value.size()) {
-            Coefficient.AddError(Error, coefficient_gain, E::Form, File_Adm_Private, Value);
+            Coefficient.AddError(Error, 0x80 | (int8u)coefficient_gain, E::Form, File_Adm_Private, Value);
         }
         else if (Unit >= 0) {
             static const int Linear_20dB = 10; // 10 ^ ( dB / 20)
