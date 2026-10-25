@@ -437,10 +437,12 @@ void Slice::contexts_init(int32u plane_count, int32u quant_table_index[MAX_PLANE
         if (i >= plane_count)
         {
             contexts[i] = NULL;
+            contexts_size[i] = 0;
             continue;
         }
         int32u idx = quant_table_index[i];
         contexts[i] = new Context [context_count[idx]];
+        contexts_size[i] = context_count[idx];
     }
 }
 
@@ -1757,6 +1759,11 @@ int32s File_Ffv1::pixel_GR(int32s context)
     // Time for the new symbol length run
     current_slice->run_mode_init();
 
+    if ((size_t)context >= Context_GR_Size)
+    {
+        BS->Skip(BS->Remain());
+        return 0;
+    }
     int32s u = get_symbol_with_bias_correlation(&Context_GR[context]);
     if (u >= 0) // GR(u - 1, ...)
         u++;
@@ -1778,10 +1785,13 @@ void File_Ffv1::line(int pos, pixel_t *sample[2])
     if (coder_type)
     {
         Context_RC = current_slice->plane_states[pos];
+        const size_t Context_RC_Size = Context_RC ? current_slice->plane_states_size[pos] : 0; // No states e.g. if there was no keyframe
 
         while (s0c<s0e)
         {
             int32s context = Is5 ? get_context_5(quant_table, s1c, s0c) : get_context_3(quant_table, s1c, s0c);
+            if ((size_t)(context >= 0 ? context : -context) >= Context_RC_Size) // e.g. no keyframe or quant table with more contexts than at the keyframe
+                return;
 
             int32s Value = predict(s1c, s0c, is_overflow_16bit);
             #if MEDIAINFO_TRACE_FFV1CONTENT
@@ -1806,7 +1816,7 @@ void File_Ffv1::line(int pos, pixel_t *sample[2])
         current_slice->run_mode_init();
 
         Context_GR = current_slice->contexts[pos];
-        Context_GR_Size = context_count[pos];
+        Context_GR_Size = Context_GR ? current_slice->contexts_size[pos] : 0; // No contexts e.g. if there was no keyframe
         x = 0;
 
         while (s0c < s0e)
@@ -2014,6 +2024,7 @@ void File_Ffv1::copy_plane_states_to_slice(int8u plane_count)
                 current_slice->plane_states[i][j][k] = plane_states[idx][j][k];
             }
         }
+        current_slice->plane_states_size[i] = context_count[idx];
     }
 }
 
