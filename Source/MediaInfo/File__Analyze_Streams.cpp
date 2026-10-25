@@ -1299,7 +1299,7 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data)
                 // Nonlinear Quantization Parameters
                 Element_Begin1("rpu_data_nlq_param");
                 int16u nlq_offset;
-                int32u vdr_in_max_int, vdr_in_max, linear_deadzone_slope_int, linear_deadzone_slope, linear_deadzone_threshold_int, linear_deadzone_threshold;
+                int32u vdr_in_max_int{}, vdr_in_max{}, linear_deadzone_slope_int{}, linear_deadzone_slope{}, linear_deadzone_threshold_int{}, linear_deadzone_threshold{};
                 Get_S2(static_cast<int8u>(el_bit_depth_minus8 + 8), nlq_offset, ("nlq_offset[0][" + to_string(cmp) + "]").c_str());
                 if (coefficient_data_type == 0) {
                     Get_UE(vdr_in_max_int,                      ("vdr_in_max_int[0][" + to_string(cmp) + "]").c_str());
@@ -1324,7 +1324,11 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data)
                         Get_S4(32, linear_deadzone_threshold,   ("linear_deadzone_threshold[0][" + to_string(cmp) + "]").c_str());
                     break;
                 }
-                if ((nlq_offset | vdr_in_max | linear_deadzone_slope_int | linear_deadzone_slope | linear_deadzone_threshold_int | linear_deadzone_threshold) != 0 || vdr_in_max_int != 1)
+                if (coefficient_data_type == 0) {
+                    if ((nlq_offset | vdr_in_max | linear_deadzone_slope_int | linear_deadzone_slope | linear_deadzone_threshold_int | linear_deadzone_threshold) != 0 || vdr_in_max_int != 1)
+                        isMEL = 0;
+                }
+                else if ((nlq_offset | linear_deadzone_slope | linear_deadzone_threshold) != 0 || vdr_in_max != 0x3F800000) // 1.0 in IEEE 754 single precision
                     isMEL = 0;
                 Element_End0(); // rpu_data_nlq_param
             }
