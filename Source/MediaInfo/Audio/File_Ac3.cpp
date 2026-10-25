@@ -5047,6 +5047,11 @@ void File_Ac3::Get_V4(int8u  Bits, int32u  &Info, const char* Name)
 #endif //MEDIAINFO_TRACE
     for (;;)
     {
+        if (BS->Remain() < Bits + 1u)
+        {
+            Trusted_IsNot("Variable length value not valid");
+            break;
+        }
         Info += BS->Get4(Bits);
 #if MEDIAINFO_TRACE
         Count += Bits;
@@ -5077,9 +5082,17 @@ void File_Ac3::Skip_V4(int8u  Bits, const char* Name)
     else
 #endif //MEDIAINFO_TRACE
     {
-        do
+        for (;;)
+        {
+            if (BS->Remain() < Bits + 1u)
+            {
+                Trusted_IsNot("Variable length value not valid");
+                break;
+            }
             BS->Skip(Bits);
-        while (BS->GetB());
+            if (!BS->GetB())
+                break;
+        }
     }
 }
 

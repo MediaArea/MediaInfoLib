@@ -808,6 +808,11 @@ void File_Av1::metadata_itu_t_t35_B5_003B_00000800()
             #endif //MEDIAINFO_TRACE
                 for (;;)
                 {
+                    if (BS->Remain() < Bits + 1u)
+                    {
+                        Trusted_IsNot("Variable length value not valid");
+                        break;
+                    }
                     Info += BS->Get4(Bits);
             #if MEDIAINFO_TRACE
                     Count += Bits;
