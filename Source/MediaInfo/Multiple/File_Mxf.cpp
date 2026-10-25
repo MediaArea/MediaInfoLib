@@ -8461,7 +8461,7 @@ void File_Mxf::RandomIndexPack()
         {
             IsParsingEnd=true;
             GoTo(RandomIndexPacks[0].ByteOffset);
-            RandomIndexPacks.erase(RandomIndexPacks.begin());
+            RandomIndexPacks.pop_front();
             Open_Buffer_Unsynch();
 
             //Hints
@@ -17259,7 +17259,7 @@ void File_Mxf::NextRandomIndexPack()
     else
     {
         GoTo(RandomIndexPacks[0].ByteOffset);
-        RandomIndexPacks.erase(RandomIndexPacks.begin());
+        RandomIndexPacks.pop_front();
         Open_Buffer_Unsynch();
     }
 
