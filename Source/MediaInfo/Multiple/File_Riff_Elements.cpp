@@ -2144,6 +2144,7 @@ void File_Riff::AVI__hdlr_strl_vprp()
     Skip_L4(                                                    "FrameWidthInPixels");
     Skip_L4(                                                    "FrameHeightInLines");
     Get_L4 (FieldPerFrame,                                      "FieldPerFrame");
+    Loop_CheckValue(FieldPerFrame, 32, "FieldPerFrame");
     vector<int32u> VideoYValidStartLines;
     for (int32u Pos=0; Pos<FieldPerFrame; Pos++)
     {
@@ -3150,6 +3151,7 @@ void File_Riff::INDX_xxxx()
         Skip_L4(                                                    "Unknown");
         Skip_L4(                                                    "Unknown");
 
+        Loop_CheckValue(Entry_Count, 24, "EntriesInUse");
         for (int32u Pos=0; Pos<Entry_Count; Pos++)
         {
             Skip_L8(                                                "Offset");
@@ -3269,6 +3271,7 @@ void File_Riff::QLCM_fmt_()
     Get_L2 (sample_size,                                        "sample-size");
     Element_Begin1("rate-map-table");
         Get_L4 (num_rates,                                      "num-rates");
+        Loop_CheckValue(num_rates, 4, "num-rates");
         for (int32u rate=0; rate<num_rates; rate++)
         {
             Skip_L2(                                            "rate-size");
