@@ -379,6 +379,12 @@ protected :
     size_t Data_Remain ()                                                       {return (size_t)(Element_Size-(Element_Offset+BS->Offset_Get()));};
     size_t Data_BS_Remain ()                                                    {return (size_t)BS->Remain();};
 
+    //Data - Loops
+    void Loop_CheckValue(int64u& Value, int64u RemainingSize, int64u MinBlockSize, const char* Name);
+    template<typename T> void Loop_CheckValue(T& Value, int64u RemainingSize, int64u MinBlockSize, const char* Name) {int64u Value2=Value; Loop_CheckValue(Value2, RemainingSize, MinBlockSize, Name); Value=(T)Value2;}
+    template<typename T> void Loop_CheckValue(T& Value, int64u MinBlockSize, const char* Name) {Loop_CheckValue(Value, Element_Size>Element_Offset?(Element_Size-Element_Offset):0, MinBlockSize, Name);}
+    template<typename T> void Loop_CheckValue_BS(T& Value, int64u MinBlockSize, const char* Name) {Loop_CheckValue(Value, Data_BS_Remain(), MinBlockSize, Name);}
+
     //Data - Detect EOF
     virtual void Detect_EOF ()                                                  {};
     bool EOF_AlreadyDetected;
