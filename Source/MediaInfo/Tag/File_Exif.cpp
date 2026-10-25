@@ -2120,7 +2120,7 @@ void File_Exif::Header_Parse()
         }
         if (Offset != IfdItems.begin()->first) {
             IfdItems.clear(); //There was a problem during the seek, trashing remaining positions from last IFD
-            Finish();
+            ForceFinish();
             return;
         }
         #ifdef MEDIAINFO_TRACE
@@ -2181,7 +2181,7 @@ void File_Exif::Header_Parse()
             int32u temp;
             Skip_C4(                                            "Alignment");
             Get_X4(temp,                                        "Makernote offset");
-            Finish();
+            ForceFinish();
             return;
         }
     }
@@ -2279,7 +2279,7 @@ void File_Exif::Data_Parse()
             }
         }
 
-        if (!HasFooter) Finish(); //No more IFDs
+        if (!HasFooter) ForceFinish(); //No more IFDs, the remaining content is not parsed even if the whole file is requested
     }
 }
 
