@@ -6775,6 +6775,9 @@ void File_Adm::Streams_Fill()
     // Errors
     #if MEDIAINFO_CONFORMANCE
     auto IsAtmos = File_Adm_Private->IsAtmos;
+    if (File_Adm_Private->Items[item_root].Items.empty()) {
+        File_Adm_Private->Items[item_root].New(); // e.g. only chna content, checks need a root
+    }
     auto& Root = File_Adm_Private->Items[item_root].Items;
     auto& Programmes = File_Adm_Private->Items[item_audioProgramme].Items;
     auto& Contents = File_Adm_Private->Items[item_audioContent].Items;
