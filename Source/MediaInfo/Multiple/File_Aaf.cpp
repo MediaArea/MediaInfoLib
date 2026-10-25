@@ -204,7 +204,7 @@ void File_Aaf::Read_Buffer_Continue()
             ForceFinish();
         }
         else
-            GoTo((1+sectsFat[0])*(1<<SectorShift));
+            GoTo((((int64u)1)+sectsFat[0])<<SectorShift);
     FILLING_END();
 }
 
@@ -256,13 +256,13 @@ void File_Aaf::Data_Parse()
             IsChainEnd=true;
         }
         if (!IsChainEnd)
-            GoTo((1+Pointers[Pointers_Pos])*(1<<SectorShift));
+            GoTo((((int64u)1)+Pointers[Pointers_Pos])<<SectorShift);
         else if (Step==Step_MiniFat)
         {
             Step=Step_Directory;
             Directory_Pos=0;
             Chain_Count=0;
-            GoTo((1+sectDirStart)*(1<<SectorShift));
+            GoTo((((int64u)1)+sectDirStart)<<SectorShift);
         }
         else if (Step==Step_Directory)
         {
@@ -299,12 +299,12 @@ void File_Aaf::Fat()
     //Next FAT sector or next step
     sectsFat_Pos++;
     if (sectsFat_Pos<sectsFat.size())
-        GoTo((1+sectsFat[sectsFat_Pos])*(1<<SectorShift));
+        GoTo((((int64u)1)+sectsFat[sectsFat_Pos])<<SectorShift);
     else
     {
         Step=Step_MiniFat;
         Chain_Count=0;
-        GoTo((1+sectMiniFatStart)*(1<<SectorShift));
+        GoTo((((int64u)1)+sectMiniFatStart)<<SectorShift);
     }
 }
 
@@ -403,11 +403,11 @@ void File_Aaf::Directory_Entry()
                 if (SectPos >= sectsMiniStream.size())
                     break;
                 int32u MiniSectPos=Pointers_Pos&((((size_t)1)<<(SectorShift-MiniSectorShift))-1);
-                StreamOffset=((1+sectsMiniStream[SectPos])<<SectorShift)+(MiniSectPos<<MiniSectorShift);
+                StreamOffset=((((int64u)1)+sectsMiniStream[SectPos])<<SectorShift)+(((int64u)MiniSectPos)<<MiniSectorShift);
             }
             else //FAT
             {
-                StreamOffset=(1+Pointers_Pos)<<SectorShift;
+                StreamOffset=(((int64u)1)+Pointers_Pos)<<SectorShift;
             }
             Stream->StreamOffsets.push_back(StreamOffset);
             Param_Info1(StreamOffset);
