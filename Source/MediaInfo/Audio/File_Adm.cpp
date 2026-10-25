@@ -2836,6 +2836,7 @@ public:
     vector<vector<channel_list>> ChannelFormat_Matrix_coefficients;
     vector<vector<channel_list>> ChannelFormat_Matrix_outputChannelFormatIDRefs;
     vector<string> coefficients;
+    set<string> coefficients_Unique; // Same content as coefficients, for quick uniqueness test
     vector<profile_info> profileInfos;
     map<string, string> More;
     float32 FrameRate_Sum = 0;
@@ -4453,7 +4454,7 @@ void coefficient_Check(file_adm_private* File_Adm_Private) {
     auto& Items = File_Adm_Private->Items;
     auto& Matrixes = Items[item_matrix].Items;
     auto& Matrix = Matrixes.back();
-    const auto Matrix_Coefficients = Matrix.Elements[matrix_coefficient];
+    const auto& Matrix_Coefficients = Matrix.Elements[matrix_coefficient];
     const auto& coefficient = Matrix_Coefficients.back();
     auto& Coefficients = Items[item_coefficient].Items;
     auto& Coefficient = Coefficients.back();
@@ -4491,7 +4492,7 @@ void coefficient_Check(file_adm_private* File_Adm_Private) {
         }
     }
 
-    if (find(File_Adm_Private->coefficients.begin(), File_Adm_Private->coefficients.end(), coefficient) != File_Adm_Private->coefficients.end()) {
+    if (!File_Adm_Private->coefficients_Unique.insert(coefficient).second) {
         Matrix.AddError(Error, item_matrix, 0, ":coefficient" + to_string(Matrix_Coefficients.size() - 1) + ":coefficient value \"" + coefficient + "\" shall be unique");
     }
     else {
@@ -4514,12 +4515,15 @@ void matrix_Check(file_adm_private* File_Adm_Private) {
     }
     if (!File_Adm_Private->ChannelFormat_Matrix_coefficients.back().empty() && File_Adm_Private->coefficients == File_Adm_Private->ChannelFormat_Matrix_coefficients.back().back().List) {
         File_Adm_Private->coefficients.clear();
+        File_Adm_Private->coefficients_Unique.clear();
         return;
     }
 
     auto audioBlockFormat_Count = ChannelFormat.Elements[audioChannelFormat_audioBlockFormat].size();
     if (File_Adm_Private->ChannelFormat_Matrix_coefficients.back().size() < 0x100) { // Limit the count of different coefficients stored
         File_Adm_Private->ChannelFormat_Matrix_coefficients.back().push_back({ audioBlockFormat_Count - 1, std::move(File_Adm_Private->coefficients) });
+        File_Adm_Private->coefficients.clear();
+        File_Adm_Private->coefficients_Unique.clear();
     }
 }
 
@@ -6626,7 +6630,7 @@ void File_Adm::Streams_Fill()
         const auto& audioChannelFormat_audioBlockFormats = audioChannelFormat_Item.Elements[audioChannelFormat_audioBlockFormat];
         auto& audioChannelFormat_ChannelLayout_Item = audioChannelFormat_ChannelLayout_List[i];
         if (!audioChannelFormat_audioBlockFormats.empty()) {
-            const auto audioBlockFormat_Items = File_Adm_Private->Items[item_audioBlockFormat].Items;
+            const auto& audioBlockFormat_Items = File_Adm_Private->Items[item_audioBlockFormat].Items;
             const auto& audioBlockFormat = audioBlockFormat_Items[audioBlockFormat_Pos];
             auto const& SpeakerLabels = audioBlockFormat.Elements[audioBlockFormat_speakerLabel];
             if (!SpeakerLabels.empty()) {
