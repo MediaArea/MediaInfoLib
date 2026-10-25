@@ -1105,7 +1105,7 @@ static bool DV_CRC32_Check(const int8u* Buffer, int64u BufferOffsetBegin, size_t
 }
 
 // Must be in bitstream before calling this function.
-void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data)
+void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t BitsAfter)
 {
     using std::to_string;
 
@@ -1454,7 +1454,7 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data)
         }
 
         // Content Mapping v4.0 (CMv4.0)
-        if (Data_BS_Remain() >= 56) {
+        if (Data_BS_Remain() >= BitsAfter + 56) {
             int32u num_ext_blocks2;
             Get_UE(num_ext_blocks2,                             "num_ext_blocks");
             if (num_ext_blocks > 16) { // An arbitrary value as there is currently not so many extension blocks defined

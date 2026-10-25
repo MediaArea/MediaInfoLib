@@ -966,7 +966,7 @@ public :
         bool reference_mode{};
     };
     // Must be in bitstream before calling this function.
-    void Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data);
+    void Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t BitsAfter = 0);
     #endif
 
     //***************************************************************************
