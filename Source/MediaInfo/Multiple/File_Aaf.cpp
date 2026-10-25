@@ -249,12 +249,19 @@ void File_Aaf::Data_Parse()
     size_t Pointers_Pos=(size_t)((File_Offset+Buffer_Offset)>>SectorShift)-1;
     if (Pointers_Pos<Pointers.size())
     {
-        if (Pointers[Pointers_Pos]<0xFFFFFFF0)
+        bool IsChainEnd=Pointers[Pointers_Pos]>=0xFFFFFFF0;
+        if (!IsChainEnd && ++Chain_Count>Pointers.size())
+        {
+            Trusted_IsNot("FAT chain not valid"); //Loop in the chain
+            IsChainEnd=true;
+        }
+        if (!IsChainEnd)
             GoTo((1+Pointers[Pointers_Pos])*(1<<SectorShift));
         else if (Step==Step_MiniFat)
         {
             Step=Step_Directory;
             Directory_Pos=0;
+            Chain_Count=0;
             GoTo((1+sectDirStart)*(1<<SectorShift));
         }
         else if (Step==Step_Directory)
@@ -296,6 +303,7 @@ void File_Aaf::Fat()
     else
     {
         Step=Step_MiniFat;
+        Chain_Count=0;
         GoTo((1+sectMiniFatStart)*(1<<SectorShift));
     }
 }
