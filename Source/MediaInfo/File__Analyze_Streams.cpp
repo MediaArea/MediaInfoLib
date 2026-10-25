@@ -1457,6 +1457,7 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data)
                     Element_Begin1("ext_metadata_block");
                     int32u ext_block_length;
                     int8u ext_block_level;
+                    int8u l16_count{ 0 };
                     Get_UE(ext_block_length,                    "ext_block_length");
                     Get_S1(8, ext_block_level,                  "ext_block_level");
                     Element_Begin1("ext_block_payload");
@@ -1545,21 +1546,65 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data)
                         break;
                     }
                     case 15:
-                    {   // Consumer look metadata, Precision Rendering/Detail
-                        Skip_BS(ext_block_len_bits,             "(Unknown)");
-                        ext_block_use_bits += ext_block_len_bits;
+                    {   // Consumer look metadata, Precision Rendering/Detail (Dolby Image Engine, Standard mode)
+                        // Source: Dolby Vision Metadata Spec v1.5.1 (L15),
+                        // cross-validated against quietvoid/dovi_tool and the
+                        // official DV2 TV SDK v6.0 MFV-L15 / CST-DV2 test vectors.
+                        // 10 x 8-bit fields + 4-bit revision + 4-bit reserved = 88 bits (11 bytes).
+                        Skip_S1( 8,                             "confidence");
+                        Skip_S1( 8,                             "precision_rendering_strength");
+                        Skip_S1( 8,                             "d_local_contrast");
+                        Skip_S1( 8,                             "d_brightness");
+                        Skip_S1( 8,                             "d_saturation_plus_one");
+                        Skip_S1( 8,                             "d_contrast_plus_one");
+                        Skip_S1( 8,                             "confidence_no_pr");
+                        Skip_S1( 8,                             "d_brightness_no_pr");
+                        Skip_S1( 8,                             "d_saturation_plus_one_no_pr");
+                        Skip_S1( 8,                             "d_contrast_plus_one_no_pr");
+                        Skip_S1( 4,                             "revision");
+                        Skip_S1( 4,                             "reserved");
+                        ext_block_use_bits += 88;
                         break;
                     }
                     case 16:
-                    {   // Local tone mapping metadata
-                        Skip_BS(ext_block_len_bits,             "(Unknown)");
-                        ext_block_use_bits += ext_block_len_bits;
+                    {   // Local tone mapping metadata (Reference mode Image Engine)
+                        // Source: Dolby Vision Metadata Spec v1.5.1 (L16),
+                        // cross-validated against quietvoid/dovi_tool.
+                        // Variable length: 4-bit revision + 4-bit count, then count x Level16Params (5 bytes each).
+                        Skip_S1( 4,                             "revision");
+                        Get_S1 ( 4, l16_count,                  "count");
+                        ext_block_use_bits += 8;
+                        for (int8u p = 0; p < l16_count; ++p) {
+                            Element_Begin1("Level16Params");
+                            Skip_S1( 8,                         "contrast_target");
+                            Skip_S1( 8,                         "precision_rendering_strength");
+                            Skip_S1( 8,                         "d_local_contrast");
+                            Skip_S1( 8,                         "max_d_brightness");
+                            Skip_S1( 8,                         "max_d_saturation_plus_one");
+                            Element_End0();
+                            ext_block_use_bits += 40;
+                        }
                         break;
                     }
                     case 17:
                     {   // Up mapping metadata
                         Skip_BS(ext_block_len_bits,             "(Unknown)");
                         ext_block_use_bits += ext_block_len_bits;
+                        break;
+                    }
+                    case 18:
+                    {   // Creative environment metadata (Precision Black)
+                        // Source: Dolby Vision Metadata Spec v1.5.1 (L18),
+                        // cross-validated against quietvoid/dovi_tool and the
+                        // official DV2 TV SDK v6.0 MFV-L18 / CST-DV2 test vectors.
+                        // 4 x 12-bit PQ-coded luminance + 4-bit revision + 4-bit reserved = 56 bits (7 bytes).
+                        Skip_S2(12,                             "surround_luminance_PQ");
+                        Skip_S2(12,                             "min_preserved_luminance_PQ");
+                        Skip_S2(12,                             "adaptation_luminance_PQ");
+                        Skip_S2(12,                             "max_preserved_luminance_PQ");
+                        Skip_S1( 4,                             "revision");
+                        Skip_S1( 4,                             "reserved");
+                        ext_block_use_bits += 56;
                         break;
                     }
                     case 254: // CM version
