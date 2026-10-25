@@ -1091,7 +1091,10 @@ void File_Flv::video_H263()
     Skip_S3(17,                                                 "PictureStartCode");
     Get_S1 ( 5, Version,                                        "Version");
     if (Version>1)
+    {
+        BS_End();
         return;
+    }
     Skip_S1( 8,                                                 "TemporalReference");
     Get_S1 ( 3, PictureSize,                                    "PictureSize"); Param_Info1(Flv_H263_PictureSize[PictureSize]);
     switch (PictureSize)

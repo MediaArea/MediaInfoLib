@@ -201,10 +201,10 @@ void File_Aaf::Read_Buffer_Continue()
         sectsFat_Pos=0;
         if (sectsFat.empty())
         {
-            Finish();
+            ForceFinish();
         }
         else
-            GoTo((1+sectsFat[0])*(1<<SectorShift));
+            GoTo((((int64u)1)+sectsFat[0])<<SectorShift);
     FILLING_END();
 }
 
@@ -227,7 +227,7 @@ void File_Aaf::Header_Parse()
                                   Header_Fill_Size(((int64u)1) << SectorShift);
                                   break;
         case Step_Stream        : Header_Fill_Code(0, "Stream");
-                                  Header_Fill_Size(((int64u)1) << (Streams[0]->Size<MiniSectorCutoff ? MiniSectorShift : SectorShift));
+                                  Header_Fill_Size(((int64u)1) << (!Streams.empty() && Streams[0]->Size<MiniSectorCutoff ? MiniSectorShift : SectorShift));
                                   break;
         default                 : ;
     }
@@ -249,19 +249,26 @@ void File_Aaf::Data_Parse()
     size_t Pointers_Pos=(size_t)((File_Offset+Buffer_Offset)>>SectorShift)-1;
     if (Pointers_Pos<Pointers.size())
     {
-        if (Pointers[Pointers_Pos]<0xFFFFFFF0)
-            GoTo((1+Pointers[Pointers_Pos])*(1<<SectorShift));
+        bool IsChainEnd=Pointers[Pointers_Pos]>=0xFFFFFFF0;
+        if (!IsChainEnd && ++Chain_Count>Pointers.size())
+        {
+            Trusted_IsNot("FAT chain not valid"); //Loop in the chain
+            IsChainEnd=true;
+        }
+        if (!IsChainEnd)
+            GoTo((((int64u)1)+Pointers[Pointers_Pos])<<SectorShift);
         else if (Step==Step_MiniFat)
         {
             Step=Step_Directory;
             Directory_Pos=0;
-            GoTo((1+sectDirStart)*(1<<SectorShift));
+            Chain_Count=0;
+            GoTo((((int64u)1)+sectDirStart)<<SectorShift);
         }
         else if (Step==Step_Directory)
         {
             Step=Step_Stream;
             if (Streams.empty() || Streams[0]->StreamOffsets.empty())
-                Finish();
+                ForceFinish();
             else
             {
                 Streams_Pos=0;
@@ -270,10 +277,10 @@ void File_Aaf::Data_Parse()
             }
         }
         else
-            Finish();
+            ForceFinish();
     }
     else
-        Finish();
+        ForceFinish();
 }
 
 //---------------------------------------------------------------------------
@@ -292,11 +299,12 @@ void File_Aaf::Fat()
     //Next FAT sector or next step
     sectsFat_Pos++;
     if (sectsFat_Pos<sectsFat.size())
-        GoTo((1+sectsFat[sectsFat_Pos])*(1<<SectorShift));
+        GoTo((((int64u)1)+sectsFat[sectsFat_Pos])<<SectorShift);
     else
     {
         Step=Step_MiniFat;
-        GoTo((1+sectMiniFatStart)*(1<<SectorShift));
+        Chain_Count=0;
+        GoTo((((int64u)1)+sectMiniFatStart)<<SectorShift);
     }
 }
 
@@ -395,11 +403,11 @@ void File_Aaf::Directory_Entry()
                 if (SectPos >= sectsMiniStream.size())
                     break;
                 int32u MiniSectPos=Pointers_Pos&((((size_t)1)<<(SectorShift-MiniSectorShift))-1);
-                StreamOffset=((1+sectsMiniStream[SectPos])<<SectorShift)+(MiniSectPos<<MiniSectorShift);
+                StreamOffset=((((int64u)1)+sectsMiniStream[SectPos])<<SectorShift)+(((int64u)MiniSectPos)<<MiniSectorShift);
             }
             else //FAT
             {
-                StreamOffset=(1+Pointers_Pos)<<SectorShift;
+                StreamOffset=(((int64u)1)+Pointers_Pos)<<SectorShift;
             }
             Stream->StreamOffsets.push_back(StreamOffset);
             Param_Info1(StreamOffset);
@@ -448,11 +456,13 @@ void File_Aaf::StreamElement()
         StreamElement_Parse();
         Streams_Pos++;
         Streams_Pos2=0;
+        while (Streams_Pos<Streams.size() && Streams[Streams_Pos]->StreamOffsets.empty()) //No content
+            Streams_Pos++;
     }
     if (Streams_Pos<Streams.size())
         GoTo(Streams[Streams_Pos]->StreamOffsets[Streams_Pos2]);
     else
-        Finish();
+        ForceFinish();
 }
 
 //---------------------------------------------------------------------------

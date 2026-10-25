@@ -23,6 +23,7 @@
 #endif //defined(MEDIAINFO_ANCILLARY_YES)
 #include "MediaInfo/MediaInfo_Internal.h"
 #include "MediaInfo/TimeCode.h"
+#include <deque>
 #include <vector>
 #include <set>
 #include <bitset>
@@ -703,7 +704,7 @@ protected :
         int64u ByteOffset;
         int32u BodySID;
     };
-    std::vector<randomindexpack>     RandomIndexPacks;
+    std::deque<randomindexpack>      RandomIndexPacks; //Front is removed when the partition is parsed
     bool                             RandomIndexPacks_AlreadyParsed;
     std::set<int64u>                 PartitionPack_AlreadyParsed;
     size_t Streams_Count;

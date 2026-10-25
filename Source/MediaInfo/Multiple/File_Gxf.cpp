@@ -591,6 +591,7 @@ bool File_Gxf::Synchronize()
                     return false; //Need more data
                 const auto Buffer_NextOffset = Buffer_Offset + Size;
                 if (BigEndian2int32u(Buffer + Buffer_NextOffset) == 0x00000000
+                    && Buffer[Buffer_NextOffset + 4] == 0x01
                     && BigEndian2int16u(Buffer + Buffer_NextOffset + 14) == 0xE1E2)
                 {
                     //Synched is OK

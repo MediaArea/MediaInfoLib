@@ -972,6 +972,7 @@ void File_StarDiva::Read_Buffer_Continue()
                 Get_T1(4, Nine,                                 "9");
                 if (Nine!=9)
                 {
+                    BS_End_LE();
                     Element_End0();
                     Element_End0();
                     Skip_XX(Element_Size-Element_Offset,        "Unknown");
@@ -985,6 +986,7 @@ void File_StarDiva::Read_Buffer_Continue()
                 Get_T1(4, Padding, "Padding");
                 if (Padding)
                 {
+                    BS_End_LE();
                     Element_End0();
                     Element_End0();
                     Skip_XX(Element_Size-Element_Offset,        "Unknown");
@@ -1115,6 +1117,7 @@ void File_StarDiva::Read_Buffer_Continue()
                         break;
                     default:
                     {
+                        BS_End_LE();
                         Element_End0();
                         Element_End0();
                         Skip_XX(Element_Size-Element_Offset,    "Unknown");

@@ -2836,6 +2836,7 @@ public:
     vector<vector<channel_list>> ChannelFormat_Matrix_coefficients;
     vector<vector<channel_list>> ChannelFormat_Matrix_outputChannelFormatIDRefs;
     vector<string> coefficients;
+    set<string> coefficients_Unique; // Same content as coefficients, for quick uniqueness test
     vector<profile_info> profileInfos;
     map<string, string> More;
     float32 FrameRate_Sum = 0;
@@ -3490,12 +3491,18 @@ static void CheckErrors_Element_Target(file_adm_private* File_Adm_Private, item 
 
         int16u Ref_Int = (int16u)-1;
         if (item_Infos[Target_Type].ID_Flags[item_info::Flags_ID_YX]) {
-            const auto TargetIDRef_xxxx = TargetIDRef.substr(strlen(item_Infos[Target_Type].ID_Begin) + 5, 4);
-            Ref_Int = strtoul(TargetIDRef_xxxx.c_str(), nullptr, 16);
+            const auto TargetIDRef_xxxx_Pos = strlen(item_Infos[Target_Type].ID_Begin) + 5;
+            if (TargetIDRef_xxxx_Pos <= TargetIDRef.size()) { // Too short references are handled as unknown targets
+                const auto TargetIDRef_xxxx = TargetIDRef.substr(TargetIDRef_xxxx_Pos, 4);
+                Ref_Int = strtoul(TargetIDRef_xxxx.c_str(), nullptr, 16);
+            }
         }
         if (item_Infos[Target_Type].ID_Flags[item_info::Flags_ID_W]) {
-            const auto TargetIDRef_wwww = TargetIDRef.substr(strlen(item_Infos[Target_Type].ID_Begin) + 1, 4);
-            Ref_Int = strtoul(TargetIDRef_wwww.c_str(), nullptr, 16);
+            const auto TargetIDRef_wwww_Pos = strlen(item_Infos[Target_Type].ID_Begin) + 1;
+            if (TargetIDRef_wwww_Pos <= TargetIDRef.size()) { // Too short references are handled as unknown targets
+                const auto TargetIDRef_wwww = TargetIDRef.substr(TargetIDRef_wwww_Pos, 4);
+                Ref_Int = strtoul(TargetIDRef_wwww.c_str(), nullptr, 16);
+            }
         }
         if (Ref_Int < 0x1000) {
             if (Ref_Int > item_Infos[Target_Type].MaxKnown && Ref_Int_NotKnown.find(Ref_Int) == Ref_Int_NotKnown.end()) {
@@ -4453,7 +4460,7 @@ void coefficient_Check(file_adm_private* File_Adm_Private) {
     auto& Items = File_Adm_Private->Items;
     auto& Matrixes = Items[item_matrix].Items;
     auto& Matrix = Matrixes.back();
-    const auto Matrix_Coefficients = Matrix.Elements[matrix_coefficient];
+    const auto& Matrix_Coefficients = Matrix.Elements[matrix_coefficient];
     const auto& coefficient = Matrix_Coefficients.back();
     auto& Coefficients = Items[item_coefficient].Items;
     auto& Coefficient = Coefficients.back();
@@ -4481,7 +4488,7 @@ void coefficient_Check(file_adm_private* File_Adm_Private) {
         char* End;
         auto Float = strtod(Value.c_str(), &End);
         if (End - Value.c_str() != Value.size()) {
-            Coefficient.AddError(Error, coefficient_gain, E::Form, File_Adm_Private, Value);
+            Coefficient.AddError(Error, 0x80 | (int8u)coefficient_gain, E::Form, File_Adm_Private, Value);
         }
         else if (Unit >= 0) {
             static const int Linear_20dB = 10; // 10 ^ ( dB / 20)
@@ -4491,7 +4498,7 @@ void coefficient_Check(file_adm_private* File_Adm_Private) {
         }
     }
 
-    if (find(File_Adm_Private->coefficients.begin(), File_Adm_Private->coefficients.end(), coefficient) != File_Adm_Private->coefficients.end()) {
+    if (!File_Adm_Private->coefficients_Unique.insert(coefficient).second) {
         Matrix.AddError(Error, item_matrix, 0, ":coefficient" + to_string(Matrix_Coefficients.size() - 1) + ":coefficient value \"" + coefficient + "\" shall be unique");
     }
     else {
@@ -4514,12 +4521,15 @@ void matrix_Check(file_adm_private* File_Adm_Private) {
     }
     if (!File_Adm_Private->ChannelFormat_Matrix_coefficients.back().empty() && File_Adm_Private->coefficients == File_Adm_Private->ChannelFormat_Matrix_coefficients.back().back().List) {
         File_Adm_Private->coefficients.clear();
+        File_Adm_Private->coefficients_Unique.clear();
         return;
     }
 
     auto audioBlockFormat_Count = ChannelFormat.Elements[audioChannelFormat_audioBlockFormat].size();
     if (File_Adm_Private->ChannelFormat_Matrix_coefficients.back().size() < 0x100) { // Limit the count of different coefficients stored
         File_Adm_Private->ChannelFormat_Matrix_coefficients.back().push_back({ audioBlockFormat_Count - 1, std::move(File_Adm_Private->coefficients) });
+        File_Adm_Private->coefficients.clear();
+        File_Adm_Private->coefficients_Unique.clear();
     }
 }
 
@@ -6626,7 +6636,7 @@ void File_Adm::Streams_Fill()
         const auto& audioChannelFormat_audioBlockFormats = audioChannelFormat_Item.Elements[audioChannelFormat_audioBlockFormat];
         auto& audioChannelFormat_ChannelLayout_Item = audioChannelFormat_ChannelLayout_List[i];
         if (!audioChannelFormat_audioBlockFormats.empty()) {
-            const auto audioBlockFormat_Items = File_Adm_Private->Items[item_audioBlockFormat].Items;
+            const auto& audioBlockFormat_Items = File_Adm_Private->Items[item_audioBlockFormat].Items;
             const auto& audioBlockFormat = audioBlockFormat_Items[audioBlockFormat_Pos];
             auto const& SpeakerLabels = audioBlockFormat.Elements[audioBlockFormat_speakerLabel];
             if (!SpeakerLabels.empty()) {
@@ -6636,8 +6646,8 @@ void File_Adm::Streams_Fill()
                 for (; Cur < End; Cur++) {
                     const auto& audioBlockFormat1 = audioBlockFormat_Items[Cur];
                     auto const& SpeakerLabels1 = audioBlockFormat1.Elements[audioBlockFormat_speakerLabel];
-                    if (!SpeakerLabels.empty()) {
-                        auto SpeakerLabel1 = SpeakerLabels1.front();
+                    if (!SpeakerLabels1.empty()) {
+                        const auto& SpeakerLabel1 = SpeakerLabels1.front();
                         if (SpeakerLabel1 != SpeakerLabel) {
                             SpeakerLabel.assign(1, '\0');
                             break;
@@ -6771,6 +6781,9 @@ void File_Adm::Streams_Fill()
     // Errors
     #if MEDIAINFO_CONFORMANCE
     auto IsAtmos = File_Adm_Private->IsAtmos;
+    if (File_Adm_Private->Items[item_root].Items.empty()) {
+        File_Adm_Private->Items[item_root].New(); // e.g. only chna content, checks need a root
+    }
     auto& Root = File_Adm_Private->Items[item_root].Items;
     auto& Programmes = File_Adm_Private->Items[item_audioProgramme].Items;
     auto& Contents = File_Adm_Private->Items[item_audioContent].Items;

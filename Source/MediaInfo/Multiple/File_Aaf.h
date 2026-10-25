@@ -129,6 +129,7 @@ private :
     size_t Streams_Pos;
     size_t Streams_Pos2;
     size_t Directory_Pos;
+    size_t Chain_Count=0; //Count of sectors in the current chain
 
     //Descriptor
     /*

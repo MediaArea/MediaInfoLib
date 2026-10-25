@@ -808,6 +808,11 @@ void File_Av1::metadata_itu_t_t35_B5_003B_00000800()
             #endif //MEDIAINFO_TRACE
                 for (;;)
                 {
+                    if (BS->Remain() < Bits + 1u)
+                    {
+                        Trusted_IsNot("Variable length value not valid");
+                        break;
+                    }
                     Info += BS->Get4(Bits);
             #if MEDIAINFO_TRACE
                     Count += Bits;
@@ -848,6 +853,7 @@ void File_Av1::metadata_itu_t_t35_B5_003B_00000800()
     {
         Skip_BS(Data_BS_Remain(),                               "(Unparsed emdf_container data)");
         Element_End0(); 
+        BS_End();
         return;
     }
 
@@ -927,12 +933,19 @@ void File_Av1::metadata_itu_t_t35_B5_003B_00000800()
 
         int32u emdf_payload_size = 0;
         Get_V4 (8, emdf_payload_size,                           "emdf_payload_size");
+        if (emdf_payload_size > Data_BS_Remain() / 8)
+        {
+            Trusted_IsNot("emdf_payload_size is too large");
+            Skip_BS(Data_BS_Remain(),                           "(Problem)");
+            Element_End0(); // emdf_payload
+            break;
+        }
         size_t emdf_payload_End = Data_BS_Remain() - static_cast<size_t>(emdf_payload_size) * 8;
 
         Element_Begin1("emdf_payload_bytes");
             switch (emdf_payload_id)
             {
-                case 256: Get_DolbyVision_ReferenceProcessingUnit(DV_RPU_data); break;
+                case 256: Get_DolbyVision_ReferenceProcessingUnit(DV_RPU_data, emdf_payload_End); break;
                 default : Skip_BS(static_cast<size_t>(emdf_payload_size) * 8, "(Unknown)"); break;
             }
             size_t RemainginBits=Data_BS_Remain();

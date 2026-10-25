@@ -2798,18 +2798,22 @@ void File_Mpeg4::meta_iloc()
     // Validate sizes. Specification allows 0, 4 or 8 only.
     if (offset_size > 8) {
         Trusted_IsNot("Invalid offset_size");
+        BS_End();
         return;
     }
     if (length_size > 8) {
         Trusted_IsNot("Invalid length_size");
+        BS_End();
         return;
     }
     if (base_offset_size > 8) {
         Trusted_IsNot("Invalid base_offset_size");
+        BS_End();
         return;
     }
     if (index_size > 8) {
         Trusted_IsNot("Invalid index_size");
+        BS_End();
         return;
     }
 

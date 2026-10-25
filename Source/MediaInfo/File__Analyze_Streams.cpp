@@ -1104,14 +1104,47 @@ static bool DV_CRC32_Check(const int8u* Buffer, int64u BufferOffsetBegin, size_t
     return (CRC_32 != 0);
 }
 
+// Count of bits of the fixed part of extension metadata blocks, 0 if not parsed
+static size_t DV_ext_block_MinBits(bool IsCMv40, int8u ext_block_level)
+{
+    if (!IsCMv40) {
+        switch (ext_block_level) {
+        case   1: return 36;
+        case   2: return 85;
+        case   4: return 24;
+        case   5: return 52;
+        case   6: return 64;
+        case 255: return 48;
+        default : return 0;
+        }
+    }
+    switch (ext_block_level) {
+    case   3: return 36;
+    case   8: return 80;
+    case   9: return 8;
+    case  10: return 40;
+    case  11: return 32;
+    case  15: return 88;
+    case  16: return 8;
+    case  18: return 56;
+    case 254: return 16;
+    default : return 0;
+    }
+}
+
 // Must be in bitstream before calling this function.
-void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data)
+void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t BitsAfter)
 {
     using std::to_string;
 
     #define UNSUPPORTED() \
         Trusted_IsNot("Unsupported"); \
         return;
+
+    auto Remaining_Bits{ [&]() {
+        auto Remain{ Data_BS_Remain() };
+        return Remain > BitsAfter ? Remain - BitsAfter : 0;
+    } };
 
     //Parsing
     Element_Begin1("rpu_data");
@@ -1141,6 +1174,10 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data)
         switch (coefficient_data_type) {
         case 0: //COEFF_FIXED
             Get_UE(coefficient_log2_denom,                      "coefficient_log2_denom");
+            if (coefficient_log2_denom > 32) {
+                Trusted_IsNot("coefficient_log2_denom is too large");
+                return;
+            }
             break;
         case 1: //COEFF_FLOAT
             break;
@@ -1151,7 +1188,12 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data)
             // sequence header
             Get_UE (bl_bit_depth_minus8,                        "BL_bit_depth_minus8");
             Get_UE (el_bit_depth_minus8,                        "EL_bit_depth_minus8");
+            el_bit_depth_minus8 &= 0xFF; // ext_mapping_idc is in the upper bits
             Get_UE (vdr_bit_depth_minus8,                       "vdr_bit_depth_minus8");
+            if (bl_bit_depth_minus8 > 8 || el_bit_depth_minus8 > 8 || vdr_bit_depth_minus8 > 8) {
+                Trusted_IsNot("bit depth is too large");
+                return;
+            }
             Skip_SB(                                            "spatial_resampling_filter_flag");
             Get_S1 (3, dm_compression,                          "dm_compression");
             Get_SB (el_spatial_resampling_filter_flag,          "el_spatial_resampling_filter_flag");
@@ -1290,7 +1332,7 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data)
                 // Nonlinear Quantization Parameters
                 Element_Begin1("rpu_data_nlq_param");
                 int16u nlq_offset;
-                int32u vdr_in_max_int, vdr_in_max, linear_deadzone_slope_int, linear_deadzone_slope, linear_deadzone_threshold_int, linear_deadzone_threshold;
+                int32u vdr_in_max_int{}, vdr_in_max{}, linear_deadzone_slope_int{}, linear_deadzone_slope{}, linear_deadzone_threshold_int{}, linear_deadzone_threshold{};
                 Get_S2(static_cast<int8u>(el_bit_depth_minus8 + 8), nlq_offset, ("nlq_offset[0][" + to_string(cmp) + "]").c_str());
                 if (coefficient_data_type == 0) {
                     Get_UE(vdr_in_max_int,                      ("vdr_in_max_int[0][" + to_string(cmp) + "]").c_str());
@@ -1315,7 +1357,11 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data)
                         Get_S4(32, linear_deadzone_threshold,   ("linear_deadzone_threshold[0][" + to_string(cmp) + "]").c_str());
                     break;
                 }
-                if ((nlq_offset | vdr_in_max | linear_deadzone_slope_int | linear_deadzone_slope | linear_deadzone_threshold_int | linear_deadzone_threshold) != 0 || vdr_in_max_int != 1)
+                if (coefficient_data_type == 0) {
+                    if ((nlq_offset | vdr_in_max | linear_deadzone_slope_int | linear_deadzone_slope | linear_deadzone_threshold_int | linear_deadzone_threshold) != 0 || vdr_in_max_int != 1)
+                        isMEL = 0;
+                }
+                else if ((nlq_offset | linear_deadzone_slope | linear_deadzone_threshold) != 0 || vdr_in_max != 0x3F800000) // 1.0 in IEEE 754 single precision
                     isMEL = 0;
                 Element_End0(); // rpu_data_nlq_param
             }
@@ -1381,9 +1427,17 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data)
                 int8u ext_block_level;
                 Get_UE(ext_block_length,                        "ext_block_length");
                 Get_S1(8, ext_block_level,                      "ext_block_level");
+                if (ext_block_length > Remaining_Bits() / 8) {
+                    Trusted_IsNot("ext_block_length is too large");
+                    return;
+                }
                 Element_Begin1("ext_block_payload");
                 size_t ext_block_len_bits{ static_cast<size_t>(ext_block_length) * 8 };
                 size_t ext_block_use_bits{ 0 };
+                if (ext_block_len_bits < DV_ext_block_MinBits(false, ext_block_level)) {
+                    Trusted_IsNot("ext_block_length is too small");
+                    ext_block_level = 0; // Skipped as unknown
+                }
                 switch (ext_block_level) {
                 case 1: // ANALYSIS METADATA (DYNAMIC)
                     Skip_S2(12,                                 "min_PQ");
@@ -1441,10 +1495,10 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data)
         }
 
         // Content Mapping v4.0 (CMv4.0)
-        if (Data_BS_Remain() >= 56) {
+        if (Data_BS_Remain() >= BitsAfter + 56) {
             int32u num_ext_blocks2;
             Get_UE(num_ext_blocks2,                             "num_ext_blocks");
-            if (num_ext_blocks > 16) { // An arbitrary value as there is currently not so many extension blocks defined
+            if (num_ext_blocks2 > 16) { // An arbitrary value as there is currently not so many extension blocks defined
                 Trusted_IsNot("num_ext_blocks is larger than expected");
                 return;
             }
@@ -1460,9 +1514,17 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data)
                     int8u l16_count{ 0 };
                     Get_UE(ext_block_length,                    "ext_block_length");
                     Get_S1(8, ext_block_level,                  "ext_block_level");
+                    if (ext_block_length > Remaining_Bits() / 8) {
+                        Trusted_IsNot("ext_block_length is too large");
+                        return;
+                    }
                     Element_Begin1("ext_block_payload");
                     size_t ext_block_len_bits{ static_cast<size_t>(ext_block_length) * 8 };
                     size_t ext_block_use_bits{ 0 };
+                    if (ext_block_len_bits < DV_ext_block_MinBits(true, ext_block_level)) {
+                        Trusted_IsNot("ext_block_length is too small");
+                        ext_block_level = 0; // Skipped as unknown
+                    }
                     switch (ext_block_level) {
                     case 3: // OFFSETS TO L1 (DYNAMIC)
                         Skip_S2(12,                             "min_pq_offset");
@@ -1479,7 +1541,7 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data)
                         Skip_S2(12,                             "trim_saturation_gain");
                         Skip_S2(12,                             "ms_weight");
                         ext_block_use_bits += 80;
-                        if (ext_block_length > 10) {
+                        if (ext_block_length > 11) {
                             Skip_S2(12,                         "target_mid_contrast");
                             ext_block_use_bits += 12;
                         }
@@ -1487,13 +1549,13 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data)
                             Skip_S2(12,                         "clip_trim");
                             ext_block_use_bits += 12;
                         }
-                        if (ext_block_length > 13) {
+                        if (ext_block_length > 18) {
                             for (int8u i = 0; i < 6; ++i) {
                                 Skip_S1(8,                      ("saturation_vector_field" + to_string(i)).c_str());
                             }
                             ext_block_use_bits += 48;
                         }
-                        if (ext_block_length > 19) {
+                        if (ext_block_length > 24) {
                             for (int8u i = 0; i < 6; ++i) {
                                 Skip_S1(8,                      ("hue_vector_field" + to_string(i)).c_str());
                             }
@@ -1503,7 +1565,7 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data)
                     case 9: // PER-SHOT SOURCE CONTENT PRIMARIES (DYNAMIC)
                         Skip_S1(8,                              "source_primary_index");
                         ext_block_use_bits += 8;
-                        if (ext_block_length > 1) {
+                        if (ext_block_length > 16) {
                             Skip_S2(16,                         "source_primary_red_x");
                             Skip_S2(16,                         "source_primary_red_y");
                             Skip_S2(16,                         "source_primary_green_x");
@@ -1521,7 +1583,7 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data)
                         Skip_S2(12,                             "target_min_pq");
                         Skip_S1( 8,                             "target_primary_index");
                         ext_block_use_bits += 40;
-                        if (ext_block_length > 5) {
+                        if (ext_block_length > 20) {
                             Skip_S2(16,                         "target_primary_red_x");
                             Skip_S2(16,                         "target_primary_red_y");
                             Skip_S2(16,                         "target_primary_green_x");
@@ -1573,6 +1635,7 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data)
                         // Variable length: 4-bit revision + 4-bit count, then count x Level16Params (5 bytes each).
                         Skip_S1( 4,                             "revision");
                         Get_S1 ( 4, l16_count,                  "count");
+                        Loop_CheckValue(l16_count, ext_block_len_bits - 8, 40, "count");
                         ext_block_use_bits += 8;
                         for (int8u p = 0; p < l16_count; ++p) {
                             Element_Begin1("Level16Params");
@@ -3090,9 +3153,12 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, const char* Par
     {
         if (Replace)
         {
-            const size_t Pos_ToReplace= Stream_More_Item.Find(Parameter_ISO, Info_Name);
+            const size_t Pos_ToReplace= Stream_More_Find(Stream_More_Item, Parameter_ISO);
             if (Pos_ToReplace!=(size_t)-1)
+            {
                 Stream_More_Item.erase(Stream_More_Item.begin()+Pos_ToReplace); //Empty value --> remove the line
+                Stream_More_Index_Erase(Stream_More_Item, Pos_ToReplace, Parameter_ISO);
+            }
         }
     }
     else
@@ -3102,16 +3168,25 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, const char* Par
         if (Space!=string::npos)
         {
             Ztring ToSearch=Parameter_ISO.substr(0, Space);
-            for (size_t i=0; i<Stream_More_Item.size(); i++)
+            if (Stream_More_Find(Stream_More_Item, Parameter_ISO)==(size_t)-1) // Also updates the index
             {
-                const auto& Item=Stream_More_Item[i][Info_Name];
-                if (Item==Parameter_ISO)
+                // Is there a line with the same prefix
+                const auto& Positions=Stream_More_Index.Positions;
+                const auto ToSearch_Space=ToSearch+__T(' ');
+                const auto Group=Positions.lower_bound(ToSearch_Space);
+                if (Positions.find(ToSearch)!=Positions.end() || (Group!=Positions.end() && !Group->first.compare(0, ToSearch_Space.size(), ToSearch_Space)))
                 {
-                    LastFound=(size_t)-1;
-                    break;
+                    // Last line with the same prefix, searching from the end as it is usually there
+                    for (size_t i=Stream_More_Item.size(); i--;)
+                    {
+                        const auto& Item=Stream_More_Item[i][Info_Name];
+                        if (Item.rfind(ToSearch, 0)==0 && (Item.size()==ToSearch.size() || Item[ToSearch.size()]==__T(' ')))
+                        {
+                            LastFound=i;
+                            break;
+                        }
+                    }
                 }
-                if (Item.rfind(ToSearch, 0)==0 && (Item.size()==ToSearch.size() || Item[ToSearch.size()]==__T(' ')))
-                    LastFound=i;
             }
             if (LastFound!=(size_t)-1)
             {
@@ -3121,13 +3196,13 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, const char* Par
                 Line[Info_Text]=Value;
                 Line[Info_Options]=__T("Y NT");
                 Line[Info_Name_Text]=MediaInfoLib::Config.Language_Get(Parameter_Local);
+                Stream_More_Index_Insert(Stream_More_Item, LastFound+1);
                 return;
             }
         }
 
-        auto TargetFind=[&Parameter_ISO](const ZtringList& Line) { return !Line.empty() && Line[0] == Parameter_ISO; };
-        auto Target=find_if(Stream_More_Item.begin(), Stream_More_Item.end(), TargetFind);
-        if (Target==Stream_More_Item.end())
+        auto Target=Stream_More_Find(Stream_More_Item, Parameter_ISO);
+        if (Target==(size_t)-1)
         {
             size_t Pos=Stream_More_Item.size();
             Stream_More_Item.resize(Pos+1);
@@ -3137,10 +3212,11 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, const char* Par
             Line[Info_Text]=Value;
             Line[Info_Options]=__T("Y NT");
             Line[Info_Name_Text]=MediaInfoLib::Config.Language_Get(Parameter_Local);
+            Stream_More_Index_Insert(Stream_More_Item, Pos);
         }
         else
         {
-            auto& Item=(*Target)(Info_Text);
+            auto& Item=Stream_More_Item[Target](Info_Text);
             if (Item.empty() || Replace)
             {
                 Item=Value;
@@ -3183,6 +3259,96 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, const char* Par
 }
 
 //---------------------------------------------------------------------------
+// Same as Get(StreamKind, StreamPos, Name).empty() but using the index for unknown parameters
+bool File__Analyze::Stream_More_IsEmpty(stream_t StreamKind, size_t StreamPos, const Ztring& Name)
+{
+    if (MediaInfoLib::Config.Info_Get(StreamKind).Find(Name)!=Error)
+        return Get(StreamKind, StreamPos, Name).empty();
+    auto& Stream_More_Item=(*Stream_More)[StreamKind][StreamPos];
+    const auto Target=Stream_More_Find(Stream_More_Item, Name);
+    return Target==(size_t)-1 || Stream_More_Item[Target](Info_Text).empty();
+}
+
+//---------------------------------------------------------------------------
+// Position of the first line with this name, the index is rebuilt if the list changed outside of Fill()
+size_t File__Analyze::Stream_More_Find(const ZtringListList& List, const Ztring& Name)
+{
+    const ZtringList* Data=List.empty()?nullptr:&List[0];
+    if (Stream_More_Index.List!=&List || Stream_More_Index.Data!=Data || Stream_More_Index.Size!=List.size())
+    {
+        Stream_More_Index.List=&List;
+        Stream_More_Index.Data=Data;
+        Stream_More_Index.Size=List.size();
+        Stream_More_Index.Positions.clear();
+        Stream_More_Index.Lines.clear();
+        for (size_t Pos=0; Pos<List.size(); Pos++)
+            if (!List[Pos].empty() && Stream_More_Index.Positions.emplace(List[Pos][0], Stream_More_Index.Lines.size()).second) // First one is kept
+                Stream_More_Index.Lines.push_back(Pos);
+    }
+
+    auto It=Stream_More_Index.Positions.find(Name);
+    if (It==Stream_More_Index.Positions.end())
+        return (size_t)-1;
+    const auto Line=Stream_More_Index.Lines[It->second];
+    if (Line<List.size() && !List[Line].empty() && List[Line][0]==Name)
+        return Line;
+
+    // Not coherent, list was modified elsewhere
+    Stream_More_Index.List=nullptr;
+    return Stream_More_Find(List, Name);
+}
+
+//---------------------------------------------------------------------------
+// Update of the index after a line was inserted at Pos, the index is rebuilt later if it was not coherent with the list before the insertion
+void File__Analyze::Stream_More_Index_Insert(const ZtringListList& List, size_t Pos)
+{
+    if (Stream_More_Index.List!=&List || Stream_More_Index.Size+1!=List.size())
+    {
+        Stream_More_Index.List=nullptr;
+        return;
+    }
+    if (Pos<Stream_More_Index.Size)
+        for (auto& Line : Stream_More_Index.Lines)
+            if (Line>=Pos)
+                Line++;
+    const auto Position=Stream_More_Index.Positions.emplace(List[Pos][0], Stream_More_Index.Lines.size());
+    if (Position.second)
+        Stream_More_Index.Lines.push_back(Pos);
+    else if (Stream_More_Index.Lines[Position.first->second]>Pos)
+        Stream_More_Index.Lines[Position.first->second]=Pos; // First one is kept
+    Stream_More_Index.Data=&List[0];
+    Stream_More_Index.Size++;
+}
+
+//---------------------------------------------------------------------------
+// Update of the index after the line at Pos with this name was erased, the index is rebuilt later if it was not coherent with the list before the erasure
+void File__Analyze::Stream_More_Index_Erase(const ZtringListList& List, size_t Pos, const Ztring& Name)
+{
+    if (Stream_More_Index.List!=&List || Stream_More_Index.Size!=List.size()+1)
+    {
+        Stream_More_Index.List=nullptr;
+        return;
+    }
+    for (auto& Line : Stream_More_Index.Lines)
+        if (Line>Pos)
+            Line--;
+    const auto Position=Stream_More_Index.Positions.find(Name);
+    if (Position!=Stream_More_Index.Positions.end() && Stream_More_Index.Lines[Position->second]==Pos)
+    {
+        // Next line with the same name becomes the first one
+        size_t Next=Pos;
+        while (Next<List.size() && (List[Next].empty() || List[Next][0]!=Name))
+            Next++;
+        if (Next<List.size())
+            Stream_More_Index.Lines[Position->second]=Next;
+        else
+            Stream_More_Index.Positions.erase(Position);
+    }
+    Stream_More_Index.Data=List.empty()?nullptr:&List[0];
+    Stream_More_Index.Size--;
+}
+
+//---------------------------------------------------------------------------
 void File__Analyze::Fill_SetOptions(stream_t StreamKind, size_t StreamPos, const char* Parameter, const char* Options)
 {
     //Integrity
@@ -3204,7 +3370,16 @@ void File__Analyze::Fill_SetOptions(stream_t StreamKind, size_t StreamPos, const
         return;
     }
 
-    (*Stream_More)[StreamKind][StreamPos](Ztring().From_ISO_8859_1(Parameter), Info_Options).From_UTF8(Options);
+    auto& Stream_More_Item=(*Stream_More)[StreamKind][StreamPos];
+    const Ztring Parameter_ISO=Ztring().From_ISO_8859_1(Parameter);
+    const auto Target=Stream_More_Find(Stream_More_Item, Parameter_ISO);
+    if (Target!=(size_t)-1)
+        Stream_More_Item[Target](Info_Options).From_UTF8(Options);
+    else
+    {
+        Stream_More_Item(Parameter_ISO, Info_Options).From_UTF8(Options);
+        Stream_More_Index_Insert(Stream_More_Item, Stream_More_Item.size()-1);
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -3291,7 +3466,7 @@ const Ztring &File__Analyze::Retrieve_Const (stream_t StreamKind, size_t StreamP
         }
         if (StreamPos>=(*Stream)[StreamKind].size())
             return MediaInfoLib::Config.EmptyString_Get();
-        Parameter_Pos=(*Stream_More)[StreamKind][StreamPos].Find(Parameter_Local);
+        Parameter_Pos=Stream_More_Find((*Stream_More)[StreamKind][StreamPos], Parameter_Local);
         if (Parameter_Pos==Error)
             return MediaInfoLib::Config.EmptyString_Get();
         return (*Stream_More)[StreamKind][StreamPos](Parameter_Pos, 1);
@@ -3317,7 +3492,7 @@ Ztring File__Analyze::Retrieve (stream_t StreamKind, size_t StreamPos, const cha
     size_t Parameter_Pos=MediaInfoLib::Config.Info_Get(StreamKind).Find(Parameter_Local);
     if (Parameter_Pos==Error)
     {
-        Parameter_Pos=(*Stream_More)[StreamKind][StreamPos].Find(Parameter_Local);
+        Parameter_Pos=Stream_More_Find((*Stream_More)[StreamKind][StreamPos], Parameter_Local);
         if (Parameter_Pos==Error)
             return MediaInfoLib::Config.EmptyString_Get();
         return (*Stream_More)[StreamKind][StreamPos](Parameter_Pos, 1);
@@ -3351,7 +3526,7 @@ void File__Analyze::Clear (stream_t StreamKind, size_t StreamPos, const char* Pa
     size_t Parameter_Pos=MediaInfoLib::Config.Info_Get(StreamKind).Find(Parameter_Local);
     if (Parameter_Pos==Error)
     {
-        Parameter_Pos=(*Stream_More)[StreamKind][StreamPos].Find(Parameter_Local);
+        Parameter_Pos=Stream_More_Find((*Stream_More)[StreamKind][StreamPos], Parameter_Local);
         if (Parameter_Pos==Error)
             return;
         (*Stream_More)[StreamKind][StreamPos](Parameter_Pos, 1).clear();
@@ -3656,7 +3831,7 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
         {
             //Ignore
         }
-        else if (!ToFill_Value.empty() && (Erase || (Pos < Size_NotExtra && Get(StreamKind, StreamPos_To, Pos).empty()) || (Pos >= Size_NotExtra && Get(StreamKind, StreamPos_To, ToAdd.Get(StreamKind, StreamPos_From, Pos, Info_Name)).empty())))
+        else if (!ToFill_Value.empty() && (Erase || (Pos < Size_NotExtra && Get(StreamKind, StreamPos_To, Pos).empty()) || (Pos >= Size_NotExtra && Stream_More_IsEmpty(StreamKind, StreamPos_To, ToAdd.Get(StreamKind, StreamPos_From, Pos, Info_Name)))))
         {
             if (Pos<MediaInfoLib::Config.Info_Get(StreamKind).size())
                 Fill(StreamKind, StreamPos_To, Pos, ToFill_Value, true);
