@@ -1065,6 +1065,7 @@ void File_Bdmv::Mobj_MovieObjects()
     int16u number_of_mobjs;
     Skip_B4(                                                    "reserved");
     Get_B2 (number_of_mobjs,                                    "number_of_mobj");
+    Loop_CheckValue(number_of_mobjs, 4, "number_of_mobj");
     for (int16u mobjs_Pos=0; mobjs_Pos<number_of_mobjs; mobjs_Pos++)
     {
         Element_Begin1("mobj");
@@ -1076,6 +1077,7 @@ void File_Bdmv::Mobj_MovieObjects()
         Skip_BS(13,                                             "reserved");
         BS_End();
         Get_B2 (number_of_navigation_commands,                  "number_of_navigation_commands");
+        Loop_CheckValue(number_of_navigation_commands, 12, "number_of_navigation_commands");
         for (int16u navigation_command_Pos=0; navigation_command_Pos<number_of_navigation_commands; navigation_command_Pos++)
         {
             Element_Begin1("navigation_command");
