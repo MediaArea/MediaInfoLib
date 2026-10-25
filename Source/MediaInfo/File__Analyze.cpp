@@ -2040,6 +2040,7 @@ bool File__Analyze::Synchronize_0x000001(bool NeedFour)
     constexpr size_t Sync_Pos = 2;
     constexpr size_t Frame_Size = 3;
     const size_t Required_Size = Frame_Size + NeedFour;
+    const size_t Buffer_Offset_Begin = Buffer_Offset;
 
     // Synchronizing
     while (Buffer_Size - Buffer_Offset >= Required_Size)
@@ -2057,8 +2058,8 @@ bool File__Analyze::Synchronize_0x000001(bool NeedFour)
         if (Buffer[Buffer_Offset] == 0x00
             && Buffer[Buffer_Offset + 1] == 0x00)
         {
-            if (NeedFour && Buffer_Offset && Buffer[Buffer_Offset - 1] == 0x00)
-                Buffer_Offset--;
+            if (NeedFour && Buffer_Offset > Buffer_Offset_Begin && Buffer[Buffer_Offset - 1] == 0x00)
+                Buffer_Offset--; // Not before the start of the search, else we may come back to an already parsed position and loop forever
             return true;
         }
 
