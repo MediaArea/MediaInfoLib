@@ -1011,13 +1011,25 @@ int File_DtsUhd::Frame()
     Get_VR (Table, FTOCPayloadinBytes,                          "FTOCPayloadinBytes");
     FTOCPayloadinBytes++;
     if (FTOCPayloadinBytes<=4 || FTOCPayloadinBytes>=FrameSize)
+    {
+        BS_End();
         return DTSUHD_INCOMPLETE;  //Data buffer does not contain entire FTOC
+    }
     if (ExtractStreamParams())
+    {
+        BS_End();
         return DTSUHD_INVALID_FRAME;
+    }
     if (ResolveAudPresParams())
+    {
+        BS_End();
         return DTSUHD_INVALID_FRAME;
+    }
     if (ExtractChunkNaviData())  //AudioChunkTypes and payload sizes.
+    {
+        BS_End();
         return DTSUHD_INVALID_FRAME;
+    }
     size_t Remain8=Data_BS_Remain()%8;
     if (Remain8)
         Skip_S1(Remain8,                                        "Padding");

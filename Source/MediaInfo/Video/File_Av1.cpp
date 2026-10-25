@@ -853,6 +853,7 @@ void File_Av1::metadata_itu_t_t35_B5_003B_00000800()
     {
         Skip_BS(Data_BS_Remain(),                               "(Unparsed emdf_container data)");
         Element_End0(); 
+        BS_End();
         return;
     }
 

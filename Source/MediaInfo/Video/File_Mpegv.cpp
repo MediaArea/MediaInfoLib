@@ -2562,6 +2562,7 @@ void File_Mpegv::slice_start()
                     if (!Data_BS_Remain())
                     {
                         Trusted_IsNot("extra_bit_slice is missing");
+                        BS_End();
                         return;
                     }
                 }

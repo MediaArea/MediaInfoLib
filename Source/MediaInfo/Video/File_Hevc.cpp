@@ -3126,7 +3126,10 @@ void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_0031_GA94_09()
     BS_Begin();
     Get_UE(app_identifier, "app_identifier");
     if (app_identifier!=1)
+    {
+        BS_End();
         return;
+    }
     Get_UE (app_version,                                        "app_version");
     if (!app_version)
     {

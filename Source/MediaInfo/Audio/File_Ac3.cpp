@@ -4459,6 +4459,7 @@ void File_Ac3::HD()
         if ((!restart_nonexistent && Synch!=0xF8726F) || (restart_nonexistent && Synch==0xF8726F))
         {
             Element_End0();
+            BS_End();
             return;
         }
         Skip_SB(                                                "crc_present");

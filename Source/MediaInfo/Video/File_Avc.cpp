@@ -3185,7 +3185,7 @@ void File_Avc::sei_message_pic_timing(int32u /*payloadSize*/, int32u seq_paramet
             case  6 : FrameRate_Divider=1; break;
             case  7 : FrameRate_Divider=2; break;
             case  8 : FrameRate_Divider=3; break;
-            default : Param_Info1("Reserved"); return; //NumClockTS is unknown
+            default : Param_Info1("Reserved"); BS_End(); return; //NumClockTS is unknown
         }
         Param_Info1(Avc_pic_struct[pic_struct]);
         int8u NumClockTS=Avc_NumClockTS[pic_struct];
@@ -3940,7 +3940,10 @@ void File_Avc::seq_parameter_set()
     int32u seq_parameter_set_id;
     seq_parameter_set_struct* Data_Item_New=seq_parameter_set_data(seq_parameter_set_id);
     if (!Data_Item_New)
+    {
+        BS_End();
         return;
+    }
     Mark_1(                                                     );
     size_t BS_bits=Data_BS_Remain()%8;
     while (BS_bits)
@@ -4053,6 +4056,7 @@ void File_Avc::pic_parameter_set()
         {
             //Not yet present
             Skip_BS(Data_BS_Remain(),                               "Data (seq_parameter_set is missing)");
+            BS_End();
             return;
         }
     }
@@ -4094,6 +4098,7 @@ void File_Avc::pic_parameter_set()
             if(pic_size_in_map_units_minus1>=((int64u)(*seq_parameter_set_Item)->pic_width_in_mbs_minus1+1)*((int64u)(*seq_parameter_set_Item)->pic_height_in_map_units_minus1+1))
             {
                 Trusted_IsNot("pic_size_in_map_units_minus1 too high");
+                BS_End();
                 return;
             }
             #if defined (__mips__)       || defined (__mipsel__)
@@ -4271,7 +4276,10 @@ void File_Avc::subset_seq_parameter_set()
     int32u subset_seq_parameter_set_id;
     seq_parameter_set_struct* Data_Item_New=seq_parameter_set_data(subset_seq_parameter_set_id);
     if (!Data_Item_New)
+    {
+        BS_End();
         return;
+    }
     if (Data_Item_New->profile_idc==83 || Data_Item_New->profile_idc==86)
     {
         //bool svc_vui_parameters_present_flag;

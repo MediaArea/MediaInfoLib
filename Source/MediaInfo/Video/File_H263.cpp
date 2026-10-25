@@ -327,6 +327,7 @@ void File_H263::Data_Parse()
         if (!Status[IsFilled])
             Frame_Count=0; // Back to start of sync
         Trusted_IsNot("Out of Order");
+        BS_End();
         return;
     }
     Temporal_Reference=Temporal_Reference_Temp;

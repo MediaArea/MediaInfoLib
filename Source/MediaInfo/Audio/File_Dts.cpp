@@ -2168,6 +2168,7 @@ void File_Dts::Data_Parse()
         if (ExtSSHeaderSize<4)
         {
             Element_End0();
+            BS_End();
             return;
         }
         auto CRC=CRC_Compute(ExtSSHeaderSize-4);
@@ -2175,6 +2176,7 @@ void File_Dts::Data_Parse()
         {
             Element_Info1("CRC NOK");
             Element_End0();
+            BS_End();
             return;
         }
         Param_Info2(ExtSSHeaderSize+1, " bytes");

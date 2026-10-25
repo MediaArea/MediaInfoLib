@@ -2171,6 +2171,7 @@ void File_DolbyE::evo_frame()
     {
         Skip_BS(Data_BS_Remain(),                               "(Unparsed evo_frame data)");
         Element_End0(); 
+        BS_End();
         return;
     }
     Get_S1 (3, key_id,                                          "key_id");
