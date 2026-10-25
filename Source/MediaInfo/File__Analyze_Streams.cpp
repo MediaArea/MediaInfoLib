@@ -2416,8 +2416,6 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
         }
         if (Data.Count_Shot || (IsRPU && Data.Count_CMv29))
             Fill(Stream_Video, 0, "DolbyVision ShotCount", Data.Count_Shot);
-        if (Data.FrameRange_Start!=(int64u)-1 && Data.FrameRange_End>=Data.FrameRange_Start)
-            Fill(Stream_Video, 0, "DolbyVision FrameRange", to_string(Data.FrameRange_Start)+'-'+to_string(Data.FrameRange_End));
     }
 
     // Low level details

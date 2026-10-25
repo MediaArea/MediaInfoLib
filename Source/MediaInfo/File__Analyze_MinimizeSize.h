@@ -1601,7 +1601,7 @@ public :
     #if MEDIAINFO_CONFORMANCE
         void*               Conformance_Data;
         void                Fill_Conformance(const char* Field, const char* Value, uint8_t Flags = {}, conformance_type Level = Conformance_Error, stream_t StreamKind = Stream_Max, size_t StreamPos = 0);
-        void                Fill_Conformance(const char* Field, const string& Value, uint8_t Flags = {}, conformance_type Level = Conformance_Error) { Fill_Conformance(Field, Value.c_str(), Flags, Level); }
+        void                Fill_Conformance(const char* Field, const string& Value, uint8_t Flags = {}, conformance_type Level = Conformance_Error, stream_t StreamKind = Stream_Max, size_t StreamPos = 0) { Fill_Conformance(Field, Value.c_str(), Flags, Level, StreamKind, StreamPos); }
         void                Clear_Conformance();
         void                Merge_Conformance(bool FromConfig = false);
         void                Streams_Finish_Conformance(stream_t StreamKind = Stream_Max, size_t StreamPos = (size_t)-1);
@@ -1613,7 +1613,7 @@ public :
         void                SynchLost(const char* Prefix = nullptr, int64u CountOfBytes = 0, bool AreZero = false);
     #else //MEDIAINFO_CONFORMANCE
         void                Fill_Conformance(const char* Field, const char* Value, uint8_t Flags = {}, conformance_type Level = Conformance_Error, stream_t StreamKind = Stream_Max, size_t StreamPos = 0) {}
-        void                Fill_Conformance(const char* Field, const string& Value, uint8_t Flags = {}, conformance_type Level = Conformance_Error) { Fill_Conformance(Field, Value.c_str(), Flags, Level); }
+        void                Fill_Conformance(const char* Field, const string& Value, uint8_t Flags = {}, conformance_type Level = Conformance_Error, stream_t StreamKind = Stream_Max, size_t StreamPos = 0) { Fill_Conformance(Field, Value.c_str(), Flags, Level, StreamKind, StreamPos); }
         void                Clear_Conformance() {}
         void                Merge_Conformance(bool FromConfig = false) {}
         void                Streams_Finish_Conformance(stream_t = Stream_Max, size_t = (size_t)-1) {}

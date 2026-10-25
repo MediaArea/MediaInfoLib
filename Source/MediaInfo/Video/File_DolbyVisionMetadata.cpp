@@ -23,6 +23,7 @@
 //---------------------------------------------------------------------------
 #include "MediaInfo/Video/File_DolbyVisionMetadata.h"
 #include "tinyxml2.h"
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <set>
@@ -49,6 +50,26 @@ static void TID_Collect(XMLElement* Element, std::set<string>& TIDs)
         else
             TID_Collect(Item, TIDs);
     }
+}
+
+//---------------------------------------------------------------------------
+// Values separated by spaces (version 4.x or more) or commas (version 2.x)
+static std::vector<float64> Values_Get(const char* Text)
+{
+    std::vector<float64> Values;
+    for (;;)
+    {
+        while (*Text == ' ' || *Text == ',')
+            Text++;
+        if (!*Text)
+            break;
+        const char* End = Text;
+        while (*End && *End != ' ' && *End != ',')
+            End++;
+        Values.push_back(Ztring().From_UTF8(Text, End - Text).To_float64());
+        Text = End;
+    }
+    return Values;
 }
 
 //***************************************************************************
@@ -226,10 +247,159 @@ bool File_DolbyVisionMetadata::FileHeader_Begin()
     if (AspectRatio)
         Fill(Stream_Video, 0, Video_DisplayAspectRatio, AspectRatio);
 
+    // Dolby Vision metadata, displayed the same way as the metadata from the RPU
+    DV_RPU DV;
+    int8u TargetDisplay_WithoutID = 255;
+    auto TargetDisplay_Fill = [&](XMLElement* TargetDisplay)
+    {
+        const char* Name = TargetDisplay->Attribute("name");
+        const char* ID = TargetDisplay->Attribute("id");
+        float64 PeakBrightness = 0, MinimumBrightness = 0;
+        for (XMLElement* TargetDisplay_Item = TargetDisplay->FirstChildElement(); TargetDisplay_Item; TargetDisplay_Item = TargetDisplay_Item->NextSiblingElement())
+        {
+            const char* Text = TargetDisplay_Item->GetText();
+            if (!Text)
+                continue;
+            if (!strcmp(TargetDisplay_Item->Name(), "Name"))
+                Name = Text;
+            if (!strcmp(TargetDisplay_Item->Name(), "ID"))
+                ID = Text;
+            if (!strcmp(TargetDisplay_Item->Name(), "PeakBrightness"))
+                PeakBrightness = atof(Text);
+            if (!strcmp(TargetDisplay_Item->Name(), "MinimumBrightness"))
+                MinimumBrightness = atof(Text);
+        }
+        int8u Index = ID ? (int8u)atoi(ID) : TargetDisplay_WithoutID--;
+        if (find(DV.L8_target_display_index.begin(), DV.L8_target_display_index.end(), Index) != DV.L8_target_display_index.end())
+            return;
+        DV.L8_target_display_index.push_back(Index);
+        if (Name)
+            DV.TargetDisplay_Names.emplace_back(Index, Ztring().From_UTF8(Name));
+        if (PeakBrightness)
+            DV.L10.push_back({ Index, 0, DolbyVision_Nits_ToPQ12(PeakBrightness), DolbyVision_Nits_ToPQ12(MinimumBrightness) });
+    };
+    auto MasteringDisplay_Fill = [&](XMLElement* MasteringDisplay)
+    {
+        const char* Name = MasteringDisplay->Attribute("name");
+        const char* ID = MasteringDisplay->Attribute("id");
+        for (XMLElement* MasteringDisplay_Item = MasteringDisplay->FirstChildElement(); MasteringDisplay_Item; MasteringDisplay_Item = MasteringDisplay_Item->NextSiblingElement())
+        {
+            const char* Text = MasteringDisplay_Item->GetText();
+            if (!Text)
+                continue;
+            if (!strcmp(MasteringDisplay_Item->Name(), "Name"))
+                Name = Text;
+            if (!strcmp(MasteringDisplay_Item->Name(), "ID"))
+                ID = Text;
+            if (!strcmp(MasteringDisplay_Item->Name(), "DiagonalSize"))
+                DV.source_diagonal = (int16u)atoi(Text);
+        }
+        if (Name)
+            DV.MasteringDisplay_Name.From_UTF8(Name);
+        if (ID)
+            DV.MasteringDisplay_ID.From_UTF8(ID);
+    };
+    auto MasteringDisplay_Values = [&](const mastering_metadata_2086& Mastering)
+    {
+        if (Mastering.Luminance[0] != (int32u)-1 && Mastering.Luminance[1] != (int32u)-1)
+        {
+            int32u Source = (((int32u)DolbyVision_Nits_ToPQ12(((float64)Mastering.Luminance[0]) / 10000)) << 16) | DolbyVision_Nits_ToPQ12(((float64)Mastering.Luminance[1]) / 10000);
+            if (find(DV.Sources.begin(), DV.Sources.end(), Source) == DV.Sources.end())
+                DV.Sources.push_back(Source);
+        }
+        DV_RPU::l9 L9{};
+        static const int8u Order[8] = { 4, 5, 0, 1, 2, 3, 6, 7 }; // Green, blue, red, white to red, green, blue, white
+        for (int8u i = 0; i < 8; i++)
+        {
+            int16u Value = Mastering.Primaries[Order[i]];
+            if (Value == (int16u)-1)
+                return;
+            L9.Primaries[i] = (int16u)float64_int64s(((float64)Value) * 32767 / 50000);
+        }
+        L9.source_primary_index = 255;
+        L9.Explicit = true;
+        if (find(DV.L9.begin(), DV.L9.end(), L9) == DV.L9.end())
+            DV.L9.push_back(L9);
+    };
+    auto Level_Parse = [&](XMLElement* Level_Item)
+    {
+        int Level = Level_Item->IntAttribute("level", -1);
+        if (Level < 0)
+            return;
+        DV_RPU::l9 L9{};
+        DV_RPU::l11 L11{ 0, 0, (int8u)-1 };
+        bool L9_IsValid = false, L11_IsValid = false;
+        for (XMLElement* Item = Level_Item->FirstChildElement(); Item; Item = Item->NextSiblingElement())
+        {
+            const char* Text = Item->GetText();
+            if (!Text)
+                continue;
+            if (Level == 1 && !strcmp(Item->Name(), "ImageCharacter"))
+            {
+                auto Values = Values_Get(Text); // Minimum, average, maximum
+                if (Values.size() == 3 && Values[1] >= 0 && Values[2] >= 0 && Values[1] <= 1 && Values[2] <= 1)
+                {
+                    auto avg_PQ = (int16u)float64_int64s(Values[1] * 4095);
+                    auto max_PQ = (int16u)float64_int64s(Values[2] * 4095);
+                    if (DV.L1_avg_PQ < avg_PQ)
+                        DV.L1_avg_PQ = avg_PQ;
+                    if (DV.L1_max_PQ < max_PQ)
+                        DV.L1_max_PQ = max_PQ;
+                }
+            }
+            if (Level == 5 && !strcmp(Item->Name(), "AspectRatios"))
+            {
+                auto Values = Values_Get(Text); // Canvas, image
+                if (Values.size() == 2 && Values[1] > 0 && find(DV.Active_DisplayAspectRatios.begin(), DV.Active_DisplayAspectRatios.end(), Values[1]) == DV.Active_DisplayAspectRatios.end())
+                    DV.Active_DisplayAspectRatios.push_back(Values[1]);
+            }
+            if (Level == 9 && !strcmp(Item->Name(), "SourceColorModel"))
+            {
+                L9.source_primary_index = (int8u)atoi(Text);
+                L9_IsValid = true;
+            }
+            if (Level == 9 && !strcmp(Item->Name(), "SourceColorPrimary"))
+            {
+                auto Values = Values_Get(Text);
+                if (Values.size() == 8)
+                {
+                    for (int8u i = 0; i < 8; i++)
+                        L9.Primaries[i] = (int16u)(int16s)float64_int64s(Values[i] * 32767);
+                    L9.Explicit = true;
+                }
+            }
+            if (Level == 11 && !strcmp(Item->Name(), "ContentType"))
+            {
+                L11.content_type = (int8u)atoi(Text);
+                L11_IsValid = true;
+            }
+            if (Level == 11 && !strcmp(Item->Name(), "IntendedWhitePoint"))
+                L11.white_point = (int8u)atoi(Text);
+        }
+        if (L9_IsValid && (L9.Explicit || L9.source_primary_index != 255) && find(DV.L9.begin(), DV.L9.end(), L9) == DV.L9.end())
+            DV.L9.push_back(L9);
+        if (L11_IsValid && find(DV.L11.begin(), DV.L11.end(), L11) == DV.L11.end())
+            DV.L11.push_back(L11);
+    };
+    auto DynamicData_Parse = [&](XMLElement* PluginNode)
+    {
+        // Version 2.x: DolbyEDR elements with a level attribute, version 4.x or more: LevelN elements in DVDynamicData
+        for (XMLElement* PluginNode_Item = PluginNode->FirstChildElement(); PluginNode_Item; PluginNode_Item = PluginNode_Item->NextSiblingElement())
+        {
+            if (!strcmp(PluginNode_Item->Name(), "DVDynamicData"))
+            {
+                for (XMLElement* Level_Item = PluginNode_Item->FirstChildElement(); Level_Item; Level_Item = Level_Item->NextSiblingElement())
+                    Level_Parse(Level_Item);
+            }
+            else
+                Level_Parse(PluginNode_Item);
+        }
+    };
+
     if (MDF_Output)
     {
         if (!Version.empty())
-            Fill(Stream_Video, 0, Video_HDR_Format_Settings, Version[0] == '2' ? "CM v2.9" : "CM v4.0");
+            DV.CMVersion.From_UTF8(Version[0] == '2' ? "2.9" : "4.0");
         if (MDF_Revision_Last)
         {
             const char* CompanyName = nullptr;
@@ -289,6 +459,7 @@ bool File_DolbyVisionMetadata::FileHeader_Begin()
     }
 
     int64u Shot_In = (int64u)-1, Shot_Out = 0;
+    size_t Shot_Count = 0;
     for (auto MasterElement : MasterElements)
     {
     if (!MasterElement)
@@ -436,21 +607,24 @@ bool File_DolbyVisionMetadata::FileHeader_Begin()
         }
         if (!strcmp(DolbyVisionGlobalData_Item->Name(), "Level6"))
         {
+            DV_RPU::l6 L6{};
             for (XMLElement* Level6_Item = DolbyVisionGlobalData_Item->FirstChildElement(); Level6_Item; Level6_Item = Level6_Item->NextSiblingElement())
             {
                 if (!strcmp(Level6_Item->Name(), "MaxCLL"))
                 {
                     if (const char* Text = Level6_Item->GetText())
-                        if (Ztring().From_UTF8(Text).To_float32())
+                        if ((L6.max_content_light_level = Ztring().From_UTF8(Text).To_float64()))
                             Fill(Stream_Video, 0, Video_MaxCLL, Ztring(Text));
                 }
                 if (!strcmp(Level6_Item->Name(), "MaxFALL"))
                 {
                     if (const char* Text = Level6_Item->GetText())
-                        if (Ztring().From_UTF8(Text).To_float32())
+                        if ((L6.max_frame_average_light_level = Ztring().From_UTF8(Text).To_float64()))
                             Fill(Stream_Video, 0, Video_MaxFALL, Ztring(Text));
                 }
             }
+            if (L6.max_content_light_level || L6.max_frame_average_light_level)
+                DV.L6.push_back(L6);
         }
         if (!strcmp(DolbyVisionGlobalData_Item->Name(), "PluginNode"))
         {
@@ -466,6 +640,7 @@ bool File_DolbyVisionMetadata::FileHeader_Begin()
                             {
                                 if (!strcmp(Characteristics_Item->Name(), "MasteringDisplay"))
                                 {
+                                    MasteringDisplay_Fill(Characteristics_Item);
                                     mastering_metadata_2086 Mastering;
                                     memset(&Mastering, 0xFF, sizeof(Mastering));
                                     for (XMLElement* MasteringDisplay_Item=Characteristics_Item->FirstChildElement(); MasteringDisplay_Item; MasteringDisplay_Item=MasteringDisplay_Item->NextSiblingElement())
@@ -535,16 +710,22 @@ bool File_DolbyVisionMetadata::FileHeader_Begin()
                                         }
                                     }
                                     Ztring colour_primaries, luminance;
+                                    MasteringDisplay_Values(Mastering);
                                     Get_MasteringDisplayColorVolume(colour_primaries, luminance, Mastering);
                                     if (!colour_primaries.empty())
                                         Fill(Stream_Video, 0, Video_MasteringDisplay_ColorPrimaries, colour_primaries);
                                     if (!luminance.empty())
                                         Fill(Stream_Video, 0, Video_MasteringDisplay_Luminance, luminance);
                                 }
+                                if (!strcmp(Characteristics_Item->Name(), "TargetDisplay"))
+                                    TargetDisplay_Fill(Characteristics_Item);
                             }
                         }
+                        if (!strcmp(DolbyEDR_Item->Name(), "TargetDisplay"))
+                            TargetDisplay_Fill(DolbyEDR_Item);
                         if (!strcmp(DolbyEDR_Item->Name(), "MasteringDisplay"))
                         {
+                            MasteringDisplay_Fill(DolbyEDR_Item);
                             mastering_metadata_2086 Mastering;
                             memset(&Mastering, 0xFF, sizeof(Mastering));
                             for (XMLElement* MasteringDisplay_Item=DolbyEDR_Item->FirstChildElement(); MasteringDisplay_Item; MasteringDisplay_Item=MasteringDisplay_Item->NextSiblingElement())
@@ -614,11 +795,40 @@ bool File_DolbyVisionMetadata::FileHeader_Begin()
                                 }
                             }
                             Ztring colour_primaries, luminance;
+                            MasteringDisplay_Values(Mastering);
                             Get_MasteringDisplayColorVolume(colour_primaries, luminance, Mastering);
                             if (!colour_primaries.empty())
                                 Fill(Stream_Video, 0, Video_MasteringDisplay_ColorPrimaries, colour_primaries);
                             if (!luminance.empty())
                                 Fill(Stream_Video, 0, Video_MasteringDisplay_Luminance, luminance);
+                        }
+                    }
+                }
+                if (!strcmp(PluginNode_Item->Name(), "Level254"))
+                {
+                    for (XMLElement* Level254_Item = PluginNode_Item->FirstChildElement(); Level254_Item; Level254_Item = Level254_Item->NextSiblingElement())
+                    {
+                        const char* Text = Level254_Item->GetText();
+                        if (!Text)
+                            continue;
+                        if (!strcmp(Level254_Item->Name(), "CMVersion"))
+                        {
+                            // "4 1" is displayed as "4.1"
+                            Ztring CMVersion;
+                            CMVersion.From_UTF8(Text);
+                            CMVersion.FindAndReplace(__T(" "), __T("."), 0, Ztring_Recursive);
+                            CMVersion.FindAndReplace(__T(","), __T("."), 0, Ztring_Recursive);
+                            DV.CMVersion = CMVersion;
+                        }
+                        if (!strcmp(Level254_Item->Name(), "DMVersion"))
+                        {
+                            DV.L254_Present = true;
+                            DV.dm_version_index = (int8u)atoi(Text);
+                        }
+                        if (!strcmp(Level254_Item->Name(), "DMMode"))
+                        {
+                            DV.L254_Present = true;
+                            DV.dm_mode = (int8u)atoi(Text);
                         }
                     }
                 }
@@ -655,6 +865,15 @@ bool File_DolbyVisionMetadata::FileHeader_Begin()
                         Shot_Out = In_Value + Duration_Value;
                 }
             }
+            for (XMLElement* Shot_Item = DolbyVisionGlobalData_Item->FirstChildElement(); Shot_Item; Shot_Item = Shot_Item->NextSiblingElement())
+            {
+                if (!strcmp(Shot_Item->Name(), "PluginNode"))
+                    DynamicData_Parse(Shot_Item);
+                if (!strcmp(Shot_Item->Name(), "Frame"))
+                    if (XMLElement* PluginNode = Shot_Item->FirstChildElement("PluginNode"))
+                        DynamicData_Parse(PluginNode);
+            }
+            Shot_Count++;
         }
         if (!strcmp(DolbyVisionGlobalData_Item->Name(), "TrackName"))
         {
@@ -673,8 +892,17 @@ bool File_DolbyVisionMetadata::FileHeader_Begin()
         }
     }
     }
-    if (Shot_Out > Shot_In)
-        Fill(Stream_Video, 0, Video_FrameCount, Shot_Out - Shot_In);
+    if (Shot_Count)
+    {
+        DV.Count_Shot = (int32u)Shot_Count;
+        if (Shot_Out > Shot_In)
+        {
+            Fill(Stream_Video, 0, Video_FrameCount, Shot_Out - Shot_In);
+            DV.FrameRange_Start = Shot_In;
+            DV.FrameRange_End = Shot_Out - 1;
+        }
+    }
+    DolbyVision_Streams_Fill(DV, DV_Source_XML);
 
     if (MDF_Output)
         Conformance_MDF(document.FirstChildElement(), MasterElements[1], Version);
@@ -694,7 +922,7 @@ void File_DolbyVisionMetadata::Conformance_MDF(XMLElement* Root, XMLElement* Tra
     // Version, attribute in version 2.x, element in version 4.x or more
     if (Version.empty())
     {
-        Fill_Conformance("DolbyVisionMetadata Version", "Version is missing");
+        Fill_Conformance("DolbyVision Version", "Version is missing", {}, Conformance_Error, Stream_Video, 0);
         return;
     }
     const int Version_Major = atoi(Version.c_str());
@@ -704,9 +932,9 @@ void File_DolbyVisionMetadata::Conformance_MDF(XMLElement* Root, XMLElement* Tra
     if (XMLElement* Version_Item = Root->FirstChildElement("Version"))
         Version_Element = Version_Item->GetText();
     if (Version_Attribute && Version_Element && strcmp(Version_Attribute, Version_Element))
-        Fill_Conformance("DolbyVisionMetadata Version", "version attribute (" + string(Version_Attribute) + ") and Version element (" + Version_Element + ") differ");
+        Fill_Conformance("DolbyVision Version", "version attribute (" + string(Version_Attribute) + ") and Version element (" + Version_Element + ") differ", {}, Conformance_Error, Stream_Video, 0);
     if (IsV2 ? Version_Element != nullptr : Version_Attribute != nullptr)
-        Fill_Conformance("DolbyVisionMetadata Version", IsV2 ? "Version element is not expected in version 2.x, version attribute is expected" : "version attribute is not expected in version 4.x or more, Version element is expected", {}, Conformance_Warning);
+        Fill_Conformance("DolbyVision Version", IsV2 ? "Version element is not expected in version 2.x, version attribute is expected" : "version attribute is not expected in version 4.x or more, Version element is expected", {}, Conformance_Warning, Stream_Video, 0);
 
     // Namespace
     if (const char* Namespace = Root->Attribute("xmlns"))
@@ -719,7 +947,7 @@ void File_DolbyVisionMetadata::Conformance_MDF(XMLElement* Root, XMLElement* Tra
                 if (Character == '.')
                     Character = '_';
             if (Namespace_Expected != Namespace + sizeof(Namespace_Prefix) - 1)
-                Fill_Conformance("DolbyVisionMetadata Namespace", "Namespace " + string(Namespace) + " does not match version " + Version);
+                Fill_Conformance("DolbyVision Namespace", "Namespace " + string(Namespace) + " does not match version " + Version, {}, Conformance_Error, Stream_Video, 0);
         }
     }
 
@@ -736,7 +964,7 @@ void File_DolbyVisionMetadata::Conformance_MDF(XMLElement* Root, XMLElement* Tra
             return;
         bool HasComma = strchr(Text, ',') != nullptr;
         if (IsV2 ? (!HasComma && strchr(Text, ' ')) : HasComma)
-            Fill_Conformance("DolbyVisionMetadata Structure", string(Element->Name()) + " values are separated by " + (IsV2 ? "space" : "comma") + ", " + (IsV2 ? "comma" : "space") + " is expected in version " + Version);
+            Fill_Conformance("DolbyVision Structure", string(Element->Name()) + " values are separated by " + (IsV2 ? "space" : "comma") + ", " + (IsV2 ? "comma" : "space") + " is expected in version " + Version, {}, Conformance_Error, Stream_Video, 0);
     };
     if (XMLElement* ColorEncoding = Track->FirstChildElement("ColorEncoding"))
     {
@@ -774,7 +1002,7 @@ void File_DolbyVisionMetadata::Conformance_MDF(XMLElement* Root, XMLElement* Tra
         for (XMLElement* PluginNode_Item = PluginNode->FirstChildElement(); PluginNode_Item; PluginNode_Item = PluginNode_Item->NextSiblingElement())
         {
             if (!strcmp(PluginNode_Item->Name(), GlobalData_Unexpected))
-                Fill_Conformance("DolbyVisionMetadata Structure", string(GlobalData_Unexpected) + " element is not expected in version " + Version);
+                Fill_Conformance("DolbyVision Structure", string(GlobalData_Unexpected) + " element is not expected in version " + Version, {}, Conformance_Error, Stream_Video, 0);
             if (!strcmp(PluginNode_Item->Name(), "DVGlobalData") || !strcmp(PluginNode_Item->Name(), "DolbyEDR"))
             {
                 // Same places as for the display of the displays, also if the element name does not match the version
@@ -789,19 +1017,19 @@ void File_DolbyVisionMetadata::Conformance_MDF(XMLElement* Root, XMLElement* Tra
 
     // Level 254
     if (IsV2 && Level254)
-        Fill_Conformance("DolbyVisionMetadata Level254", "Level254 is not expected in version " + Version, {}, Conformance_Warning);
+        Fill_Conformance("DolbyVision Level254", "Level254 is not expected in version " + Version, {}, Conformance_Warning, Stream_Video, 0);
     if (!IsV2 && !Level254)
-        Fill_Conformance("DolbyVisionMetadata Level254", "Level254 is missing", {}, Conformance_Warning);
+        Fill_Conformance("DolbyVision Level254", "Level254 is missing", {}, Conformance_Warning, Stream_Video, 0);
     if (!IsV2 && Level254)
     {
         if (XMLElement* CMVersion = Level254->FirstChildElement("CMVersion"))
         {
             if (const char* Text = CMVersion->GetText())
                 if (atoi(Text) != 4)
-                    Fill_Conformance("DolbyVisionMetadata Level254", "CMVersion " + string(Text) + " does not match version " + Version + " (actual " + std::to_string(atoi(Text)) + ", expected 4)", {}, Conformance_Warning);
+                    Fill_Conformance("DolbyVision Level254", "CMVersion " + string(Text) + " does not match version " + Version + " (actual " + std::to_string(atoi(Text)) + ", expected 4)", {}, Conformance_Warning, Stream_Video, 0);
         }
         else
-            Fill_Conformance("DolbyVisionMetadata Level254", "CMVersion is missing", {}, Conformance_Warning);
+            Fill_Conformance("DolbyVision Level254", "CMVersion is missing", {}, Conformance_Warning, Stream_Video, 0);
     }
 
     // Level 6
@@ -810,7 +1038,7 @@ void File_DolbyVisionMetadata::Conformance_MDF(XMLElement* Root, XMLElement* Tra
             if (XMLElement* MaxCLL = Level6->FirstChildElement("MaxCLL"))
                 if (const char* Text = MaxCLL->GetText())
                     if (Ztring().From_UTF8(Text).To_float64() > Ztring().From_UTF8(MasteringDisplay_Peak).To_float64())
-                        Fill_Conformance("DolbyVisionMetadata Level6", "MaxCLL is more than mastering display peak brightness (actual " + string(Text) + ", expected <= " + MasteringDisplay_Peak + ")", {}, Conformance_Warning);
+                        Fill_Conformance("DolbyVision Level6", "MaxCLL is more than mastering display peak brightness (actual " + string(Text) + ", expected <= " + MasteringDisplay_Peak + ")", {}, Conformance_Warning, Stream_Video, 0);
 
     // Shots
     std::set<string> TIDs;
@@ -826,7 +1054,7 @@ void File_DolbyVisionMetadata::Conformance_MDF(XMLElement* Root, XMLElement* Tra
             if (XMLElement* PluginNode = Shot->FirstChildElement("PluginNode"))
                 if (PluginNode->FirstChildElement(DynamicData_Unexpected))
                 {
-                    Fill_Conformance("DolbyVisionMetadata Structure", string(DynamicData_Unexpected) + " element in Shot is not expected in version " + Version);
+                    Fill_Conformance("DolbyVision Structure", string(DynamicData_Unexpected) + " element in Shot is not expected in version " + Version, {}, Conformance_Error, Stream_Video, 0);
                     DynamicData_Unexpected_Found = true;
                 }
 
@@ -837,7 +1065,7 @@ void File_DolbyVisionMetadata::Conformance_MDF(XMLElement* Root, XMLElement* Tra
         const char* Duration_Text = Duration ? Duration->GetText() : nullptr;
         if (!In_Text || !Duration_Text)
         {
-            Fill_Conformance("DolbyVisionMetadata Shot", "Record In or Duration is missing");
+            Fill_Conformance("DolbyVision Shot", "Record In or Duration is missing", {}, Conformance_Error, Stream_Video, 0);
             continue;
         }
         int64u In_Value = Ztring().From_UTF8(In_Text).To_int64u();
@@ -868,16 +1096,16 @@ void File_DolbyVisionMetadata::Conformance_MDF(XMLElement* Root, XMLElement* Tra
         Previous_Out = In_Value + Duration_Value;
     }
     if (Gap_Count)
-        Fill_Conformance("DolbyVisionMetadata Shot", std::to_string(Gap_Count) + " gap(s) between shots, " + std::to_string(Gap_Frames) + " frame(s) not covered, first gap at frame " + std::to_string(Gap_First));
+        Fill_Conformance("DolbyVision Shot", std::to_string(Gap_Count) + " gap(s) between shots, " + std::to_string(Gap_Frames) + " frame(s) not covered, first gap at frame " + std::to_string(Gap_First), {}, Conformance_Error, Stream_Video, 0);
     if (Overlap_Count)
-        Fill_Conformance("DolbyVisionMetadata Shot", std::to_string(Overlap_Count) + " overlap(s) between shots, " + std::to_string(Overlap_Frames) + " frame(s) covered more than once, first overlap at frame " + std::to_string(Overlap_First));
+        Fill_Conformance("DolbyVision Shot", std::to_string(Overlap_Count) + " overlap(s) between shots, " + std::to_string(Overlap_Frames) + " frame(s) covered more than once, first overlap at frame " + std::to_string(Overlap_First), {}, Conformance_Error, Stream_Video, 0);
     if (Empty_Count)
-        Fill_Conformance("DolbyVisionMetadata Shot", std::to_string(Empty_Count) + " shot(s) with a duration of 0, first at frame " + std::to_string(Empty_First));
+        Fill_Conformance("DolbyVision Shot", std::to_string(Empty_Count) + " shot(s) with a duration of 0, first at frame " + std::to_string(Empty_First), {}, Conformance_Error, Stream_Video, 0);
 
     // Trims must reference a declared target display
     for (const auto& TID : TIDs)
         if (TargetDisplay_IDs.find(TID) == TargetDisplay_IDs.end())
-            Fill_Conformance("DolbyVisionMetadata TID", "TID " + TID + " does not match any TargetDisplay ID");
+            Fill_Conformance("DolbyVision TID", "TID " + TID + " does not match any TargetDisplay ID", {}, Conformance_Error, Stream_Video, 0);
 }
 
 } //NameSpace
