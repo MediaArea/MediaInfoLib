@@ -1016,6 +1016,7 @@ void File_Dvdv::VTSM_PGCI_UT ()
             Skip_XX(Offset-16,                                  "Unknown");
     Element_End0();
 
+    Loop_CheckValue(LU_Count, 16, "LU_Count");
     for (int16u LU_Pos=0; LU_Pos<LU_Count; LU_Pos++)
     {
         Element_Begin1("Language Unit");
@@ -1047,6 +1048,7 @@ void File_Dvdv::VTSM_PGCI_UT ()
             if (Offset-16>0)
                 Skip_XX(Offset-16,                              "Unknown");
         Element_End0();
+        Loop_CheckValue(PGC_Count, 236, "PGC_Count"); //PGC header
         for (int16u PGC_Pos=0; PGC_Pos<PGC_Count; PGC_Pos++)
             PGC();
 
