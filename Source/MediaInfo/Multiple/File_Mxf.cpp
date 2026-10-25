@@ -12804,23 +12804,18 @@ void File_Mxf::PartitionMetadata()
         PartitionMetadata_PreviousPartition=PreviousPartition;
     if (FooterPartition)
         PartitionMetadata_FooterPartition=FooterPartition;
-    bool AlreadyParsed=false;
-    for (size_t Pos=0; Pos<Partitions.size(); Pos++)
-        if (Partitions[Pos].StreamOffset==File_Offset+Buffer_Offset-Header_Size)
-            AlreadyParsed=true;
-    if (!AlreadyParsed)
+    partition Partition;
+    Partition.StreamOffset=File_Offset+Buffer_Offset-Header_Size;
+    const auto Partition_Next=lower_bound(Partitions.begin(), Partitions.end(), Partition); //Partitions are sorted by offset
+    if (Partition_Next==Partitions.end() || Partition_Next->StreamOffset!=Partition.StreamOffset)
     {
-        partition Partition;
-        Partition.StreamOffset=File_Offset+Buffer_Offset-Header_Size;
         Partition.FooterPartition=FooterPartition;
         Partition.HeaderByteCount=HeaderByteCount;
         Partition.IndexByteCount=IndexByteCount;
         Partition.BodyOffset=BodyOffset;
         Partition.BodySID=BodySID;
-        Partitions_Pos=0;
-        while (Partitions_Pos<Partitions.size() && Partitions[Partitions_Pos].StreamOffset<Partition.StreamOffset)
-            Partitions_Pos++;
-        Partitions.insert(Partitions.begin()+Partitions_Pos, Partition);
+        Partitions_Pos=Partition_Next-Partitions.begin();
+        Partitions.insert(Partition_Next, Partition);
         Partitions_IsCalculatingHeaderByteCount=true;
     }
 
