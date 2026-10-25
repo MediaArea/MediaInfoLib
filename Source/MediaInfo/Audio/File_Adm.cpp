@@ -6636,8 +6636,8 @@ void File_Adm::Streams_Fill()
                 for (; Cur < End; Cur++) {
                     const auto& audioBlockFormat1 = audioBlockFormat_Items[Cur];
                     auto const& SpeakerLabels1 = audioBlockFormat1.Elements[audioBlockFormat_speakerLabel];
-                    if (!SpeakerLabels.empty()) {
-                        auto SpeakerLabel1 = SpeakerLabels1.front();
+                    if (!SpeakerLabels1.empty()) {
+                        const auto& SpeakerLabel1 = SpeakerLabels1.front();
                         if (SpeakerLabel1 != SpeakerLabel) {
                             SpeakerLabel.assign(1, '\0');
                             break;
