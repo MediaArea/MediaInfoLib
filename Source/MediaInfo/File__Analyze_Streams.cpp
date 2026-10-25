@@ -1104,6 +1104,34 @@ static bool DV_CRC32_Check(const int8u* Buffer, int64u BufferOffsetBegin, size_t
     return (CRC_32 != 0);
 }
 
+// Count of bits of the fixed part of extension metadata blocks, 0 if not parsed
+static size_t DV_ext_block_MinBits(bool IsCMv40, int8u ext_block_level)
+{
+    if (!IsCMv40) {
+        switch (ext_block_level) {
+        case   1: return 36;
+        case   2: return 85;
+        case   4: return 24;
+        case   5: return 52;
+        case   6: return 64;
+        case 255: return 48;
+        default : return 0;
+        }
+    }
+    switch (ext_block_level) {
+    case   3: return 36;
+    case   8: return 80;
+    case   9: return 8;
+    case  10: return 40;
+    case  11: return 32;
+    case  15: return 88;
+    case  16: return 8;
+    case  18: return 56;
+    case 254: return 16;
+    default : return 0;
+    }
+}
+
 // Must be in bitstream before calling this function.
 void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t BitsAfter)
 {
@@ -1112,6 +1140,11 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
     #define UNSUPPORTED() \
         Trusted_IsNot("Unsupported"); \
         return;
+
+    auto Remaining_Bits{ [&]() {
+        auto Remain{ Data_BS_Remain() };
+        return Remain > BitsAfter ? Remain - BitsAfter : 0;
+    } };
 
     //Parsing
     Element_Begin1("rpu_data");
@@ -1394,9 +1427,17 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
                 int8u ext_block_level;
                 Get_UE(ext_block_length,                        "ext_block_length");
                 Get_S1(8, ext_block_level,                      "ext_block_level");
+                if (ext_block_length > Remaining_Bits() / 8) {
+                    Trusted_IsNot("ext_block_length is too large");
+                    return;
+                }
                 Element_Begin1("ext_block_payload");
                 size_t ext_block_len_bits{ static_cast<size_t>(ext_block_length) * 8 };
                 size_t ext_block_use_bits{ 0 };
+                if (ext_block_len_bits < DV_ext_block_MinBits(false, ext_block_level)) {
+                    Trusted_IsNot("ext_block_length is too small");
+                    ext_block_level = 0; // Skipped as unknown
+                }
                 switch (ext_block_level) {
                 case 1: // ANALYSIS METADATA (DYNAMIC)
                     Skip_S2(12,                                 "min_PQ");
@@ -1457,7 +1498,7 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
         if (Data_BS_Remain() >= BitsAfter + 56) {
             int32u num_ext_blocks2;
             Get_UE(num_ext_blocks2,                             "num_ext_blocks");
-            if (num_ext_blocks > 16) { // An arbitrary value as there is currently not so many extension blocks defined
+            if (num_ext_blocks2 > 16) { // An arbitrary value as there is currently not so many extension blocks defined
                 Trusted_IsNot("num_ext_blocks is larger than expected");
                 return;
             }
@@ -1473,9 +1514,17 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
                     int8u l16_count{ 0 };
                     Get_UE(ext_block_length,                    "ext_block_length");
                     Get_S1(8, ext_block_level,                  "ext_block_level");
+                    if (ext_block_length > Remaining_Bits() / 8) {
+                        Trusted_IsNot("ext_block_length is too large");
+                        return;
+                    }
                     Element_Begin1("ext_block_payload");
                     size_t ext_block_len_bits{ static_cast<size_t>(ext_block_length) * 8 };
                     size_t ext_block_use_bits{ 0 };
+                    if (ext_block_len_bits < DV_ext_block_MinBits(true, ext_block_level)) {
+                        Trusted_IsNot("ext_block_length is too small");
+                        ext_block_level = 0; // Skipped as unknown
+                    }
                     switch (ext_block_level) {
                     case 3: // OFFSETS TO L1 (DYNAMIC)
                         Skip_S2(12,                             "min_pq_offset");
@@ -1492,7 +1541,7 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
                         Skip_S2(12,                             "trim_saturation_gain");
                         Skip_S2(12,                             "ms_weight");
                         ext_block_use_bits += 80;
-                        if (ext_block_length > 10) {
+                        if (ext_block_length > 11) {
                             Skip_S2(12,                         "target_mid_contrast");
                             ext_block_use_bits += 12;
                         }
@@ -1500,13 +1549,13 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
                             Skip_S2(12,                         "clip_trim");
                             ext_block_use_bits += 12;
                         }
-                        if (ext_block_length > 13) {
+                        if (ext_block_length > 18) {
                             for (int8u i = 0; i < 6; ++i) {
                                 Skip_S1(8,                      ("saturation_vector_field" + to_string(i)).c_str());
                             }
                             ext_block_use_bits += 48;
                         }
-                        if (ext_block_length > 19) {
+                        if (ext_block_length > 24) {
                             for (int8u i = 0; i < 6; ++i) {
                                 Skip_S1(8,                      ("hue_vector_field" + to_string(i)).c_str());
                             }
@@ -1516,7 +1565,7 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
                     case 9: // PER-SHOT SOURCE CONTENT PRIMARIES (DYNAMIC)
                         Skip_S1(8,                              "source_primary_index");
                         ext_block_use_bits += 8;
-                        if (ext_block_length > 1) {
+                        if (ext_block_length > 16) {
                             Skip_S2(16,                         "source_primary_red_x");
                             Skip_S2(16,                         "source_primary_red_y");
                             Skip_S2(16,                         "source_primary_green_x");
@@ -1534,7 +1583,7 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
                         Skip_S2(12,                             "target_min_pq");
                         Skip_S1( 8,                             "target_primary_index");
                         ext_block_use_bits += 40;
-                        if (ext_block_length > 5) {
+                        if (ext_block_length > 20) {
                             Skip_S2(16,                         "target_primary_red_x");
                             Skip_S2(16,                         "target_primary_red_y");
                             Skip_S2(16,                         "target_primary_green_x");
@@ -1586,6 +1635,7 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
                         // Variable length: 4-bit revision + 4-bit count, then count x Level16Params (5 bytes each).
                         Skip_S1( 4,                             "revision");
                         Get_S1 ( 4, l16_count,                  "count");
+                        Loop_CheckValue(l16_count, ext_block_len_bits - 8, 40, "count");
                         ext_block_use_bits += 8;
                         for (int8u p = 0; p < l16_count; ++p) {
                             Element_Begin1("Level16Params");
