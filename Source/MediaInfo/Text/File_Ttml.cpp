@@ -29,6 +29,9 @@
 #include "tinyxml2.h"
 #include <cstring>
 #include <limits>
+#include <map>
+#include <set>
+#include <tuple>
 using namespace tinyxml2;
 using namespace std;
 //---------------------------------------------------------------------------
@@ -51,6 +54,149 @@ static const auto Ttml_timeBase_Size=sizeof(Ttml_timeBase)/sizeof(*Ttml_timeBase
 // Utils
 //***************************************************************************
 
+// Timeline of currently displayed events, indexed in order to avoid scanning all events for each new event
+class Ttml_TimeLine
+{
+public:
+    struct item
+    {
+        TimeCode    Time_Begin;
+        TimeCode    Time_End;
+        int64s      Begin;      // Time_Begin in milliseconds
+        int64s      End;        // Time_End in milliseconds (0 if not set)
+        bool        End_IsSet;
+        int64u      LineCount;
+    };
+
+    // Remove events beginning after this time (not supporting back to the past)
+    void Remove_BeginAfter(int64s Time)
+    {
+        while (!ByBegin.empty() && ByBegin.rbegin()->first>Time)
+            Remove(ByBegin.rbegin()->second);
+    }
+
+    // Remove events ending at or before this time
+    void Remove_EndUpTo(int64s Time)
+    {
+        while (!ByEnd.empty() && ByEnd.begin()->first<=Time)
+            Remove(ByEnd.begin()->second);
+    }
+
+    // Last added event still present
+    const item* Last() const
+    {
+        return Items.empty()?nullptr:&Items.rbegin()->second;
+    }
+
+    // Add lines to events with same begin and end, return true if there is such event
+    bool AddToSameTime(const TimeCode& Time_Begin, const TimeCode& Time_End, int64s Begin, int64s End, int64u LineCount)
+    {
+        bool HasSameTime=false;
+        for (auto It=ByTimes.lower_bound(make_tuple(Begin, End, (int64u)0)); It!=ByTimes.end() && get<0>(*It)==Begin && get<1>(*It)==End; ++It)
+        {
+            auto& Item=Items[get<2>(*It)];
+            if (Item.Time_Begin==Time_Begin && Item.Time_End==Time_End)
+            {
+                Item.LineCount+=LineCount;
+                LineCount_Total+=LineCount;
+                HasSameTime=true;
+            }
+        }
+        return HasSameTime;
+    }
+
+    // Is there an event beginning at this time, or with an end set at this time
+    bool HasBeginOrEndAt(int64s Time) const
+    {
+        return Count(Count_Begin, Time) || Count(Count_EndSet_End, Time);
+    }
+
+    // Is there an event with an end set, beginning and ending not at this time
+    bool HasEndSetNotAt(int64s Time) const
+    {
+        auto Pair=Count_EndSet_BeginEnd.find(make_pair(Time, Time));
+        return Count_EndSet-Count(Count_EndSet_Begin, Time)-Count(Count_EndSet_End, Time)+(Pair==Count_EndSet_BeginEnd.end()?0:Pair->second)!=0;
+    }
+
+    void Add(const TimeCode& Time_Begin, const TimeCode& Time_End, int64u LineCount)
+    {
+        auto Id=Id_Next++;
+        auto& Item=Items[Id];
+        Item.Time_Begin=Time_Begin;
+        Item.Time_End=Time_End;
+        Item.Begin=Time_Begin.ToMilliseconds();
+        Item.End=Time_End.ToMilliseconds();
+        Item.End_IsSet=Time_End.IsSet();
+        Item.LineCount=LineCount;
+        ByBegin.insert(make_pair(Item.Begin, Id));
+        ByEnd.insert(make_pair(Item.End, Id));
+        ByTimes.insert(make_tuple(Item.Begin, Item.End, Id));
+        Count_Begin[Item.Begin]++;
+        if (Item.End_IsSet)
+        {
+            Count_EndSet++;
+            Count_EndSet_Begin[Item.Begin]++;
+            Count_EndSet_End[Item.End]++;
+            Count_EndSet_BeginEnd[make_pair(Item.Begin, Item.End)]++;
+        }
+        LineCount_Total+=LineCount;
+    }
+
+    int64u LineCount() const
+    {
+        return LineCount_Total;
+    }
+
+private:
+    typedef map<int64s, size_t> counts;
+    map<int64u, item> Items; // Key is the insertion order
+    set<pair<int64s, int64u> > ByBegin;
+    set<pair<int64s, int64u> > ByEnd;
+    set<tuple<int64s, int64s, int64u> > ByTimes;
+    counts Count_Begin;
+    counts Count_EndSet_Begin;
+    counts Count_EndSet_End;
+    map<pair<int64s, int64s>, size_t> Count_EndSet_BeginEnd;
+    size_t Count_EndSet=0;
+    int64u LineCount_Total=0;
+    int64u Id_Next=0;
+
+    static size_t Count(const counts& Counts, int64s Time)
+    {
+        auto It=Counts.find(Time);
+        return It==Counts.end()?0:It->second;
+    }
+
+    static void Decrement(counts& Counts, int64s Time)
+    {
+        auto It=Counts.find(Time);
+        if (!--It->second)
+            Counts.erase(It);
+    }
+
+    void Remove(int64u Id)
+    {
+        auto It=Items.find(Id);
+        const auto& Item=It->second;
+        ByBegin.erase(make_pair(Item.Begin, Id));
+        ByEnd.erase(make_pair(Item.End, Id));
+        ByTimes.erase(make_tuple(Item.Begin, Item.End, Id));
+        Decrement(Count_Begin, Item.Begin);
+        if (Item.End_IsSet)
+        {
+            Count_EndSet--;
+            Decrement(Count_EndSet_Begin, Item.Begin);
+            Decrement(Count_EndSet_End, Item.End);
+            auto Pair=Count_EndSet_BeginEnd.find(make_pair(Item.Begin, Item.End));
+            if (!--Pair->second)
+                Count_EndSet_BeginEnd.erase(Pair);
+        }
+        LineCount_Total-=Item.LineCount;
+        Items.erase(It);
+    }
+};
+
+//---------------------------------------------------------------------------
 // Helper structure to track line and character counting
 struct LineCharCounter
 {
@@ -257,12 +403,19 @@ double to_float64(const char* s)
             sign=-1;
         }
         while (c>='0' && c<='9') {
-            i*=10;
-            i+=(c-'0');
+            if (i<100000) // Avoid overflow, more than enough for a double
+            {
+                i*=10;
+                i+=(c-'0');
+            }
             c=*s++;
         }
         e+=i*sign;
     }
+    if (e>400) // More than enough for a double
+        e=400;
+    if (e<-400)
+        e=-400;
     while (e>0)
     {
         Value*=Ten;
@@ -632,7 +785,7 @@ void File_Ttml::Read_Buffer_Continue()
     #if MEDIAINFO_EVENTS
     tinyxml2::XMLElement*       p=NULL;
     #endif //MEDIAINFO_EVENTS
-    vector<timeline> TimeLine;
+    Ttml_TimeLine TimeLine;
     for (XMLElement* tt_element=Root->FirstChildElement(); tt_element; tt_element=tt_element->NextSiblingElement())
     {
         //body
@@ -753,68 +906,33 @@ void File_Ttml::Read_Buffer_Continue()
 
                             if (Time_Begin_New.IsSet())
                             {
+                                const auto Begin_New=Time_Begin_New.ToMilliseconds();
+                                const auto End_New=Time_End_New.ToMilliseconds();
+
                                 // Not supporting back to the past
-                                for (size_t i=0; i<TimeLine.size(); i++)
-                                {
-                                    if (Time_Begin_New.ToMilliseconds()<TimeLine[i].Time_Begin.ToMilliseconds())
-                                    {
-                                        TimeLine.erase(TimeLine.begin()+i);
-                                        i--;
-                                        continue;
-                                    }
-                                }
+                                TimeLine.Remove_BeginAfter(Begin_New);
 
                                 // Empty
-                                if (!TimeLine.empty() && TimeLine[TimeLine.size()-1].Time_End.IsSet() && TimeLine[TimeLine.size()-1].Time_End.ToMilliseconds()<Time_Begin_New.ToMilliseconds())
+                                const auto Last=TimeLine.Last();
+                                if (Last && Last->End_IsSet && Last->End<Begin_New)
                                     EmptyCount++;
 
                                 // Checking same times
-                                bool HasSameTime=false;
-                                for (size_t i=0; i<TimeLine.size(); i++)
-                                {
-                                    if (TimeLine[i].Time_Begin==Time_Begin_New && TimeLine[i].Time_End==Time_End_New)
-                                    {
-                                        TimeLine[i].LineCount+=LineCount_New;
-                                        HasSameTime=true;
-                                    }
-                                }
+                                bool HasSameTime=TimeLine.AddToSameTime(Time_Begin_New, Time_End_New, Begin_New, End_New, LineCount_New);
 
                                 // Checking overlappings
                                 if (!HasSameTime)
                                 {
-                                    size_t CreateFrame_Begin=1;
-                                    size_t CreateFrame_End=0;
-                                    for (size_t i=0; i<TimeLine.size(); i++)
-                                    {
-                                        if (Time_Begin_New.ToMilliseconds()==TimeLine[i].Time_Begin.ToMilliseconds()
-                                         || (TimeLine[i].Time_End.IsSet() && Time_Begin_New.ToMilliseconds()==TimeLine[i].Time_End.ToMilliseconds()))
-                                            CreateFrame_Begin=0;
-                                        if (Time_End_New.ToMilliseconds()!=TimeLine[i].Time_Begin.ToMilliseconds()
-                                         && (TimeLine[i].Time_End.IsSet() && Time_End_New.ToMilliseconds()!=TimeLine[i].Time_End.ToMilliseconds()))
-                                            CreateFrame_End=1;
-                                    }
-                                    Frame_Count+=CreateFrame_Begin;
-                                    Frame_Count+=CreateFrame_End;
+                                    Frame_Count+=TimeLine.HasBeginOrEndAt(Begin_New)?0:1;
+                                    Frame_Count+=TimeLine.HasEndSetNotAt(End_New)?1:0;
                                 }
 
-                                for (size_t i=0; i<TimeLine.size(); i++)
-                                {
-                                    if (TimeLine[i].Time_End.ToMilliseconds()<=Time_Begin_New.ToMilliseconds())
-                                    {
-                                        TimeLine.erase(TimeLine.begin()+i);
-                                        i--;
-                                        continue;
-                                    }
-                                }
+                                TimeLine.Remove_EndUpTo(Begin_New);
 
                                 if (!HasSameTime)
-                                    TimeLine.push_back(timeline(Time_Begin_New, Time_End_New, LineCount_FromCounter));
+                                    TimeLine.Add(Time_Begin_New, Time_End_New, LineCount_FromCounter);
 
-                                LineCount_New=0;
-                                for (size_t i=0; i<TimeLine.size(); i++)
-                                {
-                                    LineCount_New+=TimeLine[i].LineCount;
-                                }
+                                LineCount_New=TimeLine.LineCount();
                             }
                             else
                                 Frame_Count++;

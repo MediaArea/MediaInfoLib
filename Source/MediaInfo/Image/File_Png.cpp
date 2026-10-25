@@ -772,7 +772,7 @@ void File_Png::iCCP()
                 break;
 
             //Check if we need to stop
-            if (strm.avail_out || inflate_Result)
+            if (strm.avail_out || inflate_Result || strm.total_out>=0x4000000) //Arbitrary limit of 64 MiB
                 break;
 
             //Need to increase buffer
@@ -999,7 +999,7 @@ void File_Png::Textual(bitset8 Method)
                     break;
 
                 //Check if we need to stop
-                if (strm.avail_out || inflate_Result)
+                if (strm.avail_out || inflate_Result || strm.total_out>=0x4000000) //Arbitrary limit of 64 MiB
                     break;
 
                 //Need to increase buffer
@@ -1128,6 +1128,9 @@ void File_Png::Decode_RawProfile(const char* in, size_t in_len, const string& ty
         return;
     }
     ++end;
+    if ((size_t)(end - in) > in_len || expected_length > (in_len - (end - in)) / 2) {
+        return; // 2 hex digits per byte
+    }
 
     // 'end' now points to the profile payload.
     auto data = HexStringToBytes(end, in_len - (end - in), expected_length);

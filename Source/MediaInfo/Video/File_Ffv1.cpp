@@ -858,7 +858,8 @@ void File_Ffv1::Read_Buffer_Continue()
 
         //SliceContent
         #if MEDIAINFO_TRACE || MEDIAINFO_MACROBLOCKS
-        if (ParseContent && (ParseCompletely || Trace_Activated) && current_slice->w && current_slice->h) // Parse slice only if trace feature is activated
+        if (ParseContent && (ParseCompletely || Trace_Activated) && current_slice->w && current_slice->h
+         && bits_per_raw_sample<=30 && h_chroma_subsample_log2<=30 && v_chroma_subsample_log2<=30) // Parse slice only if trace feature is activated, and if values are supported (shifts on 32-bit integers)
         {
             SliceContent(States);
         }

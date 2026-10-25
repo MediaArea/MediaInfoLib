@@ -330,6 +330,7 @@ void File_Mz::Read_Buffer_Continue()
                 }
                 Skip_L4(                                        "LoaderFlags");
                 Get_L4 (NumberOfRvaAndSizes,                    "NumberOfRvaAndSizes");
+                Loop_CheckValue(NumberOfRvaAndSizes, 8, "NumberOfRvaAndSizes");
                 for (int32u i = 0; i < NumberOfRvaAndSizes; ++i) {
                     Element_Begin1("Data Directory");
                     if (i < sizeof(Mz_Directories) / sizeof(Mz_Directories[0]))
@@ -351,7 +352,8 @@ void File_Mz::Read_Buffer_Continue()
             Element_End0();
         }
         if (SizeOfOptionalHeader > 24) {
-            for (int8u i = 0; i < NumberOfSections; ++i) {
+            Loop_CheckValue(NumberOfSections, 40, "NumberOfSections");
+            for (int16u i = 0; i < NumberOfSections; ++i) {
                 Element_Begin1("Section Header");
                 int64u Name;
                 int32u VirtualSize, VirtualAddress, PointerToRawData;
@@ -513,7 +515,7 @@ void File_Mz::Parse_ImageDebugDirectory() {
 }
 
 //---------------------------------------------------------------------------
-void File_Mz::Parse_Resources() {
+void File_Mz::Parse_Resources(size_t Depth) {
     int16u num_name, num_ID;
     vector<int32u> OffsetToDirectories;
     vector<int32u> OffsetsToData;
@@ -576,9 +578,11 @@ void File_Mz::Parse_Resources() {
         
     }
     for (const int& directory_offset : OffsetToDirectories) {
+        if (Depth >= 8 || !Resource_Directories_Parsed.insert(directory_offset).second)
+            continue; // Too deep or already parsed (loop)
         Element_Offset = directory_offset;
         if (Element_Offset > Element_Size) Element_Offset = Element_Size;
-        Parse_Resources();
+        Parse_Resources(Depth + 1);
     }
     auto rsrc = to_parse[State::Resources];
     for (const int& data_offset : OffsetsToData) {
@@ -653,7 +657,7 @@ bool File_Mz::Parse_StringFileInfo(int8u level) {
             auto Buffer_Current = Buffer_Begin;
             auto Remaining = (size_t)(Element_Size - Element_Offset);
             auto Buffer_End = Buffer_Begin + (128 > Remaining ? Remaining : 128);
-            while (Buffer_Current < Buffer_End && (Buffer_Current[0] || Buffer_Current[1]))
+            while (Buffer_End - Buffer_Current >= 2 && (Buffer_Current[0] || Buffer_Current[1]))
                 Buffer_Current += 2;
             return Buffer_Current - Buffer_Begin;
         };
@@ -743,7 +747,7 @@ void File_Mz::Parse_CargoAuditable() {
                 break;
 
             //Check if we need to stop
-            if (strm.avail_out || inflate_Result)
+            if (strm.avail_out || inflate_Result || strm.total_out >= 0x4000000) //Arbitrary limit of 64 MiB
                 break;
 
             //Need to increase buffer
@@ -762,6 +766,7 @@ void File_Mz::Parse_CargoAuditable() {
         // Only show raw JSON string in MediaTrace for now as we do not have JSON parsing
         Ztring JSON;
         JSON.From_UTF8(Buffer, Buffer_Size);
+        delete[] Buffer;
         Param("Cargo Auditable JSON Data", JSON);
     }
 #endif

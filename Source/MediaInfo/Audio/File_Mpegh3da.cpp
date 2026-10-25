@@ -767,6 +767,7 @@ void File_Mpegh3da::SpeakerConfig3d(speaker_layout& Layout)
         int32u numSpeakers;
         escapedValue(numSpeakers, 5, 8, 16,                     "numSpeakers");
         numSpeakers++;
+        Loop_CheckValue_BS(numSpeakers, speakerLayoutType==1?7:1, "numSpeakers");
         Layout.numSpeakers=numSpeakers;
 
         if (speakerLayoutType==1)
@@ -982,6 +983,7 @@ void File_Mpegh3da::mpegh3daDecoderConfig()
     bool elementLengthPresent;
     Get_SB (elementLengthPresent,                               "elementLengthPresent");
 
+    Loop_CheckValue_BS(numElements, 2, "numElements");
     for (size_t Pos=0; Pos<numElements; Pos++)
     {
         Element_Begin1("Element");

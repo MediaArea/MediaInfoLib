@@ -611,8 +611,8 @@ int TimeCode::FromString(const string_view& V, bool Ignore1001FromDropFrame)
             return 1;
         }
         uint64_t FrameRate = (uint64_t)GetFramesMax() + 1;
-        uint32_t OneHourInFrames = 3600 * FrameRate;
-        uint32_t OneMinuteInFrames = 60 * FrameRate;
+        uint64_t OneHourInFrames = 3600 * FrameRate;
+        uint64_t OneMinuteInFrames = 60 * FrameRate;
         SetHours(S / OneHourInFrames);
         SetMinutes((S % OneHourInFrames) / OneMinuteInFrames);
         SetSeconds((S % OneMinuteInFrames) / FrameRate);

@@ -1465,6 +1465,7 @@ bool File_Mpega::Header_VBRI()
             Get_B2 (TableScale,                                 "TableScale");
             Get_B2 (EntryBytes,                                 "EntryBytes");
             Skip_B2(                                            "EntryFrames"); //Count of frames per entry
+            Loop_CheckValue(TableSize, EntryBytes, "TableSize");
             Element_Begin1("Table");
                 for (int16u Pos=0; Pos<TableSize; Pos++)
                 {

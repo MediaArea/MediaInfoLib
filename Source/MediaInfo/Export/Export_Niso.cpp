@@ -205,10 +205,10 @@ Ztring Export_Niso::Transform(MediaInfo_Internal &MI, Ztring ExternalMetadataVal
                     Node* footroom=Component->Add_Child("mix:footroom");
                     footroom->Add_Child("mix:numerator", Ztring::ToZtring(0));
                     int8u BitDepth=MI.Get(Stream_Image, Pos, Image_BitDepth).To_int8u();
-                    if (BitDepth)
+                    if (BitDepth && BitDepth<64)
                     {
                         Node* headroom=Component->Add_Child("mix:headroom");
-                        headroom->Add_Child("mix:numerator", Ztring::ToZtring((1<<BitDepth)-1));
+                        headroom->Add_Child("mix:numerator", Ztring::ToZtring((((int64u)1)<<BitDepth)-1));
                     }
                 }
             }
@@ -299,10 +299,15 @@ Ztring Export_Niso::Transform(MediaInfo_Internal &MI, Ztring ExternalMetadataVal
             Node_Root->Childs.push_back(Node_Extension);
 
         ToReturn+=Ztring().From_UTF8(To_XML(*Node_Root, 0, true, true).c_str());
+        delete Node_Root;
     }
 
     if (ToReturn.empty())
-        ToReturn+=Ztring().From_UTF8(To_XML(*Transform_Header(), 0, true, true).c_str())+=__T("\n");
+    {
+        Node* Node_Root=Transform_Header();
+        ToReturn+=Ztring().From_UTF8(To_XML(*Node_Root, 0, true, true).c_str())+=__T("\n");
+        delete Node_Root;
+    }
 
     //Carriage return
     if (MediaInfoLib::Config.LineSeparator_Get()!=__T("\n"))

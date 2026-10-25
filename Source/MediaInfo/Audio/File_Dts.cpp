@@ -3277,7 +3277,7 @@ bool File_Dts::FrameSynchPoint_Test()
             //Preparing new buffer
             if (Word)
             {
-                int8u* Buffer_Little=new int8u[Size];
+                int8u* Buffer_Little=new int8u[Size](); //Initialized in case of incomplete words
                 for (size_t Pos=0; Pos+1<Size; Pos+=2)
                 {
                     Buffer_Little[Pos+1]=Save_Buffer[Buffer_Offset+Pos  ];
@@ -3289,7 +3289,7 @@ bool File_Dts::FrameSynchPoint_Test()
             }
             else
             {
-                int8u* Dest=new int8u[Size];
+                int8u* Dest=new int8u[Size](); //Initialized in case of incomplete words
                 for (size_t Pos=0; Pos+8<=Original_Size; Pos+=8)
                 {
                     int64u Value;

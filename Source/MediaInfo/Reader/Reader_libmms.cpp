@@ -97,7 +97,7 @@ size_t Reader_libmms::Format_Test(MediaInfo_Internal* MI, String File_Name)
 
         //MediaInfo init
         mms_off_t Offset=mmsx_seek(0, Handle, 0, SEEK_SET);
-        uint32_t Length=mmsx_get_length(Handle);
+        Length=mmsx_get_length(Handle);
         MI->Open_Buffer_Init(Length, File_Name);
     }
     else

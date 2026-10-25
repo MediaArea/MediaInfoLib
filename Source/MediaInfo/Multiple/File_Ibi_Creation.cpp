@@ -480,6 +480,7 @@ void File_Ibi_Creation::Add(int64u ID, const ibi::stream &Stream)
     Buffers.push_back(Buffer);
 
     //Finish
+    delete[] IbiHeader; //IbiHeader=NULL;
     delete[] IbiByteOffset; //IbiByteOffset=NULL;
     delete[] IbiFrameNumber; //IbiFrameNumber=NULL;
     delete[] IbiDts; //IbiDts=NULL;

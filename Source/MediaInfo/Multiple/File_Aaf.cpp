@@ -363,6 +363,11 @@ void File_Aaf::Directory_Entry()
         int32u Pointers_Pos=SectStart;
         while (Pointers_Pos<Pointers.size() && Pointers_Pos<0xFFFFFFF0)
         {
+            if (sectsMiniStream.size()>=Pointers.size())
+            {
+                Trusted_IsNot("MiniFAT root chain not valid"); //Loop in the chain
+                break;
+            }
             Param_Info1(Ztring::ToZtring(Pointers_Pos<<SectorShift));
             sectsMiniStream.push_back(Pointers_Pos);
             Pointers_Pos=Pointers[Pointers_Pos];

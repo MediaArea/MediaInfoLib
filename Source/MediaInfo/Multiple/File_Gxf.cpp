@@ -1258,7 +1258,7 @@ void File_Gxf::map()
                                 if (DataLength==4)
                                 {
                                     Get_B4 (Streams[TrackID].FieldsPerFrame_Code, "Content"); Param_Info1(Gxf_FieldsPerFrame(Streams[TrackID].FieldsPerFrame_Code)); Element_Info1(Gxf_FieldsPerFrame(Streams[TrackID].FieldsPerFrame_Code));
-                                    if (Gxf_MediaTypes_StreamKind(MediaType)==Stream_Video)
+                                    if (Gxf_MediaTypes_StreamKind(MediaType)==Stream_Video && (Streams[TrackID].FieldsPerFrame_Code==1 || Streams[TrackID].FieldsPerFrame_Code==2))
                                     {
                                         Stream_Video_FieldsPerFrame_Code=Streams[TrackID].FieldsPerFrame_Code;
                                         Material_Fields_FieldsPerFrame=Streams[TrackID].FieldsPerFrame_Code;
@@ -1364,9 +1364,12 @@ void File_Gxf::media()
         Temp*=(Element_Size-Element_Offset);
         int64u ByteOffset=(int64u)Temp;
         int64u SampleSize=(Element_Size-Element_Offset)/32768;
-        ByteOffset/=SampleSize; //Need to be in sync with sample size
-        ByteOffset*=SampleSize;
-        Element_Offset+=ByteOffset;
+        if (SampleSize)
+        {
+            ByteOffset/=SampleSize; //Need to be in sync with sample size
+            ByteOffset*=SampleSize;
+            Element_Offset+=ByteOffset;
+        }
     }
 
     #if MEDIAINFO_SEEK

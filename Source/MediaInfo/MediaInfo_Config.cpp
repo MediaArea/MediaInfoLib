@@ -607,11 +607,10 @@ static String _DecodeEscapeC(String::const_iterator first, String::const_iterato
                         inc = 2;
                         for (int i = 0; i < 3; ++i)
                         {
-                            if ((it+3+i) != last && (d = _HexDigitValue(*(it+3+i))) >= 0)
-                            {
-                                ch = (ch << 4) | String::value_type(d);
-                                ++inc;
-                            }
+                            if ((it+3+i) == last || (d = _HexDigitValue(*(it+3+i))) < 0)
+                                break;
+                            ch = (ch << 4) | String::value_type(d);
+                            ++inc;
                         }
                     }
                 }

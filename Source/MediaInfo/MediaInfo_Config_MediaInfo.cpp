@@ -316,6 +316,50 @@ MediaInfo_Config_MediaInfo::MediaInfo_Config_MediaInfo()
     #endif //MEDIAINFO_ADVANCED
 }
 
+#if MEDIAINFO_EVENTS
+//---------------------------------------------------------------------------
+// Free the buffers copied in Event_Send() for delayed events, conditions must be same as the ones used for copying
+static void Event_Delayed_Free(int8u* Data_Content, size_t Data_Size)
+{
+    int32u EventCode;
+    std::memcpy(&EventCode, Data_Content, sizeof(EventCode));
+    if ((EventCode&0x00FFFFFF)==((MediaInfo_Event_Global_Demux<<8)|4) && Data_Size==sizeof(MediaInfo_Event_Global_Demux_4))
+    {
+        MediaInfo_Event_Global_Demux_4* New=(MediaInfo_Event_Global_Demux_4*)Data_Content;
+        if (New->Content_Size)
+        {
+            delete[] New->Content; New->Content=NULL;
+        }
+        if (New->Offsets_Size)
+        {
+            delete[] New->Offsets_Stream; New->Offsets_Stream=NULL;
+            delete[] New->Offsets_Content; New->Offsets_Content=NULL;
+        }
+        if (New->OriginalContent_Size)
+        {
+            delete[] New->OriginalContent; New->OriginalContent=NULL;
+        }
+    }
+    if ((EventCode & 0x00FFFF00) == (MediaInfo_Event_DvDif_Change << 8) && Data_Size == sizeof(MediaInfo_Event_DvDif_Change_0))
+    {
+        MediaInfo_Event_DvDif_Change_0* New = (MediaInfo_Event_DvDif_Change_0*)Data_Content;
+        delete[] New->MoreData; New->MoreData=NULL;
+    }
+    if (EventCode == ((MediaInfo_Parser_DvDif << 24) | (MediaInfo_Event_DvDif_Analysis_Frame << 8)) && Data_Size >= sizeof(MediaInfo_Event_DvDif_Analysis_Frame_0))
+    {
+        MediaInfo_Event_DvDif_Analysis_Frame_0* New = (MediaInfo_Event_DvDif_Analysis_Frame_0*)Data_Content;
+        delete[] New->Errors; New->Errors=NULL;
+    }
+    if ((EventCode & 0x00FFFF00) == (MediaInfo_Event_DvDif_Analysis_Frame << 8) && Data_Size >= sizeof(MediaInfo_Event_DvDif_Analysis_Frame_1))
+    {
+        MediaInfo_Event_DvDif_Analysis_Frame_1* New = (MediaInfo_Event_DvDif_Analysis_Frame_1*)Data_Content;
+        delete[] New->Errors; New->Errors=NULL;
+        delete[] New->MoreData; New->MoreData=NULL;
+    }
+}
+#endif //MEDIAINFO_EVENTS
+
+//---------------------------------------------------------------------------
 MediaInfo_Config_MediaInfo::~MediaInfo_Config_MediaInfo()
 {
     delete[] File_Buffer; //File_Buffer=NULL;
@@ -324,7 +368,11 @@ MediaInfo_Config_MediaInfo::~MediaInfo_Config_MediaInfo()
     #if MEDIAINFO_EVENTS
         for (events_delayed::iterator Event=Events_Delayed.begin(); Event!=Events_Delayed.end(); ++Event)
             for (size_t Pos=0; Pos<Event->second.size(); Pos++)
+            {
+                if (Event->second[Pos])
+                    Event_Delayed_Free(Event->second[Pos]->Data_Content, Event->second[Pos]->Data_Size);
                 delete Event->second[Pos]; //Event->second[Pos]=NULL;
+            }
     #endif //MEDIAINFO_EVENTS
     #if MEDIAINFO_ADVANCED
         delete TimeCode_Dumps;
@@ -3281,36 +3329,7 @@ void MediaInfo_Config_MediaInfo::Event_Accepted (File__Analyze* Source)
                     int32u EventCode=*((int32u*)Event->second[Pos]->Data_Content);
                     bool IsDemux=(EventCode&0x00FFFF00)==(MediaInfo_Event_Global_Demux<<8);
 
-                    if (IsDemux)
-                    {
-                        MediaInfo_Event_Global_Demux_4* Old=(MediaInfo_Event_Global_Demux_4*)Event->second[Pos]->Data_Content;
-                        delete[] Old->Content; Old->Content=NULL;
-                        if (Old->Offsets_Size)
-                        {
-                            delete[] Old->Offsets_Content; Old->Offsets_Content=NULL;
-                        }
-                        if (Old->Offsets_Size)
-                        {
-                            delete[] Old->OriginalContent; Old->OriginalContent=NULL;
-                        }
-                    }
-
-                    if (((EventCode) & 0x00FFFF00) == (MediaInfo_Event_DvDif_Change << 8) && Event->second[Pos]->Data_Size >= sizeof(MediaInfo_Event_DvDif_Change_0))
-                    {
-                        MediaInfo_Event_DvDif_Change_0* New = (MediaInfo_Event_DvDif_Change_0*)Event->second[Pos]->Data_Content;
-                        delete[] New->MoreData;
-                    }
-                    if (EventCode == ((MediaInfo_Parser_DvDif << 24) | (MediaInfo_Event_DvDif_Analysis_Frame << 8)) && Event->second[Pos]->Data_Size >= sizeof(MediaInfo_Event_DvDif_Analysis_Frame_0))
-                    {
-                        MediaInfo_Event_DvDif_Analysis_Frame_0* New = (MediaInfo_Event_DvDif_Analysis_Frame_0*)Event->second[Pos]->Data_Content;
-                        delete[] New->Errors;
-                    }
-                    if (((EventCode) & 0x00FFFF00) == (MediaInfo_Event_DvDif_Analysis_Frame << 8) && Event->second[Pos]->Data_Size >= sizeof(MediaInfo_Event_DvDif_Analysis_Frame_1))
-                    {
-                        MediaInfo_Event_DvDif_Analysis_Frame_1* New = (MediaInfo_Event_DvDif_Analysis_Frame_1*)Event->second[Pos]->Data_Content;
-                        delete[] New->Errors;
-                        delete[] New->MoreData;
-                    }
+                    Event_Delayed_Free(Event->second[Pos]->Data_Content, Event->second[Pos]->Data_Size);
 
                     delete Event->second[Pos]; Event->second[Pos]=NULL;
 

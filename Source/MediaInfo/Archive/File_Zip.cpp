@@ -344,7 +344,7 @@ bool File_Zip::central_directory()
     //Parsing
     Element_Begin1("Central directory");
     Skip_C4("central file header signature");
-    Get_L2 (version_made_by,"version made by");Param_Info1((version_made_by>>8)>20?"unused":Zip_made_by[version_made_by>>8]);
+    Get_L2 (version_made_by,"version made by");Param_Info1((version_made_by>>8)>=20?"unused":Zip_made_by[version_made_by>>8]);
     Skip_L2("version needed to extract");
     Get_L2 (general_purpose_bit_flag,"general purpose bit flag");
     Skip_Flags(general_purpose_bit_flag, 0,                     "encrypted file");
@@ -442,7 +442,7 @@ bool File_Zip::Zip64_end_of_central_directory_record()
     Skip_C4(                                                    "Zip64 end of central dir signature");
     Skip_L8(                                                    "size of zip64 end of central directory record");
     Get_L2 (version_made_by,                                    "version made by");
-    Param_Info1((version_made_by>>8)>20?"unused":Zip_made_by[version_made_by>>8]);
+    Param_Info1((version_made_by>>8)>=20?"unused":Zip_made_by[version_made_by>>8]);
     Skip_L2(                                                    "version needed to extract");
     Skip_L4(                                                    "number of this disk");
     Skip_L4(                                                    "number of the disk");// with the start of the central directory

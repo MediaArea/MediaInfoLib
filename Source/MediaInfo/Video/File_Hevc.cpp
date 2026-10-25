@@ -1087,10 +1087,24 @@ bool File_Hevc::Demux_UnpacketizeContainer_Test()
         }
     }
 
+    auto Buffer_Restore=[&]()
+    {
+        if (Buffer_Temp)
+        {
+            delete[] Buffer;
+            Buffer=Buffer_Temp;
+            Buffer_Size=Buffer_Temp_Size;
+            Buffer_Temp=NULL;
+        }
+    };
+
     if (!Status[IsAccepted])
     {
         if (Config->Demux_EventWasSent)
+        {
+            Buffer_Restore();
             return false;
+        }
         File_Hevc* MI=new File_Hevc;
         Element_Code=(int64u)-1;
         Open_Buffer_Init(MI);
@@ -1105,7 +1119,10 @@ bool File_Hevc::Demux_UnpacketizeContainer_Test()
         bool IsOk=MI->Status[IsAccepted];
         delete MI;
         if (!IsOk)
+        {
+            Buffer_Restore();
             return false;
+        }
     }
 
     if (IFrame_Count || RandomAccess)
@@ -1963,6 +1980,11 @@ void File_Hevc::video_parameter_set()
             Get_UE (num_add_layer_sets,                         "num_add_layer_sets");
         else
             num_add_layer_sets=0;
+        if (num_add_layer_sets>1023)
+        {
+            Trusted_IsNot("num_add_layer_sets not valid");
+            num_add_layer_sets=0;
+        }
         vector<int32u> NumLayersInIdList;
         vector<vector<int32u> > LayerSetLayerIdList;
         vector<vector<int32u> > highest_layer_idx_plus1List;
@@ -1975,6 +1997,11 @@ void File_Hevc::video_parameter_set()
             {
                 int32u highest_layer_idx_plus1;
                 Get_S4 ((int8u)ceil(log2(NumLayersInTreePartition[j] + 1)), highest_layer_idx_plus1, "highest_layer_idx_plus1");
+                if (highest_layer_idx_plus1>NumLayersInTreePartition[j])
+                {
+                    Trusted_IsNot("highest_layer_idx_plus1 not valid");
+                    highest_layer_idx_plus1=NumLayersInTreePartition[j];
+                }
                 highest_layer_idx_plus1List[i].push_back(highest_layer_idx_plus1);
             }
         }
@@ -2009,7 +2036,8 @@ void File_Hevc::video_parameter_set()
         Skip_SB(                                                "default_ref_layers_active_flag");
         int32u vps_num_profile_tier_level_minus1;
         Get_UE(vps_num_profile_tier_level_minus1,               "vps_num_profile_tier_level_minus1");
-        for (int32u i = vps_base_layer_internal_flag ? 2 : 1; i <= vps_num_profile_tier_level_minus1; i++)
+        Loop_CheckValue_BS(vps_num_profile_tier_level_minus1, 1, "vps_num_profile_tier_level_minus1");
+        for (int32u i = vps_base_layer_internal_flag ? 2 : 1; i <= vps_num_profile_tier_level_minus1 && i <= 63; i++)
         {
             bool vps_profile_present_flag;
             Get_SB(vps_profile_present_flag,                    "vps_profile_present_flag");
@@ -2242,6 +2270,7 @@ void File_Hevc::seq_parameter_set()
         Element_Begin1("long_term_ref_pics");
         int32u num_long_term_ref_pics_sps;
         Get_UE (num_long_term_ref_pics_sps,                     "num_long_term_ref_pics_sps");
+        Loop_CheckValue_BS(num_long_term_ref_pics_sps, log2_max_pic_order_cnt_lsb_minus4+4+1, "num_long_term_ref_pics_sps");
         for (int32u long_term_ref_pics_sps_pos=0; long_term_ref_pics_sps_pos<num_long_term_ref_pics_sps; long_term_ref_pics_sps_pos++)
         {
             Skip_BS(log2_max_pic_order_cnt_lsb_minus4+4,        "lt_ref_pic_poc_lsb_sps");
@@ -2314,6 +2343,7 @@ void File_Hevc::seq_parameter_set()
                     int32u sps_num_palette_predictor_initializers_minus1;
                     Get_UE (sps_num_palette_predictor_initializers_minus1, "sps_num_palette_predictor_initializers_minus1");
                     auto numComps=(chroma_format_idc==0)?1:3;
+                    Loop_CheckValue_BS(sps_num_palette_predictor_initializers_minus1, 8*numComps, "sps_num_palette_predictor_initializers_minus1");
                     for(int comp=0; comp<numComps; comp++)
                         for (int32u i=0; i<=sps_num_palette_predictor_initializers_minus1; i++)
                             Skip_S4(8+(comp==0?bit_depth_luma_minus8:bit_depth_chroma_minus8), "sps_palette_predictor_initializer");
@@ -2504,8 +2534,10 @@ void File_Hevc::pic_parameter_set()
         Get_SB (    uniform_spacing_flag,                       "uniform_spacing_flag");
         if (!uniform_spacing_flag)
         {
+            Loop_CheckValue_BS(num_tile_columns_minus1, 1, "num_tile_columns_minus1");
             for (int32u tile_pos=0; tile_pos<num_tile_columns_minus1; tile_pos++)
                Skip_UE(                                         "column_width_minus1");
+            Loop_CheckValue_BS(num_tile_rows_minus1, 1, "num_tile_rows_minus1");
             for (int32u tile_pos=0; tile_pos<num_tile_rows_minus1; tile_pos++)
                Skip_UE(                                         "row_height_minus1");
         }
@@ -3671,6 +3703,7 @@ void File_Hevc::sei_message_active_parameter_sets()
     Skip_SB(                                                    "self_contained_cvs_flag");
     Skip_SB(                                                    "no_parameter_set_update_flag");
     Get_UE (   num_sps_ids_minus1,                              "num_sps_ids_minus1");
+    Loop_CheckValue_BS(num_sps_ids_minus1, 1, "num_sps_ids_minus1");
     for (int32u i=0; i<=num_sps_ids_minus1; ++i)
     {
         Skip_UE(                                                "active_seq_parameter_set_id");
@@ -4357,6 +4390,7 @@ void File_Hevc::short_term_ref_pic_sets(int8u num_short_term_ref_pic_sets)
             Get_SB (   delta_rps_sign,                              "delta_rps_sign");
             Get_UE (   abs_delta_rps_minus1,                        "abs_delta_rps_minus1");
             int32u num_pics_new=0;
+            Loop_CheckValue_BS(num_pics, 1, "num_pics");
             for(int32u pic_pos=0 ; pic_pos<=num_pics; pic_pos++)
             {
                 TESTELSE_SB_SKIP(                                   "used_by_curr_pic_flag");
@@ -4375,6 +4409,14 @@ void File_Hevc::short_term_ref_pic_sets(int8u num_short_term_ref_pic_sets)
             int32u num_negative_pics, num_positive_pics;
             Get_UE (num_negative_pics,                              "num_negative_pics");
             Get_UE (num_positive_pics,                              "num_positive_pics");
+            if (num_negative_pics>16 || num_positive_pics>16)
+            {
+                Trusted_IsNot("num_negative_pics or num_positive_pics not valid");
+                Skip_BS(Data_BS_Remain(),                           "(Problem)");
+                Element_End0();
+                Element_End0();
+                return;
+            }
             num_pics=num_negative_pics+num_positive_pics;
             for (int32u i=0; i<num_negative_pics; i++)
             {

@@ -1591,6 +1591,7 @@ void File_Flv::meta()
 
     //Parsing
     meta_Level=0;
+    meta_Depth=0;
     meta_SCRIPTDATAOBJECT();
 
     if (MetaData_NotTrustable)
@@ -1632,6 +1633,20 @@ void File_Flv::meta_SCRIPTDATAVARIABLE()
 
 //---------------------------------------------------------------------------
 void File_Flv::meta_SCRIPTDATAVALUE(const std::string &StringData)
+{
+    if (meta_Depth>=64)
+    {
+        Trusted_IsNot("Too many nested elements");
+        Element_Offset=Element_Size; //Forcing the end of parsing
+        return;
+    }
+    meta_Depth++;
+    meta_SCRIPTDATAVALUE_Content(StringData);
+    meta_Depth--;
+}
+
+//---------------------------------------------------------------------------
+void File_Flv::meta_SCRIPTDATAVALUE_Content(const std::string &StringData)
 {
     std::string StringDataModified(StringData);
     if (!StringDataModified.empty() && StringDataModified[0]==__T('_'))
@@ -1809,6 +1824,7 @@ void File_Flv::meta_SCRIPTDATAVALUE(const std::string &StringData)
                 int32u ECMAArrayLength;
                 Get_B4 (ECMAArrayLength,                        "ECMAArrayLength");
                 Element_Info1(Ztring::ToZtring(ECMAArrayLength)+__T(" elements"));
+                Loop_CheckValue(ECMAArrayLength, 3, "ECMAArrayLength"); //Name length and type
                 for (int32u Pos=0; Pos<ECMAArrayLength; Pos++)
                 {
                     meta_SCRIPTDATAVARIABLE();
@@ -1826,6 +1842,7 @@ void File_Flv::meta_SCRIPTDATAVALUE(const std::string &StringData)
             {
                 int32u Count;
                 Get_B4 (Count,                                  "Count");
+                Loop_CheckValue(Count, 1, "Count"); //Type
                 for (int32u Pos=0; Pos<Count; Pos++)
                     meta_SCRIPTDATAVALUE(StringData);
             }

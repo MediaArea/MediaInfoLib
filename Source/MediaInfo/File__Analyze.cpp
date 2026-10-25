@@ -3138,6 +3138,33 @@ void File__Analyze::Data_GoToFromEnd (int64u GoToFromEnd, const char* ParserName
 }
 #endif //MEDIAINFO_TRACE
 
+//---------------------------------------------------------------------------
+void File__Analyze::Loop_CheckValue(int64u& Value, int64u RemainingSize, int64u MinBlockSize, const char* Name)
+{
+    if (!MinBlockSize)
+    {
+        Value = 0; // Avoiding loop when there is no data
+        return;
+    }
+    auto MaxSize = RemainingSize / MinBlockSize;
+    if (Value > MaxSize) {
+        #if MEDIAINFO_CONFORMANCE
+            // Name of the current element and of its parents, without the trace only elements (no code)
+            auto Element_Level_Save = Element_Level;
+            while (Element_Level && !Element[Element_Level].Code)
+                Element_Level--;
+            Element_Level++; // CreateElementName() does not include the last level
+            auto FullName = CreateElementName();
+            Element_Level = Element_Level_Save;
+            if (!FullName.empty())
+                FullName += ' ';
+
+            Fill_Conformance((FullName + Name).c_str(), "Value " + std::to_string(Value) + " is bigger than what the element can contain " + std::to_string(MaxSize));
+        #endif //MEDIAINFO_CONFORMANCE
+        Value = MaxSize;
+    }
+}
+
 
 //***************************************************************************
 // Element

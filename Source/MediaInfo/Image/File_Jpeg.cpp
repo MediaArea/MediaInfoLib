@@ -1693,7 +1693,7 @@ void File_Jpeg::APP1()
         APP1_XMP();
         return;
     }
-    if (Element_Size >= 29 && !strncmp((const char*)Buffer + Buffer_Offset, "http://ns.adobe.com/xmp/extension/", 35)) { // the char* contains a terminating \0
+    if (Element_Size >= 35 && !strncmp((const char*)Buffer + Buffer_Offset, "http://ns.adobe.com/xmp/extension/", 35)) { // the char* contains a terminating \0
         Skip_String(35,                                         "Name");
         APP1_XMP_Extension();
         return;

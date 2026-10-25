@@ -671,6 +671,15 @@ int File_DtsUhd::ExtractMultiFrameDistribStaticMD(MD01* MD01)
             MD01->StaticMDPacketByteSize+=3;
         }
 
+        if (MD01->NumStaticMDPackets*MD01->StaticMDPacketByteSize>0x10000) //Arbitrary limit of 64 KiB, real streams use only few bytes
+        {
+            MD01->NumStaticMDPackets=0;
+            MD01->StaticMDPacketByteSize=0;
+            MD01->Buffer.clear();
+            Trusted_IsNot("Static metadata too big");
+            Element_End0();
+            return 1;
+        }
         MD01->Buffer.resize(MD01->NumStaticMDPackets*MD01->StaticMDPacketByteSize);
         if (MD01->NumStaticMDPackets>1)
             Get_SB (MD01->StaticMetadataUpdtFlag,               "StaticMetadataUpdtFlag");

@@ -2312,9 +2312,9 @@ size_t File_MpegTs::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
 
                             InfiniteLoop_Detect=0;
                             Config->Demux_IsSeeking=false;
-                            if (Complete_Stream && Complete_Stream->Streams[(size_t)IbiStream_Temp->first] && Complete_Stream->Streams[(size_t)IbiStream_Temp->first]->Parser)
+                            if (Complete_Stream && IbiStream_Temp->first<Complete_Stream->Streams.size() && Complete_Stream->Streams[(size_t)IbiStream_Temp->first] && Complete_Stream->Streams[(size_t)IbiStream_Temp->first]->Parser)
                                 Complete_Stream->Streams[(size_t)IbiStream_Temp->first]->Parser->Unsynch_Frame_Count=IbiStream_Temp->second->Infos[Pos].FrameNumber;
-                            else
+                            else if (IbiStream_Temp->first<0x2000)
                                 Unsynch_Frame_Counts[(int16u)IbiStream_Temp->first]=IbiStream_Temp->second->Infos[Pos].FrameNumber;
 
                             GoTo(IbiStream_Temp->second->Infos[Pos].StreamOffset);
@@ -2355,9 +2355,9 @@ size_t File_MpegTs::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
                                 Pos--;
 
                             Config->Demux_IsSeeking=false;
-                            if (Complete_Stream && Complete_Stream->Streams[(size_t)IbiStream_Temp->first] && Complete_Stream->Streams[(size_t)IbiStream_Temp->first]->Parser)
+                            if (Complete_Stream && IbiStream_Temp->first<Complete_Stream->Streams.size() && Complete_Stream->Streams[(size_t)IbiStream_Temp->first] && Complete_Stream->Streams[(size_t)IbiStream_Temp->first]->Parser)
                                 Complete_Stream->Streams[(size_t)IbiStream_Temp->first]->Parser->Unsynch_Frame_Count=IbiStream_Temp->second->Infos[Pos].FrameNumber;
-                            else
+                            else if (IbiStream_Temp->first<0x2000)
                                 Unsynch_Frame_Counts[(int16u)IbiStream_Temp->first]=IbiStream_Temp->second->Infos[Pos].FrameNumber;
 
                             GoTo(IbiStream_Temp->second->Infos[Pos].StreamOffset);

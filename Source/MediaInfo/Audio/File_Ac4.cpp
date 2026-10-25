@@ -3168,22 +3168,32 @@ void File_Ac4::presentation_config_ext_info(presentation& P)
         n_skip_bytes=(int8u)n_skip_bytes32<<5;
     TEST_SB_END();
 
-    if (bitstream_version==1 && P.presentation_config==7)
+    if (bitstream_version==1 && P.presentation_config==7 && ac4_presentation_v1_info_Depth<4) //Arbitrary limit of nested levels
     {
         size_t Pos_Before=Data_BS_Remain();
+        ac4_presentation_v1_info_Depth++;
         ac4_presentation_v1_info(P);
+        ac4_presentation_v1_info_Depth--;
         size_t Pos_After=Data_BS_Remain();
-        size_t n_bits_read=Pos_After-Pos_Before;
+        size_t n_bits_read=Pos_Before-Pos_After;
         if (n_bits_read%8)
         {
             int8u n_skip_bits=8-(n_bits_read%8);
             Skip_S8(n_skip_bits,                                "reserved");
             n_bits_read+=n_skip_bits;
         }
-        n_skip_bytes-=(n_bits_read/8);
+        if (n_skip_bytes>=n_bits_read/8)
+            n_skip_bytes-=(int16u)(n_bits_read/8);
+        else
+            n_skip_bytes=0;
     }
 
-    Skip_S8(n_skip_bytes*8,                                     "reserved");
+    if ((size_t)n_skip_bytes*8>Data_BS_Remain())
+    {
+        Trusted_IsNot("n_skip_bytes not valid");
+        n_skip_bytes=(int16u)(Data_BS_Remain()/8);
+    }
+    Skip_BS(n_skip_bytes*8,                                     "reserved");
     Element_End0();
 }
 
@@ -4786,7 +4796,14 @@ void File_Ac4::further_loudness_info(loudness_info& L, bool sus_ver, bool b_pres
             int32u prgmbndy=1;
             bool prgmbndy_bit=false;
             while(!prgmbndy_bit)
+            {
+                if (!Data_BS_Remain())
+                {
+                    Trusted_IsNot("prgmbndy_bit not valid");
+                    break;
+                }
                 Get_SB (prgmbndy_bit,                           "prgmbndy_bit");
+            }
             Element_Info1(prgmbndy);
             Element_End0();
             Skip_SB(                                            "b_end_or_start");

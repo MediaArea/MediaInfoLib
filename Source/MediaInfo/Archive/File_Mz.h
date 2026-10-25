@@ -17,6 +17,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/File__Analyze.h"
+#include <set>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -38,7 +39,7 @@ protected :
     void Goto_Next();
     void Parse_ReadonlyData();
     void Parse_ImageDebugDirectory();
-    void Parse_Resources();
+    void Parse_Resources(size_t Depth=0);
     bool Parse_StringFileInfo(int8u level = 0);
     void Parse_SBAT();
     void Parse_CargoAuditable();
@@ -60,6 +61,7 @@ protected :
     };
     std::map<State, PESectionInfo> to_parse;
     map<int32u, Ztring> Named_Resource;
+    set<int32u> Resource_Directories_Parsed;
     map<int32u, int32u> Resource;
 };
 

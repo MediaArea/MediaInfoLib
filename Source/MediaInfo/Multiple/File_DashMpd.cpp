@@ -172,6 +172,11 @@ struct template_generic
         startNumber_Max=ToCopy.startNumber_Max;
     }
 
+    ~template_generic()
+    {
+        delete Sequence;
+    }
+
     void AdaptationSet_Attributes_Parse     (XMLElement* Item);
     void SegmentTemplate_Attributes_Parse   (XMLElement* Item);
     void SegmentTimeline_Attributes_Parse   (XMLElement* Item);
@@ -602,6 +607,7 @@ bool File_DashMpd::FileHeader_Begin()
 
                                     Template_Generic_PerRepresentation.Decode();
                                     ReferenceFiles->AddSequence(Template_Generic_PerRepresentation.Sequence);
+                                    Template_Generic_PerRepresentation.Sequence=NULL; //Ownership transfered
                                 }
                             }
                         }

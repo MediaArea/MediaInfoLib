@@ -1857,6 +1857,7 @@ Ztring Export_EbuCore::Transform(MediaInfo_Internal &MI, version Version, acquis
         ToReturn=Ztring().From_UTF8(To_JSON(*Node_CoreMain, 0, true, true).c_str());
     else
         ToReturn=Ztring().From_UTF8(To_XML(*Node_CoreMain, 0, true, true).c_str());
+    delete Node_CoreMain;
 
     //Carriage return
     if (MediaInfoLib::Config.LineSeparator_Get()!=__T("\n"))
