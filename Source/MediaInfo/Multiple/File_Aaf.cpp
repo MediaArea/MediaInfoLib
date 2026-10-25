@@ -201,7 +201,7 @@ void File_Aaf::Read_Buffer_Continue()
         sectsFat_Pos=0;
         if (sectsFat.empty())
         {
-            Finish();
+            ForceFinish();
         }
         else
             GoTo((1+sectsFat[0])*(1<<SectorShift));
@@ -227,7 +227,7 @@ void File_Aaf::Header_Parse()
                                   Header_Fill_Size(((int64u)1) << SectorShift);
                                   break;
         case Step_Stream        : Header_Fill_Code(0, "Stream");
-                                  Header_Fill_Size(((int64u)1) << (Streams[0]->Size<MiniSectorCutoff ? MiniSectorShift : SectorShift));
+                                  Header_Fill_Size(((int64u)1) << (!Streams.empty() && Streams[0]->Size<MiniSectorCutoff ? MiniSectorShift : SectorShift));
                                   break;
         default                 : ;
     }
@@ -268,7 +268,7 @@ void File_Aaf::Data_Parse()
         {
             Step=Step_Stream;
             if (Streams.empty() || Streams[0]->StreamOffsets.empty())
-                Finish();
+                ForceFinish();
             else
             {
                 Streams_Pos=0;
@@ -277,10 +277,10 @@ void File_Aaf::Data_Parse()
             }
         }
         else
-            Finish();
+            ForceFinish();
     }
     else
-        Finish();
+        ForceFinish();
 }
 
 //---------------------------------------------------------------------------
@@ -456,11 +456,13 @@ void File_Aaf::StreamElement()
         StreamElement_Parse();
         Streams_Pos++;
         Streams_Pos2=0;
+        while (Streams_Pos<Streams.size() && Streams[Streams_Pos]->StreamOffsets.empty()) //No content
+            Streams_Pos++;
     }
     if (Streams_Pos<Streams.size())
         GoTo(Streams[Streams_Pos]->StreamOffsets[Streams_Pos2]);
     else
-        Finish();
+        ForceFinish();
 }
 
 //---------------------------------------------------------------------------
