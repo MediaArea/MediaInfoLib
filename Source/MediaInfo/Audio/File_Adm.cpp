@@ -3491,12 +3491,18 @@ static void CheckErrors_Element_Target(file_adm_private* File_Adm_Private, item 
 
         int16u Ref_Int = (int16u)-1;
         if (item_Infos[Target_Type].ID_Flags[item_info::Flags_ID_YX]) {
-            const auto TargetIDRef_xxxx = TargetIDRef.substr(strlen(item_Infos[Target_Type].ID_Begin) + 5, 4);
-            Ref_Int = strtoul(TargetIDRef_xxxx.c_str(), nullptr, 16);
+            const auto TargetIDRef_xxxx_Pos = strlen(item_Infos[Target_Type].ID_Begin) + 5;
+            if (TargetIDRef_xxxx_Pos <= TargetIDRef.size()) { // Too short references are handled as unknown targets
+                const auto TargetIDRef_xxxx = TargetIDRef.substr(TargetIDRef_xxxx_Pos, 4);
+                Ref_Int = strtoul(TargetIDRef_xxxx.c_str(), nullptr, 16);
+            }
         }
         if (item_Infos[Target_Type].ID_Flags[item_info::Flags_ID_W]) {
-            const auto TargetIDRef_wwww = TargetIDRef.substr(strlen(item_Infos[Target_Type].ID_Begin) + 1, 4);
-            Ref_Int = strtoul(TargetIDRef_wwww.c_str(), nullptr, 16);
+            const auto TargetIDRef_wwww_Pos = strlen(item_Infos[Target_Type].ID_Begin) + 1;
+            if (TargetIDRef_wwww_Pos <= TargetIDRef.size()) { // Too short references are handled as unknown targets
+                const auto TargetIDRef_wwww = TargetIDRef.substr(TargetIDRef_wwww_Pos, 4);
+                Ref_Int = strtoul(TargetIDRef_wwww.c_str(), nullptr, 16);
+            }
         }
         if (Ref_Int < 0x1000) {
             if (Ref_Int > item_Infos[Target_Type].MaxKnown && Ref_Int_NotKnown.find(Ref_Int) == Ref_Int_NotKnown.end()) {
