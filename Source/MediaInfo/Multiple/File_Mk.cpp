@@ -5488,15 +5488,24 @@ void File_Mk::CRC32_Check ()
         if (CRC32Compute[i].UpTo && File_Offset + Buffer_Offset - (size_t)Header_Size >= CRC32Compute[i].From)
         {
             //Handling of case when data is not completetely loaded because it is not needed by the parser
-            const size_t Offset = Buffer_Offset + (size_t)((Element_WantNextLevel && Element_Offset <= Element_Size) ? Element_Offset : Element_Size);
-            if (Element_Offset > Element_Size)
+            size_t Offset = Buffer_Offset + (size_t)((Element_WantNextLevel && Element_Offset <= Element_Size) ? Element_Offset : Element_Size);
+            if (Element_Offset > Element_Size || Offset > Buffer_Size) // Offset > Buffer_Size e.g. when the rest of the upper element is in the header after a parsing problem
             {
                 if (Config->ParseSpeed<1)
                 {
                     CRC32Compute.clear();
                     break;
                 }
-                CRC32Compute_SkipUpTo = File_Offset + Buffer_Offset + Element_Offset;
+                if (Offset > Buffer_Size)
+                {
+                    // Computing the end of the header with next buffers
+                    CRC32Compute_SkipUpTo = File_Offset + Offset;
+                    Header_Size -= Buffer_Offset - Buffer_Size;
+                    Buffer_Offset = Buffer_Size;
+                    Offset = Buffer_Size;
+                }
+                else
+                    CRC32Compute_SkipUpTo = File_Offset + Buffer_Offset + Element_Offset;
                 Element_Offset = Element_Size;
                 Element_ThisIsAList(); // Fake for forcing the parser to be called for the whole stream
             }
