@@ -1081,6 +1081,8 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
     for (size_t Pos=1; Pos<(size_t)TemporalReferences_Size; Pos+=2)
         if (TemporalReferences[Pos])
             HasOddNumbers=true;
+    size_t IsBeforeI_Next=0;
+    auto IsBeforeI=false;
     for (size_t Pos=0; Pos<(size_t)TemporalReferences_Size; Pos++)
         if (TemporalReferences[Pos])
         {
@@ -1090,20 +1092,25 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
         }
         else if (!PictureTypes.empty()) //Only if stream already started
         {
-            auto IsBeforeI=false;
-            for (size_t Pos2=Pos; Pos2<(size_t)TemporalReferences_Size; Pos2++)
+            if (Pos>=IsBeforeI_Next) //Same result for all missing pictures before the next present picture
             {
-                auto TemporalReference=TemporalReferences[Pos2];
-                if (TemporalReference)
+                IsBeforeI=false;
+                IsBeforeI_Next=(size_t)TemporalReferences_Size;
+                for (size_t Pos2=Pos; Pos2<(size_t)TemporalReferences_Size; Pos2++)
                 {
-                    for (; Pos2<(size_t)TemporalReferences_Size; Pos2++)
+                    auto TemporalReference=TemporalReferences[Pos2];
+                    if (TemporalReference)
                     {
-                        TemporalReference=TemporalReferences[Pos2];
-                        if (!TemporalReference || (TemporalReference->slice_type!=1 && TemporalReference->slice_type!=6))
-                            break;
+                        IsBeforeI_Next=Pos2;
+                        for (; Pos2<(size_t)TemporalReferences_Size; Pos2++)
+                        {
+                            TemporalReference=TemporalReferences[Pos2];
+                            if (!TemporalReference || (TemporalReference->slice_type!=1 && TemporalReference->slice_type!=6))
+                                break;
+                        }
+                        IsBeforeI=TemporalReference && (TemporalReference->slice_type==2 || TemporalReference->slice_type==7);
+                        break;
                     }
-                    IsBeforeI=TemporalReference && (TemporalReference->slice_type==2 || TemporalReference->slice_type==7);
-                    break;
                 }
             }
             if (!IsBeforeI)
@@ -2571,6 +2578,8 @@ void File_Avc::slice_header()
                         if (TemporalReferences[Pos])
                             HasOddNumbers=true;
                     bool IsStarted=false;
+                    size_t IsBeforeI_Next=0;
+                    auto IsBeforeI=false;
                     for (size_t Pos=0; Pos<TemporalReferences_Reserved; Pos++)
                     {
                         if (TemporalReferences[Pos])
@@ -2582,20 +2591,25 @@ void File_Avc::slice_header()
                         }
                         else if (PictureTypes_PreviousFrames.size()!=PictureTypes_PreviousFrames_InitialSize) //Only if stream already started
                         {
-                            auto IsBeforeI=false;
-                            for (size_t Pos2=Pos; Pos2<(size_t)TemporalReferences_Size; Pos2++)
+                            if (Pos>=IsBeforeI_Next) //Same result for all missing pictures before the next present picture
                             {
-                                auto TemporalReference=TemporalReferences[Pos2];
-                                if (TemporalReference)
+                                IsBeforeI=false;
+                                IsBeforeI_Next=(size_t)TemporalReferences_Size;
+                                for (size_t Pos2=Pos; Pos2<(size_t)TemporalReferences_Size; Pos2++)
                                 {
-                                    for (; Pos2<(size_t)TemporalReferences_Size; Pos2++)
+                                    auto TemporalReference=TemporalReferences[Pos2];
+                                    if (TemporalReference)
                                     {
-                                        TemporalReference=TemporalReferences[Pos2];
-                                        if (!TemporalReference || (TemporalReference->slice_type!=1 && TemporalReference->slice_type!=6))
-                                            break;
+                                        IsBeforeI_Next=Pos2;
+                                        for (; Pos2<(size_t)TemporalReferences_Size; Pos2++)
+                                        {
+                                            TemporalReference=TemporalReferences[Pos2];
+                                            if (!TemporalReference || (TemporalReference->slice_type!=1 && TemporalReference->slice_type!=6))
+                                                break;
+                                        }
+                                        IsBeforeI=TemporalReference && (TemporalReference->slice_type==2 || TemporalReference->slice_type==7);
+                                        break;
                                     }
-                                    IsBeforeI=TemporalReference && (TemporalReference->slice_type==2 || TemporalReference->slice_type==7);
-                                    break;
                                 }
                             }
                             if (!IsBeforeI)
@@ -2759,6 +2773,8 @@ void File_Avc::slice_header()
                     for (size_t Pos=1; Pos<(size_t)TemporalReferences_Size; Pos+=2)
                         if (TemporalReferences[Pos])
                             HasOddNumbers=true;
+                    size_t IsBeforeI_Next=0;
+                    auto IsBeforeI=false;
                     for (size_t Pos=0; Pos<(size_t)TemporalReferences_Size; Pos++)
                         if (TemporalReferences[Pos])
                         {
@@ -2767,20 +2783,25 @@ void File_Avc::slice_header()
                         }
                         else if (!PictureTypes.empty()) //Only if stream already started
                         {
-                            auto IsBeforeI=false;
-                            for (size_t Pos2=Pos; Pos2<(size_t)TemporalReferences_Size; Pos2++)
+                            if (Pos>=IsBeforeI_Next) //Same result for all missing pictures before the next present picture
                             {
-                                auto TemporalReference=TemporalReferences[Pos2];
-                                if (TemporalReference)
+                                IsBeforeI=false;
+                                IsBeforeI_Next=(size_t)TemporalReferences_Size;
+                                for (size_t Pos2=Pos; Pos2<(size_t)TemporalReferences_Size; Pos2++)
                                 {
-                                    for (; Pos2<(size_t)TemporalReferences_Size; Pos2++)
+                                    auto TemporalReference=TemporalReferences[Pos2];
+                                    if (TemporalReference)
                                     {
-                                        TemporalReference=TemporalReferences[Pos2];
-                                        if (!TemporalReference || (TemporalReference->slice_type!=1 && TemporalReference->slice_type!=6))
-                                            break;
+                                        IsBeforeI_Next=Pos2;
+                                        for (; Pos2<(size_t)TemporalReferences_Size; Pos2++)
+                                        {
+                                            TemporalReference=TemporalReferences[Pos2];
+                                            if (!TemporalReference || (TemporalReference->slice_type!=1 && TemporalReference->slice_type!=6))
+                                                break;
+                                        }
+                                        IsBeforeI=TemporalReference && (TemporalReference->slice_type==2 || TemporalReference->slice_type==7);
+                                        break;
                                     }
-                                    IsBeforeI=TemporalReference && (TemporalReference->slice_type==2 || TemporalReference->slice_type==7);
-                                    break;
                                 }
                             }
                             if (!IsBeforeI)
