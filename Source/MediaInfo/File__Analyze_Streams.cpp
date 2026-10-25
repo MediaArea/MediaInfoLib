@@ -1141,6 +1141,10 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data)
         switch (coefficient_data_type) {
         case 0: //COEFF_FIXED
             Get_UE(coefficient_log2_denom,                      "coefficient_log2_denom");
+            if (coefficient_log2_denom > 32) {
+                Trusted_IsNot("coefficient_log2_denom is too large");
+                return;
+            }
             break;
         case 1: //COEFF_FLOAT
             break;
@@ -1151,7 +1155,12 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data)
             // sequence header
             Get_UE (bl_bit_depth_minus8,                        "BL_bit_depth_minus8");
             Get_UE (el_bit_depth_minus8,                        "EL_bit_depth_minus8");
+            el_bit_depth_minus8 &= 0xFF; // ext_mapping_idc is in the upper bits
             Get_UE (vdr_bit_depth_minus8,                       "vdr_bit_depth_minus8");
+            if (bl_bit_depth_minus8 > 8 || el_bit_depth_minus8 > 8 || vdr_bit_depth_minus8 > 8) {
+                Trusted_IsNot("bit depth is too large");
+                return;
+            }
             Skip_SB(                                            "spatial_resampling_filter_flag");
             Get_S1 (3, dm_compression,                          "dm_compression");
             Get_SB (el_spatial_resampling_filter_flag,          "el_spatial_resampling_filter_flag");
