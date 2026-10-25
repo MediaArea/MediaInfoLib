@@ -5986,6 +5986,9 @@ bool File_Mxf::Synchronize()
 
         if (!memcmp(Sync + 1, Sync_Pattern + 1, 3))
         {
+            if (IsSub && !Status[IsAccepted])
+                Accept();
+
             //Synched is OK
             return true;
         }
