@@ -244,12 +244,19 @@ void File_Av1::Streams_Finish()
                     Fill(Stream_Video, 0, HDR_Item.first, Value.Read());
             }
         }
+        HDR.clear(); //Streams_Finish() may be called again (e.g. by Matroska), values must not be added twice
     }
 
     if (!maximum_content_light_level.empty())
+    {
         Fill(Stream_Video, 0, Video_MaxCLL, maximum_content_light_level);
+        maximum_content_light_level.clear();
+    }
     if (!maximum_frame_average_light_level.empty())
+    {
         Fill(Stream_Video, 0, Video_MaxFALL, maximum_frame_average_light_level);
+        maximum_frame_average_light_level.clear();
+    }
 }
 
 //***************************************************************************
