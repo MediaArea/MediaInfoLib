@@ -177,6 +177,8 @@ struct field_value
     string Field;
     string Value;
     bitset8 Flags;
+    stream_t StreamKind = Stream_Max;
+    size_t StreamPos = (size_t)-1;
     struct frame_pos
     {
         int64u Frame_Count_Min = (int64u)-1;
@@ -210,7 +212,7 @@ struct field_value
 
     friend bool operator==(const field_value& l, const field_value& r)
     {
-        return l.Field == r.Field && l.Value == r.Value && l.Flags.to_int8u() == r.Flags.to_int8u();
+        return l.Field == r.Field && l.Value == r.Value && l.Flags.to_int8u() == r.Flags.to_int8u() && l.StreamKind == r.StreamKind && l.StreamPos == r.StreamPos;
     }
 };
 struct conformance
@@ -232,7 +234,7 @@ struct conformance
     int8u                           IsParsingRaw = 0;
     bool                            CheckIf(const bitset8 Flags) { return !Flags || (ConformanceFlags & Flags); }
 
-    void                            Fill_Conformance(const char* Field, const char* Value, bitset8 Flags = {}, conformance_type Level = Conformance_Error, stream_t StreamKind = Stream_General, size_t StreamPos = 0);
+    void                            Fill_Conformance(const char* Field, const char* Value, bitset8 Flags = {}, conformance_type Level = Conformance_Error, stream_t StreamKind = Stream_Max, size_t StreamPos = 0);
     void                            Fill_Conformance(const char* Field, const string& Value, bitset8 Flags = {}, conformance_type Level = Conformance_Error) { Fill_Conformance(Field, Value.c_str(), Flags, Level); }
     void                            Clear_Conformance();
     void                            Merge_Conformance(bool FromConfig = false);
@@ -279,6 +281,8 @@ void conformance::Fill_Conformance(const char* Field, const char* Value, bitset8
     if (Level == Conformance_Warning && Warning_Error)
         Level = Conformance_Error;
     field_value FieldValue(Field, Value, Flags, (int64u)-1, (int64u)-1, IsParsingRaw >= 2 ? (IsParsingRaw - 2) : (int64u)-1, (int64u)-1, (int64u)-1);
+    FieldValue.StreamKind = StreamKind;
+    FieldValue.StreamPos = StreamPos;
     auto& Conformance = ConformanceErrors[Level];
     auto Current = find(Conformance.begin(), Conformance.end(), FieldValue);
     if (Current != Conformance.end())
@@ -371,82 +375,95 @@ void conformance::Streams_Finish_Conformance()
         }
         if (Conformance_Total.empty())
             continue;
-        string Conformance_String = "Conformance";
-        Conformance_String += Conformance_Type_String[Level];
-        A->Fill(StreamKind_Last, StreamPos_Last, Conformance_String.c_str(), Conformance_Total.size());
-        Conformance_String += ' ';
-        for (const auto& ConformanceError : Conformance_Total) {
-            size_t Space = 0;
-            for (;;) {
-                Space = ConformanceError.Field.find(' ', Space + 1);
-                if (Space == string::npos) {
-                    break;
-                }
-                const auto Field = Conformance_String + ConformanceError.Field.substr(0, Space);
-                const auto& Value = A->Retrieve_Const(StreamKind_Last, StreamPos_Last, Field.c_str());
-                if (Value.empty()) {
-                    A->Fill(StreamKind_Last, StreamPos_Last, Field.c_str(), "Yes");
+
+        // Items without stream go to the last stream
+        vector<pair<stream_t, size_t>> Streams;
+        for (auto& ConformanceError : Conformance_Total) {
+            if (ConformanceError.StreamKind == Stream_Max) {
+                ConformanceError.StreamKind = StreamKind_Last;
+                ConformanceError.StreamPos = StreamPos_Last;
+            }
+            const pair<stream_t, size_t> Stream(ConformanceError.StreamKind, ConformanceError.StreamPos);
+            if (find(Streams.begin(), Streams.end(), Stream) == Streams.end()) {
+                Streams.push_back(Stream);
+            }
+        }
+
+        for (const auto& Stream : Streams) {
+            const auto StreamKind = Stream.first;
+            const auto StreamPos = Stream.second;
+            size_t Count = 0;
+            for (const auto& ConformanceError : Conformance_Total) {
+                if (ConformanceError.StreamKind == StreamKind && ConformanceError.StreamPos == StreamPos) {
+                    Count++;
                 }
             }
-            string Extra;
-            bool RemoveOneValueCharacter = false;
-            if (!ConformanceError.FramePoss.empty())
-            {
-                string Frames, Times, Offsets;
-                auto Pos_Total = ConformanceError.FramePoss.size();
-                if (ConformanceError.FramePoss.back().File_Offset_Min == (int64u)-1) {
-                    Pos_Total--;
+            string Conformance_String = "Conformance";
+            Conformance_String += Conformance_Type_String[Level];
+            A->Fill(StreamKind, StreamPos, Conformance_String.c_str(), Count);
+            Conformance_String += ' ';
+            for (const auto& ConformanceError : Conformance_Total) {
+                if (ConformanceError.StreamKind != StreamKind || ConformanceError.StreamPos != StreamPos) {
+                    continue;
                 }
-                size_t Frames_HasContent, Times_HasContent, Offsets_HasContent;
-                Frames_HasContent = Times_HasContent = Offsets_HasContent = Pos_Total;
-                for (size_t i = 0; i < Pos_Total; i++) {
-                    auto& FramePos = ConformanceError.FramePoss[i];
-                    if (FramePos.Frame_Count_Min == (int64u)-2) {
-                        Frames += "conf";
+                size_t Space = 0;
+                for (;;) {
+                    Space = ConformanceError.Field.find(' ', Space + 1);
+                    if (Space == string::npos) {
+                        break;
                     }
-                    else {
-                        if (FramePos.Frame_Count_NotParsedIncluded_Min != (int64u)-1) {
-                            if (FramePos.Frame_Count_NotParsedIncluded_Max != (int64u)-1) {
-                                Frames += '[';
-                            }
-                            Frames += to_string(FramePos.Frame_Count_NotParsedIncluded_Min);
-                            if (FramePos.SubFramePos_Min != (int64u)-1) {
-                                Frames += '.';
-                                Frames += to_string(FramePos.SubFramePos_Min);
-                            }
-                            if (FramePos.Frame_Count_NotParsedIncluded_Max != (int64u)-1) {
-                                Frames += '.';
-                                Frames += '.';
-                                Frames += to_string(FramePos.Frame_Count_NotParsedIncluded_Max);
-                                if (FramePos.SubFramePos_Min != (int64u)-1) {
-                                    Frames += '.';
-                                    Frames += to_string(FramePos.SubFramePos_Max);
-                                }
-                                Frames += ']';
-                            }
+                    const auto Field = Conformance_String + ConformanceError.Field.substr(0, Space);
+                    const auto& Value = A->Retrieve_Const(StreamKind, StreamPos, Field.c_str());
+                    if (Value.empty()) {
+                        A->Fill(StreamKind, StreamPos, Field.c_str(), "Yes");
+                    }
+                }
+                string Extra;
+                bool RemoveOneValueCharacter = false;
+                if (!ConformanceError.FramePoss.empty())
+                {
+                    string Frames, Times, Offsets;
+                    auto Pos_Total = ConformanceError.FramePoss.size();
+                    if (ConformanceError.FramePoss.back().File_Offset_Min == (int64u)-1) {
+                        Pos_Total--;
+                    }
+                    size_t Frames_HasContent, Times_HasContent, Offsets_HasContent;
+                    Frames_HasContent = Times_HasContent = Offsets_HasContent = Pos_Total;
+                    for (size_t i = 0; i < Pos_Total; i++) {
+                        auto& FramePos = ConformanceError.FramePoss[i];
+                        if (FramePos.Frame_Count_Min == (int64u)-2) {
+                            Frames += "conf";
                         }
                         else {
-                            Frames += '?';
-                            Frames_HasContent--;
-                        }
-                        if (FramePos.PTS_Min != (int64u)-1) {
-                            if (FramePos.PTS_Max != (int64u)-1) {
-                                Times += '[';
-                            }
-                            auto PTS = (int64_t)FramePos.PTS_Min;
-                            if (PTS >= 0) {
-                                PTS += 500000;
+                            if (FramePos.Frame_Count_NotParsedIncluded_Min != (int64u)-1) {
+                                if (FramePos.Frame_Count_NotParsedIncluded_Max != (int64u)-1) {
+                                    Frames += '[';
+                                }
+                                Frames += to_string(FramePos.Frame_Count_NotParsedIncluded_Min);
+                                if (FramePos.SubFramePos_Min != (int64u)-1) {
+                                    Frames += '.';
+                                    Frames += to_string(FramePos.SubFramePos_Min);
+                                }
+                                if (FramePos.Frame_Count_NotParsedIncluded_Max != (int64u)-1) {
+                                    Frames += '.';
+                                    Frames += '.';
+                                    Frames += to_string(FramePos.Frame_Count_NotParsedIncluded_Max);
+                                    if (FramePos.SubFramePos_Min != (int64u)-1) {
+                                        Frames += '.';
+                                        Frames += to_string(FramePos.SubFramePos_Max);
+                                    }
+                                    Frames += ']';
+                                }
                             }
                             else {
-                                PTS -= 500000;
+                                Frames += '?';
+                                Frames_HasContent--;
                             }
-                            PTS /= 1000000;
-                            TimeCode TC(PTS, 999, TimeCode::Timed());
-                            Times += TC.ToString();
-                            if (FramePos.PTS_Max != (int64u)-1) {
-                                Times += '.';
-                                Times += '.';
-                                auto PTS = (int64_t)FramePos.PTS_Max;
+                            if (FramePos.PTS_Min != (int64u)-1) {
+                                if (FramePos.PTS_Max != (int64u)-1) {
+                                    Times += '[';
+                                }
+                                auto PTS = (int64_t)FramePos.PTS_Min;
                                 if (PTS >= 0) {
                                     PTS += 500000;
                                 }
@@ -456,87 +473,101 @@ void conformance::Streams_Finish_Conformance()
                                 PTS /= 1000000;
                                 TimeCode TC(PTS, 999, TimeCode::Timed());
                                 Times += TC.ToString();
-                                Times += ']';
+                                if (FramePos.PTS_Max != (int64u)-1) {
+                                    Times += '.';
+                                    Times += '.';
+                                    auto PTS = (int64_t)FramePos.PTS_Max;
+                                    if (PTS >= 0) {
+                                        PTS += 500000;
+                                    }
+                                    else {
+                                        PTS -= 500000;
+                                    }
+                                    PTS /= 1000000;
+                                    TimeCode TC(PTS, 999, TimeCode::Timed());
+                                    Times += TC.ToString();
+                                    Times += ']';
+                                }
+                            }
+                            else {
+                                Times += '?';
+                                Times_HasContent--;
+                            }
+                        }
+                        if (FramePos.File_Offset_Min != (int64u)-1) {
+                            if (FramePos.File_Offset_Max != (int64u)-1) {
+                                Offsets += '[';
+                            }
+                            Offsets += "0x" + Ztring::ToZtring(FramePos.File_Offset_Min, 16).To_UTF8();
+                            if (FramePos.File_Offset_Max != (int64u)-1) {
+                                Offsets += '.';
+                                Offsets += '.';
+                                Offsets += "0x" + Ztring::ToZtring(FramePos.File_Offset_Max, 16).To_UTF8();
+                                Offsets += ']';
                             }
                         }
                         else {
-                            Times += '?';
-                            Times_HasContent--;
+                            Offsets += '?';
+                            Offsets_HasContent--;
                         }
+                        Frames += '+';
+                        Times += '+';
+                        Offsets += '+';
                     }
-                    if (FramePos.File_Offset_Min != (int64u)-1) {
-                        if (FramePos.File_Offset_Max != (int64u)-1) {
-                            Offsets += '[';
-                        }
-                        Offsets += "0x" + Ztring::ToZtring(FramePos.File_Offset_Min, 16).To_UTF8();
-                        if (FramePos.File_Offset_Max != (int64u)-1) {
-                            Offsets += '.';
-                            Offsets += '.';
-                            Offsets += "0x" + Ztring::ToZtring(FramePos.File_Offset_Max, 16).To_UTF8();
-                            Offsets += ']';
-                        }
+                    if (ConformanceError.FramePoss.back().File_Offset_Min == (int64u)-1) {
+                        Frames += "...";
+                        Times += "...";
+                        Offsets += "...";
                     }
                     else {
-                        Offsets += '?';
-                        Offsets_HasContent--;
+                        Frames.pop_back();
+                        Times.pop_back();
+                        Offsets.pop_back();
                     }
-                    Frames += '+';
-                    Times += '+';
-                    Offsets += '+';
-                }
-                if (ConformanceError.FramePoss.back().File_Offset_Min == (int64u)-1) {
-                    Frames += "...";
-                    Times += "...";
-                    Offsets += "...";
-                }
-                else {
-                    Frames.pop_back();
-                    Times.pop_back();
-                    Offsets.pop_back();
-                }
-                if (Frames_HasContent + Times_HasContent + Offsets_HasContent) {
-                    if (ConformanceError.Value.back() == ')') {
-                        RemoveOneValueCharacter = true;
-                        Extra = ',';
-                        Extra += ' ';
-                    }
-                    else {
-                        Extra = ' ';
-                        Extra += '(';
-                    }
-                    if (Frames == "conf") {
-                        Extra += Frames;
-                    }
-                    else {
-                        if (Frames_HasContent) {
-                            Extra += "frame ";
+                    if (Frames_HasContent + Times_HasContent + Offsets_HasContent) {
+                        if (ConformanceError.Value.back() == ')') {
+                            RemoveOneValueCharacter = true;
+                            Extra = ',';
+                            Extra += ' ';
+                        }
+                        else {
+                            Extra = ' ';
+                            Extra += '(';
+                        }
+                        if (Frames == "conf") {
                             Extra += Frames;
                         }
-                        if (Times_HasContent) {
+                        else {
                             if (Frames_HasContent) {
+                                Extra += "frame ";
+                                Extra += Frames;
+                            }
+                            if (Times_HasContent) {
+                                if (Frames_HasContent) {
+                                    Extra += ',';
+                                    Extra += ' ';
+                                }
+                                Extra += "time ";
+                                Extra += Times;
+                            }
+                        }
+                        if (Offsets_HasContent) {
+                            if (Frames_HasContent + Times_HasContent) {
                                 Extra += ',';
                                 Extra += ' ';
                             }
-                            Extra += "time ";
-                            Extra += Times;
+                            Extra += "offset ";
+                            Extra += Offsets;
                         }
+                        Extra += ')';
                     }
-                    if (Offsets_HasContent) {
-                        if (Frames_HasContent + Times_HasContent) {
-                            Extra += ',';
-                            Extra += ' ';
-                        }
-                        Extra += "offset ";
-                        Extra += Offsets;
-                    }
-                    Extra += ')';
                 }
+                auto Value = ConformanceError.Value;
+                if (RemoveOneValueCharacter)
+                    Value.pop_back();
+                Value += Extra;
+                A->Fill(StreamKind, StreamPos, (Conformance_String + ConformanceError.Field).c_str(), Value);
             }
-            auto Value = ConformanceError.Value;
-            if (RemoveOneValueCharacter)
-                Value.pop_back();
-            Value += Extra;
-            A->Fill(StreamKind_Last, StreamPos_Last, (Conformance_String + ConformanceError.Field).c_str(), Value);
         }
         Conformance_Total.clear();
     }

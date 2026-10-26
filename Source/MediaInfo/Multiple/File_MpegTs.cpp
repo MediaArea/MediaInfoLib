@@ -832,8 +832,20 @@ void File_MpegTs::Streams_Update_Programs_PerStream(size_t StreamID)
                 Fill((stream_t)StreamKind, StreamPos, "Encryption", "Encrypted");
 
             //TS info
+            Ztring HDR_Container[Video_HDR_Format_Compatibility-Video_HDR_Format+1];
             for (std::map<std::string, ZenLib::Ztring>::iterator Info=Temp->Infos.begin(); Info!=Temp->Infos.end(); ++Info)
             {
+                //Special case: HDR formats, merged with the ones from the stream after all infos
+                if ((stream_t)StreamKind==Stream_Video && Info->first.rfind("HDR_Format", 0)==0)
+                {
+                    size_t Parameter=MediaInfoLib::Config.Info_Get(Stream_Video).Find(Ztring().From_UTF8(Info->first));
+                    if (Parameter>=Video_HDR_Format && Parameter<=Video_HDR_Format_Compatibility)
+                    {
+                        HDR_Container[Parameter-Video_HDR_Format]=Info->second;
+                        continue;
+                    }
+                }
+
                 //Special case: Preselections
                 string First=Info->first;
                 if ((stream_t)StreamKind==Stream_Audio && First.rfind("Preselection", 12)==0 && Retrieve_Const((stream_t)Stream_Audio, StreamPos, Audio_Format)==__T("AC-4"))
@@ -934,10 +946,20 @@ void File_MpegTs::Streams_Update_Programs_PerStream(size_t StreamID)
                 {
                     Fill((stream_t)StreamKind, StreamPos, Info->first.c_str(), Info->second+__T('-')+Retrieve((stream_t)StreamKind, StreamPos, Info->first.c_str()), true);
                 }
-                else if (Info->first.find("HDR_Format")==0)
+            }
+            if (!HDR_Container[0].empty())
+            {
+                Ztring HDR_Stream[Video_HDR_Format_Compatibility-Video_HDR_Format+1];
+                for (size_t i=Video_HDR_Format; i<=Video_HDR_Format_Compatibility; i++)
+                    HDR_Stream[i-Video_HDR_Format]=Retrieve_Const(Stream_Video, StreamPos, i);
+                if (HDR_Stream[0].empty())
                 {
-                    Fill((stream_t)StreamKind, StreamPos, Info->first.c_str(), Info->second+__T(" / ")+Retrieve((stream_t)StreamKind, StreamPos, Info->first.c_str()), true);
+                    for (size_t i=Video_HDR_Format; i<=Video_HDR_Format_Compatibility; i++)
+                        if (!HDR_Container[i-Video_HDR_Format].empty())
+                            Fill(Stream_Video, StreamPos, i, HDR_Container[i-Video_HDR_Format], true);
                 }
+                else
+                    Merge_HDR(StreamPos, HDR_Container, HDR_Stream, Retrieve(Stream_Video, StreamPos, Video_colour_range), Retrieve(Stream_Video, StreamPos, Video_matrix_coefficients));
             }
 
             //Common

@@ -3913,23 +3913,10 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
             Fill(Stream_Video, StreamPos_To, "ColorSpace_Original", Retrieve(StreamKind, StreamPos_To, Video_ColorSpace), true);
             Fill(Stream_Video, StreamPos_To, Video_ColorSpace, ColorSpace_Temp, true);
         }
-        if (!HDR_Temp[0].empty() && !ToAdd.Retrieve_Const(Stream_Video, StreamPos_From, Video_HDR_Format).empty() && HDR_Temp[0]!=ToAdd.Retrieve_Const(Stream_Video, StreamPos_From, Video_HDR_Format))
-        {
-            for (size_t i=Video_HDR_Format; i<=Video_HDR_Format_Compatibility; i++)
-            {
-                Ztring Container_Value=HDR_Temp[i-Video_HDR_Format];
-                Ztring Stream_Value=ToAdd.Retrieve(Stream_Video, StreamPos_From, i);
-                ZtringList Stream_Values;
-                Stream_Values.Separator_Set(0, __T(" / "));
-                Stream_Values.Write(Stream_Value);
-                if (i==Video_HDR_Format && Stream_Values.Find(Container_Value)!=Error)
-                    break;
-                if (!Container_Value.empty() || !Stream_Value.empty())
-                    Container_Value+=__T(" / ");
-                Container_Value+=Stream_Value;
-                Fill(Stream_Video, StreamPos_To, i, Container_Value, true);
-            }
-        }
+        Ztring HDR_ToAdd[Video_HDR_Format_Compatibility-Video_HDR_Format+1];
+        for (size_t i=Video_HDR_Format; i<=Video_HDR_Format_Compatibility; i++)
+            HDR_ToAdd[i-Video_HDR_Format]=ToAdd.Retrieve_Const(Stream_Video, StreamPos_From, i);
+        Merge_HDR(StreamPos_To, HDR_Temp, HDR_ToAdd, ToAdd.Retrieve_Const(Stream_Video, StreamPos_From, Video_colour_range), ToAdd.Retrieve_Const(Stream_Video, StreamPos_From, Video_matrix_coefficients));
     }
     if (StreamKind==Stream_Audio)
     {
@@ -4066,6 +4053,74 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
 //***************************************************************************
 // Helpers
 //***************************************************************************
+
+//---------------------------------------------------------------------------
+void File__Analyze::Merge_HDR(size_t StreamPos_To, const Ztring* Container, const Ztring* ToAdd, const Ztring& ToAdd_colour_range, const Ztring& ToAdd_matrix_coefficients)
+{
+    ZtringList Container_Formats, Stream_Formats;
+    Container_Formats.Separator_Set(0, __T(" / "));
+    Stream_Formats.Separator_Set(0, __T(" / "));
+    Container_Formats.Write(Container[0]);
+    Stream_Formats.Write(ToAdd[0]);
+    auto Container_DolbyVision=Container_Formats.Find(__T("Dolby Vision"));
+    if (!Container[0].empty() && !ToAdd[0].empty() && Container[0]!=ToAdd[0])
+    {
+        //The container has priority, the stream adds the HDR formats which are not in the container
+        ZtringList Container_Values[Video_HDR_Format_Compatibility-Video_HDR_Format+1], Stream_Values[Video_HDR_Format_Compatibility-Video_HDR_Format+1];
+        for (size_t i=Video_HDR_Format; i<=Video_HDR_Format_Compatibility; i++)
+        {
+            auto& Container_Value=Container_Values[i-Video_HDR_Format];
+            auto& Stream_Value=Stream_Values[i-Video_HDR_Format];
+            Container_Value.Separator_Set(0, __T(" / "));
+            Stream_Value.Separator_Set(0, __T(" / "));
+            Container_Value.Write(Container[i-Video_HDR_Format]);
+            Stream_Value.Write(ToAdd[i-Video_HDR_Format]);
+            Container_Value.resize(Container_Formats.size());
+            Stream_Value.resize(Stream_Formats.size());
+        }
+
+        //If all HDR formats of the container are in the stream, the stream values are kept
+        auto Container_InStream=true;
+        for (const auto& Container_Format : Container_Formats)
+            if (Stream_Formats.Find(Container_Format)==Error)
+                Container_InStream=false;
+
+        if (!Container_InStream)
+        {
+            for (size_t i=Video_HDR_Format; i<=Video_HDR_Format_Compatibility; i++)
+            {
+                if (i==Video_HDR_Format_String || i==Video_HDR_Format_Commercial)
+                    continue;
+                auto& Container_Value=Container_Values[i-Video_HDR_Format];
+                const auto& Stream_Value=Stream_Values[i-Video_HDR_Format];
+                for (size_t j=0; j<Stream_Formats.size(); j++)
+                    if (Container_Formats.Find(Stream_Formats[j])==Error)
+                        Container_Value.push_back(Stream_Value[j]);
+                auto Value=Container_Value.Read();
+                if (Value.size()>(Container_Value.size()-1)*3)
+                    Fill(Stream_Video, StreamPos_To, i, Value, true);
+            }
+        }
+    }
+    #if MEDIAINFO_CONFORMANCE
+        if (Container_DolbyVision!=Error)
+        {
+            ZtringList Container_Profiles;
+            Container_Profiles.Separator_Set(0, __T(" / "));
+            Container_Profiles.Write(Container[Video_HDR_Format_Profile-Video_HDR_Format]);
+            Container_Profiles.resize(Container_Formats.size());
+            const auto& Container_Profile=Container_Profiles[Container_DolbyVision];
+            if (Container_Profile.size()>=3 && !Container_Profile.compare(Container_Profile.size()-3, 3, __T(".05")))
+            {
+                //Profile 5 VUI is either 1,2,2,2,0 or 1,9,16,15,0 (video_full_range_flag, colour_primaries, transfer_characteristics, matrix_coeffs, chroma_sample_loc_type)
+                if (ToAdd_colour_range==__T("Limited"))
+                    Fill_Conformance("Crosscheck DolbyVisionConfiguration dv_profile", "Dolby Vision configuration dv_profile 5 does not permit HEVC VUI video_full_range_flag 0", {}, Conformance_Error, Stream_Video, StreamPos_To);
+                if (!ToAdd_matrix_coefficients.empty() && ToAdd_matrix_coefficients!=__T("IPT-PQ-C2"))
+                    Fill_Conformance("Crosscheck DolbyVisionConfiguration dv_profile", ("Dolby Vision configuration dv_profile 5 does not permit HEVC VUI matrix_coeffs " + ToAdd_matrix_coefficients.To_UTF8()).c_str(), {}, Conformance_Error, Stream_Video, StreamPos_To);
+            }
+        }
+    #endif //MEDIAINFO_CONFORMANCE
+}
 
 //---------------------------------------------------------------------------
 float64 File__Analyze::Video_FrameRate_Rounded(float64 FrameRate)
