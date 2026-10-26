@@ -943,28 +943,125 @@ public :
     #if defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MK_YES)
     void dvcC(bool has_dependency_pid=false, std::map<std::string, Ztring>* Infos=NULL);
     #endif
-    #if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES)
+    #if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MXF_YES)
+    // Dolby Vision metadata, from the RPU or from Dolby Vision XML metadata
     struct DV_RPU {
+        // Header, from the first RPU
+        int16u rpu_format{};
         int8u vdr_rpu_profile{};
-        int32u bl_bit_depth{};
-        int32u el_bit_depth{};
-        int32u vdr_bit_depth{};
+        int8u vdr_rpu_level{};
+        int8u coefficient_data_type{};
+        int8u coefficient_log2_denom{};
+        int8u vdr_rpu_normalized_idc{};
+        int8u bl_bit_depth{};
+        int8u el_bit_depth{};
+        int8u vdr_bit_depth{};
+        int8u ext_mapping_idc{};
+        int8u dm_compression{};
+        int8u Profile_First{};
+        int16u Profiles{}; // Bit field of the profiles deduced from each RPU header (HEVC rules)
+        bool chroma_resampling_explicit_filter_flag{};
         bool BL_video_full_range_flag{};
-        int8u isMEL{};
-        float CMv{};
-        int16u active_area_left_offset{};
-        int16u active_area_right_offset{};
-        int16u active_area_top_offset{};
-        int16u active_area_bottom_offset{};
-        int16u max_display_mastering_luminance{};
-        int16u min_display_mastering_luminance{};
-        int16u max_content_light_level{};
-        int16u max_frame_average_light_level{};
-        bool L11_present{};
-        int8u content_type{};
-        int8u white_point{};
-        bool reference_mode{};
+        bool spatial_resampling_filter_flag{};
+        bool el_spatial_resampling_filter_flag{};
+        bool disable_residual_flag{};
+
+        // Mapping, from the first RPU having it
+        bool Mapping_Present{};
+        int8u nlq_method_idc{};
+        int32u mapping_color_space{};
+        int32u mapping_chroma_format_idc{};
+        int32u num_x_partitions_minus1{};
+        int32u num_y_partitions_minus1{};
+
+        // Display management, from the first RPU having it
+        bool DM_Present{};
+        int8u signal_bit_depth{};
+        int8u signal_color_space{};
+        int8u signal_chroma_format{};
+        int8u signal_full_range_flag{};
+        int16u signal_eotf{};
+        int16u signal_eotf_param0{};
+        int16u signal_eotf_param1{};
+        int32u signal_eotf_param2{};
+        int16u source_diagonal{};
+        std::vector<int32u> Sources; // Unique (source_min_PQ<<16)|source_max_PQ values
+
+        // Counts
+        int32u Count{}; // RPUs
+        int32u Count_Shot{};
+        int32u Count_MEL{};
+        int32u Count_FEL{};
+        int32u Count_CMv29{};
+        int32u Count_CMv40{};
+        bool IsFilled{}; // Streams are filled, Streams_Finish() may be called again (e.g. by Matroska) and must not add the same values twice
+
+        // Extension blocks
+        struct l5 {
+            int16u Offsets[4]; // Left, right, top, bottom
+            bool operator==(const l5& b) const { for (int i=0; i<4; i++) if (Offsets[i]!=b.Offsets[i]) return false; return true; }
+        };
+        struct l6 {
+            int16u max_display_mastering_luminance;
+            int16u min_display_mastering_luminance;
+            float64 max_content_light_level;
+            float64 max_frame_average_light_level;
+            bool operator==(const l6& b) const { return max_display_mastering_luminance==b.max_display_mastering_luminance && min_display_mastering_luminance==b.min_display_mastering_luminance && max_content_light_level==b.max_content_light_level && max_frame_average_light_level==b.max_frame_average_light_level; }
+        };
+        struct l9 {
+            int8u source_primary_index;
+            bool Explicit;
+            int16u Primaries[8]; // R, G, B, W pairs
+            bool operator==(const l9& b) const { if (source_primary_index!=b.source_primary_index || Explicit!=b.Explicit) return false; for (int i=0; i<8; i++) if (Primaries[i]!=b.Primaries[i]) return false; return true; }
+        };
+        struct l10 {
+            int8u target_display_index;
+            int8u target_primary_index;
+            int16u target_max_PQ;
+            int16u target_min_PQ;
+            bool operator==(const l10& b) const { return target_display_index==b.target_display_index && target_primary_index==b.target_primary_index && target_max_PQ==b.target_max_PQ && target_min_PQ==b.target_min_PQ; }
+        };
+        struct l11 {
+            int8u content_type;
+            int8u white_point;
+            int8u reference_mode; // 0xFF if unknown
+            bool operator==(const l11& b) const { return content_type==b.content_type && white_point==b.white_point && reference_mode==b.reference_mode; }
+        };
+        int16u L1_max_PQ{}; // Maximum of the values
+        int16u L1_avg_PQ{}; // Maximum of the values
+        int16u L5_First[4]{}; // Left, right, top, bottom
+        int16u L5_Min[4]{};
+        int16u L5_Max[4]{};
+        bool L5_Present{};
+        bool L254_Present{};
+        int8u dm_mode{};
+        int8u dm_version_index{};
+        std::vector<int16u> L2_target_max_PQ;
+        std::vector<l5> L5;
+        std::vector<l6> L6;
+        std::vector<int8u> L8_target_display_index;
+        std::vector<l9> L9;
+        std::vector<l10> L10;
+        std::vector<l11> L11;
+
+        // From XML metadata only
+        Ztring CMVersion;
+        Ztring MasteringDisplay_Name;
+        Ztring MasteringDisplay_ID;
+        std::vector<std::pair<int8u, Ztring> > TargetDisplay_Names;
+        std::vector<float64> Active_DisplayAspectRatios;
+        int64u FrameRange_Start{(int64u)-1};
+        int64u FrameRange_End{};
     };
+    enum dv_source {
+        DV_Source_HEVC,
+        DV_Source_AV1,
+        DV_Source_XML,
+    };
+    void DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source);
+    static int16u DolbyVision_Nits_ToPQ12(float64 Nits);
+    #endif
+    #if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES)
     // Must be in bitstream before calling this function.
     void Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t BitsAfter = 0);
     #endif

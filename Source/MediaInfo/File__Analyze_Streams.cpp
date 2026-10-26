@@ -986,7 +986,7 @@ void File__Analyze::dvcC(bool has_dependency_pid, std::map<std::string, Ztring>*
 #endif
 
 //---------------------------------------------------------------------------
-#if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES)
+#if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MXF_YES)
 
 const char* DV_content_type(int8u content_type)
 {
@@ -1022,6 +1022,10 @@ const char* DV_white_point(int8u white_point)
     default: return "";
     }
 }
+
+#endif // defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MXF_YES)
+
+#if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES)
 
 // CRC Table for CRC-32/MPEG-2
 // Polynomial - 0x04C11DB7
@@ -1132,6 +1136,13 @@ static size_t DV_ext_block_MinBits(bool IsCMv40, int8u ext_block_level)
     }
 }
 
+template<typename T, typename V>
+static void Unique_Add(std::vector<T>& List, const V& Value)
+{
+    if (std::find(List.begin(), List.end(), Value) == List.end())
+        List.push_back(Value);
+}
+
 // Must be in bitstream before calling this function.
 void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t BitsAfter)
 {
@@ -1145,6 +1156,9 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
         auto Remain{ Data_BS_Remain() };
         return Remain > BitsAfter ? Remain - BitsAfter : 0;
     } };
+
+    // Values are added to a copy, the copy is kept only if the RPU is fully parsed
+    DV_RPU New(data);
 
     //Parsing
     Element_Begin1("rpu_data");
@@ -1162,14 +1176,14 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
     }
     // if (rpu_type == 2) {
     // EDR RPU frame header
-    int32u coefficient_log2_denom, bl_bit_depth_minus8, el_bit_depth_minus8, vdr_bit_depth_minus8;
-    int8u vdr_rpu_profile, dm_compression, coefficient_data_type;
-    bool BL_video_full_range_flag, el_spatial_resampling_filter_flag, disable_residual_flag;
+    int32u coefficient_log2_denom{}, bl_bit_depth_minus8, el_bit_depth_minus8, vdr_bit_depth_minus8;
+    int8u vdr_rpu_profile, vdr_rpu_level, dm_compression, coefficient_data_type, vdr_rpu_normalized_idc{}, ext_mapping_idc{};
+    bool BL_video_full_range_flag, el_spatial_resampling_filter_flag, disable_residual_flag, chroma_resampling_explicit_filter_flag{}, spatial_resampling_filter_flag{};
     Get_S1 ( 4, vdr_rpu_profile,                                "vdr_rpu_profile");
-    Skip_S1( 4,                                                 "vdr_rpu_level");
+    Get_S1 ( 4, vdr_rpu_level,                                  "vdr_rpu_level");
     TESTELSE_SB_SKIP(                                           "vdr_seq_info_present_flag");
         // EDR RPU sequence header
-        Skip_SB(                                                "chroma_resampling_explicit_filter_flag");
+        Get_SB (chroma_resampling_explicit_filter_flag,         "chroma_resampling_explicit_filter_flag");
         Get_S1 (2, coefficient_data_type,                       "coefficient_data_type");
         switch (coefficient_data_type) {
         case 0: //COEFF_FIXED
@@ -1182,19 +1196,20 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
         case 1: //COEFF_FLOAT
             break;
         }
-        Skip_S1(2,                                              "vdr_rpu_normalized_idc");
+        Get_S1 (2, vdr_rpu_normalized_idc,                      "vdr_rpu_normalized_idc");
         Get_SB (BL_video_full_range_flag,                       "BL_video_full_range_flag");
         if ((rpu_format & 0x700) == 0) {
             // sequence header
             Get_UE (bl_bit_depth_minus8,                        "BL_bit_depth_minus8");
             Get_UE (el_bit_depth_minus8,                        "EL_bit_depth_minus8");
-            el_bit_depth_minus8 &= 0xFF; // ext_mapping_idc is in the upper bits
+            ext_mapping_idc = (int8u)(el_bit_depth_minus8 >> 8); // ext_mapping_idc is in the upper bits
+            el_bit_depth_minus8 &= 0xFF;
             Get_UE (vdr_bit_depth_minus8,                       "vdr_bit_depth_minus8");
             if (bl_bit_depth_minus8 > 8 || el_bit_depth_minus8 > 8 || vdr_bit_depth_minus8 > 8) {
                 Trusted_IsNot("bit depth is too large");
                 return;
             }
-            Skip_SB(                                            "spatial_resampling_filter_flag");
+            Get_SB (spatial_resampling_filter_flag,             "spatial_resampling_filter_flag");
             Get_S1 (3, dm_compression,                          "dm_compression");
             Get_SB (el_spatial_resampling_filter_flag,          "el_spatial_resampling_filter_flag");
             Get_SB (disable_residual_flag,                      "disable_residual_flag");
@@ -1213,10 +1228,10 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
         Skip_UE(                                                "prev_vdr_rpu_id");
     }
     else {
-        int32u num_pivots_minus_2[3]{};
+        int32u num_pivots_minus_2[3]{}, mapping_color_space, mapping_chroma_format_idc, num_x_partitions_minus1, num_y_partitions_minus1;
         Skip_UE(                                                "vdr_rpu_id");
-        Skip_UE(                                                "mapping_color_space");
-        Skip_UE(                                                "mapping_chroma_format_idc");
+        Get_UE (mapping_color_space,                            "mapping_color_space");
+        Get_UE (mapping_chroma_format_idc,                      "mapping_chroma_format_idc");
         // pivot points for BL three components
         for (int8u cmp = 0; cmp < 3; ++cmp) {
             Get_UE(num_pivots_minus_2[cmp],                     ("num_pivots_minus_2[" + to_string(cmp) + "]").c_str());
@@ -1229,15 +1244,23 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
             }
         }
         auto use_nlq{ (rpu_format & 0x700) == 0 && !disable_residual_flag };
-        int8u nlq_method_idc;
+        int8u nlq_method_idc{};
         if (use_nlq) {
             // vl.x architecture EL specific
             Get_S1(3, nlq_method_idc,                           "nlq_method_idc");
             Skip_BS(static_cast<size_t>(bl_bit_depth_minus8) + 8, "nlq_pred_pivot_value[0]");
             Skip_BS(static_cast<size_t>(bl_bit_depth_minus8) + 8, "nlq_pred_pivot_value[1]");
         }
-        Skip_UE(                                                "num_x_partitions_minus1");
-        Skip_UE(                                                "num_y_partitions_minus1");
+        Get_UE (num_x_partitions_minus1,                        "num_x_partitions_minus1");
+        Get_UE (num_y_partitions_minus1,                        "num_y_partitions_minus1");
+        if (!New.Mapping_Present) {
+            New.Mapping_Present = true;
+            New.mapping_color_space = mapping_color_space;
+            New.mapping_chroma_format_idc = mapping_chroma_format_idc;
+            New.nlq_method_idc = nlq_method_idc;
+            New.num_x_partitions_minus1 = num_x_partitions_minus1;
+            New.num_y_partitions_minus1 = num_y_partitions_minus1;
+        }
         // }
         Element_End0(); // rpu_data_header / EDR RPU header
 
@@ -1365,6 +1388,9 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
                     isMEL = 0;
                 Element_End0(); // rpu_data_nlq_param
             }
+            if (nlq_method_idc) {
+                isMEL = 0xFF; // Unknown NLQ method, the MEL condition can not be checked
+            }
             Element_End0(); // rpu_data_nlq
         }
         
@@ -1373,43 +1399,59 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
     Element_End0(); // vdr_rpu_data_payload
 
     // Display Management
-    bool L11_present{}, reference_mode_flag{};
-    float CMv{};
-    int8u content_type{}, white_point{};
-    int16u active_area_left_offset{}, active_area_right_offset{}, active_area_top_offset{}, active_area_bottom_offset{}, max_display_mastering_luminance{}, min_display_mastering_luminance{}, max_content_light_level{}, max_frame_average_light_level{};
+    int32u scene_refresh_flag{};
     if (vdr_dm_metadata_present_flag) {
         Element_Begin1("vdr_dm_data_payload");
         Skip_UE(                                                "affected_dm_metadata_id");
         Skip_UE(                                                "current_dm_metadata_id");
-        Skip_UE(                                                "scene_refresh_flag");
-        if (dm_compression) {
+        Get_UE (scene_refresh_flag,                             "scene_refresh_flag");
+        if (dm_compression > 1) {
             UNSUPPORTED();
         }
-        for (int8u i = 0; i < 9; ++i) {
-            Skip_S2(16,                                         ("YCCtoRGB_coef" + to_string(i)).c_str());
+        if (!dm_compression) {
+            int32u signal_eotf_param2;
+            int16u signal_eotf, signal_eotf_param0, signal_eotf_param1, source_min_PQ, source_max_PQ, source_diagonal;
+            int8u signal_bit_depth, signal_color_space, signal_chroma_format, signal_full_range_flag;
+            for (int8u i = 0; i < 9; ++i) {
+                Skip_S2(16,                                     ("YCCtoRGB_coef" + to_string(i)).c_str());
+            }
+            for (int8u i = 0; i < 3; ++i) {
+                Skip_S4(32,                                     ("YCCtoRGB_offset" + to_string(i)).c_str());
+            }
+            for (int8u i = 0; i < 9; ++i) {
+                Skip_S2(16,                                     ("RGBtoLMS_coef" + to_string(i)).c_str());
+            }
+            Get_S2 (16, signal_eotf,                            "signal_eotf");
+            Get_S2 (16, signal_eotf_param0,                     "signal_eotf_param0");
+            Get_S2 (16, signal_eotf_param1,                     "signal_eotf_param1");
+            Get_S4 (32, signal_eotf_param2,                     "signal_eotf_param2");
+            Get_S1 ( 5, signal_bit_depth,                       "signal_bit_depth");
+            Get_S1 ( 2, signal_color_space,                     "signal_color_space");
+            Get_S1 ( 2, signal_chroma_format,                   "signal_chroma_format");
+            Get_S1 ( 2, signal_full_range_flag,                 "signal_full_range_flag");
+            Get_S2 (12, source_min_PQ,                          "source_min_PQ");
+            Get_S2 (12, source_max_PQ,                          "source_max_PQ");
+            Get_S2 (10, source_diagonal,                        "source_diagonal");
+            if (!New.DM_Present) {
+                New.DM_Present = true;
+                New.signal_eotf = signal_eotf;
+                New.signal_eotf_param0 = signal_eotf_param0;
+                New.signal_eotf_param1 = signal_eotf_param1;
+                New.signal_eotf_param2 = signal_eotf_param2;
+                New.signal_bit_depth = signal_bit_depth;
+                New.signal_color_space = signal_color_space;
+                New.signal_chroma_format = signal_chroma_format;
+                New.signal_full_range_flag = signal_full_range_flag;
+                New.source_diagonal = source_diagonal;
+            }
+            Unique_Add(New.Sources, (((int32u)source_min_PQ) << 16) | source_max_PQ);
         }
-        for (int8u i = 0; i < 3; ++i) {
-            Skip_S4(32,                                         ("YCCtoRGB_offset" + to_string(i)).c_str());
-        }
-        for (int8u i = 0; i < 9; ++i) {
-            Skip_S2(16,                                         ("RGBtoLMS_coef" + to_string(i)).c_str());
-        }
-        Skip_S2(16,                                             "signal_eotf");
-        Skip_S2(16,                                             "signal_eotf_param0");
-        Skip_S2(16,                                             "signal_eotf_param1");
-        Skip_S4(32,                                             "signal_eotf_param2");
-        Skip_S1( 5,                                             "signal_bit_depth");
-        Skip_S1( 2,                                             "signal_color_space");
-        Skip_S1( 2,                                             "signal_chroma_format");
-        Skip_S1( 2,                                             "signal_full_range_flag");
-        Skip_S2(12,                                             "source_min_PQ");
-        Skip_S2(12,                                             "source_max_PQ");
-        Skip_S2(10,                                             "source_diagonal");
 
         // Extension blocks
         // ----------------------------------------------------------------------------------------
         
         // Content Mapping v2.9 (CMv2.9)
+        New.Count_CMv29++;
         int32u num_ext_blocks;
         Get_UE(num_ext_blocks,                                  "num_ext_blocks");
         if (num_ext_blocks > 16) { // An arbitrary value as there is currently not so many extension blocks defined
@@ -1417,7 +1459,6 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
             return;
         }
         if (num_ext_blocks) {
-            CMv = 2.9f;
             auto RemainingBitsEnd = Data_BS_Remain();
             auto size = RemainingBitsBegin - RemainingBitsEnd;
             Skip_BS((8 - (size & 7)) & 7,                       "dm_alignment_zero_bit");
@@ -1440,13 +1481,22 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
                 }
                 switch (ext_block_level) {
                 case 1: // ANALYSIS METADATA (DYNAMIC)
+                {
+                    int16u max_PQ, avg_PQ;
                     Skip_S2(12,                                 "min_PQ");
-                    Skip_S2(12,                                 "max_PQ");
-                    Skip_S2(12,                                 "avg_PQ");
+                    Get_S2 (12, max_PQ,                         "max_PQ");
+                    Get_S2 (12, avg_PQ,                         "avg_PQ");
                     ext_block_use_bits += 36;
+                    if (New.L1_max_PQ < max_PQ)
+                        New.L1_max_PQ = max_PQ;
+                    if (New.L1_avg_PQ < avg_PQ)
+                        New.L1_avg_PQ = avg_PQ;
                     break;
+                }
                 case 2: // PER-TARGET TRIM METADATA (DYNAMIC)
-                    Skip_S2(12,                                 "target_max_PQ");
+                {
+                    int16u target_max_PQ;
+                    Get_S2 (12, target_max_PQ,                  "target_max_PQ");
                     Skip_S2(12,                                 "trim_slope");
                     Skip_S2(12,                                 "trim_offset");
                     Skip_S2(12,                                 "trim_power");
@@ -1454,26 +1504,53 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
                     Skip_S2(12,                                 "trim_saturation_gain");
                     Skip_S2(13,                                 "ms_weight");
                     ext_block_use_bits += 85;
+                    Unique_Add(New.L2_target_max_PQ, target_max_PQ);
                     break;
+                }
                 case 4:
                     Skip_S2(12,                                 "anchor_pq");
                     Skip_S2(12,                                 "anchor_power");
                     ext_block_use_bits += 24;
                     break;
                 case 5: // PER-SHOT ASPECT RATIO (DYNAMIC)
-                    Get_S2(13, active_area_left_offset,         "active_area_left_offset");
-                    Get_S2(13, active_area_right_offset,        "active_area_right_offset");
-                    Get_S2(13, active_area_top_offset,          "active_area_top_offset");
-                    Get_S2(13, active_area_bottom_offset,       "active_area_bottom_offset");
+                {
+                    int16u active_area[4];
+                    Get_S2(13, active_area[0],                  "active_area_left_offset");
+                    Get_S2(13, active_area[1],                  "active_area_right_offset");
+                    Get_S2(13, active_area[2],                  "active_area_top_offset");
+                    Get_S2(13, active_area[3],                  "active_area_bottom_offset");
                     ext_block_use_bits += 52;
+                    for (int8u j = 0; j < 4; ++j) {
+                        if (!New.L5_Present) {
+                            New.L5_First[j] = active_area[j];
+                            New.L5_Min[j] = active_area[j];
+                            New.L5_Max[j] = active_area[j];
+                        }
+                        else if (New.L5_Min[j] > active_area[j])
+                            New.L5_Min[j] = active_area[j];
+                        else if (New.L5_Max[j] < active_area[j])
+                            New.L5_Max[j] = active_area[j];
+                    }
+                    New.L5_Present = true;
+                    DV_RPU::l5 L5;
+                    memcpy(L5.Offsets, active_area, sizeof(active_area));
+                    Unique_Add(New.L5, L5);
                     break;
+                }
                 case 6: // OPTIONAL HDR10 METADATA (STATIC)
-                    Get_S2(16, max_display_mastering_luminance, "max_display_mastering_luminance");
-                    Get_S2(16, min_display_mastering_luminance, "min_display_mastering_luminance");
+                {
+                    DV_RPU::l6 L6{};
+                    int16u max_content_light_level, max_frame_average_light_level;
+                    Get_S2(16, L6.max_display_mastering_luminance, "max_display_mastering_luminance");
+                    Get_S2(16, L6.min_display_mastering_luminance, "min_display_mastering_luminance");
                     Get_S2(16, max_content_light_level,         "max_content_light_level");
                     Get_S2(16, max_frame_average_light_level,   "max_frame_average_light_level");
                     ext_block_use_bits += 64;
+                    L6.max_content_light_level = max_content_light_level;
+                    L6.max_frame_average_light_level = max_frame_average_light_level;
+                    Unique_Add(New.L6, L6);
                     break;
+                }
                 case 255:
                     Skip_S1(8,                                  "dm_run_mode");
                     Skip_S1(8,                                  "dm_run_version");
@@ -1503,7 +1580,7 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
                 return;
             }
             if (num_ext_blocks2) {
-                CMv = 4.0;
+                New.Count_CMv40++;
                 auto RemainingBitsEnd = Data_BS_Remain();
                 auto size = RemainingBitsBegin - RemainingBitsEnd;
                 Skip_BS((8 - (size & 7)) & 7,                   "dm_alignment_zero_bit");
@@ -1533,7 +1610,9 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
                         ext_block_use_bits += 36;
                         break;
                     case 8: // PER-TARGET TRIM METADATA (DYNAMIC)
-                        Skip_S1( 8,                             "target_display_index");
+                    {
+                        int8u target_display_index;
+                        Get_S1 ( 8, target_display_index,       "target_display_index");
                         Skip_S2(12,                             "trim_slope");
                         Skip_S2(12,                             "trim_offset");
                         Skip_S2(12,                             "trim_power");
@@ -1561,27 +1640,36 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
                             }
                             ext_block_use_bits += 48;
                         }
+                        Unique_Add(New.L8_target_display_index, target_display_index);
                         break;
+                    }
                     case 9: // PER-SHOT SOURCE CONTENT PRIMARIES (DYNAMIC)
-                        Skip_S1(8,                              "source_primary_index");
+                    {
+                        DV_RPU::l9 L9{};
+                        Get_S1 (8, L9.source_primary_index,     "source_primary_index");
                         ext_block_use_bits += 8;
                         if (ext_block_length > 16) {
-                            Skip_S2(16,                         "source_primary_red_x");
-                            Skip_S2(16,                         "source_primary_red_y");
-                            Skip_S2(16,                         "source_primary_green_x");
-                            Skip_S2(16,                         "source_primary_green_y");
-                            Skip_S2(16,                         "source_primary_blue_x");
-                            Skip_S2(16,                         "source_primary_blue_y");
-                            Skip_S2(16,                         "source_primary_white_x");
-                            Skip_S2(16,                         "source_primary_white_y");
+                            Get_S2(16, L9.Primaries[0],         "source_primary_red_x");
+                            Get_S2(16, L9.Primaries[1],         "source_primary_red_y");
+                            Get_S2(16, L9.Primaries[2],         "source_primary_green_x");
+                            Get_S2(16, L9.Primaries[3],         "source_primary_green_y");
+                            Get_S2(16, L9.Primaries[4],         "source_primary_blue_x");
+                            Get_S2(16, L9.Primaries[5],         "source_primary_blue_y");
+                            Get_S2(16, L9.Primaries[6],         "source_primary_white_x");
+                            Get_S2(16, L9.Primaries[7],         "source_primary_white_y");
                             ext_block_use_bits += 128;
+                            L9.Explicit = true;
                         }
+                        Unique_Add(New.L9, L9);
                         break;
+                    }
                     case 10:
-                        Skip_S1( 8,                             "target_display_index");
-                        Skip_S2(12,                             "target_max_pq");
-                        Skip_S2(12,                             "target_min_pq");
-                        Skip_S1( 8,                             "target_primary_index");
+                    {
+                        DV_RPU::l10 L10{};
+                        Get_S1 ( 8, L10.target_display_index,   "target_display_index");
+                        Get_S2 (12, L10.target_max_PQ,          "target_max_pq");
+                        Get_S2 (12, L10.target_min_PQ,          "target_min_pq");
+                        Get_S1 ( 8, L10.target_primary_index,   "target_primary_index");
                         ext_block_use_bits += 40;
                         if (ext_block_length > 20) {
                             Skip_S2(16,                         "target_primary_red_x");
@@ -1594,17 +1682,22 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
                             Skip_S2(16,                         "target_primary_white_y");
                             ext_block_use_bits += 128;
                         }
+                        Unique_Add(New.L10, L10);
                         break;
+                    }
                     case 11:
                     {   // Automatic Picture/Playback Optimization (APO) / Dolby Vision IQ - Content Type Metadata (L11)
-                        L11_present = true;
+                        DV_RPU::l11 L11{};
+                        bool reference_mode_flag;
                         Skip_S1(4,                              "reserved");
-                        Get_S1 (4, content_type,                "content_type");            Param_Info1(DV_content_type(content_type));
+                        Get_S1 (4, L11.content_type,            "content_type");            Param_Info1(DV_content_type(L11.content_type));
                         Skip_S1(3,                              "reserved");
                         Get_SB (reference_mode_flag,            "reference_mode_flag");
-                        Get_S1 (4, white_point,                 "white_point");             Param_Info1(DV_white_point(white_point));
+                        L11.reference_mode = reference_mode_flag;
+                        Get_S1 (4, L11.white_point,             "white_point");             Param_Info1(DV_white_point(L11.white_point));
                         Skip_S2(16,                             "(Unknown)"); // Motion control metadata
                         ext_block_use_bits += 32;
+                        Unique_Add(New.L11, L11);
                         break;
                     }
                     case 15:
@@ -1671,10 +1764,18 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
                         break;
                     }
                     case 254: // CM version
-                        Skip_S1(8,                              "dm_mode");
-                        Skip_S1(8,                              "dm_version_index");
+                    {
+                        int8u dm_mode, dm_version_index;
+                        Get_S1 (8, dm_mode,                     "dm_mode");
+                        Get_S1 (8, dm_version_index,            "dm_version_index");
                         ext_block_use_bits += 16;
+                        if (!New.L254_Present) {
+                            New.L254_Present = true;
+                            New.dm_mode = dm_mode;
+                            New.dm_version_index = dm_version_index;
+                        }
                         break;
+                    }
                     default:
                         Skip_BS(ext_block_len_bits,             "(Unknown)");
                         ext_block_use_bits += ext_block_len_bits;
@@ -1692,6 +1793,14 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
     auto RemainingBitsEnd = Data_BS_Remain();
     auto size = RemainingBitsBegin - RemainingBitsEnd;
     Skip_BS((8 - (size & 7)) & 7,                               "rpu_alignment_zero_bit");
+    if (Remaining_Bits() == 48) {
+        // Some encoders add a zero byte before the CRC when the payload is already byte aligned
+        int8u Padding;
+        Peek_S1(8, Padding);
+        if (!Padding) {
+            Skip_S1(8,                                          "padding");
+        }
+    }
     Skip_S4(32,                                                 "rpu_data_crc32");
     auto CRC32_Check = DV_CRC32_Check(Buffer, Buffer_Offset + OffsetBegin, RemainingBitsBegin, Data_BS_Remain());
     Param_Info1(CRC32_Check ? "NOK" : "OK");
@@ -1705,31 +1814,637 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
     #undef UNSUPPORTED
 
     FILLING_BEGIN();
-    if (CRC32_Check)
+    if (CRC32_Check) {
+        Fill_Conformance("DolbyVision rpu_data_crc32", "CRC-32 mismatch", {}, Conformance_Error, Stream_Video, 0);
         return;
-    data.vdr_rpu_profile = vdr_rpu_profile;
-    data.bl_bit_depth = bl_bit_depth_minus8 + 8;
-    data.el_bit_depth = el_bit_depth_minus8 + 8;
-    data.vdr_bit_depth = vdr_bit_depth_minus8 + 8;
-    data.BL_video_full_range_flag = BL_video_full_range_flag;
-    data.isMEL = isMEL;
-    data.CMv = CMv;
-    data.active_area_left_offset = active_area_left_offset;
-    data.active_area_right_offset = active_area_right_offset;
-    data.active_area_top_offset = active_area_top_offset;
-    data.active_area_bottom_offset = active_area_bottom_offset;
-    data.max_display_mastering_luminance = max_display_mastering_luminance;
-    data.min_display_mastering_luminance = min_display_mastering_luminance;
-    data.max_content_light_level = max_content_light_level;
-    data.max_frame_average_light_level = max_frame_average_light_level;
-    data.L11_present = L11_present;
-    data.content_type = content_type;
-    data.white_point = white_point;
-    data.reference_mode = reference_mode_flag;
+    }
+    int8u Profile{};
+    switch (vdr_rpu_profile) {
+    case 0:
+        if (BL_video_full_range_flag)
+            Profile = 5;
+        break;
+    case 1:
+        if (el_spatial_resampling_filter_flag && !disable_residual_flag)
+            Profile = vdr_bit_depth_minus8 == 4 ? 7 : 4;
+        else
+            Profile = 8;
+        break;
+    }
+    if (!New.Count) {
+        New.rpu_format = rpu_format;
+        New.vdr_rpu_profile = vdr_rpu_profile;
+        New.vdr_rpu_level = vdr_rpu_level;
+        New.coefficient_data_type = coefficient_data_type;
+        New.coefficient_log2_denom = (int8u)coefficient_log2_denom;
+        New.vdr_rpu_normalized_idc = vdr_rpu_normalized_idc;
+        New.bl_bit_depth = (int8u)(bl_bit_depth_minus8 + 8);
+        New.el_bit_depth = (int8u)(el_bit_depth_minus8 + 8);
+        New.vdr_bit_depth = (int8u)(vdr_bit_depth_minus8 + 8);
+        New.ext_mapping_idc = ext_mapping_idc;
+        New.dm_compression = dm_compression;
+        New.Profile_First = Profile;
+        New.chroma_resampling_explicit_filter_flag = chroma_resampling_explicit_filter_flag;
+        New.BL_video_full_range_flag = BL_video_full_range_flag;
+        New.spatial_resampling_filter_flag = spatial_resampling_filter_flag;
+        New.el_spatial_resampling_filter_flag = el_spatial_resampling_filter_flag;
+        New.disable_residual_flag = disable_residual_flag;
+    }
+    New.Profiles = (int16u)(New.Profiles | (1 << Profile));
+    New.Count++;
+    if (scene_refresh_flag)
+        New.Count_Shot++;
+    switch (isMEL) {
+    case 0: New.Count_FEL++; break;
+    case 1: New.Count_MEL++; break;
+    }
+    data = std::move(New);
     FILLING_END();
 }
 
 #endif // defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES)
+
+#if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MXF_YES)
+
+//---------------------------------------------------------------------------
+static const float64 DV_PQ_m1=2610.0/16384;
+static const float64 DV_PQ_m2=2523.0/4096*128;
+static const float64 DV_PQ_c1=3424.0/4096;
+static const float64 DV_PQ_c2=2413.0/4096*32;
+static const float64 DV_PQ_c3=2392.0/4096*32;
+static float64 DV_PQ_ToNits(float64 PQ)
+{
+    auto Ep=pow(PQ, 1/DV_PQ_m2);
+    auto Num=Ep-DV_PQ_c1;
+    if (Num<0)
+        Num=0;
+    return pow(Num/(DV_PQ_c2-DV_PQ_c3*Ep), 1/DV_PQ_m1)*10000;
+}
+static float64 DV_Nits_ToPQ(float64 Nits)
+{
+    auto Ym=pow(Nits/10000, DV_PQ_m1);
+    return pow((DV_PQ_c1+DV_PQ_c2*Ym)/(1+DV_PQ_c3*Ym), DV_PQ_m2);
+}
+int16u File__Analyze::DolbyVision_Nits_ToPQ12(float64 Nits)
+{
+    if (Nits<=0)
+        return 0;
+    if (Nits>=10000)
+        return 4095;
+    return (int16u)float64_int64s(DV_Nits_ToPQ(Nits)*4095);
+}
+// Simplest luminance value having the same 12-bit PQ code, e.g. 1000 instead of 1001.42
+static float64 DV_PQ12_ToNits(int16u Code)
+{
+    if (!Code)
+        return 0;
+    auto Nits=DV_PQ_ToNits(((float64)Code)/4095);
+    auto Magnitude=floor(log10(Nits));
+    for (int Digits=1; Digits<=6; Digits++)
+    {
+        auto Scale=pow(10.0, Digits-1-Magnitude);
+        auto Candidate=round(Nits*Scale)/Scale;
+        if (float64_int64s(DV_Nits_ToPQ(Candidate)*4095)==Code)
+            return Candidate;
+    }
+    return Nits;
+}
+static Ztring DV_Nits_String(float64 Nits)
+{
+    if (Nits==floor(Nits))
+        return Ztring::ToZtring(Nits, 0);
+    auto Value=Ztring::ToZtring(Nits, 4);
+    while (Value.back()==__T('0'))
+        Value.pop_back();
+    return Value;
+}
+static Ztring DV_Luminance_String(float64 Min, float64 Max)
+{
+    return __T("min: ")+Ztring::ToZtring(Min, 4)+__T(" cd/m2, max: ")+DV_Nits_String(Max)+__T(" cd/m2");
+}
+static Ztring DV_Primaries_String(const File__Analyze::DV_RPU::l9& L9)
+{
+    if (L9.Explicit)
+    {
+        int16u Values[8]; // MPEG units
+        for (int8u i=0; i<8; i++)
+        {
+            int32s Value=(int16s)L9.Primaries[i];
+            if (Value<0)
+                Value=0;
+            Values[i]=(int16u)((Value*50000+16383)/32767);
+        }
+        return MasteringDisplayColorVolume_Values_Compute(Values);
+    }
+    switch (L9.source_primary_index)
+    {
+        case 0: return Mpegv_colour_primaries(12); // Display P3
+        case 1: return Mpegv_colour_primaries(1);
+        case 2: return Mpegv_colour_primaries(9);
+        case 3: return Mpegv_colour_primaries(6);
+        case 4: return Mpegv_colour_primaries(5);
+        case 5: return Mpegv_colour_primaries(11);
+        case 6: return __T("ACES");
+        case 7: return __T("S-Gamut");
+        case 8: return __T("S-Gamut3.Cine");
+        default: return __T("Index ")+Ztring::ToZtring(L9.source_primary_index);
+    }
+}
+// Predefined displays, same IDs in the RPU (target_display_index) and in the XML metadata (ID)
+struct dv_display
+{
+    int8u ID;
+    int16u Nits;
+    const char* Name;
+};
+static const dv_display DV_MasteringDisplays[]=
+{
+    {  7, 4000, "4000-nit, P3, D65, ST.2084, Full" },
+    { 20, 1000, "1000-nit, P3, D65, ST.2084, Full" },
+    { 21, 1000, "1000-nit, BT.2020, D65, ST.2084, Full" },
+};
+static const dv_display DV_TargetDisplays[]=
+{
+    {  1,  100, "100-nit, BT.709, BT.1886, Full" },
+    { 16,   48, nullptr },
+    { 18,   48, nullptr },
+    { 21,   48, nullptr },
+    { 24,  300, nullptr },
+    { 25,  300, nullptr },
+    { 27,  600, "600-nit, P3, D65, ST.2084, Full" },
+    { 28,  600, "600-nit, BT.2020, ST.2084, Full" },
+    { 37, 2000, "2000-nit, P3, D65, ST.2084, Full" },
+    { 38, 2000, "2000-nit, BT.2020, D65, ST.2084, Full" },
+    { 42,  108, nullptr },
+    { 48, 1000, "1000-nit, P3, D65, ST.2084, Full" },
+    { 49, 1000, "1000-nit, BT.2020, ST.2084, Full" },
+};
+template<size_t Size>
+static const dv_display* DV_Display_Get(const dv_display (&Displays)[Size], int8u ID)
+{
+    for (const auto& Display : Displays)
+        if (Display.ID==ID)
+            return &Display;
+    return nullptr;
+}
+static const char* DV_ColorRange(int8u Value)
+{
+    switch (Value)
+    {
+        case 0: return "Limited";
+        case 1: return "Full";
+        case 2: return "SDI";
+        default: return nullptr;
+    }
+}
+static const char* DV_ColorSpace(int8u Value)
+{
+    switch (Value)
+    {
+        case 0: return "YCbCr";
+        case 1: return "RGB";
+        case 2: return "IPT";
+        default: return nullptr;
+    }
+}
+static const char* DV_ChromaFormat(int8u Value)
+{
+    switch (Value)
+    {
+        case 0: return "4:2:0";
+        case 1: return "4:2:2";
+        case 2: return "4:4:4";
+        default: return nullptr;
+    }
+}
+
+//---------------------------------------------------------------------------
+void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
+{
+    auto IsRPU=Source!=DV_Source_XML;
+    if (IsRPU && !Data.Count)
+        return;
+    if (Data.IsFilled)
+        return;
+    Data.IsFilled=true;
+
+    const auto Value_Or_Number=[](const char* Value, int32u Number) {
+        return Value?Ztring().From_UTF8(Value):Ztring::ToZtring(Number);
+    };
+    const auto YesNo=[](bool Value) {
+        return Value?"Yes":"No";
+    };
+
+    // Profile and layers
+    auto Profile=Source==DV_Source_AV1?(int8u)10:Data.Profile_First;
+    auto HasEL=Source==DV_Source_HEVC && (Data.rpu_format&0x700)==0 && !Data.disable_residual_flag;
+    const char* EL_Type=Data.Count_FEL?"FEL":(Data.Count_MEL?"MEL":nullptr);
+    float64 Source_Max=Data.Sources.empty()?0:DV_PQ12_ToNits((int16u)Data.Sources.front());
+
+    if (IsRPU)
+    {
+        // HDR format, inserted before the other HDR formats of the stream
+        Ztring HDR[Video_HDR_Format_Compatibility-Video_HDR_Format+1];
+        HDR[0]=__T("Dolby Vision");
+        if (Profile)
+        {
+            string Profile_String;
+            DolbyVision_Profiles_Append(Profile_String, Profile);
+            Profile_String+='.';
+            add_dec_2chars(Profile_String, Profile);
+            HDR[Video_HDR_Format_Profile-Video_HDR_Format].From_UTF8(Profile_String);
+        }
+        string Layers("BL+");
+        if (HasEL)
+        {
+            Layers+=EL_Type?EL_Type:"EL";
+            Layers+='+';
+        }
+        Layers+="RPU";
+        HDR[Video_HDR_Format_Settings-Video_HDR_Format].From_UTF8(Layers);
+        if (Data.dm_compression<sizeof(DolbyVision_Compression)/sizeof(*DolbyVision_Compression) && DolbyVision_Compression[Data.dm_compression])
+            HDR[Video_HDR_Format_Compression-Video_HDR_Format].From_UTF8(DolbyVision_Compression[Data.dm_compression]);
+        ZtringList Formats;
+        Formats.Separator_Set(0, __T(" / "));
+        Formats.Write(Retrieve_Const(Stream_Video, 0, Video_HDR_Format));
+        auto Formats_Count=Formats.size();
+        for (size_t i=Video_HDR_Format; i<=Video_HDR_Format_Compatibility; i++)
+        {
+            if (i==Video_HDR_Format_String || i==Video_HDR_Format_Commercial)
+                continue;
+            ZtringList List;
+            List.Separator_Set(0, __T(" / "));
+            List.Write(Retrieve_Const(Stream_Video, 0, i));
+            List.resize(Formats_Count);
+            List.insert(List.begin(), HDR[i-Video_HDR_Format]);
+            auto Value=List.Read();
+            if (Value.size()>(List.size()-1)*3)
+                Fill(Stream_Video, 0, i, Value, true);
+        }
+
+        // Mastering display, per HDR format if the other HDR formats have different values, else only if there is no other value
+        Ztring MasteringDisplay_ColorPrimaries, MasteringDisplay_Luminance;
+        if (!Data.L9.empty())
+            MasteringDisplay_ColorPrimaries=DV_Primaries_String(Data.L9.front());
+        if (!Data.Sources.empty())
+            MasteringDisplay_Luminance=DV_Luminance_String(DV_PQ12_ToNits((int16u)(Data.Sources.front()>>16)), Source_Max);
+        const auto MasteringDisplay_Fill=[&](video Parameter, const Ztring& Value) {
+            const auto& Current=Retrieve_Const(Stream_Video, 0, Parameter);
+            if (Current.find(__T(" / "))!=string::npos)
+                Fill(Stream_Video, 0, Parameter, Value+__T(" / ")+Current, true);
+            else if (Current.empty() && !Value.empty())
+                Fill(Stream_Video, 0, Parameter, Value);
+        };
+        MasteringDisplay_Fill(Video_MasteringDisplay_ColorPrimaries, MasteringDisplay_ColorPrimaries);
+        MasteringDisplay_Fill(Video_MasteringDisplay_Luminance, MasteringDisplay_Luminance);
+        if (!Data.L6.empty())
+        {
+            const auto& L6=Data.L6.front();
+            if (L6.max_content_light_level && Retrieve_Const(Stream_Video, 0, Video_MaxCLL).empty())
+                Fill(Stream_Video, 0, Video_MaxCLL, L6.max_content_light_level, 0);
+            if (L6.max_frame_average_light_level && Retrieve_Const(Stream_Video, 0, Video_MaxFALL).empty())
+                Fill(Stream_Video, 0, Video_MaxFALL, L6.max_frame_average_light_level, 0);
+        }
+
+        // Active area
+        if (Data.L5_Present && (Data.L5_First[0] || Data.L5_First[1] || Data.L5_First[2] || Data.L5_First[3]) && Retrieve_Const(Stream_Video, 0, Video_Active_Width).empty() && Retrieve_Const(Stream_Video, 0, Video_Active_Height).empty())
+        {
+            auto Width=Retrieve_Const(Stream_Video, 0, Video_Width).To_int64u();
+            auto Height=Retrieve_Const(Stream_Video, 0, Video_Height).To_int64u();
+            auto Crop_Width=(int64u)Data.L5_First[0]+Data.L5_First[1];
+            auto Crop_Height=(int64u)Data.L5_First[2]+Data.L5_First[3];
+            if (Width>Crop_Width && Height>Crop_Height)
+            {
+                Width-=Crop_Width;
+                Height-=Crop_Height;
+                Fill(Stream_Video, 0, Video_Active_Width, Width);
+                Fill(Stream_Video, 0, Video_Active_Height, Height);
+                auto PixelAspectRatio=Retrieve_Const(Stream_Video, 0, Video_PixelAspectRatio).To_float64();
+                if (!PixelAspectRatio)
+                    PixelAspectRatio=1;
+                Fill(Stream_Video, 0, Video_Active_DisplayAspectRatio, ((float64)Width)/Height*PixelAspectRatio, 3);
+            }
+        }
+
+        // Conformance, same checks as with XML metadata
+        if (Data.Count_CMv40 && !Data.L254_Present)
+            Fill_Conformance("DolbyVision Level254", "Level254 is missing", {}, Conformance_Warning, Stream_Video, 0);
+        if (Source_Max)
+            for (const auto& L6 : Data.L6)
+                if (L6.max_content_light_level>Source_Max)
+                    Fill_Conformance("DolbyVision Level6", ("MaxCLL is more than mastering display peak brightness (actual "+DV_Nits_String(L6.max_content_light_level).To_UTF8()+", expected <= "+DV_Nits_String(Source_Max).To_UTF8()+')').c_str(), {}, Conformance_Warning, Stream_Video, 0);
+    }
+
+    // Details
+    string Summary;
+    ZtringList Profiles;
+    Profiles.Separator_Set(0, __T(" / "));
+    if (Source==DV_Source_AV1)
+        Profiles.push_back(Ztring::ToZtring(Profile));
+    else
+        for (int8u i=1; i<16; i++)
+            if (Data.Profiles&(1<<i))
+                Profiles.push_back(Ztring::ToZtring(i));
+    if (!Profiles.empty())
+        Summary="Profile "+Profiles.Read().To_UTF8();
+    if (HasEL && EL_Type)
+    {
+        if (!Summary.empty())
+            Summary+=", ";
+        Summary+=EL_Type;
+    }
+    const dv_display* MasteringDisplay=nullptr;
+    if (!Data.MasteringDisplay_ID.empty())
+        MasteringDisplay=DV_Display_Get(DV_MasteringDisplays, Data.MasteringDisplay_ID.To_int8u());
+    Ztring MasteringDisplay_Name=MasteringDisplay?Ztring().From_UTF8(MasteringDisplay->Name):Data.MasteringDisplay_Name;
+    if (Summary.empty())
+        Summary=MasteringDisplay_Name.empty()?string("Yes"):MasteringDisplay_Name.To_UTF8();
+    Fill(Stream_Video, 0, "DolbyVision", Summary);
+    if (!Profiles.empty())
+        Fill(Stream_Video, 0, "DolbyVision Profile", Profiles.Read());
+    if (HasEL && EL_Type)
+    {
+        if (Data.Count_MEL && Data.Count_FEL)
+            Fill(Stream_Video, 0, "DolbyVision EnhancementLayer", "MEL ("+to_string(Data.Count_MEL)+") / FEL ("+to_string(Data.Count_FEL)+')');
+        else
+            Fill(Stream_Video, 0, "DolbyVision EnhancementLayer", EL_Type);
+    }
+    if (IsRPU)
+    {
+        string BitDepth=to_string(Data.bl_bit_depth)+" (BL) / ";
+        if (HasEL)
+            BitDepth+=to_string(Data.el_bit_depth)+" (EL) / ";
+        BitDepth+=to_string(Data.vdr_bit_depth)+" bits (VDR)";
+        Fill(Stream_Video, 0, "DolbyVision BitDepth", BitDepth);
+        Fill(Stream_Video, 0, "DolbyVision BaseLayer_ColorRange", Data.BL_video_full_range_flag?"Full":"Limited");
+    }
+
+    // Content mapping and display management versions
+    auto CMVersion=Data.CMVersion;
+    if (CMVersion.empty() && Data.Count_CMv29)
+        CMVersion.From_UTF8(!Data.Count_CMv40?"2.9":(Data.Count_CMv40==Data.Count_CMv29?"4.0":"2.9 / 4.0"));
+    if (!CMVersion.empty())
+        Fill(Stream_Video, 0, "DolbyVision CMVersion", CMVersion);
+    if (Data.L254_Present)
+        Fill(Stream_Video, 0, "DolbyVision DMVersion", Data.dm_version_index);
+
+    // Mastering display
+    if (!MasteringDisplay_Name.empty())
+        Fill(Stream_Video, 0, "DolbyVision MasteringDisplay_Name", MasteringDisplay_Name);
+    if (!Data.MasteringDisplay_ID.empty())
+        Fill(Stream_Video, 0, "DolbyVision MasteringDisplay_ID", Data.MasteringDisplay_ID);
+    if (!Data.L9.empty())
+    {
+        ZtringList List;
+        List.Separator_Set(0, __T(" / "));
+        for (const auto& L9 : Data.L9)
+        {
+            auto Value=DV_Primaries_String(L9);
+            if (List.Find(Value)==Error)
+                List.push_back(Value);
+        }
+        Fill(Stream_Video, 0, "DolbyVision MasteringDisplay_ColorPrimaries", List.Read());
+    }
+    if (!Data.Sources.empty())
+    {
+        ZtringList List;
+        List.Separator_Set(0, __T(" / "));
+        for (auto Source_Item : Data.Sources)
+            List.push_back(DV_Luminance_String(DV_PQ12_ToNits((int16u)(Source_Item>>16)), DV_PQ12_ToNits((int16u)Source_Item)));
+        Fill(Stream_Video, 0, "DolbyVision MasteringDisplay_Luminance", List.Read());
+    }
+    if (Data.source_diagonal)
+    {
+        Fill(Stream_Video, 0, "DolbyVision MasteringDisplay_Diagonal", to_string(Data.source_diagonal)+" inches");
+        Fill_SetOptions(Stream_Video, 0, "DolbyVision MasteringDisplay_Diagonal", "N NT");
+    }
+
+    // Target displays, names of the predefined displays if known
+    {
+        vector<pair<float64, Ztring> > Targets;
+        const auto Target_Add=[&](float64 Nits, const Ztring& Name) {
+            for (const auto& Target : Targets)
+                if (Target.second==Name)
+                    return;
+            Targets.emplace_back(Nits, Name);
+        };
+        for (auto target_display_index : Data.L8_target_display_index)
+        {
+            const auto* Predefined=DV_Display_Get(DV_TargetDisplays, target_display_index);
+            float64 Nits=Predefined?Predefined->Nits:0;
+            for (const auto& L10 : Data.L10)
+                if (L10.target_display_index==target_display_index)
+                {
+                    Nits=DV_PQ12_ToNits(L10.target_max_PQ);
+                    break;
+                }
+            Ztring Name;
+            if (Predefined && Predefined->Name)
+                Name.From_UTF8(Predefined->Name);
+            else
+            {
+                for (const auto& TargetDisplay_Name : Data.TargetDisplay_Names)
+                    if (TargetDisplay_Name.first==target_display_index)
+                        Name=TargetDisplay_Name.second;
+                if (Name.empty())
+                    Name=Nits?(DV_Nits_String(Nits)+__T("-nit")):(__T("Target display ")+Ztring::ToZtring(target_display_index));
+            }
+            Target_Add(Nits, Name);
+        }
+        for (auto target_max_PQ : Data.L2_target_max_PQ)
+        {
+            auto Nits=DV_PQ12_ToNits(target_max_PQ);
+            auto IsKnown=false;
+            for (const auto& Target : Targets)
+                if (Target.first==Nits)
+                    IsKnown=true;
+            if (!IsKnown)
+                Target_Add(Nits, DV_Nits_String(Nits)+__T("-nit"));
+        }
+        stable_sort(Targets.begin(), Targets.end(), [](const pair<float64, Ztring>& a, const pair<float64, Ztring>& b) { return a.first<b.first; });
+        ZtringList List;
+        List.Separator_Set(0, __T(" / "));
+        for (const auto& Target : Targets)
+            List.push_back(Target.second);
+        if (!List.empty())
+            Fill(Stream_Video, 0, "DolbyVision TargetDisplays", List.Read());
+    }
+
+    // Light levels
+    const auto LightLevel_Fill=[&](const char* Parameter, const vector<float64>& Values) {
+        // Numeric value for XML/JSON, value with measure for text
+        ZtringList List;
+        List.Separator_Set(0, __T(" / "));
+        for (auto Value : Values)
+        {
+            auto Value_String=MediaInfoLib::Config.Language_Get(DV_Nits_String(Value), __T(" cd/m2"));
+            if (List.Find(Value_String)==Error)
+                List.push_back(Value_String);
+        }
+        auto Name=string("DolbyVision ")+Parameter;
+        Fill(Stream_Video, 0, Name.c_str(), DV_Nits_String(Values.front()));
+        Fill_SetOptions(Stream_Video, 0, Name.c_str(), "N NFY");
+        Name+="/String";
+        Fill(Stream_Video, 0, Name.c_str(), List.Read());
+        Fill_SetOptions(Stream_Video, 0, Name.c_str(), "Y NTN");
+    };
+    if (!Data.L6.empty())
+    {
+        ZtringList Luminance;
+        Luminance.Separator_Set(0, __T(" / "));
+        vector<float64> MaxCLL, MaxFALL;
+        for (const auto& L6 : Data.L6)
+        {
+            MaxCLL.push_back(L6.max_content_light_level);
+            MaxFALL.push_back(L6.max_frame_average_light_level);
+            if (L6.max_display_mastering_luminance)
+            {
+                auto Luminance_Value=DV_Luminance_String(((float64)L6.min_display_mastering_luminance)/10000, L6.max_display_mastering_luminance);
+                if (Luminance.Find(Luminance_Value)==Error)
+                    Luminance.push_back(Luminance_Value);
+            }
+        }
+        if (!Luminance.empty())
+            Fill(Stream_Video, 0, "DolbyVision MasteringDisplay_Luminance_HDR10", Luminance.Read());
+        LightLevel_Fill("MaxCLL", MaxCLL);
+        LightLevel_Fill("MaxFALL", MaxFALL);
+    }
+
+    // Active area
+    if (Data.L5_Present)
+    {
+        static const char* const Sides[4]={ "left", "right", "top", "bottom" };
+        static const int8u Order[4]={ 2, 3, 0, 1 };
+        string ActiveArea;
+        for (auto i : Order)
+        {
+            if (!ActiveArea.empty())
+                ActiveArea+=", ";
+            ActiveArea+=Sides[i];
+            ActiveArea+=": ";
+            ActiveArea+=to_string(Data.L5_Min[i]);
+            if (Data.L5_Max[i]!=Data.L5_Min[i])
+                ActiveArea+='-'+to_string(Data.L5_Max[i]);
+        }
+        Fill(Stream_Video, 0, "DolbyVision ActiveArea", ActiveArea);
+    }
+    {
+        auto AspectRatios=Data.Active_DisplayAspectRatios;
+        if (!Data.L5.empty())
+        {
+            auto Width=Retrieve_Const(Stream_Video, 0, Video_Width).To_int64u();
+            auto Height=Retrieve_Const(Stream_Video, 0, Video_Height).To_int64u();
+            auto PixelAspectRatio=Retrieve_Const(Stream_Video, 0, Video_PixelAspectRatio).To_float64();
+            if (!PixelAspectRatio)
+                PixelAspectRatio=1;
+            for (const auto& L5 : Data.L5)
+            {
+                auto Crop_Width=(int64u)L5.Offsets[0]+L5.Offsets[1];
+                auto Crop_Height=(int64u)L5.Offsets[2]+L5.Offsets[3];
+                if (Width>Crop_Width && Height>Crop_Height)
+                    AspectRatios.push_back(((float64)(Width-Crop_Width))/(Height-Crop_Height)*PixelAspectRatio);
+            }
+        }
+        sort(AspectRatios.begin(), AspectRatios.end());
+        ZtringList List;
+        List.Separator_Set(0, __T(" / "));
+        for (auto AspectRatio : AspectRatios)
+        {
+            auto Value=Ztring::ToZtring(AspectRatio, 3);
+            if (List.Find(Value)==Error)
+                List.push_back(Value);
+        }
+        if (!List.empty())
+            Fill(Stream_Video, 0, "DolbyVision Active_DisplayAspectRatio", List.Read());
+    }
+
+    // Content type
+    if (!Data.L11.empty())
+    {
+        ZtringList ContentType, WhitePoint, ReferenceMode;
+        ContentType.Separator_Set(0, __T(" / "));
+        WhitePoint.Separator_Set(0, __T(" / "));
+        ReferenceMode.Separator_Set(0, __T(" / "));
+        for (const auto& L11 : Data.L11)
+        {
+            const char* ContentType_Name=DV_content_type(L11.content_type);
+            auto ContentType_Value=Value_Or_Number(*ContentType_Name?ContentType_Name:nullptr, L11.content_type);
+            if (ContentType.Find(ContentType_Value)==Error)
+                ContentType.push_back(ContentType_Value);
+            const char* WhitePoint_Name=DV_white_point(L11.white_point);
+            auto WhitePoint_Value=Value_Or_Number(*WhitePoint_Name?WhitePoint_Name:nullptr, L11.white_point);
+            if (WhitePoint.Find(WhitePoint_Value)==Error)
+                WhitePoint.push_back(WhitePoint_Value);
+            if (L11.reference_mode!=(int8u)-1)
+            {
+                Ztring ReferenceMode_Value; ReferenceMode_Value.From_UTF8(YesNo(L11.reference_mode));
+                if (ReferenceMode.Find(ReferenceMode_Value)==Error)
+                    ReferenceMode.push_back(ReferenceMode_Value);
+            }
+        }
+        Fill(Stream_Video, 0, "DolbyVision Content_Type", ContentType.Read());
+        Fill(Stream_Video, 0, "DolbyVision WhitePoint", WhitePoint.Read());
+        if (!ReferenceMode.empty())
+            Fill(Stream_Video, 0, "DolbyVision ReferenceMode", ReferenceMode.Read());
+    }
+
+    // Values for the whole stream, always available with XML metadata, only when the whole stream is parsed with the RPU
+    if (!IsRPU || Config->ParseSpeed>=1.0)
+    {
+        if (Data.L1_max_PQ)
+        {
+            LightLevel_Fill("MaxCLL_Analysis", { DV_PQ12_ToNits(Data.L1_max_PQ) });
+            LightLevel_Fill("MaxFALL_Analysis", { DV_PQ12_ToNits(Data.L1_avg_PQ) });
+        }
+        if (Data.Count_Shot || (IsRPU && Data.Count_CMv29))
+            Fill(Stream_Video, 0, "DolbyVision ShotCount", Data.Count_Shot);
+        if (Data.FrameRange_Start!=(int64u)-1 && Data.FrameRange_End>=Data.FrameRange_Start)
+            Fill(Stream_Video, 0, "DolbyVision FrameRange", to_string(Data.FrameRange_Start)+'-'+to_string(Data.FrameRange_End));
+    }
+
+    // Low level details
+    const auto Fill_Hidden=[&](const char* Parameter, const Ztring& Value) {
+        auto Name=string("DolbyVision ")+Parameter;
+        Fill(Stream_Video, 0, Name.c_str(), Value);
+        Fill_SetOptions(Stream_Video, 0, Name.c_str(), "N NT");
+    };
+    if (IsRPU)
+    {
+        Fill_Hidden("RPU_Format", Ztring::ToZtring(Data.rpu_format));
+        Fill_Hidden("VDR_RPU_Profile", Ztring::ToZtring(Data.vdr_rpu_profile));
+        Fill_Hidden("VDR_RPU_Level", Ztring::ToZtring(Data.vdr_rpu_level));
+        Fill_Hidden("VDR_RPU_NormalizedIdc", Ztring::ToZtring(Data.vdr_rpu_normalized_idc));
+        Fill_Hidden("CoefficientDataType", Value_Or_Number(Data.coefficient_data_type==0?"Fixed":(Data.coefficient_data_type==1?"Float":nullptr), Data.coefficient_data_type));
+        if (!Data.coefficient_data_type)
+            Fill_Hidden("CoefficientLog2Denom", Ztring::ToZtring(Data.coefficient_log2_denom));
+        Fill_Hidden("ChromaResamplingExplicitFilter", Ztring().From_UTF8(YesNo(Data.chroma_resampling_explicit_filter_flag)));
+        Fill_Hidden("SpatialResamplingFilter", Ztring().From_UTF8(YesNo(Data.spatial_resampling_filter_flag)));
+        Fill_Hidden("EL_SpatialResamplingFilter", Ztring().From_UTF8(YesNo(Data.el_spatial_resampling_filter_flag)));
+        Fill_Hidden("DisableResidual", Ztring().From_UTF8(YesNo(Data.disable_residual_flag)));
+        Fill_Hidden("ExtMappingIdc", Ztring::ToZtring(Data.ext_mapping_idc));
+        if (Data.Mapping_Present)
+        {
+            Fill_Hidden("MappingColorSpace", Ztring::ToZtring(Data.mapping_color_space));
+            Fill_Hidden("MappingChromaFormat", Ztring::ToZtring(Data.mapping_chroma_format_idc));
+            if (HasEL)
+                Fill_Hidden("NLQ_Method", Value_Or_Number(Data.nlq_method_idc?nullptr:"Linear dead zone", Data.nlq_method_idc));
+            Fill_Hidden("Partitions", Ztring::ToZtring(((int64u)Data.num_x_partitions_minus1)+1)+__T('x')+Ztring::ToZtring(((int64u)Data.num_y_partitions_minus1)+1));
+        }
+        if (Data.DM_Present)
+        {
+            Fill_Hidden("Signal_EOTF", Ztring::ToZtring(Data.signal_eotf));
+            Fill_Hidden("Signal_EOTF_Parameters", Ztring::ToZtring(Data.signal_eotf_param0)+__T(", ")+Ztring::ToZtring(Data.signal_eotf_param1)+__T(", ")+Ztring::ToZtring(Data.signal_eotf_param2));
+            Fill_Hidden("Signal_BitDepth", Ztring::ToZtring(Data.signal_bit_depth));
+            Fill_Hidden("Signal_ColorSpace", Value_Or_Number(DV_ColorSpace(Data.signal_color_space), Data.signal_color_space));
+            Fill_Hidden("Signal_ChromaFormat", Value_Or_Number(DV_ChromaFormat(Data.signal_chroma_format), Data.signal_chroma_format));
+            Fill_Hidden("Signal_ColorRange", Value_Or_Number(DV_ColorRange(Data.signal_full_range_flag), Data.signal_full_range_flag));
+        }
+    }
+    if (Data.L254_Present)
+        Fill_Hidden("DMMode", Ztring::ToZtring(Data.dm_mode));
+}
+
+#endif // defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MXF_YES)
 
 //---------------------------------------------------------------------------
 #if defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES)
@@ -4063,7 +4778,8 @@ void File__Analyze::Merge_HDR(size_t StreamPos_To, const Ztring* Container, cons
     Container_Formats.Write(Container[0]);
     Stream_Formats.Write(ToAdd[0]);
     auto Container_DolbyVision=Container_Formats.Find(__T("Dolby Vision"));
-    if (!Container[0].empty() && !ToAdd[0].empty() && Container[0]!=ToAdd[0])
+    auto Stream_DolbyVision=Stream_Formats.Find(__T("Dolby Vision"));
+    if (!Container[0].empty() && !ToAdd[0].empty() && (Container[0]!=ToAdd[0] || (Container_DolbyVision!=Error && Stream_DolbyVision!=Error)))
     {
         //The container has priority, the stream adds the HDR formats which are not in the container
         ZtringList Container_Values[Video_HDR_Format_Compatibility-Video_HDR_Format+1], Stream_Values[Video_HDR_Format_Compatibility-Video_HDR_Format+1];
@@ -4084,6 +4800,69 @@ void File__Analyze::Merge_HDR(size_t StreamPos_To, const Ztring* Container, cons
         for (const auto& Container_Format : Container_Formats)
             if (Stream_Formats.Find(Container_Format)==Error)
                 Container_InStream=false;
+
+        if (Container_DolbyVision!=Error && Stream_DolbyVision!=Error)
+        {
+            //Dolby Vision in both container configuration and stream RPU, the configuration has priority and the RPU adds what is not in the configuration
+            Container_InStream=false;
+
+            #if MEDIAINFO_CONFORMANCE
+                const auto Profile_Number=[](const Ztring& Profile) {
+                    auto Dot=Profile.find(__T('.'));
+                    return Dot==string::npos?Ztring():Ztring::ToZtring(Ztring(Profile.substr(Dot+1)).To_int8u());
+                };
+                const auto Layers_HasEL=[](const Ztring& Layers) {
+                    ZtringList List;
+                    List.Separator_Set(0, __T("+"));
+                    List.Write(Layers);
+                    return List.Find(__T("EL"))!=Error || List.Find(__T("MEL"))!=Error || List.Find(__T("FEL"))!=Error;
+                };
+                const auto Container_Profile=Profile_Number(Container_Values[Video_HDR_Format_Profile-Video_HDR_Format][Container_DolbyVision]);
+                const auto Stream_Profile=Profile_Number(Stream_Values[Video_HDR_Format_Profile-Video_HDR_Format][Stream_DolbyVision]);
+                Ztring Container_Profile_RPU; //Profile with the signature expected in the RPU, empty if unknown
+                switch (Container_Profile.To_int8u())
+                {
+                    case  4:
+                    case  5:
+                    case  7:
+                    case  8:
+                    case 10: Container_Profile_RPU=Container_Profile; break;
+                    case 20: Container_Profile_RPU=Container_Values[Video_HDR_Format_Compatibility-Video_HDR_Format][Container_DolbyVision].empty()?__T("5"):__T("8"); break; //MV-HEVC, the RPU has the signature of the single view equivalent
+                    default:;
+                }
+                if (!Container_Profile_RPU.empty() && !Stream_Profile.empty() && Container_Profile_RPU!=Stream_Profile)
+                    Fill_Conformance("Crosscheck DolbyVisionConfiguration dv_profile", ("Dolby Vision configuration dv_profile " + Container_Profile.To_UTF8() + " does not match Dolby Vision RPU profile " + Stream_Profile.To_UTF8()).c_str(), {}, Conformance_Error, Stream_Video, StreamPos_To);
+                const auto& Container_Layers=Container_Values[Video_HDR_Format_Settings-Video_HDR_Format][Container_DolbyVision];
+                const auto& Stream_Layers=Stream_Values[Video_HDR_Format_Settings-Video_HDR_Format][Stream_DolbyVision];
+                if (!Container_Layers.empty() && !Stream_Layers.empty() && Layers_HasEL(Container_Layers)!=Layers_HasEL(Stream_Layers))
+                    Fill_Conformance("Crosscheck DolbyVisionConfiguration el_present_flag", (string("Dolby Vision configuration el_present_flag ") + (Layers_HasEL(Container_Layers)?'1':'0') + " does not match Dolby Vision RPU " + (Layers_HasEL(Stream_Layers)?"with":"without") + " enhancement layer").c_str(), {}, Conformance_Error, Stream_Video, StreamPos_To);
+            #endif //MEDIAINFO_CONFORMANCE
+
+            for (size_t i=Video_HDR_Format; i<=Video_HDR_Format_Compatibility; i++)
+            {
+                if (i==Video_HDR_Format_String || i==Video_HDR_Format_Commercial)
+                    continue;
+                auto& Container_DolbyVision_Value=Container_Values[i-Video_HDR_Format][Container_DolbyVision];
+                const auto& Stream_DolbyVision_Value=Stream_Values[i-Video_HDR_Format][Stream_DolbyVision];
+                if (Container_DolbyVision_Value.empty())
+                    Container_DolbyVision_Value=Stream_DolbyVision_Value;
+                else if (i==Video_HDR_Format_Settings && !Stream_DolbyVision_Value.empty())
+                {
+                    //Enhancement layer type is known only from the RPU
+                    ZtringList Container_Layers, Stream_Layers;
+                    Container_Layers.Separator_Set(0, __T("+"));
+                    Stream_Layers.Separator_Set(0, __T("+"));
+                    Container_Layers.Write(Container_DolbyVision_Value);
+                    Stream_Layers.Write(Stream_DolbyVision_Value);
+                    auto EL_Pos=Container_Layers.Find(__T("EL"));
+                    if (EL_Pos!=Error)
+                        for (const auto& Stream_Layer : Stream_Layers)
+                            if (Stream_Layer==__T("MEL") || Stream_Layer==__T("FEL"))
+                                Container_Layers[EL_Pos]=Stream_Layer;
+                    Container_DolbyVision_Value=Container_Layers.Read();
+                }
+            }
+        }
 
         if (!Container_InStream)
         {

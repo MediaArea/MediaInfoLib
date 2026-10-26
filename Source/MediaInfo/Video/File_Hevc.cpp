@@ -724,6 +724,8 @@ void File_Hevc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator se
 //---------------------------------------------------------------------------
 void File_Hevc::Streams_Finish()
 {
+    DolbyVision_Streams_Fill(DV_RPU_data, DV_Source_HEVC);
+
     //GA94 captions
     #if defined(MEDIAINFO_DTVCCTRANSPORT_YES)
         if (GA94_03_Parser && GA94_03_Parser->Status[IsAccepted])

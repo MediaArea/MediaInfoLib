@@ -257,6 +257,8 @@ void File_Av1::Streams_Finish()
         Fill(Stream_Video, 0, Video_MaxFALL, maximum_frame_average_light_level);
         maximum_frame_average_light_level.clear();
     }
+
+    DolbyVision_Streams_Fill(DV_RPU_data, DV_Source_AV1);
 }
 
 //***************************************************************************
