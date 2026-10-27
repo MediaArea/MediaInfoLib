@@ -1020,9 +1020,9 @@ Matrix_ChannelPositions;Matrix encoding, channel positions
 matrix_coefficients;Matrix coefficients
 Matrix_Format;Matrix encoding, format
 MaxCLL;Maximum Content Light Level
-MaxCLL_Analysis;MaxCLL (analysis)
+MaxCLL_Analysis;Maximum Content Light Level (analysis)
 MaxFALL;Maximum Frame-Average Light Level
-MaxFALL_Analysis;MaxFALL (analysis)
+MaxFALL_Analysis;Maximum Frame-Average Light Level (analysis)
 MaxGain;Max gain
 MaximumMomentaryLoudness;Maximum momentary loudness
 MaxTruePeak;Max true peak
