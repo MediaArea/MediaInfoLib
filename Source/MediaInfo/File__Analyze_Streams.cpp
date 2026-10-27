@@ -2295,8 +2295,11 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
         vector<float64> MaxCLL, MaxFALL;
         for (const auto& L6 : Data.L6)
         {
-            MaxCLL.push_back(L6.max_content_light_level);
-            MaxFALL.push_back(L6.max_frame_average_light_level);
+            // 0 means unknown
+            if (L6.max_content_light_level)
+                MaxCLL.push_back(L6.max_content_light_level);
+            if (L6.max_frame_average_light_level)
+                MaxFALL.push_back(L6.max_frame_average_light_level);
             if (L6.max_display_mastering_luminance)
             {
                 auto Luminance_Value=DV_Luminance_String(((float64)L6.min_display_mastering_luminance)/10000, L6.max_display_mastering_luminance);
@@ -2306,8 +2309,10 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
         }
         if (!Luminance.empty())
             Fill(Stream_Video, 0, "DolbyVision MasteringDisplay_Luminance_HDR10", Luminance.Read());
-        LightLevel_Fill("MaxCLL", MaxCLL);
-        LightLevel_Fill("MaxFALL", MaxFALL);
+        if (!MaxCLL.empty())
+            LightLevel_Fill("MaxCLL", MaxCLL);
+        if (!MaxFALL.empty())
+            LightLevel_Fill("MaxFALL", MaxFALL);
     }
 
     // Active area
