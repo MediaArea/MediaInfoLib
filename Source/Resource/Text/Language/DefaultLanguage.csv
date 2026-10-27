@@ -166,6 +166,7 @@ AC3_Metadata;AC-3 metadata
 Active_DisplayAspectRatio;Active display aspect ratio
 Active_Height;Active height
 Active_Width;Active width
+ActiveArea;Active area
 ActiveFormatDescription;Active Format Description
 ActiveFormatDescription_MuxingMode;Active Format Description, Muxing mode
 Actor;Actor
@@ -214,6 +215,7 @@ Back4ToBack2;Four backs to two backs
 Balance_FrontBackListener;Front/back listener balance
 Balance_FrontBackOverheadFloor;Front/back overhead/floor balance
 BarCode;BarCode
+BaseLayer_ColorRange;Base layer color range
 Basic;Basic
 Basic_Note;Note : for more information about this file, you must select a different view (Sheet, Tree...)
 BedChannelConfiguration;Bed channel configuration
@@ -260,6 +262,7 @@ Choose filename;Choose your desired filename
 Choose language;Choose your desired language
 Choreographer;Choreographer
 Chroma;Chroma
+ChromaResamplingExplicitFilter;Chroma resampling explicit filter
 ChromaSubsampling;Chroma subsampling
 Classifier;Content classifier
 Close;Close
@@ -267,6 +270,7 @@ Close all before open;Close all before open
 ClosedCaptionsLanguage;Closed Captions Language
 ClosedCaptionsPresent;Closed Captions Present
 ClosedCaptionsType;Closed Captions Type
+CMVersion;CM version
 Codec;Codec
 Codec_Description;Codec description
 Codec_Info;Details for codec
@@ -289,6 +293,8 @@ CodecConfigurationBox;Codec configuration box
 CodecID;Codec ID
 CodecID_Description;Description of the codec
 CoDirector;Codirector
+CoefficientDataType;Coefficient data type
+CoefficientLog2Denom;Coefficient log2 denominator
 Collection;Collection
 Colorimetry;Colorimetry
 ColorSpace;Color space
@@ -316,6 +322,7 @@ ContactEmail;Contact Email
 ContactTelephoneNumber;Contact Telephone Number
 Container and general information;Container and general information
 Content;Content
+Content_Type;Content type
 ContentType;ContentType
 CoProducer;Coproducer
 Copyright;Copyright
@@ -351,13 +358,17 @@ Dimensions;Dimensions
 Director;Director
 DirectorOfPhotography;Director of photography
 Disabled;Disabled
+DisableResidual;Disable residual
 DisplayAspectRatio;Display aspect ratio
 DisplayAspectRatio_CleanAperture;Clean aperture display aspect ratio
 DisplayAspectRatio_Original;Original display aspect ratio
 DistributedBy;Distributed by
 Distributor;Distributor
+DMMode;DM mode
+DMVersion;DM version
 Dolby_Atmos_Metadata;Dolby Atmos metadata
 DolbyAtmos;Dolby Atmos
+DolbyVision;Dolby Vision
 Donate;Donate
 DotsPerInch;Dots per inch
 Downmix;Downmix
@@ -378,6 +389,7 @@ Eac3DrcProfile;E-AC-3 DRC profile
 Edit;Edit
 EditedBy;Edited by
 EditorialClassification;Editorial classification
+EL_SpatialResamplingFilter;EL spatial resampling filter
 ElementaryStream;Elementary stream
 ElementCount;Count of elements
 EMail;E-Mail
@@ -389,6 +401,7 @@ Encoded_Library_Settings;Encoding settings
 Encoded_OperatingSystem;Writing operating system
 Encoded_Original;Original support
 EncodedBy;Encoded by
+EnhancementLayer;Enhancement layer
 EPG_Positions;EPG positions (internal)
 EpisodeTitleNumber;Episode Title Number
 Events_MinDuration;Minimum duration per event
@@ -403,6 +416,7 @@ Exit_Hint;Quit the program
 Export;Export
 Export_Hint;Export in a customized format
 Extensions;Extensions usually used
+ExtMappingIdc;Extended mapping IDC
 Family;Family
 Fax;Fax
 File;File
@@ -471,6 +485,7 @@ FpaManufacturer;FPA Manufacturer
 FpaPass;FPA Pass
 FpaVersion;FPA Version
 FrameCount;Frame count
+FrameRange;Frame range
 FrameRate;Frame rate
 FrameRate_Maximum;Maximum frame rate
 FrameRate_Minimum;Minimum frame rate
@@ -990,16 +1005,24 @@ LtRtCenterMixGain;LtRt center mix gain
 LtRtSurroundMixGain;LtRt surround mix gain
 Lyricist;Lyricist
 Lyrics;Lyrics
+MappingChromaFormat;Mapping chroma format
+MappingColorSpace;Mapping color space
 Mastered_Date;Mastered date
 MasteredBy;Mastered by
 MasteringDisplay_ColorPrimaries;Mastering display color primaries
+MasteringDisplay_Diagonal;Mastering display diagonal
+MasteringDisplay_ID;Mastering display ID
 MasteringDisplay_Luminance;Mastering display luminance
+MasteringDisplay_Luminance_HDR10;Mastering display luminance (HDR10)
+MasteringDisplay_Name;Mastering display name
 Matrix_Channel(s);Matrix encoding, Channel(s)
 Matrix_ChannelPositions;Matrix encoding, channel positions
 matrix_coefficients;Matrix coefficients
 Matrix_Format;Matrix encoding, format
 MaxCLL;Maximum Content Light Level
+MaxCLL_Analysis;MaxCLL (analysis)
 MaxFALL;Maximum Frame-Average Light Level
+MaxFALL_Analysis;MaxFALL (analysis)
 MaxGain;Max gain
 MaximumMomentaryLoudness;Maximum momentary loudness
 MaxTruePeak;Max true peak
@@ -1037,6 +1060,7 @@ Newest version;Check for new versions (requires Internet connection)
 NewVersion_Menu;A new version is available
 NewVersion_Question_Content;A new version (v%Version%) is available, would you like to download it?
 NewVersion_Question_Title;A new version was released!
+NLQ_Method;NLQ method
 No;No
 Not yet;Not yet
 NumberOfChannelFormats;Number of channel formats
@@ -1083,6 +1107,7 @@ PackFormat;Pack format
 Part;Part
 Part_Count;Total count
 PartialParsing;Partial parsing
+Partitions;Partitions
 PartNumber;Part Number
 PartTotal;Part Total
 Performer;Performer
@@ -1135,12 +1160,14 @@ RealtimeLoudnessCorrected;Realtime loudness corrected
 Reel;Reel
 Recorded_Date;Recorded date
 Recorded_Location;Recorded location
+ReferenceMode;Reference mode
 Released_Date;Released date
 RemixedBy;Remixed by
 RenderMode;Render mode
 ReplayGain_Gain;Replay gain
 ReplayGain_Peak;Replay gain peak
 Resolution;Resolution
+RPU_Format;RPU format
 s; s
 SamplePeakLevel;Sample peak level
 SamplePeakLevel_Album;Sample peak level (album)
@@ -1182,8 +1209,15 @@ Shell extension, folder;For folders too
 Shell InfoTip;Explorer Tooltip (in Windows Explorer, move the mouse over the file, info will be displayed)
 ShimName;Shim Name
 ShimVersion;Shim Version
+ShotCount;Shot count
 Show menu;Show menu
 Show toolbar;Show toolbar
+Signal_BitDepth;Signal bit depth
+Signal_ChromaFormat;Signal chroma format
+Signal_ColorRange;Signal color range
+Signal_ColorSpace;Signal color space
+Signal_EOTF;Signal EOTF
+Signal_EOTF_Parameters;Signal EOTF parameters
 SignalGroup;Signal group
 SigningPresent;Signing Present
 SignLanguage;Sign Language
@@ -1196,6 +1230,7 @@ Source_FrameCount;Source frame count
 Source_SamplingCount;Source sample count
 Source_StreamSize;Source stream size
 Source_StreamSize_Encoded;Source encoded stream size
+SpatialResamplingFilter;Spatial resampling filter
 SpokenSubtitles;Spoken subtitles
 Standard;Standard
 StoreMethod_InterleavedFields;Interleaved fields
@@ -1229,6 +1264,7 @@ SystemId;Id
 Tagged_Application;Tagging application
 Tagged_Date;Tagged date
 TargetDeviceConfig;Target device config
+TargetDisplays;Target displays
 Technician;Technician
 TermsOfUse;Terms of use
 TertiaryAudioLanguage;Tertiary Audio Language
@@ -1320,6 +1356,9 @@ UniversalAdID_Registry;Universal Ad ID registry
 UniversalAdID_Value;Universal Ad ID value
 Unknown;Unknown
 Url;Url
+VDR_RPU_Level;VDR RPU level
+VDR_RPU_NormalizedIdc;VDR RPU normalized IDC
+VDR_RPU_Profile;VDR RPU profile
 Video;Video
 Video stream(s);Video stream(s)
 Video_Codec_List;Codecs Video
@@ -1342,6 +1381,7 @@ WebSite_Text_More;Go to the web site (%Url%) to find this text codec
 WebSite_Url;http://MediaArea.net/MediaInfo
 WebSite_Video;Go to the web site of this video codec
 WebSite_Video_More;Go to the web site (%Url%) to find this video codec
+WhitePoint;White point
 Width;Width
 Width_CleanAperture;Clean aperture width
 Width_Original;Original width
