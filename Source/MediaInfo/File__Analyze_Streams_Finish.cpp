@@ -4035,6 +4035,41 @@ void File__Analyze::Streams_Finish_StreamOnly_Video(size_t Pos)
         }
     }
 
+    //Dolby Vision profile 8 without compatibility info (e.g. MPEG-TS descriptor version 1), deduced from the transfer characteristics as profile 8 has always a compatible base layer
+    {
+        ZtringList HDR_Format;
+        HDR_Format.Separator_Set(0, __T(" / "));
+        HDR_Format.Write(Retrieve(Stream_Video, Pos, Video_HDR_Format));
+        auto DolbyVision_Pos=HDR_Format.Find(__T("Dolby Vision"));
+        if (DolbyVision_Pos!=Error)
+        {
+            ZtringList HDR_Format_Profile, HDR_Format_Compatibility;
+            HDR_Format_Profile.Separator_Set(0, __T(" / "));
+            HDR_Format_Profile.Write(Retrieve(Stream_Video, Pos, Video_HDR_Format_Profile));
+            HDR_Format_Compatibility.Separator_Set(0, __T(" / "));
+            HDR_Format_Compatibility.Write(Retrieve(Stream_Video, Pos, Video_HDR_Format_Compatibility));
+            HDR_Format_Profile.resize(HDR_Format.size());
+            HDR_Format_Compatibility.resize(HDR_Format.size());
+            const auto& Profile=HDR_Format_Profile[DolbyVision_Pos];
+            if (Profile.size()>3 && Profile.rfind(__T(".08"))==Profile.size()-3 && HDR_Format_Compatibility[DolbyVision_Pos].empty())
+            {
+                const auto& transfer_characteristics=Retrieve_Const(Stream_Video, Pos, Video_transfer_characteristics);
+                const char* Compatibility=nullptr;
+                if (transfer_characteristics==__T("PQ"))
+                    Compatibility="HDR10";
+                else if (transfer_characteristics==__T("HLG"))
+                    Compatibility="HLG";
+                else if (transfer_characteristics==__T("BT.709") || transfer_characteristics==__T("BT.601") || transfer_characteristics.rfind(__T("BT.2020"), 0)==0)
+                    Compatibility="SDR";
+                if (Compatibility)
+                {
+                    HDR_Format_Compatibility[DolbyVision_Pos].From_UTF8(Compatibility);
+                    Fill(Stream_Video, Pos, Video_HDR_Format_Compatibility, HDR_Format_Compatibility.Read(), true);
+                }
+            }
+        }
+    }
+
     //Commercial name
     if (Retrieve(Stream_Video, Pos, Video_HDR_Format_Compatibility).rfind(__T("HDR10"), 0)==0
      && ((!Retrieve(Stream_Video, Pos, Video_BitDepth).empty() && Retrieve(Stream_Video, Pos, Video_BitDepth).To_int64u()<10) //e.g. ProRes has not bitdepth info
