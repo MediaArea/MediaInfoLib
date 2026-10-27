@@ -4080,39 +4080,33 @@ void File__Analyze::Streams_Finish_StreamOnly_Video(size_t Pos)
                         {
                             case Video_HDR_Format_Version: Summary[j]+=__T(", Version "); break;
                             case Video_HDR_Format_Level: Summary[j]+=__T('.'); break;
-                            case Video_HDR_Format_Compression: ToAdd[j][0]+=0x20; if (ToAdd[j].size()==4) ToAdd[j].resize(2); ToAdd[j]+=__T(" metadata compression"); [[fallthrough]];
-                            default: Summary[j] += __T(", ");
-                        }
-                        Summary[j]+=ToAdd[j];
-                        if (i==Video_HDR_Format_Version && j==DolbyVision_Pos)
-                        {
-                            ToAdd.Write(Retrieve(Stream_Video, Pos, Video_HDR_Format_Profile));
-                            if (j<ToAdd.size())
-                            {
-                                const Ztring& Profile=ToAdd[j];
-                                size_t Profile_Dot=Profile.find(__T('.'));
-                                if (Profile_Dot!=string::npos)
+                            case Video_HDR_Format_Profile:
+                                if (j==DolbyVision_Pos)
                                 {
-                                    Profile_Dot++;
-                                    if (Profile_Dot<Profile.size() && Profile[Profile_Dot]==__T('0'))
-                                        Profile_Dot++;
-                                    Summary[j]+=__T(", Profile ");
-                                    Summary[j]+=Profile.substr(Profile_Dot);
-                                    ToAdd.Write(Retrieve(Stream_Video, Pos, Video_HDR_Format_Compatibility));
-                                    if (j<ToAdd.size())
+                                    const Ztring& Profile=ToAdd[j];
+                                    size_t Profile_Dot=Profile.find(__T('.'));
+                                    if (Profile_Dot!=string::npos)
                                     {
-                                        const Ztring& Compatibility=ToAdd[j];
-                                        size_t Compatibility_Pos=DolbyVision_Compatibility_Pos(Compatibility);
-                                        if (Compatibility_Pos!=size_t()-1)
+                                        Profile_Dot++;
+                                        if (Profile_Dot<Profile.size() && Profile[Profile_Dot]==__T('0'))
+                                            Profile_Dot++;
+                                        Summary[j]+=__T(", Profile ");
+                                        Summary[j]+=Profile.substr(Profile_Dot);
+                                        const Ztring& Compatibility=HDR_Format_Compatibility[j];
+                                        size_t Compatibility_Pos=Compatibility.empty()?(size_t)-1:DolbyVision_Compatibility_Pos(Compatibility);
+                                        if (Compatibility_Pos!=(size_t)-1)
                                         {
                                             Summary[j]+=__T('.');
                                             Summary[j]+=Ztring::ToZtring(Compatibility_Pos, 16);
                                         }
                                     }
                                 }
-                            }
-                            ToAdd.resize(Summary.size());
+                                Summary[j]+=__T(", ");
+                                break;
+                            case Video_HDR_Format_Compression: ToAdd[j][0]+=0x20; if (ToAdd[j].size()==4) ToAdd[j].resize(2); ToAdd[j]+=__T(" metadata compression"); [[fallthrough]];
+                            default: Summary[j] += __T(", ");
                         }
+                        Summary[j]+=ToAdd[j];
                     }
                 }
             }

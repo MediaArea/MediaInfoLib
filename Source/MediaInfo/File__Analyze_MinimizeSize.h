@@ -1226,6 +1226,7 @@ public :
     size_t Merge(MediaInfo_Internal &ToAdd, stream_t StreamKind, size_t StreamPos_From, size_t StreamPos_To, bool Erase=true); //Merge 2 streams
     size_t Merge(File__Analyze &ToAdd, bool Erase=true); //Merge 2 File_Base
     size_t Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t StreamPos_From, size_t StreamPos_To, bool Erase=true); //Merge 2 streams
+    void Merge_HDR(size_t StreamPos_To, const Ztring* Container, const Ztring* ToAdd, const Ztring& ToAdd_colour_range, const Ztring& ToAdd_matrix_coefficients); //Merge HDR formats of a container and of a stream, from Video_HDR_Format to Video_HDR_Format_Compatibility
 
     void CodecID_Fill           (const Ztring &Value, stream_t StreamKind, size_t StreamPos, infocodecid_format_t Format, stream_t StreamKind_CodecID=Stream_Max);
     void PixelAspectRatio_Fill  (const Ztring &Value, stream_t StreamKind, size_t StreamPos, size_t Parameter_Width, size_t Parameter_Height, size_t Parameter_PixelAspectRatio, size_t Parameter_DisplayAspectRatio);
@@ -1501,7 +1502,7 @@ public :
 
     #if MEDIAINFO_CONFORMANCE
         void*               Conformance_Data;
-        void                Fill_Conformance(const char* Field, const char* Value, uint8_t Flags = {}, conformance_type Level = Conformance_Error, stream_t StreamKind = Stream_General, size_t StreamPos = 0);
+        void                Fill_Conformance(const char* Field, const char* Value, uint8_t Flags = {}, conformance_type Level = Conformance_Error, stream_t StreamKind = Stream_Max, size_t StreamPos = 0);
         void                Fill_Conformance(const char* Field, const string& Value, uint8_t Flags = {}, conformance_type Level = Conformance_Error) { Fill_Conformance(Field, Value.c_str(), Flags, Level); }
         void                Clear_Conformance();
         void                Merge_Conformance(bool FromConfig = false);
@@ -1513,7 +1514,7 @@ public :
         void                RanOutOfData(const char* Prefix = nullptr);
         void                SynchLost(const char* Prefix = nullptr, int64u CountOfBytes = 0, bool AreZero = false);
     #else //MEDIAINFO_CONFORMANCE
-        void                Fill_Conformance(const char* Field, const char* Value, uint8_t Flags = {}, conformance_type Level = Conformance_Error, stream_t StreamKind = Stream_General, size_t StreamPos = 0) {}
+        void                Fill_Conformance(const char* Field, const char* Value, uint8_t Flags = {}, conformance_type Level = Conformance_Error, stream_t StreamKind = Stream_Max, size_t StreamPos = 0) {}
         void                Fill_Conformance(const char* Field, const string& Value, uint8_t Flags = {}, conformance_type Level = Conformance_Error) { Fill_Conformance(Field, Value.c_str(), Flags, Level); }
         void                Clear_Conformance() {}
         void                Merge_Conformance(bool FromConfig = false) {}
