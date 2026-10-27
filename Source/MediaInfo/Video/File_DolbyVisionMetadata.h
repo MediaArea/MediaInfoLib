@@ -35,6 +35,9 @@ public:
 private :
     //Buffer - File header
     bool FileHeader_Begin();
+
+    //Conformance
+    void Conformance_MDF(tinyxml2::XMLElement* Root, tinyxml2::XMLElement* Track, const std::string& Version);
 };
 
 } //NameSpace

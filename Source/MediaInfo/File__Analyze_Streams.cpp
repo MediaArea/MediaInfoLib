@@ -2099,11 +2099,19 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
         MasteringDisplay_Fill(Video_MasteringDisplay_Luminance, MasteringDisplay_Luminance);
         if (!Data.L6.empty())
         {
-            const auto& L6=Data.L6.front();
-            if (L6.max_content_light_level && Retrieve_Const(Stream_Video, 0, Video_MaxCLL).empty())
-                Fill(Stream_Video, 0, Video_MaxCLL, L6.max_content_light_level, 0);
-            if (L6.max_frame_average_light_level && Retrieve_Const(Stream_Video, 0, Video_MaxFALL).empty())
-                Fill(Stream_Video, 0, Video_MaxFALL, L6.max_frame_average_light_level, 0);
+            // Maximum of the values found (0 means unknown), the values may change during the stream
+            float64 MaxCLL=0, MaxFALL=0;
+            for (const auto& L6 : Data.L6)
+            {
+                if (MaxCLL<L6.max_content_light_level)
+                    MaxCLL=L6.max_content_light_level;
+                if (MaxFALL<L6.max_frame_average_light_level)
+                    MaxFALL=L6.max_frame_average_light_level;
+            }
+            if (MaxCLL && Retrieve_Const(Stream_Video, 0, Video_MaxCLL).empty())
+                Fill(Stream_Video, 0, Video_MaxCLL, MaxCLL, 0);
+            if (MaxFALL && Retrieve_Const(Stream_Video, 0, Video_MaxFALL).empty())
+                Fill(Stream_Video, 0, Video_MaxFALL, MaxFALL, 0);
         }
 
         // Active area
@@ -2188,6 +2196,13 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
     if (Data.L254_Present)
         Fill(Stream_Video, 0, "DolbyVision DMVersion", Data.dm_version_index);
 
+    // Only if there are several values or if the value differs from the one of the video stream
+    const auto Fill_IfNotInVideo=[&](const char* Parameter, video Parameter_Video, const ZtringList& List) {
+        if (List.size()==1 && Retrieve_Const(Stream_Video, 0, Parameter_Video)==List[0])
+            return;
+        Fill(Stream_Video, 0, Parameter, List.Read());
+    };
+
     // Mastering display
     if (!MasteringDisplay_Name.empty())
         Fill(Stream_Video, 0, "DolbyVision MasteringDisplay_Name", MasteringDisplay_Name);
@@ -2203,7 +2218,7 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
             if (List.Find(Value)==Error)
                 List.push_back(Value);
         }
-        Fill(Stream_Video, 0, "DolbyVision MasteringDisplay_ColorPrimaries", List.Read());
+        Fill_IfNotInVideo("DolbyVision MasteringDisplay_ColorPrimaries", Video_MasteringDisplay_ColorPrimaries, List);
     }
     if (!Data.Sources.empty())
     {
@@ -2211,7 +2226,7 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
         List.Separator_Set(0, __T(" / "));
         for (auto Source_Item : Data.Sources)
             List.push_back(DV_Luminance_String(DV_PQ12_ToNits((int16u)(Source_Item>>16)), DV_PQ12_ToNits((int16u)Source_Item)));
-        Fill(Stream_Video, 0, "DolbyVision MasteringDisplay_Luminance", List.Read());
+        Fill_IfNotInVideo("DolbyVision MasteringDisplay_Luminance", Video_MasteringDisplay_Luminance, List);
     }
     if (Data.source_diagonal)
     {
@@ -2290,16 +2305,11 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
     };
     if (!Data.L6.empty())
     {
+        // MaxCLL and MaxFALL are in the video stream, see above
         ZtringList Luminance;
         Luminance.Separator_Set(0, __T(" / "));
-        vector<float64> MaxCLL, MaxFALL;
         for (const auto& L6 : Data.L6)
         {
-            // 0 means unknown
-            if (L6.max_content_light_level)
-                MaxCLL.push_back(L6.max_content_light_level);
-            if (L6.max_frame_average_light_level)
-                MaxFALL.push_back(L6.max_frame_average_light_level);
             if (L6.max_display_mastering_luminance)
             {
                 auto Luminance_Value=DV_Luminance_String(((float64)L6.min_display_mastering_luminance)/10000, L6.max_display_mastering_luminance);
@@ -2308,11 +2318,7 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
             }
         }
         if (!Luminance.empty())
-            Fill(Stream_Video, 0, "DolbyVision MasteringDisplay_Luminance_HDR10", Luminance.Read());
-        if (!MaxCLL.empty())
-            LightLevel_Fill("MaxCLL", MaxCLL);
-        if (!MaxFALL.empty())
-            LightLevel_Fill("MaxFALL", MaxFALL);
+            Fill_IfNotInVideo("DolbyVision MasteringDisplay_Luminance_HDR10", Video_MasteringDisplay_Luminance, Luminance);
     }
 
     // Active area
@@ -2359,6 +2365,13 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
             if (List.Find(Value)==Error)
                 List.push_back(Value);
         }
+        // Only if there are several values or if the value differs from the one of the video stream
+        if (List.size()==1)
+        {
+            const auto& Active_DisplayAspectRatio=Retrieve_Const(Stream_Video, 0, Video_Active_DisplayAspectRatio);
+            if (!Active_DisplayAspectRatio.empty() && Ztring::ToZtring(Active_DisplayAspectRatio.To_float64(), 3)==List[0])
+                List.clear();
+        }
         if (!List.empty())
             Fill(Stream_Video, 0, "DolbyVision Active_DisplayAspectRatio", List.Read());
     }
@@ -2403,8 +2416,6 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
         }
         if (Data.Count_Shot || (IsRPU && Data.Count_CMv29))
             Fill(Stream_Video, 0, "DolbyVision ShotCount", Data.Count_Shot);
-        if (Data.FrameRange_Start!=(int64u)-1 && Data.FrameRange_End>=Data.FrameRange_Start)
-            Fill(Stream_Video, 0, "DolbyVision FrameRange", to_string(Data.FrameRange_Start)+'-'+to_string(Data.FrameRange_End));
     }
 
     // Low level details
