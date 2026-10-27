@@ -992,6 +992,7 @@ public :
         int32u Count_Shot{};
         int32u Count_MEL{};
         int32u Count_FEL{};
+        int32u Count_EL{}; // Enhancement layer NAL units in the same stream as the RPUs, none if the stream is the enhancement layer itself (e.g. UHD Blu-ray)
         int32u Count_CMv29{};
         int32u Count_CMv40{};
         bool IsFilled{}; // Streams are filled, Streams_Finish() may be called again (e.g. by Matroska) and must not add the same values twice

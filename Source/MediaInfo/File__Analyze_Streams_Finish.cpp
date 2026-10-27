@@ -4085,6 +4085,12 @@ void File__Analyze::Streams_Finish_StreamOnly_Video(size_t Pos)
                     auto Width=Retrieve_Const(Stream_Video, Pos, Video_Width).To_int64u();
                     auto Height=Retrieve_Const(Stream_Video, Pos, Video_Height).To_int64u();
                     auto FrameRate=Retrieve_Const(Stream_Video, Pos, Video_FrameRate).To_float64();
+                    if (Values[Video_HDR_Format_Settings-Video_HDR_Format_Version][DolbyVision_Pos].rfind(__T("BL"), 0)!=0 && Retrieve_Const(Stream_Video, Pos, "DolbyVision EL_SpatialResamplingFilter")==__T("Yes"))
+                    {
+                        // The stream is the enhancement layer with a resolution of half the one of the base layer, the level is about the base layer
+                        Width*=2;
+                        Height*=2;
+                    }
                     if (Width && Height && FrameRate)
                     {
                         auto PixelRate=Width*Height*FrameRate;
