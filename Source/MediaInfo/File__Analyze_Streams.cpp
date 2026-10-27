@@ -2054,7 +2054,7 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
             add_dec_2chars(Profile_String, Profile);
             HDR[Video_HDR_Format_Profile-Video_HDR_Format].From_UTF8(Profile_String);
         }
-        string Layers("BL+");
+        string Layers(HasEL && !Data.Count_EL?"":"BL+"); // No enhancement layer NAL unit with the RPUs: the stream is the enhancement layer, the base layer is in another stream
         if (HasEL)
         {
             Layers+=EL_Type?EL_Type:"EL";

@@ -3988,6 +3988,8 @@ void File_Hevc::Dolby_Vision_reference_processing_unit()
 // Packet "63"
 void File_Hevc::Dolby_Vision_enhancement_layer()
 {
+    DV_RPU_data.Count_EL++;
+
 #if MEDIAINFO_TRACE
 
     Element_Name("Dolby Vision Enhancement Layer (EL)");
