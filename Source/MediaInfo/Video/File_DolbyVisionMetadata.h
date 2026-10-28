@@ -37,7 +37,10 @@ private :
     bool FileHeader_Begin();
 
     //Conformance
-    void Conformance_MDF(tinyxml2::XMLElement* Root, tinyxml2::XMLElement* Track, const std::string& Version);
+    bool Conformance_Schema(tinyxml2::XMLElement* Root, const std::string& Version);
+    void Conformance_MDF(tinyxml2::XMLElement* Root, tinyxml2::XMLElement* Track, const std::string& Version, bool HasSchema);
+    void Conformance_V6(tinyxml2::XMLElement* Root);
+    void Conformance_Shots(const std::vector<std::pair<int64u, int64u>>& Shots);
 };
 
 } //NameSpace
