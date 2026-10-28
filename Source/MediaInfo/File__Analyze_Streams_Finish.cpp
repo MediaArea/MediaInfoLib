@@ -4148,6 +4148,31 @@ void File__Analyze::Streams_Finish_StreamOnly_Video(size_t Pos)
         }
     }
 
+    //Dolby Vision group, values only if there are several values or if the value differs from the one of the video stream (known only once all sources are merged)
+    {
+        static const pair<const char*, video> DolbyVision_InVideo[]=
+        {
+            {"DolbyVision MasteringDisplay_ColorPrimaries", Video_MasteringDisplay_ColorPrimaries},
+            {"DolbyVision MasteringDisplay_Luminance", Video_MasteringDisplay_Luminance},
+            {"DolbyVision MasteringDisplay_Luminance_HDR10", Video_MasteringDisplay_Luminance},
+        };
+        for (const auto& Item : DolbyVision_InVideo)
+        {
+            const auto& Value=Retrieve_Const(Stream_Video, Pos, Item.first);
+            if (!Value.empty() && Value==Retrieve_Const(Stream_Video, Pos, Item.second))
+                Clear(Stream_Video, Pos, Item.first);
+        }
+        const auto& Active_DisplayAspectRatio=Retrieve_Const(Stream_Video, Pos, "DolbyVision Active_DisplayAspectRatio");
+        if (!Active_DisplayAspectRatio.empty() && Active_DisplayAspectRatio.find(__T(" / "))==string::npos)
+        {
+            // Display aspect ratio if there is no active aspect ratio (full frame)
+            const auto& Active_DisplayAspectRatio_Video=Retrieve_Const(Stream_Video, Pos, Video_Active_DisplayAspectRatio);
+            const auto& DisplayAspectRatio_Video=Active_DisplayAspectRatio_Video.empty()?Retrieve_Const(Stream_Video, Pos, Video_DisplayAspectRatio):Active_DisplayAspectRatio_Video;
+            if (!DisplayAspectRatio_Video.empty() && Ztring::ToZtring(DisplayAspectRatio_Video.To_float64(), 3)==Active_DisplayAspectRatio)
+                Clear(Stream_Video, Pos, "DolbyVision Active_DisplayAspectRatio");
+        }
+    }
+
     //Commercial name
     if (Retrieve(Stream_Video, Pos, Video_HDR_Format_Compatibility).rfind(__T("HDR10"), 0)==0
      && ((!Retrieve(Stream_Video, Pos, Video_BitDepth).empty() && Retrieve(Stream_Video, Pos, Video_BitDepth).To_int64u()<10) //e.g. ProRes has not bitdepth info

@@ -2196,13 +2196,6 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
     if (Data.L254_Present)
         Fill(Stream_Video, 0, "DolbyVision DMVersion", Data.dm_version_index);
 
-    // Only if there are several values or if the value differs from the one of the video stream
-    const auto Fill_IfNotInVideo=[&](const char* Parameter, video Parameter_Video, const ZtringList& List) {
-        if (List.size()==1 && Retrieve_Const(Stream_Video, 0, Parameter_Video)==List[0])
-            return;
-        Fill(Stream_Video, 0, Parameter, List.Read());
-    };
-
     // Mastering display
     if (!MasteringDisplay_Name.empty())
         Fill(Stream_Video, 0, "DolbyVision MasteringDisplay_Name", MasteringDisplay_Name);
@@ -2218,7 +2211,7 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
             if (List.Find(Value)==Error)
                 List.push_back(Value);
         }
-        Fill_IfNotInVideo("DolbyVision MasteringDisplay_ColorPrimaries", Video_MasteringDisplay_ColorPrimaries, List);
+        Fill(Stream_Video, 0, "DolbyVision MasteringDisplay_ColorPrimaries", List.Read());
     }
     if (!Data.Sources.empty())
     {
@@ -2226,7 +2219,7 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
         List.Separator_Set(0, __T(" / "));
         for (auto Source_Item : Data.Sources)
             List.push_back(DV_Luminance_String(DV_PQ12_ToNits((int16u)(Source_Item>>16)), DV_PQ12_ToNits((int16u)Source_Item)));
-        Fill_IfNotInVideo("DolbyVision MasteringDisplay_Luminance", Video_MasteringDisplay_Luminance, List);
+        Fill(Stream_Video, 0, "DolbyVision MasteringDisplay_Luminance", List.Read());
     }
     if (Data.source_diagonal)
     {
@@ -2318,7 +2311,7 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
             }
         }
         if (!Luminance.empty())
-            Fill_IfNotInVideo("DolbyVision MasteringDisplay_Luminance_HDR10", Video_MasteringDisplay_Luminance, Luminance);
+            Fill(Stream_Video, 0, "DolbyVision MasteringDisplay_Luminance_HDR10", Luminance.Read());
     }
 
     // Active area
@@ -2364,13 +2357,6 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
             auto Value=Ztring::ToZtring(AspectRatio, 3);
             if (List.Find(Value)==Error)
                 List.push_back(Value);
-        }
-        // Only if there are several values or if the value differs from the one of the video stream
-        if (List.size()==1)
-        {
-            const auto& Active_DisplayAspectRatio=Retrieve_Const(Stream_Video, 0, Video_Active_DisplayAspectRatio);
-            if (!Active_DisplayAspectRatio.empty() && Ztring::ToZtring(Active_DisplayAspectRatio.To_float64(), 3)==List[0])
-                List.clear();
         }
         if (!List.empty())
             Fill(Stream_Video, 0, "DolbyVision Active_DisplayAspectRatio", List.Read());
