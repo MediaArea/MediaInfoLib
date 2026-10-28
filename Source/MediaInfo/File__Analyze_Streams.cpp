@@ -2315,7 +2315,7 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
     }
 
     // Active area
-    if (Data.L5_Present)
+    if (Data.L5_Present && (Data.L5_Max[0] || Data.L5_Max[1] || Data.L5_Max[2] || Data.L5_Max[3])) // Not displayed if 0 everywhere (full frame)
     {
         static const char* const Sides[4]={ "left", "right", "top", "bottom" };
         static const int8u Order[4]={ 2, 3, 0, 1 };
