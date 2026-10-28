@@ -6073,6 +6073,8 @@ void MediaInfo_Config_Image (ZtringListList &Info)
     "Active_Height/String;;;Y NT\n"
     "Active_DisplayAspectRatio;;;N YFY\n"
     "Active_DisplayAspectRatio/String;;;Y NT\n"
+    "Rotation;;;N YTY\n"
+    "Rotation/String;;;Y NT\n"
     "ColorSpace;;;Y YTY\n"
     "ChromaSubsampling;;;Y YTY\n"
     "Resolution;; bit;N NI;;;Deprecated\n"
