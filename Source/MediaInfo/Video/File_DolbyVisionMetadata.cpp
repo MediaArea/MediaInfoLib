@@ -335,6 +335,36 @@ bool File_DolbyVisionMetadata::FileHeader_Begin()
     if (AspectRatio)
         Fill(Stream_Video, 0, Video_DisplayAspectRatio, AspectRatio);
 
+    // Color space of the color encoding, only for a standalone file as embedded metadata may not describe the video essence (e.g. RGB mastering of YUV video)
+    const auto ColorSpace_Fill = [&](const char* Name)
+    {
+        if (IsSub || !Name)
+            return;
+        static const struct
+        {
+            const char* Name;
+            const char* ColorSpace;
+            const char* matrix_coefficients;
+        } ColorSpaces[] =
+        {
+            { "rgb"         , "RGB", "Identity" },
+            { "xyz"         , "XYZ", nullptr },
+            { "ycbcr_bt709" , "YUV", "BT.709" },
+            { "ycbcr_bt2020", "YUV", "BT.2020 non-constant" },
+            { "ycbcr_native", "YUV", nullptr },
+            { "yuv"         , "YUV", nullptr },
+        };
+        for (const auto& ColorSpace : ColorSpaces)
+            if (!strcmp(ColorSpace.Name, Name))
+            {
+                Fill(Stream_Video, 0, Video_ColorSpace, ColorSpace.ColorSpace);
+                if (ColorSpace.matrix_coefficients)
+                    Fill(Stream_Video, 0, Video_matrix_coefficients, ColorSpace.matrix_coefficients);
+                return;
+            }
+        Fill(Stream_Video, 0, Video_ColorSpace, Name);
+    };
+
     // Dolby Vision metadata, displayed the same way as the metadata from the RPU
     DV_RPU DV;
     int8u TargetDisplay_WithoutID = 255;
@@ -660,6 +690,8 @@ bool File_DolbyVisionMetadata::FileHeader_Begin()
                     if (XMLElement* ColorRange = Child(ColorEncoding, "ColorRange"))
                         if (const char* Name = ColorRange->Attribute("name"))
                             Fill(Stream_Video, 0, Video_colour_range, !strcmp(Name, "full") ? "Full" : (!strcmp(Name, "legal") ? "Limited" : Name));
+                    if (XMLElement* ColorSpace = Child(ColorEncoding, "ColorSpace"))
+                        ColorSpace_Fill(ColorSpace->Attribute("name"));
                 }
                 XMLElement* FrameRate = Child(UniversalData, "FrameRate");
                 if (FrameRate)
@@ -855,17 +887,8 @@ bool File_DolbyVisionMetadata::FileHeader_Begin()
                         if (float32 TextF = Ztring().From_UTF8(Text).To_float32())
                             Fill(Stream_Video, 0, Video_DisplayAspectRatio, TextF);
                 }
-                if (false) // Is(ColorEncoding_Item, "ColorSpace"))
-                {
-                    if (const char* Text = ColorEncoding_Item->GetText())
-                    {
-                        if (!strcmp(Text, "rgb"))
-                            Text = "RGB";
-                        if (!strcmp(Text, "yuv"))
-                            Text = "YUV";
-                        Fill(Stream_Video, 0, Video_ColorSpace, Text);
-                    }
-                }
+                if (Is(ColorEncoding_Item, "ColorSpace"))
+                    ColorSpace_Fill(ColorEncoding_Item->GetText());
                 if (Is(ColorEncoding_Item, "Encoding"))
                 {
                     if (const char* Text=ColorEncoding_Item->GetText())
