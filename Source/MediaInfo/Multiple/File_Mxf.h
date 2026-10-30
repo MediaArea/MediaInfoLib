@@ -90,6 +90,10 @@ protected :
     void Streams_Finish_Package (const int128u PackageUID);
     void Streams_Finish_Package_ForTimeCode (const int128u PackageUID);
     void Streams_Finish_Package_ForAS11 (const int128u PackageUID);
+    #if MEDIAINFO_CONFORMANCE
+    void Streams_Finish_ContentStorage_Conformance (const int128u ContentStorageUID);
+    void Streams_Finish_Conformance_References ();
+    #endif //MEDIAINFO_CONFORMANCE
     void Streams_Finish_Track (const int128u TrackUID);
     void Streams_Finish_Track_ForTimeCode (const int128u TrackUID, bool IsSourcePackage);
     void Streams_Finish_Track_ForAS11 (const int128u TrackUID);
@@ -892,6 +896,12 @@ protected :
         int128u EssenceContainer;
         int128u EssenceCompression;
         int32u LinkedTrackID;
+        #if MEDIAINFO_CONFORMANCE
+            int64u LinkedTrackID_Offset; //Only if from FileDescriptor
+            int32u SourceTrackID; //PHDR or HDR Vivid metadata track
+            int64u SourceTrackID_Offset;
+            const char* SourceTrackID_Name;
+        #endif //MEDIAINFO_CONFORMANCE
         int32u Width;
         int32u Width_Display;
         int32u Width_Display_Offset;
@@ -972,6 +982,12 @@ protected :
             EssenceCompression.hi=(int64u)-1;
             EssenceCompression.lo=(int64u)-1;
             LinkedTrackID=(int32u)-1;
+            #if MEDIAINFO_CONFORMANCE
+                LinkedTrackID_Offset=(int64u)-1;
+                SourceTrackID=(int32u)-1;
+                SourceTrackID_Offset=(int64u)-1;
+                SourceTrackID_Name=nullptr;
+            #endif //MEDIAINFO_CONFORMANCE
             Width=(int32u)-1;
             Width_Display=(int32u)-1;
             Width_Display_Offset=(int32u)-1;
@@ -1068,6 +1084,9 @@ protected :
         int64u Duration;
         int256u SourcePackageID; //Sequence from SourcePackage only
         int32u  SourceTrackID;
+        #if MEDIAINFO_CONFORMANCE
+            int64u SourceTrackID_Offset;
+        #endif //MEDIAINFO_CONFORMANCE
         std::vector<int128u> StructuralComponents; //Sequence from MaterialPackage only
         mxftimecode MxfTimeCode;
 
@@ -1075,6 +1094,9 @@ protected :
         {
             Duration=(int64u)-1;
             SourceTrackID=(int32u)-1;
+            #if MEDIAINFO_CONFORMANCE
+                SourceTrackID_Offset=(int64u)-1;
+            #endif //MEDIAINFO_CONFORMANCE
         }
 
         void Update (struct component &New)
@@ -1084,7 +1106,12 @@ protected :
             if (New.SourcePackageID.hi || New.SourcePackageID.lo)
                 SourcePackageID=New.SourcePackageID;
             if (New.SourceTrackID!=(int32u)-1)
+            {
                 SourceTrackID=New.SourceTrackID;
+                #if MEDIAINFO_CONFORMANCE
+                    SourceTrackID_Offset=New.SourceTrackID_Offset;
+                #endif //MEDIAINFO_CONFORMANCE
+            }
             if (!New.StructuralComponents.empty())
                 StructuralComponents=New.StructuralComponents;
             if (New.MxfTimeCode.StartTimecode!=(int64u)-1)
@@ -1117,6 +1144,18 @@ protected :
     };
     typedef std::map<int128u, timecodecache> timecodecaches; //Key is InstanceUID of the timecode
     timecodecaches TimecodeCaches;
+
+    //Track ID references conformance, filled once streams are known
+    #if MEDIAINFO_CONFORMANCE
+    struct conformance_reference
+    {
+        int64u      Offset;
+        const char* Field;
+        string      Value;
+        int32u      TrackID;
+    };
+    std::vector<conformance_reference> Conformance_References;
+    #endif //MEDIAINFO_CONFORMANCE
 
     //Descriptive Metadata - DescriptiveMarkers
     struct dmsegment

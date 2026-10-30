@@ -2878,6 +2878,9 @@ void File_Mxf::Streams_Finish()
     //Commercial names
     Streams_Finish_CommercialNames();
 
+    #if MEDIAINFO_CONFORMANCE
+        Streams_Finish_Conformance_References();
+    #endif //MEDIAINFO_CONFORMANCE
     Streams_Finish_Conformance();
 
     //Timecode coherency
@@ -2936,9 +2939,159 @@ void File_Mxf::Streams_Finish_ContentStorage (const int128u ContentStorageUID)
     if (ContentStorage==ContentStorages.end())
         return;
 
+    #if MEDIAINFO_CONFORMANCE
+        Streams_Finish_ContentStorage_Conformance(ContentStorageUID); //Before Streams_Finish_Descriptor(), which may fill LinkedTrackID
+    #endif //MEDIAINFO_CONFORMANCE
+
     for (size_t Pos=0; Pos<ContentStorage->second.Packages.size(); Pos++)
         Streams_Finish_Package(ContentStorage->second.Packages[Pos]);
 }
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
+void File_Mxf::Streams_Finish_ContentStorage_Conformance (const int128u ContentStorageUID)
+{
+    contentstorages::iterator ContentStorage=ContentStorages.find(ContentStorageUID);
+    if (ContentStorage==ContentStorages.end())
+        return;
+
+    //Track IDs of a package, no check if a track is unknown
+    const auto Package_TrackIDs=[&](packages::iterator Package, std::vector<int32u>& TrackIDs, string& TrackIDs_String) {
+        TrackIDs.clear();
+        TrackIDs_String.clear();
+        if (Package->second.Tracks.empty())
+            return false;
+        for (size_t Pos=0; Pos<Package->second.Tracks.size(); Pos++)
+        {
+            tracks::iterator Track=Tracks.find(Package->second.Tracks[Pos]);
+            if (Track==Tracks.end() || Track->second.TrackID==(int32u)-1)
+                return false;
+            if (std::find(TrackIDs.begin(), TrackIDs.end(), Track->second.TrackID)==TrackIDs.end())
+                TrackIDs.push_back(Track->second.TrackID);
+        }
+        for (size_t Pos=0; Pos<TrackIDs.size(); Pos++)
+        {
+            if (Pos)
+                TrackIDs_String+=' ';
+            TrackIDs_String+=std::to_string(TrackIDs[Pos]);
+        }
+        return true;
+    };
+
+    //Filled once streams are known, in the stream with the Track ID
+    const auto Fill_Conformance_AtOffset=[&](int64u Offset, const char* Field, const string& Value, int32u TrackID) {
+        Conformance_References.push_back({Offset, Field, Value, TrackID});
+    };
+
+    //Material Package references are in the file if the operational pattern indicates internal essence (OP-Atom material package may reference other files)
+    const auto OperationalPattern_ItemComplexity=(int8u)(OperationalPattern.lo>>24);
+    const auto OperationalPattern_Qualifier=(int8u)(OperationalPattern.lo>>8);
+    const auto IsInternalEssence=OperationalPattern_ItemComplexity>=0x01 && OperationalPattern_ItemComplexity<=0x03 && (OperationalPattern_Qualifier&0x03)==0x01;
+
+    std::vector<int32u> TrackIDs;
+    string TrackIDs_String;
+    std::vector<int128u> SourceClipUIDs;
+    for (size_t Package_Pos=0; Package_Pos<ContentStorage->second.Packages.size(); Package_Pos++)
+    {
+        packages::iterator Package=Packages.find(ContentStorage->second.Packages[Package_Pos]);
+        if (Package==Packages.end())
+            continue;
+
+        //Linked Track ID and Source Track ID of the descriptor and of its sub-descriptors (e.g. Multiple Descriptor)
+        if (Package->second.IsSourcePackage && Package_TrackIDs(Package, TrackIDs, TrackIDs_String))
+        {
+            std::vector<int128u> DescriptorUIDs(1, Package->second.Descriptor);
+            for (size_t Pos=0; Pos<DescriptorUIDs.size(); Pos++)
+            {
+                descriptors::iterator Descriptor=Descriptors.find(DescriptorUIDs[Pos]);
+                if (Descriptor==Descriptors.end())
+                    continue;
+                for (size_t SubPos=0; SubPos<Descriptor->second.SubDescriptors.size(); SubPos++)
+                    if (std::find(DescriptorUIDs.begin(), DescriptorUIDs.end(), Descriptor->second.SubDescriptors[SubPos])==DescriptorUIDs.end())
+                        DescriptorUIDs.push_back(Descriptor->second.SubDescriptors[SubPos]);
+                if (Descriptor->second.LinkedTrackID_Offset!=(int64u)-1 && std::find(TrackIDs.begin(), TrackIDs.end(), Descriptor->second.LinkedTrackID)==TrackIDs.end())
+                    Fill_Conformance_AtOffset(Descriptor->second.LinkedTrackID_Offset, "MXF LinkedTrackID", "Linked Track ID does not match any Track ID of the Source Package (actual "+std::to_string(Descriptor->second.LinkedTrackID)+", expected any of "+TrackIDs_String+')', Descriptor->second.LinkedTrackID);
+                if (Descriptor->second.SourceTrackID_Offset!=(int64u)-1 && std::find(TrackIDs.begin(), TrackIDs.end(), Descriptor->second.SourceTrackID)==TrackIDs.end())
+                    Fill_Conformance_AtOffset(Descriptor->second.SourceTrackID_Offset, "MXF SourceTrackID", string(Descriptor->second.SourceTrackID_Name)+" Source Track ID does not match any Track ID of the Source Package (actual "+std::to_string(Descriptor->second.SourceTrackID)+", expected any of "+TrackIDs_String+')', Descriptor->second.SourceTrackID);
+            }
+        }
+
+        //Source Clips of the tracks
+        for (size_t Track_Pos=0; Track_Pos<Package->second.Tracks.size(); Track_Pos++)
+        {
+            tracks::iterator Track=Tracks.find(Package->second.Tracks[Track_Pos]);
+            if (Track==Tracks.end())
+                continue;
+            components::iterator Sequence=Components.find(Track->second.Sequence);
+            if (Sequence==Components.end())
+                continue;
+            std::vector<int128u> ComponentUIDs(Sequence->second.StructuralComponents);
+            ComponentUIDs.insert(ComponentUIDs.begin(), Sequence->first);
+            for (size_t Pos=0; Pos<ComponentUIDs.size(); Pos++)
+            {
+                if (std::find(SourceClipUIDs.begin(), SourceClipUIDs.end(), ComponentUIDs[Pos])!=SourceClipUIDs.end())
+                    continue;
+                components::iterator SourceClip=Components.find(ComponentUIDs[Pos]);
+                if (SourceClip==Components.end() || SourceClip->second.SourceTrackID_Offset==(int64u)-1)
+                    continue;
+                SourceClipUIDs.push_back(SourceClip->first);
+                const auto& SourcePackageID=SourceClip->second.SourcePackageID;
+                if (!SourcePackageID.lo && !SourcePackageID.hi)
+                    continue; //End of the reference chain
+                packages::iterator SourcePackage=Packages.begin();
+                for (; SourcePackage!=Packages.end(); ++SourcePackage)
+                    if (SourcePackage->second.PackageUID.lo==SourcePackageID.lo && SourcePackage->second.PackageUID.hi==SourcePackageID.hi)
+                        break;
+                if (SourcePackage==Packages.end())
+                {
+                    //Source Package references may be outside of the file (e.g. lower level source packages)
+                    if (!Package->second.IsSourcePackage && IsInternalEssence)
+                        Fill_Conformance_AtOffset(SourceClip->second.SourceTrackID_Offset, "MXF SourcePackageID", "Source Package ID of a Source Clip of the Material Package does not match any Source Package (Track ID "+std::to_string(Track->second.TrackID)+", Source Track ID "+std::to_string(SourceClip->second.SourceTrackID)+')', Track->second.TrackID);
+                    continue;
+                }
+                if (Package_TrackIDs(SourcePackage, TrackIDs, TrackIDs_String) && std::find(TrackIDs.begin(), TrackIDs.end(), SourceClip->second.SourceTrackID)==TrackIDs.end())
+                    Fill_Conformance_AtOffset(SourceClip->second.SourceTrackID_Offset, "MXF SourceTrackID", string("Source Clip Source Track ID of the ")+(Package->second.IsSourcePackage?"Source":"Material")+" Package does not match any Track ID of the referenced Source Package (actual "+std::to_string(SourceClip->second.SourceTrackID)+", expected any of "+TrackIDs_String+')', Track->second.TrackID);
+            }
+        }
+    }
+}
+#endif //MEDIAINFO_CONFORMANCE
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
+void File_Mxf::Streams_Finish_Conformance_References ()
+{
+    for (const auto& Reference : Conformance_References)
+    {
+        //Stream with the Track ID, else default stream
+        auto StreamKind=Stream_Max;
+        size_t StreamPos=0;
+        const auto TrackID=Ztring::ToZtring(Reference.TrackID);
+        for (size_t StreamKind_Pos=Stream_General+1; StreamKind_Pos<Stream_Max && StreamKind==Stream_Max; StreamKind_Pos++)
+            for (size_t StreamPos_Pos=0; StreamPos_Pos<Count_Get((stream_t)StreamKind_Pos); StreamPos_Pos++)
+            {
+                auto ID=Retrieve_Const((stream_t)StreamKind_Pos, StreamPos_Pos, General_ID);
+                size_t ID_Dash_Pos=ID.find(__T('-'));
+                if (ID_Dash_Pos!=string::npos)
+                    ID.resize(ID_Dash_Pos);
+                if (ID==TrackID)
+                {
+                    StreamKind=(stream_t)StreamKind_Pos;
+                    StreamPos=StreamPos_Pos;
+                    break;
+                }
+            }
+
+        //Conformance offset is the one of the value
+        auto File_Offset_Sav=File_Offset;
+        File_Offset=Reference.Offset-(Buffer_Offset+Element_Offset);
+        Fill_Conformance(Reference.Field, Reference.Value, {}, Conformance_Error, StreamKind, StreamPos);
+        Merge_Conformance(true);
+        File_Offset=File_Offset_Sav;
+    }
+    Conformance_References.clear();
+}
+#endif //MEDIAINFO_CONFORMANCE
 
 //---------------------------------------------------------------------------
 void File_Mxf::Streams_Finish_ContentStorage_ForTimeCode (const int128u ContentStorageUID)
@@ -10599,7 +10752,22 @@ void File_Mxf::HdrVividDataDefinition()
 void File_Mxf::HdrVividSourceTrackID()
 {
     //Parsing
-    Info_B4(Data,                                               "Data"); Element_Info1(Data);
+    #if MEDIAINFO_CONFORMANCE
+        auto Offset=File_Offset+Buffer_Offset+Element_Offset;
+        int32u Data;
+        Get_B4 (Data,                                           "Data"); Element_Info1(Data);
+
+        FILLING_BEGIN();
+            if (Descriptors[InstanceUID].SourceTrackID==(int32u)-1)
+            {
+                Descriptors[InstanceUID].SourceTrackID=Data;
+                Descriptors[InstanceUID].SourceTrackID_Offset=Offset;
+                Descriptors[InstanceUID].SourceTrackID_Name="HDR Vivid";
+            }
+        FILLING_END();
+    #else //MEDIAINFO_CONFORMANCE
+        Info_B4(Data,                                           "Data"); Element_Info1(Data);
+    #endif //MEDIAINFO_CONFORMANCE
 }
 
 //---------------------------------------------------------------------------
@@ -10969,12 +11137,20 @@ void File_Mxf::FileDescriptor_Codec()
 //---------------------------------------------------------------------------
 void File_Mxf::FileDescriptor_LinkedTrackID()
 {
+    #if MEDIAINFO_CONFORMANCE
+        auto Offset=File_Offset+Buffer_Offset+Element_Offset;
+    #endif //MEDIAINFO_CONFORMANCE
     int32u Data;
     Get_B4 (Data,                                               "Data"); Element_Info1(Data);
 
     FILLING_BEGIN();
         if (Descriptors[InstanceUID].LinkedTrackID==(int32u)-1)
+        {
             Descriptors[InstanceUID].LinkedTrackID=Data;
+            #if MEDIAINFO_CONFORMANCE
+                Descriptors[InstanceUID].LinkedTrackID_Offset=Offset;
+            #endif //MEDIAINFO_CONFORMANCE
+        }
     FILLING_END();
 }
 
@@ -13122,12 +13298,20 @@ void File_Mxf::SourceClip_SourcePackageID()
 void File_Mxf::SourceClip_SourceTrackID()
 {
     //Parsing
+    #if MEDIAINFO_CONFORMANCE
+        auto Offset=File_Offset+Buffer_Offset+Element_Offset;
+    #endif //MEDIAINFO_CONFORMANCE
     int32u Data;
     Get_B4 (Data,                                                "SourceTrackID"); Element_Info1(Data);
 
     FILLING_BEGIN();
         if (Components[InstanceUID].SourceTrackID==(int32u)-1)
+        {
             Components[InstanceUID].SourceTrackID=Data;
+            #if MEDIAINFO_CONFORMANCE
+                Components[InstanceUID].SourceTrackID_Offset=Offset;
+            #endif //MEDIAINFO_CONFORMANCE
+        }
     FILLING_END();
 }
 
@@ -15257,12 +15441,23 @@ void File_Mxf::PHDRDataDefinition()
 void File_Mxf::PHDRSourceTrackID()
 {
     //Parsing
+    #if MEDIAINFO_CONFORMANCE
+        auto Offset=File_Offset+Buffer_Offset+Element_Offset;
+    #endif //MEDIAINFO_CONFORMANCE
     int32u Data;
     Get_B4 (Data,                                               "Data"); Element_Info1(Data);
 
     FILLING_BEGIN();
         if (Descriptors[InstanceUID].LinkedTrackID==(int32u)-1)
             Descriptors[InstanceUID].LinkedTrackID=Data;
+        #if MEDIAINFO_CONFORMANCE
+            if (Descriptors[InstanceUID].SourceTrackID==(int32u)-1)
+            {
+                Descriptors[InstanceUID].SourceTrackID=Data;
+                Descriptors[InstanceUID].SourceTrackID_Offset=Offset;
+                Descriptors[InstanceUID].SourceTrackID_Name="PHDR";
+            }
+        #endif //MEDIAINFO_CONFORMANCE
     FILLING_END();
 }
 
