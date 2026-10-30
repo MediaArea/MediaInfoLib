@@ -2579,7 +2579,7 @@ void File_Mxf::Streams_Finish()
     #if MEDIAINFO_ADVANCED
         if (Footer_Position!=(int64u)-1)
             Fill(Stream_General, 0, General_FooterSize, File_Size-Footer_Position);
-        else if (Config->ParseSpeed>-1 || (!Partitions.empty() && Partitions[0].FooterPartition && Partitions[0].FooterPartition>=File_Size))
+        else if ((Config->ParseSpeed>-1 || (!Partitions.empty() && Partitions[0].FooterPartition && Partitions[0].FooterPartition>=File_Size)) && Retrieve_Const(Stream_General, 0, "IsTruncated").empty()) //If not already detected
             IsTruncated((!Partitions.empty() && Partitions[0].FooterPartition && Partitions[0].FooterPartition>=File_Size)?Partitions[0].FooterPartition:(int64u)-1, false, "MXF");
     #endif //MEDIAINFO_ADVANCED
 
@@ -7496,7 +7496,9 @@ void File_Mxf::Data_Parse()
     }
     case 0x060E2B34020401LL:
     case 0x060E2B34020501LL:
-    case 0x060E2B34025301LL: {
+    case 0x060E2B34024301LL:
+    case 0x060E2B34025301LL:
+    case 0x060E2B34026301LL: {
     if (!Element_IsComplete_Get())
     {
         Element_WaitForMoreData();
@@ -7570,13 +7572,20 @@ void File_Mxf::Data_Parse()
     GROUP(SDTISystemMetadataPack)
     else if ((Code.lo>>16)==(Groups::SDTISystemMetadataPack>>16))
     {
-        Code_Compare4&=0xFFFFFF00; //Remove MetaData Block Count
-        if (0) {}
-        GROUP(SDTIPackageMetadataSet)
-        GROUP(SDTIPictureMetadataSet)
-        GROUP(SDTISoundMetadataSet)
-        GROUP(SDTIDataMetadataSet)
-        GROUP(SDTIControlMetadataSet)
+        //Items are parsed by the methods (1-byte tags), MetaData Block Count is ignored
+        const auto Code_WithoutBlockCount=Code.lo&0xFFFFFFFFFFFFFF00LL;
+        if (Code_WithoutBlockCount==Groups::SDTIPackageMetadataSet)
+            SDTIPackageMetadataSet();
+        else if (Code_WithoutBlockCount==Groups::SDTIPictureMetadataSet)
+            SDTIPictureMetadataSet();
+        else if (Code_WithoutBlockCount==Groups::SDTISoundMetadataSet)
+            SDTISoundMetadataSet();
+        else if (Code_WithoutBlockCount==Groups::SDTIDataMetadataSet)
+            SDTIDataMetadataSet();
+        else if (Code_WithoutBlockCount==Groups::SDTIControlMetadataSet)
+            SDTIControlMetadataSet();
+        else
+            Skip_XX(Element_Size,                               "Unknown");
     }
     else if ((Code.lo>>16)==(Groups::SystemScheme1FirstElement>>16))
     {
@@ -10586,29 +10595,35 @@ void File_Mxf::SDTIPackageMetadataSet()
     {
         //Parsing
         Element_Begin1("Item");
-        int128u Tag;
         int16u Length;
         int8u Type;
-        Get_B1 (Type,                                            "Type");
+        Get_B1 (Type,                                           "Type");
         Get_B2 (Length,                                         "Length");
-        int64u End=Element_Offset+Length;
-        Get_UL (Tag,                                            "Tag", NULL); //TODO: check 10-byte UL with out_imx.mxf
+        auto End=Element_Offset+Length;
+        if (End>Element_Size)
+            End=Element_Size;
         switch (Type)
         {
             case 0x83 : //UMID
+                        if (Length==32 || Length==64)
                         {
                             Skip_UMID(                          );
-                            if (Element_Offset<End)
-                                Skip_UL  (                      "Zeroes");
+                            if (Length==64)
+                                Skip_XX(32,                     "Source Pack");
                         }
                         break;
             case 0x88 : //KLV Metadata
+                        if (End-Element_Offset>=16)
                         {
+                            int128u Key;
+                            Get_UL (Key,                        "Key", NULL);
                             while (Element_Offset<End)
                             {
                                 int64u Length;
                                 Get_BER(Length,                 "Length");
-                                switch ((Tag.lo>>16)&0xFF)
+                                if (Length>End-Element_Offset)
+                                    Length=End-Element_Offset;
+                                switch ((Key.lo>>16)&0xFF)
                                 {
                                     case 0x00 : Skip_UTF8(Length,"Data"); break;
                                     case 0x01 : Skip_UTF16L(Length,"Data"); break;
@@ -10617,8 +10632,10 @@ void File_Mxf::SDTIPackageMetadataSet()
                             }
                         }
                         break;
-            default   : Skip_XX(Length,                         "Unknown");
+            default   : ;
         }
+        if (Element_Offset<End)
+            Skip_XX(End-Element_Offset,                         Type==0x83?"(Unknown UMID size)":"Unknown");
         Element_End0();
     }
 
@@ -13095,10 +13112,14 @@ void File_Mxf::PartitionMetadata()
             if (Footer_Position==(int64u)-1)
                 Footer_Position=File_Offset+Buffer_Offset-Header_Size;
         #endif //MEDIAINFO_ADVANCED
+    }
 
-        #if MEDIAINFO_ADVANCED
-            //IsTruncated
-            if (!Trusted_Get())
+    #if MEDIAINFO_ADVANCED
+        //IsTruncated
+        const auto IsHeader=(Code.lo&0xFF0000)==0x020000;
+        if (IsHeader || (Code.lo&0xFF0000)==0x040000) //If Header or Footer Partition Pack
+        {
+            if (!IsHeader && !Trusted_Get())
                 IsTruncated();
             else
             {
@@ -13113,13 +13134,13 @@ void File_Mxf::PartitionMetadata()
                 }
 
                 auto ExpectedSize=File_Offset+Buffer_Offset-Header_Size+Element_Size_WithPadding;
-                if ((Code.lo&0xFF0000)==0x020000) //If Header Partition Pack
+                if (IsHeader)
                     ExpectedSize+=HeaderByteCount+IndexByteCount;
                 if (ExpectedSize>File_Size)
                     IsTruncated(ExpectedSize, true);
             }
-        #endif //MEDIAINFO_ADVANCED
-    }
+        }
+    #endif //MEDIAINFO_ADVANCED
 
     PartitionPack_AlreadyParsed.insert(File_Offset+Buffer_Offset-Header_Size);
 }
