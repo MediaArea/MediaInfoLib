@@ -1274,6 +1274,14 @@ bool File_DolbyVisionMetadata::FileHeader_Begin()
             Fill(Stream_Video, Video_Pos, Video_FrameCount, Shot_Out - Shot_In);
             DV.FrameRange_Start = Shot_In;
             DV.FrameRange_End = Shot_Out - 1;
+
+            // First frame of the frame range as delay
+            auto FrameRate = Retrieve_Const(Stream_Video, Video_Pos, Video_FrameRate).To_float64();
+            if (FrameRate)
+            {
+                Fill(Stream_Video, Video_Pos, Video_Delay, Shot_In * 1000 / FrameRate, 3);
+                Fill(Stream_Video, Video_Pos, Video_Delay_Source, "Container");
+            }
         }
     }
     if (Shot_WithoutL5 && ImageAspectRatio_Default > 0 && find(DV.Active_DisplayAspectRatios.begin(), DV.Active_DisplayAspectRatios.end(), ImageAspectRatio_Default) == DV.Active_DisplayAspectRatios.end())
