@@ -2766,9 +2766,8 @@ void File_Mpeg4::meta_iinf_infe()
                                 {
                                 Format = "ISO 21496-1 Gain map metadata";
                                 auto Parser = new File_GainMap();
-                                GainMap_metadata_ISO.reset(new GainMap_metadata());
-                                Parser->output = static_cast<GainMap_metadata*>(GainMap_metadata_ISO.get());
                                 Parser->fromAvif = true;
+                                Parser->StreamKind = Stream_Video; //Item stream kind before its conversion to image
                                 Open_Buffer_Init(Parser);
                                 Streams[item_ID].Parsers.push_back(Parser); //Data is in idat or in mdat
                                 if (idat_items.find(item_ID) == idat_items.end())
