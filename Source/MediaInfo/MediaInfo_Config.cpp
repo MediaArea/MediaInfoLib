@@ -3927,17 +3927,17 @@ string MediaInfo_Config::AdmProfile(const Ztring& Value2)
     {
         const auto Item = ItemZ.To_UTF8();
         if (Item == "auto")
-            Adm_Profile.Auto = true;
+            Result.Auto = true;
         else if (Item == "itu-r_bs.2076-0")
-            Adm_Profile.BS2076 = 0;
+            Result.BS2076 = 0;
         else if (Item == "itu-r_bs.2076-1")
-            Adm_Profile.BS2076 = 1;
+            Result.BS2076 = 1;
         else if (Item == "itu-r_bs.2076-2")
-            Adm_Profile.BS2076 = 2;
+            Result.BS2076 = 2;
         else if (Item.rfind("urn:ebu:tech:3392:1.0:", 0) == 0)
         {
             if (Item.size() > 22 && Item[22] >= '1' && Item[22] <= '4')
-                Adm_Profile.Ebu3392 = Item[22] - '0';
+                Result.Ebu3392 = Item[22] - '0';
             else
                 return "Unknown ADM profile " + Item;
         }
