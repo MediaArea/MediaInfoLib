@@ -2599,6 +2599,7 @@ void File_Mpeg4::meta()
     NAME_VERSION_FLAG("Metadata", 0);
 
     idat_items.clear();
+    meta_idat_Buffer.clear();
 }
 
 //---------------------------------------------------------------------------
@@ -2606,14 +2607,25 @@ void File_Mpeg4::meta_idat()
 {
     Element_Name("Item data");
 
-    for (auto& item : idat_items) {
-        if (item.second.offset > Element_Size)
+    if (idat_items.empty())
+    {
+        //Item locations are not yet known, parsing is done after iloc
+        meta_idat_Buffer.assign(Buffer+Buffer_Offset, Buffer+Buffer_Offset+(size_t)Element_Size);
+        Skip_XX(Element_Size,                                   "(Waiting, need iloc atom)");
+        return;
+    }
+
+    for (const auto& item : idat_items) {
+        const auto Stream_Item = Streams.find(item.first);
+        if (Stream_Item == Streams.end() || item.second.offset > Element_Size || item.second.length > Element_Size - item.second.offset)
             continue;
-        Element_Begin1(Ztring().From_Number(item.first));
-        Element_Offset = item.second.offset;
-        Open_Buffer_Continue(item.second.parser.get(), item.second.length);
-        Open_Buffer_Finalize(item.second.parser.get());
-        Element_End0();
+        for (auto Parser : Stream_Item->second.Parsers) {
+            Element_Begin1(Ztring().From_Number(item.first));
+            Element_Offset = item.second.offset;
+            Open_Buffer_Continue(Parser, (size_t)item.second.length);
+            Open_Buffer_Finalize(Parser);
+            Element_End0();
+        }
     }
 
     idat_items.clear();
@@ -2758,13 +2770,9 @@ void File_Mpeg4::meta_iinf_infe()
                                 Parser->output = static_cast<GainMap_metadata*>(GainMap_metadata_ISO.get());
                                 Parser->fromAvif = true;
                                 Open_Buffer_Init(Parser);
-                                if (idat_items.find(item_ID) != idat_items.end())
-                                    idat_items[item_ID].parser.reset(Parser);
-                                else {
-                                    auto& Stream = Streams[item_ID];
-                                    Stream.Parsers.push_back(Parser);
+                                Streams[item_ID].Parsers.push_back(Parser); //Data is in idat or in mdat
+                                if (idat_items.find(item_ID) == idat_items.end())
                                     mdat_MustParse = true;
-                                }
                                 break;
                                 }
         }
@@ -2883,6 +2891,29 @@ void File_Mpeg4::meta_iloc()
         Element_End0();
     }
     BS_End();
+
+    //Item data, if idat was before iloc
+    if (!meta_idat_Buffer.empty())
+    {
+        if (!idat_items.empty())
+        {
+            const int8u* Buffer_Save=Buffer;
+            size_t Buffer_Offset_Save=Buffer_Offset;
+            int64u Element_Size_Save=Element_Size;
+            Buffer=meta_idat_Buffer.data();
+            Buffer_Offset=0;
+            Element_Offset=0;
+            Element_Size=meta_idat_Buffer.size();
+            Element_Begin0();
+            meta_idat();
+            Element_End0();
+            Buffer=Buffer_Save;
+            Buffer_Offset=Buffer_Offset_Save;
+            Element_Offset=Element_Size_Save;
+            Element_Size=Element_Size_Save;
+        }
+        meta_idat_Buffer.clear();
+    }
 }
 
 //---------------------------------------------------------------------------

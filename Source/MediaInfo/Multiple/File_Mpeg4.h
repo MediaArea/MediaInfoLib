@@ -776,9 +776,9 @@ private :
     struct idat_item {
         int64u offset{};
         int64u length{};
-        std::unique_ptr<File__Analyze> parser;
     };
     std::map<int16u, idat_item> idat_items;
+    std::vector<int8u> meta_idat_Buffer; //Content of idat when it is before iloc
 
     //Gain map
     std::shared_ptr<void> GainMap_metadata_ISO;
