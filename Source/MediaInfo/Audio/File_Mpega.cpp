@@ -1104,11 +1104,9 @@ void File_Mpega::Data_Parse()
     LastSync_Offset_AreNotZero = false;
 
     //VBR and library headers
+    bool IsTagFrame=false;
     if (Frame_Count<3) //No need to do it too much
-    {
-        if (!Header_Xing())
-            Header_VBRI();
-    }
+        IsTagFrame=Header_Xing() || Header_VBRI();
 
     //Counting
     if (File_Offset+Buffer_Offset+Element_Size==File_Size-File_EndTagSize)
@@ -1172,7 +1170,10 @@ void File_Mpega::Data_Parse()
     switch (layer)
     {
         case 1 : //Layer 3
-                audio_data_Layer3();
+                if (IsTagFrame) //No audio data, and the offset is after the tag
+                    Skip_XX(Element_Size-Element_Offset,        "(data)");
+                else
+                    audio_data_Layer3();
                 break;
         default: Skip_XX(Element_Size-Element_Offset,           "(data)");
     }
