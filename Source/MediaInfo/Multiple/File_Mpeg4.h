@@ -50,6 +50,7 @@ protected :
     void Streams_Accept();
     void Streams_Accept_jp2(bool IsJp2=false);
     void Streams_Finish();
+    void Streams_Finish_Grid(const std::map<int32u, size_t>& Image_StreamPos);
     void Streams_Finish_CommercialNames ();
 
 public :
@@ -605,6 +606,8 @@ private :
         std::vector<int32u>     ChaptersFor;
         std::vector<int32u>     Meta;
         std::vector<int32u>     MetaFor;
+        int32u                  infe_item_type;
+        std::vector<int32u>     iref_dimg; //Input images of a derived image
         float32                 CleanAperture_Width;
         float32                 CleanAperture_Height;
         float32                 CleanAperture_PixelAspectRatio;
@@ -691,6 +694,7 @@ private :
             MayHaveCaption=false;
             tkhd_Found=false;
             TrackID = 0;
+            infe_item_type=0x00000000;
             CleanAperture_Width=0;
             CleanAperture_Height=0;
             CleanAperture_PixelAspectRatio=0;

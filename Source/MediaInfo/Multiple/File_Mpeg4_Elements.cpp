@@ -2771,6 +2771,7 @@ void File_Mpeg4::meta_iinf_infe()
         if (!Skip)
         {
             META_CREATESTREAM();
+            Current.infe_item_type=item_type;
             if (Format)
                 Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Format), Format);
             else
@@ -3247,9 +3248,9 @@ void File_Mpeg4::meta_iref_xxxx()
     const char* To;
     switch (Element_Code)
     {
-        case 0x6175786C: Element_Name("Auxilary"); From="Auxilary"; To="Auxilary for"; break; //auxl
+        case 0x6175786C: Element_Name("Auxiliary"); From="Auxiliary"; To="Auxiliary for"; break; //auxl
         case 0x63647363: Element_Name("Content Describes"); From="Describes"; To="Describes for"; break; //cdsc
-        case 0x64696D67: Element_Name("Derived Image"); From="Derived"; To="Derived for"; break; //dimg
+        case 0x64696D67: Element_Name("Derived Image"); From="Derived"; To="Derived from"; break; //dimg
         case 0x696C6F63: Element_Name("Item Location"); From="Location"; To="Location for"; break; //iloc
         case 0x74686D62: Element_Name("Thumbnails"); From="Thumbnail"; To="Thumbnail for"; break; //thmb
         default: From="Reference"; To="Reference for"; 
@@ -3268,6 +3269,8 @@ void File_Mpeg4::meta_iref_xxxx()
         Get_B4_DEPENDOFVERSION(1, to_item_ID,                   "to_item_ID");
         Streams[from_item_ID].Infos_List[To].push_back(to_item_ID);
         Streams[to_item_ID].Infos_List[From].push_back(from_item_ID);
+        if (Element_Code==0x64696D67) //dimg
+            Streams[from_item_ID].iref_dimg.push_back(to_item_ID);
     }
 }
 
