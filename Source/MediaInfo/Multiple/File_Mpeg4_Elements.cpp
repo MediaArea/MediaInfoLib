@@ -869,6 +869,7 @@ namespace Elements
     const int64u meta_iprp_ipco_imir=0x696D6972;
     const int64u meta_iprp_ipco_irot=0x69726F74;
     const int64u meta_iprp_ipco_ispe=0x69737065;
+    const int64u meta_iprp_ipco_lsel=0x6C73656C;
     const int64u meta_iprp_ipco_mdcv=0x6D646376;
     const int64u meta_iprp_ipco_pasp=0x70617370;
     const int64u meta_iprp_ipco_pixi=0x70697869;
@@ -1299,11 +1300,13 @@ void File_Mpeg4::Data_Parse()
                 ATOM(meta_iprp_ipco_ispe)
                 ATOM(meta_iprp_ipco_imir)
                 ATOM(meta_iprp_ipco_irot)
+                ATOM(meta_iprp_ipco_lsel)
                 ATOM(meta_iprp_ipco_mdcv)
                 ATOM(meta_iprp_ipco_pasp)
                 ATOM(meta_iprp_ipco_pixi)
                 ATOM(meta_iprp_ipco_rloc)
-                ATOM_END
+                ATOM_DEFAULT(meta_iprp_ipco_xxxx)
+                ATOM_END_DEFAULT
             ATOM(meta_iprp_ipma)
             ATOM_END
         LIST(meta_iref)
@@ -2665,6 +2668,11 @@ void File_Mpeg4::meta_iinf()
         Current.IsImage=true; \
         Fill(StreamKind_Last, StreamPos_Last, General_ID, moov_trak_tkhd_TrackID, 10, true); \
     } \
+    else \
+    { \
+        StreamKind_Last=Stream_Video; \
+        StreamPos_Last=Current.StreamPos; \
+    } \
 
 //---------------------------------------------------------------------------
 void File_Mpeg4::meta_iinf_infe()
@@ -2902,6 +2910,8 @@ void File_Mpeg4::meta_iprp_ipco()
 
         Skip_XX(Element_Size,                                   "(Waiting, need ipma atom)");
     }
+    else
+        meta_iprp_ipco_Buffer_Size=0; //Used as property index
 }
 
 //---------------------------------------------------------------------------
@@ -2913,11 +2923,13 @@ void File_Mpeg4::meta_iprp_ipco()
                 std::vector<int32u>& Entry=meta_iprp_ipma_Entries[meta_iprp_ipco_Buffer_Size]; \
                 size_t Entry_Size=Entry.size(); \
                 int64u Element_Offset_Save=Element_Offset; \
+                int64u Element_Code_Save=Element_Code; \
                 for (size_t i=0; i<Entry_Size; i++) \
                 { \
                     moov_trak_tkhd_TrackID=Entry[i]; \
                     META_CREATESTREAM(); \
                     Element_Offset=Element_Offset_Save; \
+                    Element_Code=Element_Code_Save; \
 
 #define FILLING_END_IPCO() \
                 } \
@@ -2948,9 +2960,10 @@ void File_Mpeg4::meta_iprp_ipco_auxC()
     NAME_VERSION_FLAG("Image Properties for Auxiliary Images", 0);
 
     //Parsing
-    if (Version)
-        return;
-    Skip_NulString(                                             "name");
+    if (!Version)
+        Skip_NulString(                                         "name");
+
+    meta_iprp_ipco_Buffer_Size++; //Property index
 }
 
 //---------------------------------------------------------------------------
@@ -2988,9 +3001,7 @@ void File_Mpeg4::meta_iprp_ipco_colr()
 //---------------------------------------------------------------------------
 void File_Mpeg4::meta_iprp_ipco_hvcC()
 {
-    int64u Element_Code_Save=Element_Code;
     FILLING_BEGIN_IPCO();
-        Element_Code=Element_Code_Save;
         moov_trak_mdia_minf_stbl_stsd_Pos=0;
         moov_trak_mdia_minf_stbl_stsz_Pos=0;
         moov_trak_mdia_minf_stbl_stsd_xxxx_hvcC();
@@ -3045,11 +3056,12 @@ void File_Mpeg4::meta_iprp_ipco_ispe()
     NAME_VERSION_FLAG("Image Spatial Extents", 0);
 
     //Parsing
-    if (Version)
-        return;
-    int32u image_width, image_height;
-    Get_B4 (image_width,                                        "image_width");
-    Get_B4 (image_height,                                       "image_height");
+    int32u image_width=0, image_height=0;
+    if (!Version)
+    {
+        Get_B4 (image_width,                                    "image_width");
+        Get_B4 (image_height,                                   "image_height");
+    }
 
     FILLING_BEGIN_IPCO();
         if (image_width)
@@ -3066,6 +3078,8 @@ void File_Mpeg4::meta_iprp_ipco_lsel()
 
     //Parsing
     Skip_B2(                                                    "layer_id");
+
+    meta_iprp_ipco_Buffer_Size++; //Property index
 }
 
 //---------------------------------------------------------------------------
@@ -3114,10 +3128,22 @@ void File_Mpeg4::meta_iprp_ipco_rloc()
     NAME_VERSION_FLAG("Relative Location", 0);
 
     //Parsing
-    if (Version)
-        return;
-    Skip_B4(                                                    "horizontal_offset");
-    Skip_B4(                                                    "vertical_offset");
+    if (!Version)
+    {
+        Skip_B4(                                                "horizontal_offset");
+        Skip_B4(                                                "vertical_offset");
+    }
+
+    meta_iprp_ipco_Buffer_Size++; //Property index
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::meta_iprp_ipco_xxxx()
+{
+    //Parsing
+    Skip_XX(Element_Size,                                       "Unknown");
+
+    meta_iprp_ipco_Buffer_Size++; //Property index
 }
 
 //---------------------------------------------------------------------------
@@ -7794,8 +7820,8 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_clli()
     Get_LightLevel(MaxCLL, MaxFALL);
 
     FILLING_BEGIN();
-        Fill(Stream_Video, 0, "MaxCLL", MaxCLL);
-        Fill(Stream_Video, 0, "MaxFALL", MaxFALL);
+        Fill(Stream_Video, StreamPos_Last, "MaxCLL", MaxCLL);
+        Fill(Stream_Video, StreamPos_Last, "MaxFALL", MaxFALL);
     FILLING_END();
 }
 
@@ -7870,7 +7896,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_colr_prof()
         Open_Buffer_Init(&ICC_Parser);
         Open_Buffer_Continue(&ICC_Parser);
         Open_Buffer_Finalize(&ICC_Parser);
-        Merge(ICC_Parser, StreamKind_Last, 0, 0);
+        Merge(ICC_Parser, StreamKind_Last, 0, StreamPos_Last);
     #else
         Skip_XX(Element_Size-Element_Offset,                    "ICC profile");
     #endif
