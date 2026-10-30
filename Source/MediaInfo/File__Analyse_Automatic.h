@@ -1809,6 +1809,8 @@ enum image
     Image_Active_Height_String,
     Image_Active_DisplayAspectRatio,
     Image_Active_DisplayAspectRatio_String,
+    Image_Rotation,
+    Image_Rotation_String,
     Image_ColorSpace,
     Image_ChromaSubsampling,
     Image_Resolution,

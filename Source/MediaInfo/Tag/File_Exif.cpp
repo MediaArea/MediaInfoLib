@@ -1212,6 +1212,22 @@ static const char* Exif_IFD0_Orientation_Name(int16u orientation)
 }
 
 //---------------------------------------------------------------------------
+// Clockwise rotation, then left-right mirror, like HEIF irot and imir
+static const struct {
+    int16u Rotation;
+    bool   Mirror;
+} Exif_IFD0_Orientation_Transform[] = {
+    {   0, false },
+    {   0, true  },
+    { 180, false },
+    { 180, true  },
+    {  90, true  },
+    {  90, false },
+    { 270, true  },
+    { 270, false },
+};
+
+//---------------------------------------------------------------------------
 static const char* Exif_ExifIFD_Tag_LightSource_Name(int16u value) {
     switch (value) {
     case 0: return "Unknown";
@@ -1653,6 +1669,19 @@ void File_Exif::Streams_Finish()
                 const auto TIFFEPStandardID = Infos_Image.find(IFD0::TIFFEPStandardID);
                 if (TIFFEPStandardID->second.size() == 4) {
                     Value = TIFFEPStandardID->second.at(0) + __T(".") + TIFFEPStandardID->second.at(1) + __T(".") + TIFFEPStandardID->second.at(2) + __T(".") + TIFFEPStandardID->second.at(3);
+                }
+                break;
+            }
+            case IFD0::Orientation: {
+                Parameter = (size_t)-1;
+                const auto Orientation = Item.second.Read().To_int16u();
+                if (Orientation >= 1 && Orientation <= 8) {
+                    const auto& Transform = Exif_IFD0_Orientation_Transform[Orientation - 1];
+                    Fill(Stream_Image, 0, Image_Rotation, Transform.Rotation);
+                    if (Transform.Rotation)
+                        Fill(Stream_Image, 0, Image_Rotation_String, Ztring::ToZtring(Transform.Rotation) + __T("\xB0")); //degree sign
+                    if (Transform.Mirror)
+                        Fill(Stream_Image, 0, "Mirror", "Vertical");
                 }
                 break;
             }

@@ -80,6 +80,8 @@ Active_Height;; pixel;N YIY;;;Height of frame, not considering black bars
 Active_Height/String;;;Y NT;;;Height of frame, not considering black bars, in pixels, presented in SI unit digit spacing style, with measurement (e.g. 1 080 pixels)
 Active_DisplayAspectRatio;;;N YFY;;;The proportional relationship between the active width and active height of a frame (e.g. 4:3)
 Active_DisplayAspectRatio/String;;;Y NT;;;The proportional relationship between the active width and active height of a frame (e.g. 4:3)
+Rotation;;;N YTY;;;Rotation of the image, derived from the Exif orientation, in degrees
+Rotation/String;;;Y NT;;;Rotation of the image, derived from the Exif orientation, in degrees
 ColorSpace;;;Y YTY;;;Color profile of the image (e.g. YUV)
 ChromaSubsampling;;;Y YTY;;;Ratio of chroma to luma in encoded image (e.g. 4:2:2)
 Resolution;; bit;N NI;;;Deprecated, do not use in new projects
