@@ -2956,15 +2956,42 @@ void File_Mpeg4::meta_iprp_ipco_av2C()
 }
 
 //---------------------------------------------------------------------------
+static const char* Mpeg4_auxC_Type(const string& aux_type)
+{
+    if (aux_type=="urn:mpeg:mpegB:cicp:systems:auxiliary:alpha"
+     || aux_type=="urn:mpeg:hevc:2015:auxid:1")
+        return "Alpha";
+    if (aux_type=="urn:mpeg:mpegB:cicp:systems:auxiliary:depth"
+     || aux_type=="urn:mpeg:hevc:2015:auxid:2")
+        return "Depth";
+    if (aux_type=="urn:com:apple:photo:2020:aux:hdrgainmap")
+        return "Gain map";
+    return nullptr;
+}
+
+//---------------------------------------------------------------------------
 void File_Mpeg4::meta_iprp_ipco_auxC()
 {
     NAME_VERSION_FLAG("Image Properties for Auxiliary Images", 0);
 
     //Parsing
+    string aux_type;
     if (!Version)
-        Skip_NulString(                                         "name");
+    {
+        Get_String(SizeUpTo0(), aux_type,                       "aux_type"); Param_Info1C(Mpeg4_auxC_Type(aux_type), Mpeg4_auxC_Type(aux_type));
+        if (Element_Offset<Element_Size)
+            Skip_B1(                                            "zero");
+        if (Element_Offset<Element_Size)
+            Skip_XX(Element_Size-Element_Offset,                "aux_subtype");
+    }
 
-    meta_iprp_ipco_Buffer_Size++; //Property index
+    FILLING_BEGIN_IPCO();
+        if (!aux_type.empty())
+        {
+            const char* Type=Mpeg4_auxC_Type(aux_type);
+            Streams[moov_trak_tkhd_TrackID].Infos["Type"].From_UTF8(Type?Type:aux_type.c_str());
+        }
+    FILLING_END_IPCO();
 }
 
 //---------------------------------------------------------------------------
@@ -3272,6 +3299,11 @@ void File_Mpeg4::meta_iref_xxxx()
         if (Element_Code==0x64696D67) //dimg
             Streams[from_item_ID].iref_dimg.push_back(to_item_ID);
     }
+
+    FILLING_BEGIN();
+        if (Element_Code==0x74686D62) //thmb
+            Streams[from_item_ID].Infos["Type"].From_UTF8("Thumbnail");
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
