@@ -2519,7 +2519,7 @@ void File_Mxf::Streams_Finish()
                 //Searching the corresponding Descriptor
                 stream_t StreamKind=Stream_Max;
                 for (descriptors::iterator Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
-                    if (Descriptor->second.LinkedTrackID==Track->second.TrackID)
+                    if (Descriptor->second.LinkedTrackID==Track->second.TrackID && !SubDescriptor_IsDangling(Descriptor))
                     {
                         StreamKind=Descriptor->second.StreamKind;
                         break;
@@ -3014,6 +3014,23 @@ void File_Mxf::Streams_Finish_ContentStorage_Conformance (const int128u ContentS
                 if (Descriptor->second.SourceTrackID_Offset!=(int64u)-1 && std::find(TrackIDs.begin(), TrackIDs.end(), Descriptor->second.SourceTrackID)==TrackIDs.end())
                     Fill_Conformance_AtOffset(Descriptor->second.SourceTrackID_Offset, "MXF SourceTrackID", string(Descriptor->second.SourceTrackID_Name)+" Source Track ID does not match any Track ID of the Source Package (actual "+std::to_string(Descriptor->second.SourceTrackID)+", expected any of "+TrackIDs_String+')', Descriptor->second.SourceTrackID);
             }
+
+            //Source Track ID must reference a track not described by another descriptor (e.g. not an audio track)
+            for (const auto& DescriptorUID : DescriptorUIDs)
+            {
+                descriptors::iterator Descriptor=Descriptors.find(DescriptorUID);
+                if (Descriptor==Descriptors.end() || Descriptor->second.SourceTrackID_Offset==(int64u)-1)
+                    continue;
+                for (const auto& LinkedDescriptorUID : DescriptorUIDs)
+                {
+                    descriptors::iterator LinkedDescriptor=Descriptors.find(LinkedDescriptorUID);
+                    if (LinkedDescriptor!=Descriptors.end() && LinkedDescriptor->second.SourceTrackID_Offset==(int64u)-1 && LinkedDescriptor->second.LinkedTrackID==Descriptor->second.SourceTrackID)
+                    {
+                        Fill_Conformance_AtOffset(Descriptor->second.SourceTrackID_Offset, "MXF SourceTrackID", string(Descriptor->second.SourceTrackID_Name)+" Source Track ID references a track described by another descriptor (actual "+std::to_string(Descriptor->second.SourceTrackID)+')', Descriptor->second.SourceTrackID);
+                        break;
+                    }
+                }
+            }
         }
 
         //Source Clips of the tracks
@@ -3393,7 +3410,7 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
     else
     {
         for (descriptors::iterator Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
-            if (Descriptor->second.LinkedTrackID==Essence->second.TrackID)
+            if (Descriptor->second.LinkedTrackID==Essence->second.TrackID && !SubDescriptor_IsDangling(Descriptor))
             {
                 if (Descriptor->second.StreamKind!=Stream_Max)
                 {
@@ -3409,7 +3426,7 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
         Fill(StreamKind_Last, StreamPos_Last, "MuxingMode", "MXF");
 
     for (descriptors::iterator Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
-        if (Descriptor->second.LinkedTrackID==Essence->second.TrackID)
+        if (Descriptor->second.LinkedTrackID==Essence->second.TrackID && !SubDescriptor_IsDangling(Descriptor))
         {
             if (Descriptor->second.StreamKind!=Stream_Max)
                 Descriptor->second.StreamPos=StreamPos_Last;
@@ -4475,7 +4492,7 @@ void File_Mxf::Streams_Finish_Descriptor(descriptors::iterator Descriptor)
                     if (SubDescriptor->second.LinkedTrackID!=(int32u)-1)
                     {
                         //This is not a real subdescriptor, rather a descriptor for another track. Seen in a PHDR track
-                        if (SubDescriptor->second.LinkedTrackID!=Descriptor->second.LinkedTrackID) // TODO: better method for avoiding loop
+                        if (SubDescriptor->second.LinkedTrackID!=Descriptor->second.LinkedTrackID && !SubDescriptor_IsDangling(SubDescriptor)) // TODO: better method for avoiding loop
                             Streams_Finish_Descriptor(SubDescriptor->first, int128u());
                         continue;
                     }
@@ -6989,7 +7006,7 @@ void File_Mxf::Data_Parse()
             //Searching the corresponding Descriptor
             bool DescriptorFound=false;
             for (descriptors::iterator Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
-                if (Descriptor==SingleDescriptor || (Descriptor->second.LinkedTrackID==Essence->second.TrackID && Descriptor->second.LinkedTrackID!=(int32u)-1))
+                if (Descriptor==SingleDescriptor || (Descriptor->second.LinkedTrackID==Essence->second.TrackID && Descriptor->second.LinkedTrackID!=(int32u)-1 && !SubDescriptor_IsDangling(Descriptor)))
                 {
                     DescriptorFound=true;
 
@@ -17607,6 +17624,25 @@ void File_Mxf::Descriptor_Fill(const char* Name, const Ztring& Value)
         Descriptor.Infos[Name] = Value;
     else
         Info->second = Value;
+}
+
+//---------------------------------------------------------------------------
+bool File_Mxf::SubDescriptor_IsDangling(const descriptors::iterator& Descriptor)
+{
+    //A sub-descriptor with a Linked Track ID (e.g. PHDR Metadata Track SubDescriptor with its Source Track ID) describes another track
+    //It is ignored if this track is described by another descriptor (malformed file, else the result depends on the InstanceUID order)
+    const auto IsSubDescriptor=[&](const int128u& DescriptorUID) {
+        for (const auto& Parent : Descriptors)
+            if (Parent.second.Type!=descriptor::type_Mutiple && std::find(Parent.second.SubDescriptors.begin(), Parent.second.SubDescriptors.end(), DescriptorUID)!=Parent.second.SubDescriptors.end())
+                return true;
+        return false;
+    };
+    if (Descriptor->second.LinkedTrackID==(int32u)-1 || !IsSubDescriptor(Descriptor->first))
+        return false;
+    for (const auto& Descriptor2 : Descriptors)
+        if (Descriptor2.first!=Descriptor->first && Descriptor2.second.LinkedTrackID==Descriptor->second.LinkedTrackID && !IsSubDescriptor(Descriptor2.first))
+            return true;
+    return false;
 }
 
 //---------------------------------------------------------------------------

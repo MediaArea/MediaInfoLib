@@ -1050,6 +1050,7 @@ protected :
     typedef std::map<int128u, descriptor> descriptors; //Key is InstanceUID of Descriptor
     descriptors Descriptors;
     void Descriptor_Fill(const char* Name, const Ztring& Value);
+    bool SubDescriptor_IsDangling(const descriptors::iterator& Descriptor);
 
     //Locator
     struct locator
