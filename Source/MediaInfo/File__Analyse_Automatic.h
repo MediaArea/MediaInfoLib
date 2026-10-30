@@ -1770,6 +1770,8 @@ enum image
     Image_Format_Settings_Endianness,
     Image_Format_Settings_Packing,
     Image_Format_Settings_Wrapping,
+    Image_Format_Settings_SliceCount,
+    Image_Format_Settings_SliceCount_String,
     Image_MuxingMode,
     Image_InternetMediaType,
     Image_CodecID,

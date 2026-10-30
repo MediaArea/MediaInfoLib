@@ -6034,6 +6034,8 @@ void MediaInfo_Config_Image (ZtringListList &Info)
     "Format_Settings_Endianness;;;N YTY\n"
     "Format_Settings_Packing;;;N YTY\n"
     "Format_Settings_Wrapping;;;Y YTY\n"
+    "Format_Settings_SliceCount;; slice per frame;N YIY\n"
+    "Format_Settings_SliceCount/String;;;Y NTN\n"
     "MuxingMode;;;Y YTY\n"
     "InternetMediaType;;;N YT\n"
     "CodecID;;;Y YTY\n"

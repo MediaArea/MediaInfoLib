@@ -1687,6 +1687,7 @@ void File_Mpeg4::Streams_Finish_Grid(const std::map<int32u, size_t>& Image_Strea
         {
             "Width",
             "Height",
+            "Format_Settings_SliceCount",
             "Stored_",
             "Sampled_",
             "PixelAspectRatio_CleanAperture",
@@ -1719,6 +1720,7 @@ void File_Mpeg4::Streams_Finish_Grid(const std::map<int32u, size_t>& Image_Strea
             Fill_SetOptions(Stream_Image, Grid_StreamPos, Name.c_str(), Retrieve_Const(Stream_Image, FirstTile_StreamPos, i, Info_Options).To_UTF8().c_str());
         }
         Fill(Stream_Image, Grid_StreamPos, Image_MuxingMode, "Grid");
+        Fill(Stream_Image, Grid_StreamPos, Image_Format_Settings_SliceCount, Grid.iref_dimg.size()); //Count of cells
 
         //Tiles
         int64u StreamSize=Grid.stsz_StreamSize;
