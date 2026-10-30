@@ -114,6 +114,7 @@ private :
     int64u Data_Size{};
     int32u Signature{};
     std::shared_ptr<void> GainMap_metadata_ISO;
+    std::unique_ptr<File__Analyze> GainMap_Parser;
     bool IDATseen{};
     bool isAPNG{};
     int32u framecount{};

@@ -216,6 +216,19 @@ void File_Png::Streams_Finish()
             Fill(StreamKind, 0, Video_FrameRate_Maximum, framerate_max);
         }
     }
+    if (GainMap_Parser) {
+        //In the gain map image, or in this image if it is the gain map image
+        size_t GainMap_StreamPos = 0;
+        for (size_t StreamPos = Count_Get(Stream_Image); StreamPos--;) {
+            if (Retrieve_Const(Stream_Image, StreamPos, Image_Type) == __T("Gain map")) {
+                GainMap_StreamPos = StreamPos;
+                break;
+            }
+        }
+        if (GainMap_StreamPos < Count_Get(Stream_Image) && GainMap_Parser->Count_Get(Stream_Image))
+            Merge(*GainMap_Parser, Stream_Image, 0, GainMap_StreamPos);
+        GainMap_Parser.reset();
+    }
     if (Data_Size != (int64u)-1) {
         if (StreamKind == Stream_Video && !IsSub && File_Size != (int64u)-1 && !Config->File_Sizes.empty())
             Fill(Stream_Video, 0, Video_StreamSize, File_Size - (Config->File_Sizes.front() - Data_Size) * Config->File_Sizes.size()); //We guess that the metadata part has a fixed size
@@ -719,12 +732,13 @@ void File_Png::gdAT()
 void File_Png::gmAP()
 {
     //Parsing
-    File_GainMap MI;
+    auto MI = new File_GainMap;
+    GainMap_Parser.reset(MI);
     GainMap_metadata_ISO.reset(new GainMap_metadata());
-    MI.output = static_cast<GainMap_metadata*>(GainMap_metadata_ISO.get());
-    Open_Buffer_Init(&MI);
-    Open_Buffer_Continue(&MI);
-    Open_Buffer_Finalize(&MI);
+    MI->output = static_cast<GainMap_metadata*>(GainMap_metadata_ISO.get());
+    Open_Buffer_Init(MI);
+    Open_Buffer_Continue(MI);
+    Open_Buffer_Finalize(MI);
 }
 
 //---------------------------------------------------------------------------

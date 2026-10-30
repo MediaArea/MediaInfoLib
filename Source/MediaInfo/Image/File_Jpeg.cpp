@@ -427,6 +427,11 @@ void File_Jpeg::Streams_Finish_PerImage()
         ICC_Parser.reset();
     }
     #endif
+    if (GainMap_Parser) {
+        if (GainMap_Parser->Count_Get(StreamKind)) // Only version in the primary image
+            Merge(*GainMap_Parser, StreamKind, 0, CurrentMainStream);
+        GainMap_Parser.reset();
+    }
     for (const auto& Item : XmpExt_List)
     {
         if (Item.second.Parser) {
@@ -1910,12 +1915,14 @@ void File_Jpeg::APP2_ISO21496_1()
     Element_Info1("ISO 21496-1 Gain map metadata for image conversion");
 
     //Parsing
-    File_GainMap MI;
+    auto MI = new File_GainMap;
+    GainMap_Parser.reset(MI);
     GainMap_metadata_ISO.reset(new GainMap_metadata());
-    MI.output = static_cast<GainMap_metadata*>(GainMap_metadata_ISO.get());
-    Open_Buffer_Init(&MI);
-    Open_Buffer_Continue(&MI);
-    Open_Buffer_Finalize(&MI);
+    MI->output = static_cast<GainMap_metadata*>(GainMap_metadata_ISO.get());
+    MI->StreamKind = StreamKind;
+    Open_Buffer_Init(MI);
+    Open_Buffer_Continue(MI);
+    Open_Buffer_Finalize(MI);
 }
 
 //---------------------------------------------------------------------------
