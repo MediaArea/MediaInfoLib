@@ -502,6 +502,11 @@ void File_Av2::reserved_obu()
 //---------------------------------------------------------------------------
 void File_Av2::sequence_header_obu()
 {
+    // Check size to reduce false positive
+    if (Element_Size > 1024) {
+        Reject();
+    }
+
     //Parsing
     BS_Begin();
 
