@@ -1152,7 +1152,7 @@ public :
         DV_Source_AV2,
         DV_Source_XML,
     };
-    void DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source);
+    void DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source, size_t StreamPos = 0);
     static int16u DolbyVision_Nits_ToPQ12(float64 Nits);
     #endif
     #if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_T35_YES)

@@ -2226,7 +2226,7 @@ static const char* DV_ChromaFormat(int8u Value)
 }
 
 //---------------------------------------------------------------------------
-void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
+void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source, size_t StreamPos)
 {
     auto IsRPU=Source!=DV_Source_XML;
     if (IsRPU && !Data.Count)
@@ -2271,7 +2271,7 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
         HDR["HDR_Format_Settings"].From_UTF8(Layers);
         if (Data.dm_compression<sizeof(DolbyVision_Compression)/sizeof(*DolbyVision_Compression) && DolbyVision_Compression[Data.dm_compression])
             HDR["HDR_Format_Compression"].From_UTF8(DolbyVision_Compression[Data.dm_compression]);
-        Fill_HDR_Format(Stream_Video, 0, HDR);
+        Fill_HDR_Format(Stream_Video, StreamPos, HDR);
 
         // Mastering display, per HDR format if the other HDR formats have different values, else only if there is no other value
         Ztring MasteringDisplay_ColorPrimaries, MasteringDisplay_Luminance;
@@ -2280,11 +2280,11 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
         if (!Data.Sources.empty())
             MasteringDisplay_Luminance=DV_Luminance_String(DV_PQ12_ToNits((int16u)(Data.Sources.front()>>16)), Source_Max);
         const auto MasteringDisplay_Fill=[&](video Parameter, const Ztring& Value) {
-            const auto& Current=Retrieve_Const(Stream_Video, 0, Parameter);
+            const auto& Current=Retrieve_Const(Stream_Video, StreamPos, Parameter);
             if (Current.find(__T(" / "))!=string::npos)
-                Fill(Stream_Video, 0, Parameter, Value+__T(" / ")+Current, true);
+                Fill(Stream_Video, StreamPos, Parameter, Value+__T(" / ")+Current, true);
             else if (Current.empty() && !Value.empty())
-                Fill(Stream_Video, 0, Parameter, Value);
+                Fill(Stream_Video, StreamPos, Parameter, Value);
         };
         MasteringDisplay_Fill(Video_MasteringDisplay_ColorPrimaries, MasteringDisplay_ColorPrimaries);
         MasteringDisplay_Fill(Video_MasteringDisplay_Luminance, MasteringDisplay_Luminance);
@@ -2299,29 +2299,29 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
                 if (MaxFALL<L6.max_frame_average_light_level)
                     MaxFALL=L6.max_frame_average_light_level;
             }
-            if (MaxCLL && Retrieve_Const(Stream_Video, 0, Video_MaxCLL).empty())
-                Fill(Stream_Video, 0, Video_MaxCLL, MaxCLL, 0);
-            if (MaxFALL && Retrieve_Const(Stream_Video, 0, Video_MaxFALL).empty())
-                Fill(Stream_Video, 0, Video_MaxFALL, MaxFALL, 0);
+            if (MaxCLL && Retrieve_Const(Stream_Video, StreamPos, Video_MaxCLL).empty())
+                Fill(Stream_Video, StreamPos, Video_MaxCLL, MaxCLL, 0);
+            if (MaxFALL && Retrieve_Const(Stream_Video, StreamPos, Video_MaxFALL).empty())
+                Fill(Stream_Video, StreamPos, Video_MaxFALL, MaxFALL, 0);
         }
 
         // Active area
-        if (Data.L5_Present && (Data.L5_First[0] || Data.L5_First[1] || Data.L5_First[2] || Data.L5_First[3]) && Retrieve_Const(Stream_Video, 0, Video_Active_Width).empty() && Retrieve_Const(Stream_Video, 0, Video_Active_Height).empty())
+        if (Data.L5_Present && (Data.L5_First[0] || Data.L5_First[1] || Data.L5_First[2] || Data.L5_First[3]) && Retrieve_Const(Stream_Video, StreamPos, Video_Active_Width).empty() && Retrieve_Const(Stream_Video, StreamPos, Video_Active_Height).empty())
         {
-            auto Width=Retrieve_Const(Stream_Video, 0, Video_Width).To_int64u();
-            auto Height=Retrieve_Const(Stream_Video, 0, Video_Height).To_int64u();
+            auto Width=Retrieve_Const(Stream_Video, StreamPos, Video_Width).To_int64u();
+            auto Height=Retrieve_Const(Stream_Video, StreamPos, Video_Height).To_int64u();
             auto Crop_Width=(int64u)Data.L5_First[0]+Data.L5_First[1];
             auto Crop_Height=(int64u)Data.L5_First[2]+Data.L5_First[3];
             if (Width>Crop_Width && Height>Crop_Height)
             {
                 Width-=Crop_Width;
                 Height-=Crop_Height;
-                Fill(Stream_Video, 0, Video_Active_Width, Width);
-                Fill(Stream_Video, 0, Video_Active_Height, Height);
-                auto PixelAspectRatio=Retrieve_Const(Stream_Video, 0, Video_PixelAspectRatio).To_float64();
+                Fill(Stream_Video, StreamPos, Video_Active_Width, Width);
+                Fill(Stream_Video, StreamPos, Video_Active_Height, Height);
+                auto PixelAspectRatio=Retrieve_Const(Stream_Video, StreamPos, Video_PixelAspectRatio).To_float64();
                 if (!PixelAspectRatio)
                     PixelAspectRatio=1;
-                Fill(Stream_Video, 0, Video_Active_DisplayAspectRatio, ((float64)Width)/Height*PixelAspectRatio, 3);
+                Fill(Stream_Video, StreamPos, Video_Active_DisplayAspectRatio, ((float64)Width)/Height*PixelAspectRatio, 3);
             }
         }
 
@@ -2329,11 +2329,11 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
         if (DolbyVision_Conformance())
         {
             if (Data.Count_CMv40 && !Data.L254_Present)
-                Fill_Conformance("DolbyVision Level254", "Level254 is missing", {}, Conformance_Warning, Stream_Video, 0);
+                Fill_Conformance("DolbyVision Level254", "Level254 is missing", {}, Conformance_Warning, Stream_Video, StreamPos);
             if (Source_Max)
                 for (const auto& L6 : Data.L6)
                     if (L6.max_content_light_level>Source_Max)
-                        Fill_Conformance("DolbyVision Level6", ("MaxCLL is more than mastering display peak brightness (actual "+DV_Nits_String(L6.max_content_light_level).To_UTF8()+", expected <= "+DV_Nits_String(Source_Max).To_UTF8()+')').c_str(), {}, Conformance_Warning, Stream_Video, 0);
+                        Fill_Conformance("DolbyVision Level6", ("MaxCLL is more than mastering display peak brightness (actual "+DV_Nits_String(L6.max_content_light_level).To_UTF8()+", expected <= "+DV_Nits_String(Source_Max).To_UTF8()+')').c_str(), {}, Conformance_Warning, Stream_Video, StreamPos);
         }
     }
 
@@ -2361,15 +2361,15 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
     Ztring MasteringDisplay_Name=MasteringDisplay?Ztring().From_UTF8(MasteringDisplay->Name):Data.MasteringDisplay_Name;
     if (Summary.empty())
         Summary=MasteringDisplay_Name.empty()?string("Yes"):MasteringDisplay_Name.To_UTF8();
-    Fill(Stream_Video, 0, "DolbyVision", Summary);
+    Fill(Stream_Video, StreamPos, "DolbyVision", Summary);
     if (!Profiles.empty())
-        Fill(Stream_Video, 0, "DolbyVision Profile", Profiles.Read());
+        Fill(Stream_Video, StreamPos, "DolbyVision Profile", Profiles.Read());
     if (HasEL && EL_Type)
     {
         if (Data.Count_MEL && Data.Count_FEL)
-            Fill(Stream_Video, 0, "DolbyVision EnhancementLayer", "MEL ("+to_string(Data.Count_MEL)+") / FEL ("+to_string(Data.Count_FEL)+')');
+            Fill(Stream_Video, StreamPos, "DolbyVision EnhancementLayer", "MEL ("+to_string(Data.Count_MEL)+") / FEL ("+to_string(Data.Count_FEL)+')');
         else
-            Fill(Stream_Video, 0, "DolbyVision EnhancementLayer", EL_Type);
+            Fill(Stream_Video, StreamPos, "DolbyVision EnhancementLayer", EL_Type);
     }
     if (IsRPU)
     {
@@ -2377,8 +2377,8 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
         if (HasEL)
             BitDepth+=to_string(Data.el_bit_depth)+" (EL) / ";
         BitDepth+=to_string(Data.vdr_bit_depth)+" bits (VDR)";
-        Fill(Stream_Video, 0, "DolbyVision BitDepth", BitDepth);
-        Fill(Stream_Video, 0, "DolbyVision BaseLayer_ColorRange", Data.BL_video_full_range_flag?"Full":"Limited");
+        Fill(Stream_Video, StreamPos, "DolbyVision BitDepth", BitDepth);
+        Fill(Stream_Video, StreamPos, "DolbyVision BaseLayer_ColorRange", Data.BL_video_full_range_flag?"Full":"Limited");
     }
 
     // Content mapping and display management versions
@@ -2386,15 +2386,15 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
     if (CMVersion.empty() && Data.Count_CMv29)
         CMVersion.From_UTF8(!Data.Count_CMv40?"2.9":(Data.Count_CMv40==Data.Count_CMv29?"4.0":"2.9 / 4.0"));
     if (!CMVersion.empty())
-        Fill(Stream_Video, 0, "DolbyVision CMVersion", CMVersion);
+        Fill(Stream_Video, StreamPos, "DolbyVision CMVersion", CMVersion);
     if (Data.L254_Present)
-        Fill(Stream_Video, 0, "DolbyVision DMVersion", Data.dm_version_index);
+        Fill(Stream_Video, StreamPos, "DolbyVision DMVersion", Data.dm_version_index);
 
     // Mastering display
     if (!MasteringDisplay_Name.empty())
-        Fill(Stream_Video, 0, "DolbyVision MasteringDisplay_Name", MasteringDisplay_Name);
+        Fill(Stream_Video, StreamPos, "DolbyVision MasteringDisplay_Name", MasteringDisplay_Name);
     if (!Data.MasteringDisplay_ID.empty())
-        Fill(Stream_Video, 0, "DolbyVision MasteringDisplay_ID", Data.MasteringDisplay_ID);
+        Fill(Stream_Video, StreamPos, "DolbyVision MasteringDisplay_ID", Data.MasteringDisplay_ID);
     if (!Data.L9.empty())
     {
         ZtringList List;
@@ -2405,7 +2405,7 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
             if (List.Find(Value)==Error)
                 List.push_back(Value);
         }
-        Fill(Stream_Video, 0, "DolbyVision MasteringDisplay_ColorPrimaries", List.Read());
+        Fill(Stream_Video, StreamPos, "DolbyVision MasteringDisplay_ColorPrimaries", List.Read());
     }
     if (!Data.Sources.empty())
     {
@@ -2413,12 +2413,12 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
         List.Separator_Set(0, __T(" / "));
         for (auto Source_Item : Data.Sources)
             List.push_back(DV_Luminance_String(DV_PQ12_ToNits((int16u)(Source_Item>>16)), DV_PQ12_ToNits((int16u)Source_Item)));
-        Fill(Stream_Video, 0, "DolbyVision MasteringDisplay_Luminance", List.Read());
+        Fill(Stream_Video, StreamPos, "DolbyVision MasteringDisplay_Luminance", List.Read());
     }
     if (Data.source_diagonal)
     {
-        Fill(Stream_Video, 0, "DolbyVision MasteringDisplay_Diagonal", to_string(Data.source_diagonal)+" inches");
-        Fill_SetOptions(Stream_Video, 0, "DolbyVision MasteringDisplay_Diagonal", "N NT");
+        Fill(Stream_Video, StreamPos, "DolbyVision MasteringDisplay_Diagonal", to_string(Data.source_diagonal)+" inches");
+        Fill_SetOptions(Stream_Video, StreamPos, "DolbyVision MasteringDisplay_Diagonal", "N NT");
     }
 
     // Target displays, names of the predefined displays if known
@@ -2469,7 +2469,7 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
         for (const auto& Target : Targets)
             List.push_back(Target.second);
         if (!List.empty())
-            Fill(Stream_Video, 0, "DolbyVision TargetDisplays", List.Read());
+            Fill(Stream_Video, StreamPos, "DolbyVision TargetDisplays", List.Read());
     }
 
     // Light levels
@@ -2484,11 +2484,11 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
                 List.push_back(Value_String);
         }
         auto Name=string("DolbyVision ")+Parameter;
-        Fill(Stream_Video, 0, Name.c_str(), DV_Nits_String(Values.front()));
-        Fill_SetOptions(Stream_Video, 0, Name.c_str(), "N NFY");
+        Fill(Stream_Video, StreamPos, Name.c_str(), DV_Nits_String(Values.front()));
+        Fill_SetOptions(Stream_Video, StreamPos, Name.c_str(), "N NFY");
         Name+="/String";
-        Fill(Stream_Video, 0, Name.c_str(), List.Read());
-        Fill_SetOptions(Stream_Video, 0, Name.c_str(), "Y NTN");
+        Fill(Stream_Video, StreamPos, Name.c_str(), List.Read());
+        Fill_SetOptions(Stream_Video, StreamPos, Name.c_str(), "Y NTN");
     };
     if (!Data.L6.empty())
     {
@@ -2505,7 +2505,7 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
             }
         }
         if (!Luminance.empty())
-            Fill(Stream_Video, 0, "DolbyVision MasteringDisplay_Luminance_HDR10", Luminance.Read());
+            Fill(Stream_Video, StreamPos, "DolbyVision MasteringDisplay_Luminance_HDR10", Luminance.Read());
     }
 
     // Active area
@@ -2524,15 +2524,15 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
             if (Data.L5_Max[i]!=Data.L5_Min[i])
                 ActiveArea+='-'+to_string(Data.L5_Max[i]);
         }
-        Fill(Stream_Video, 0, "DolbyVision ActiveArea", ActiveArea);
+        Fill(Stream_Video, StreamPos, "DolbyVision ActiveArea", ActiveArea);
     }
     {
         auto AspectRatios=Data.Active_DisplayAspectRatios;
         if (!Data.L5.empty())
         {
-            auto Width=Retrieve_Const(Stream_Video, 0, Video_Width).To_int64u();
-            auto Height=Retrieve_Const(Stream_Video, 0, Video_Height).To_int64u();
-            auto PixelAspectRatio=Retrieve_Const(Stream_Video, 0, Video_PixelAspectRatio).To_float64();
+            auto Width=Retrieve_Const(Stream_Video, StreamPos, Video_Width).To_int64u();
+            auto Height=Retrieve_Const(Stream_Video, StreamPos, Video_Height).To_int64u();
+            auto PixelAspectRatio=Retrieve_Const(Stream_Video, StreamPos, Video_PixelAspectRatio).To_float64();
             if (!PixelAspectRatio)
                 PixelAspectRatio=1;
             for (const auto& L5 : Data.L5)
@@ -2559,10 +2559,10 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
         }
         if (!List.empty())
         {
-            Fill(Stream_Video, 0, "DolbyVision Active_DisplayAspectRatio", List.Read());
-            Fill_SetOptions(Stream_Video, 0, "DolbyVision Active_DisplayAspectRatio", "N NFY");
-            Fill(Stream_Video, 0, "DolbyVision Active_DisplayAspectRatio/String", List_String.Read());
-            Fill_SetOptions(Stream_Video, 0, "DolbyVision Active_DisplayAspectRatio/String", "Y NTN");
+            Fill(Stream_Video, StreamPos, "DolbyVision Active_DisplayAspectRatio", List.Read());
+            Fill_SetOptions(Stream_Video, StreamPos, "DolbyVision Active_DisplayAspectRatio", "N NFY");
+            Fill(Stream_Video, StreamPos, "DolbyVision Active_DisplayAspectRatio/String", List_String.Read());
+            Fill_SetOptions(Stream_Video, StreamPos, "DolbyVision Active_DisplayAspectRatio/String", "Y NTN");
         }
     }
 
@@ -2590,10 +2590,10 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
                     ReferenceMode.push_back(ReferenceMode_Value);
             }
         }
-        Fill(Stream_Video, 0, "DolbyVision Content_Type", ContentType.Read());
-        Fill(Stream_Video, 0, "DolbyVision WhitePoint", WhitePoint.Read());
+        Fill(Stream_Video, StreamPos, "DolbyVision Content_Type", ContentType.Read());
+        Fill(Stream_Video, StreamPos, "DolbyVision WhitePoint", WhitePoint.Read());
         if (!ReferenceMode.empty())
-            Fill(Stream_Video, 0, "DolbyVision ReferenceMode", ReferenceMode.Read());
+            Fill(Stream_Video, StreamPos, "DolbyVision ReferenceMode", ReferenceMode.Read());
     }
 
     // Values for the whole stream, always available with XML metadata, only when the whole stream is parsed with the RPU
@@ -2605,14 +2605,14 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
             LightLevel_Fill("MaxFALL_Analysis", { DV_PQ12_ToNits(Data.L1_avg_PQ, true) });
         }
         if (Data.Count_Shot || (IsRPU && Data.Count_CMv29))
-            Fill(Stream_Video, 0, "DolbyVision ShotCount", Data.Count_Shot);
+            Fill(Stream_Video, StreamPos, "DolbyVision ShotCount", Data.Count_Shot);
     }
 
     // Low level details
     const auto Fill_Hidden=[&](const char* Parameter, const Ztring& Value) {
         auto Name=string("DolbyVision ")+Parameter;
-        Fill(Stream_Video, 0, Name.c_str(), Value);
-        Fill_SetOptions(Stream_Video, 0, Name.c_str(), "N NT");
+        Fill(Stream_Video, StreamPos, Name.c_str(), Value);
+        Fill_SetOptions(Stream_Video, StreamPos, Name.c_str(), "N NT");
     };
     if (IsRPU)
     {
