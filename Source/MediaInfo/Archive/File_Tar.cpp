@@ -143,6 +143,13 @@ void File_Tar::Data_Parse()
 //---------------------------------------------------------------------------
 void File_Tar::Header()
 {
+    // The file may end inside the 512-byte header block
+    if (Element_Size < 512)
+    {
+        Reject();
+        return;
+    }
+
     const auto BufferO = Buffer + Buffer_Offset;
 
     // Magic / version (strict, but tolerant of real-world version padding) ---
@@ -361,7 +368,7 @@ void File_Tar::Payload()
 
     // PAX records: "<len> <key>=<value>\n" repeated
     const int8u* P   = (const int8u*)Buffer + Buffer_Offset;
-    size_t       End = (size_t)Size;
+    size_t       End = (size_t)std::min(Size, Element_Size); // The file may end inside the records
     size_t       Pos = 0;
 
     while (Pos < End)
