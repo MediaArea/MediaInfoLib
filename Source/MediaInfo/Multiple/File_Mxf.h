@@ -282,6 +282,7 @@ protected :
     void InterchangeObject();
     void PictureDescriptor();
     void PartitionMetadata();
+    void BodyPartition();
     void GenericTrack();
     void GenericPackage();
     void FileDescriptor();
@@ -820,6 +821,7 @@ protected :
     };
     typedef std::map<int128u, track> tracks; //Key is InstanceUID of the track
     tracks Tracks;
+    int32u TrackID_FromTrackNumber(int32u TrackNumber);
 
     //Essence
     typedef std::vector<File__Analyze*> parsers;
@@ -1060,6 +1062,11 @@ protected :
     descriptors Descriptors;
     void Descriptor_Fill(const char* Name, const Ztring& Value);
     bool SubDescriptor_IsDangling(const descriptors::iterator& Descriptor);
+    descriptors::iterator Descriptor_Single(bool IncludeLinkedToTrack=false);
+    descriptors::iterator Descriptor_FromTrackID(int32u TrackID);
+    #if MEDIAINFO_DEMUX || MEDIAINFO_SEEK
+    bool Descriptors_ConfigureForDemux();
+    #endif //MEDIAINFO_DEMUX || MEDIAINFO_SEEK
 
     //Locator
     struct locator
