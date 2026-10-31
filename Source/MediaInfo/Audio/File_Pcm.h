@@ -18,6 +18,7 @@
 //---------------------------------------------------------------------------
 #include "MediaInfo/File__Analyze.h"
 #include <deque>
+#include <vector>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -68,6 +69,10 @@ public :
     File_Pcm();
 
 private :
+    #if defined(MEDIAINFO_PCM_YES)
+    std::vector<int8u> Auro_Buffer;
+    bool               Auro_Detected;
+    #endif
     //Streams management
     void Streams_Fill();
     void Streams_Finish();
