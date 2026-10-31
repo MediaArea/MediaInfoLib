@@ -50,6 +50,7 @@ protected :
     void Streams_Accept();
     void Streams_Accept_jp2(bool IsJp2=false);
     void Streams_Finish();
+    void Streams_Finish_Grid(const std::map<int32u, size_t>& Image_StreamPos);
     void Streams_Finish_CommercialNames ();
 
 public :
@@ -116,6 +117,7 @@ private :
     void meta_iprp_ipco_pasp();
     void meta_iprp_ipco_pixi();
     void meta_iprp_ipco_rloc();
+    void meta_iprp_ipco_xxxx();
     void meta_iprp_ipma();
     void meta_iref();
     void meta_iref_xxxx();
@@ -604,6 +606,8 @@ private :
         std::vector<int32u>     ChaptersFor;
         std::vector<int32u>     Meta;
         std::vector<int32u>     MetaFor;
+        int32u                  infe_item_type;
+        std::vector<int32u>     iref_dimg; //Input images of a derived image
         float32                 CleanAperture_Width;
         float32                 CleanAperture_Height;
         float32                 CleanAperture_PixelAspectRatio;
@@ -690,6 +694,7 @@ private :
             MayHaveCaption=false;
             tkhd_Found=false;
             TrackID = 0;
+            infe_item_type=0x00000000;
             CleanAperture_Width=0;
             CleanAperture_Height=0;
             CleanAperture_PixelAspectRatio=0;
@@ -771,12 +776,9 @@ private :
     struct idat_item {
         int64u offset{};
         int64u length{};
-        std::unique_ptr<File__Analyze> parser;
     };
     std::map<int16u, idat_item> idat_items;
-
-    //Gain map
-    std::shared_ptr<void> GainMap_metadata_ISO;
+    std::vector<int8u> meta_idat_Buffer; //Content of idat when it is before iloc
 };
 
 } //NameSpace

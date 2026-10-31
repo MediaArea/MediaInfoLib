@@ -47,6 +47,7 @@
 #include "ZenLib/Format/Http/Http_Utils.h"
 #include <algorithm>    // std::sort
 #include <cfloat>       // DBL_MAX
+#include <set>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -494,6 +495,7 @@ void File_Mpeg4::Streams_Finish()
 
     //For each stream
     vector<size_t> ToDelete_StreamPos;
+    std::map<int32u, size_t> Image_StreamPos; //Image stream position per item ID
     streams::iterator Temp=Streams.begin();
     while (Temp!=Streams.end())
     {
@@ -554,7 +556,7 @@ void File_Mpeg4::Streams_Finish()
         //    Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_StreamSize), Temp->second.stsz_StreamSize);
 
         //flags and references
-        if (StreamKind_Last != Stream_Menu)
+        if (StreamKind_Last != Stream_Menu && StreamKind_Last != Stream_General) // General is used by metadata items (e.g. Exif in HEIF), merged with the file metadata
         {
             Ztring TempString;
             std::vector<int32u>::iterator TrackID;
@@ -1489,6 +1491,7 @@ void File_Mpeg4::Streams_Finish()
             size_t Source_StreamPos=StreamPos_Last;
             ToDelete_StreamPos.push_back(StreamPos_Last);
             Stream_Prepare(Stream_Image);
+            Image_StreamPos[Temp->first]=StreamPos_Last;
             if (Temp->second.stsz_StreamSize)
                 Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_StreamSize), Temp->second.stsz_StreamSize, 10, true);
             size_t Size=Count_Get(Source_StreamKind, Source_StreamPos);
@@ -1546,6 +1549,7 @@ void File_Mpeg4::Streams_Finish()
         for (size_t i=ToDelete_StreamPos.size()-1; i!=(size_t)-1; i--)
             Stream_Erase(Stream_Video, ToDelete_StreamPos[i]);
     }
+    Streams_Finish_Grid(Image_StreamPos);
     if (Vendor!=0x00000000 && Vendor!=0xFFFFFFFF)
     {
         Ztring VendorS=Mpeg4_Encoded_Library(Vendor);
@@ -1646,6 +1650,103 @@ void File_Mpeg4::Streams_Finish()
 
     //Commercial names
     Streams_Finish_CommercialNames();
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::Streams_Finish_Grid(const std::map<int32u, size_t>& Image_StreamPos)
+{
+    //HEIF grid: the image to display is the reconstructed one, with the characteristics of its tiles, the tiles are not displayed
+    std::set<int32u> Grids, Inputs_NotGrid;
+    for (const auto& Item : Streams)
+    {
+        const auto& Inputs=Item.second.iref_dimg;
+        if (Item.second.infe_item_type==0x67726964 //grid
+         && !Inputs.empty()
+         && Image_StreamPos.find(Item.first)!=Image_StreamPos.end()
+         && Image_StreamPos.find(Inputs[0])!=Image_StreamPos.end())
+            Grids.insert(Item.first);
+        else
+            Inputs_NotGrid.insert(Inputs.begin(), Inputs.end());
+    }
+    if (Grids.empty())
+        return;
+
+    std::set<size_t> ToDelete_StreamPos;
+    for (auto Grid_ID : Grids)
+    {
+        const auto& Grid=Streams[Grid_ID];
+        const auto Grid_StreamPos=Image_StreamPos.find(Grid_ID)->second;
+        const auto& FirstTile=Streams[Grid.iref_dimg[0]];
+        const auto FirstTile_StreamPos=Image_StreamPos.find(Grid.iref_dimg[0])->second;
+
+        //Characteristics of the tiles, except the ones specific to a tile or to the grid item
+        const auto& Format=Retrieve_Const(Stream_Image, FirstTile_StreamPos, Image_Format);
+        if (!Format.empty())
+            Fill(Stream_Image, Grid_StreamPos, Image_Format, Format, true);
+        static const char* const TileSpecific[]=
+        {
+            "Width",
+            "Height",
+            "Format_Settings_SliceCount",
+            "Stored_",
+            "Sampled_",
+            "PixelAspectRatio_CleanAperture",
+            "DisplayAspectRatio",
+            "Active_",
+            "Rotation",
+            "Mirror",
+            "StreamSize",
+            "Default",
+        };
+        const auto Count=Count_Get(Stream_Image, FirstTile_StreamPos);
+        for (size_t i=Image_Format+1; i<Count; i++)
+        {
+            const auto& Value=Retrieve_Const(Stream_Image, FirstTile_StreamPos, i);
+            if (Value.empty())
+                continue;
+            const auto Name=Retrieve_Const(Stream_Image, FirstTile_StreamPos, i, Info_Name).To_UTF8();
+            if (FirstTile.Infos_List.find(Name)!=FirstTile.Infos_List.end()) //References
+                continue;
+            bool IsTileSpecific=false;
+            for (const auto Prefix : TileSpecific)
+                if (!Name.rfind(Prefix, 0))
+                {
+                    IsTileSpecific=true;
+                    break;
+                }
+            if (IsTileSpecific || !Retrieve_Const(Stream_Image, Grid_StreamPos, Name.c_str()).empty())
+                continue;
+            Fill(Stream_Image, Grid_StreamPos, Name.c_str(), Value);
+            Fill_SetOptions(Stream_Image, Grid_StreamPos, Name.c_str(), Retrieve_Const(Stream_Image, FirstTile_StreamPos, i, Info_Options).To_UTF8().c_str());
+        }
+        Fill(Stream_Image, Grid_StreamPos, Image_MuxingMode, "Grid");
+        Fill(Stream_Image, Grid_StreamPos, Image_Format_Settings_SliceCount, Grid.iref_dimg.size()); //Count of cells
+
+        //Tiles
+        int64u StreamSize=Grid.stsz_StreamSize;
+        bool AllTilesHidden=true;
+        const std::set<int32u> Tiles(Grid.iref_dimg.begin(), Grid.iref_dimg.end()); //A tile may be used several times
+        for (auto Tile_ID : Tiles)
+        {
+            const auto Tile=Streams.find(Tile_ID);
+            const auto Tile_StreamPos=Image_StreamPos.find(Tile_ID);
+            if (Tile==Streams.end() || Tile_StreamPos==Image_StreamPos.end())
+            {
+                AllTilesHidden=false;
+                continue;
+            }
+            StreamSize+=Tile->second.stsz_StreamSize;
+            if (Tile_ID==meta_pitm_item_ID || Inputs_NotGrid.find(Tile_ID)!=Inputs_NotGrid.end() || Tile->second.Infos_List.size()!=1) //Tile used for something else
+                AllTilesHidden=false;
+            else
+                ToDelete_StreamPos.insert(Tile_StreamPos->second);
+        }
+        Fill(Stream_Image, Grid_StreamPos, Image_StreamSize, StreamSize, 10, true);
+        if (AllTilesHidden)
+            Fill(Stream_Image, Grid_StreamPos, "Derived from", Ztring(), true);
+    }
+    for (auto StreamPos=ToDelete_StreamPos.rbegin(); StreamPos!=ToDelete_StreamPos.rend(); ++StreamPos)
+        Stream_Erase(Stream_Image, *StreamPos);
 }
 
 //---------------------------------------------------------------------------
