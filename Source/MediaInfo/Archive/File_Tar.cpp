@@ -388,7 +388,7 @@ void File_Tar::Payload()
         // A valid record needs at least "NN x=y\n"
         if (!LenOk || Pos >= End || P[Pos] != ' ' ||
             Len < Pos - RecStart + 4 ||              // digits + space + key + '=' + '\n'
-            RecStart + Len > End)
+            Len > End - RecStart)
         {
             // Malformed: skip the rest of the payload to stay aligned
             Skip_XX(End - Pos + (Pos - RecStart),               "(Malformed)");
