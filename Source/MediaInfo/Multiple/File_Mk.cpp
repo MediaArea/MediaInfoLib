@@ -2759,6 +2759,22 @@ void File_Mk::Segment_Chapters_EditionEntry_ChapterAtom_ChapterDisplay_ChapLangu
     Ztring Data=String_Get();
 
     FILLING_BEGIN();
+        if (EditionEntries[EditionEntries_Pos].ChapterAtoms[ChapterAtoms_Pos].ChapterDisplays[ChapterDisplays_Pos].HasChapLanguageIETF)
+            return;
+        EditionEntries[EditionEntries_Pos].ChapterAtoms[ChapterAtoms_Pos].ChapterDisplays[ChapterDisplays_Pos].ChapLanguage=Data;
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Chapters_EditionEntry_ChapterAtom_ChapterDisplay_ChapLanguageIETF()
+{
+    //Parsing
+    Ztring Data=String_Get();
+
+    FILLING_BEGIN();
+        if (Data.empty())
+            return;
+        EditionEntries[EditionEntries_Pos].ChapterAtoms[ChapterAtoms_Pos].ChapterDisplays[ChapterDisplays_Pos].HasChapLanguageIETF=true;
         EditionEntries[EditionEntries_Pos].ChapterAtoms[ChapterAtoms_Pos].ChapterDisplays[ChapterDisplays_Pos].ChapLanguage=Data;
     FILLING_END();
 }
