@@ -282,6 +282,7 @@ protected :
     void InterchangeObject();
     void PictureDescriptor();
     void PartitionMetadata();
+    void BodyPartition();
     void GenericTrack();
     void GenericPackage();
     void FileDescriptor();
@@ -820,6 +821,7 @@ protected :
     };
     typedef std::map<int128u, track> tracks; //Key is InstanceUID of the track
     tracks Tracks;
+    int32u TrackID_FromTrackNumber(int32u TrackNumber);
 
     //Essence
     typedef std::vector<File__Analyze*> parsers;
@@ -831,6 +833,7 @@ protected :
         parsers Parsers;
         std::map<std::string, Ztring> Infos;
         int64u Stream_Size;
+        int64u Element_Size_Constant; //Size of parsed elements if it is always the same, 0 if no element is parsed, (int64u)-1 if not constant
         int32u TrackID;
         bool   TrackID_WasLookedFor;
         bool   Stream_Finish_Done;
@@ -852,6 +855,7 @@ protected :
             StreamPos=(size_t)-1;
             StreamPos_Initial=(size_t)-1;
             Stream_Size=(int64u)-1;
+            Element_Size_Constant=0;
             TrackID=(int32u)-1;
             TrackID_WasLookedFor=false;
             Stream_Finish_Done=false;
@@ -878,6 +882,13 @@ protected :
     };
     typedef std::map<int32u, essence> essences; //Key is TrackNumber
     essences Essences;
+    struct streamsize_fromelements
+    {
+        size_t  StreamPos;
+        Ztring  ID;
+        int64u  StreamSize;
+    };
+    std::vector<streamsize_fromelements> StreamSizes_FromElements; //Video stream sizes from the size of frame wrapped elements, used only if the file is complete
     std::bitset<Stream_Max+1> StreamPos_StartAtZero; //information about the base of StreamPos (0 or 1, 1 is found in 1 file) TODO: per Essence code (last 4 bytes of the Essence header 0xTTXXTTXX)
 
     //Descriptor
@@ -1051,6 +1062,11 @@ protected :
     descriptors Descriptors;
     void Descriptor_Fill(const char* Name, const Ztring& Value);
     bool SubDescriptor_IsDangling(const descriptors::iterator& Descriptor);
+    descriptors::iterator Descriptor_Single(bool IncludeLinkedToTrack=false);
+    descriptors::iterator Descriptor_FromTrackID(int32u TrackID);
+    #if MEDIAINFO_DEMUX || MEDIAINFO_SEEK
+    bool Descriptors_ConfigureForDemux();
+    #endif //MEDIAINFO_DEMUX || MEDIAINFO_SEEK
 
     //Locator
     struct locator

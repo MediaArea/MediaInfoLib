@@ -2517,13 +2517,8 @@ void File_Mxf::Streams_Finish()
             for (tracks::iterator Track=Tracks.begin(); Track!=Tracks.end(); ++Track)
             {
                 //Searching the corresponding Descriptor
-                stream_t StreamKind=Stream_Max;
-                for (descriptors::iterator Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
-                    if (Descriptor->second.LinkedTrackID==Track->second.TrackID && !SubDescriptor_IsDangling(Descriptor))
-                    {
-                        StreamKind=Descriptor->second.StreamKind;
-                        break;
-                    }
+                descriptors::iterator Descriptor=Descriptor_FromTrackID(Track->second.TrackID);
+                stream_t StreamKind=Descriptor==Descriptors.end()?Stream_Max:Descriptor->second.StreamKind;
                 if (StreamKind!=Stream_Max)
                 {
                     for (essences::iterator Essence=Essences.begin(); Essence!=Essences.end(); ++Essence)
@@ -2579,9 +2574,16 @@ void File_Mxf::Streams_Finish()
     #if MEDIAINFO_ADVANCED
         if (Footer_Position!=(int64u)-1)
             Fill(Stream_General, 0, General_FooterSize, File_Size-Footer_Position);
-        else if (Config->ParseSpeed>-1 || (!Partitions.empty() && Partitions[0].FooterPartition && Partitions[0].FooterPartition>=File_Size))
+        else if ((Config->ParseSpeed>-1 || (!Partitions.empty() && Partitions[0].FooterPartition && Partitions[0].FooterPartition>=File_Size)) && Retrieve_Const(Stream_General, 0, "IsTruncated").empty()) //If not already detected
             IsTruncated((!Partitions.empty() && Partitions[0].FooterPartition && Partitions[0].FooterPartition>=File_Size)?Partitions[0].FooterPartition:(int64u)-1, false, "MXF");
     #endif //MEDIAINFO_ADVANCED
+
+    //Stream sizes from the size of frame wrapped elements, only if all elements of the container duration are present
+    if (Retrieve_Const(Stream_General, 0, "IsTruncated").empty() && !(!Partitions.empty() && Partitions[0].FooterPartition && Partitions[0].FooterPartition>=File_Size)
+     && !Config->File_IgnoreEditsBefore && Config->File_IgnoreEditsAfter==(int64u)-1)
+        for (const auto& Item : StreamSizes_FromElements)
+            if (Item.StreamPos<Count_Get(Stream_Video) && Retrieve_Const(Stream_Video, Item.StreamPos, Video_ID)==Item.ID && Retrieve_Const(Stream_Video, Item.StreamPos, Video_StreamSize).empty())
+                Fill(Stream_Video, Item.StreamPos, Video_StreamSize, Item.StreamSize);
 
     //Handling separate streams
     for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
@@ -3322,6 +3324,26 @@ void File_Mxf::Streams_Finish_Track(const int128u TrackUID)
     //Sequence
     Streams_Finish_Component(Track->second.Sequence, Track->second.EditRate_Real?Track->second.EditRate_Real:Track->second.EditRate, Track->second.TrackID, Track->second.Origin);
 
+    //Stream size from the size of frame wrapped video elements, if constant
+    const auto Essence=Essences.find(Track->second.TrackNumber);
+    if (StreamKind_Last==Stream_Video && Essence!=Essences.end() && Essence->second.Element_Size_Constant && Essence->second.Element_Size_Constant!=(int64u)-1
+     && Retrieve_Const(Stream_Video, StreamPos_Last, Video_StreamSize).empty())
+    {
+        const auto Descriptor=Descriptor_FromTrackID(Essence->second.TrackID);
+        if (Descriptor!=Descriptors.end() && Descriptor->second.Duration && Descriptor->second.Duration!=(int64u)-1
+         && Track->second.EditRate && std::fabs(Descriptor->second.SampleRate-Track->second.EditRate)<Track->second.EditRate/1000) //Container duration is the count of elements
+        {
+            const auto Wrapping=Descriptor->second.Infos.find("Format_Settings_Wrapping");
+            auto IsCbe=!IndexTables.empty(); //Constant size of edit units, so of the elements
+            for (const auto& IndexTable : IndexTables)
+                if (!IndexTable.EditUnitByteCount)
+                    IsCbe=false;
+            const auto Stream_Size=Essence->second.Element_Size_Constant*Descriptor->second.Duration;
+            if (IsCbe && Stream_Size<=File_Size && Wrapping!=Descriptor->second.Infos.end() && Wrapping->second.rfind(__T("Frame"), 0)==0)
+                StreamSizes_FromElements.push_back({StreamPos_Last, Retrieve_Const(Stream_Video, StreamPos_Last, Video_ID), Stream_Size}); //Filled after the check of truncation
+        }
+    }
+
     //Done
     Track->second.Stream_Finish_Done=true;
 }
@@ -3409,29 +3431,18 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
         Stream_Prepare(Essence->second.StreamKind);
     else
     {
-        for (descriptors::iterator Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
-            if (Descriptor->second.LinkedTrackID==Essence->second.TrackID && !SubDescriptor_IsDangling(Descriptor))
-            {
-                if (Descriptor->second.StreamKind!=Stream_Max)
-                {
-                    Stream_Prepare(Descriptor->second.StreamKind);
-                    Descriptor->second.StreamPos=StreamPos_Last;
-                }
-                break;
-            }
+        descriptors::iterator TrackDescriptor=Descriptor_FromTrackID(Essence->second.TrackID);
+        if (TrackDescriptor!=Descriptors.end() && TrackDescriptor->second.StreamKind!=Stream_Max)
+            Stream_Prepare(TrackDescriptor->second.StreamKind);
         if (StreamKind_Last==Stream_Max)
             return; //Not found
     }
     if (IsSub)
         Fill(StreamKind_Last, StreamPos_Last, "MuxingMode", "MXF");
 
-    for (descriptors::iterator Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
-        if (Descriptor->second.LinkedTrackID==Essence->second.TrackID && !SubDescriptor_IsDangling(Descriptor))
-        {
-            if (Descriptor->second.StreamKind!=Stream_Max)
-                Descriptor->second.StreamPos=StreamPos_Last;
-            break;
-        }
+    descriptors::iterator TrackDescriptor=Descriptor_FromTrackID(Essence->second.TrackID);
+    if (TrackDescriptor!=Descriptors.end() && TrackDescriptor->second.StreamKind!=Stream_Max)
+        TrackDescriptor->second.StreamPos=StreamPos_Last;
 
     for (std::map<std::string, Ztring>::iterator Info=Essence->second.Infos.begin(); Info!=Essence->second.Infos.end(); ++Info)
         Fill(StreamKind_Last, StreamPos_Last, Info->first.c_str(), Info->second, true);
@@ -3744,7 +3755,7 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
                     {
                         Fill(Stream_Text, StreamPos_Last, Text_ID, Ztring::ToZtring(Descriptor->second.LinkedTrackID)+__T("-")+ID, true);
                         Fill(Stream_Text, StreamPos_Last, Text_ID_String, Ztring::ToZtring(Descriptor->second.LinkedTrackID)+__T("-")+ID, true);
-                        Fill(Stream_Text, StreamPos_Last, Text_Title, Tracks[TrackUID].TrackName, true);
+                        Fill(Stream_Text, StreamPos_Last, Text_Title, Track==Tracks.end()?Ztring():Track->second.TrackName, true);
                         break;
                     }
             }
@@ -3875,12 +3886,13 @@ void File_Mxf::Streams_Finish_Essence_FillID(int32u EssenceUID, int128u TrackUID
                     }
             }
 
+        tracks::iterator Track=Tracks.find(TrackUID);
         Ztring ID;
         Ztring ID_String;
         if (TrackID!=(int32u)-1)
             ID=Ztring::ToZtring(TrackID);
-        else if (Tracks[TrackUID].TrackID!=(int32u)-1)
-            ID=Ztring::ToZtring(Tracks[TrackUID].TrackID);
+        else if (Track!=Tracks.end() && Track->second.TrackID!=(int32u)-1)
+            ID=Ztring::ToZtring(Track->second.TrackID);
         else
         {
             ID=Ztring::ToZtring(Essence->first);
@@ -3901,12 +3913,12 @@ void File_Mxf::Streams_Finish_Essence_FillID(int32u EssenceUID, int128u TrackUID
                     Fill(StreamKind_Last, StreamPos, General_ID_String, ID_String, true);
             }
         }
-        if (!Tracks[TrackUID].TrackName.empty())
+        if (Track!=Tracks.end() && !Track->second.TrackName.empty())
         {
             for (size_t StreamPos=StreamPos_Last-((*Parser)->Count_Get(StreamKind_Last)?((*Parser)->Count_Get(StreamKind_Last)-1):0); StreamPos<=StreamPos_Last; StreamPos++) //If more than 1 stream
             {
                 Ztring Title_Temp=Retrieve(StreamKind_Last, StreamPos, "Title");
-                Fill(StreamKind_Last, StreamPos, "Title", Title_Temp.empty()?Tracks[TrackUID].TrackName:(Tracks[TrackUID].TrackName+__T(" - ")+Title_Temp), true);
+                Fill(StreamKind_Last, StreamPos, "Title", Title_Temp.empty()?Track->second.TrackName:(Track->second.TrackName+__T(" - ")+Title_Temp), true);
             }
         }
     }
@@ -5762,61 +5774,10 @@ size_t File_Mxf::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
             return 0;
     }
 
-    //Config - TODO: merge with the one in Data_Parse()
+    //Config
     if (!Essences_FirstEssence_Parsed)
     {
-        //Searching single descriptor if it is the only valid descriptor
-        descriptors::iterator SingleDescriptor=Descriptors.end();
-        for (descriptors::iterator SingleDescriptor_Temp=Descriptors.begin(); SingleDescriptor_Temp!=Descriptors.end(); ++SingleDescriptor_Temp)
-            if (SingleDescriptor_Temp->second.StreamKind!=Stream_Max)
-            {
-                if (SingleDescriptor!=Descriptors.end())
-                {
-                    SingleDescriptor=Descriptors.end();
-                    break; // 2 or more descriptors, can not be used
-                }
-                SingleDescriptor=SingleDescriptor_Temp;
-            }
-
-        if (SingleDescriptor!=Descriptors.end() && SingleDescriptor->second.StreamKind==Stream_Audio)
-        {
-            //Configuring bitrate is not available in descriptor
-            if (Descriptors.begin()->second.ByteRate==(int32u)-1)
-            {
-                std::map<std::string, Ztring>::const_iterator i=Descriptors.begin()->second.Infos.find("SamplingRate");
-                if (i!=Descriptors.begin()->second.Infos.end())
-                {
-                    int32u SamplingRate=i->second.To_int32u();
-
-                    if (Descriptors.begin()->second.BlockAlign!=(int16u)-1)
-                        Descriptors.begin()->second.ByteRate=SamplingRate*Descriptors.begin()->second.BlockAlign;
-                    else if (Descriptors.begin()->second.QuantizationBits!=(int8u)-1)
-                        Descriptors.begin()->second.ByteRate=SamplingRate*Descriptors.begin()->second.QuantizationBits / 8;
-                }
-            }
-        }
-
-        for (descriptors::iterator Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
-        {
-            //Configuring EditRate if needed (e.g. audio at 48000 Hz)
-            if (Descriptor->second.SampleRate>1000)
-            {
-                float64 EditRate_FromTrack=DBL_MAX;
-                for (tracks::iterator Track=Tracks.begin(); Track!=Tracks.end(); ++Track)
-                    if (Track->second.EditRate && EditRate_FromTrack>Track->second.EditRate)
-                        EditRate_FromTrack=Track->second.EditRate;
-                if (EditRate_FromTrack>1000)
-                    EditRate_FromTrack=Demux_Rate; //Default value;
-                Descriptor->second.SampleRate=EditRate_FromTrack;
-                for (tracks::iterator Track=Tracks.begin(); Track!=Tracks.end(); ++Track)
-                    if (Track->second.EditRate>EditRate_FromTrack)
-                    {
-                        Track->second.EditRate_Real=Track->second.EditRate;
-                        Track->second.EditRate=EditRate_FromTrack;
-                    }
-            }
-        }
-
+        Descriptors_ConfigureForDemux();
         Essences_FirstEssence_Parsed=true;
     }
     //Parsing
@@ -6228,19 +6189,7 @@ bool File_Mxf::Header_Begin()
     while (Buffer_End)
     {
         #if MEDIAINFO_DEMUX
-            //Searching single descriptor if it is the only valid descriptor
-            descriptors::iterator SingleDescriptor=Descriptors.end();
-            for (descriptors::iterator SingleDescriptor_Temp=Descriptors.begin(); SingleDescriptor_Temp!=Descriptors.end(); ++SingleDescriptor_Temp)
-                if (SingleDescriptor_Temp->second.StreamKind!=Stream_Max)
-                {
-                    if (SingleDescriptor!=Descriptors.end())
-                    {
-                        SingleDescriptor=Descriptors.end();
-                        break; // 2 or more descriptors, can not be used
-                    }
-                    SingleDescriptor=SingleDescriptor_Temp;
-                }
-
+            descriptors::iterator SingleDescriptor=Descriptor_Single();
             if (Demux_UnpacketizeContainer && SingleDescriptor!=Descriptors.end() && SingleDescriptor->second.ByteRate!=(int32u)-1 && SingleDescriptor->second.BlockAlign && SingleDescriptor->second.BlockAlign!=(int16u)-1  && SingleDescriptor->second.SampleRate)
             {
                 float64 BytesPerFrame=((float64)SingleDescriptor->second.ByteRate)/SingleDescriptor->second.SampleRate;
@@ -6838,58 +6787,8 @@ void File_Mxf::Data_Parse()
             Streams_Finish_Preface_ForTimeCode(Preface_Current); //Configuring DTS_Delay
 
             #if MEDIAINFO_DEMUX || MEDIAINFO_SEEK
-            //Searching single descriptor if it is the only valid descriptor
-            descriptors::iterator SingleDescriptor=Descriptors.end();
-            for (descriptors::iterator SingleDescriptor_Temp=Descriptors.begin(); SingleDescriptor_Temp!=Descriptors.end(); ++SingleDescriptor_Temp)
-                if (SingleDescriptor_Temp->second.StreamKind!=Stream_Max)
-                {
-                    if (SingleDescriptor!=Descriptors.end())
-                    {
-                        SingleDescriptor=Descriptors.end();
-                        break; // 2 or more descriptors, can not be used
-                    }
-                    SingleDescriptor=SingleDescriptor_Temp;
-                }
-
-            if (SingleDescriptor!=Descriptors.end() && SingleDescriptor->second.StreamKind==Stream_Audio)
-            {
-                //Configuring bitrate is not available in descriptor
-                if (SingleDescriptor->second.ByteRate==(int32u)-1)
-                {
-                    std::map<std::string, Ztring>::const_iterator i=Descriptors.begin()->second.Infos.find("SamplingRate");
-                    if (i != Descriptors.begin()->second.Infos.end())
-                    {
-                        int32u SamplingRate=i->second.To_int32u();
-
-                        if (SingleDescriptor->second.BlockAlign != (int16u)-1)
-                            SingleDescriptor->second.ByteRate = SamplingRate*SingleDescriptor->second.BlockAlign;
-                        else if (SingleDescriptor->second.QuantizationBits != (int8u)-1)
-                            SingleDescriptor->second.ByteRate = SamplingRate*SingleDescriptor->second.QuantizationBits / 8;
-                    }
-                }
-            }
-
-            for (descriptors::iterator Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
-            {
-                //Configuring EditRate if needed (e.g. audio at 48000 Hz)
-                if (Descriptor->second.SampleRate>1000)
-                {
-                    float64 EditRate_FromTrack=DBL_MAX;
-                    for (tracks::iterator Track=Tracks.begin(); Track!=Tracks.end(); ++Track)
-                        if (Track->second.EditRate && EditRate_FromTrack>Track->second.EditRate)
-                            EditRate_FromTrack=Track->second.EditRate;
-                    if (EditRate_FromTrack>1000)
-                        EditRate_FromTrack=Demux_Rate; //Default value;
-                    Descriptor->second.SampleRate=EditRate_FromTrack;
-                    DemuxedSampleCount_Total=Config->File_IgnoreEditsBefore;
-                    for (tracks::iterator Track=Tracks.begin(); Track!=Tracks.end(); ++Track)
-                        if (Track->second.EditRate>EditRate_FromTrack)
-                        {
-                            Track->second.EditRate_Real=Track->second.EditRate;
-                            Track->second.EditRate=EditRate_FromTrack;
-                        }
-                }
-            }
+            if (Descriptors_ConfigureForDemux())
+                DemuxedSampleCount_Total=Config->File_IgnoreEditsBefore;
             #endif //MEDIAINFO_DEMUX || MEDIAINFO_SEEK
 
             Frame_Count=0;
@@ -6924,18 +6823,7 @@ void File_Mxf::Data_Parse()
 
         if (Essence->second.Parsers.empty())
         {
-            //Searching single descriptor if it is the only valid descriptor
-            descriptors::iterator SingleDescriptor=Descriptors.end();
-            for (descriptors::iterator SingleDescriptor_Temp=Descriptors.begin(); SingleDescriptor_Temp!=Descriptors.end(); ++SingleDescriptor_Temp)
-                if (SingleDescriptor_Temp->second.StreamKind!=Stream_Max || SingleDescriptor_Temp->second.LinkedTrackID!=(int32u)-1)
-                {
-                    if (SingleDescriptor!=Descriptors.end())
-                    {
-                        SingleDescriptor=Descriptors.end();
-                        break; // 2 or more descriptors, can not be used
-                    }
-                    SingleDescriptor=SingleDescriptor_Temp;
-                }
+            descriptors::iterator SingleDescriptor=Descriptor_Single(true);
 
             //Format_Settings_Wrapping
             if (SingleDescriptor!=Descriptors.end())
@@ -6953,16 +6841,12 @@ void File_Mxf::Data_Parse()
             //Searching the corresponding Track (for TrackID)
             if (!Essence->second.TrackID_WasLookedFor)
             {
-                for (tracks::iterator Track=Tracks.begin(); Track!=Tracks.end(); ++Track)
-                    if (Track->second.TrackNumber==Code_Compare4)
-                        Essence->second.TrackID=Track->second.TrackID;
+                Essence->second.TrackID=TrackID_FromTrackNumber(Code_Compare4);
                 #if MEDIAINFO_DEMUX || MEDIAINFO_SEEK
                     if (Config->ParseSpeed>=1 && Essence->second.TrackID==(int32u)-1 && !Duration_Detected && !Config->File_IsDetectingDuration_Get())
                     {
                         DetectDuration(); //In one file (*-009.mxf), the TrackNumber is known only at the end of the file (Open and incomplete header/footer)
-                        for (tracks::iterator Track=Tracks.begin(); Track!=Tracks.end(); ++Track)
-                            if (Track->second.TrackNumber==Code_Compare4)
-                                Essence->second.TrackID=Track->second.TrackID;
+                        Essence->second.TrackID=TrackID_FromTrackNumber(Code_Compare4);
                     }
                 #endif //MEDIAINFO_DEMUX || MEDIAINFO_SEEK
 
@@ -7117,29 +7001,28 @@ void File_Mxf::Data_Parse()
                 Stream_Size=File_Size; //TODO: find a way to remove header/footer correctly
             if (Stream_Size!=(int64u)-1)
             {
-                //Searching single descriptor if it is the only valid descriptor
-                descriptors::iterator SingleDescriptor=Descriptors.end();
-                for (descriptors::iterator SingleDescriptor_Temp=Descriptors.begin(); SingleDescriptor_Temp!=Descriptors.end(); ++SingleDescriptor_Temp)
-                    if (SingleDescriptor_Temp->second.StreamKind!=Stream_Max)
-                    {
-                        if (SingleDescriptor!=Descriptors.end())
-                        {
-                            SingleDescriptor=Descriptors.end();
-                            break; // 2 or more descriptors, can not be used
-                        }
-                        SingleDescriptor=SingleDescriptor_Temp;
-                    }
-
+                descriptors::iterator SingleDescriptor=Descriptor_Single();
                 if (SingleDescriptor!=Descriptors.end())
                 {
+                    std::map<std::string, Ztring>::const_iterator Duration=SingleDescriptor->second.Infos.find("Duration");
+                    float64 Duration_Value=Duration==SingleDescriptor->second.Infos.end()?0:Duration->second.To_float64();
                     if (SingleDescriptor->second.ByteRate!=(int32u)-1)
                         for (parsers::iterator Parser=Essence->second.Parsers.begin(); Parser!=Essence->second.Parsers.end(); ++Parser)
                             (*Parser)->Stream_BitRateFromContainer=SingleDescriptor->second.ByteRate*8;
-                    else if (SingleDescriptor->second.Infos["Duration"].To_float64())
-                        for (parsers::iterator Parser=Essences.begin()->second.Parsers.begin(); Parser!=Essences.begin()->second.Parsers.end(); ++Parser)
-                            (*Parser)->Stream_BitRateFromContainer=((float64)Stream_Size)*8/(SingleDescriptor->second.Infos["Duration"].To_float64()/1000);
+                    else if (Duration_Value)
+                        for (parsers::iterator Parser=Essence->second.Parsers.begin(); Parser!=Essence->second.Parsers.end(); ++Parser)
+                            (*Parser)->Stream_BitRateFromContainer=((float64)Stream_Size)*8/(Duration_Value/1000);
                 }
             }
+        }
+
+        //Element size, for the stream size if all elements have the same size
+        if (!Buffer_End)
+        {
+            if (!Essence->second.Element_Size_Constant)
+                Essence->second.Element_Size_Constant=Element_Size;
+            else if (Essence->second.Element_Size_Constant!=Element_Size)
+                Essence->second.Element_Size_Constant=(int64u)-1;
         }
 
         //Frame info is specific to the container, and it is not updated
@@ -7441,18 +7324,7 @@ void File_Mxf::Data_Parse()
         #endif //MEDIAINFO_DEMUX
         if (Config->ParseSpeed>=1.0 && Frame_Count_NotParsedIncluded!=(int64u)-1 && Config->File_IgnoreEditsAfter!=(int64u)-1)
         {
-            descriptors::iterator SingleDescriptor=Descriptors.end();
-            for (descriptors::iterator SingleDescriptor_Temp=Descriptors.begin(); SingleDescriptor_Temp!=Descriptors.end(); ++SingleDescriptor_Temp)
-                if (SingleDescriptor_Temp->second.StreamKind!=Stream_Max)
-                {
-                    if (SingleDescriptor!=Descriptors.end())
-                    {
-                        SingleDescriptor=Descriptors.end();
-                        break; // 2 or more descriptors, can not be used
-                    }
-                    SingleDescriptor=SingleDescriptor_Temp;
-                }
-
+            descriptors::iterator SingleDescriptor=Descriptor_Single();
             int64u RealSampleRate=(SingleDescriptor==Descriptors.end() || SingleDescriptor->second.StreamKind!=Stream_Audio)?((int64u)Config->File_EditRate):SingleDescriptor->second.Infos["SamplingRate"].To_int64u();
             int64u IgnoreSamplesAfter;
             if (!RealSampleRate || RealSampleRate==Config->File_EditRate)
@@ -7496,7 +7368,9 @@ void File_Mxf::Data_Parse()
     }
     case 0x060E2B34020401LL:
     case 0x060E2B34020501LL:
-    case 0x060E2B34025301LL: {
+    case 0x060E2B34024301LL:
+    case 0x060E2B34025301LL:
+    case 0x060E2B34026301LL: {
     if (!Element_IsComplete_Get())
     {
         Element_WaitForMoreData();
@@ -7570,13 +7444,20 @@ void File_Mxf::Data_Parse()
     GROUP(SDTISystemMetadataPack)
     else if ((Code.lo>>16)==(Groups::SDTISystemMetadataPack>>16))
     {
-        Code_Compare4&=0xFFFFFF00; //Remove MetaData Block Count
-        if (0) {}
-        GROUP(SDTIPackageMetadataSet)
-        GROUP(SDTIPictureMetadataSet)
-        GROUP(SDTISoundMetadataSet)
-        GROUP(SDTIDataMetadataSet)
-        GROUP(SDTIControlMetadataSet)
+        //Items are parsed by the methods (1-byte tags), MetaData Block Count is ignored
+        const auto Code_WithoutBlockCount=Code.lo&0xFFFFFFFFFFFFFF00LL;
+        if (Code_WithoutBlockCount==Groups::SDTIPackageMetadataSet)
+            SDTIPackageMetadataSet();
+        else if (Code_WithoutBlockCount==Groups::SDTIPictureMetadataSet)
+            SDTIPictureMetadataSet();
+        else if (Code_WithoutBlockCount==Groups::SDTISoundMetadataSet)
+            SDTISoundMetadataSet();
+        else if (Code_WithoutBlockCount==Groups::SDTIDataMetadataSet)
+            SDTIDataMetadataSet();
+        else if (Code_WithoutBlockCount==Groups::SDTIControlMetadataSet)
+            SDTIControlMetadataSet();
+        else
+            Skip_XX(Element_Size,                               "Unknown");
     }
     else if ((Code.lo>>16)==(Groups::SystemScheme1FirstElement>>16))
     {
@@ -7861,7 +7742,7 @@ void File_Mxf::HeaderPartitionClosedComplete()
 }
 
 //---------------------------------------------------------------------------
-void File_Mxf::BodyPartitionOpenIncomplete()
+void File_Mxf::BodyPartition()
 {
     //Parsing
     PartitionMetadata();
@@ -7886,90 +7767,34 @@ void File_Mxf::BodyPartitionOpenIncomplete()
             }
         }
     #endif //MEDIAINFO_NEXTPACKET && MEDIAINFO_DEMUX
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::BodyPartitionOpenIncomplete()
+{
+    //Parsing
+    BodyPartition();
 }
 
 //---------------------------------------------------------------------------
 void File_Mxf::BodyPartitionClosedIncomplete()
 {
     //Parsing
-    PartitionMetadata();
-
-    #if MEDIAINFO_NEXTPACKET && MEDIAINFO_DEMUX
-        if (!Demux_HeaderParsed)
-        {
-            Demux_HeaderParsed=true;
-
-            //Testing locators
-            Locators_CleanUp();
-
-            if (Config->File_IgnoreEditsBefore && !Config->File_IsDetectingDuration_Get() && Config->Event_CallBackFunction_IsSet()) //Only if demux packet may be requested
-                Open_Buffer_Seek(3, 0, (int64u)-1); //Forcing seek to Config->File_IgnoreEditsBefore
-            if (Config->NextPacket_Get() && Config->Event_CallBackFunction_IsSet())
-            {
-                if (Locators.empty())
-                {
-                    Config->Demux_EventWasSent=true; //First set is to indicate the user that header is parsed
-                    return;
-                }
-            }
-        }
-    #endif //MEDIAINFO_NEXTPACKET && MEDIAINFO_DEMUX
+    BodyPartition();
 }
 
 //---------------------------------------------------------------------------
 void File_Mxf::BodyPartitionOpenComplete()
 {
     //Parsing
-    PartitionMetadata();
-
-    #if MEDIAINFO_NEXTPACKET && MEDIAINFO_DEMUX
-        if (!Demux_HeaderParsed)
-        {
-            Demux_HeaderParsed=true;
-
-            //Testing locators
-            Locators_CleanUp();
-
-            if (Config->File_IgnoreEditsBefore && !Config->File_IsDetectingDuration_Get() && Config->Event_CallBackFunction_IsSet()) //Only if demux packet may be requested
-                Open_Buffer_Seek(3, 0, (int64u)-1); //Forcing seek to Config->File_IgnoreEditsBefore
-            if (Config->NextPacket_Get() && Config->Event_CallBackFunction_IsSet())
-            {
-                if (Locators.empty())
-                {
-                    Config->Demux_EventWasSent=true; //First set is to indicate the user that header is parsed
-                    return;
-                }
-            }
-        }
-    #endif //MEDIAINFO_NEXTPACKET && MEDIAINFO_DEMUX
+    BodyPartition();
 }
 
 //---------------------------------------------------------------------------
 void File_Mxf::BodyPartitionClosedComplete()
 {
     //Parsing
-    PartitionMetadata();
-
-    #if MEDIAINFO_NEXTPACKET && MEDIAINFO_DEMUX
-        if (!Demux_HeaderParsed)
-        {
-            Demux_HeaderParsed=true;
-
-            //Testing locators
-            Locators_CleanUp();
-
-            if (Config->File_IgnoreEditsBefore && !Config->File_IsDetectingDuration_Get() && Config->Event_CallBackFunction_IsSet()) //Only if demux packet may be requested
-                Open_Buffer_Seek(3, 0, (int64u)-1); //Forcing seek to Config->File_IgnoreEditsBefore
-            if (Config->NextPacket_Get() && Config->Event_CallBackFunction_IsSet())
-            {
-                if (Locators.empty())
-                {
-                    Config->Demux_EventWasSent=true; //First set is to indicate the user that header is parsed
-                    return;
-                }
-            }
-        }
-    #endif //MEDIAINFO_NEXTPACKET && MEDIAINFO_DEMUX
+    BodyPartition();
 }
 
 //---------------------------------------------------------------------------
@@ -10586,29 +10411,35 @@ void File_Mxf::SDTIPackageMetadataSet()
     {
         //Parsing
         Element_Begin1("Item");
-        int128u Tag;
         int16u Length;
         int8u Type;
-        Get_B1 (Type,                                            "Type");
+        Get_B1 (Type,                                           "Type");
         Get_B2 (Length,                                         "Length");
-        int64u End=Element_Offset+Length;
-        Get_UL (Tag,                                            "Tag", NULL); //TODO: check 10-byte UL with out_imx.mxf
+        auto End=Element_Offset+Length;
+        if (End>Element_Size)
+            End=Element_Size;
         switch (Type)
         {
             case 0x83 : //UMID
+                        if (Length==32 || Length==64)
                         {
                             Skip_UMID(                          );
-                            if (Element_Offset<End)
-                                Skip_UL  (                      "Zeroes");
+                            if (Length==64)
+                                Skip_XX(32,                     "Source Pack");
                         }
                         break;
             case 0x88 : //KLV Metadata
+                        if (End-Element_Offset>=16)
                         {
+                            int128u Key;
+                            Get_UL (Key,                        "Key", NULL);
                             while (Element_Offset<End)
                             {
                                 int64u Length;
                                 Get_BER(Length,                 "Length");
-                                switch ((Tag.lo>>16)&0xFF)
+                                if (Length>End-Element_Offset)
+                                    Length=End-Element_Offset;
+                                switch ((Key.lo>>16)&0xFF)
                                 {
                                     case 0x00 : Skip_UTF8(Length,"Data"); break;
                                     case 0x01 : Skip_UTF16L(Length,"Data"); break;
@@ -10617,8 +10448,10 @@ void File_Mxf::SDTIPackageMetadataSet()
                             }
                         }
                         break;
-            default   : Skip_XX(Length,                         "Unknown");
+            default   : ;
         }
+        if (Element_Offset<End)
+            Skip_XX(End-Element_Offset,                         Type==0x83?"(Unknown UMID size)":"Unknown");
         Element_End0();
     }
 
@@ -13095,10 +12928,14 @@ void File_Mxf::PartitionMetadata()
             if (Footer_Position==(int64u)-1)
                 Footer_Position=File_Offset+Buffer_Offset-Header_Size;
         #endif //MEDIAINFO_ADVANCED
+    }
 
-        #if MEDIAINFO_ADVANCED
-            //IsTruncated
-            if (!Trusted_Get())
+    #if MEDIAINFO_ADVANCED
+        //IsTruncated
+        const auto IsHeader=(Code.lo&0xFF0000)==0x020000;
+        if (IsHeader || (Code.lo&0xFF0000)==0x040000) //If Header or Footer Partition Pack
+        {
+            if (!IsHeader && !Trusted_Get())
                 IsTruncated();
             else
             {
@@ -13113,13 +12950,13 @@ void File_Mxf::PartitionMetadata()
                 }
 
                 auto ExpectedSize=File_Offset+Buffer_Offset-Header_Size+Element_Size_WithPadding;
-                if ((Code.lo&0xFF0000)==0x020000) //If Header Partition Pack
+                if (IsHeader)
                     ExpectedSize+=HeaderByteCount+IndexByteCount;
                 if (ExpectedSize>File_Size)
                     IsTruncated(ExpectedSize, true);
             }
-        #endif //MEDIAINFO_ADVANCED
-    }
+        }
+    #endif //MEDIAINFO_ADVANCED
 
     PartitionPack_AlreadyParsed.insert(File_Offset+Buffer_Offset-Header_Size);
 }
@@ -17631,19 +17468,101 @@ bool File_Mxf::SubDescriptor_IsDangling(const descriptors::iterator& Descriptor)
 {
     //A sub-descriptor with a Linked Track ID (e.g. PHDR Metadata Track SubDescriptor with its Source Track ID) describes another track
     //It is ignored if this track is described by another descriptor (malformed file, else the result depends on the InstanceUID order)
-    const auto IsSubDescriptor=[&](const int128u& DescriptorUID) {
-        for (const auto& Parent : Descriptors)
-            if (Parent.second.Type!=descriptor::type_Mutiple && std::find(Parent.second.SubDescriptors.begin(), Parent.second.SubDescriptors.end(), DescriptorUID)!=Parent.second.SubDescriptors.end())
-                return true;
+    if (Descriptor->second.LinkedTrackID==(int32u)-1)
         return false;
-    };
-    if (Descriptor->second.LinkedTrackID==(int32u)-1 || !IsSubDescriptor(Descriptor->first))
+    std::set<int128u> SubDescriptorUIDs;
+    for (const auto& Parent : Descriptors)
+        if (Parent.second.Type!=descriptor::type_Mutiple)
+            SubDescriptorUIDs.insert(Parent.second.SubDescriptors.begin(), Parent.second.SubDescriptors.end());
+    if (SubDescriptorUIDs.find(Descriptor->first)==SubDescriptorUIDs.end())
         return false;
     for (const auto& Descriptor2 : Descriptors)
-        if (Descriptor2.first!=Descriptor->first && Descriptor2.second.LinkedTrackID==Descriptor->second.LinkedTrackID && !IsSubDescriptor(Descriptor2.first))
+        if (Descriptor2.first!=Descriptor->first && Descriptor2.second.LinkedTrackID==Descriptor->second.LinkedTrackID && SubDescriptorUIDs.find(Descriptor2.first)==SubDescriptorUIDs.end())
             return true;
     return false;
 }
+
+//---------------------------------------------------------------------------
+int32u File_Mxf::TrackID_FromTrackNumber(int32u TrackNumber)
+{
+    //Last track with this Track Number
+    int32u TrackID=(int32u)-1;
+    for (tracks::iterator Track=Tracks.begin(); Track!=Tracks.end(); ++Track)
+        if (Track->second.TrackNumber==TrackNumber)
+            TrackID=Track->second.TrackID;
+    return TrackID;
+}
+
+//---------------------------------------------------------------------------
+File_Mxf::descriptors::iterator File_Mxf::Descriptor_Single(bool IncludeLinkedToTrack)
+{
+    //Searching single descriptor if it is the only valid descriptor
+    descriptors::iterator SingleDescriptor=Descriptors.end();
+    for (descriptors::iterator Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
+        if (Descriptor->second.StreamKind!=Stream_Max || (IncludeLinkedToTrack && Descriptor->second.LinkedTrackID!=(int32u)-1))
+        {
+            if (SingleDescriptor!=Descriptors.end())
+                return Descriptors.end(); // 2 or more descriptors, can not be used
+            SingleDescriptor=Descriptor;
+        }
+    return SingleDescriptor;
+}
+
+//---------------------------------------------------------------------------
+File_Mxf::descriptors::iterator File_Mxf::Descriptor_FromTrackID(int32u TrackID)
+{
+    //First descriptor describing this track
+    for (descriptors::iterator Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
+        if (Descriptor->second.LinkedTrackID==TrackID && !SubDescriptor_IsDangling(Descriptor))
+            return Descriptor;
+    return Descriptors.end();
+}
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_DEMUX || MEDIAINFO_SEEK
+bool File_Mxf::Descriptors_ConfigureForDemux()
+{
+    //Configuring bitrate if not available in descriptor
+    descriptors::iterator SingleDescriptor=Descriptor_Single();
+    if (SingleDescriptor!=Descriptors.end() && SingleDescriptor->second.StreamKind==Stream_Audio && SingleDescriptor->second.ByteRate==(int32u)-1)
+    {
+        std::map<std::string, Ztring>::const_iterator i=SingleDescriptor->second.Infos.find("SamplingRate");
+        if (i!=SingleDescriptor->second.Infos.end())
+        {
+            int32u SamplingRate=i->second.To_int32u();
+
+            if (SingleDescriptor->second.BlockAlign!=(int16u)-1)
+                SingleDescriptor->second.ByteRate=SamplingRate*SingleDescriptor->second.BlockAlign;
+            else if (SingleDescriptor->second.QuantizationBits!=(int32u)-1)
+                SingleDescriptor->second.ByteRate=SamplingRate*SingleDescriptor->second.QuantizationBits/8;
+        }
+    }
+
+    //Configuring EditRate if needed (e.g. audio at 48000 Hz)
+    bool EditRate_IsAdapted=false;
+    for (descriptors::iterator Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
+    {
+        if (Descriptor->second.SampleRate>1000)
+        {
+            float64 EditRate_FromTrack=DBL_MAX;
+            for (tracks::iterator Track=Tracks.begin(); Track!=Tracks.end(); ++Track)
+                if (Track->second.EditRate && EditRate_FromTrack>Track->second.EditRate)
+                    EditRate_FromTrack=Track->second.EditRate;
+            if (EditRate_FromTrack>1000)
+                EditRate_FromTrack=Demux_Rate; //Default value;
+            Descriptor->second.SampleRate=EditRate_FromTrack;
+            for (tracks::iterator Track=Tracks.begin(); Track!=Tracks.end(); ++Track)
+                if (Track->second.EditRate>EditRate_FromTrack)
+                {
+                    Track->second.EditRate_Real=Track->second.EditRate;
+                    Track->second.EditRate=EditRate_FromTrack;
+                }
+            EditRate_IsAdapted=true;
+        }
+    }
+    return EditRate_IsAdapted;
+}
+#endif //MEDIAINFO_DEMUX || MEDIAINFO_SEEK
 
 //---------------------------------------------------------------------------
 #if defined(MEDIAINFO_ADM_YES)
