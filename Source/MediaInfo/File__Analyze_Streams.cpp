@@ -2630,11 +2630,12 @@ size_t File__Analyze::Stream_Prepare (stream_t KindOfStream, size_t StreamPos)
     Fill(StreamKind_Last, StreamPos_Last, (size_t)General_Count, Count_Get(StreamKind_Last, StreamPos_Last));
     Fill(StreamKind_Last, StreamPos_Last, General_StreamKind, MediaInfoLib::Config.Info_Get(StreamKind_Last).Read(General_StreamKind, Info_Text));
     Fill(StreamKind_Last, StreamPos_Last, General_StreamKind_String, MediaInfoLib::Config.Language_Get(MediaInfoLib::Config.Info_Get(StreamKind_Last).Read(General_StreamKind, Info_Text)), true);
-    for (size_t Pos=0; Pos<Count_Get(KindOfStream); Pos++)
+    size_t Count=Count_Get(StreamKind_Last);
+    Stream_Count_Update(StreamKind_Last);
+    for (size_t Pos=Count==2?0:StreamPos_Last; Pos<Count; Pos++) //Only the shifted streams, or all streams if the position is no longer alone
     {
-        Fill(StreamKind_Last, Pos, General_StreamCount, Count_Get(StreamKind_Last), 10, true);
         Fill(StreamKind_Last, Pos, General_StreamKindID, Pos, 10, true);
-        if (Count_Get(StreamKind_Last)>1)
+        if (Count>1)
             Fill(StreamKind_Last, Pos, General_StreamKindPos, Pos+1, 10, true);
         else
             Clear(StreamKind_Last, Pos, General_StreamKindPos);
@@ -2760,11 +2761,12 @@ size_t File__Analyze::Stream_Erase (stream_t KindOfStream, size_t StreamPos)
     (*Stream_More)[KindOfStream].erase((*Stream_More)[KindOfStream].begin()+StreamPos);
 
     //Filling basic info
-    for (size_t Pos=0; Pos<Count_Get(KindOfStream); Pos++)
+    size_t Count=Count_Get(KindOfStream);
+    Stream_Count_Update(KindOfStream);
+    for (size_t Pos=Count==1?0:StreamPos; Pos<Count; Pos++) //Only the shifted streams, or all streams if the position is no longer needed
     {
-        Fill(KindOfStream, Pos, General_StreamCount, Count_Get(KindOfStream), 10, true);
         Fill(KindOfStream, Pos, General_StreamKindID, Pos, 10, true);
-        if (Count_Get(KindOfStream)>1)
+        if (Count>1)
             Fill(KindOfStream, Pos, General_StreamKindPos, Pos+1, 10, true);
         else
             Clear(KindOfStream, Pos, General_StreamKindPos);
@@ -2774,6 +2776,19 @@ size_t File__Analyze::Stream_Erase (stream_t KindOfStream, size_t StreamPos)
     StreamPos_Last=(size_t)-1;
 
     return (*Stream)[KindOfStream].size()-1; //The position in the stream count
+}
+
+//---------------------------------------------------------------------------
+void File__Analyze::Stream_Count_Update(stream_t KindOfStream)
+{
+    //Count of streams is in all streams of this kind, the value is set directly because Fill() is too slow for files with thousands of streams
+    auto& Streams=(*Stream)[KindOfStream];
+    if (Streams.empty())
+        return;
+    Ztring Count=Ztring::ToZtring(Streams.size());
+    for (auto& Stream_Item : Streams)
+        Stream_Item(General_StreamCount)=Count;
+    Status[IsUpdated]=true;
 }
 
 
