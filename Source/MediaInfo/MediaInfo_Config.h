@@ -393,6 +393,9 @@ public :
           string        Mp4Profile(const Ztring& Value);
           string        Mp4Profile();
           string        Mp4Profile_List();
+          string        MxfProfile(const Ztring& Value);
+          string        MxfProfile();
+          string        MxfProfile_List();
           string        UsacProfile(const Ztring& Value);
           int8u         UsacProfile();
           string        UsacProfile_List();
@@ -566,6 +569,7 @@ private :
     #if MEDIAINFO_CONFORMANCE
     adm_profile     Adm_Profile;
     string          Mp4_Profile;
+    string          Mxf_Profile;
     int8u           Usac_Profile;
     bool            Warning_Error;
     #endif

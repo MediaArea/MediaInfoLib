@@ -1655,6 +1655,23 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
         #endif // MEDIAINFO_CONFORMANCE
     }
 
+    if (Option_Lower==__T("mxfprofile"))
+    {
+        #if MEDIAINFO_CONFORMANCE
+            return Ztring().From_UTF8(MxfProfile(Value));
+        #else // MEDIAINFO_CONFORMANCE
+            return __T("conformance features are disabled due to compilation options");
+        #endif // MEDIAINFO_CONFORMANCE
+    }
+    if (Option_Lower==__T("mxfprofile_list"))
+    {
+        #if MEDIAINFO_CONFORMANCE
+            return Ztring().From_UTF8(MxfProfile_List());
+        #else // MEDIAINFO_CONFORMANCE
+            return Ztring();
+        #endif // MEDIAINFO_CONFORMANCE
+    }
+
     if (Option_Lower==__T("usacprofile"))
     {
         #if MEDIAINFO_CONFORMANCE
@@ -4054,6 +4071,44 @@ string MediaInfo_Config::ProfileList_Get(const char* const* Names, size_t Names_
         Result += Names[i];
     }
     return Result;
+}
+#endif //MEDIAINFO_CONFORMANCE
+
+#if MEDIAINFO_CONFORMANCE
+static const char* const MxfProfile_Names[] =
+{
+    "SMPTE_ST_337_2008", //Editions of SMPTE ST 337 and associated standards, only one can be requested (by default, latest edition without check of the data types)
+    "SMPTE_ST_337_2015",
+    "SMPTE_ST_337_2016",
+    "SMPTE_ST_337_2019",
+};
+string MediaInfo_Config::MxfProfile(const Ztring& Value)
+{
+    string Temp;
+    const auto Error = ProfileList_Set(Value, MxfProfile_Names, sizeof(MxfProfile_Names)/sizeof(*MxfProfile_Names), "MXF profile", Temp);
+    if (!Error.empty())
+        return Error;
+    if (Temp.find("SMPTE_ST_337_") != Temp.rfind("SMPTE_ST_337_"))
+        return "Only one SMPTE ST 337 edition can be requested";
+
+    CriticalSectionLocker CSL(CS);
+    Mxf_Profile = Temp;
+    return {};
+}
+#endif //MEDIAINFO_CONFORMANCE
+
+#if MEDIAINFO_CONFORMANCE
+string MediaInfo_Config::MxfProfile()
+{
+    CriticalSectionLocker CSL(CS);
+    return Mxf_Profile;
+}
+#endif //MEDIAINFO_CONFORMANCE
+
+#if MEDIAINFO_CONFORMANCE
+string MediaInfo_Config::MxfProfile_List()
+{
+    return ProfileList_Get(MxfProfile_Names, sizeof(MxfProfile_Names)/sizeof(*MxfProfile_Names));
 }
 #endif //MEDIAINFO_CONFORMANCE
 
