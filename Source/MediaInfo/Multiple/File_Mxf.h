@@ -107,6 +107,10 @@ protected :
     void Streams_Finish_Component_ForAS11 (const int128u ComponentUID, float64 EditRate, int32u TrackID, int64s Origin);
     void Streams_Finish_Identification (const int128u IdentificationUID);
     void Streams_Finish_CommercialNames ();
+    void Streams_Finish_CompliantWith ();
+    conformance_errors CompliantWith_ArdZdf (size_t Profile_Pos, bool IsCandidateTest=false); //Profile_Pos is the position in the list of ARD/ZDF profiles, candidate test is done before parsing all partitions, without tests needing all partitions or the essence
+    bool CompliantWith_ArdZdf_IsCandidate (); //Candidate for an ARD/ZDF profile with Body Partitions
+    size_t CompliantWith_ArdZdf_FromContent (std::string& Content); //Position of the ARD/ZDF profile matching the kind of content, (size_t)-1 if none, Content is filled with a description of the content
 
     //Buffer - Global
     void Read_Buffer_Init ();
@@ -1551,11 +1555,34 @@ protected :
     };
     std::vector<indextablesegment>  IndexTableSegments;
     std::string                     IndexTableSegment_Flags; //Flags of each index entry of the index table segment being parsed
+    std::vector<int32u>             ContentPackage_Elements; //Track Number of essence elements, in order of first appearance
+    bool                            ContentPackage_SystemItemIsFirst;
+    bool                            SDTI_PackageMetadataSet_IsPresent;
     bool                            PrivateMetadata_IsPresent;
     std::vector<randomindexpack>    RandomIndexPack_Entries; //All partitions listed in the Random Index Pack
     int64u                          RandomIndexPack_Offset; //Offset of the Random Index Pack, (int64u)-1 if not parsed
     int64u                          RandomIndexPack_Size; //Size of the Random Index Pack
     int32u                          RandomIndexPack_Length; //Value of the Length item of the Random Index Pack
+    struct systemitem_checks
+    {
+        int16u  ContentPackageRate=(int16u)-1;  //Package Rate and 1.001 Flag, (int16u)-1 if not yet parsed, (int16u)-2 if not constant
+        bool    TimeCode_IsMissing=false;       //A System Item has no timecode
+        bool    TimeCode_IsNotContinuous=false;
+        int64u  TimeCode_Count=0;               //Count of timecodes since the last jump
+        int32u  TimeCode_First_Seconds=0;       //First timecode since the last jump
+        int8u   TimeCode_First_Frames=0;
+        int8u   TimeCode_Modes=0;               //Bit 0: frame count at full rate, bits 1+: frame count at full rate divided by pair count, with first frame being the frame of the pair with this index
+        int64u  ContentPackage_Offset=(int64u)-1; //Offset of the previous System Item since the last jump
+        int64u  ContentPackage_Size=(int64u)-1; //Distance between System Items, (int64u)-1 if not yet parsed, (int64u)-2 if not constant
+        std::vector<int32u> ContentPackage_Elements; //Track Number of essence elements since the previous System Item
+        std::vector<int32u> ContentPackage_Elements_First; //Track Number of essence elements of the first content package between contiguous System Items
+        bool    ContentPackage_Elements_IsNotConstant=false; //Essence elements are not in the same order in all content packages between contiguous System Items
+    };
+    systemitem_checks               SystemItem_Checks;
+    void SystemItem_Checks_TimeCode(int32u Seconds, int8u Frames, int8u FrameRate, int8u PairCount);
+    int32u                          ArdZdf_IsRequested; //Bit per ARD/ZDF profile requested by the user, conformance errors are reported
+    bool                            ArdZdf_FromContent_IsRequested; //ARD/ZDF profile matching the kind of content requested by the user ("ARD_ZDF"), conformance errors are reported
+    int64u                          Anc_ElementSize; //Size of the ANC Data Elements, (int64u)-1 if not yet parsed, (int64u)-2 if not constant
     void Property_Store(properties& Properties, int64u Size);
     void Properties_Store(properties& Properties);
     void PrivateMetadata_Test(const int128u& UL);

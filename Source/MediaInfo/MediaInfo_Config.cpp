@@ -4077,6 +4077,15 @@ string MediaInfo_Config::ProfileList_Get(const char* const* Names, size_t Names_
 #if MEDIAINFO_CONFORMANCE
 static const char* const MxfProfile_Names[] =
 {
+    "ARD_ZDF", //ARD/ZDF profile matching the kind of content
+    "ARD_ZDF_HDF-01a",
+    "ARD_ZDF_HDF-01b",
+    "ARD_ZDF_HDF-02a",
+    "ARD_ZDF_HDF-02b",
+    "ARD_ZDF_HDF-03a",
+    "ARD_ZDF_HDF-03b",
+    "ARD_ZDF_SDF-01",
+    "ARD_ZDF_SDF-02",
     "SMPTE_ST_337_2008", //Editions of SMPTE ST 337 and associated standards, only one can be requested (by default, latest edition without check of the data types)
     "SMPTE_ST_337_2015",
     "SMPTE_ST_337_2016",
