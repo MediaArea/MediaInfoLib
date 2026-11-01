@@ -1463,6 +1463,7 @@ protected :
     void Video_FrameRate_Rounding (stream_t StreamKind, size_t Pos, size_t Parameter);
     void Video_BitRate_Rounding (size_t Pos, video Parameter);
     void Audio_BitRate_Rounding (size_t Pos, audio Parameter);
+    bool Video_BitRate_Rounding_Disabled=false; //For an exact video bit rate (e.g. from the size of all elements), not rounded to a well known value
 
     //Utils - Finalize
     void Duration_Duration123   (stream_t StreamKind, size_t StreamPos, size_t Parameter);

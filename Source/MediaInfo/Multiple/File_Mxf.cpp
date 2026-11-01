@@ -2007,6 +2007,8 @@ File_Mxf::File_Mxf()
     //Temp
     RandomIndexPacks_AlreadyParsed=false;
     Streams_Count=(size_t)-1;
+    IndexTable_SegmentCount=0;
+    IndexTable_SegmentCount_Cbe=0;
     OperationalPattern=0;
     Buffer_Begin=(int64u)-1;
     Buffer_End=0;
@@ -2583,6 +2585,13 @@ void File_Mxf::Streams_Finish()
             IsTruncated((!Partitions.empty() && Partitions[0].FooterPartition && Partitions[0].FooterPartition>=File_Size)?Partitions[0].FooterPartition:(int64u)-1, false, "MXF");
     #endif //MEDIAINFO_ADVANCED
 
+    //Stream sizes from the size of frame wrapped elements, only if all elements of the container duration are present
+    if (Retrieve_Const(Stream_General, 0, "IsTruncated").empty() && !(!Partitions.empty() && Partitions[0].FooterPartition && Partitions[0].FooterPartition>=File_Size)
+     && !Config->File_IgnoreEditsBefore && Config->File_IgnoreEditsAfter==(int64u)-1)
+        for (const auto& Item : StreamSizes_FromElements)
+            if (Item.StreamPos<Count_Get(Stream_Video) && Retrieve_Const(Stream_Video, Item.StreamPos, Video_ID)==Item.ID && Retrieve_Const(Stream_Video, Item.StreamPos, Video_StreamSize).empty())
+                Fill(Stream_Video, Item.StreamPos, Video_StreamSize, Item.StreamSize);
+
     //Handling separate streams
     for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
         for (size_t StreamPos=0; StreamPos<Count_Get((stream_t)StreamKind); StreamPos++)
@@ -2901,6 +2910,13 @@ void File_Mxf::Streams_Finish()
         Merge_Conformance();
         Streams_Finish_Conformance(Stream_Other, TimecodeCache.second.StreamPos);
     }
+
+    //Bit rates from the size of frame wrapped elements, exact so not rounded to a well known value, after the commercial names which rely on these values
+    Video_BitRate_Rounding_Disabled=true;
+    for (const auto& Item : StreamSizes_FromElements)
+        if (Item.StreamPos<Count_Get(Stream_Video) && Retrieve_Const(Stream_Video, Item.StreamPos, Video_ID)==Item.ID && Retrieve_Const(Stream_Video, Item.StreamPos, Video_StreamSize).To_int64u()==Item.StreamSize)
+            Fill(Stream_Video, Item.StreamPos, Video_BitRate, Item.BitRate, 0, true);
+    Video_BitRate_Rounding_Disabled=false;
 }
 
 //---------------------------------------------------------------------------
@@ -3321,6 +3337,27 @@ void File_Mxf::Streams_Finish_Track(const int128u TrackUID)
 
     //Sequence
     Streams_Finish_Component(Track->second.Sequence, Track->second.EditRate_Real?Track->second.EditRate_Real:Track->second.EditRate, Track->second.TrackID, Track->second.Origin);
+
+    //Stream size from the size of frame wrapped video elements, if constant
+    const auto Essence=Essences.find(Track->second.TrackNumber);
+    if (StreamKind_Last==Stream_Video && Essence!=Essences.end() && Essence->second.Element_Size_Constant && Essence->second.Element_Size_Constant!=(int64u)-1
+     && Retrieve_Const(Stream_Video, StreamPos_Last, Video_StreamSize).empty())
+    {
+        for (descriptors::iterator Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
+            if (Descriptor->second.LinkedTrackID==Essence->second.TrackID && !SubDescriptor_IsDangling(Descriptor))
+            {
+                if (Descriptor->second.Duration && Descriptor->second.Duration!=(int64u)-1
+                 && Track->second.EditRate && std::fabs(Descriptor->second.SampleRate-Track->second.EditRate)<Track->second.EditRate/1000) //Container duration is the count of elements
+                {
+                    const auto Wrapping=Descriptor->second.Infos.find("Format_Settings_Wrapping");
+                    const auto IsCbe=IndexTable_SegmentCount && IndexTable_SegmentCount_Cbe==IndexTable_SegmentCount; //Constant size of edit units, so of the elements
+                    const auto Stream_Size=Essence->second.Element_Size_Constant*Descriptor->second.Duration;
+                    if (IsCbe && Stream_Size<=File_Size && Wrapping!=Descriptor->second.Infos.end() && Wrapping->second.rfind(__T("Frame"), 0)==0)
+                        StreamSizes_FromElements.push_back({StreamPos_Last, Retrieve_Const(Stream_Video, StreamPos_Last, Video_ID), Stream_Size, Essence->second.Element_Size_Constant*8*Track->second.EditRate}); //Filled after the check of truncation
+                }
+                break;
+            }
+    }
 
     //Done
     Track->second.Stream_Finish_Done=true;
@@ -7142,6 +7179,15 @@ void File_Mxf::Data_Parse()
             }
         }
 
+        //Element size, for the stream size if all elements have the same size
+        if (!Buffer_End)
+        {
+            if (!Essence->second.Element_Size_Constant)
+                Essence->second.Element_Size_Constant=Element_Size;
+            else if (Essence->second.Element_Size_Constant!=Element_Size)
+                Essence->second.Element_Size_Constant=(int64u)-1;
+        }
+
         //Frame info is specific to the container, and it is not updated
         const frame_info FrameInfo_Temp=FrameInfo;
         int64u Frame_Count_NotParsedIncluded_Temp=Frame_Count_NotParsedIncluded;
@@ -8119,6 +8165,7 @@ void File_Mxf::IndexTableSegment()
             IndexTables.push_back(indextable());
             IndexTables[IndexTables.size()-1].StreamOffset=File_Offset+Buffer_Offset-Header_Size;
         #endif //MEDIAINFO_DEMUX || MEDIAINFO_SEEK
+        IndexTable_SegmentCount++;
     }
 
     ELEMENT_BEGIN()
@@ -12055,6 +12102,8 @@ void File_Mxf::IndexTableSegment_EditUnitByteCount()
         #if MEDIAINFO_SEEK
             IndexTables[IndexTables.size()-1].EditUnitByteCount=Data;
         #endif //MEDIAINFO_SEEK
+        if (Data)
+            IndexTable_SegmentCount_Cbe++;
     FILLING_END();
 }
 
