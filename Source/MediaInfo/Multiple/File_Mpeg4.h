@@ -125,6 +125,11 @@ private :
     void mfra();
     void mfra_mfro();
     void mfra_tfra();
+    void mini();
+    template<typename F> void mini_Chunk(const char* Name, int64u Size, F Parse);
+    void mini_CodecConfiguration(int32u item_ID, int32u codec_config_type);
+    void mini_HdrProperties(Ztring& MaxCLL, Ztring& MaxFALL, Ztring& MasteringDisplay_ColorPrimaries, Ztring& MasteringDisplay_Luminance);
+    void mini_ItemData(int32u item_ID);
     void moof();
     void moof_mfhd();
     void moof_traf();
