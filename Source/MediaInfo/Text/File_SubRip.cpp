@@ -542,7 +542,7 @@ void File_SubRip::Read_Buffer_Continue()
     #endif //MEDIAINFO_DEMUX
 
     // Output
-    #if MEDIAINFO_EVENTS
+    #if MEDIAINFO_EVENTS && MEDIAINFO_DEMUX
         for (; Items_Pos<Items.size(); Items_Pos++)
         {
             Frame_Count_NotParsedIncluded=Frame_Count;
@@ -580,7 +580,7 @@ void File_SubRip::Read_Buffer_Continue()
 
             Frame_Count++;
         }
-    #endif //MEDIAINFO_EVENTS
+    #endif //MEDIAINFO_EVENTS && MEDIAINFO_DEMUX
 
     Buffer_Offset=Buffer_Size;
 }

@@ -770,8 +770,10 @@ void File_Nsv::Data_Parse()
                 for (const auto& Buffer : Stream.Buffers)
                 {
                     Open_Buffer_Continue(Stream.Parser, Buffer.Data, Buffer.Size);
-                    if (Stream.Parser->Status[IsAccepted])
-                        Demux(Buffer.Data, Buffer.Size, ContentType_MainStream);
+                    #if MEDIAINFO_DEMUX
+                        if (Stream.Parser->Status[IsAccepted])
+                            Demux(Buffer.Data, Buffer.Size, ContentType_MainStream);
+                    #endif //MEDIAINFO_DEMUX
                     delete[] Buffer.Data;
                 }
                 if (Stream.Parser->Status[IsAccepted] && Stream.Parser->FrameInfo.PTS!=(int64u)-1)
