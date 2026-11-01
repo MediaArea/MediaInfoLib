@@ -1287,7 +1287,7 @@ void File_Mpeg4::Data_Parse()
         ATOM(meta_iloc)
         LIST(meta_iprp)
             ATOM_BEGIN
-            LIST(meta_iprp_ipco)
+            LIST_COMPLETE(meta_iprp_ipco)
                 ATOM_BEGIN
                 ATOM(meta_iprp_ipco_av1C)
                 ATOM(meta_iprp_ipco_av2C)
