@@ -3026,7 +3026,7 @@ void File_Mxf::Streams_Finish_ContentStorage_Conformance (const int128u ContentS
                     Fill_Conformance_AtOffset(Descriptor->second.SourceTrackID_Offset, "MXF SourceTrackID", string(Descriptor->second.SourceTrackID_Name)+" Source Track ID does not match any Track ID of the Source Package (actual "+std::to_string(Descriptor->second.SourceTrackID)+", expected any of "+TrackIDs_String+')', Descriptor->second.SourceTrackID);
             }
 
-            //Source Track ID must reference a track not described by another descriptor (e.g. not an audio track)
+            //Source Track ID must reference a track not described by another descriptor (e.g. not an audio track), the error is in the stream of the parent descriptor (e.g. the video)
             for (const auto& DescriptorUID : DescriptorUIDs)
             {
                 descriptors::iterator Descriptor=Descriptors.find(DescriptorUID);
@@ -3037,7 +3037,25 @@ void File_Mxf::Streams_Finish_ContentStorage_Conformance (const int128u ContentS
                     descriptors::iterator LinkedDescriptor=Descriptors.find(LinkedDescriptorUID);
                     if (LinkedDescriptor!=Descriptors.end() && LinkedDescriptor->second.SourceTrackID_Offset==(int64u)-1 && LinkedDescriptor->second.LinkedTrackID==Descriptor->second.SourceTrackID)
                     {
-                        Fill_Conformance_AtOffset(Descriptor->second.SourceTrackID_Offset, "MXF SourceTrackID", string(Descriptor->second.SourceTrackID_Name)+" Source Track ID references a track described by another descriptor (actual "+std::to_string(Descriptor->second.SourceTrackID)+')', Descriptor->second.SourceTrackID);
+                        auto TrackID=(int32u)-1; //Track of the parent descriptor, else of the only video descriptor
+                        size_t Video_Count=0;
+                        int32u Video_TrackID=(int32u)-1;
+                        for (const auto& ParentUID : DescriptorUIDs)
+                        {
+                            descriptors::iterator Parent=Descriptors.find(ParentUID);
+                            if (Parent==Descriptors.end())
+                                continue;
+                            if (Parent->second.LinkedTrackID!=(int32u)-1 && std::find(Parent->second.SubDescriptors.begin(), Parent->second.SubDescriptors.end(), DescriptorUID)!=Parent->second.SubDescriptors.end())
+                                TrackID=Parent->second.LinkedTrackID;
+                            if (Parent->second.StreamKind==Stream_Video)
+                            {
+                                Video_Count++;
+                                Video_TrackID=Parent->second.LinkedTrackID;
+                            }
+                        }
+                        if (TrackID==(int32u)-1 && Video_Count==1)
+                            TrackID=Video_TrackID;
+                        Fill_Conformance_AtOffset(Descriptor->second.SourceTrackID_Offset, "MXF SourceTrackID", string(Descriptor->second.SourceTrackID_Name)+" Source Track ID references a track described by another descriptor (actual "+std::to_string(Descriptor->second.SourceTrackID)+')', TrackID);
                         break;
                     }
                 }
