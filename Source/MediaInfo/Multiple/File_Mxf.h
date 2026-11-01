@@ -92,6 +92,7 @@ protected :
     void Streams_Finish_Package_ForAS11 (const int128u PackageUID);
     #if MEDIAINFO_CONFORMANCE
     void Streams_Finish_ContentStorage_Conformance (const int128u ContentStorageUID);
+    void Streams_Finish_Conformance_FileFormat (); //SMPTE ST 377-1, edition depending on the version in the file
     void Streams_Finish_Conformance_References ();
     #endif //MEDIAINFO_CONFORMANCE
     void Streams_Finish_Track (const int128u TrackUID);
@@ -1462,6 +1463,8 @@ protected :
     {
         int64u StreamOffset; //From file, not MXF one
         int64u PartitionPackByteCount; //Fill included
+        int64u ThisPartition;
+        int64u PreviousPartition;
         int64u FooterPartition;
         int64u HeaderByteCount;
         int64u IndexByteCount;
@@ -1479,6 +1482,8 @@ protected :
         {
             StreamOffset=0;
             PartitionPackByteCount=(int64u)-1;
+            ThisPartition=0;
+            PreviousPartition=0;
             FooterPartition=0;
             HeaderByteCount=0;
             IndexByteCount=0;
@@ -1548,6 +1553,9 @@ protected :
     std::string                     IndexTableSegment_Flags; //Flags of each index entry of the index table segment being parsed
     bool                            PrivateMetadata_IsPresent;
     std::vector<randomindexpack>    RandomIndexPack_Entries; //All partitions listed in the Random Index Pack
+    int64u                          RandomIndexPack_Offset; //Offset of the Random Index Pack, (int64u)-1 if not parsed
+    int64u                          RandomIndexPack_Size; //Size of the Random Index Pack
+    int32u                          RandomIndexPack_Length; //Value of the Length item of the Random Index Pack
     void Property_Store(properties& Properties, int64u Size);
     void Properties_Store(properties& Properties);
     void PrivateMetadata_Test(const int128u& UL);

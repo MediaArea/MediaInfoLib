@@ -2036,6 +2036,9 @@ File_Mxf::File_Mxf()
     SDTI_IsPresent=false;
     SDTI_IsInIndexStreamOffset=true;
     PrivateMetadata_IsPresent=false;
+    RandomIndexPack_Offset=(int64u)-1;
+    RandomIndexPack_Size=0;
+    RandomIndexPack_Length=0;
     #if MEDIAINFO_TRACE
         SDTI_SystemMetadataPack_Trace_Count=0;
         SDTI_PackageMetadataSet_Trace_Count=0;
@@ -2883,6 +2886,11 @@ void File_Mxf::Streams_Finish()
     //Commercial names
     Streams_Finish_CommercialNames();
 
+    //Conformance with SMPTE ST 377-1
+    #if MEDIAINFO_CONFORMANCE
+        Streams_Finish_Conformance_FileFormat();
+    #endif //MEDIAINFO_CONFORMANCE
+
     #if MEDIAINFO_CONFORMANCE
         Streams_Finish_Conformance_References();
     #endif //MEDIAINFO_CONFORMANCE
@@ -3106,6 +3114,264 @@ void File_Mxf::Streams_Finish_ContentStorage_Conformance (const int128u ContentS
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_CONFORMANCE
+void File_Mxf::Streams_Finish_Conformance_FileFormat ()
+{
+    if (IsSub || Partitions.empty() || Partitions[0].Kind!=0x02)
+        return; //Header Partition is not parsed
+
+    const auto& HeaderPartition=Partitions[0];
+    const auto RunIn=HeaderPartition.StreamOffset; //Byte offsets are relative to the Header Partition
+
+    const auto Hex=[](int64u Value) {
+        return "0x"+Ztring::ToZtring(Value, 16).To_UTF8();
+    };
+    const auto Version=[](int Major, int Minor) {
+        return to_string(Major)+'.'+to_string(Minor);
+    };
+    const auto Version_Normalized=[](int Major, int Minor) { //Version 1.1 is accepted as version 1.2
+        return (Major<<8)|((Major==1 && Minor==1)?2:Minor);
+    };
+    const auto Fill_Conformance_AtOffset=[&](int64u Offset, const char* Field, const string& Value, conformance_type Level=Conformance_Error) {
+        //Conformance offset is the one of the item, no offset if (int64u)-1, no frame or time
+        const auto File_Offset_Save=File_Offset;
+        const auto Frame_Count_Save=Frame_Count;
+        const auto Frame_Count_NotParsedIncluded_Save=Frame_Count_NotParsedIncluded;
+        const auto PTS_Save=FrameInfo.PTS;
+        const auto DTS_Save=FrameInfo.DTS;
+        File_Offset=Offset-(Buffer_Offset+Element_Offset);
+        Frame_Count=(int64u)-1;
+        Frame_Count_NotParsedIncluded=(int64u)-1;
+        FrameInfo.PTS=(int64u)-1;
+        FrameInfo.DTS=(int64u)-1;
+        Fill_Conformance(Field, Value, {}, Level);
+        Merge_Conformance();
+        File_Offset=File_Offset_Save;
+        Frame_Count=Frame_Count_Save;
+        Frame_Count_NotParsedIncluded=Frame_Count_NotParsedIncluded_Save;
+        FrameInfo.PTS=PTS_Save;
+        FrameInfo.DTS=DTS_Save;
+    };
+    const auto IsClosed=[](const partition& Partition) {
+        return Partition.Status==0x02 || Partition.Status==0x04;
+    };
+    const auto Kind_Name=[](int8u Kind) {
+        switch (Kind)
+        {
+            case 0x02 : return "Header";
+            case 0x03 : return "Body";
+            case 0x04 : return "Footer";
+            default   : return "Unknown";
+        }
+    };
+
+    //Edition, SMPTE 377M-2004 for version 1.2 (version 1.1 is checked as version 1.2), SMPTE ST 377-1:2009 and later for version 1.3, no check for version 1.0
+    if (HeaderPartition.MajorVersion==1 && !HeaderPartition.MinorVersion)
+        return;
+    if (HeaderPartition.MajorVersion!=1 || HeaderPartition.MinorVersion>3)
+    {
+        Fill_Conformance_AtOffset(RunIn, HeaderPartition.MajorVersion!=1?"MXF PartitionPack MajorVersion":"MXF PartitionPack MinorVersion", "Version support not implemented (actual "+Version(HeaderPartition.MajorVersion, HeaderPartition.MinorVersion)+')', Conformance_Information);
+        return;
+    }
+    const auto HeaderPartition_Version=Version_Normalized(HeaderPartition.MajorVersion, HeaderPartition.MinorVersion);
+    const auto Is2004=HeaderPartition_Version==0x0102;
+
+    //Footer Partition, its absence is known only if the last partition listed in the Random Index Pack is parsed
+    const partition* FooterPartition=nullptr;
+    size_t HeaderPartition_Count=0, FooterPartition_Count=0;
+    for (const auto& Partition : Partitions)
+    {
+        if (Partition.Kind==0x02)
+            HeaderPartition_Count++;
+        if (Partition.Kind==0x04)
+        {
+            FooterPartition=&Partition;
+            FooterPartition_Count++;
+        }
+    }
+    auto FooterPartition_IsAbsent=false;
+    if (!FooterPartition && !RandomIndexPack_Entries.empty())
+        for (const auto& Partition : Partitions)
+            if (Partition.StreamOffset-RunIn==RandomIndexPack_Entries.back().ByteOffset)
+                FooterPartition_IsAbsent=true;
+    if (HeaderPartition_Count>1)
+        Fill_Conformance_AtOffset(RunIn, "MXF PartitionPack", "Header Partition is present more than once");
+    if (FooterPartition_Count>1)
+        Fill_Conformance_AtOffset(FooterPartition->StreamOffset, "MXF PartitionPack", "Footer Partition is present more than once");
+    else if (FooterPartition && FooterPartition!=&Partitions.back())
+        Fill_Conformance_AtOffset(Partitions.back().StreamOffset, "MXF PartitionPack", "Partition is after the Footer Partition");
+
+    //Random Index Pack
+    auto RandomIndexPack_IsAscending=true;
+    if (RandomIndexPack_Offset!=(int64u)-1)
+    {
+        if (RandomIndexPack_Length!=RandomIndexPack_Size)
+            Fill_Conformance_AtOffset(RandomIndexPack_Offset, "MXF RandomIndexPack Length", "Length is not the size of the Random Index Pack (actual "+to_string(RandomIndexPack_Length)+", expected "+to_string(RandomIndexPack_Size)+')');
+        for (size_t i=1; i<RandomIndexPack_Entries.size(); i++)
+            if (RandomIndexPack_Entries[i].ByteOffset<=RandomIndexPack_Entries[i-1].ByteOffset)
+                RandomIndexPack_IsAscending=false;
+        if (!RandomIndexPack_IsAscending)
+            Fill_Conformance_AtOffset(RandomIndexPack_Offset, "MXF RandomIndexPack ByteOffset", "Byte Offsets are not in ascending order");
+        for (const auto& Partition : Partitions)
+        {
+            const auto Entry=RandomIndexPack_Find(Partition.StreamOffset-RunIn);
+            if (!Entry)
+                Fill_Conformance_AtOffset(Partition.StreamOffset, "MXF RandomIndexPack ByteOffset", "Partition is not listed in the Random Index Pack");
+            else if (Entry->BodySID!=Partition.BodySID)
+                Fill_Conformance_AtOffset(RandomIndexPack_Offset, "MXF RandomIndexPack BodySID", "BodySID is not the one of the Partition Pack (actual "+to_string(Entry->BodySID)+", expected "+to_string(Partition.BodySID)+", partition at "+Hex(Entry->ByteOffset)+')');
+        }
+    }
+
+    //Partition Packs
+    set<int64u> Kind_Reported; //Partitions with a wrong kind, reported once
+    for (const auto& Partition : Partitions)
+    {
+        const auto Offset=Partition.StreamOffset;
+        const auto ByteOffset=Offset-RunIn;
+        if (Version_Normalized(Partition.MajorVersion, Partition.MinorVersion)!=HeaderPartition_Version)
+            Fill_Conformance_AtOffset(Offset, Partition.MajorVersion!=HeaderPartition.MajorVersion?"MXF PartitionPack MajorVersion":"MXF PartitionPack MinorVersion", "Version is not the one of the Header Partition (actual "+Version(Partition.MajorVersion, Partition.MinorVersion)+", expected "+Version(HeaderPartition.MajorVersion, HeaderPartition.MinorVersion)+')');
+        if (Partition.ThisPartition!=ByteOffset)
+            Fill_Conformance_AtOffset(Offset, "MXF PartitionPack ThisPartition", "ThisPartition is not the offset of the partition (actual "+Hex(Partition.ThisPartition)+", expected "+Hex(ByteOffset)+')');
+
+        //Previous partition, checked with the Random Index Pack
+        if (Partition.Kind==0x02)
+        {
+            if (Partition.PreviousPartition)
+                Fill_Conformance_AtOffset(Offset, "MXF PartitionPack PreviousPartition", "PreviousPartition of the Header Partition is wrong (actual "+Hex(Partition.PreviousPartition)+", expected 0)");
+        }
+        else if (Partition.PreviousPartition>=ByteOffset)
+            Fill_Conformance_AtOffset(Offset, "MXF PartitionPack PreviousPartition", "PreviousPartition is not the offset of a previous partition (actual "+Hex(Partition.PreviousPartition)+')');
+        else if (RandomIndexPack_IsAscending)
+            for (size_t i=1; i<RandomIndexPack_Entries.size(); i++)
+                if (RandomIndexPack_Entries[i].ByteOffset==ByteOffset && Partition.PreviousPartition!=RandomIndexPack_Entries[i-1].ByteOffset)
+                    Fill_Conformance_AtOffset(Offset, "MXF PartitionPack PreviousPartition", "PreviousPartition is not the offset of the previous partition listed in the Random Index Pack (actual "+Hex(Partition.PreviousPartition)+", expected "+Hex(RandomIndexPack_Entries[i-1].ByteOffset)+')');
+
+        //Footer Partition offset
+        if (Partition.Kind==0x04)
+        {
+            if (Partition.FooterPartition!=ByteOffset)
+                Fill_Conformance_AtOffset(Offset, "MXF PartitionPack FooterPartition", "FooterPartition of the Footer Partition is not its offset (actual "+Hex(Partition.FooterPartition)+", expected "+Hex(ByteOffset)+')');
+        }
+        else if (Partition.FooterPartition)
+        {
+            if (FooterPartition && Partition.FooterPartition!=FooterPartition->StreamOffset-RunIn)
+                Fill_Conformance_AtOffset(Offset, "MXF PartitionPack FooterPartition", "FooterPartition is not the offset of the Footer Partition (actual "+Hex(Partition.FooterPartition)+", expected "+Hex(FooterPartition->StreamOffset-RunIn)+')');
+            else if (FooterPartition_IsAbsent)
+            {
+                //The referenced partition is the last one, so it is used as the Footer Partition but it has another kind
+                const auto& LastPartition=Partitions.back();
+                if (LastPartition.StreamOffset-RunIn==Partition.FooterPartition)
+                {
+                    if (Kind_Reported.insert(LastPartition.StreamOffset).second)
+                        Fill_Conformance_AtOffset(LastPartition.StreamOffset, "MXF PartitionPack Kind", string("Partition Kind is wrong (actual ")+Kind_Name(LastPartition.Kind)+", expected Footer)");
+                }
+                else
+                    Fill_Conformance_AtOffset(Offset, "MXF PartitionPack FooterPartition", "FooterPartition is wrong as there is no Footer Partition (actual "+Hex(Partition.FooterPartition)+", expected 0)");
+            }
+        }
+        //Not checked: FooterPartition 0 in a Closed Partition of a version 1.2 file with a Footer Partition is not permitted by SMPTE 377M-2004, but it is tolerated as many version 1.2 writers do it, and it is permitted for version 1.3 since SMPTE ST 377-1:2011 Amendment 2:2012 (Body Partitions) and SMPTE ST 377-1:2019 (Header Partition)
+        //else if (Is2004 && FooterPartition && IsClosed(Partition))
+        //    Fill_Conformance_AtOffset(Offset, "MXF PartitionPack FooterPartition", "FooterPartition is 0 in a Closed Partition with a Footer Partition, not permitted for version 1.2 (SMPTE 377M-2004)");
+
+        //Content
+        switch (Partition.Kind)
+        {
+            case 0x02 :
+                        if (!Partition.HeaderByteCount)
+                            Fill_Conformance_AtOffset(Offset, "MXF PartitionPack HeaderByteCount", "HeaderByteCount of the Header Partition is 0");
+                        break;
+            case 0x04 :
+                        if (!IsClosed(Partition))
+                            Fill_Conformance_AtOffset(Offset, "MXF PartitionPack Status", "Footer Partition is Open");
+                        if (Partition.BodySID)
+                            Fill_Conformance_AtOffset(Offset, "MXF PartitionPack BodySID", "BodySID of the Footer Partition is wrong (actual "+to_string(Partition.BodySID)+", expected 0)");
+                        if (Partition.BodyOffset)
+                            Fill_Conformance_AtOffset(Offset, "MXF PartitionPack BodyOffset", "BodyOffset of the Footer Partition is wrong (actual "+to_string(Partition.BodyOffset)+", expected 0)");
+                        break;
+            default   : ;
+        }
+        if (Partition.IndexSID && !Partition.IndexByteCount)
+            Fill_Conformance_AtOffset(Offset, "MXF PartitionPack IndexSID", "IndexSID is wrong as IndexByteCount is 0 (actual "+to_string(Partition.IndexSID)+", expected 0)");
+    }
+
+    //Index Table Segments
+    set<int32u> BodySIDs;
+    for (const auto& Partition : Partitions)
+        if (Partition.BodySID)
+            BodySIDs.insert(Partition.BodySID);
+    for (const auto& Segment : IndexTableSegments)
+    {
+        const auto IndexSID_Value=Property_Get(Segment.Properties, 0x3F06);
+        const auto BodySID_Value=Property_Get(Segment.Properties, 0x3F07);
+        if (BodySID_Value && BodySID_Value->size()==4 && BigEndian2int32u(BodySID_Value->data()))
+            BodySIDs.insert(BigEndian2int32u(BodySID_Value->data()));
+        if (!IndexSID_Value || IndexSID_Value->size()!=4)
+            continue;
+        const auto IndexSID=BigEndian2int32u(IndexSID_Value->data());
+
+        //Partition containing the segment, if the segment is in its index table area
+        const partition* Partition=nullptr;
+        for (const auto& Partition_Item : Partitions)
+            if (Partition_Item.StreamOffset<Segment.StreamOffset)
+                Partition=&Partition_Item;
+        if (!Partition || Partition->PartitionPackByteCount==(int64u)-1 || Segment.StreamOffset>=Partition->StreamOffset+Partition->PartitionPackByteCount+Partition->HeaderByteCount+Partition->IndexByteCount)
+            continue;
+        if (!Partition->IndexSID)
+            Fill_Conformance_AtOffset(Partition->StreamOffset, "MXF PartitionPack IndexSID", "IndexSID is 0 but the partition contains an Index Table Segment");
+        else if (IndexSID!=Partition->IndexSID)
+            Fill_Conformance_AtOffset(Segment.StreamOffset, "MXF IndexTableSegment IndexSID", "IndexSID is not the one of the partition (actual "+to_string(IndexSID)+", expected "+to_string(Partition->IndexSID)+')');
+    }
+
+    //Stream IDs are unique, SMPTE 377M-2004 files may use the same value as IndexSID and BodySID
+    if (!Is2004)
+        for (const auto& Partition : Partitions)
+            if (Partition.IndexSID && BodySIDs.find(Partition.IndexSID)!=BodySIDs.end())
+                Fill_Conformance_AtOffset(Partition.StreamOffset, "MXF PartitionPack IndexSID", "IndexSID is also used as BodySID (actual "+to_string(Partition.IndexSID)+')');
+
+    //KAG size is constant for an essence container, zero is permitted since SMPTE ST 377-1:2009
+    map<int32u, int32u> KAGSizes; //Key is BodySID
+    for (const auto& Partition : Partitions)
+    {
+        if (!Partition.BodySID || (!Is2004 && !Partition.KAGSize))
+            continue;
+        const auto KAGSize=KAGSizes.emplace(Partition.BodySID, Partition.KAGSize);
+        if (!KAGSize.second && KAGSize.first->second!=Partition.KAGSize)
+            Fill_Conformance_AtOffset(Partition.StreamOffset, "MXF PartitionPack KAGSize", "KAGSize is not the same in all partitions of the essence container (actual "+to_string(Partition.KAGSize)+", expected "+to_string(KAGSize.first->second)+')');
+    }
+
+    //Preface
+    const string* OperationalPattern_Preface=nullptr;
+    auto OperationalPattern_IsSame=true;
+    for (const auto& Preface : Prefaces)
+    {
+        const auto Properties=SetProperties.find(Preface.first);
+        if (Properties==SetProperties.end())
+            continue;
+        const auto Version_Value=Property_Get(Properties->second, 0x3B05);
+        if (Version_Value && Version_Value->size()==2 && Version_Normalized((int8u)(*Version_Value)[0], (int8u)(*Version_Value)[1])!=HeaderPartition_Version)
+            Fill_Conformance_AtOffset((int64u)-1, "MXF Preface Version", "Version is not the one of the Partition Packs (actual "+Version((int8u)(*Version_Value)[0], (int8u)(*Version_Value)[1])+", expected "+Version(HeaderPartition.MajorVersion, HeaderPartition.MinorVersion)+')');
+        const auto ObjectModelVersion=Property_Get(Properties->second, 0x3B07);
+        if (ObjectModelVersion && ObjectModelVersion->size()==4 && BigEndian2int32u(ObjectModelVersion->data())!=1)
+            Fill_Conformance_AtOffset((int64u)-1, "MXF Preface ObjectModelVersion", "Object Model Version is wrong (actual "+to_string(BigEndian2int32u(ObjectModelVersion->data()))+", expected 1)");
+        const auto OperationalPattern_Value=Property_Get(Properties->second, 0x3B09);
+        if (OperationalPattern_Value)
+        {
+            if (OperationalPattern_Preface && !Raw_IsSame(*OperationalPattern_Value, *OperationalPattern_Preface))
+                OperationalPattern_IsSame=false;
+            OperationalPattern_Preface=OperationalPattern_Value;
+        }
+    }
+    if (OperationalPattern_Preface && OperationalPattern_IsSame) //Only if all Prefaces have the same value, an Open Partition may have another value
+        for (const auto& Partition : Partitions)
+            if (IsClosed(Partition) && !Raw_IsSame(Raw_UL(Partition.OperationalPattern.hi, Partition.OperationalPattern.lo), *OperationalPattern_Preface))
+                Fill_Conformance_AtOffset(Partition.StreamOffset, "MXF PartitionPack OperationalPattern", "Operational Pattern is not the one of the Preface");
+
+    //Header Metadata of Closed Partitions is identical, checked only between Complete Partitions as best effort properties may have a distinguished value in Incomplete Partitions
+    if (FooterPartition && HeaderPartition.Status==0x04 && FooterPartition->Status==0x04 && HeaderPartition.HeaderByteCount && FooterPartition->HeaderByteCount)
+        for (const auto& Difference : HeaderMetadata_FooterDifferences(true))
+            Fill_Conformance_AtOffset(FooterPartition->StreamOffset, "MXF HeaderMetadata", "Property is not the same in the Header Partition and in the Footer Partition ("+Difference+')');
+}
+
+//---------------------------------------------------------------------------
 void File_Mxf::Streams_Finish_Conformance_References ()
 {
     for (const auto& Reference : Conformance_References)
@@ -8766,9 +9032,16 @@ void File_Mxf::RandomIndexPack()
                 ExtraMetadata_Offset=RandomIndexPack.ByteOffset;
         FILLING_END();
     }
-    Skip_B4(                                                    "Length");
+    int32u Length;
+    Get_B4 (Length,                                             "Length");
 
     FILLING_BEGIN();
+        if (!RandomIndexPacks_AlreadyParsed)
+        {
+            RandomIndexPack_Offset=File_Offset+Buffer_Offset-Header_Size;
+            RandomIndexPack_Size=Header_Size+Element_Size;
+            RandomIndexPack_Length=Length;
+        }
         if (Config->ParseSpeed<1.0 && !RandomIndexPacks_AlreadyParsed && !RandomIndexPacks.empty() && Config->File_Mxf_ParseIndex_Get())
         {
             IsParsingEnd=true;
@@ -13106,14 +13379,14 @@ void File_Mxf::RFC5646TextLanguageCode()
 void File_Mxf::PartitionMetadata()
 {
     //Parsing
-    int64u PreviousPartition, FooterPartition, HeaderByteCount, IndexByteCount, BodyOffset;
+    int64u ThisPartition, PreviousPartition, FooterPartition, HeaderByteCount, IndexByteCount, BodyOffset;
     int32u IndexSID, BodySID;
     int32u KAGSize;
     int16u MajorVersion, MinorVersion;
     Get_B2 (MajorVersion,                                       "MajorVersion");
     Get_B2 (MinorVersion,                                       "MinorVersion");
     Get_B4 (KAGSize,                                            "KAGSize");
-    Skip_B8(                                                    "ThisPartition");
+    Get_B8 (ThisPartition,                                      "ThisPartition");
     Get_B8 (PreviousPartition,                                  "PreviousPartition");
     Get_B8 (FooterPartition,                                    "FooterPartition");
     Get_B8 (HeaderByteCount,                                    "HeaderByteCount");
@@ -13155,6 +13428,8 @@ void File_Mxf::PartitionMetadata()
     const auto Partition_Next=lower_bound(Partitions.begin(), Partitions.end(), Partition); //Partitions are sorted by offset
     if (Partition_Next==Partitions.end() || Partition_Next->StreamOffset!=Partition.StreamOffset)
     {
+        Partition.ThisPartition=ThisPartition;
+        Partition.PreviousPartition=PreviousPartition;
         Partition.FooterPartition=FooterPartition;
         Partition.HeaderByteCount=HeaderByteCount;
         Partition.IndexByteCount=IndexByteCount;
