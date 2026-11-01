@@ -1983,6 +1983,7 @@ namespace
         ArdZdf_SDF01, //D10, 576i/25, version 1.0 (December 2015)
         ArdZdf_SDF02, //DVbased50, 576i/25, version 1.0 (December 2015)
         ArdZdf_XDF01, //XAVC Long GOP 50 Mbit/s @ 1080p50, version 1.0 (January 2025)
+        ArdZdf_XDF02, //XAVC Intra (Class 300 CBG) 500 Mbit/s @ 2160p50, draft version 0.5 (October 2026)
     };
     struct ardzdf_profile
     {
@@ -2001,6 +2002,7 @@ namespace
         {"ARD_ZDF_SDF-01", ArdZdf_SDF01, 1},
         {"ARD_ZDF_SDF-02", ArdZdf_SDF02, 8},
         {"ARD_ZDF_XDF-01", ArdZdf_XDF01, 0},
+        {"ARD_ZDF_XDF-02", ArdZdf_XDF02, 0},
     };
     const size_t ArdZdf_Profiles_Size=sizeof(ArdZdf_Profiles)/sizeof(*ArdZdf_Profiles);
 }
@@ -5364,7 +5366,7 @@ void File_Mxf::Streams_Finish_CompliantWith ()
 }
 
 //---------------------------------------------------------------------------
-// ARD/ZDF MXF profiles HDF01a, HDF01b, HDF02a, HDF02b, HDF03a, HDF03b, SDF01, SDF02 and XDF01 (see ArdZdf_Profiles for versions)
+// ARD/ZDF MXF profiles HDF01a, HDF01b, HDF02a, HDF02b, HDF03a, HDF03b, SDF01, SDF02, XDF01 and XDF02 (see ArdZdf_Profiles for versions)
 // All partitions and index table segments are checked (partitions not parsed are parsed if the file is a candidate)
 // Frame related items (SEI messages, pictures in the bitstream, timecode continuity, element sizes) are checked only in parsed frames, all frames are parsed with ParseSpeed=1
 // GOP structure is checked for all frames with index table entries (Long GOP)
@@ -5421,7 +5423,8 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_ArdZdf (size_t Profile_Pos,
     //Profile values
     const auto& Profile=ArdZdf_Profiles[Profile_Pos];
     const auto Family=Profile.Family;
-    const auto IsXdf=Family==ArdZdf_XDF01;
+    const auto IsXdf=Family==ArdZdf_XDF01 || Family==ArdZdf_XDF02;
+    const auto IsIntra=Family==ArdZdf_XDF02; //XAVC Intra CBG
     const auto IsAvcIntra=Family==ArdZdf_HDF02 || Family==ArdZdf_HDF03; //AVC-I 100
     const auto IsSD=Family==ArdZdf_SDF01 || Family==ArdZdf_SDF02;
     const auto IsInterlaced=Family==ArdZdf_HDF01 || Family==ArdZdf_HDF02 || IsSD;
@@ -5430,20 +5433,25 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_ArdZdf (size_t Profile_Pos,
     const auto IsOptionalMetadataRequired=!IsXdf; //Optional metadata specified by the profile shall be present
     const int32u EditRate=(IsXdf || Family==ArdZdf_HDF03)?50:25; //Edit units per second
     const int32u KAGSize=(IsAvcIntra || Family==ArdZdf_SDF02)?1:512;
-    const int32u Width=IsSD?720:(Family==ArdZdf_HDF03?1280:1920);
-    const int32u Height=IsSD?576:(Family==ArdZdf_HDF03?720:1080);
+    const int32u Width=IsSD?720:(Family==ArdZdf_HDF03?1280:(IsIntra?3840:1920));
+    const int32u Height=IsSD?576:(Family==ArdZdf_HDF03?720:(IsIntra?2160:1080));
     const int32u PictureKey=Family==ArdZdf_SDF01?0x05010100:(Family==ArdZdf_SDF02?0x18010100:0x15010500);
-    const size_t SliceCount=4; //Per picture, XDF only
+    const size_t SliceCount=IsIntra?8:4; //Per picture, XDF only
     const int64u IndexTableSegment_Duration=Family==ArdZdf_HDF01?240:480; //Edit units, Long GOP
     const size_t MaxGOPSize=Family==ArdZdf_HDF01?12:24; //Pictures, Long GOP
     const size_t MaxBPictureCount=2; //Consecutive B pictures, Long GOP
     const int16u ContentPackageRate=((EditRate==50?5:2)<<1)|0; //Package Rate (5 for 50 fps, 2 for 25 fps) without 1.001 flag
+    const auto TransferCharacteristic_HLG=UL(0x060E2B340401010DLL, 0x04010101010B0000LL);
+    const auto TransferCharacteristic_PQ=UL(0x060E2B340401010DLL, 0x04010101010A0000LL);
     const auto TransferCharacteristic_BT709=UL(0x060E2B3404010101LL, 0x0401010101020000LL);
     const auto TransferCharacteristic_BT470=UL(0x060E2B3404010101LL, 0x0401010101010000LL);
+    const auto ColorPrimaries_BT2020=UL(0x060E2B340401010DLL, 0x0401010103040000LL);
     const auto ColorPrimaries_BT709=UL(0x060E2B3404010106LL, 0x0401010103030000LL);
+    const auto CodingEquations_BT2020=UL(0x060E2B340401010DLL, 0x0401010102060000LL); //Non-constant luminance
     const auto CodingEquations_BT709=UL(0x060E2B3404010101LL, 0x0401010102020000LL);
 
     //Video bitstream, the stream is fully parsed only after candidate test
+    string Video_TransferCharacteristics; //For crosscheck with the descriptor
     if (!IsCandidateTest)
     {
         const auto VideoEssence=Essences.find(PictureKey);
@@ -5473,7 +5481,7 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_ArdZdf (size_t Profile_Pos,
                             break;
                 default :
                             Fields.push_back({Video_Format, {"AVC"}});
-                            Fields.push_back({Video_Format_Profile, {IsXdf?"High 4:2:2@L4.2":"High 4:2:2 Intra@L4.1"}});
+                            Fields.push_back({Video_Format_Profile, {IsXdf?(IsIntra?"High 4:2:2 Intra@L5.2":"High 4:2:2@L4.2"):"High 4:2:2 Intra@L4.1"}});
             }
             Fields.push_back({Video_Width, {to_string(Width)}});
             Fields.push_back({Video_Height, {to_string(Family==ArdZdf_SDF01?608:Height)}}); //D10 bitstream includes 32 lines of VBI
@@ -5494,11 +5502,14 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_ArdZdf (size_t Profile_Pos,
             if (IsXdf)
             {
                 Fields.push_back({Video_colour_range, {"Limited"}});
-                Fields.push_back({Video_colour_primaries, {"BT.709"}});
-                Fields.push_back({Video_transfer_characteristics, {"BT.709"}});
-                Fields.push_back({Video_matrix_coefficients, {"BT.709"}});
-                Fields.push_back({Video_Format_Settings_CABAC, {"Yes"}});
-                Fields.push_back({Video_Format_Settings_RefFrames, {"2"}});
+                if (!IsIntra) //HDR or SDR is tested later for Intra
+                {
+                    Fields.push_back({Video_colour_primaries, {"BT.709"}});
+                    Fields.push_back({Video_transfer_characteristics, {"BT.709"}});
+                    Fields.push_back({Video_matrix_coefficients, {"BT.709"}});
+                }
+                Fields.push_back({Video_Format_Settings_CABAC, {IsIntra?"No":"Yes"}});
+                Fields.push_back({Video_Format_Settings_RefFrames, {IsIntra?"":"2"}}); //Empty if max_num_ref_frames is 0
                 Fields.push_back({Video_Format_Settings_SliceCount, {to_string(SliceCount)}});
             }
             for (const auto& Item : Fields)
@@ -5511,6 +5522,18 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_ArdZdf (size_t Profile_Pos,
                         Expected+=(Expected.empty()?"":" or ")+Value_Text(Expected_Value);
                     Error("Video bitstream field "+VideoParser->Retrieve_Const(Stream_Video, 0, Item.Field, Info_Name).To_UTF8()+" is wrong (actual "+Value_Text(Value)+", expected "+Expected+')');
                 }
+            }
+            if (IsIntra)
+            {
+                //HDR (HLG or PQ) with BT.2020 or SDR with BT.709
+                const auto colour_primaries=VideoParser->Retrieve_Const(Stream_Video, 0, Video_colour_primaries).To_UTF8();
+                const auto transfer_characteristics=VideoParser->Retrieve_Const(Stream_Video, 0, Video_transfer_characteristics).To_UTF8();
+                const auto matrix_coefficients=VideoParser->Retrieve_Const(Stream_Video, 0, Video_matrix_coefficients).To_UTF8();
+                if ((colour_primaries=="BT.2020" && (transfer_characteristics=="HLG" || transfer_characteristics=="PQ") && matrix_coefficients=="BT.2020 non-constant")
+                 || (colour_primaries=="BT.709" && transfer_characteristics=="BT.709" && matrix_coefficients=="BT.709"))
+                    Video_TransferCharacteristics=transfer_characteristics;
+                else
+                    Error("Video bitstream colour description is not HDR (HLG or PQ) with BT.2020 or SDR with BT.709 (actual "+Value_Text(colour_primaries)+", "+Value_Text(transfer_characteristics)+", "+Value_Text(matrix_coefficients)+')');
             }
 
             //Video pictures, only parsed ones
@@ -5541,6 +5564,15 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_ArdZdf (size_t Profile_Pos,
                             Error("Video SPS or PPS is not the same in all pictures");
                         if (Pictures.chroma_loc_info_present_flag&2)
                             Error("Video bitstream field chroma_loc_info_present_flag is wrong (actual "+Bits_Text(Pictures.chroma_loc_info_present_flag)+", expected 0)");
+                    }
+                    else if (IsIntra)
+                    {
+                        if (Pictures.SliceCount_Min!=SliceCount || Pictures.SliceCount_Max!=SliceCount)
+                            Error("Video slice count is wrong (actual "+Range_Text(Pictures.SliceCount_Min, Pictures.SliceCount_Max)+", expected "+to_string(SliceCount)+')');
+                        if (Pictures.Idr_Count!=Pictures.Count)
+                            Error("Video picture is not IDR");
+                        if (Pictures.I_WithoutSps || Pictures.I_WithoutPps)
+                            Error("Video SPS or PPS is missing in a picture");
                     }
                     else if (IsXdf)
                     {
@@ -5574,7 +5606,7 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_ArdZdf (size_t Profile_Pos,
                         {
                             {"seq_scaling_matrix_present_flag", Pictures.seq_scaling_matrix_present_flag, 0},
                             {"log2_max_frame_num_minus4", Pictures.log2_max_frame_num_minus4, 0},
-                            {"log2_max_pic_order_cnt_lsb_minus4", Pictures.log2_max_pic_order_cnt_lsb_minus4, 1},
+                            {"log2_max_pic_order_cnt_lsb_minus4", Pictures.log2_max_pic_order_cnt_lsb_minus4, (int8u)(IsIntra?0:1)}, //Absent if pic_order_cnt_type is not 0
                             {"transform_8x8_mode_flag", Pictures.transform_8x8_mode_flag, 1},
                         };
                         for (const auto& Value : Values)
@@ -5605,7 +5637,12 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_ArdZdf (size_t Profile_Pos,
         switch (Partition.Kind)
         {
             case 0x02 :
-                        if (IsXdf)
+                        if (IsIntra)
+                        {
+                            if (Partition.Status!=0x04 && Error("Header Partition status is wrong (actual "+Status_Name(Partition.Status)+", expected Closed Complete)"))
+                                return Errors;
+                        }
+                        else if (IsXdf)
                         {
                             if (Partition.Status!=0x01 && Partition.Status!=0x04 && Error("Header Partition status is wrong (actual "+Status_Name(Partition.Status)+", expected Closed Complete or Open Incomplete)"))
                                 return Errors;
@@ -5661,6 +5698,7 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_ArdZdf (size_t Profile_Pos,
     {
         switch (Family)
         {
+            case ArdZdf_XDF02 :
             case ArdZdf_SDF01 :
                         //Essence and index in Header Partition
                         if ((!HeaderPartition->BodySID || !HeaderPartition->IndexSID) && Error("Essence or Index Table is not in Header Partition"))
@@ -5765,6 +5803,11 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_ArdZdf (size_t Profile_Pos,
             const auto Duration=Get(Segment.Properties, 0x3F0D);
             if (!Duration || Duration->size()!=8)
                 Error("Index Duration is missing");
+            else if (IsIntra)
+            {
+                if (BigEndian2int64u(Duration->data()))
+                    Error("Index Duration is wrong (actual "+Raw_Text(*Duration)+", expected 0)");
+            }
             else if (BigEndian2int64u(Duration->data()))
                 IndexDurations.insert(BigEndian2int64u(Duration->data())); //0 or container duration
             const auto DeltaEntryArray=Get(Segment.Properties, 0x3F09);
@@ -5779,10 +5822,23 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_ArdZdf (size_t Profile_Pos,
                 {
                     if (DeltaEntry_Count!=1+ContentPackage_Elements.size()) //System Item and essence elements
                         Error("Delta Entry Array entry count is wrong (actual "+to_string(DeltaEntry_Count)+", expected "+to_string(1+ContentPackage_Elements.size())+')');
+                    if (IsIntra)
+                        for (size_t i=0; i<DeltaEntry_Count; i++)
+                            if ((*DeltaEntryArray)[8+i*6+1])
+                                Error("Delta Entry Array Slice is wrong (actual "+to_string((int8u)(*DeltaEntryArray)[8+i*6+1])+", expected 0)");
                 }
             }
             const auto IndexEntryArray=Get(Segment.Properties, 0x3F0A);
-            if (IsSD && IndexEntryArray)
+            if (IsIntra)
+            {
+                if (!IndexEntryArray)
+                    Error("Index Entry Array is missing (expected present and empty)");
+                else if (IndexEntryArray->size()!=8)
+                    Error("Index Entry Array is not empty (actual "+to_string(IndexEntryArray->size())+" bytes, expected 8)");
+                else if (*IndexEntryArray!=string(8, '\0')) //Array header set to 0 and no entries
+                    Error("Index Entry Array header is wrong (actual "+to_string(BigEndian2int32u(IndexEntryArray->data()))+" entries of "+to_string(BigEndian2int32u(IndexEntryArray->data()+4))+" bytes, expected 0 entries of 0 bytes)");
+            }
+            else if (IsSD && IndexEntryArray)
                 Error("Index Entry Array is present");
         }
     if (!IsCandidateTest && IsCbe)
@@ -6070,7 +6126,7 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_ArdZdf (size_t Profile_Pos,
             vector<property_expected> Track_Expected={
                 {0x4B01, Package.IsSourcePackage?"Track Edit Rate":"Material Package Track Edit Rate", {Rational(EditRate, 1)}, false},
             };
-            if (IsAvcIntra || IsSD)
+            if (IsIntra || IsAvcIntra || IsSD)
                 Track_Expected.push_back({0x4B02, Package.IsSourcePackage?"Track Origin":"Material Package Track Origin", {UInt(0, 8)}, true}); //No precharge
             if (Test(*Item->Properties, Track_Expected))
                 return true;
@@ -6243,14 +6299,14 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_ArdZdf (size_t Profile_Pos,
                                         break;
                             default :
                                         Video_Expected.push_back({0x3004, "Video Essence Container", {UL(0x060E2B340401010ALL, 0x0D01030102106001LL)}, false});
-                                        Video_Expected.push_back({0x3201, "Picture Essence Coding", {UL(0x060E2B340401010DLL, 0x0401020201316001LL)}, false});
+                                        Video_Expected.push_back({0x3201, "Picture Essence Coding", {IsIntra?UL(0x060E2B340401010ALL, 0x0401020201323001LL):UL(0x060E2B340401010DLL, 0x0401020201316001LL)}, false}); //AVC High 422 Intra Profile for XDF-02, AVC High 422 Profile (Long GOP) for XDF-01
                         }
                         const auto StoredHeight=IsInterlaced?(IsSD?(Family==ArdZdf_SDF01?304:288):544):(Family==ArdZdf_XDF01?1088:Height);
                         const auto SampledHeight=IsInterlaced?(Family==ArdZdf_SDF01?304:Height/2):Height;
                         Video_Expected.insert(Video_Expected.end(), {
                             {0x3001, "Video Sample Rate", {Rational(EditRate, 1)}, false},
                             {0x320E, "Aspect Ratio", IsSD?vector<string>{Rational(16, 9), Rational(4, 3), Rational(0, 0)}:vector<string>{Rational(16, 9)}, false},
-                            {0x3215, "Signal Standard", {UInt(IsSD?1:(Family==ArdZdf_HDF03?5:4), 1)}, false},
+                            {0x3215, "Signal Standard", {UInt(IsSD?1:(Family==ArdZdf_HDF03?5:(IsIntra?0:4)), 1)}, false},
                             {0x320C, "Frame Layout", {UInt(IsInterlaced?1:0, 1)}, false},
                             {0x3209, "Display Width", {UInt(Width, 4)}, false},
                             {0x3208, "Display Height", {UInt(IsInterlaced?Height/2:Height, 4)}, false},
@@ -6263,7 +6319,7 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_ArdZdf (size_t Profile_Pos,
                             {0x320A, "Display X Offset", {UInt(0, 4)}, !IsOptionalMetadataRequired},
                             {0x320B, "Display Y Offset", {UInt(Family==ArdZdf_SDF01?16:0, 4)}, !IsOptionalMetadataRequired},
                             {0x320D, "Video Line Map", {Batch(IsSD?(Family==ArdZdf_SDF01?vector<int32u>{7, 320}:vector<int32u>{23, 335}):(IsInterlaced?vector<int32u>{21, 584}:(Family==ArdZdf_HDF03?vector<int32u>{26, 0}:vector<int32u>{42, 0})))}, false},
-                            {0x3210, "Transfer Characteristic", IsSD?vector<string>{TransferCharacteristic_BT470}:vector<string>{TransferCharacteristic_BT709}, false},
+                            {0x3210, "Transfer Characteristic", IsSD?vector<string>{TransferCharacteristic_BT470}:(IsIntra?vector<string>{TransferCharacteristic_HLG, TransferCharacteristic_PQ, TransferCharacteristic_BT709}:vector<string>{TransferCharacteristic_BT709}), false},
                             {0x3213, "Image Start Offset", {UInt(0, 4)}, !IsOptionalMetadataRequired},
                             {0x3214, "Image End Offset", {UInt(0, 4)}, !IsOptionalMetadataRequired},
                             {0x3303, "Color Siting", {UInt(0, 1)}, false},
@@ -6276,8 +6332,8 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_ArdZdf (size_t Profile_Pos,
                         });
                         if (IsXdf)
                         {
-                            Video_Expected.push_back({0x3219, "Color Primaries", {ColorPrimaries_BT709}, false});
-                            Video_Expected.push_back({0x321A, "Coding Equations", {CodingEquations_BT709}, false});
+                            Video_Expected.push_back({0x3219, "Color Primaries", IsIntra?vector<string>{ColorPrimaries_BT2020, ColorPrimaries_BT709}:vector<string>{ColorPrimaries_BT709}, false});
+                            Video_Expected.push_back({0x321A, "Coding Equations", IsIntra?vector<string>{CodingEquations_BT2020, CodingEquations_BT709}:vector<string>{CodingEquations_BT709}, false});
                         }
                         else
                         {
@@ -6310,6 +6366,31 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_ArdZdf (size_t Profile_Pos,
                         if (Test(DescriptorProperties->second, Video_Expected))
                             return Errors;
                         Video_ContainerDuration=Get(DescriptorProperties->second, 0x3002);
+                        if (IsIntra)
+                        {
+                            //HDR (HLG or PQ) with BT.2020 or SDR with BT.709, same as in the bitstream
+                            const auto TransferCharacteristic=Get(DescriptorProperties->second, 0x3210);
+                            const auto ColorPrimaries=Get(DescriptorProperties->second, 0x3219);
+                            const auto CodingEquations=Get(DescriptorProperties->second, 0x321A);
+                            const char* TransferCharacteristic_Name=nullptr;
+                            if (TransferCharacteristic && IsSame(*TransferCharacteristic, TransferCharacteristic_HLG))
+                                TransferCharacteristic_Name="HLG";
+                            else if (TransferCharacteristic && IsSame(*TransferCharacteristic, TransferCharacteristic_PQ))
+                                TransferCharacteristic_Name="PQ";
+                            else if (TransferCharacteristic && IsSame(*TransferCharacteristic, TransferCharacteristic_BT709))
+                                TransferCharacteristic_Name="BT.709";
+                            if (TransferCharacteristic_Name && ColorPrimaries && CodingEquations) //Other values are already reported
+                            {
+                                const auto IsHDR=TransferCharacteristic_Name[0]!='B';
+                                const auto Colour_Name=[&](const string& Value, const string& BT2020, const string& BT709) {
+                                    return IsSame(Value, BT2020)?string("BT.2020"):(IsSame(Value, BT709)?string("BT.709"):Raw_Text(Value));
+                                };
+                                if ((!IsSame(*ColorPrimaries, IsHDR?ColorPrimaries_BT2020:ColorPrimaries_BT709) || !IsSame(*CodingEquations, IsHDR?CodingEquations_BT2020:CodingEquations_BT709)) && Error("Transfer Characteristic, Color Primaries and Coding Equations are not HDR (HLG or PQ) with BT.2020 or SDR with BT.709 (actual "+string(TransferCharacteristic_Name)+", "+Colour_Name(*ColorPrimaries, ColorPrimaries_BT2020, ColorPrimaries_BT709)+", "+Colour_Name(*CodingEquations, CodingEquations_BT2020, CodingEquations_BT709)+')'))
+                                    return Errors;
+                                if (!Video_TransferCharacteristics.empty() && Video_TransferCharacteristics!=TransferCharacteristic_Name && Error("Transfer Characteristic is not the video bitstream one (actual "+string(TransferCharacteristic_Name)+", expected "+Video_TransferCharacteristics+')'))
+                                    return Errors;
+                            }
+                        }
                         if (!IsXdf && !IsAvcIntra)
                             break;
                         auto AVCSubDescriptorProperties=SetProperties.end();
@@ -6343,7 +6424,19 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_ArdZdf (size_t Profile_Pos,
                              || TestRange(AVCSubDescriptorProperties->second, Elements::AVCAverageBitRate, "AVC Average Bitrate", 110000000, 115000000))
                                 return Errors;
                         }
-                        else if (Test(AVCSubDescriptorProperties->second, {
+                        else if (Test(AVCSubDescriptorProperties->second, IsIntra?vector<property_expected>{
+                            {Elements::AVCCodedContentKind, "AVC Coded Content Kind", {UInt(1, 1)}, false},
+                            {Elements::AVCMaximumGOPSize, "AVC Maximum GOP Size", {UInt(1, 2)}, false},
+                            {Elements::AVCMaximumBPictureCount, "AVC Maximum B Picture Count", {UInt(0, 2)}, false},
+                            {Elements::AVCMaximumBitRate, "AVC Maximum Bitrate", {UInt(500121600, 4)}, false},
+                            {Elements::AVCProfile, "AVC Profile", {UInt(122, 1)}, false},
+                            {Elements::AVCProfileConstraint, "AVC Profile Constraint", {UInt(0x10, 1)}, false},
+                            {Elements::AVCLevel, "AVC Level", {UInt(52, 1)}, false},
+                            {Elements::AVCDecodingDelay, "AVC Decoding Delay", {UInt(0, 1)}, false},
+                            {Elements::AVCMaximumRefFrames, "AVC Maximum Ref Frames", {UInt(0, 1)}, false},
+                            {Elements::AVCSequenceParameterSetFlag, "AVC Sequence Parameter Set Flag", {UInt(0x20, 1)}, false},
+                            {Elements::AVCPictureParameterSetFlag, "AVC Picture Parameter Set Flag", {UInt(0x20, 1)}, false},
+                        }:vector<property_expected>{
                             {Elements::AVCCodedContentKind, "AVC Coded Content Kind", {UInt(1, 1)}, false},
                             {Elements::AVCMaximumGOPSize, "AVC Maximum GOP Size", {UInt(24, 2)}, false},
                             {Elements::AVCMaximumBPictureCount, "AVC Maximum B Picture Count", {UInt(2, 2)}, false},
@@ -6536,6 +6629,8 @@ size_t File_Mxf::CompliantWith_ArdZdf_FromContent (string& Content)
         Family=ArdZdf_SDF02; //DVCPRO 50, 576i/25
     else if (Is(__T("AVC"), 1080, 50))
         Family=ArdZdf_XDF01; //XAVC Long GOP, 1080p/50
+    else if (Is(__T("AVC"), 2160, 50))
+        Family=ArdZdf_XDF02; //XAVC Intra, 2160p/50
     else
         return (size_t)-1;
 

@@ -4087,6 +4087,7 @@ static const char* const MxfProfile_Names[] =
     "ARD_ZDF_SDF-01",
     "ARD_ZDF_SDF-02",
     "ARD_ZDF_XDF-01",
+    "ARD_ZDF_XDF-02",
     "SMPTE_ST_337_2008", //Editions of SMPTE ST 337 and associated standards, only one can be requested (by default, latest edition without check of the data types)
     "SMPTE_ST_337_2015",
     "SMPTE_ST_337_2016",
