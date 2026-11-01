@@ -1467,6 +1467,13 @@ protected :
         int64u IndexByteCount;
         int64u BodyOffset;
         int32u BodySID;
+        int32u IndexSID;
+        int32u KAGSize;
+        int128u OperationalPattern;
+        int16u MajorVersion;
+        int16u MinorVersion;
+        int8u  Kind; //Byte 14 of the key: 0x02=Header, 0x03=Body or Generic Stream, 0x04=Footer
+        int8u  Status; //Byte 15 of the key: 0x01=Open Incomplete, 0x02=Closed Incomplete, 0x03=Open Complete, 0x04=Closed Complete, 0x11=Generic Stream
 
         partition()
         {
@@ -1477,6 +1484,13 @@ protected :
             IndexByteCount=0;
             BodyOffset=0;
             BodySID=0;
+            IndexSID=0;
+            KAGSize=0;
+            OperationalPattern=0;
+            MajorVersion=0;
+            MinorVersion=0;
+            Kind=0;
+            Status=0;
         }
 
         bool operator < (const partition& lhs) const
@@ -1486,6 +1500,57 @@ protected :
     };
     typedef std::vector<partition>  partitions;
     partitions                      Partitions;
+
+    //Raw values of local set properties, for checking compliance with specifications
+    typedef std::map<int64u, std::string> properties; //Key is static local tag or low part of the dynamic property UL, value is the raw content (truncated if long)
+    std::map<int128u, properties>   SetProperties; //Key is InstanceUID of the set
+    std::set<std::pair<int64u, int64u> > SetProperties_FooterDifferences; //Low part of the set key and property key, for properties having another value in the Footer Partition
+    std::set<std::pair<int64u, int64u> > SetProperties_FooterPresenceDifferences; //Low part of the set key and property key, for properties present in only one of the Header Metadata repetitions
+
+    //Helpers for checking compliance with specifications, on raw values of local set properties
+    struct property_expected
+    {
+        int64u          Key; //Static local tag or low part of the dynamic property UL
+        const char*     Name;
+        std::vector<std::string> Values; //Empty if any value is accepted
+        bool            AbsentIsAccepted; //Default value is the expected one
+    };
+    struct track_info
+    {
+        tracks::iterator    Track;
+        char                Kind; //T=Timecode, V=Picture, A=Sound, D=Data, M=Descriptive Metadata
+        int32u              TrackNumber;
+        const properties*   Properties;
+    };
+    static std::string          Raw_UInt(int64u Value, size_t Size); //Big endian
+    static std::string          Raw_Rational(int32u Numerator, int32u Denominator);
+    static std::string          Raw_UL(int64u Hi, int64u Lo);
+    static std::string          Raw_Batch(const std::vector<int32u>& Values); //Batch of 4-byte values
+    static bool                 Raw_IsSame(const std::string& Value, const std::string& Expected); //Version byte of UL is ignored
+    static std::string          Raw_Hex(const std::string& Value); //Bytes in hexadecimal with a dot every 4 bytes, e.g. "060E2B34.0401010D.04010202.01316001"
+    static std::string          Raw_Text(const std::string& Value, bool IsRational=false); //Value for messages, e.g. "10", "50/1", "060E2B34.0401010D.04010202.01316001" or "{21, 584}"
+    static const std::string*   Property_Get(const properties& Properties, int64u Key);
+    static const std::string*   Property_Get(const properties& Properties, int16u Tag, int64u UL_Lo); //Static tag or dynamic tag
+    static bool                 Properties_Test(const properties& Properties, const std::vector<property_expected>& List, conformance_errors& Errors); //Returns true if the test must stop
+    static bool                 Properties_TestRange(const properties& Properties, int64u Key, const char* Name, int32u Min, int32u Max, conformance_errors& Errors); //4-byte value, returns true if the test must stop
+    static bool                 IsOP1a(int64u Hi, int64u Lo); //OP1a with internal essence
+    bool                        Package_Tracks(const package& Package, std::vector<track_info>& List, std::string& Kinds, conformance_errors& Errors); //Kinds has a character per track except Descriptive Metadata, returns true if the test must stop
+    static std::string          Tracks_Kinds_Description(const std::string& Kinds); //e.g. "1 Timecode, 1 Video, 16 Audio"
+    const randomindexpack*      RandomIndexPack_Find(int64u ByteOffset) const; //Entry of the Random Index Pack with this byte offset, nullptr if not listed
+    std::vector<std::string>    HeaderMetadata_FooterDifferences(bool WithPresence=false) const; //Properties of the Header Metadata having another value in the Footer Partition (or present in only one of them if WithPresence), e.g. "Duration of Sequence"
+    struct indextablesegment
+    {
+        int64u      StreamOffset;
+        properties  Properties;
+        std::string Flags; //Flags of each index entry
+    };
+    std::vector<indextablesegment>  IndexTableSegments;
+    std::string                     IndexTableSegment_Flags; //Flags of each index entry of the index table segment being parsed
+    bool                            PrivateMetadata_IsPresent;
+    std::vector<randomindexpack>    RandomIndexPack_Entries; //All partitions listed in the Random Index Pack
+    void Property_Store(properties& Properties, int64u Size);
+    void Properties_Store(properties& Properties);
+    void PrivateMetadata_Test(const int128u& UL);
     size_t                          Partitions_Pos;
     bool                            Partitions_IsCalculatingHeaderByteCount;
     bool                            Partitions_IsCalculatingSdtiByteCount;

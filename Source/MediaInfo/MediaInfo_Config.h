@@ -442,6 +442,11 @@ public :
     #endif //MEDIAINFO_FIXITY
 
 private :
+    #if MEDIAINFO_CONFORMANCE
+        static string ProfileList_Set(const Ztring& Value, const char* const* Names, size_t Names_Size, const char* Kind, string& Result); //Comma separated list of names, case and hyphens are ignored, Result is the list of the names as provided in Names
+        string        ProfileList_Get(const char* const* Names, size_t Names_Size); //One name per line
+    #endif //MEDIAINFO_CONFORMANCE
+
     int64u          FormatDetection_MaximumOffset;
     #if MEDIAINFO_ADVANCED
         int64u      VariableGopDetection_Occurences;

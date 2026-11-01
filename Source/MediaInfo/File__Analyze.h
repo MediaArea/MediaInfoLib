@@ -1697,10 +1697,24 @@ public :
         int64u              Hash_ParseUpTo;
     #endif //MEDIAINFO_HASH
 
+    //Errors found when testing the compliance with a specification (e.g. a profile or an edition of a standard)
+    struct conformance_error
+    {
+        string  Value;
+        string  StreamID; //ID of the stream the error is about, empty if it is about the whole file
+    };
+    struct conformance_errors : vector<conformance_error>
+    {
+        bool StopAtFirst=false; //Only the first error is needed, e.g. when testing if a file is a candidate before parsing more data
+        string StreamID; //ID of the stream the next errors are about, empty if they are about the whole file
+        bool Add(const string& Value); //Adds the error about StreamID if it is not already present for this stream (ignoring the values from " (actual "), returns true if the test must stop
+    };
+
     #if MEDIAINFO_CONFORMANCE
         void*               Conformance_Data;
         void                Fill_Conformance(const char* Field, const char* Value, uint8_t Flags = {}, conformance_type Level = Conformance_Error, stream_t StreamKind = Stream_Max, size_t StreamPos = 0);
         void                Fill_Conformance(const char* Field, const string& Value, uint8_t Flags = {}, conformance_type Level = Conformance_Error, stream_t StreamKind = Stream_Max, size_t StreamPos = 0) { Fill_Conformance(Field, Value.c_str(), Flags, Level, StreamKind, StreamPos); }
+        void                Fill_Conformance_Specification(const char* Field, const string& Specification, const conformance_errors& Errors, conformance_type Level = Conformance_Error); //Errors are about the whole stream, without offset
         void                Clear_Conformance();
         void                Merge_Conformance(bool FromConfig = false);
         void                Streams_Finish_Conformance(stream_t StreamKind = Stream_Max, size_t StreamPos = (size_t)-1);
@@ -1713,6 +1727,7 @@ public :
     #else //MEDIAINFO_CONFORMANCE
         void                Fill_Conformance(const char* Field, const char* Value, uint8_t Flags = {}, conformance_type Level = Conformance_Error, stream_t StreamKind = Stream_Max, size_t StreamPos = 0) {}
         void                Fill_Conformance(const char* Field, const string& Value, uint8_t Flags = {}, conformance_type Level = Conformance_Error, stream_t StreamKind = Stream_Max, size_t StreamPos = 0) { Fill_Conformance(Field, Value.c_str(), Flags, Level, StreamKind, StreamPos); }
+        void                Fill_Conformance_Specification(const char* Field, const string& Specification, const conformance_errors& Errors, conformance_type Level = Conformance_Error) {}
         void                Clear_Conformance() {}
         void                Merge_Conformance(bool FromConfig = false) {}
         void                Streams_Finish_Conformance(stream_t = Stream_Max, size_t = (size_t)-1) {}

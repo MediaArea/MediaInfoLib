@@ -4603,6 +4603,57 @@ void File__Analyze::Fill_Conformance(const char* Field, const char* Value, uint8
 #endif
 
 //---------------------------------------------------------------------------
+bool File__Analyze::conformance_errors::Add(const string& Value)
+{
+    const auto Key=Value.substr(0, Value.find(" (actual ")); //Errors differing only by their actual and expected values are listed once per stream, with the first values
+    for (const auto& Item : *this)
+        if (Item.StreamID==StreamID && !Item.Value.compare(0, Item.Value.find(" (actual "), Key))
+            return StopAtFirst;
+    push_back({Value, StreamID});
+    return StopAtFirst;
+}
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
+void File__Analyze::Fill_Conformance_Specification(const char* Field, const string& Specification, const conformance_errors& Errors, conformance_type Level)
+{
+    if (Errors.empty())
+        return;
+
+    //Errors are about a whole stream, no offset is provided
+    const auto File_Offset_Save=File_Offset;
+    File_Offset=(int64u)-1-(Buffer_Offset+Element_Offset);
+    for (const auto& Error : Errors)
+    {
+        //Stream with the ID of the error (or with this ID before a dash, e.g. for a sub-stream), else default stream with the ID in the message
+        auto StreamKind=Stream_Max;
+        size_t StreamPos=0;
+        if (!Error.StreamID.empty())
+        {
+            const auto StreamID=Ztring().From_UTF8(Error.StreamID);
+            for (size_t StreamKind_Pos=Stream_General+1; StreamKind_Pos<Stream_Max && StreamKind==Stream_Max; StreamKind_Pos++)
+                for (size_t StreamPos_Pos=0; StreamPos_Pos<Count_Get((stream_t)StreamKind_Pos); StreamPos_Pos++)
+                {
+                    const auto& ID=Retrieve_Const((stream_t)StreamKind_Pos, StreamPos_Pos, General_ID);
+                    if (ID==StreamID || (ID.size()>StreamID.size() && ID[StreamID.size()]==__T('-') && !ID.compare(0, StreamID.size(), StreamID)))
+                    {
+                        StreamKind=(stream_t)StreamKind_Pos;
+                        StreamPos=StreamPos_Pos;
+                        break;
+                    }
+                }
+        }
+        auto Value=Specification.empty()?Error.Value:(Specification+": "+Error.Value);
+        if (StreamKind==Stream_Max && !Error.StreamID.empty())
+            Value+=" (ID "+Error.StreamID+')';
+        Fill_Conformance(Field, Value, {}, Level, StreamKind, StreamPos);
+    }
+    Merge_Conformance(true);
+    File_Offset=File_Offset_Save;
+}
+#endif
+
+//---------------------------------------------------------------------------
 #if MEDIAINFO_CONFORMANCE
 void File__Analyze::Clear_Conformance()
 {

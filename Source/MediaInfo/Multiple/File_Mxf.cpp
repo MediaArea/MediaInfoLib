@@ -2035,6 +2035,7 @@ File_Mxf::File_Mxf()
     SDTI_SizePerFrame=0;
     SDTI_IsPresent=false;
     SDTI_IsInIndexStreamOffset=true;
+    PrivateMetadata_IsPresent=false;
     #if MEDIAINFO_TRACE
         SDTI_SystemMetadataPack_Trace_Count=0;
         SDTI_PackageMetadataSet_Trace_Count=0;
@@ -4731,6 +4732,288 @@ void File_Mxf::Streams_Finish_CommercialNames ()
     }
 }
 
+//***************************************************************************
+// Helpers for checking compliance with specifications
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+string File_Mxf::Raw_UInt(int64u Value, size_t Size)
+{
+    string Result(Size, '\0');
+    for (size_t i=0; i<Size; i++)
+        Result[Size-1-i]=(char)(Value>>(i*8));
+    return Result;
+}
+
+//---------------------------------------------------------------------------
+string File_Mxf::Raw_Rational(int32u Numerator, int32u Denominator)
+{
+    return Raw_UInt(Numerator, 4)+Raw_UInt(Denominator, 4);
+}
+
+//---------------------------------------------------------------------------
+string File_Mxf::Raw_UL(int64u Hi, int64u Lo)
+{
+    return Raw_UInt(Hi, 8)+Raw_UInt(Lo, 8);
+}
+
+//---------------------------------------------------------------------------
+string File_Mxf::Raw_Batch(const vector<int32u>& Values)
+{
+    auto Result=Raw_UInt(Values.size(), 4)+Raw_UInt(4, 4);
+    for (const auto Value : Values)
+        Result+=Raw_UInt(Value, 4);
+    return Result;
+}
+
+//---------------------------------------------------------------------------
+bool File_Mxf::Raw_IsSame(const string& Value, const string& Expected)
+{
+    if (Value.size()!=Expected.size())
+        return false;
+    const auto IsUL=Expected.size()==16 && Expected[0]=='\x06' && Expected[1]=='\x0E' && Expected[2]=='\x2B' && Expected[3]=='\x34';
+    for (size_t i=0; i<Value.size(); i++)
+        if (Value[i]!=Expected[i] && !(IsUL && i==7)) //Version byte of UL is ignored
+            return false;
+    return true;
+}
+
+//---------------------------------------------------------------------------
+string File_Mxf::Raw_Hex(const string& Value)
+{
+    static const char Digits[]="0123456789ABCDEF";
+    string Result;
+    for (size_t i=0; i<Value.size(); i++)
+    {
+        if (i && !(i%4))
+            Result+='.';
+        Result+=Digits[(int8u)Value[i]>>4];
+        Result+=Digits[(int8u)Value[i]&0x0F];
+    }
+    return Result;
+}
+
+//---------------------------------------------------------------------------
+string File_Mxf::Raw_Text(const string& Value, bool IsRational)
+{
+    switch (Value.size())
+    {
+        case 1 : return to_string((int8u)Value[0]);
+        case 2 : return to_string(BigEndian2int16u(Value.data()));
+        case 4 : return to_string(BigEndian2int32u(Value.data()));
+        case 8 : if (IsRational)
+                    return to_string(BigEndian2int32u(Value.data()))+'/'+to_string(BigEndian2int32u(Value.data()+4));
+                 return to_string((int64s)BigEndian2int64u(Value.data())); //Position or Length
+        default: ;
+    }
+    if (Value.size()==16 && !Value.compare(0, 4, "\x06\x0E\x2B\x34", 4))
+        return Raw_Hex(Value); //UL
+    if (Value.size()>=8 && Value.size()==8+(int64u)BigEndian2int32u(Value.data())*BigEndian2int32u(Value.data()+4))
+    {
+        //Batch
+        const auto Count=BigEndian2int32u(Value.data());
+        const auto Size=BigEndian2int32u(Value.data()+4);
+        string Result="{";
+        for (int32u i=0; i<Count; i++)
+        {
+            if (i)
+                Result+=", ";
+            Result+=Raw_Text(Value.substr(8+(size_t)i*Size, Size));
+        }
+        return Result+'}';
+    }
+    return Raw_Hex(Value);
+}
+
+//---------------------------------------------------------------------------
+const string* File_Mxf::Property_Get(const properties& Properties, int64u Key)
+{
+    const auto Property=Properties.find(Key);
+    return Property==Properties.end()?nullptr:&Property->second;
+}
+
+//---------------------------------------------------------------------------
+const string* File_Mxf::Property_Get(const properties& Properties, int16u Tag, int64u UL_Lo)
+{
+    const auto Value=Property_Get(Properties, (int64u)Tag);
+    return Value?Value:Property_Get(Properties, UL_Lo);
+}
+
+//---------------------------------------------------------------------------
+bool File_Mxf::Properties_Test(const properties& Properties, const vector<property_expected>& List, conformance_errors& Errors)
+{
+    for (const auto& Item : List)
+    {
+        const auto Value=Property_Get(Properties, Item.Key);
+        const auto Text=[&](const string& Raw) -> string { //Rationals, versions and flags are known by their key
+            switch (Item.Key)
+            {
+                case 0x3001 : //Sample Rate
+                case 0x320E : //Aspect Ratio
+                case 0x3D03 : //Audio Sampling Rate
+                case 0x3F0B : //Index Edit Rate
+                case 0x4B01 : //Track Edit Rate
+                            return Raw_Text(Raw, true);
+                case 0x3B05 : //Version
+                            return Raw.size()==2?to_string((int8u)Raw[0])+'.'+to_string((int8u)Raw[1]):Raw_Text(Raw);
+                case 0x3218 : //Active Format Descriptor
+                case Elements::ProfileAndLevel :
+                case Elements::AVCProfileConstraint :
+                case Elements::AVCSequenceParameterSetFlag :
+                case Elements::AVCPictureParameterSetFlag :
+                            return Raw.size()==1?"0x"+Raw_Hex(Raw):Raw_Text(Raw);
+                default     : return Raw_Text(Raw);
+            }
+        };
+        const auto Expected_Text=[&]() { //e.g. "1 or 2"
+            string Result;
+            for (const auto& Expected : Item.Values)
+                Result+=(Result.empty()?"":" or ")+Text(Expected);
+            return Result;
+        };
+        if (!Value)
+        {
+            if (!Item.AbsentIsAccepted && Errors.Add(string(Item.Name)+" is missing"+(Item.Values.empty()?string():" (expected "+Expected_Text()+')')))
+                return true;
+            continue;
+        }
+        if (Item.Values.empty())
+            continue;
+        bool IsValid=false;
+        for (const auto& Expected : Item.Values)
+            if (Raw_IsSame(*Value, Expected))
+                IsValid=true;
+        if (!IsValid && Errors.Add(string(Item.Name)+" is wrong (actual "+Text(*Value)+", expected "+Expected_Text()+')'))
+            return true;
+    }
+    return false;
+}
+
+//---------------------------------------------------------------------------
+bool File_Mxf::Properties_TestRange(const properties& Properties, int64u Key, const char* Name, int32u Min, int32u Max, conformance_errors& Errors)
+{
+    const auto Value=Property_Get(Properties, Key);
+    const auto Expected_Text=to_string(Min)+" to "+to_string(Max);
+    if (!Value)
+        return Errors.Add(string(Name)+" is missing (expected "+Expected_Text+')');
+    if (Value->size()!=4 || BigEndian2int32u(Value->data())<Min || BigEndian2int32u(Value->data())>Max)
+        return Errors.Add(string(Name)+" is wrong (actual "+Raw_Text(*Value)+", expected "+Expected_Text+')');
+    return false;
+}
+
+//---------------------------------------------------------------------------
+bool File_Mxf::IsOP1a(int64u Hi, int64u Lo)
+{
+    return (Hi&0xFFFFFFFFFFFFFF00LL)==0x060E2B3404010100LL && (Lo&0xFFFFFFFFFFFF02FFLL)==0x0D01020101010000LL; //OP1a with internal essence
+}
+
+//---------------------------------------------------------------------------
+bool File_Mxf::Package_Tracks(const package& Package, vector<track_info>& List, string& Kinds, conformance_errors& Errors)
+{
+    set<int128u> TrackUIDs; //Tracks are listed again each time the Header Metadata is parsed
+    for (const auto& TrackUID : Package.Tracks)
+    {
+        if (!TrackUIDs.insert(TrackUID).second)
+            continue;
+        const auto Track=Tracks.find(TrackUID);
+        const auto TrackProperties=SetProperties.find(TrackUID);
+        if (Track==Tracks.end() || TrackProperties==SetProperties.end())
+        {
+            if (Errors.Add("Track is missing"))
+                return true;
+            continue;
+        }
+        const auto Sequence=SetProperties.find(Track->second.Sequence);
+        const auto DataDefinition=Sequence==SetProperties.end()?nullptr:Property_Get(Sequence->second, 0x0201);
+        if (!DataDefinition || DataDefinition->size()!=16 || DataDefinition->compare(8, 3, "\x01\x03\x02", 3))
+        {
+            if (Errors.Add("Track kind is unknown"))
+                return true;
+            continue;
+        }
+        char Kind;
+        const auto Kind1=(*DataDefinition)[11];
+        const auto Kind2=(*DataDefinition)[12];
+        if (Kind1==0x01 && Kind2==0x10)
+            Kind='M';
+        else if (Kind1==0x01 && Kind2>=0x01 && Kind2<=0x03)
+            Kind='T';
+        else if (Kind1==0x02 && Kind2==0x01)
+            Kind='V';
+        else if (Kind1==0x02 && Kind2==0x02)
+            Kind='A';
+        else if (Kind1==0x02 && Kind2==0x03)
+            Kind='D';
+        else
+        {
+            if (Errors.Add("Track kind is not supported"))
+                return true;
+            continue;
+        }
+        const auto TrackNumber=Property_Get(TrackProperties->second, 0x4804);
+        List.push_back({Track, Kind, (TrackNumber && TrackNumber->size()==4)?BigEndian2int32u(TrackNumber->data()):0, &TrackProperties->second});
+        if (Kind!='M')
+            Kinds+=Kind;
+    }
+    return false;
+}
+
+//---------------------------------------------------------------------------
+string File_Mxf::Tracks_Kinds_Description(const string& Kinds)
+{
+    string Result;
+    for (size_t i=0; i<Kinds.size();)
+    {
+        auto j=i+1;
+        while (j<Kinds.size() && Kinds[j]==Kinds[i])
+            j++;
+        if (!Result.empty())
+            Result+=", ";
+        Result+=to_string(j-i)+' ';
+        switch (Kinds[i])
+        {
+            case 'T' : Result+="Timecode"; break;
+            case 'V' : Result+="Video"; break;
+            case 'A' : Result+="Audio"; break;
+            default  : Result+="ANC Data";
+        }
+        i=j;
+    }
+    return Result;
+}
+
+//---------------------------------------------------------------------------
+const File_Mxf::randomindexpack* File_Mxf::RandomIndexPack_Find(int64u ByteOffset) const
+{
+    for (const auto& Entry : RandomIndexPack_Entries)
+        if (Entry.ByteOffset==ByteOffset)
+            return &Entry;
+    return nullptr;
+}
+
+//---------------------------------------------------------------------------
+vector<string> File_Mxf::HeaderMetadata_FooterDifferences(bool WithPresence) const
+{
+    auto Differences=SetProperties_FooterDifferences;
+    if (WithPresence)
+        Differences.insert(SetProperties_FooterPresenceDifferences.begin(), SetProperties_FooterPresenceDifferences.end());
+    vector<string> List;
+    for (const auto& Difference : Differences)
+    {
+        auto Property=Difference.second;
+        if (Property<0x8000) //Static local tag
+        {
+            const auto Primer_Value=Primer_Values.find((int16u)Property);
+            Property=Primer_Value==Primer_Values.end()?0:Primer_Value->second.lo;
+        }
+        const auto SetName=Mxf_Param_Info(0x02530100, Difference.first);
+        const auto PropertyName=Property?Mxf_Param_Info(0x01010100, Property):nullptr;
+        List.push_back((PropertyName?string(PropertyName):Ztring().From_Number(Difference.second, 16).To_UTF8())
+            +" of "+(SetName?string(SetName):Ztring().From_Number(Difference.first, 16).To_UTF8()));
+    }
+    return List;
+}
+
 //---------------------------------------------------------------------------
 void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 EditRate, int32u TrackID, int64s Origin)
 {
@@ -6640,6 +6923,7 @@ void File_Mxf::Data_Parse()
 {
     //Clearing
     InstanceUID=0;
+    PrivateMetadata_Test(Code);
     if (!Essences_FirstEssence_Parsed)
     {
         Frame_Count=(int64u)-1;
@@ -6686,6 +6970,8 @@ void File_Mxf::Data_Parse()
     } \
 
     auto ManageGroup = [&](method_name MethodName) {
+        const auto IsLocalSet=(int8u)(Code.hi>>16)==0x53;
+        properties Properties;
         switch ((int8u)(Code.hi>>16))         {
         case 0x05: (this->*MethodName)(); break;
         case 0x13:
@@ -6746,6 +7032,8 @@ void File_Mxf::Data_Parse()
                     Length3 = Length3_Max;
                     Length2 = Length3 > 0xFFFF ? 0xFFFF : (int16u)Length3;
                 }
+                if (IsLocalSet)
+                    Property_Store(Properties, Length3);
                 auto Element_Size_Save = Element_Size;
                 Element_Size = Element_Offset + Length3;
                 (this->*MethodName)();
@@ -6755,6 +7043,8 @@ void File_Mxf::Data_Parse()
                 Element_Size = Element_Size_Save;
                 Element_End0();
             }
+            if (IsLocalSet)
+                Properties_Store(Properties);
             break;
         default: Skip_XX(Element_Size - Element_Offset,         "Unknown");
         }
@@ -8468,6 +8758,8 @@ void File_Mxf::RandomIndexPack()
         Element_End0();
 
         FILLING_BEGIN();
+            if (!RandomIndexPacks_AlreadyParsed)
+                RandomIndexPack_Entries.push_back(RandomIndexPack);
             if (!RandomIndexPacks_AlreadyParsed && PartitionPack_AlreadyParsed.find(RandomIndexPack.ByteOffset)==PartitionPack_AlreadyParsed.end())
                 RandomIndexPacks.push_back(RandomIndexPack);
             if (!RandomIndexPacks_AlreadyParsed && ExtraMetadata_SID.find(RandomIndexPack.BodySID)!=ExtraMetadata_SID.end() && RandomIndexPack.ByteOffset<ExtraMetadata_Offset)
@@ -11965,6 +12257,7 @@ void File_Mxf::IndexTableSegment_IndexEntryArray()
         Skip_B1(                                                "Temporal Offset");
         Skip_B1(                                                "Key-Frame Offset");
         Get_B1 (Flags,                                          "Flags");
+            IndexTableSegment_Flags+=(char)Flags;
             Skip_Flags(Flags, 7,                                "Random Access");
             Skip_Flags(Flags, 6,                                "Sequence Header");
             #if MEDIAINFO_SEEK
@@ -12867,6 +13160,13 @@ void File_Mxf::PartitionMetadata()
         Partition.IndexByteCount=IndexByteCount;
         Partition.BodyOffset=BodyOffset;
         Partition.BodySID=BodySID;
+        Partition.IndexSID=IndexSID;
+        Partition.KAGSize=KAGSize;
+        Partition.OperationalPattern=OperationalPattern;
+        Partition.MajorVersion=MajorVersion;
+        Partition.MinorVersion=MinorVersion;
+        Partition.Kind=(int8u)(Code.lo>>16);
+        Partition.Status=(int8u)(Code.lo>>8);
         Partitions_Pos=Partition_Next-Partitions.begin();
         Partitions.insert(Partition_Next, Partition);
         Partitions_IsCalculatingHeaderByteCount=true;
@@ -17590,6 +17890,89 @@ bool File_Mxf::Descriptors_ConfigureForDemux()
     return EditRate_IsAdapted;
 }
 #endif //MEDIAINFO_DEMUX || MEDIAINFO_SEEK
+
+//---------------------------------------------------------------------------
+void File_Mxf::Property_Store(properties& Properties, int64u Size)
+{
+    //Static local tag or low part of the dynamic property UL
+    int64u Key;
+    if (Code2<0x8000)
+        Key=Code2;
+    else
+    {
+        const auto Primer_Value=Primer_Values.find(Code2);
+        if (Primer_Value==Primer_Values.end())
+            return;
+        PrivateMetadata_Test(Primer_Value->second);
+        if ((Primer_Value->second.hi>>24)!=0x060E2B3401LL)
+            return;
+        Key=Primer_Value->second.lo;
+    }
+
+    //Raw content, only the beginning of long values (e.g. index entries) is kept
+    if (Size>256)
+        Size=256;
+    if (Buffer_Offset+Element_Offset+Size>Buffer_Size)
+        return;
+    Properties[Key].assign((const char*)Buffer+Buffer_Offset+(size_t)Element_Offset, (size_t)Size);
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Properties_Store(properties& Properties)
+{
+    if (Code.lo==Groups::IndexTableSegment)
+    {
+        auto Flags=std::move(IndexTableSegment_Flags);
+        IndexTableSegment_Flags.clear();
+        const auto StreamOffset=File_Offset+Buffer_Offset-Header_Size;
+        for (const auto& IndexTableSegment : IndexTableSegments)
+            if (IndexTableSegment.StreamOffset==StreamOffset)
+                return; //Already parsed
+        IndexTableSegments.push_back({StreamOffset, std::move(Properties), std::move(Flags)});
+        return;
+    }
+    if (InstanceUID.hi || InstanceUID.lo)
+    {
+        auto& Properties_Previous=SetProperties[InstanceUID];
+        if (Partitions_IsFooter && !Properties_Previous.empty()) //Header Metadata repeated in the Footer Partition
+        {
+            //References to sets may have another value, as Instance UIDs of sets may be different (SMPTE ST 377-1)
+            const auto IsReference=[&](const string& Value) {
+                size_t Begin=(Value.size()>=24 && BigEndian2int32u(Value.data()+4)==16)?8:0; //Batch or array of references
+                if (Value.size()<Begin+16)
+                    return false;
+                int128u UUID;
+                UUID.hi=BigEndian2int64u(Value.data()+Begin);
+                UUID.lo=BigEndian2int64u(Value.data()+Begin+8);
+                return SetProperties.find(UUID)!=SetProperties.end();
+            };
+            const int64u SetKey=Code.lo; //Low part of the set key, copied as a packed field can not be bound to a reference
+            for (const auto& Property : Properties)
+            {
+                const auto Property_Previous=Properties_Previous.find(Property.first);
+                if (Property_Previous==Properties_Previous.end())
+                    SetProperties_FooterPresenceDifferences.emplace(SetKey, Property.first);
+                else if (Property_Previous->second!=Property.second && !IsReference(Property_Previous->second))
+                    SetProperties_FooterDifferences.emplace(SetKey, Property.first);
+            }
+            for (const auto& Property_Previous : Properties_Previous)
+                if (Properties.find(Property_Previous.first)==Properties.end())
+                    SetProperties_FooterPresenceDifferences.emplace(SetKey, Property_Previous.first);
+        }
+        Properties_Previous=std::move(Properties);
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::PrivateMetadata_Test(const int128u& UL)
+{
+    //SMPTE metadata classes 1-7 and 13 are public, 14 is private and 15 is experimental
+    if ((UL.hi>>32)!=0x060E2B34)
+        return;
+    const auto Class=(int8u)(UL.lo>>56);
+    if ((Class<1 || Class>7) && Class!=13)
+        PrivateMetadata_IsPresent=true;
+}
 
 //---------------------------------------------------------------------------
 #if defined(MEDIAINFO_ADM_YES)

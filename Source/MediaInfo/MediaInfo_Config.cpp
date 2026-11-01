@@ -4014,6 +4014,50 @@ string MediaInfo_Config::Mp4Profile_List()
 #endif //MEDIAINFO_CONFORMANCE
 
 #if MEDIAINFO_CONFORMANCE
+string MediaInfo_Config::ProfileList_Set(const Ztring& Value, const char* const* Names, size_t Names_Size, const char* Kind, string& Result)
+{
+    const auto Normalize = [](string Name) { //Case, hyphens and underscores are ignored
+        transform(Name.begin(), Name.end(), Name.begin(), [](unsigned char c) { return toupper(c); });
+        Name.erase(remove_if(Name.begin(), Name.end(), [](char c) { return c == '-' || c == '_'; }), Name.end());
+        return Name;
+    };
+    ZtringList List;
+    List.Separator_Set(0, __T(","));
+    List.Write(Value);
+    Result.clear();
+    for (const auto& ItemZ : List)
+    {
+        const auto Item = Normalize(ItemZ.To_UTF8());
+        const char* Name = nullptr;
+        for (size_t i = 0; i < Names_Size; i++)
+            if (Item == Normalize(Names[i]))
+                Name = Names[i];
+        if (!Name)
+            return string("Unknown ") + Kind + ' ' + ItemZ.To_UTF8();
+        if (!Result.empty())
+            Result += ',';
+        Result += Name;
+    }
+    return {};
+}
+#endif //MEDIAINFO_CONFORMANCE
+
+#if MEDIAINFO_CONFORMANCE
+string MediaInfo_Config::ProfileList_Get(const char* const* Names, size_t Names_Size)
+{
+    string Result;
+    const auto LineSep = LineSeparator_Get().To_UTF8();
+    for (size_t i = 0; i < Names_Size; i++)
+    {
+        if (!Result.empty())
+            Result += LineSep;
+        Result += Names[i];
+    }
+    return Result;
+}
+#endif //MEDIAINFO_CONFORMANCE
+
+#if MEDIAINFO_CONFORMANCE
 extern string Mpeg4_Descriptors_AudioProfileLevelString(int8u AudioProfileLevelIndication);
 string MediaInfo_Config::UsacProfile(const Ztring& ValueZ)
 {
