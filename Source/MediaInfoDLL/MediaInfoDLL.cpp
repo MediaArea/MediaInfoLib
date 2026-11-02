@@ -32,6 +32,7 @@
 #include "MediaInfoDLL_Static.h"
 #include "ZenLib/Ztring.h"
 #include "ZenLib/CriticalSection.h"
+#include "ZenLib/OS_Utils.h"
 #include <map>
 #include <vector>
 #include <clocale>
@@ -90,7 +91,7 @@ static const char* WC2MB(void* Handle, const wchar_t* Text)
 }
 
 //---------------------------------------------------------------------------
-static const wchar_t* MB2WC(void* Handle, size_t Pos, const char* Text)
+static const wchar_t* MB2WC(void* Handle, size_t Pos, const char* Text, bool IsFileName=false)
 {
     //Coherancy
     Critical.Enter();
@@ -104,6 +105,8 @@ static const wchar_t* MB2WC(void* Handle, size_t Pos, const char* Text)
     //Adaptation
     if (utf8)
         return MI_Input->second->Unicode[Pos].From_UTF8(Text).c_str();
+    else if (IsFileName)
+        return (MI_Input->second->Unicode[Pos]=FileName_From_Native(Text)).c_str();
     else
         return MI_Input->second->Unicode[Pos].From_Local(Text).c_str();
 }
@@ -371,7 +374,7 @@ void*           __stdcall MediaInfoA_New ()
 
 void*           __stdcall MediaInfoA_New_Quick (const char* File, const char* Options)
 {
-    return MediaInfo_New_Quick(MB2WC(NULL, 0, File), MB2WC(NULL, 1, Options));
+    return MediaInfo_New_Quick(MB2WC(NULL, 0, File, true), MB2WC(NULL, 1, Options));
 }
 
 void            __stdcall MediaInfoA_Delete (void* Handle)
@@ -381,7 +384,7 @@ void            __stdcall MediaInfoA_Delete (void* Handle)
 
 size_t          __stdcall MediaInfoA_Open (void* Handle, const char* File)
 {
-    return MediaInfo_Open(Handle, MB2WC(Handle, 0, File));
+    return MediaInfo_Open(Handle, MB2WC(Handle, 0, File, true));
 }
 
 size_t          __stdcall MediaInfoA_Open_Buffer (void* Handle, const unsigned char* Begin, size_t  Begin_Size, const unsigned char* End, size_t  End_Size)
@@ -483,7 +486,7 @@ void*           __stdcall MediaInfoListA_New ()
 
 void*           __stdcall MediaInfoListA_New_Quick (const char* File, const char* Options)
 {
-    return MediaInfoList_New_Quick(MB2WC(NULL, 0, File), MB2WC(NULL, 1, Options));
+    return MediaInfoList_New_Quick(MB2WC(NULL, 0, File, true), MB2WC(NULL, 1, Options));
 }
 
 void            __stdcall MediaInfoListA_Delete (void* Handle)
@@ -493,7 +496,7 @@ void            __stdcall MediaInfoListA_Delete (void* Handle)
 
 size_t          __stdcall MediaInfoListA_Open (void* Handle, const char* File, MediaInfo_fileoptions_C Options)
 {
-    return MediaInfoList_Open(Handle, MB2WC(Handle, 0, File), Options);
+    return MediaInfoList_Open(Handle, MB2WC(Handle, 0, File, true), Options);
 }
 
 size_t          __stdcall MediaInfoListA_Open_Buffer (void* Handle, const unsigned char* Begin, size_t  Begin_Size, const unsigned char* End, size_t  End_Size)
