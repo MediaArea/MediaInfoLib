@@ -1064,6 +1064,7 @@ NewVersion_Question_Title;A new version was released!
 NLQ_Method;NLQ method
 No;No
 Not yet;Not yet
+NumberOfBeds;Number of beds
 NumberOfChannelFormats;Number of channel formats
 NumberOfContents;Number of contents
 NumberOfDynamicObjects;Number of dynamic objects
