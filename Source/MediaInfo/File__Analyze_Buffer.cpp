@@ -2363,7 +2363,7 @@ void File__Analyze::Skip_S1(int8u Bits, const char* Name)
     #if MEDIAINFO_TRACE
         if (Trace_Activated)
         {
-            Param(Name, BS->Get1(Bits), 1);
+            Param(Name, BS->Get1(Bits), Bits);
             Param_Info(__T("(")+Ztring::ToZtring(Bits)+__T(" bits)"));
         }
         else
