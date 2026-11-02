@@ -673,7 +673,7 @@ void File_Iab::BedDefinition()
             Pos++;
         Skip_XX(Pos-Element_Offset,                             "AudioDescriptionText");
     }
-    Skip_B1(                                                    "SubElementCount");
+    Skip_Plex8(                                                 "SubElementCount");
     Element_ThisIsAList();
 }
 
@@ -777,7 +777,7 @@ void File_Iab::ObjectDefinition()
             Pos++;
         Skip_XX(Pos-Element_Offset,                             "AudioDescriptionText");
     }
-    Skip_B1(                                                    "SubElementCount");
+    Skip_Plex8(                                                 "SubElementCount");
     //Element_ThisIsAList(); // TODO: handle SubElements here
 }
 
