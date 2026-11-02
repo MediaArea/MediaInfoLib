@@ -27,9 +27,7 @@
     #include "ThirdParty/base64/base64.h"
 #endif //MEDIAINFO_IBI || MEDIAINFO_AES
 #include <algorithm>
-#if MEDIAINFO_DEMUX
-    #include <cmath>
-#endif //MEDIAINFO_DEMUX
+#include <cmath>
 using namespace ZenLib;
 using namespace std;
 //---------------------------------------------------------------------------
