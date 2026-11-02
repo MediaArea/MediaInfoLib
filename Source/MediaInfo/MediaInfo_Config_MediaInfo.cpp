@@ -1818,7 +1818,7 @@ void MediaInfo_Config_MediaInfo::File_ExpandSubs_Update(void** Source)
                             PosPrevious--;
                         while (PosPrevious && Track[PosPrevious][Info_Name][0]==__T(' ')) // avoid injected lines
                             PosPrevious--;
-                        if (!Nested && i>j && Name[i-j]==' ' && Track[PosPrevious][Info_Name].size()>= i-j && (Track[PosPrevious][Info_Name].size()==i-j || Track[PosPrevious][Info_Name][i-j]==' ') && Name.substr(0, i-j) == Track[PosPrevious][Info_Name].substr(0, i-j))
+                        if (!Nested && Pos && i>j && Name[i-j]==' ' && Track[PosPrevious][Info_Name].size()>= i-j && (Track[PosPrevious][Info_Name].size()==i-j || Track[PosPrevious][Info_Name][i-j]==' ') && Name.substr(0, i-j) == Track[PosPrevious][Info_Name].substr(0, i-j))
                             Nested=true;
                         if (Nested)
                             Name.erase(0, i);

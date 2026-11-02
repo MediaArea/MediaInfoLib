@@ -4944,6 +4944,9 @@ void File__Analyze::Video_FrameRate_Rounding(stream_t StreamKind, size_t Pos, si
 //---------------------------------------------------------------------------
 void File__Analyze::Video_BitRate_Rounding(size_t Pos, video Parameter)
 {
+    if (Video_BitRate_Rounding_Disabled)
+        return;
+
     const Ztring& Format=Retrieve(Stream_Video, Pos, Video_Format);
     int32u BitRate=Retrieve(Stream_Video, Pos, Parameter).To_int32u();
     int32u BitRate_Sav=BitRate;
