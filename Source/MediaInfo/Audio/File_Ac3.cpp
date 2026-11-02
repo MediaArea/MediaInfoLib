@@ -2662,14 +2662,14 @@ void File_Ac3::Core_Frame()
                     if(acmod<0x2)
                     {
                         TEST_SB_SKIP(                               "paninfoe");
-                            Skip_S1 (6,                             "panmean");
-                            Skip_S1 (8,                             "paninfo");
+                            Skip_S1 (8,                             "panmean");
+                            Skip_S1 (6,                             "paninfo");
                         TEST_SB_END();
                         if(acmod==0x0)
                         {
                             TEST_SB_SKIP(                           "paninfo2e");
-                               Skip_S1 (6,                          "panmean2");
-                               Skip_S1 (8,                          "paninfo2");
+                               Skip_S1 (8,                          "panmean2");
+                               Skip_S1 (6,                          "paninfo2");
                             TEST_SB_END();
                         }
                     }
