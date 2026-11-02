@@ -93,6 +93,7 @@ protected :
     #if MEDIAINFO_CONFORMANCE
     void Streams_Finish_ContentStorage_Conformance (const int128u ContentStorageUID);
     void Streams_Finish_Conformance_FileFormat (); //SMPTE ST 377-1, edition depending on the version in the file
+    void Streams_Finish_Conformance_RiffChunks (); //SMPTE ST 2131
     void Streams_Finish_Conformance_References ();
     #endif //MEDIAINFO_CONFORMANCE
     void Streams_Finish_Track (const int128u TrackUID);
@@ -962,6 +963,10 @@ protected :
             Type_GroupOfSoundfieldGroupsLabelSubDescriptor,
             Type_ADMSoundfieldGroupLabelSubDescriptor,
             Type_RIFFChunkDefinitionSubDescriptor,
+            Type_RIFFChunkReferencesSubDescriptor,
+            Type_ADMAudioMetadataSubDescriptor,
+            Type_ADM_CHNASubDescriptor,
+            Type_ADMChannelMapping,
         };
         type Type;
         bool HasBFrames;
@@ -991,6 +996,11 @@ protected :
 
         //RIFFChunkDefinitionSubDescriptor specific
         int32u      RIFFChunkID;
+
+        //ADM_CHNASubDescriptor specific
+        #if MEDIAINFO_CONFORMANCE
+            std::vector<int128u> ADMChannelMappings; //Entries of ADMChannelMappingsArray
+        #endif //MEDIAINFO_CONFORMANCE
 
         //DescriptiveMarker, GenericStreamTextBasedSet, RIFFChunkDefinitionSubDescriptor
         int32u      SID;
@@ -1566,6 +1576,9 @@ protected :
     static bool                 Raw_IsSame(const std::string& Value, const std::string& Expected); //Version byte of UL is ignored
     static std::string          Raw_Hex(const std::string& Value); //Bytes in hexadecimal with a dot every 4 bytes, e.g. "060E2B34.0401010D.04010202.01316001"
     static std::string          Raw_Text(const std::string& Value, bool IsRational=false); //Value for messages, e.g. "10", "50/1", "060E2B34.0401010D.04010202.01316001" or "{21, 584}"
+    static bool                 Raw_UInt_Get(const std::string* Value, size_t Size, int64u& Result); //Big endian, returns false if absent or with another size
+    static std::string          Raw_UTF16_Get(const std::string* Value); //UTF-16 big endian, characters out of ISO 7 replaced by '?', null characters at the end ignored, empty if absent
+    const properties&           SetProperties_Get(const int128u& InstanceUID) const; //Empty if the set is not parsed
     static const std::string*   Property_Get(const properties& Properties, int64u Key);
     static const std::string*   Property_Get(const properties& Properties, int16u Tag, int64u UL_Lo); //Static tag or dynamic tag
     static bool                 Properties_Test(const properties& Properties, const std::vector<property_expected>& List, conformance_errors& Errors); //Returns true if the test must stop
@@ -1618,6 +1631,9 @@ protected :
     bool                            Partitions_IsCalculatingHeaderByteCount;
     bool                            Partitions_IsCalculatingSdtiByteCount;
     bool                            Partitions_IsFooter;
+    #if MEDIAINFO_CONFORMANCE
+        int64u                      GenericStreamPartition_PackEnd; //Offset after the Generic Stream Partition Pack just parsed, (int64u)-1 if the last Partition Pack is not a Generic Stream one
+    #endif //MEDIAINFO_CONFORMANCE
 
     //Config
     bool                            TimeCodeFromMaterialPackage;
@@ -1680,6 +1696,12 @@ protected :
     {
         File__Analyze* Parser = {};
         int32u SID = {};
+        #if MEDIAINFO_CONFORMANCE
+            int64u Key_Lo = {}; //Low part of the key of the Generic Stream Data Element
+            bool IsAfterPartitionPack = {}; //Directly after a Generic Stream Partition Pack
+            std::string Format; //Format of the content, empty if unknown
+            std::string SHA1; //SHA-1 digest of the content, empty if not computed
+        #endif //MEDIAINFO_CONFORMANCE
 
         generic_stream_data_element_key() = default;
         generic_stream_data_element_key(const generic_stream_data_element_key& Value) = delete;

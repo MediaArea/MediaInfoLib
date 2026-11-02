@@ -120,6 +120,12 @@
 #if MEDIAINFO_SEEK
     #include <algorithm>
 #endif //MEDIAINFO_SEEK
+#if MEDIAINFO_CONFORMANCE && MEDIAINFO_SHA1
+    extern "C"
+    {
+        #include <sha1.h>
+    }
+#endif //MEDIAINFO_CONFORMANCE && MEDIAINFO_SHA1
 using namespace std;
 //---------------------------------------------------------------------------
 
@@ -2124,6 +2130,9 @@ File_Mxf::File_Mxf()
     Partitions_IsCalculatingHeaderByteCount=false;
     Partitions_IsCalculatingSdtiByteCount=false;
     Partitions_IsFooter=false;
+    #if MEDIAINFO_CONFORMANCE
+        GenericStreamPartition_PackEnd=(int64u)-1;
+    #endif //MEDIAINFO_CONFORMANCE
 
     #if MEDIAINFO_SEEK
         IndexTables_Pos=0;
@@ -2882,6 +2891,11 @@ void File_Mxf::Streams_Finish()
             }
         }
     }
+    //Conformance with SMPTE ST 2131, before filling the ADM content as its parsed items are then cleared
+    #if MEDIAINFO_CONFORMANCE
+        Streams_Finish_Conformance_RiffChunks();
+    #endif //MEDIAINFO_CONFORMANCE
+
     if (DolbyAudioMetadata) //Before ADM for having content before all ADM stuff
         Merge(*DolbyAudioMetadata, Stream_Audio, 0, 0);
     if (Adm)
@@ -3432,6 +3446,463 @@ void File_Mxf::Streams_Finish_Conformance_FileFormat ()
     };
     for (const auto& Duplicate : InstanceUID_Duplicates)
         Fill_Conformance_AtOffset(Duplicate.first, "MXF InstanceUID", "Instance UID is the one of another set (actual "+Ztring().From_UUID(Duplicate.second.InstanceUID).To_UTF8()+", "+Set_Name(Duplicate.second.Key)+" and "+Set_Name(Duplicate.second.Key_Duplicate)+')');
+}
+
+//---------------------------------------------------------------------------
+// RIFF Chunks mapped to Generic Streams and ADM metadata (SMPTE ST 2131:2026-05), checked if such sets are present
+// Generic Streams are checked if they are parsed (Generic Stream Data Element, SHA-1 digest, content)
+void File_Mxf::Streams_Finish_Conformance_RiffChunks ()
+{
+    if (IsSub)
+        return;
+
+    //Sets
+    vector<descriptors::iterator> Definitions, References, Metadatas, Chnas, Labels;
+    auto Framework_IsIdentified=false; //AudioLabelingFrameworkADMContent label in the Channel Assignment of a File Descriptor
+    for (auto Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
+    {
+        switch (Descriptor->second.Type)
+        {
+            case descriptor::Type_RIFFChunkDefinitionSubDescriptor      : Definitions.push_back(Descriptor); break;
+            case descriptor::Type_RIFFChunkReferencesSubDescriptor      : References.push_back(Descriptor); break;
+            case descriptor::Type_ADMAudioMetadataSubDescriptor         : Metadatas.push_back(Descriptor); break;
+            case descriptor::Type_ADM_CHNASubDescriptor                 : Chnas.push_back(Descriptor); break;
+            case descriptor::Type_ADMSoundfieldGroupLabelSubDescriptor  : Labels.push_back(Descriptor); break;
+            default                                                     : ;
+        }
+        if ((Descriptor->second.ChannelAssignment.hi&0xFFFFFFFFFFFFFF00LL)==0x060E2B3404010100LL && Descriptor->second.ChannelAssignment.lo==0x0402021005010000LL)
+            Framework_IsIdentified=true;
+    }
+    if (Definitions.empty() && References.empty() && Metadatas.empty() && Chnas.empty() && Labels.empty() && !Framework_IsIdentified)
+        return;
+
+    //Helpers
+    const auto IsAdmId=[](const string& Value, const char* Prefix, size_t Digits, size_t SuffixDigits) { //e.g. "ATU_" with 8 hexadecimal digits, then '_' with SuffixDigits hexadecimal digits if not 0
+        const auto Prefix_Size=strlen(Prefix);
+        if (Value.size()!=Prefix_Size+Digits+(SuffixDigits?1+SuffixDigits:0) || Value.compare(0, Prefix_Size, Prefix))
+            return false;
+        for (size_t i=Prefix_Size; i<Value.size(); i++)
+            if (!(i==Prefix_Size+Digits?Value[i]=='_':isxdigit((int8u)Value[i])))
+                return false;
+        return true;
+    };
+
+    //File Descriptor referencing each sub-descriptor (raw value of SubDescriptors if not parsed)
+    map<int128u, descriptors::iterator> Parents;
+    for (auto Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
+    {
+        auto List=Descriptor->second.Type==descriptor::type_Mutiple?Descriptor->second.SubDescriptors_Multiple:Descriptor->second.SubDescriptors; //SubDescriptors of the Multiple Descriptor is used for its File Descriptors
+        if (List.empty())
+        {
+            const auto Value=Property_Get(SetProperties_Get(Descriptor->first), Elements::SubDescriptors);
+            if (Value && Value->size()>=8 && BigEndian2int32u(Value->data()+4)==16)
+                for (size_t i=8; i+16<=Value->size(); i+=16)
+                {
+                    int128u UID;
+                    UID.hi=BigEndian2int64u(Value->data()+i);
+                    UID.lo=BigEndian2int64u(Value->data()+i+8);
+                    List.push_back(UID);
+                }
+        }
+        for (const auto& SubDescriptor : List)
+            Parents.emplace(SubDescriptor, Descriptor);
+    }
+    const auto Parent_Get=[&](const int128u& InstanceUID) {
+        const auto Parent=Parents.find(InstanceUID);
+        return Parent==Parents.end()?Descriptors.end():Parent->second;
+    };
+    const auto IsSoundDescriptor=[&](descriptors::iterator Descriptor) {
+        return Descriptor!=Descriptors.end() && Descriptor->second.StreamKind==Stream_Audio;
+    };
+    set<int128u> PackageDescriptors; //File Descriptors directly referenced by a File Package
+    for (const auto& Package : Packages)
+        if (Package.second.IsSourcePackage)
+            PackageDescriptors.insert(Package.second.Descriptor);
+
+    //Errors, in the stream of the Sound Track if the set is referenced by its File Descriptor
+    const auto Error=[&](const int128u* InstanceUID, const char* Field, const string& Value) {
+        conformance_errors Errors;
+        const auto Parent=InstanceUID?Parent_Get(*InstanceUID):Descriptors.end();
+        if (IsSoundDescriptor(Parent))
+        {
+            if (Parent->second.LinkedTrackID!=(int32u)-1)
+                Errors.StreamID=to_string(Parent->second.LinkedTrackID);
+            else if (Count_Get(Stream_Audio)==1)
+                Errors.StreamID=Retrieve_Const(Stream_Audio, 0, Audio_ID).To_UTF8();
+        }
+        Errors.Add(Value);
+        Fill_Conformance_Specification(Field, string(), Errors);
+    };
+
+    //Generic Streams, from the parsed Generic Stream Data Elements
+    map<int32u, vector<const generic_stream_data_element_key*> > GenericStreams;
+    for (const auto& Elem : MXFGenericStreamDataElementKey)
+        if (Elem.second.SID)
+            GenericStreams[Elem.second.SID].push_back(&Elem.second);
+    const auto GenericStream_Format=[&](int32u SID) -> const string* { //nullptr if not parsed
+        const auto GenericStream=GenericStreams.find(SID);
+        return GenericStream==GenericStreams.end()?nullptr:&GenericStream->second.front()->Format;
+    };
+
+    //RIFFChunkDefinitionSubDescriptor
+    map<int32u, descriptors::iterator> Definitions_BySID;
+    set<string> UUIDs;
+    for (const auto& Definition : Definitions)
+    {
+        const auto& Properties=SetProperties_Get(Definition->first);
+        const auto Error_Definition=[&](const char* Field, const string& Value) { Error(&Definition->first, Field, Value); };
+
+        //Location
+        const auto Parent=Parent_Get(Definition->first);
+        if (Parent!=Descriptors.end() && PackageDescriptors.find(Parent->first)==PackageDescriptors.end())
+            Error_Definition("MXF RIFFChunkDefinitionSubDescriptor", "RIFFChunkDefinitionSubDescriptor is not referenced by the File Descriptor of the File Package");
+
+        //RIFFChunkID
+        const auto ChunkID=Property_Get(Properties, Elements::RIFFChunkID);
+        if (!ChunkID)
+            Error_Definition("MXF RIFFChunkDefinitionSubDescriptor RIFFChunkID", "RIFFChunkID is not present");
+        else if (ChunkID->size()!=4 || any_of(ChunkID->begin(), ChunkID->end(), [](char Character) { return Character<0x20 || Character>0x7E; }))
+            Error_Definition("MXF RIFFChunkDefinitionSubDescriptor RIFFChunkID", "RIFFChunkID is not 4 ISO 7 characters (actual "+Raw_Hex(*ChunkID)+')');
+        else if (*ChunkID=="BW64" || *ChunkID=="ds64" || *ChunkID=="JUNK" || *ChunkID=="chna")
+            Error_Definition("MXF RIFFChunkDefinitionSubDescriptor RIFFChunkID", "RIFF Chunk \""+*ChunkID+"\" is not permitted");
+
+        //RIFFChunkUUID
+        const auto UUID=Property_Get(Properties, Elements::RIFFChunkUUID);
+        if (UUID && !UUIDs.insert(*UUID).second)
+            Error_Definition("MXF RIFFChunkDefinitionSubDescriptor RIFFChunkUUID", "RIFFChunkUUID is the one of another RIFFChunkDefinitionSubDescriptor");
+
+        //RIFFChunkHashSHA1
+        const auto Hash=Property_Get(Properties, Elements::RIFFChunkHashSHA1);
+        if (Hash && Hash->size()!=20)
+            Error_Definition("MXF RIFFChunkDefinitionSubDescriptor RIFFChunkHashSHA1", "RIFFChunkHashSHA1 is not 20 bytes (actual "+to_string(Hash->size())+')');
+
+        //RIFFChunkStreamID
+        int64u SID;
+        if (!Raw_UInt_Get(Property_Get(Properties, Elements::RIFFChunkStreamID), 4, SID))
+        {
+            Error_Definition("MXF RIFFChunkDefinitionSubDescriptor RIFFChunkStreamID", "RIFFChunkStreamID is not present");
+            continue;
+        }
+        if (!Definitions_BySID.emplace((int32u)SID, Definition).second)
+        {
+            Error_Definition("MXF RIFFChunkDefinitionSubDescriptor RIFFChunkStreamID", "RIFFChunkStreamID is the one of another RIFFChunkDefinitionSubDescriptor (actual "+to_string(SID)+')');
+            continue;
+        }
+
+        //Generic Stream Partition, from the Random Index Pack listing all partitions
+        if (RandomIndexPack_Offset!=(int64u)-1)
+        {
+            size_t Count=0;
+            for (const auto& Entry : RandomIndexPack_Entries)
+                if (Entry.BodySID==SID)
+                    Count++;
+            if (!Count)
+                Error_Definition("MXF RIFFChunkDefinitionSubDescriptor RIFFChunkStreamID", "No Generic Stream Partition with the Stream ID of the RIFF Chunk (actual "+to_string(SID)+')');
+            else if (Count>1)
+                Error_Definition("MXF GenericStreamPartition", "Generic Stream of the RIFF Chunk is in more than one partition (actual "+to_string(Count)+" partitions with Stream ID "+to_string(SID)+')');
+        }
+
+        //Generic Stream Data Element
+        const auto GenericStream=GenericStreams.find((int32u)SID);
+        if (GenericStream!=GenericStreams.end())
+        {
+            if (GenericStream->second.size()>1)
+                Error_Definition("MXF GenericStreamDataElement", "Generic Stream of the RIFF Chunk is in more than one Generic Stream Data Element (actual "+to_string(GenericStream->second.size())+" elements with Stream ID "+to_string(SID)+')');
+            const auto& Elem=*GenericStream->second.front();
+            if (Elem.Key_Lo!=0x0D01050901000000LL)
+                Error_Definition("MXF GenericStreamDataElement Key", "Key of the Generic Stream Data Element of the RIFF Chunk is wrong (actual "+Raw_Hex(Raw_UInt(Elem.Key_Lo, 8))+", expected 0D010509.01000000)");
+            if (!Elem.IsAfterPartitionPack)
+                Error_Definition("MXF GenericStreamDataElement", "Generic Stream Data Element of the RIFF Chunk is not directly after a Generic Stream Partition Pack (Stream ID "+to_string(SID)+')');
+            if (Hash && Hash->size()==20 && Elem.SHA1.size()==20 && *Hash!=Elem.SHA1)
+                Error_Definition("MXF RIFFChunkDefinitionSubDescriptor RIFFChunkHashSHA1", "RIFFChunkHashSHA1 is not the SHA-1 digest of the RIFF Chunk (actual "+Raw_Hex(*Hash)+", expected "+Raw_Hex(Elem.SHA1)+')');
+        }
+
+        //Index Table
+        for (const auto& Segment : IndexTableSegments)
+        {
+            int64u BodySID;
+            if (Raw_UInt_Get(Property_Get(Segment.Properties, 0x3F07), 4, BodySID) && BodySID==SID)
+            {
+                Error_Definition("MXF IndexTableSegment BodySID", "Generic Stream of the RIFF Chunk is indexed (Stream ID "+to_string(SID)+')');
+                break;
+            }
+        }
+    }
+
+    //ADM metadata parsed from a single RIFF Chunk, for checking the references to its content
+    #if defined(MEDIAINFO_ADM_YES)
+        size_t AdmChunks_Count=0;
+        for (const auto& Definition : Definitions_BySID)
+        {
+            const auto Format=GenericStream_Format(Definition.first);
+            if (Format && *Format=="ADM")
+                AdmChunks_Count++;
+        }
+        auto AdmContent=(Adm && AdmChunks_Count==1)?(File_Adm*)Adm:nullptr;
+        if (AdmContent && AdmContent->audioMXFLookUp_IsPresent())
+            Error(nullptr, "MXF RIFFChunkDefinitionSubDescriptor", "ADM metadata of the RIFF Chunk includes the audioMXFLookUp element");
+    #endif //defined(MEDIAINFO_ADM_YES)
+
+    //RIFFChunkReferencesSubDescriptor
+    set<int32u> SIDs_Referenced;
+    map<int128u, set<int32u> > SIDs_ByParent; //RIFF Chunks referenced by the File Descriptor of a Sound Track
+    map<int128u, size_t> References_ByParent;
+    for (const auto& Reference : References)
+    {
+        const auto Error_Reference=[&](const char* Field, const string& Value) { Error(&Reference->first, Field, Value); };
+        set<int32u> SIDs;
+        const auto Array=Property_Get(SetProperties_Get(Reference->first), Elements::RIFFChunkStreamIDsArray);
+        if (!Array || Array->size()<8)
+            Error_Reference("MXF RIFFChunkReferencesSubDescriptor RIFFChunkStreamIDsArray", "RIFFChunkStreamIDsArray is not present");
+        else
+            for (size_t i=8; i+4<=Array->size(); i+=4)
+            {
+                const auto SID=BigEndian2int32u(Array->data()+i);
+                if (!SIDs.insert(SID).second)
+                    Error_Reference("MXF RIFFChunkReferencesSubDescriptor RIFFChunkStreamIDsArray", "Stream ID is present more than once (actual "+to_string(SID)+')');
+                else if (Definitions_BySID.find(SID)==Definitions_BySID.end())
+                    Error_Reference("MXF RIFFChunkReferencesSubDescriptor RIFFChunkStreamIDsArray", "Stream ID is not the one of a RIFFChunkDefinitionSubDescriptor (actual "+to_string(SID)+')');
+            }
+        SIDs_Referenced.insert(SIDs.begin(), SIDs.end());
+
+        //Location
+        const auto Parent=Parent_Get(Reference->first);
+        if (Parent==Descriptors.end())
+            continue;
+        if (!IsSoundDescriptor(Parent))
+        {
+            Error_Reference("MXF RIFFChunkReferencesSubDescriptor", "RIFFChunkReferencesSubDescriptor is not referenced by the File Descriptor of a Sound Track");
+            continue;
+        }
+        SIDs_ByParent[Parent->first].insert(SIDs.begin(), SIDs.end());
+        if (++References_ByParent[Parent->first]==2)
+            Error_Reference("MXF RIFFChunkReferencesSubDescriptor", "File Descriptor of the Sound Track references more than one RIFFChunkReferencesSubDescriptor");
+    }
+    for (const auto& Definition : Definitions_BySID)
+        if (SIDs_Referenced.find(Definition.first)==SIDs_Referenced.end())
+            Error(&Definition.second->first, "MXF RIFFChunkDefinitionSubDescriptor", "RIFF Chunk is not referenced by a RIFFChunkReferencesSubDescriptor (Stream ID "+to_string(Definition.first)+')');
+
+    //ADM_CHNASubDescriptor
+    map<int128u, size_t> Chnas_ByParent;
+    for (const auto& Chna : Chnas)
+    {
+        const auto& Properties=SetProperties_Get(Chna->first);
+        const auto Error_Chna=[&](const char* Field, const string& Value) { Error(&Chna->first, Field, Value); };
+
+        //Location, channels of a Sound Track mapped with SMPTE ST 382 are identified with a 1-based index
+        const auto Parent=Parent_Get(Chna->first);
+        auto ChannelCount=(int32u)-1;
+        if (Parent!=Descriptors.end())
+        {
+            if (!IsSoundDescriptor(Parent))
+                Error_Chna("MXF ADM_CHNASubDescriptor", "ADM_CHNASubDescriptor is not referenced by the File Descriptor of a Sound Track");
+            else
+            {
+                if (++Chnas_ByParent[Parent->first]==2)
+                    Error_Chna("MXF ADM_CHNASubDescriptor", "File Descriptor of the Sound Track references more than one ADM_CHNASubDescriptor");
+                if ((Parent->second.EssenceContainer.lo&0xFFFFFFFFFFFF0000LL)==0x0D01030102060000LL)
+                    ChannelCount=Parent->second.ChannelCount;
+            }
+        }
+
+        //Items
+        int64u NumLocalChannels, NumADMAudioTrackUIDs;
+        const auto NumLocalChannels_IsPresent=Raw_UInt_Get(Property_Get(Properties, Elements::NumLocalChannels), 2, NumLocalChannels);
+        const auto NumADMAudioTrackUIDs_IsPresent=Raw_UInt_Get(Property_Get(Properties, Elements::NumADMAudioTrackUIDs), 2, NumADMAudioTrackUIDs);
+        if (!NumLocalChannels_IsPresent)
+            Error_Chna("MXF ADM_CHNASubDescriptor NumLocalChannels", "NumLocalChannels is not present");
+        if (!NumADMAudioTrackUIDs_IsPresent)
+            Error_Chna("MXF ADM_CHNASubDescriptor NumADMAudioTrackUIDs", "NumADMAudioTrackUIDs is not present");
+        const auto& Mappings=Chna->second.ADMChannelMappings;
+        if (!Property_Get(Properties, Elements::ADMChannelMappingsArray))
+            Error_Chna("MXF ADM_CHNASubDescriptor ADMChannelMappingsArray", "ADMChannelMappingsArray is not present");
+        else if (Mappings.empty())
+            Error_Chna("MXF ADM_CHNASubDescriptor ADMChannelMappingsArray", "ADMChannelMappingsArray has no entry");
+
+        //ADMChannelMapping
+        set<int64u> LocalChannelIDs;
+        set<string> UIDs;
+        for (size_t i=0; i<Mappings.size(); i++)
+        {
+            const auto Mapping=Descriptors.find(Mappings[i]);
+            if (Mapping==Descriptors.end() || Mapping->second.Type!=descriptor::Type_ADMChannelMapping)
+            {
+                Error_Chna("MXF ADM_CHNASubDescriptor ADMChannelMappingsArray", "ADMChannelMapping "+to_string(i+1)+" is not present");
+                continue;
+            }
+            const auto& Mapping_Properties=SetProperties_Get(Mapping->first);
+            const auto UID=Raw_UTF16_Get(Property_Get(Mapping_Properties, Elements::ADMAudioTrackUID));
+            const auto Name=UID.empty()?("ADMChannelMapping "+to_string(i+1)):UID;
+            int64u LocalChannelID;
+            if (!Raw_UInt_Get(Property_Get(Mapping_Properties, Elements::LocalChannelID), 4, LocalChannelID))
+                Error_Chna("MXF ADMChannelMapping LocalChannelID", "LocalChannelID of "+Name+" is not present");
+            else
+            {
+                LocalChannelIDs.insert(LocalChannelID);
+                if (ChannelCount!=(int32u)-1 && (!LocalChannelID || LocalChannelID>ChannelCount))
+                    Error_Chna("MXF ADMChannelMapping LocalChannelID", "LocalChannelID of "+Name+" is not a channel of the Sound Track (actual "+to_string(LocalChannelID)+", expected 1 to "+to_string(ChannelCount)+')');
+            }
+            if (UID.empty())
+                Error_Chna("MXF ADMChannelMapping ADMAudioTrackUID", "ADMAudioTrackUID of "+Name+" is not present or is empty");
+            else
+            {
+                if (!UIDs.insert(UID).second)
+                    Error_Chna("MXF ADMChannelMapping ADMAudioTrackUID", "ADMAudioTrackUID is present more than once (actual "+UID+')');
+                if (!IsAdmId(UID, "ATU_", 8, 0))
+                    Error_Chna("MXF ADMChannelMapping ADMAudioTrackUID", "ADMAudioTrackUID is not formatted as the UID of a chna RIFF Chunk (actual \""+UID+"\")");
+            }
+            const auto Format=Raw_UTF16_Get(Property_Get(Mapping_Properties, Elements::ADMAudioTrackChannelFormatID));
+            if (Format.empty())
+                Error_Chna("MXF ADMChannelMapping ADMAudioTrackChannelFormatID", "ADMAudioTrackChannelFormatID of "+Name+" is not present or is empty");
+            else if (!IsAdmId(Format, "AT_", 8, 2) && !IsAdmId(Format, "AC_", 8, 2))
+                Error_Chna("MXF ADMChannelMapping ADMAudioTrackChannelFormatID", "ADMAudioTrackChannelFormatID of "+Name+" is not formatted as the trackRef of a chna RIFF Chunk (actual \""+Format+"\")");
+            const auto Pack_Raw=Property_Get(Mapping_Properties, Elements::ADMAudioPackFormatID);
+            const auto Pack=Raw_UTF16_Get(Pack_Raw);
+            if (Pack_Raw && Pack.empty())
+                Error_Chna("MXF ADMChannelMapping ADMAudioPackFormatID", "ADMAudioPackFormatID of "+Name+" is empty");
+            else if (Pack_Raw && !IsAdmId(Pack, "AP_", 8, 0))
+                Error_Chna("MXF ADMChannelMapping ADMAudioPackFormatID", "ADMAudioPackFormatID of "+Name+" is not formatted as the packRef of a chna RIFF Chunk (actual \""+Pack+"\")");
+
+            //Same references as the audioTrackUID of the ADM metadata
+            #if defined(MEDIAINFO_ADM_YES)
+                string TrackFormatIDRef, ChannelFormatIDRef, PackFormatIDRef;
+                if (AdmContent && !UID.empty() && AdmContent->audioTrackUID_Get(UID, TrackFormatIDRef, ChannelFormatIDRef, PackFormatIDRef))
+                {
+                    const auto IsChannelFormat=!Format.compare(0, 3, "AC_");
+                    const auto& Expected=IsChannelFormat?ChannelFormatIDRef:TrackFormatIDRef;
+                    if (!Format.empty() && !Expected.empty() && (IsChannelFormat?Format.substr(0, Expected.size()):Format)!=Expected)
+                        Error_Chna("MXF ADMChannelMapping ADMAudioTrackChannelFormatID", "ADMAudioTrackChannelFormatID of "+UID+" is not the one of the audioTrackUID in the ADM metadata (actual "+Format+", expected "+Expected+')');
+                    if (!Pack.empty() && !PackFormatIDRef.empty() && Pack!=PackFormatIDRef)
+                        Error_Chna("MXF ADMChannelMapping ADMAudioPackFormatID", "ADMAudioPackFormatID of "+UID+" is not the one of the audioTrackUID in the ADM metadata (actual "+Pack+", expected "+PackFormatIDRef+')');
+                }
+            #endif //defined(MEDIAINFO_ADM_YES)
+        }
+        if (NumADMAudioTrackUIDs_IsPresent && !Mappings.empty() && NumADMAudioTrackUIDs!=Mappings.size())
+            Error_Chna("MXF ADM_CHNASubDescriptor NumADMAudioTrackUIDs", "NumADMAudioTrackUIDs is not the count of ADMChannelMapping (actual "+to_string(NumADMAudioTrackUIDs)+", expected "+to_string(Mappings.size())+')');
+        if (NumLocalChannels_IsPresent && !LocalChannelIDs.empty() && NumLocalChannels!=LocalChannelIDs.size())
+            Error_Chna("MXF ADM_CHNASubDescriptor NumLocalChannels", "NumLocalChannels is not the count of channels in ADMChannelMappingsArray (actual "+to_string(NumLocalChannels)+", expected "+to_string(LocalChannelIDs.size())+')');
+    }
+
+    //ADMAudioMetadataSubDescriptor
+    set<int32u> SIDs_Adm; //RIFF Chunks carrying ADM metadata
+    for (const auto& Definition : Definitions_BySID)
+    {
+        const auto Format=GenericStream_Format(Definition.first);
+        if (Format && *Format=="ADM")
+            SIDs_Adm.insert(Definition.first);
+    }
+    map<int32u, size_t> Metadatas_BySID;
+    for (const auto& Metadata : Metadatas)
+    {
+        const auto Error_Metadata=[&](const char* Field, const string& Value) { Error(&Metadata->first, Field, Value); };
+        int64u SID;
+        if (!Raw_UInt_Get(Property_Get(SetProperties_Get(Metadata->first), Elements::RIFFChunkStreamID_link1), 4, SID))
+        {
+            Error_Metadata("MXF ADMAudioMetadataSubDescriptor RIFFChunkStreamID_link1", "RIFFChunkStreamID_link1 is not present");
+            continue;
+        }
+        const auto Definition=Definitions_BySID.find((int32u)SID);
+        if (Definition==Definitions_BySID.end())
+        {
+            Error_Metadata("MXF ADMAudioMetadataSubDescriptor RIFFChunkStreamID_link1", "RIFFChunkStreamID_link1 is not the Stream ID of a RIFFChunkDefinitionSubDescriptor (actual "+to_string(SID)+')');
+            continue;
+        }
+        SIDs_Adm.insert((int32u)SID);
+        if (++Metadatas_BySID[(int32u)SID]==2)
+            Error_Metadata("MXF ADMAudioMetadataSubDescriptor", "More than one ADMAudioMetadataSubDescriptor for the RIFF Chunk (Stream ID "+to_string(SID)+')');
+        const auto Parent=Parent_Get(Metadata->first);
+        const auto Definition_Parent=Parent_Get(Definition->second->first);
+        if (Parent!=Descriptors.end() && Definition_Parent!=Descriptors.end() && Parent!=Definition_Parent)
+            Error_Metadata("MXF ADMAudioMetadataSubDescriptor", "ADMAudioMetadataSubDescriptor is not referenced by the File Descriptor referencing the RIFFChunkDefinitionSubDescriptor (Stream ID "+to_string(SID)+')');
+        const auto Format=GenericStream_Format((int32u)SID);
+        if (Format && *Format!="ADM" && Definition->second->second.RIFFChunkID!=0x62786D6C) //"bxml" RIFF Chunk (compressed) is not parsed
+            Error_Metadata("MXF ADMAudioMetadataSubDescriptor RIFFChunkStreamID_link1", "No ADM metadata in the RIFF Chunk (actual "+(Format->empty()?string("unknown content"):*Format)+", Stream ID "+to_string(SID)+')');
+    }
+
+    //ADMSoundfieldGroupLabelSubDescriptor
+    set<int32u> SIDs_Labeled;
+    for (const auto& Label : Labels)
+    {
+        const auto& Properties=SetProperties_Get(Label->first);
+        const auto Error_Label=[&](const char* Field, const string& Value) { Error(&Label->first, Field, Value); };
+        int64u SID;
+        if (!Raw_UInt_Get(Property_Get(Properties, Elements::RIFFChunkStreamID_link2), 4, SID))
+            Error_Label("MXF ADMSoundfieldGroupLabelSubDescriptor RIFFChunkStreamID_link2", "RIFFChunkStreamID_link2 is not present");
+        else
+        {
+            SIDs_Labeled.insert((int32u)SID);
+            if (Definitions_BySID.find((int32u)SID)==Definitions_BySID.end())
+                Error_Label("MXF ADMSoundfieldGroupLabelSubDescriptor RIFFChunkStreamID_link2", "RIFFChunkStreamID_link2 is not the Stream ID of a RIFFChunkDefinitionSubDescriptor (actual "+to_string(SID)+')');
+            else if (Metadatas_BySID.find((int32u)SID)==Metadatas_BySID.end())
+                Error_Label("MXF ADMSoundfieldGroupLabelSubDescriptor RIFFChunkStreamID_link2", "RIFFChunkStreamID_link2 is not the Stream ID of an ADMAudioMetadataSubDescriptor (actual "+to_string(SID)+')');
+
+            //Location
+            const auto Parent=Parent_Get(Label->first);
+            if (Parent!=Descriptors.end() && Parent->second.Type!=descriptor::type_Mutiple)
+            {
+                if (!IsSoundDescriptor(Parent))
+                    Error_Label("MXF ADMSoundfieldGroupLabelSubDescriptor", "ADMSoundfieldGroupLabelSubDescriptor is not referenced by the Multiple Descriptor or by the File Descriptor of a Sound Track");
+                else
+                {
+                    const auto SIDs=SIDs_ByParent.find(Parent->first);
+                    if (SIDs==SIDs_ByParent.end() || SIDs->second.find((int32u)SID)==SIDs->second.end())
+                        Error_Label("MXF ADMSoundfieldGroupLabelSubDescriptor", "Sound Track does not reference the RIFF Chunk of its ADMSoundfieldGroupLabelSubDescriptor (Stream ID "+to_string(SID)+')');
+                }
+            }
+        }
+
+        //ADM Soundfield Group Label
+        const auto DictionaryID=Property_Get(Properties, Elements::MCALabelDictionaryID);
+        if (DictionaryID && DictionaryID->size()==16 && (BigEndian2int64u(DictionaryID->data())&0xFFFFFFFFFFFFFF00LL)==0x060E2B3404010100LL && BigEndian2int64u(DictionaryID->data()+8)==0x0302022300000000LL)
+        {
+            const auto TagSymbol=Raw_UTF16_Get(Property_Get(Properties, Elements::MCATagSymbol));
+            if (TagSymbol!="ADM")
+                Error_Label("MXF ADMSoundfieldGroupLabelSubDescriptor MCATagSymbol", "MCATagSymbol is not the one of the ADM Soundfield label (actual \""+TagSymbol+"\", expected \"ADM\")");
+            const auto TagName=Raw_UTF16_Get(Property_Get(Properties, Elements::MCATagName));
+            if (TagName!="ADM")
+                Error_Label("MXF ADMSoundfieldGroupLabelSubDescriptor MCATagName", "MCATagName is not the one of the ADM Soundfield label (actual \""+TagName+"\", expected \"ADM\")");
+        }
+
+        //ADM IDs present in the ADM metadata
+        #if defined(MEDIAINFO_ADM_YES)
+            if (AdmContent)
+            {
+                static const struct
+                {
+                    int64u      Key;
+                    const char* Element;
+                    const char* Name;
+                } ADM_IDs[]=
+                {
+                    { Elements::ADMAudioProgrammeID_ST2131, "audioProgramme", "ADMAudioProgrammeID_ST2131" },
+                    { Elements::ADMAudioContentID_ST2131, "audioContent", "ADMAudioContentID_ST2131" },
+                    { Elements::ADMAudioObjectID_ST2131, "audioObject", "ADMAudioObjectID_ST2131" },
+                };
+                for (const auto& ADM_ID : ADM_IDs)
+                {
+                    const auto Value_Raw=Property_Get(Properties, ADM_ID.Key);
+                    if (!Value_Raw)
+                        continue;
+                    const auto Value=Raw_UTF16_Get(Value_Raw);
+                    if (!AdmContent->ID_IsPresent(ADM_ID.Element, Value))
+                        Error_Label((string("MXF ADMSoundfieldGroupLabelSubDescriptor ")+ADM_ID.Name).c_str(), string(ADM_ID.Name)+" is not the ID of an "+ADM_ID.Element+" of the ADM metadata (actual \""+Value+"\")");
+                }
+            }
+        #endif //defined(MEDIAINFO_ADM_YES)
+    }
+
+    //Audio Labeling Framework for ADM-described Content
+    if (Framework_IsIdentified || !Labels.empty())
+    {
+        if (Labels.empty())
+            Error(nullptr, "MXF ADMSoundfieldGroupLabelSubDescriptor", "No ADMSoundfieldGroupLabelSubDescriptor despite the Audio Labeling Framework for ADM-described Content in the Channel Assignment");
+        for (const auto SID : SIDs_Adm)
+            if (SIDs_Labeled.find(SID)==SIDs_Labeled.end())
+            {
+                const auto Definition=Definitions_BySID.find(SID);
+                Error(Definition==Definitions_BySID.end()?nullptr:&Definition->second->first, "MXF ADMSoundfieldGroupLabelSubDescriptor", "RIFF Chunk with ADM metadata is not referenced by an ADMSoundfieldGroupLabelSubDescriptor (Stream ID "+to_string(SID)+')');
+            }
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -5168,6 +5639,40 @@ string File_Mxf::Raw_Text(const string& Value, bool IsRational)
         return Result+'}';
     }
     return Raw_Hex(Value);
+}
+
+//---------------------------------------------------------------------------
+bool File_Mxf::Raw_UInt_Get(const string* Value, size_t Size, int64u& Result)
+{
+    if (!Value || Value->size()!=Size)
+        return false;
+    Result=0;
+    for (const auto Byte : *Value)
+        Result=(Result<<8)|(int8u)Byte;
+    return true;
+}
+
+//---------------------------------------------------------------------------
+string File_Mxf::Raw_UTF16_Get(const string* Value)
+{
+    string Result;
+    if (Value)
+        for (size_t i=0; i+1<Value->size(); i+=2)
+        {
+            const auto Character=(((int8u)(*Value)[i])<<8)|(int8u)(*Value)[i+1];
+            Result+=Character<0x80?(char)Character:'?';
+        }
+    while (!Result.empty() && !Result.back())
+        Result.pop_back();
+    return Result;
+}
+
+//---------------------------------------------------------------------------
+const File_Mxf::properties& File_Mxf::SetProperties_Get(const int128u& InstanceUID) const
+{
+    static const properties Empty;
+    const auto Properties=SetProperties.find(InstanceUID);
+    return Properties==SetProperties.end()?Empty:Properties->second;
 }
 
 //---------------------------------------------------------------------------
@@ -10072,6 +10577,7 @@ void File_Mxf::ADM_CHNASubDescriptor()
     ELEM____UUID_(ADMChannelMappingsArray)
     ELEMENT_END()
     GenerationInterchangeObject();
+    Descriptor_Type_Set(descriptor::Type_ADM_CHNASubDescriptor);
 }
 
 //---------------------------------------------------------------------------
@@ -10091,6 +10597,7 @@ void File_Mxf::ADMChannelMapping()
     ELEM____UUID_(ADMAudioPackFormatID)
     ELEMENT_END()
     GenerationInterchangeObject();
+    Descriptor_Type_Set(descriptor::Type_ADMChannelMapping);
 
     #if defined(MEDIAINFO_ADM_YES)
         if ((ADMChannelMapping_Presence.to_ulong()&3)==3)
@@ -10114,6 +10621,7 @@ void File_Mxf::RIFFChunkReferencesSubDescriptor()
     ELEM____UUID_(RIFFChunkStreamIDsArray)
     ELEMENT_END()
     GenerationInterchangeObject();
+    Descriptor_Type_Set(descriptor::Type_RIFFChunkReferencesSubDescriptor);
 }
 
 //---------------------------------------------------------------------------
@@ -10125,6 +10633,7 @@ void File_Mxf::ADMAudioMetadataSubDescriptor()
     ELEM____UUID_(ADMProfileLevelULBatch)
     ELEMENT_END()
     GenerationInterchangeObject();
+    Descriptor_Type_Set(descriptor::Type_ADMAudioMetadataSubDescriptor);
 }
 
 //---------------------------------------------------------------------------
@@ -11468,14 +11977,38 @@ void File_Mxf::MXFGenericStreamDataElementKey_09_01()
         Elem.SID=Partitions[Partitions_Pos].BodySID;
 
     //RIFF Chunk carried by this Generic Stream (SMPTE ST 2131)
-    int32u RIFFChunkID=0;
+    const descriptor* RiffChunk=nullptr;
     if (Elem.SID)
         for (const auto& Descriptor : Descriptors)
             if (Descriptor.second.Type==descriptor::Type_RIFFChunkDefinitionSubDescriptor && Descriptor.second.SID==Elem.SID)
             {
-                RIFFChunkID=Descriptor.second.RIFFChunkID;
+                RiffChunk=&Descriptor.second;
                 break;
             }
+    const auto RIFFChunkID=RiffChunk?RiffChunk->RIFFChunkID:0;
+
+    //Conformance
+    #if MEDIAINFO_CONFORMANCE
+        Elem.Key_Lo=Code.lo;
+        Elem.IsAfterPartitionPack=GenericStreamPartition_PackEnd==File_Offset+Buffer_Offset-Header_Size;
+        GenericStreamPartition_PackEnd=(int64u)-1;
+        #if MEDIAINFO_SHA1
+            if (RiffChunk) //For checking RIFFChunkHashSHA1
+            {
+                sha1_ctx Context;
+                sha1_begin(&Context);
+                for (int64u Pos=0; Pos<Element_Size;)
+                {
+                    const auto Size=(unsigned long)min(Element_Size-Pos, (int64u)0x10000000);
+                    sha1_hash(Buffer+Buffer_Offset+(size_t)Pos, Size, &Context);
+                    Pos+=Size;
+                }
+                unsigned char Digest[20];
+                sha1_end(Digest, &Context);
+                Elem.SHA1.assign((const char*)Digest, 20);
+            }
+        #endif //MEDIAINFO_SHA1
+    #endif //MEDIAINFO_CONFORMANCE
 
     //Preparing
     vector<File__Analyze*> Parsers;
@@ -11518,6 +12051,9 @@ void File_Mxf::MXFGenericStreamDataElementKey_09_01()
         Parser->Stream_Prepare(Stream_Other);
         Elem.Parser = Parser;
     }
+    #if MEDIAINFO_CONFORMANCE
+        Elem.Format=Elem.Parser->Retrieve_Const(Stream_General, 0, General_Format).To_UTF8();
+    #endif //MEDIAINFO_CONFORMANCE
 
     //Exception - ADM
     #if defined(MEDIAINFO_ADM_YES)
@@ -14339,9 +14875,23 @@ void File_Mxf::NumADMAudioTrackUIDs()
 //---------------------------------------------------------------------------
 void File_Mxf::ADMChannelMappingsArray()
 {
+    #if MEDIAINFO_CONFORMANCE
+        Descriptors[InstanceUID].ADMChannelMappings.clear();
+    #endif //MEDIAINFO_CONFORMANCE
+
+    //Parsing
     VECTOR(16);
     for (int32u i=0; i<Count; i++)
-        Skip_UUID(                                              "UUID");
+    {
+        int128u Data;
+        Get_UUID(Data,                                          "UUID");
+
+        #if MEDIAINFO_CONFORMANCE
+            FILLING_BEGIN();
+                Descriptors[InstanceUID].ADMChannelMappings.push_back(Data);
+            FILLING_END();
+        #endif //MEDIAINFO_CONFORMANCE
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -14909,6 +15459,9 @@ void File_Mxf::PartitionMetadata()
 
     PartitionPack_Parsed=true;
     Partitions_IsFooter=(Code.lo&0x00FF0000)==0x00040000;
+    #if MEDIAINFO_CONFORMANCE
+        GenericStreamPartition_PackEnd=(Code.lo&0x00FFFF00)==0x00031100?(File_Offset+Buffer_Offset+Element_Size):(int64u)-1;
+    #endif //MEDIAINFO_CONFORMANCE
     if (PreviousPartition!=File_Offset+Buffer_Offset-Header_Size)
         PartitionMetadata_PreviousPartition=PreviousPartition;
     if (FooterPartition)
