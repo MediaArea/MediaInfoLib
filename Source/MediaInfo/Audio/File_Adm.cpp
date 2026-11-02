@@ -3316,7 +3316,7 @@ static void CheckErrors_formatLabelDefinition(file_adm_private* File_Adm_Private
             if (formatLabel_Int && formatLabel_Int > List_Size) {
                 Item.AddError(Warning, item_Type, i, ":formatLabel:formatLabel attribute value \"" + Label + "\" is not a known value");
             }
-            else if (Definition_Present && List && formatLabel_Int < List_Size && Definition != List[formatLabel_Int - 1]) {
+            else if (Definition_Present && List && formatLabel_Int && formatLabel_Int <= List_Size && Definition != List[formatLabel_Int - 1]) {
                 Item.AddError(Error, item_Type, i, ":formatDefinition:formatDefinition attribute value \"" + Definition + "\" shall be \"" + List[formatLabel_Int - 1] + "\" in order to match the term corresponding to formatLabel attribute value \"" + Label + "\"");
             }
             if (IsAtmos && ((Style == Style_Format && formatLabel_Int != 1) || (Style == Style_Type && formatLabel_Int != 1 && formatLabel_Int != 3))) {
@@ -3420,10 +3420,11 @@ static void CheckErrors_Elements(file_adm_private* File_Adm_Private, item Item_T
     if (Item_Type == item_audioBlockFormat) {
         static const element_item* audioBlockFormat_xxx_Elements[] = { audioBlockFormat_Elements, audioBlockFormat_DirectSpeakers_Elements, audioBlockFormat_Matrix_Elements, audioBlockFormat_Object_Elements };
         auto Type = GetType(File_Adm_Private, item_audioChannelFormat, File_Adm_Private->Items[item_audioChannelFormat].Items.size() - 1);
-        if (Type >= size(audioBlockFormat_xxx_Elements)) {
-            Type = Type_Unknown;
+        size_t Elements_Pos = (size_t)(Type + 1); // Generic elements for Type_Unknown
+        if (Elements_Pos >= size(audioBlockFormat_xxx_Elements)) {
+            Elements_Pos = 0;
         }
-        Element_Infos_Ptr = audioBlockFormat_xxx_Elements[Type];
+        Element_Infos_Ptr = audioBlockFormat_xxx_Elements[Elements_Pos];
     }
     else {
         Element_Infos_Ptr = Item_Info.Element_Infos;
@@ -3590,6 +3591,16 @@ TimeCode CheckError_Time(file_adm_private* File_Adm_Private, item Item_Type, siz
 }
 
 //---------------------------------------------------------------------------
+static type TypeLabel2Type(const string& typeLabel) {
+    // typeLabel is 1-based (0001 = DirectSpeakers), type enum is 0-based
+    auto typeLabel_Int = strtoul(typeLabel.c_str(), nullptr, 16);
+    if (!typeLabel_Int || typeLabel_Int > Type_Max) {
+        return Type_Unknown;
+    }
+    return (type)(typeLabel_Int - 1);
+}
+
+//---------------------------------------------------------------------------
 static type GetType(file_adm_private* File_Adm_Private, const item item_Type, size_t i) {
     for (const auto& Label_Info : label_Infos) {
         if (Label_Info.item_Type == item_Type) {
@@ -3597,15 +3608,15 @@ static type GetType(file_adm_private* File_Adm_Private, const item item_Type, si
 
             const auto& typeLabel = Item.Attributes[Label_Info.Label_Pos];
             if (typeLabel.size() == 4 && IsHexaDigit(typeLabel, 0, 4)) {
-                return (type)strtoul(typeLabel.c_str(), nullptr, 16);
+                return TypeLabel2Type(typeLabel);
             }
 
             const auto& typeDefinition = Item.Attributes[Label_Info.Definition_Pos];
             if (!typeDefinition.empty()) {
-                for (size_t i = 0; i < Type_Max - 1; i++) {
+                for (size_t i = 0; i < Type_Max; i++) {
                     const auto& List_Item = typeDefinition_List[i];
                     if (List_Item == typeDefinition) {
-                        return (type)(i + 1);
+                        return (type)i;
                     }
                 }
             }
@@ -3614,7 +3625,7 @@ static type GetType(file_adm_private* File_Adm_Private, const item item_Type, si
             if (item_Infos[item_Type].ID_Flags[item_info::Flags_ID_YX] && !CheckErrors_ID(File_Adm_Private, Item_ID, item_Infos[item_Type])) {
                 const auto Item_ID_yyyy = Item_ID.substr(strlen(item_Infos[item_Type].ID_Begin) + 1, 4);
                 if (IsHexaDigit(Item_ID_yyyy, 0, 4)) {
-                    return (type)strtoul(Item_ID_yyyy.c_str(), nullptr, 16);
+                    return TypeLabel2Type(Item_ID_yyyy);
                 }
             }
         }
