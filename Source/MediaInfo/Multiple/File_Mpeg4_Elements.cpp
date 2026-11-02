@@ -4698,7 +4698,9 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                                     if (Key=="com.apple.proapps.color.asc-cdl"
                                      || Key=="com.arri.camera.look.lut3d"
                                      || Key=="com.arri.camera.look.lut3d_with_cdl"
-                                     || Key=="com.arri.camera.look.information")
+                                     || Key=="com.arri.camera.look.information"
+                                     || Key=="com.arri.camera.look.video_param"
+                                     || Key=="com.arri.camera.look.video_param_with_target_colorspace")
                                     {
                                         moov_meta_ilst_xxxx_data_arri();
                                         return;
@@ -5224,6 +5226,39 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data_arri()
             if (!Name.empty())
                 Fill(Stream_General, 0, Key.c_str(), Name, true, true);
         FILLING_END();
+        return;
+    }
+
+    if (Key=="com.arri.camera.look.video_param" || Key=="com.arri.camera.look.video_param_with_target_colorspace")
+    {
+        //Parsing
+        bool WithTargetColorSpace=Key.size()>sizeof("com.arri.camera.look.video_param"); //Else the older layout, without size and target color space
+        int16u TargetColorSpace_Size;
+        Element_Begin1("ARRI Video look parameters");
+        if (WithTargetColorSpace)
+            Skip_B4(                                            "Size");
+        Skip_B4(                                                "Version");
+        Skip_BF4(                                               "Knee");
+        Skip_BF4(                                               "Black gamma");
+        Skip_BF4(                                               "Gamma");
+        Skip_BF4(                                               "Saturation");
+        for (size_t i=0; i<6; i++)
+            Skip_BF4(                                           "Saturation by hue");
+        if (!WithTargetColorSpace)
+        {
+            Element_End0();
+            return;
+        }
+        for (size_t i=0; i<9 && Element_Offset+4<=Element_Size; i++)
+            Skip_BF4(                                           "Unknown");
+        if (Element_Offset+2<=Element_Size)
+        {
+            Get_B2 (TargetColorSpace_Size,                      "Target color space size");
+            if (Element_Offset+TargetColorSpace_Size<=Element_Size)
+                Skip_String(TargetColorSpace_Size,              "Target color space");
+        }
+        Skip_XX(Element_Size-Element_Offset,                    "Padding");
+        Element_End0();
         return;
     }
 }
