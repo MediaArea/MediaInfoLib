@@ -653,10 +653,10 @@ void File_Iab::BedDefinition()
         if (ChannelDecorInfoExists)
         {
             int8u ChannelDecorCoefPrefix;
-            Skip_S2(2,                                          "Reserved");
+            Skip_S1(4,                                          "Reserved");
             Get_S1 (2, ChannelDecorCoefPrefix,                  "ChannelDecorCoefPrefix");
             if (ChannelDecorCoefPrefix>1)
-                Skip_S1(10,                                     "ChannelDecorCoef");
+                Skip_S1(8,                                      "ChannelDecorCoef");
         }
         Element_End0();
         F.Objects.back().ChannelLayout.push_back(ChannelID);
