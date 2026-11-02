@@ -166,6 +166,7 @@ private :
     void moov_meta_ilst();
     void moov_meta_ilst_xxxx();
     void moov_meta_ilst_xxxx_data();
+    void moov_meta_ilst_xxxx_data_arri();
     void moov_meta_ilst_xxxx_mean();
     void moov_meta_ilst_xxxx_name();
     void moov_meta_xml();
