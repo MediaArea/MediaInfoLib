@@ -1655,6 +1655,23 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
         #endif // MEDIAINFO_CONFORMANCE
     }
 
+    if (Option_Lower==__T("mxfprofile"))
+    {
+        #if MEDIAINFO_CONFORMANCE
+            return Ztring().From_UTF8(MxfProfile(Value));
+        #else // MEDIAINFO_CONFORMANCE
+            return __T("conformance features are disabled due to compilation options");
+        #endif // MEDIAINFO_CONFORMANCE
+    }
+    if (Option_Lower==__T("mxfprofile_list"))
+    {
+        #if MEDIAINFO_CONFORMANCE
+            return Ztring().From_UTF8(MxfProfile_List());
+        #else // MEDIAINFO_CONFORMANCE
+            return Ztring();
+        #endif // MEDIAINFO_CONFORMANCE
+    }
+
     if (Option_Lower==__T("usacprofile"))
     {
         #if MEDIAINFO_CONFORMANCE
@@ -4010,6 +4027,99 @@ string MediaInfo_Config::Mp4Profile()
 string MediaInfo_Config::Mp4Profile_List()
 {
     return "CMAF";
+}
+#endif //MEDIAINFO_CONFORMANCE
+
+#if MEDIAINFO_CONFORMANCE
+string MediaInfo_Config::ProfileList_Set(const Ztring& Value, const char* const* Names, size_t Names_Size, const char* Kind, string& Result)
+{
+    const auto Normalize = [](string Name) { //Case, hyphens and underscores are ignored
+        transform(Name.begin(), Name.end(), Name.begin(), [](unsigned char c) { return toupper(c); });
+        Name.erase(remove_if(Name.begin(), Name.end(), [](char c) { return c == '-' || c == '_'; }), Name.end());
+        return Name;
+    };
+    ZtringList List;
+    List.Separator_Set(0, __T(","));
+    List.Write(Value);
+    Result.clear();
+    for (const auto& ItemZ : List)
+    {
+        const auto Item = Normalize(ItemZ.To_UTF8());
+        const char* Name = nullptr;
+        for (size_t i = 0; i < Names_Size; i++)
+            if (Item == Normalize(Names[i]))
+                Name = Names[i];
+        if (!Name)
+            return string("Unknown ") + Kind + ' ' + ItemZ.To_UTF8();
+        if (!Result.empty())
+            Result += ',';
+        Result += Name;
+    }
+    return {};
+}
+#endif //MEDIAINFO_CONFORMANCE
+
+#if MEDIAINFO_CONFORMANCE
+string MediaInfo_Config::ProfileList_Get(const char* const* Names, size_t Names_Size)
+{
+    string Result;
+    const auto LineSep = LineSeparator_Get().To_UTF8();
+    for (size_t i = 0; i < Names_Size; i++)
+    {
+        if (!Result.empty())
+            Result += LineSep;
+        Result += Names[i];
+    }
+    return Result;
+}
+#endif //MEDIAINFO_CONFORMANCE
+
+#if MEDIAINFO_CONFORMANCE
+static const char* const MxfProfile_Names[] =
+{
+    "ARD_ZDF", //ARD/ZDF profile matching the kind of content
+    "ARD_ZDF_HDF-01a",
+    "ARD_ZDF_HDF-01b",
+    "ARD_ZDF_HDF-02a",
+    "ARD_ZDF_HDF-02b",
+    "ARD_ZDF_HDF-03a",
+    "ARD_ZDF_HDF-03b",
+    "ARD_ZDF_SDF-01",
+    "ARD_ZDF_SDF-02",
+    "ARD_ZDF_XDF-01",
+    "ARD_ZDF_XDF-02",
+    "SMPTE_ST_337_2008", //Editions of SMPTE ST 337 and associated standards, only one can be requested (by default, latest edition without check of the data types)
+    "SMPTE_ST_337_2015",
+    "SMPTE_ST_337_2016",
+    "SMPTE_ST_337_2019",
+};
+string MediaInfo_Config::MxfProfile(const Ztring& Value)
+{
+    string Temp;
+    const auto Error = ProfileList_Set(Value, MxfProfile_Names, sizeof(MxfProfile_Names)/sizeof(*MxfProfile_Names), "MXF profile", Temp);
+    if (!Error.empty())
+        return Error;
+    if (Temp.find("SMPTE_ST_337_") != Temp.rfind("SMPTE_ST_337_"))
+        return "Only one SMPTE ST 337 edition can be requested";
+
+    CriticalSectionLocker CSL(CS);
+    Mxf_Profile = Temp;
+    return {};
+}
+#endif //MEDIAINFO_CONFORMANCE
+
+#if MEDIAINFO_CONFORMANCE
+string MediaInfo_Config::MxfProfile()
+{
+    CriticalSectionLocker CSL(CS);
+    return Mxf_Profile;
+}
+#endif //MEDIAINFO_CONFORMANCE
+
+#if MEDIAINFO_CONFORMANCE
+string MediaInfo_Config::MxfProfile_List()
+{
+    return ProfileList_Get(MxfProfile_Names, sizeof(MxfProfile_Names)/sizeof(*MxfProfile_Names));
 }
 #endif //MEDIAINFO_CONFORMANCE
 

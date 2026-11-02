@@ -71,6 +71,7 @@ Format_Level;;;Y YTY;;;Level of the Format
 Format_Compression;;;Y YTY;;;Compression method used
 Format_Settings;;;Y YTY;;;Settings used and required by decoder
 Format_AdditionalFeatures;;;N YTY;;;Features required to fully support the file content
+CompliantWith;;;Y YTY;;;Specifications the file is compliant with
 InternetMediaType;;;N YT;;;Internet Media Type (aka MIME Type, Content-Type)
 CodecID;;;N YTY;;;Codec ID, if defined by the container
 CodecID/String;;;Y NT;;;Codec ID, if defined by the container (String format)

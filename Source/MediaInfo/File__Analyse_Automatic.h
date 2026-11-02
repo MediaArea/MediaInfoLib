@@ -235,6 +235,7 @@ enum general
     General_Format_Compression,
     General_Format_Settings,
     General_Format_AdditionalFeatures,
+    General_CompliantWith,
     General_InternetMediaType,
     General_CodecID,
     General_CodecID_String,

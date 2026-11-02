@@ -151,6 +151,64 @@ static const char* Smpte_St0337_Adm_format_type[2]=
 };
 #endif
 
+#if MEDIAINFO_CONFORMANCE
+//---------------------------------------------------------------------------
+// Editions of SMPTE ST 337 and associated standards, as in the MxfProfile option
+static const char* const Smpte_St0337_Generation_Names[]=
+{
+    "SMPTE_ST_337_2008", // SMPTE ST 337:2008 (same requirements as SMPTE 337M-2000), SMPTE ST 338:2010, SMPTE ST 340:2008
+    "SMPTE_ST_337_2015", // SMPTE ST 337:2015 (extended data type), SMPTE ST 338:2015, SMPTE ST 340:2015
+    "SMPTE_ST_337_2016", // SMPTE ST 338:2016
+    "SMPTE_ST_337_2019", // SMPTE ST 338:2016 Amendment 1:2019
+};
+static const char* const Smpte_St0337_Generation_DataTypes[]= // Document defining the data types
+{
+    "SMPTE ST 338:2010",
+    "SMPTE ST 338:2015",
+    "SMPTE ST 338:2016",
+    "SMPTE ST 338:2016 Amendment 1:2019",
+};
+static const size_t Smpte_St0337_Generation_Size=sizeof(Smpte_St0337_Generation_Names)/sizeof(*Smpte_St0337_Generation_Names);
+
+//---------------------------------------------------------------------------
+// Edition from which each data_type is defined, (int8u)-1 if reserved (SMPTE ST 338)
+static const int8u Smpte_St0337_data_type_Generation[32]=
+{
+    0, // Null data
+    0, // AC-3
+    0, // Time stamp
+    0, // Pause
+    0, // MPEG-1 Layer I
+    0, // MPEG-1 Layer II or III, MPEG-2 Layer I, II or III without extension
+    0, // MPEG-2 Layer I, II or III with extension
+    0, // MPEG-2 AAC in ADTS
+    (int8u)-1, // Reserved for compatibility with IEC 61937
+    (int8u)-1,
+    0, // MPEG-4 AAC in ADTS or LATM/LOAS
+    0, // MPEG-4 HE-AAC in ADTS or LATM/LOAS
+    (int8u)-1, // Reserved for compatibility with IEC 61937
+    (int8u)-1,
+    (int8u)-1,
+    (int8u)-1,
+    0, // Enhanced AC-3 (professional applications)
+    2, // DTS
+    (int8u)-1, // Reserved for compatibility with IEC 61937
+    (int8u)-1,
+    (int8u)-1,
+    (int8u)-1, // Reserved for compatibility with IEC 61937 (Enhanced AC-3 for consumer applications only in SMPTE ST 338:2010)
+    (int8u)-1,
+    (int8u)-1,
+    2, // AC-4
+    (int8u)-1, // Reserved
+    0, // Utility (V sync)
+    0, // SMPTE KLV
+    0, // Dolby E
+    0, // Captioning
+    0, // User defined
+    1, // Data type in extended code space (Pe)
+};
+#endif //MEDIAINFO_CONFORMANCE
+
 //***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
@@ -180,6 +238,21 @@ File_SmpteSt0337::File_SmpteSt0337()
 
     // Parser
     Parser=NULL;
+
+    // Conformance
+    #if MEDIAINFO_CONFORMANCE
+        const auto Profiles=','+MediaInfoLib::Config.MxfProfile()+',';
+        Conformance_Generation=(int8u)(Smpte_St0337_Generation_Size-1); // Latest edition by default
+        Conformance_DataType_IsChecked=false; // Data types may be defined in a later edition
+        for (size_t i=0; i<Smpte_St0337_Generation_Size; i++)
+            if (Profiles.find(','+string(Smpte_St0337_Generation_Names[i])+',')!=string::npos)
+            {
+                Conformance_Generation=(int8u)i;
+                Conformance_DataType_IsChecked=true;
+            }
+        Conformance_DataStreamNumbers=0;
+        Conformance_Unsynch();
+    #endif //MEDIAINFO_CONFORMANCE
 
     #if MEDIAINFO_SEEK
         Duration_Detected=false;
@@ -345,6 +418,16 @@ void File_SmpteSt0337::Streams_Finish()
         for (size_t Pos=1; Pos<Count_Get(Stream_Audio); Pos++)
             Fill(Stream_Audio, Pos, Audio_StreamSize_Encoded, 0, 10, true);
     }
+
+    #if MEDIAINFO_CONFORMANCE
+        if (Conformance_DataStreamNumbers && !(Conformance_DataStreamNumbers&1))
+        {
+            conformance_errors Errors;
+            Errors.Add("No data burst has data_stream_number 0 (main audio service)");
+            Fill_Conformance_Specification("burst_info data_stream_number", string(), Errors);
+        }
+        Streams_Finish_Conformance();
+    #endif //MEDIAINFO_CONFORMANCE
 }
 
 //***************************************************************************
@@ -364,6 +447,9 @@ void File_SmpteSt0337::Read_Buffer_Unsynched()
     Aligned=false;
     if (Parser)
         Parser->Open_Buffer_Unsynch();
+    #if MEDIAINFO_CONFORMANCE
+        Conformance_Unsynch();
+    #endif //MEDIAINFO_CONFORMANCE
 }
 #endif // MEDIAINFO_SEEK
 
@@ -972,6 +1058,11 @@ void File_SmpteSt0337::Data_Parse()
         Element_Code=(int64u)-1;
     #endif //MEDIAINFO_DEMUX
 
+    #if MEDIAINFO_CONFORMANCE
+        const auto Burst_Begin=File_Offset+Buffer_Offset;
+        const auto Burst_Size=Element_Size;
+    #endif //MEDIAINFO_CONFORMANCE
+
     // Adapting
     const int8u* Save_Buffer=NULL;
     size_t Save_Buffer_Offset=0;
@@ -1177,6 +1268,9 @@ void File_SmpteSt0337::Data_Parse()
     int8u data_stream_number;
     int32u data_type_New;
     int8u data_type_dependent;
+    int8u data_mode;
+    int8u Pc_Reserved=0, Pe_Reserved=0;
+    int32u Pf=0, extended_data_type=(int32u)-1;
     int8u* UncompressedData=NULL;
     size_t UncompressedData_Size=0;
     string MuxingMode;
@@ -1188,19 +1282,21 @@ void File_SmpteSt0337::Data_Parse()
             Get_S1 ( 3, data_stream_number,                     "data_stream_number");
             Get_S1 ( 5, data_type_dependent,                    "data_type_dependent");
             Skip_SB(                                            "error_flag");
-            Info_S1( 2, data_mode,                              "data_mode"); Param_Info2(16+4*data_mode, " bits");
+            Get_S1 ( 2, data_mode,                              "data_mode"); Param_Info2(16+4*data_mode, " bits");
             Get_S4 ( 5, data_type_New,                          "data_type"); Param_Info1(Smpte_St0337_data_type[data_type_New]);
             if (Stream_Bits>16)
-                Skip_S1(Stream_Bits-16,                         "reserved");
+                Get_S1 (Stream_Bits-16, Pc_Reserved,            "reserved");
         Element_End0();
         Get_S3 (Stream_Bits, length_code,                       "length_code"); Param_Info2(length_code/8, " bytes");
+        const auto data_type_Pc=(int8u)data_type_New;
         if (data_type_New==31)
         {
             if (Stream_Bits>16)
-                Skip_S1(Stream_Bits-16,                         "reserved");
+                Get_S1 (Stream_Bits-16, Pe_Reserved,            "reserved");
             Get_S4 (16, data_type_New,                          "data_type");
+            extended_data_type=data_type_New;
             data_type_New+=32;
-            Skip_S3(Stream_Bits,                                "reserved");
+            Get_S3 (Stream_Bits, Pf,                            "reserved");
             if (data_type_New==32+1) // ADM
             {
                 int8u multiple_chunk_flag=data_type_dependent>>3;               //2-bit
@@ -1327,6 +1423,10 @@ void File_SmpteSt0337::Data_Parse()
         }
         BS_End();
     Element_End0();
+
+    #if MEDIAINFO_CONFORMANCE
+        Conformance_Burst({Burst_Begin, Burst_Size, length_code, extended_data_type, Pf, data_stream_number, data_type_dependent, data_mode, data_type_Pc, Pc_Reserved, Pe_Reserved});
+    #endif //MEDIAINFO_CONFORMANCE
 
     if (data_type_New!=data_type)
     {
@@ -1609,6 +1709,109 @@ void File_SmpteSt0337::Data_Parse()
     // Guard band
     GuardBand_Before=0;
 }
+
+//***************************************************************************
+// Conformance
+//***************************************************************************
+
+#if MEDIAINFO_CONFORMANCE
+//---------------------------------------------------------------------------
+void File_SmpteSt0337::Conformance_Burst(const burst_preamble& Burst)
+{
+    // SMPTE ST 337 burst_info
+    if (Burst.data_mode==3)
+        Fill_Conformance("burst_info data_mode", "data_mode is reserved (actual 3)");
+    else if (16+4*Burst.data_mode!=Stream_Bits)
+        Fill_Conformance("burst_info data_mode", "data_mode is not the bit depth of the sync words (actual "+std::to_string(16+4*Burst.data_mode)+"-bit, expected "+std::to_string(Stream_Bits)+"-bit)");
+    if (Burst.Pc_Reserved)
+        Fill_Conformance("burst_info reserved", "Reserved bits of burst_info are not 0");
+    if (Burst.data_type==2 && Burst.data_stream_number!=7)
+        Fill_Conformance("burst_info data_stream_number", "data_stream_number of the time stamp data burst is wrong (actual "+std::to_string(Burst.data_stream_number)+", expected 7)");
+    else if (Burst.data_type!=2 && Burst.data_stream_number==7)
+        Fill_Conformance("burst_info data_stream_number", "data_stream_number is reserved for time stamp data bursts (actual 7)");
+    if (Burst.data_type)
+        Conformance_DataStreamNumbers|=(int8u)(1<<Burst.data_stream_number);
+
+    // SMPTE ST 338 data_type, depending on the edition
+    const auto data_type_Generation=Smpte_St0337_data_type_Generation[Burst.data_type];
+    if (Conformance_DataType_IsChecked && data_type_Generation==(int8u)-1)
+        Fill_Conformance("burst_info data_type", "data_type is reserved (actual "+std::to_string(Burst.data_type)+')');
+    else if (Conformance_DataType_IsChecked && data_type_Generation>Conformance_Generation)
+        Fill_Conformance("burst_info data_type", "data_type is not defined in the checked edition (actual "+std::to_string(Burst.data_type)+", checked edition "+Smpte_St0337_Generation_DataTypes[Conformance_Generation]+')');
+
+    // SMPTE ST 337:2015 extended data type
+    if (Burst.extended_data_type!=(int32u)-1 && data_type_Generation<=Conformance_Generation)
+    {
+        if (Burst.Pe_Reserved)
+            Fill_Conformance("extended_data_type", "Higher significance bits of extended_data_type are not 0");
+        if (Burst.Pf)
+            Fill_Conformance("Pf", "Pf is wrong (actual "+std::to_string(Burst.Pf)+", expected 0)");
+        if (Burst.length_code<2*(int32u)Stream_Bits)
+            Fill_Conformance("length_code", "length_code does not count Pe and Pf");
+        int8u extended_data_type_Generation=(int8u)-1; // SMPTE ST 338 extended data types
+        if (Burst.extended_data_type==0x0001)
+            extended_data_type_Generation=3; // Serial ADM (SMPTE ST 2116)
+        string extended_data_type_String;
+        for (int Shift=12; Shift>=0; Shift-=4)
+            extended_data_type_String+="0123456789ABCDEF"[(Burst.extended_data_type>>Shift)&0xF];
+        if (Burst.extended_data_type==0x4E1F || Burst.extended_data_type==0xF872)
+            Fill_Conformance("extended_data_type", "extended_data_type is forbidden (actual 0x"+extended_data_type_String+')');
+        else if (Conformance_DataType_IsChecked && extended_data_type_Generation==(int8u)-1)
+            Fill_Conformance("extended_data_type", "extended_data_type is reserved (actual 0x"+extended_data_type_String+')');
+        else if (Conformance_DataType_IsChecked && extended_data_type_Generation>Conformance_Generation)
+            Fill_Conformance("extended_data_type", "extended_data_type is not defined in the checked edition (actual 0x"+extended_data_type_String+", checked edition "+Smpte_St0337_Generation_DataTypes[Conformance_Generation]+')');
+    }
+
+    // SMPTE ST 337 burst spacing, a data burst preceded by 4 subframes of 0 is needed at least every 4096 AES3 frames
+    // Only for AES3 samples from a container, files with only data bursts (e.g. Dolby E data files) have no padding between bursts
+    const int64u Frame_Size=BitDepth/4; // Bytes per AES3 frame
+    if (Frame_Size && IsSub)
+    {
+        const auto Gap=Conformance_Burst_End==(int64u)-1?(int64u)GuardBand_Before:(Burst.Begin>Conformance_Burst_End?(Burst.Begin-Conformance_Burst_End):0); // Bytes of 0 before the burst
+        const auto Burst_Frames=(Burst.Size+Frame_Size-1)/Frame_Size;
+        if (Gap>=2*Frame_Size)
+            Conformance_Frames_SinceExtendedSync=Burst_Frames;
+        else
+            Conformance_Frames_SinceExtendedSync+=(Gap+Frame_Size-1)/Frame_Size+Burst_Frames;
+        if (Conformance_Frames_SinceExtendedSync>=4096)
+        {
+            Fill_Conformance("Burst spacing", "No data burst is preceded by 4 subframes of 0 during 4096 AES3 frames");
+            Conformance_Frames_SinceExtendedSync=0;
+        }
+    }
+    Conformance_Burst_End=Burst.Begin+Burst.Size;
+
+    // SMPTE ST 340 AC-3 and Enhanced AC-3
+    if ((Burst.data_type==1 || Burst.data_type==16) && Burst.data_stream_number<7)
+    {
+        if (Burst.data_type_dependent&0x07)
+            Fill_Conformance("burst_info data_type_dependent", "Reserved bits of data_type_dependent are not 0");
+        auto& Burst_Last=Conformance_Ac3_Burst_Last[Burst.data_stream_number];
+        if (Frame_Size && !(Burst.Begin%Frame_Size))
+        {
+            const auto Burst_Frame=Burst.Begin/Frame_Size;
+            if (!(Burst.data_type_dependent&0x08) && Burst_Last!=(int64u)-1 && Burst_Frame-Burst_Last!=1536) // rep_rate_flag is 0
+                Fill_Conformance("Burst spacing", "Data burst spacing is wrong as rep_rate_flag is 0 (actual "+std::to_string(Burst_Frame-Burst_Last)+" AES3 frames, expected 1536)");
+            Burst_Last=Burst_Frame;
+        }
+        else
+            Burst_Last=(int64u)-1;
+    }
+
+    Merge_Conformance();
+}
+#endif //MEDIAINFO_CONFORMANCE
+
+#if MEDIAINFO_CONFORMANCE
+//---------------------------------------------------------------------------
+void File_SmpteSt0337::Conformance_Unsynch()
+{
+    Conformance_Burst_End=(int64u)-1;
+    Conformance_Frames_SinceExtendedSync=0;
+    for (auto& Burst_Last : Conformance_Ac3_Burst_Last)
+        Burst_Last=(int64u)-1;
+}
+#endif //MEDIAINFO_CONFORMANCE
 
 //***************************************************************************
 // C++
