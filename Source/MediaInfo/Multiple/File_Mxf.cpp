@@ -2912,6 +2912,7 @@ void File_Mxf::Streams_Finish()
                                                                                    || ChannelLayout_2018_Rename(Field_Text_Iab, __T("IAB"))!=ChannelLayout_2018_Rename(Field_Text_Adm, __T("ADM")))))
                 {
                     Fill(Stream_Audio, 0, "Warnings", "Potential IAB/ADM coherency issues detected");
+                    break; //Only one warning
                 }
 
             }
