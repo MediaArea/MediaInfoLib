@@ -10,7 +10,8 @@ TESTS = \
     xml.sh \
     mixml.sh \
     ebucore.sh \
-    unicode.sh
+    unicode.sh \
+    png.sh
 
 check_PROGRAMS = mil_analyze
 mil_analyze_SOURCES = \

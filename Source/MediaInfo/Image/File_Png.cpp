@@ -1068,7 +1068,7 @@ void File_Png::Textual(bitset8 Method)
             MI.NoTrace = true; //Already have trace (Text string) from above
             Open_Buffer_Init(&MI, Text_UTF8.size());
             Open_Buffer_Continue(&MI, (const int8u*)Text_UTF8.c_str(), Text_UTF8.size());
-            Open_Buffer_Finalize(&MI);
+            MI.Open_Buffer_Finalize(); //Not Open_Buffer_Finalize(&MI), it would re-init MI with a size computed from the PNG chunk instead of the text size
             Element_Show(); //Needed since element (including the previous trace) will be removed if sub parser has no trace output
             Merge(MI, Stream_General, 0, 0, false);
             Text.clear();
