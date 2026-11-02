@@ -2572,7 +2572,7 @@ void File_Ac3::Core_Frame()
                     Get_S1 (3, ltrtcmixlev,                         "ltrtcmixlev");
                     Get_S1 (3, lorocmixlev,                         "lorocmixlev");
                 }
-                if(acmod>0x4)
+                if(acmod&0x4)
                 {
                     Get_S1 (3, ltrtsurmixlev,                       "ltrtsurmixlev");
                     Get_S1 (3, lorosurmixlev,                       "lorosurmixlev");
