@@ -1565,10 +1565,14 @@ void File_Ac3::Streams_Fill()
             Fill(Stream_Audio, 0, "dmixmod", AC3_dmixmod[dmixmod_Max[0][0] - 1]);
             Fill_SetOptions(Stream_Audio, 0, "dmixmod", "Y NTY");
         }
-        AC3_Level_Fill(this, 0, ltrtcmixlev_Max[0][0], 3, 1.5, "ltrtcmixlev");
-        AC3_Level_Fill(this, 0, ltrtsurmixlev_Max[0][0], 3, 1.5, "ltrtsurmixlev");
-        AC3_Level_Fill(this, 0, lorocmixlev_Max[0][0], 3, 1.5, "lorocmixlev");
-        AC3_Level_Fill(this, 0, lorosurmixlev_Max[0][0], 3, 1.5, "lorosurmixlev");
+        if (ltrtcmixlev_Max[0][0]!=(int8u)-1) //Only with a center channel
+            AC3_Level_Fill(this, 0, ltrtcmixlev_Max[0][0], 3, 1.5, "ltrtcmixlev");
+        if (ltrtsurmixlev_Max[0][0]!=(int8u)-1) //Only with surround channels
+            AC3_Level_Fill(this, 0, ltrtsurmixlev_Max[0][0], 3, 1.5, "ltrtsurmixlev");
+        if (lorocmixlev_Max[0][0]!=(int8u)-1)
+            AC3_Level_Fill(this, 0, lorocmixlev_Max[0][0], 3, 1.5, "lorocmixlev");
+        if (lorosurmixlev_Max[0][0]!=(int8u)-1)
+            AC3_Level_Fill(this, 0, lorosurmixlev_Max[0][0], 3, 1.5, "lorosurmixlev");
         if (adconvtyp_Max[0][0])
         {
             Fill(Stream_Audio, 0, "adconvtyp", "HDCD");
