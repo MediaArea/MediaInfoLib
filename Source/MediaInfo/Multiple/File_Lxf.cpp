@@ -732,7 +732,7 @@ void File_Lxf::Header_Parse()
                     BS_Begin_LE();
                     Get_T1 ( 6, SampleSize,                     "Sample size");
                     Skip_T1( 6,                                 "Sample precision");
-                    Skip_T1(20,                                 "Reserved");
+                    Skip_T4(20,                                 "Reserved");
                     BS_End_LE();
                     Element_Begin1("Tracks mask");
                         BS_Begin_LE();

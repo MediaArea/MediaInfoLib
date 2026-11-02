@@ -3458,7 +3458,7 @@ void File_Mpeg4::mfra_tfra()
     int8u length_size_of_traf_num, length_size_of_trun_num, length_size_of_sample_num;
     Skip_B4(                                                    "track_ID");
     BS_Begin();
-    Skip_S1(26,                                                 "reserved");
+    Skip_S4(26,                                                 "reserved");
     Get_S1 (2, length_size_of_traf_num,                         "length_size_of_traf_num");
     Get_S1 (2, length_size_of_trun_num,                         "length_size_of_trun_num");
     Get_S1 (2, length_size_of_sample_num,                       "length_size_of_sample_num");

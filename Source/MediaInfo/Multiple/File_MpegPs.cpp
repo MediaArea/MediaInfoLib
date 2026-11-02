@@ -3654,13 +3654,13 @@ void File_MpegPs::SL_packetized_stream()
                     if (SLConfig->instantBitrateLength>0)
                         Get_SB (instantBitrateFlag,                 "instantBitrateFlag");
                     if (decodingTimeStampFlag)
-                        Skip_S2(SLConfig->timeStampLength,          "decodingTimeStamp");
+                        Skip_S8(SLConfig->timeStampLength,          "decodingTimeStamp");
                     if (compositionTimeStampFlag)
-                        Skip_S2(SLConfig->timeStampLength,          "compositionTimeStamp");
+                        Skip_S8(SLConfig->timeStampLength,          "compositionTimeStamp");
                     if (SLConfig->AU_Length > 0)
-                        Skip_S2(SLConfig->AU_Length,                "accessUnitLength");
+                        Skip_S4(SLConfig->AU_Length,                "accessUnitLength");
                     if (instantBitrateFlag)
-                        Skip_S2(SLConfig->instantBitrateLength,     "instantBitrate");
+                        Skip_BS(SLConfig->instantBitrateLength,     "instantBitrate");
                 }
             }
             BS_End();

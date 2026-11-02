@@ -2654,7 +2654,7 @@ void File_Ac3::Core_Frame()
                                 TEST_SB_END();
                             TEST_SB_END();
                         TEST_SB_END();
-                        Skip_S2 (8*(mixdeflen+2),                   "mixdata");
+                        Skip_BS (8*(mixdeflen+2),                   "mixdata");
                         //Skip_S1 (,                                 "mixdatafill");
                     }
                     if(acmod<0x2)
@@ -4256,7 +4256,7 @@ void File_Ac3::program_assignment()
             int8u reserved_data_size_bits;
             Get_S1 (4, reserved_data_size_bits,                 "reserved_data_size_bits");
             int8u padding = 8 - (reserved_data_size_bits % 8);
-            Skip_S1(reserved_data_size_bits,                    "reserved_data()");
+            Skip_S2(reserved_data_size_bits,                    "reserved_data()");
             if (padding)
                 Skip_S1(padding,                                "padding");
         }
@@ -4639,7 +4639,7 @@ void File_Ac3::HD_format_info()
         Get_S1 ( 4, HD_Resolution2,                             "Resolution2"); Param_Info2(AC3_MLP_Resolution[HD_Resolution2], " bits");
         Get_S1 ( 4, HD_SamplingRate1,                           "Sampling rate"); Param_Info2(AC3_HD_SamplingRate(HD_SamplingRate1), " Hz");
         Get_S1 ( 4, HD_SamplingRate2,                           "Sampling rate"); Param_Info2(AC3_HD_SamplingRate(HD_SamplingRate2), " Hz");
-        Skip_S1(11,                                             "Unknown");
+        Skip_S2(11,                                             "Unknown");
         Get_S1 ( 5, HD_Channels1,                               "Channels"); Param_Info1(AC3_MLP_Channels[HD_Channels1]);
         BS_End();
         HD_Channels2=HD_Channels1;

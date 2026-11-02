@@ -669,7 +669,7 @@ void File_Iab::BedDefinition()
         Skip_Plex(8,                                            "AudioDataID");
         Get_S1 (2, ChannelGainPrefix,                           "ChannelGainPrefix");
         if (ChannelGainPrefix>1)
-            Skip_S1(10,                                         "ChannelGain");
+            Skip_S2(10,                                         "ChannelGain");
         Get_SB (ChannelDecorInfoExists,                         "ChannelDecorInfoExists");
         if (ChannelDecorInfoExists)
         {
@@ -733,7 +733,7 @@ void File_Iab::ObjectDefinition()
             bool ObjectSnap, ObjectZoneControl;
             Get_S1 (2, ObjectGainPrefix,                        "ObjectGainPrefix");
             if (ObjectGainPrefix>1)
-                Skip_S1(10,                                     "ObjectGainPrefix");
+                Skip_S2(10,                                     "ObjectGain");
             Skip_S1( 3,                                         "b001");
             Skip_S2(16,                                         "ObjectPosX");
             Skip_S2(16,                                         "ObjectPosY");
@@ -757,7 +757,7 @@ void File_Iab::ObjectDefinition()
                     int8u ZoneGainPrefix;
                     Get_S1 (2, ZoneGainPrefix,                  "ZoneGainPrefix");
                     if (ZoneGainPrefix>1)
-                        Skip_S1(10,                             "ZoneGain");
+                        Skip_S2(10,                             "ZoneGain");
                 }
             }
             int8u ObjectSpreadMode;
@@ -834,7 +834,7 @@ void File_Iab::BedRemap()
                     int8u RemapGainPrefix;
                     Get_S1 (2, RemapGainPrefix,                 "RemapGainPrefix");
                     if (RemapGainPrefix>1)
-                        Skip_S1(10,                             "RemapGain");
+                        Skip_S2(10,                             "RemapGain");
                 }
             }
         }

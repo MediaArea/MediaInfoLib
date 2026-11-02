@@ -2206,7 +2206,7 @@ void File_Dts::Data_Parse()
                 Get_S1 (2, Bits4MixOutMask,                     "Bits4MixOutMask"); Bits4MixOutMask=4+Bits4MixOutMask*4; Param_Info2(Bits4MixOutMask, " bits");
                 Get_S1 (2, NumMixOutConfigs,                    "NumMixOutConfigs"); NumMixOutConfigs++; Param_Info2(NumMixOutConfigs, " configs");
                 for (int8u Pos=0; Pos<NumMixOutConfigs; Pos++)
-                    Skip_S1(Bits4MixOutMask,                    "NumMixOutCh");
+                    Skip_S2(Bits4MixOutMask,                    "NumMixOutCh");
             TEST_SB_END();
         TESTELSE_SB_ELSE("Static fields present");
             NumAudioPresent=1;
@@ -2949,7 +2949,7 @@ void File_Dts::XXCH()
     // Parsing
     Element_Begin1("Header");
     vector<int16u> ChSetFsizeXXCHs;
-    int16u CoreSpkrActivityMask;
+    int32u CoreSpkrActivityMask;
     int8u Bits4SpkrMaskXXCH, NumChSetsInXXCH;
     bool bCRCPresent4ChSetHeaderXXCH;
     auto Element_Offset_Start=Element_Offset;
@@ -2973,7 +2973,7 @@ void File_Dts::XXCH()
         }
         ChSetFsizeXXCHs.push_back(ChSetFsizeXXCH);
     }
-    Get_S2 (Bits4SpkrMaskXXCH, CoreSpkrActivityMask,            "CoreSpkrActivityMask");
+    Get_S4 (Bits4SpkrMaskXXCH, CoreSpkrActivityMask,            "CoreSpkrActivityMask");
     auto RemainingBits=(HeaderSize-5)*8-(EndBS-Data_BS_Remain());
     if (RemainingBits)
     {

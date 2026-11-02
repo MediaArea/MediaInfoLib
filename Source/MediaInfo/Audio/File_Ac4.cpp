@@ -3096,7 +3096,7 @@ void File_Ac4::ac4_substream_info_obj(group_substream& G, bool b_substreams_pres
                 int8u res_bytes;
                 Get_S1 (4, res_bytes,                           "res_bytes");
                 if (res_bytes)
-                    Skip_S8(res_bytes*8,                        "reserved_data");
+                    Skip_BS(res_bytes*8,                        "reserved_data");
             TESTELSE_SB_END();
        TESTELSE_SB_END();
     TESTELSE_SB_END();
@@ -3521,7 +3521,7 @@ void File_Ac4::oamd_common_data()
         }
         //TODO: bits_used=trim();
         //TODO: bits_used+=bed_render_info();
-        Skip_S8(add_data_bytes*8,                               "add_data");
+        Skip_BS(add_data_bytes*8,                               "add_data");
     TEST_SB_END();
     Element_End0();
 }
