@@ -3420,6 +3420,14 @@ void File_Mxf::Streams_Finish_Conformance_FileFormat ()
     if (FooterPartition && HeaderPartition.Status==0x04 && FooterPartition->Status==0x04 && HeaderPartition.HeaderByteCount && FooterPartition->HeaderByteCount)
         for (const auto& Difference : HeaderMetadata_FooterDifferences(true))
             Fill_Conformance_AtOffset(FooterPartition->StreamOffset, "MXF HeaderMetadata", "Property is not the same in the Header Partition and in the Footer Partition ("+Difference+')');
+
+    //Instance UIDs are unique in a Header Metadata
+    const auto Set_Name=[](int64u Key) {
+        const auto Name=Mxf_Param_Info(0x02530100, Key);
+        return Name?string(Name):Ztring().From_Number(Key, 16).To_UTF8();
+    };
+    for (const auto& Duplicate : InstanceUID_Duplicates)
+        Fill_Conformance_AtOffset(Duplicate.first, "MXF InstanceUID", "Instance UID is the one of another set (actual "+Ztring().From_UUID(Duplicate.second.InstanceUID).To_UTF8()+", "+Set_Name(Duplicate.second.Key)+" and "+Set_Name(Duplicate.second.Key_Duplicate)+')');
 }
 
 //---------------------------------------------------------------------------
@@ -19623,6 +19631,29 @@ void File_Mxf::Properties_Store(properties& Properties)
         IndexTableSegments.push_back({StreamOffset, std::move(Properties), std::move(Flags)});
         return;
     }
+    #if MEDIAINFO_CONFORMANCE
+        //Instance UID is unique in a Header Metadata, its repetitions in other partitions reuse it (SMPTE ST 377-1), Instance UID is taken from the raw properties for dark sets
+        const auto SetOffset=File_Offset+Buffer_Offset-Header_Size;
+        const auto SetUID_Value=Property_Get(Properties, 0x3C0A);
+        auto Partition=upper_bound(Partitions.begin(), Partitions.end(), SetOffset, [](int64u Offset, const partition& Item) { return Offset<Item.StreamOffset; });
+        if (SetUID_Value && SetUID_Value->size()==16 && Partition!=Partitions.begin())
+        {
+            //Only sets in the Header Metadata of a parsed partition, e.g. not sets after a jump into a partition whose Partition Pack is not parsed
+            --Partition;
+            if (Partition->PartitionPackByteCount!=(int64u)-1 && SetOffset<Partition->StreamOffset+Partition->PartitionPackByteCount+Partition->HeaderByteCount)
+            {
+                int128u SetUID;
+                SetUID.hi=BigEndian2int64u(SetUID_Value->data());
+                SetUID.lo=BigEndian2int64u(SetUID_Value->data()+8);
+                const int64u SetKey=Code.lo; //Copied as a packed field can not be bound to a reference
+                const auto Set=InstanceUID_Sets.find(SetUID);
+                if (Set==InstanceUID_Sets.end() || Set->second.Partition!=Partition->StreamOffset)
+                    InstanceUID_Sets[SetUID]={Partition->StreamOffset, SetOffset, SetKey}; //First set with this Instance UID in this Header Metadata
+                else if (Set->second.StreamOffset!=SetOffset) //Not the same set parsed again
+                    InstanceUID_Duplicates[SetOffset]={SetUID, Set->second.Key, SetKey};
+            }
+        }
+    #endif //MEDIAINFO_CONFORMANCE
     if (InstanceUID.hi || InstanceUID.lo)
     {
         auto& Properties_Previous=SetProperties[InstanceUID];
