@@ -2600,6 +2600,8 @@ void File_Mpeg4::meta()
 
     idat_items.clear();
     meta_idat_Buffer.clear();
+    meta_iref_IsParsed=false;
+    meta_iprp_SkippedItems.clear();
 }
 
 //---------------------------------------------------------------------------
@@ -2662,29 +2664,63 @@ void File_Mpeg4::meta_iinf()
     NAME_VERSION_FLAG("Item Information", 1);
 
     //Parsing
+    int32u entry_count;
     if (Version == 0)
-        Skip_B2(                                                "entry-count");
+    {
+        int16u entry_count16;
+        Get_B2 (entry_count16,                                  "entry-count");
+        entry_count=entry_count16;
+    }
     else
-        Skip_B4(                                                "entry-count");
+        Get_B4 (entry_count,                                    "entry-count");
+
+    FILLING_BEGIN();
+        //Items are video streams during parsing, reserving them avoids copies of all the existing streams when a new one is added
+        if (entry_count<=0x10000)
+        {
+            (*File__Base::Stream)[Stream_Video].reserve((*File__Base::Stream)[Stream_Video].size()+entry_count);
+            (*File__Base::Stream_More)[Stream_Video].reserve((*File__Base::Stream_More)[Stream_Video].size()+entry_count);
+        }
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
 #define META_CREATESTREAM() \
     stream& Current=Streams[moov_trak_tkhd_TrackID]; \
     if (Current.StreamKind!=Stream_Video) \
-    { \
-        Stream_Prepare(Stream_Video); \
-        Current.StreamKind=Stream_Video; \
-        Current.StreamPos=StreamPos_Last; \
-        Current.IsEnabled=(meta_pitm_item_ID==(int32u)-1 || meta_pitm_item_ID==moov_trak_tkhd_TrackID)?true:false; \
-        Current.IsImage=true; \
-        Fill(StreamKind_Last, StreamPos_Last, General_ID, moov_trak_tkhd_TrackID, 10, true); \
-    } \
+        meta_CreateStream(); \
     else \
     { \
         StreamKind_Last=Stream_Video; \
         StreamPos_Last=Current.StreamPos; \
     } \
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::meta_CreateStream()
+{
+    //Item stream, created only when it is needed (e.g. not for the tiles hidden by their grid)
+    stream& Current=Streams[moov_trak_tkhd_TrackID];
+    Stream_Prepare(Stream_Video);
+    Current.StreamKind=Stream_Video;
+    Current.StreamPos=StreamPos_Last;
+    Current.IsEnabled=(meta_pitm_item_ID==(int32u)-1 || meta_pitm_item_ID==moov_trak_tkhd_TrackID)?true:false;
+    Current.IsImage=true;
+    Fill(StreamKind_Last, StreamPos_Last, General_ID, moov_trak_tkhd_TrackID, 10, true);
+    meta_iinf_infe_Fill();
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::meta_iinf_infe_Fill()
+{
+    //Item information in the item stream
+    const stream& Current=Streams[moov_trak_tkhd_TrackID];
+    if (Current.infe_Format)
+        Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Format), Current.infe_Format);
+    else if (Current.infe_item_type)
+        CodecID_Fill(Ztring().From_CC4(Current.infe_item_type), StreamKind_Last, StreamPos_Last, InfoCodecID_Format_Mpeg4);
+    if (Current.infe_IsEncrypted)
+        Fill(StreamKind_Last, StreamPos_Last, "Encrypted", "Yes");
+}
 
 //---------------------------------------------------------------------------
 void File_Mpeg4::meta_iinf_infe()
@@ -2777,15 +2813,19 @@ void File_Mpeg4::meta_iinf_infe()
         }
         if (!Skip)
         {
-            META_CREATESTREAM();
+            //The item stream is created when it is needed
+            stream& Current=Streams[item_ID];
+            Current.IsImage=true;
             Current.infe_item_type=item_type;
-            if (Format)
-                Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Format), Format);
-            else
-                CodecID_Fill(Ztring().From_CC4(item_type), StreamKind_Last, StreamPos_Last, InfoCodecID_Format_Mpeg4);
+            Current.infe_Format=Format;
+            Current.infe_IsEncrypted=protection_index?true:false;
+            if (Current.StreamKind==Stream_Video) //Already created for an item property
+            {
+                StreamKind_Last=Stream_Video;
+                StreamPos_Last=Current.StreamPos;
+                meta_iinf_infe_Fill();
+            }
         }
-        if (protection_index)
-            Fill(StreamKind_Last, StreamPos_Last, "Encrypted", "Yes");
     FILLING_END();
 }
 
@@ -2957,6 +2997,8 @@ void File_Mpeg4::meta_iprp_ipco()
                 int64u Element_Code_Save=Element_Code; \
                 for (size_t i=0; i<Entry_Size; i++) \
                 { \
+                    if (meta_iprp_SkippedItems.find(Entry[i])!=meta_iprp_SkippedItems.end()) \
+                        continue; \
                     moov_trak_tkhd_TrackID=Entry[i]; \
                     META_CREATESTREAM(); \
                     Element_Offset=Element_Offset_Save; \
@@ -3051,6 +3093,24 @@ void File_Mpeg4::meta_iprp_ipco_clli()
 //---------------------------------------------------------------------------
 void File_Mpeg4::meta_iprp_ipco_colr()
 {
+    #if defined(MEDIAINFO_ICC_YES)
+        if (Element_Size>4 && BigEndian2int32u(Buffer+Buffer_Offset)==Elements::moov_trak_mdia_minf_stbl_stsd_xxxx_colr_prof)
+        {
+            //ICC profile, parsed once for all the items using it
+            Element_Name("Color Parameter");
+            Skip_C4(                                            "Color parameter type");
+            File_Icc ICC_Parser;
+            ICC_Parser.StreamKind=Stream_Video;
+            ICC_Parser.IsAdditional=true;
+            Open_Buffer_Init(&ICC_Parser);
+            Open_Buffer_Continue(&ICC_Parser);
+            Open_Buffer_Finalize(&ICC_Parser);
+            FILLING_BEGIN_IPCO();
+                Merge(ICC_Parser, Stream_Video, 0, StreamPos_Last);
+            FILLING_END_IPCO();
+            return;
+        }
+    #endif
     FILLING_BEGIN_IPCO();
         moov_trak_mdia_minf_stbl_stsd_xxxx_colr();
     FILLING_END_IPCO();
@@ -3251,6 +3311,17 @@ void File_Mpeg4::meta_iprp_ipma()
         Element_End0();
     }
 
+    FILLING_BEGIN();
+        //HEIF tiles hidden by their grid don't need their properties, if the item references and the primary item are already known
+        meta_iprp_SkippedItems.clear();
+        if (meta_iref_IsParsed && meta_pitm_item_ID!=(int32u)-1)
+        {
+            grids Grids;
+            Streams_Finish_Grid_Prepare(Grids);
+            meta_iprp_SkippedItems=std::move(Grids.SkippedTiles);
+        }
+    FILLING_END();
+
     if (meta_iprp_ipco_Buffer)
     {
         Element_End0();
@@ -3296,6 +3367,7 @@ void File_Mpeg4::meta_iref()
 {
     NAME_VERSION_FLAG("Item Reference", 1);
     Version_Temp=Version;
+    meta_iref_IsParsed=true;
 }
 
 //---------------------------------------------------------------------------

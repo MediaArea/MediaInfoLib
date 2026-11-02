@@ -358,6 +358,7 @@ File_Mpeg4::File_Mpeg4()
     IsFragmented=false;
     StreamOrder=0;
     meta_pitm_item_ID=(int32u)-1;
+    meta_iref_IsParsed=false;
     meta_iprp_ipco_Buffer=NULL;
     moov_trak_mdia_minf_stbl_stsd_Pos=0;
     moov_trak_tkhd_TrackID=(int32u)-1;
@@ -496,12 +497,28 @@ void File_Mpeg4::Streams_Finish()
     //For each stream
     vector<size_t> ToDelete_StreamPos;
     std::map<int32u, size_t> Image_StreamPos; //Image stream position per item ID
+    grids Grids;
+    Streams_Finish_Grid_Prepare(Grids);
+    for (const auto& Item : Streams)
+        if (Item.second.IsImage && Item.second.StreamKind!=Stream_Video && Grids.SkippedTiles.find(Item.first)==Grids.SkippedTiles.end()) //HEIF item without stream yet
+        {
+            moov_trak_tkhd_TrackID=Item.first;
+            meta_CreateStream();
+        }
     streams::iterator Temp=Streams.begin();
     while (Temp!=Streams.end())
     {
         //Preparing
         StreamKind_Last=Temp->second.StreamKind;
         StreamPos_Last=Temp->second.StreamPos;
+
+        if (Grids.SkippedTiles.find(Temp->first)!=Grids.SkippedTiles.end()) //HEIF tile hidden by its grid, its stream (if any) is only removed
+        {
+            if (StreamKind_Last==Stream_Video)
+                ToDelete_StreamPos.push_back(StreamPos_Last);
+            ++Temp;
+            continue;
+        }
 
         if (StreamKind_Last==Stream_Max && !Temp->second.MetaFor.empty())
         {
@@ -1549,7 +1566,7 @@ void File_Mpeg4::Streams_Finish()
         for (size_t i=ToDelete_StreamPos.size()-1; i!=(size_t)-1; i--)
             Stream_Erase(Stream_Video, ToDelete_StreamPos[i]);
     }
-    Streams_Finish_Grid(Image_StreamPos);
+    Streams_Finish_Grid(Image_StreamPos, Grids);
     if (Vendor!=0x00000000 && Vendor!=0xFFFFFFFF)
     {
         Ztring VendorS=Mpeg4_Encoded_Library(Vendor);
@@ -1653,26 +1670,42 @@ void File_Mpeg4::Streams_Finish()
 }
 
 //---------------------------------------------------------------------------
-void File_Mpeg4::Streams_Finish_Grid(const std::map<int32u, size_t>& Image_StreamPos)
+void File_Mpeg4::Streams_Finish_Grid_Prepare(grids& Grids)
 {
     //HEIF grid: the image to display is the reconstructed one, with the characteristics of its tiles, the tiles are not displayed
-    std::set<int32u> Grids, Inputs_NotGrid;
+    std::set<int32u> Inputs_NotGrid;
     for (const auto& Item : Streams)
     {
         const auto& Inputs=Item.second.iref_dimg;
+        const auto FirstTile=Inputs.empty()?Streams.end():Streams.find(Inputs[0]);
         if (Item.second.infe_item_type==0x67726964 //grid
-         && !Inputs.empty()
-         && Image_StreamPos.find(Item.first)!=Image_StreamPos.end()
-         && Image_StreamPos.find(Inputs[0])!=Image_StreamPos.end())
-            Grids.insert(Item.first);
+         && Item.second.IsImage
+         && FirstTile!=Streams.end()
+         && FirstTile->second.IsImage)
+            Grids.Grid_IDs.insert(Item.first);
         else
             Inputs_NotGrid.insert(Inputs.begin(), Inputs.end());
     }
-    if (Grids.empty())
-        return;
+    for (auto Grid_ID : Grids.Grid_IDs)
+        for (auto Tile_ID : Streams[Grid_ID].iref_dimg)
+        {
+            const auto Tile=Streams.find(Tile_ID);
+            if (Tile!=Streams.end() && Tile->second.IsImage
+             && Tile_ID!=meta_pitm_item_ID && Inputs_NotGrid.find(Tile_ID)==Inputs_NotGrid.end() && Tile->second.Infos_List.size()==1) //Tile not used for something else
+                Grids.HiddenTiles.insert(Tile_ID);
+        }
 
+    //The hidden tiles are not needed, except the first one of each grid for the characteristics of the grid
+    Grids.SkippedTiles=Grids.HiddenTiles;
+    for (auto Grid_ID : Grids.Grid_IDs)
+        Grids.SkippedTiles.erase(Streams[Grid_ID].iref_dimg[0]);
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::Streams_Finish_Grid(const std::map<int32u, size_t>& Image_StreamPos, const grids& Grids)
+{
     std::set<size_t> ToDelete_StreamPos;
-    for (auto Grid_ID : Grids)
+    for (auto Grid_ID : Grids.Grid_IDs)
     {
         const auto& Grid=Streams[Grid_ID];
         const auto Grid_StreamPos=Image_StreamPos.find(Grid_ID)->second;
@@ -1729,17 +1762,20 @@ void File_Mpeg4::Streams_Finish_Grid(const std::map<int32u, size_t>& Image_Strea
         for (auto Tile_ID : Tiles)
         {
             const auto Tile=Streams.find(Tile_ID);
-            const auto Tile_StreamPos=Image_StreamPos.find(Tile_ID);
-            if (Tile==Streams.end() || Tile_StreamPos==Image_StreamPos.end())
+            if (Tile==Streams.end() || !Tile->second.IsImage)
             {
                 AllTilesHidden=false;
                 continue;
             }
             StreamSize+=Tile->second.stsz_StreamSize;
-            if (Tile_ID==meta_pitm_item_ID || Inputs_NotGrid.find(Tile_ID)!=Inputs_NotGrid.end() || Tile->second.Infos_List.size()!=1) //Tile used for something else
+            if (Grids.HiddenTiles.find(Tile_ID)==Grids.HiddenTiles.end()) //Tile used for something else
                 AllTilesHidden=false;
             else
-                ToDelete_StreamPos.insert(Tile_StreamPos->second);
+            {
+                const auto Tile_StreamPos=Image_StreamPos.find(Tile_ID);
+                if (Tile_StreamPos!=Image_StreamPos.end()) //No image stream for the skipped tiles
+                    ToDelete_StreamPos.insert(Tile_StreamPos->second);
+            }
         }
         Fill(Stream_Image, Grid_StreamPos, Image_StreamSize, StreamSize, 10, true);
         if (AllTilesHidden)

@@ -15,6 +15,7 @@
 #include "MediaInfo/MediaInfo_Internal.h"
 #include "MediaInfo/Multiple/File_Mpeg4_Descriptors.h"
 #include <memory>
+#include <set>
 class File_MpegPs;
 //---------------------------------------------------------------------------
 
@@ -50,7 +51,14 @@ protected :
     void Streams_Accept();
     void Streams_Accept_jp2(bool IsJp2=false);
     void Streams_Finish();
-    void Streams_Finish_Grid(const std::map<int32u, size_t>& Image_StreamPos);
+    struct grids
+    {
+        std::set<int32u> Grid_IDs;
+        std::set<int32u> HiddenTiles; //Tiles not displayed
+        std::set<int32u> SkippedTiles; //Hidden tiles not needed for the characteristics of the grid
+    };
+    void Streams_Finish_Grid_Prepare(grids& Grids);
+    void Streams_Finish_Grid(const std::map<int32u, size_t>& Image_StreamPos, const grids& Grids);
     void Streams_Finish_CommercialNames ();
 
 public :
@@ -92,12 +100,14 @@ private :
     void mdat_xxxx();
     void mdat_StreamJump();
     void meta();
+    void meta_CreateStream();
     void meta_grpl();
     void meta_grpl_xxxx();
     void meta_hdlr() {moov_meta_hdlr();}
     void meta_idat();
     void meta_iinf();
     void meta_iinf_infe();
+    void meta_iinf_infe_Fill();
     void meta_iloc();
     void meta_iprp();
     void meta_iprp_ipco();
@@ -479,7 +489,9 @@ private :
     bool                                    IsFragmented;
     size_t                                  StreamOrder;
     int32u                                  meta_pitm_item_ID;
+    bool                                    meta_iref_IsParsed;
     std::vector<std::vector<int32u> >       meta_iprp_ipma_Entries;
+    std::set<int32u>                        meta_iprp_SkippedItems; //HEIF tiles hidden by their grid, their properties are not needed
     #if MEDIAINFO_TRACE
     int64u                                  meta_iprp_ipco_File_Offset;
     #endif
@@ -607,6 +619,8 @@ private :
         std::vector<int32u>     Meta;
         std::vector<int32u>     MetaFor;
         int32u                  infe_item_type;
+        const char*             infe_Format; //Format of a derived image item
+        bool                    infe_IsEncrypted;
         std::vector<int32u>     iref_dimg; //Input images of a derived image
         float32                 CleanAperture_Width;
         float32                 CleanAperture_Height;
@@ -695,6 +709,8 @@ private :
             tkhd_Found=false;
             TrackID = 0;
             infe_item_type=0x00000000;
+            infe_Format=nullptr;
+            infe_IsEncrypted=false;
             CleanAperture_Width=0;
             CleanAperture_Height=0;
             CleanAperture_PixelAspectRatio=0;
