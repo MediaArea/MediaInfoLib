@@ -2609,8 +2609,10 @@ void File_Ac3::Core_Frame()
                     {
                         int8u mixdeflen;
                         Get_S1 (5, mixdeflen,                       "mixdeflen");
+                        size_t mixdata_Size=8*(mixdeflen+2); //Including mixdata2e and mixdata3e parameters
+                        size_t mixdata_End=(Data_BS_Remain()>mixdata_Size)?(Data_BS_Remain()-mixdata_Size):0;
                         TEST_SB_SKIP(                               "mixdata2e");
-                            Skip_S1 (6,                             "premixcmpsel");
+                            Skip_S1 (1,                             "premixcmpsel");
                             Skip_S1 (1,                             "drcsrc");
                             Skip_S1 (3,                             "premixcmpscl");
                             TEST_SB_SKIP(                           "extpgmlscle");
@@ -2650,12 +2652,12 @@ void File_Ac3::Core_Frame()
                                 Skip_S1 (2,                         "spchan1att");
                                 TEST_SB_SKIP(                       "addspdat1e");
                                     Skip_S1 (5,                     "spchdat2");
-                                    Skip_S1 (2,                     "spchan2att");
+                                    Skip_S1 (3,                     "spchan2att");
                                 TEST_SB_END();
                             TEST_SB_END();
                         TEST_SB_END();
-                        Skip_BS (8*(mixdeflen+2),                   "mixdata");
-                        //Skip_S1 (,                                 "mixdatafill");
+                        if (Data_BS_Remain()>mixdata_End)
+                            Skip_BS(Data_BS_Remain()-mixdata_End,   "mixdata");
                     }
                     if(acmod<0x2)
                     {
