@@ -741,13 +741,17 @@ void File_Iab::ObjectDefinition()
             Get_S1 (2, ObjectSpreadMode,                        "ObjectSpreadMode");
             switch (ObjectSpreadMode)
             {
-                case 0:
-                case 2:
+                case 0: //OBJECT_SPREAD_LOWREZ
                 {
                     Skip_S1( 8,                                 "ObjectSpread");
                 }
                 break;
-                case 3:
+                case 2: //OBJECT_SPREAD_1D
+                {
+                    Skip_S2(12,                                 "ObjectSpread");
+                }
+                break;
+                case 3: //OBJECT_SPREAD_3D
                 {
                     Skip_S2(12,                                 "ObjectSpreadX");
                     Skip_S2(12,                                 "ObjectSpreadY");
