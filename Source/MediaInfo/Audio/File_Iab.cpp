@@ -707,12 +707,12 @@ void File_Iab::ObjectDefinition()
 
     //Parsing
     int8u AudioDescription;
-    bool ConditionalBed;
+    bool ConditionalObject;
     Skip_Plex8(                                                 "MetaID");
     Skip_Plex8(                                                 "AudioDataID");
     BS_Begin();
-    Get_SB (ConditionalBed,                                     "ConditionalBed");
-    if (ConditionalBed)
+    Get_SB (ConditionalObject,                                  "ConditionalObject");
+    if (ConditionalObject)
     {
         Skip_SB(                                                "1");
         Skip_S1(8,                                              "ObjectUseCase");
@@ -787,7 +787,7 @@ void File_Iab::ObjectDefinition()
             int8u ObjectDecorCoefPrefix;
             Get_S1 (2, ObjectDecorCoefPrefix,                   "ObjectDecorCoefPrefix");
             if (ObjectDecorCoefPrefix>1)
-                Skip_S1(8,                                      "ObjectDecorCoefPrefix");
+                Skip_S1(8,                                      "ObjectDecorCoef");
         }
         Element_End0();
     }
