@@ -1672,6 +1672,7 @@ void MediaInfo_Config_CodecID_General_Mpeg4 (InfoMap &Info)
     "heix;HEIF\n"
     "mif1;HEIF\n"
     "mif2;HEIF\n"
+    "mif3;HEIF\n"
     "msf1;MPEG-4;;;;HEIF Sequence\n"
     "MJ2S;MPEG-4;;;http://www.iso.org/;Motion JPEG 2000 Simple Profile\n"
     "MJP2;MPEG-4;;;http://www.iso.org/;Motion JPEG 2000 General Profile\n"
