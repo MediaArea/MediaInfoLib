@@ -2984,6 +2984,7 @@ void File_Mxf::Streams_Finish()
         //After the requested profiles and the references, as the count of conformance items is limited
         Streams_Finish_Conformance_HeaderMetadata();
         Streams_Finish_Conformance_IndexTables();
+        Streams_Finish_Conformance_OperationalPattern();
     #endif //MEDIAINFO_CONFORMANCE
     Streams_Finish_Conformance();
 
@@ -3763,6 +3764,433 @@ void File_Mxf::Streams_Finish_Conformance_IndexTables ()
         for (const auto& Track_EditRate : Track_EditRates->second)
             if (IndexEditRate_Normalized!=Track_EditRate.first && IndexStreams_EditRate_Reported.insert(IndexSID).second)
                 Fill_Conformance_AtOffset(Segment.StreamOffset, "MXF IndexTableSegment IndexEditRate", "IndexEditRate is not the Edit Rate of the indexed Tracks (actual "+Raw_Text(*IndexEditRate, true)+", expected "+Raw_Text(Track_EditRate.second, true)+", IndexSID "+to_string(IndexSID)+')');
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Streams_Finish_Conformance_OperationalPattern ()
+{
+    if (IsSub || Partitions.empty() || Partitions[0].Kind!=0x02)
+        return; //Header Partition is not parsed
+    const auto& HeaderPartition=Partitions[0];
+    if (HeaderPartition.MajorVersion!=1 || HeaderPartition.MinorVersion<2 || HeaderPartition.MinorVersion>3)
+        return;
+    const auto Is2009=HeaderPartition.MinorVersion==3; //SMPTE ST 377-1:2009 and later
+
+    //Operational Pattern of the Preface
+    const auto& Preface=SetProperties_Get(Preface_Current);
+    const auto OperationalPattern=Property_Get(Preface, 0x3B09);
+    if (!OperationalPattern || OperationalPattern->size()!=16 || OperationalPattern->compare(0, 4, "\x06\x0E\x2B\x34", 4) || OperationalPattern->compare(8, 4, "\x0D\x01\x02\x01", 4))
+        return; //Not an MXF Operational Pattern
+    const auto ItemComplexity=(int8u)(*OperationalPattern)[12];
+    const auto PackageComplexity=(int8u)(*OperationalPattern)[13];
+    const auto Qualifiers=(int8u)(*OperationalPattern)[14];
+    const auto IsGeneralized=ItemComplexity>=1 && ItemComplexity<=3 && PackageComplexity>=1 && PackageComplexity<=3;
+    const auto IsOP1a=ItemComplexity==1 && PackageComplexity==1;
+    const auto IsOPAtom=ItemComplexity==0x10;
+    if (!IsOP1a && (!Is2009 || (!IsGeneralized && !IsOPAtom)))
+        return; //SMPTE ST 378 for OP1a, SMPTE ST 377-1:2009 and later for other generalized Operational Patterns, SMPTE ST 390:2011 for OP-Atom
+    const auto OP_Name=[](int8u Item, int8u Package) {
+        return "OP"+to_string(Item)+(char)('a'+Package-1);
+    };
+    const auto Name=IsOPAtom?string("OP-Atom"):OP_Name(ItemComplexity, PackageComplexity);
+
+    const auto Fill_Conformance_AtOffset=[&](int64u Offset, const char* Field, const string& Value) {
+        //Conformance offset is the one of the item, no offset if (int64u)-1, no frame or time
+        const auto File_Offset_Save=File_Offset;
+        const auto Frame_Count_Save=Frame_Count;
+        const auto Frame_Count_NotParsedIncluded_Save=Frame_Count_NotParsedIncluded;
+        const auto PTS_Save=FrameInfo.PTS;
+        const auto DTS_Save=FrameInfo.DTS;
+        File_Offset=Offset-(Buffer_Offset+Element_Offset);
+        Frame_Count=(int64u)-1;
+        Frame_Count_NotParsedIncluded=(int64u)-1;
+        FrameInfo.PTS=(int64u)-1;
+        FrameInfo.DTS=(int64u)-1;
+        Fill_Conformance(Field, Value);
+        Merge_Conformance();
+        File_Offset=File_Offset_Save;
+        Frame_Count=Frame_Count_Save;
+        Frame_Count_NotParsedIncluded=Frame_Count_NotParsedIncluded_Save;
+        FrameInfo.PTS=PTS_Save;
+        FrameInfo.DTS=DTS_Save;
+    };
+    const auto Fill_Conformance_OP=[&](const char* Field, const string& Value) {
+        Fill_Conformance_AtOffset((int64u)-1, Field, Value);
+    };
+    const auto Batch_Get=[](const string* Value, size_t Size, vector<string>& List) {
+        //Complete batches only, long values are truncated
+        List.clear();
+        if (!Value || Value->size()<8 || BigEndian2int32u(Value->data()+4)!=Size || Value->size()!=8+(size_t)BigEndian2int32u(Value->data())*Size)
+            return false;
+        for (size_t Pos=8; Pos<Value->size(); Pos+=Size)
+            List.push_back(Value->substr(Pos, Size));
+        return true;
+    };
+
+    //Essence Containers in the file and their Top-Level File Packages
+    set<int64u> BodySIDs;
+    set<string> TopLevelPackageUIDs;
+    for (const auto& Set : SetKeys)
+        if (Set.second==Groups::EssenceData)
+        {
+            const auto& Properties=SetProperties_Get(Set.first);
+            int64u BodySID;
+            if (Raw_UInt_Get(Property_Get(Properties, 0x3F07), 4, BodySID) && BodySID)
+                BodySIDs.insert(BodySID);
+            const auto LinkedPackageUID=Property_Get(Properties, 0x2701);
+            if (LinkedPackageUID && LinkedPackageUID->size()==32)
+                TopLevelPackageUIDs.insert(*LinkedPackageUID);
+        }
+
+    //Material Packages and Top-Level File Packages of the Content Storage of the current Preface, as the Header Metadata may be repeated with other Instance UIDs, once per Package UID
+    vector<int128u> Packages_List;
+    const auto Preface_Item=Prefaces.find(Preface_Current);
+    if (Preface_Item!=Prefaces.end())
+    {
+        const auto ContentStorage=ContentStorages.find(Preface_Item->second.ContentStorage);
+        if (ContentStorage!=ContentStorages.end())
+            Packages_List=ContentStorage->second.Packages;
+    }
+    if (Packages_List.empty())
+        for (const auto& Package : Packages)
+            Packages_List.push_back(Package.first);
+    struct package_info
+    {
+        int128u             InstanceUID;
+        vector<track_info>  Tracks;
+        size_t              EssenceTracks;
+        size_t              Components_Max; //Maximum count of Structural Components in an Essence Track
+        size_t              SourceClips_Min; //Minimum count of Source Clips in an Essence Track
+        size_t              SourceClips_Max; //Maximum count of Source Clips in an Essence Track
+        size_t              SourcePackages_AtOnce; //Maximum count of File Packages referenced at the same time by Source Clips of Essence Tracks, in the known part of the timeline
+        bool                Timeline_IsKnown; //Position of all Structural Components of Essence Tracks is known
+        set<string>         SourcePackageIDs; //Packages referenced by Source Clips of Essence Tracks
+        bool                SourcePackageIDs_IsComplete; //All Structural Components of Essence Tracks are listed
+    };
+    struct clip_event
+    {
+        float64             Time;
+        bool                IsBegin;
+        const string*       SourcePackageID;
+        bool operator < (const clip_event& b) const { return Time<b.Time || (Time==b.Time && !IsBegin && b.IsBegin); } //End of a Source Clip before the begin of the next one
+    };
+    vector<package_info> MaterialPackages, TopLevelPackages;
+    set<string> PackageUIDs;
+    for (const auto& Package_UID : Packages_List)
+    {
+        const auto Package=Packages.find(Package_UID);
+        const auto SetKey=SetKeys.find(Package_UID);
+        const auto PackageUID=Property_Get(SetProperties_Get(Package_UID), 0x4401);
+        if (Package==Packages.end() || SetKey==SetKeys.end() || !PackageUID || !PackageUIDs.insert(*PackageUID).second)
+            continue;
+        const auto IsMaterialPackage=SetKey->second==Groups::MaterialPackage;
+        if (!IsMaterialPackage && (SetKey->second!=Groups::SourcePackage || TopLevelPackageUIDs.find(*PackageUID)==TopLevelPackageUIDs.end()))
+            continue;
+        package_info Info;
+        Info.InstanceUID=Package_UID;
+        Info.EssenceTracks=0;
+        Info.Components_Max=0;
+        Info.SourceClips_Min=(size_t)-1;
+        Info.SourceClips_Max=0;
+        Info.SourcePackages_AtOnce=0;
+        Info.Timeline_IsKnown=true;
+        Info.SourcePackageIDs_IsComplete=true;
+        string Kinds;
+        conformance_errors Errors;
+        Package_Tracks(Package->second, Info.Tracks, Kinds, Errors);
+        vector<clip_event> ClipEvents; //Begin and end of the Source Clips, a quarter of an Edit Unit inside for tolerating rounding
+        for (const auto& Track : Info.Tracks)
+        {
+            if (Track.Kind!='V' && Track.Kind!='A' && Track.Kind!='D')
+                continue;
+            Info.EssenceTracks++;
+            const auto Components=Property_Get(SetProperties_Get(Track.Track->second.Sequence), 0x1001);
+            if (!Components || Components->size()<8 || BigEndian2int32u(Components->data()+4)!=16)
+            {
+                Info.SourceClips_Min=0;
+                Info.Timeline_IsKnown=false;
+                Info.SourcePackageIDs_IsComplete=false;
+                continue;
+            }
+            const auto Components_Count=(size_t)BigEndian2int32u(Components->data()); //Exact even if the value is truncated
+            Info.Components_Max=max(Info.Components_Max, Components_Count);
+            const auto IsTruncated=Components->size()!=8+Components_Count*16; //Long value is truncated
+            if (IsTruncated)
+            {
+                Info.Timeline_IsKnown=false;
+                Info.SourcePackageIDs_IsComplete=false;
+            }
+            const auto EditRate=Property_Get(*Track.Properties, 0x4B01);
+            const auto EditUnit=(EditRate && EditRate->size()==8 && BigEndian2int32u(EditRate->data()) && BigEndian2int32u(EditRate->data()+4))?(((float64)BigEndian2int32u(EditRate->data()+4))/BigEndian2int32u(EditRate->data())):0;
+            float64 Position=0;
+            size_t SourceClips=0;
+            for (size_t Pos=8; Pos+16<=Components->size(); Pos+=16)
+            {
+                int128u UID;
+                UID.hi=BigEndian2int64u(Components->data()+Pos);
+                UID.lo=BigEndian2int64u(Components->data()+Pos+8);
+                const auto& Component=SetProperties_Get(UID);
+                if (Component.empty())
+                    Info.SourcePackageIDs_IsComplete=false; //Structural Component is not parsed
+                const auto IsLast=Pos+32>Components->size() && !IsTruncated;
+                int64u Duration;
+                float64 End=DBL_MAX; //Up to the end if the duration is unknown
+                if (EditUnit && Raw_UInt_Get(Property_Get(Component, 0x0202), 8, Duration) && Duration!=(int64u)-1)
+                    End=Position+((float64)Duration)*EditUnit;
+                else if (!IsLast)
+                    Info.Timeline_IsKnown=false; //Position of the next Structural Components is unknown, the known part of the timeline is before this one
+                const auto ComponentKey=SetKeys.find(UID);
+                if (ComponentKey!=SetKeys.end() && ComponentKey->second==Groups::SourceClip)
+                {
+                    SourceClips++;
+                    const auto SourcePackageID=Property_Get(Component, 0x1101);
+                    if (SourcePackageID && SourcePackageID->size()==32 && SourcePackageID->find_first_not_of('\0')!=string::npos)
+                    {
+                        Info.SourcePackageIDs.insert(*SourcePackageID);
+                        const auto Tolerance=EditUnit/4;
+                        if (End-Position>2*Tolerance && (End!=DBL_MAX || IsLast))
+                        {
+                            ClipEvents.push_back({Position+Tolerance, true, SourcePackageID});
+                            ClipEvents.push_back({End-Tolerance, false, SourcePackageID});
+                        }
+                    }
+                }
+                Position=End;
+            }
+            Info.SourceClips_Min=min(Info.SourceClips_Min, SourceClips);
+            Info.SourceClips_Max=max(Info.SourceClips_Max, SourceClips);
+        }
+        sort(ClipEvents.begin(), ClipEvents.end());
+        map<string, size_t> SourcePackages_Active; //Count of current Source Clips per File Package
+        for (const auto& ClipEvent : ClipEvents)
+        {
+            if (ClipEvent.IsBegin)
+            {
+                SourcePackages_Active[*ClipEvent.SourcePackageID]++;
+                Info.SourcePackages_AtOnce=max(Info.SourcePackages_AtOnce, SourcePackages_Active.size());
+                continue;
+            }
+            const auto SourcePackage_Active=SourcePackages_Active.find(*ClipEvent.SourcePackageID);
+            if (SourcePackage_Active!=SourcePackages_Active.end() && !--SourcePackage_Active->second)
+                SourcePackages_Active.erase(SourcePackage_Active);
+        }
+        (IsMaterialPackage?MaterialPackages:TopLevelPackages).push_back(std::move(Info));
+    }
+    size_t Components_Max=0, SourceClips_Min=(size_t)-1, SourceClips_Max=0, EssenceTracks_Max=0, MaterialPackage_EssenceTracks_Max=0, SourcePackageIDs_Max=0, SourcePackages_AtOnce_Max=0; //SourcePackages_AtOnce_Max is a minimum if the timeline is not known
+    auto SourcePackages_AtOnce_IsKnown=true, SourcePackageIDs_IsComplete=true;
+    for (const auto& Package : MaterialPackages)
+    {
+        Components_Max=max(Components_Max, Package.Components_Max);
+        SourceClips_Min=min(SourceClips_Min, Package.SourceClips_Min);
+        SourceClips_Max=max(SourceClips_Max, Package.SourceClips_Max);
+        MaterialPackage_EssenceTracks_Max=max(MaterialPackage_EssenceTracks_Max, Package.EssenceTracks);
+        SourcePackageIDs_Max=max(SourcePackageIDs_Max, Package.SourcePackageIDs.size());
+        SourcePackages_AtOnce_Max=max(SourcePackages_AtOnce_Max, Package.SourcePackages_AtOnce);
+        if (!Package.Timeline_IsKnown)
+            SourcePackages_AtOnce_IsKnown=false;
+        if (!Package.SourcePackageIDs_IsComplete)
+            SourcePackageIDs_IsComplete=false;
+    }
+    for (const auto& Package : TopLevelPackages)
+        EssenceTracks_Max=max(EssenceTracks_Max, Package.EssenceTracks);
+
+    //Same duration for all Tracks of the Material Packages and of the Top-Level File Packages, with a precision of an Edit Unit of the track with the lowest Edit Rate (e.g. a duration in frames for samples not multiple of a frame)
+    struct duration_info
+    {
+        int64u  Duration;
+        int32u  EditRate_Num;
+        int32u  EditRate_Den;
+    };
+    vector<duration_info> Durations;
+    size_t Durations_TopLevel=0; //Count of durations of tracks of Top-Level File Packages
+    for (const auto* Packages_Kind : {&MaterialPackages, &TopLevelPackages})
+        for (const auto& Package : *Packages_Kind)
+            for (const auto& Track : Package.Tracks)
+            {
+                const auto TrackKey=SetKeys.find(Track.Track->first);
+                const auto EditRate=Property_Get(*Track.Properties, 0x4B01);
+                int64u Duration;
+                if (Track.Kind=='M' || TrackKey==SetKeys.end() || TrackKey->second!=Groups::TimelineTrack || !EditRate || EditRate->size()!=8
+                 || !Raw_UInt_Get(Property_Get(SetProperties_Get(Track.Track->second.Sequence), 0x0202), 8, Duration) || Duration==(int64u)-1)
+                    continue;
+                const auto EditRate_Num=BigEndian2int32u(EditRate->data());
+                const auto EditRate_Den=BigEndian2int32u(EditRate->data()+4);
+                if (EditRate_Num && EditRate_Den)
+                {
+                    Durations.push_back({Duration, EditRate_Num, EditRate_Den});
+                    if (Packages_Kind==&TopLevelPackages)
+                        Durations_TopLevel++;
+                }
+            }
+    size_t Durations_Different=0; //Position of the first duration which is not the first one, 0 if all are the same
+    for (size_t i=1; i<Durations.size() && !Durations_Different; i++)
+    {
+        const auto& A=Durations[0];
+        const auto& B=Durations[i];
+        const auto Time_A=((float64)A.Duration)*A.EditRate_Den/A.EditRate_Num;
+        const auto Time_B=((float64)B.Duration)*B.EditRate_Den/B.EditRate_Num;
+        const auto Precision=max(((float64)A.EditRate_Den)/A.EditRate_Num, ((float64)B.EditRate_Den)/B.EditRate_Num);
+        if (fabs(Time_A-Time_B)>=Precision*0.999)
+            Durations_Different=i;
+    }
+
+    //Generalized Operational Patterns, the simplest one is signaled (SMPTE ST 377-1, SMPTE ST 378 for OP1a)
+    if (IsGeneralized && !MaterialPackages.empty())
+    {
+        if (ItemComplexity==1 && SourceClips_Max>1)
+            Fill_Conformance_OP("MXF OperationalPattern ItemComplexity", "A Material Package Track has more than one Source Clip but the Operational Pattern is "+Name+" (actual "+to_string(SourceClips_Max)+" Source Clips)");
+        if (Is2009 && ItemComplexity>1 && Components_Max==1 && SourceClips_Min==1 && Durations_TopLevel && Durations.size()>1 && !Durations_Different)
+            Fill_Conformance_OP("MXF OperationalPattern ItemComplexity", "Operational Pattern is not the simplest one, all Material Package Tracks have one Source Clip with the duration of the File Packages (actual "+Name+", expected "+OP_Name(1, PackageComplexity)+')');
+        if (PackageComplexity==1 && SourcePackages_AtOnce_Max>1)
+            Fill_Conformance_OP("MXF OperationalPattern PackageComplexity", "Material Package Source Clips reference more than one File Package at a time but the Operational Pattern is "+Name+" (actual "+(SourcePackages_AtOnce_IsKnown?"":"at least ")+to_string(SourcePackages_AtOnce_Max)+" File Packages)");
+        if (PackageComplexity!=3 && MaterialPackages.size()>1)
+            Fill_Conformance_OP("MXF OperationalPattern PackageComplexity", "Material Package is present more than once but the Operational Pattern is "+Name+" (actual "+to_string(MaterialPackages.size())+" Material Packages)");
+        if (Is2009 && PackageComplexity==3 && MaterialPackages.size()==1)
+        {
+            string Expected;
+            if (SourcePackages_AtOnce_Max>1)
+                Expected=OP_Name(ItemComplexity, 2);
+            else if (SourcePackages_AtOnce_IsKnown || (SourcePackageIDs_IsComplete && SourcePackageIDs_Max<=1))
+                Expected=OP_Name(ItemComplexity, 1);
+            else
+                Expected=OP_Name(ItemComplexity, 1)+" or "+OP_Name(ItemComplexity, 2); //Unknown timeline
+            Fill_Conformance_OP("MXF OperationalPattern PackageComplexity", "Operational Pattern is not the simplest one, there is one Material Package (actual "+Name+", expected "+Expected+')');
+        }
+        if (Is2009 && PackageComplexity==2 && ((SourcePackageIDs_IsComplete && SourcePackageIDs_Max==1) || (SourcePackages_AtOnce_IsKnown && SourcePackages_AtOnce_Max==1)))
+            Fill_Conformance_OP("MXF OperationalPattern PackageComplexity", "Operational Pattern is not the simplest one, Material Package Source Clips reference one File Package at a time (actual "+Name+", expected "+OP_Name(ItemComplexity, 1)+')');
+
+        //Qualifiers
+        if (!(Qualifiers&0x01))
+            Fill_Conformance_OP("MXF OperationalPattern Qualifiers", "Marker bit of the qualifiers is 0");
+        if (IsOP1a && !BodySIDs.empty() && (Qualifiers&0x02))
+            Fill_Conformance_OP("MXF OperationalPattern Qualifiers", "External essence is signaled but the Essence Container is internal");
+        if (!TopLevelPackages.empty())
+        {
+            if (EssenceTracks_Max==1 && (Qualifiers&0x08))
+                Fill_Conformance_OP("MXF OperationalPattern Qualifiers", "Multi-track is signaled but each Essence Container has one Essence Track");
+            if (EssenceTracks_Max>1 && !(Qualifiers&0x08))
+                Fill_Conformance_OP("MXF OperationalPattern Qualifiers", "Uni-track is signaled but an Essence Container has more than one Essence Track (actual "+to_string(EssenceTracks_Max)+')');
+        }
+    }
+
+    //OP1a (SMPTE ST 378)
+    if (IsOP1a)
+    {
+        if (BodySIDs.size()>1)
+            Fill_Conformance_OP("MXF OperationalPattern EssenceContainer", "Essence Container is present more than once but the Operational Pattern is OP1a (actual "+to_string(BodySIDs.size())+')');
+        if (Durations_Different)
+        {
+            const auto& A=Durations[0];
+            const auto& B=Durations[Durations_Different];
+            Fill_Conformance_OP("MXF OperationalPattern Duration", "Tracks of the Material Package and of the File Package do not have the same duration (actual "+to_string((int64s)B.Duration)+" at "+to_string(B.EditRate_Num)+'/'+to_string(B.EditRate_Den)+", expected "+to_string((int64s)A.Duration)+" at "+to_string(A.EditRate_Num)+'/'+to_string(A.EditRate_Den)+')');
+        }
+
+        //Essence Container labels of the File Descriptors recorded in the Preface, the individual ones for a Multiple Descriptor (SMPTE ST 379-1)
+        vector<string> EssenceContainers;
+        if (Batch_Get(Property_Get(Preface, 0x3B0A), 16, EssenceContainers))
+            for (const auto& Package : TopLevelPackages)
+            {
+                const auto Descriptor=Property_Get(SetProperties_Get(Package.InstanceUID), 0x4701);
+                if (!Descriptor || Descriptor->size()!=16)
+                    continue;
+                int128u DescriptorUID;
+                DescriptorUID.hi=BigEndian2int64u(Descriptor->data());
+                DescriptorUID.lo=BigEndian2int64u(Descriptor->data()+8);
+                vector<int128u> FileDescriptorUIDs;
+                const auto DescriptorKey=SetKeys.find(DescriptorUID);
+                if (DescriptorKey!=SetKeys.end() && DescriptorKey->second==Groups::MultipleDescriptor)
+                {
+                    const auto MultipleDescriptor=Descriptors.find(DescriptorUID);
+                    if (MultipleDescriptor!=Descriptors.end())
+                        FileDescriptorUIDs=MultipleDescriptor->second.SubDescriptors;
+                }
+                else
+                    FileDescriptorUIDs.push_back(DescriptorUID);
+                for (const auto& FileDescriptorUID : FileDescriptorUIDs)
+                {
+                    const auto EssenceContainer=Property_Get(SetProperties_Get(FileDescriptorUID), 0x3004);
+                    if (!EssenceContainer || EssenceContainer->size()!=16)
+                        continue;
+                    auto IsListed=false;
+                    for (const auto& Item : EssenceContainers)
+                        if (Raw_IsSame(Item, *EssenceContainer))
+                            IsListed=true;
+                    if (!IsListed)
+                        Fill_Conformance_OP("MXF OperationalPattern EssenceContainer", "Essence Container of a File Descriptor is not in the Essence Containers of the Preface (actual "+Raw_Text(*EssenceContainer)+')');
+                }
+            }
+    }
+
+    //OP-Atom (SMPTE ST 390:2011)
+    if (IsOPAtom)
+    {
+        const auto Field="MXF OperationalPattern OPAtom";
+        if (TopLevelPackages.size()!=1)
+            Fill_Conformance_OP(Field, "Top-Level File Package count is not 1 (actual "+to_string(TopLevelPackages.size())+')');
+        if (EssenceTracks_Max>1)
+            Fill_Conformance_OP(Field, "Top-Level File Package has more than one Essence Track (actual "+to_string(EssenceTracks_Max)+')');
+        if (BodySIDs.size()!=1)
+            Fill_Conformance_OP(Field, "Essence Container count is not 1 (actual "+to_string(BodySIDs.size())+')');
+        if (MaterialPackages.size()>1)
+            Fill_Conformance_OP(Field, "Material Package is present more than once (actual "+to_string(MaterialPackages.size())+')');
+        const auto PrimaryPackage=Property_Get(Preface, 0x3B08);
+        if (!PrimaryPackage)
+            Fill_Conformance_OP(Field, "Primary Package is not present");
+        else if (TopLevelPackages.size()==1 && (PrimaryPackage->size()!=16 || BigEndian2int64u(PrimaryPackage->data())!=TopLevelPackages[0].InstanceUID.hi || BigEndian2int64u(PrimaryPackage->data()+8)!=TopLevelPackages[0].InstanceUID.lo))
+            Fill_Conformance_OP(Field, "Primary Package is not the Top-Level File Package");
+        if (HeaderPartition.StreamOffset)
+            Fill_Conformance_OP(Field, "Run-In is present (actual "+to_string(HeaderPartition.StreamOffset)+" bytes)");
+        if (HeaderPartition.Status!=0x04)
+            Fill_Conformance_OP(Field, "Header Partition is not Closed Complete");
+        map<int32u, size_t> BodySID_Partitions; //Copies of an Index Table are permitted in several Partitions
+        auto HeaderMetadata_IsRepeated=false, StreamsInOnePartition=false;
+        for (const auto& Partition : Partitions)
+        {
+            if (Partition.Kind==0x04 && !Partition.IndexByteCount)
+                Fill_Conformance_OP(Field, "Index Table is not in the Footer Partition");
+            if (Partition.Kind!=0x02 && Partition.HeaderByteCount)
+                HeaderMetadata_IsRepeated=true;
+            if (Partition.BodySID && Partition.IndexSID)
+                StreamsInOnePartition=true;
+            if (Partition.BodySID)
+                BodySID_Partitions[Partition.BodySID]++;
+        }
+        if (HeaderMetadata_IsRepeated)
+            Fill_Conformance_OP(Field, "Header Metadata is in a Partition other than the Header Partition");
+        if (StreamsInOnePartition)
+            Fill_Conformance_OP(Field, "A Partition contains data from more than one data stream");
+        for (const auto& SID : BodySID_Partitions)
+            if (SID.second>1)
+                Fill_Conformance_OP(Field, "Essence Container is in more than one Partition (BodySID "+to_string(SID.first)+", actual "+to_string(SID.second)+" Partitions)");
+        vector<string> EssenceContainers;
+        if (Batch_Get(Property_Get(Preface, 0x3B0A), 16, EssenceContainers) && EssenceContainers.size()!=1)
+            Fill_Conformance_OP(Field, "Essence Containers of the Preface do not have a single entry (actual "+to_string(EssenceContainers.size())+')');
+        for (const auto& Package : TopLevelPackages)
+        {
+            const auto Descriptor=Property_Get(SetProperties_Get(Package.InstanceUID), 0x4701);
+            if (!Descriptor || Descriptor->size()!=16)
+                continue;
+            int128u DescriptorUID;
+            DescriptorUID.hi=BigEndian2int64u(Descriptor->data());
+            DescriptorUID.lo=BigEndian2int64u(Descriptor->data()+8);
+            const auto DescriptorKey=SetKeys.find(DescriptorUID);
+            if (DescriptorKey!=SetKeys.end() && DescriptorKey->second==Groups::MultipleDescriptor)
+                Fill_Conformance_OP(Field, "Descriptor of the Top-Level File Package is a Multiple Descriptor");
+        }
+
+        //Material Package complexity in byte 14
+        if (!MaterialPackages.empty())
+        {
+            if ((PackageComplexity&0x01) && SourceClips_Max<=1)
+                Fill_Conformance_OP(Field, "More than one Source Clip in a Material Package Essence Track is signaled but each one has one Source Clip");
+            if (!(PackageComplexity&0x01) && SourceClips_Max>1)
+                Fill_Conformance_OP(Field, "One Source Clip in each Material Package Essence Track is signaled but an Essence Track has more than one Source Clip (actual "+to_string(SourceClips_Max)+')');
+            if ((PackageComplexity&0x02) && MaterialPackage_EssenceTracks_Max<=1)
+                Fill_Conformance_OP(Field, "More than one Material Package Essence Track is signaled but the Material Package has one Essence Track");
+            if (!(PackageComplexity&0x02) && MaterialPackage_EssenceTracks_Max>1)
+                Fill_Conformance_OP(Field, "One Material Package Essence Track is signaled but the Material Package has more than one Essence Track (actual "+to_string(MaterialPackage_EssenceTracks_Max)+')');
+        }
     }
 }
 

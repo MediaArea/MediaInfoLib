@@ -95,6 +95,7 @@ protected :
     void Streams_Finish_Conformance_FileFormat (); //SMPTE ST 377-1, edition depending on the version in the file
     void Streams_Finish_Conformance_HeaderMetadata (); //SMPTE ST 377-1, KLV coding, Primer Pack and Header Metadata, version 1.3 only
     void Streams_Finish_Conformance_IndexTables (); //SMPTE ST 377-1, Index Table Segments of an Index Stream, version 1.3 only
+    void Streams_Finish_Conformance_OperationalPattern (); //SMPTE ST 378 (OP1a), and for version 1.3 SMPTE ST 377-1 (generalized patterns) and SMPTE ST 390 (OP-Atom)
     void Streams_Finish_Conformance_RiffChunks (); //SMPTE ST 2131
     void Streams_Finish_Conformance_References ();
     #endif //MEDIAINFO_CONFORMANCE
