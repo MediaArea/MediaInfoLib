@@ -1001,9 +1001,7 @@ protected :
         int32u      RIFFChunkID;
 
         //ADM_CHNASubDescriptor specific
-        #if MEDIAINFO_CONFORMANCE
-            std::vector<int128u> ADMChannelMappings; //Entries of ADMChannelMappingsArray
-        #endif //MEDIAINFO_CONFORMANCE
+        std::vector<int128u> ADMChannelMappings; //Entries of ADMChannelMappingsArray
 
         //DescriptiveMarker, GenericStreamTextBasedSet, RIFFChunkDefinitionSubDescriptor
         int32u      SID;
@@ -1728,11 +1726,9 @@ protected :
     File__Analyze* DolbyAudioMetadata;
     #if defined(MEDIAINFO_ADM_YES)
     File__Analyze* Adm;
-    int32u ADMChannelMapping_LocalChannelID;
-    string ADMChannelMapping_ADMAudioTrackUID;
-    std::bitset<2> ADMChannelMapping_Presence;
     std::map<int128u, set<int128u> > ADMProfileLevelULBatch_List;
     void CompareAdmProfiles();
+    void Streams_Finish_ADM_CHNA();
     #endif
     #if defined(MEDIAINFO_IAB_YES)
     File__Analyze* Adm_ForLaterMerge;

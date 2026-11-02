@@ -2895,6 +2895,11 @@ void File_Mxf::Streams_Finish()
         }
     }
 
+    //Channels of the ADM metadata, after Streams_Finish_Descriptor() which links descriptors to streams
+    #if defined(MEDIAINFO_ADM_YES)
+        Streams_Finish_ADM_CHNA();
+    #endif //defined(MEDIAINFO_ADM_YES)
+
     //Conformance with SMPTE ST 2131 and compliance with SMPTE ST 2067-204, before filling the ADM content as its parsed items are then cleared
     #if MEDIAINFO_CONFORMANCE
         Streams_Finish_Conformance_RiffChunks();
@@ -10870,12 +10875,6 @@ void File_Mxf::ADM_CHNASubDescriptor()
 //---------------------------------------------------------------------------
 void File_Mxf::ADMChannelMapping()
 {
-    //Clear if first sub-element
-    #if defined(MEDIAINFO_ADM_YES)
-        if (Element_Offset<=4)
-            ADMChannelMapping_Presence.reset();
-    #endif //defined(MEDIAINFO_ADM_YES)
-
     ELEMENT_BEGIN()
     ELEMENT_MIDDLE()
     ELEM____UUID_(LocalChannelID)
@@ -10885,19 +10884,6 @@ void File_Mxf::ADMChannelMapping()
     ELEMENT_END()
     GenerationInterchangeObject();
     Descriptor_Type_Set(descriptor::Type_ADMChannelMapping);
-
-    #if defined(MEDIAINFO_ADM_YES)
-        if ((ADMChannelMapping_Presence.to_ulong()&3)==3)
-        {
-            if (!Adm)
-            {
-                Adm=new File_Adm;
-                Open_Buffer_Init(Adm);
-            }
-            ((File_Adm*)Adm)->chna_Add(ADMChannelMapping_LocalChannelID, ADMChannelMapping_ADMAudioTrackUID);
-            ADMChannelMapping_Presence.reset();
-        }
-    #endif //defined(MEDIAINFO_ADM_YES)
 }
 
 //---------------------------------------------------------------------------
@@ -15162,9 +15148,7 @@ void File_Mxf::NumADMAudioTrackUIDs()
 //---------------------------------------------------------------------------
 void File_Mxf::ADMChannelMappingsArray()
 {
-    #if MEDIAINFO_CONFORMANCE
-        Descriptors[InstanceUID].ADMChannelMappings.clear();
-    #endif //MEDIAINFO_CONFORMANCE
+    Descriptors[InstanceUID].ADMChannelMappings.clear();
 
     //Parsing
     VECTOR(16);
@@ -15173,40 +15157,24 @@ void File_Mxf::ADMChannelMappingsArray()
         int128u Data;
         Get_UUID(Data,                                          "UUID");
 
-        #if MEDIAINFO_CONFORMANCE
-            FILLING_BEGIN();
-                Descriptors[InstanceUID].ADMChannelMappings.push_back(Data);
-            FILLING_END();
-        #endif //MEDIAINFO_CONFORMANCE
+        FILLING_BEGIN();
+            Descriptors[InstanceUID].ADMChannelMappings.push_back(Data);
+        FILLING_END();
     }
 }
 
 //---------------------------------------------------------------------------
 void File_Mxf::LocalChannelID()
 {
-    int32u Data;
-    Get_B4(Data,                                                "Data");
-
-    FILLING_BEGIN();
-        #if defined(MEDIAINFO_ADM_YES)
-            ADMChannelMapping_LocalChannelID=Data;
-            ADMChannelMapping_Presence.set(0);
-        #endif //defined(MEDIAINFO_ADM_YES)
-    FILLING_END();
+    //Parsing, the value is used from the raw properties of the set
+    Info_B4(Data,                                               "Data"); Element_Info1(Data);
 }
 
 //---------------------------------------------------------------------------
 void File_Mxf::ADMAudioTrackUID()
 {
-    Ztring Data;
-    Get_UTF16B (Length2, Data,                                  "Data");
-
-    FILLING_BEGIN();
-        #if defined(MEDIAINFO_ADM_YES)
-            ADMChannelMapping_ADMAudioTrackUID= Data.To_UTF8();
-            ADMChannelMapping_Presence.set(1);
-        #endif //defined(MEDIAINFO_ADM_YES)
-    FILLING_END();
+    //Parsing, the value is used from the raw properties of the set
+    Info_UTF16B(Length2, Data,                                  "Data"); Element_Info1(Data);
 }
 
 //---------------------------------------------------------------------------
@@ -20738,6 +20706,104 @@ void File_Mxf::CompareAdmProfiles()
         if (IsKnown && !CanNotCompare)
             Adm->Fill_Conformance("Crosscheck AdmProfile", '\"' + Profile_Stream + "\" is not listed in the container but found in the ADM content");
     }
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Streams_Finish_ADM_CHNA()
+{
+    //LocalChannelID is a channel of the Sound Track (SMPTE ST 2131), it is converted to a channel of all Sound Tracks in stream order, as the trackIndex of a chna RIFF Chunk
+    map<size_t, const descriptor*> SoundDescriptors; //Key is the position of the audio stream
+    vector<const descriptor*> Chnas;
+    set<const descriptor*> Chnas_NotUsed; //Referenced by a File Descriptor not used for the streams, e.g. Header Metadata repeated with other Instance UIDs
+    vector<int128u> Mappings;
+    for (const auto& Descriptor : Descriptors)
+    {
+        if (Descriptor.second.Type==descriptor::Type_ADM_CHNASubDescriptor)
+            Chnas.push_back(&Descriptor.second);
+        else if (Descriptor.second.Type==descriptor::Type_ADMChannelMapping)
+            Mappings.push_back(Descriptor.first);
+        else if (Descriptor.second.StreamKind==Stream_Audio && Descriptor.second.StreamPos!=(size_t)-1)
+            SoundDescriptors.emplace(Descriptor.second.StreamPos, &Descriptor.second);
+        else if (Descriptor.second.StreamKind==Stream_Audio)
+            for (const auto& SubDescriptorUID : Descriptor.second.SubDescriptors)
+            {
+                const auto SubDescriptor=Descriptors.find(SubDescriptorUID);
+                if (SubDescriptor!=Descriptors.end() && SubDescriptor->second.Type==descriptor::Type_ADM_CHNASubDescriptor)
+                    Chnas_NotUsed.insert(&SubDescriptor->second);
+            }
+    }
+    if (Mappings.empty())
+        return;
+    vector<pair<int64u, string> > Chna; //Channel and ADM audioTrackUID
+    const auto Chna_Add=[&](const vector<int128u>& MappingUIDs, int32u ChannelOffset, int32u ChannelCount) {
+        for (const auto& MappingUID : MappingUIDs)
+        {
+            const auto& Properties=SetProperties_Get(MappingUID);
+            int64u LocalChannelID;
+            if (!Raw_UInt_Get(Property_Get(Properties, Elements::LocalChannelID), 4, LocalChannelID) || !LocalChannelID || LocalChannelID>ChannelCount)
+                continue;
+            auto UID=Raw_UTF16_Get(Property_Get(Properties, Elements::ADMAudioTrackUID));
+            if (!UID.empty())
+                Chna.emplace_back(ChannelOffset+LocalChannelID, std::move(UID));
+        }
+    };
+
+    //Channels of each Sound Track, channels which are not in the Sound Track are kept if there is only one Sound Track
+    set<const descriptor*> Chnas_Linked;
+    int32u ChannelOffset=0;
+    auto ChannelOffset_IsKnown=true;
+    for (const auto& SoundDescriptor : SoundDescriptors)
+    {
+        auto ChannelCount=SoundDescriptor.second->ChannelCount;
+        if (ChannelCount==(int32u)-1)
+        {
+            //Best Effort item with its distinguished value, channel count from the block align of PCM
+            const auto BlockAlign=SoundDescriptor.second->BlockAlign;
+            const auto QuantizationBits=SoundDescriptor.second->QuantizationBits;
+            if (BlockAlign!=(int16u)-1 && QuantizationBits && QuantizationBits<=32)
+                ChannelCount=BlockAlign/((QuantizationBits+7)/8);
+        }
+        for (const auto& SubDescriptorUID : SoundDescriptor.second->SubDescriptors)
+        {
+            const auto SubDescriptor=Descriptors.find(SubDescriptorUID);
+            if (SubDescriptor!=Descriptors.end() && SubDescriptor->second.Type==descriptor::Type_ADM_CHNASubDescriptor && Chnas_Linked.insert(&SubDescriptor->second).second)
+            {
+                if (ChannelOffset_IsKnown)
+                    Chna_Add(SubDescriptor->second.ADMChannelMappings, ChannelOffset, (SoundDescriptors.size()==1 || ChannelCount==(int32u)-1)?(int32u)-1:ChannelCount);
+                else
+                    Chna_Add(SubDescriptor->second.ADMChannelMappings, 0, (int32u)-1); //Channels of the previous Sound Tracks are unknown, channels are kept as is
+            }
+        }
+        if (ChannelCount==(int32u)-1)
+            ChannelOffset_IsKnown=false;
+        else
+            ChannelOffset+=ChannelCount;
+    }
+
+    //Without link to a File Descriptor used for the streams, or without link to an ADM_CHNASubDescriptor (e.g. ADMChannelMappingsArray is missing), channels are kept as is
+    set<int128u> Mappings_Listed;
+    for (const auto Descriptor : Chnas)
+    {
+        if (Chnas_Linked.find(Descriptor)==Chnas_Linked.end() && (Chnas_Linked.empty() || Chnas_NotUsed.find(Descriptor)==Chnas_NotUsed.end()))
+            Chna_Add(Descriptor->ADMChannelMappings, 0, (int32u)-1);
+        Mappings_Listed.insert(Descriptor->ADMChannelMappings.begin(), Descriptor->ADMChannelMappings.end());
+    }
+    vector<int128u> Mappings_NotListed;
+    for (const auto& Mapping : Mappings)
+        if (Mappings_Listed.find(Mapping)==Mappings_Listed.end())
+            Mappings_NotListed.push_back(Mapping);
+    Chna_Add(Mappings_NotListed, 0, (int32u)-1);
+    if (Chna.empty())
+        return;
+
+    if (!Adm)
+    {
+        Adm=new File_Adm;
+        Open_Buffer_Init(Adm);
+    }
+    for (const auto& Item : Chna)
+        if (Item.first<=0x10000)
+            ((File_Adm*)Adm)->chna_Add((int32u)Item.first, Item.second);
 }
 #endif
 
