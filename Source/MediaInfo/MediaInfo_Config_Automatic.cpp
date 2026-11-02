@@ -1093,6 +1093,7 @@ void MediaInfo_Config_DefaultLanguage (Translation &Info)
     "NLQ_Method;NLQ method\n"
     "No;No\n"
     "Not yet;Not yet\n"
+    "NumberOfBeds;Number of beds\n"
     "NumberOfChannelFormats;Number of channel formats\n"
     "NumberOfContents;Number of contents\n"
     "NumberOfDynamicObjects;Number of dynamic objects\n"

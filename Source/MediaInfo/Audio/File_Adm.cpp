@@ -6269,7 +6269,8 @@ void File_Adm::Streams_Fill()
     for (map<string, string>::iterator It = File_Adm_Private->More.begin(); It != File_Adm_Private->More.end(); ++It)
         //if (It->first != "Metadata_Format")
             Fill(Stream_Audio, StreamPos_Last, It->first.c_str(), It->second);
-    if (File_Adm_Private->Items[item_audioProgramme].Items.size() == 1 && File_Adm_Private->Items[item_audioProgramme].Items[0].Attributes[audioProgramme_audioProgrammeName] == "Atmos_Master") {
+    auto IsDolbyAtmosMaster = File_Adm_Private->Items[item_audioProgramme].Items.size() == 1 && File_Adm_Private->Items[item_audioProgramme].Items[0].Attributes[audioProgramme_audioProgrammeName] == "Atmos_Master";
+    if (IsDolbyAtmosMaster) {
         File_Adm_Private->profileInfos.resize(File_Adm_Private->profileInfos.size() + 1);
         File_Adm_Private->profileInfos.back().Strings[0] = "Dolby Atmos Master";
         if (!File_Adm_Private->DolbyProfileCanNotBeVersion1)
@@ -6433,6 +6434,126 @@ void File_Adm::Streams_Fill()
         FILL_COUNT(audioTrackFormat);
         FILL_COUNT(audioStreamFormat);
     }
+
+    // Preprocessing speakeLabel;
+    size_t audioBlockFormat_Pos = 0;
+    vector<string> audioChannelFormat_ChannelLayout_List;
+    audioChannelFormat_ChannelLayout_List.resize(File_Adm_Private->Items[item_audioChannelFormat].Items.size());
+    const auto& audioChannelFormats = File_Adm_Private->Items[item_audioChannelFormat].Items;
+    for (size_t i = 0; i < audioChannelFormats.size(); i++) {
+        const auto& audioChannelFormat_Item = audioChannelFormats[i];
+        const auto& audioChannelFormat_audioBlockFormats = audioChannelFormat_Item.Elements[audioChannelFormat_audioBlockFormat];
+        auto& audioChannelFormat_ChannelLayout_Item = audioChannelFormat_ChannelLayout_List[i];
+        if (!audioChannelFormat_audioBlockFormats.empty()) {
+            const auto& audioBlockFormat_Items = File_Adm_Private->Items[item_audioBlockFormat].Items;
+            const auto& audioBlockFormat = audioBlockFormat_Items[audioBlockFormat_Pos];
+            auto const& SpeakerLabels = audioBlockFormat.Elements[audioBlockFormat_speakerLabel];
+            if (!SpeakerLabels.empty()) {
+                auto SpeakerLabel = SpeakerLabels.front();
+                size_t Cur = audioBlockFormat_Pos + 1;
+                size_t End = audioBlockFormat_Pos + audioChannelFormat_audioBlockFormats.size();
+                for (; Cur < End; Cur++) {
+                    const auto& audioBlockFormat1 = audioBlockFormat_Items[Cur];
+                    auto const& SpeakerLabels1 = audioBlockFormat1.Elements[audioBlockFormat_speakerLabel];
+                    if (!SpeakerLabels1.empty()) {
+                        const auto& SpeakerLabel1 = SpeakerLabels1.front();
+                        if (SpeakerLabel1 != SpeakerLabel) {
+                            SpeakerLabel.assign(1, '\0');
+                            break;
+                        }
+                    }
+                }
+                if (SpeakerLabel.rfind("RC_", 0) == 0) {
+                    SpeakerLabel.erase(0, 3);
+                }
+                audioChannelFormat_ChannelLayout_Item = SpeakerLabel;
+            }
+        }
+        audioBlockFormat_Pos += audioChannelFormat_audioBlockFormats.size();
+    }
+    auto audioPackFormat_ChannelLayout = [&](const Item_Struct& Source) {
+        const Items_Struct& Dest = File_Adm_Private->Items[item_audioChannelFormat];
+        string ChannelLayout;
+        for (size_t j = 0; j < Source.Elements[audioPackFormat_audioChannelFormatIDRef].size(); j++) {
+            const string& ID = Source.Elements[audioPackFormat_audioChannelFormatIDRef][j];
+            for (size_t k = 0; k < Dest.Items.size(); k++) {
+                if (Dest.Items[k].Attributes[audioChannelFormat_audioChannelFormatID] != ID) {
+                    continue;
+                }
+                const auto& ChannelLayout_Item = audioChannelFormat_ChannelLayout_List[k];
+                if (!ChannelLayout_Item.empty()) {
+                    if (!ChannelLayout.empty()) {
+                        ChannelLayout += ' ';
+                    }
+                    if (ChannelLayout_Item[0]) {
+                        ChannelLayout += ChannelLayout_Item;
+                    }
+                    else {
+                        ChannelLayout += '?';
+                    }
+                }
+            }
+        }
+        return ChannelLayout;
+    };
+
+    // Beds and dynamic objects, as named by Dolby (a bed is an audioObject with a DirectSpeakers pack)
+    if (IsDolbyAtmosMaster) {
+        const auto& audioObjects = File_Adm_Private->Items[item_audioObject].Items;
+        const auto& audioPackFormats = File_Adm_Private->Items[item_audioPackFormat].Items;
+        size_t DynamicObjects_Count = 0;
+        vector<pair<size_t, string> > Beds; // Channel count and channel layout
+        for (const auto& audioObject : audioObjects) {
+            const auto& audioPackFormatIDRefs = audioObject.Elements[audioObject_audioPackFormatIDRef];
+            if (audioPackFormatIDRefs.empty()) {
+                continue;
+            }
+            for (size_t j = 0; j < audioPackFormats.size(); j++) {
+                const auto& audioPackFormat = audioPackFormats[j];
+                if (audioPackFormat.Attributes[audioPackFormat_audioPackFormatID] != audioPackFormatIDRefs.front()) {
+                    continue;
+                }
+                switch (GetType(File_Adm_Private, item_audioPackFormat, j)) {
+                case Type_DirectSpeakers:
+                    Beds.emplace_back(audioPackFormat.Elements[audioPackFormat_audioChannelFormatIDRef].size(), audioPackFormat_ChannelLayout(audioPackFormat));
+                    break;
+                case Type_Objects:
+                    DynamicObjects_Count++;
+                    break;
+                default:;
+                }
+                break;
+            }
+        }
+        if (DynamicObjects_Count || !Beds.empty()) {
+            Fill(Stream_Audio, 0, "NumberOfDynamicObjects", DynamicObjects_Count);
+        }
+        if (!Beds.empty()) {
+            Fill(Stream_Audio, 0, "NumberOfBeds", Beds.size());
+            if (find_if(Beds.begin(), Beds.end(), [&](const pair<size_t, string>& Bed) { return Bed != Beds.front(); }) == Beds.end()) {
+                Beds.resize(1); // All beds have the same configuration
+            }
+            ZtringList BedChannelCounts, BedChannelCount_Strings, BedChannelConfigurations;
+            BedChannelCounts.Separator_Set(0, __T(" / "));
+            BedChannelCount_Strings.Separator_Set(0, __T(" / "));
+            BedChannelConfigurations.Separator_Set(0, __T(" / "));
+            for (const auto& Bed : Beds) {
+                BedChannelCounts.push_back(Ztring::ToZtring(Bed.first));
+                BedChannelCount_Strings.push_back(MediaInfoLib::Config.Language_Get(Ztring::ToZtring(Bed.first), __T(" channel")));
+                if (!Bed.second.empty()) {
+                    BedChannelConfigurations.push_back(Ztring().From_UTF8(Bed.second));
+                }
+            }
+            Fill(Stream_Audio, 0, "BedChannelCount", BedChannelCounts.Read());
+            Fill_SetOptions(Stream_Audio, 0, "BedChannelCount", "N NIY");
+            Fill(Stream_Audio, 0, "BedChannelCount/String", BedChannelCount_Strings.Read());
+            Fill_SetOptions(Stream_Audio, 0, "BedChannelCount/String", "Y NIN");
+            if (BedChannelConfigurations.size() == Beds.size()) {
+                Fill(Stream_Audio, 0, "BedChannelConfiguration", BedChannelConfigurations.Read());
+            }
+        }
+    }
+
     #if MEDIAINFO_CONFORMANCE
     vector<string> Errors_Field[error_Type_Max];
     vector<string> Errors_Value[error_Type_Max];
@@ -6637,73 +6758,12 @@ void File_Adm::Streams_Fill()
             LINK(audioObject, "TrackUID", audioTrackUIDRef, audioTrackUID);
     }
 
-    // Preprocessing speakeLabel;
-    size_t audioBlockFormat_Pos = 0;
-    vector<string> audioChannelFormat_ChannelLayout_List;
-    audioChannelFormat_ChannelLayout_List.resize(File_Adm_Private->Items[item_audioChannelFormat].Items.size());
-    const auto& audioChannelFormats = File_Adm_Private->Items[item_audioChannelFormat].Items;
-    for (size_t i = 0; i < audioChannelFormats.size(); i++) {
-        const auto& audioChannelFormat_Item = audioChannelFormats[i];
-        const auto& audioChannelFormat_audioBlockFormats = audioChannelFormat_Item.Elements[audioChannelFormat_audioBlockFormat];
-        auto& audioChannelFormat_ChannelLayout_Item = audioChannelFormat_ChannelLayout_List[i];
-        if (!audioChannelFormat_audioBlockFormats.empty()) {
-            const auto& audioBlockFormat_Items = File_Adm_Private->Items[item_audioBlockFormat].Items;
-            const auto& audioBlockFormat = audioBlockFormat_Items[audioBlockFormat_Pos];
-            auto const& SpeakerLabels = audioBlockFormat.Elements[audioBlockFormat_speakerLabel];
-            if (!SpeakerLabels.empty()) {
-                auto SpeakerLabel = SpeakerLabels.front();
-                size_t Cur = audioBlockFormat_Pos + 1;
-                size_t End = audioBlockFormat_Pos + audioChannelFormat_audioBlockFormats.size();
-                for (; Cur < End; Cur++) {
-                    const auto& audioBlockFormat1 = audioBlockFormat_Items[Cur];
-                    auto const& SpeakerLabels1 = audioBlockFormat1.Elements[audioBlockFormat_speakerLabel];
-                    if (!SpeakerLabels1.empty()) {
-                        const auto& SpeakerLabel1 = SpeakerLabels1.front();
-                        if (SpeakerLabel1 != SpeakerLabel) {
-                            SpeakerLabel.assign(1, '\0');
-                            break;
-                        }
-                    }
-                }
-                if (SpeakerLabel.rfind("RC_", 0) == 0) {
-                    SpeakerLabel.erase(0, 3);
-                }
-                audioChannelFormat_ChannelLayout_Item = SpeakerLabel;
-            }
-        }
-        audioBlockFormat_Pos += audioChannelFormat_audioBlockFormats.size();
-    }
-
     FILL_START(audioPackFormat, audioPackFormatName)
         if (Full)
             FILL_A(audioPackFormat, audioPackFormatID, "ID");
         FILL_A(audioPackFormat, audioPackFormatName, "Title");
         FILL_A(audioPackFormat, typeDefinition, "TypeDefinition");
-        const Item_Struct& Source = File_Adm_Private->Items[item_audioPackFormat].Items[i];
-        const Items_Struct& Dest = File_Adm_Private->Items[item_audioChannelFormat];
-        string ChannelLayout;
-        for (size_t j = 0; j < Source.Elements[audioPackFormat_audioChannelFormatIDRef].size(); j++) {
-            const string& ID = Source.Elements[audioPackFormat_audioChannelFormatIDRef][j];
-            bool HasChannelLayout = false;
-            for (size_t k = 0; k < Dest.Items.size(); k++) {
-                if (Dest.Items[k].Attributes[audioChannelFormat_audioChannelFormatID] != ID) {
-                    continue;
-                }
-                const auto& ChannelLayout_Item = audioChannelFormat_ChannelLayout_List[k];
-                if (!ChannelLayout_Item.empty()) {
-                    if (!ChannelLayout.empty()) {
-                        ChannelLayout += ' ';
-                    }
-                    if (ChannelLayout_Item[0]) {
-                        HasChannelLayout = true;
-                        ChannelLayout += ChannelLayout_Item;
-                    }
-                    else {
-                        ChannelLayout += '?';
-                    }
-                }
-            }
-        }
+        const auto ChannelLayout = audioPackFormat_ChannelLayout(File_Adm_Private->Items[item_audioPackFormat].Items[i]);
         if (!ChannelLayout.empty()) {
             Fill(StreamKind_Last, StreamPos_Last, (P + " ChannelLayout").c_str(), ChannelLayout, true, true);
         }
