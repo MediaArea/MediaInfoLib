@@ -73,6 +73,27 @@ const float32 Iab_FrameRate[16]=
 };
 
 //---------------------------------------------------------------------------
+const int8u Iab_NumPanSubBlocks[16]=
+{
+    8,
+    8,
+    8,
+    4,
+    4,
+    4,
+    2,
+    2,
+    2,
+    8,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+};
+
+//---------------------------------------------------------------------------
 const char* Iab_Channel(int32u Code)
 {
     static const char* Iab_Channel_Values[]=
@@ -697,7 +718,7 @@ void File_Iab::ObjectDefinition()
         Skip_S1(8,                                              "ObjectUseCase");
     }
     Skip_SB(                                                    "0");
-    int32u NumPanSubBlocks=8;
+    int32u NumPanSubBlocks=(FrameRate<16 && Iab_NumPanSubBlocks[FrameRate])?Iab_NumPanSubBlocks[FrameRate]:8;
     for (int32u sb=0; sb<NumPanSubBlocks; sb++)
     {
         Element_Begin1("PanSubBlock");
@@ -794,7 +815,7 @@ void File_Iab::BedRemap()
     BS_Begin();
     Get_Plex (4, SourceChannels,                                "SourceChannels");
     Get_Plex (4, DestinationChannels,                           "DestinationChannels");
-    int32u NumPanSubBlocks=8;
+    int32u NumPanSubBlocks=(FrameRate<16 && Iab_NumPanSubBlocks[FrameRate])?Iab_NumPanSubBlocks[FrameRate]:8;
     for (int32u sb=0; sb<NumPanSubBlocks; sb++)
     {
         Element_Begin1("PanSubBlock");
