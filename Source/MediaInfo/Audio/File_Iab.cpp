@@ -22,6 +22,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Audio/File_Iab.h"
+#include <algorithm>
 using namespace std;
 //---------------------------------------------------------------------------
 
@@ -168,6 +169,48 @@ void File_Iab::Streams_Fill_ForAdm()
     Fill(Stream_Audio, 0, "NumberOfTrackUIDs", numberOfChannelFormats);
     Fill(Stream_Audio, 0, "NumberOfTrackFormats", numberOfChannelFormats);
     Fill(Stream_Audio, 0, "NumberOfStreamFormats", numberOfChannelFormats);
+
+    //Beds and dynamic objects, as named by Dolby (a bed is a Bed Definition element)
+    size_t DynamicObjects_Count=0;
+    vector<pair<size_t, Ztring> > Beds; //Channel count and channel layout
+    for (const auto& Object : Frame.Objects)
+    {
+        if (Object.ChannelLayout.empty())
+        {
+            DynamicObjects_Count++;
+            continue;
+        }
+        ZtringList ChannelLayout;
+        ChannelLayout.Separator_Set(0, __T(" "));
+        for (const auto& ChannelID : Object.ChannelLayout)
+            ChannelLayout.push_back(Iab_Channel(ChannelID));
+        Beds.emplace_back(Object.ChannelLayout.size(), ChannelLayout.Read());
+    }
+    Fill(Stream_Audio, 0, "NumberOfDynamicObjects", DynamicObjects_Count);
+    if (!Beds.empty())
+    {
+        Fill(Stream_Audio, 0, "NumberOfBeds", Beds.size());
+        if (find_if(Beds.begin(), Beds.end(), [&](const pair<size_t, Ztring>& Bed) { return Bed!=Beds.front(); })==Beds.end())
+            Beds.resize(1); //All beds have the same configuration
+        ZtringList BedChannelCounts, BedChannelCount_Strings, BedChannelConfigurations;
+        BedChannelCounts.Separator_Set(0, __T(" / "));
+        BedChannelCount_Strings.Separator_Set(0, __T(" / "));
+        BedChannelConfigurations.Separator_Set(0, __T(" / "));
+        BedChannelConfigurations.Quote_Set(Ztring()); //Channel names with spaces are already quoted in each channel layout
+        for (const auto& Bed : Beds)
+        {
+            BedChannelCounts.push_back(Ztring::ToZtring(Bed.first));
+            BedChannelCount_Strings.push_back(MediaInfoLib::Config.Language_Get(Ztring::ToZtring(Bed.first), __T(" channel")));
+            if (!Bed.second.empty())
+                BedChannelConfigurations.push_back(Bed.second);
+        }
+        Fill(Stream_Audio, 0, "BedChannelCount", BedChannelCounts.Read());
+        Fill_SetOptions(Stream_Audio, 0, "BedChannelCount", "N NIY");
+        Fill(Stream_Audio, 0, "BedChannelCount/String", BedChannelCount_Strings.Read());
+        Fill_SetOptions(Stream_Audio, 0, "BedChannelCount/String", "Y NIN");
+        if (BedChannelConfigurations.size()==Beds.size())
+            Fill(Stream_Audio, 0, "BedChannelConfiguration", BedChannelConfigurations.Read());
+    }
 
     {
         auto O="Programme0";
