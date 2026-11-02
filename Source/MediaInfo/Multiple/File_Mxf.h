@@ -93,6 +93,8 @@ protected :
     #if MEDIAINFO_CONFORMANCE
     void Streams_Finish_ContentStorage_Conformance (const int128u ContentStorageUID);
     void Streams_Finish_Conformance_FileFormat (); //SMPTE ST 377-1, edition depending on the version in the file
+    void Streams_Finish_Conformance_HeaderMetadata (); //SMPTE ST 377-1, KLV coding, Primer Pack and Header Metadata, version 1.3 only
+    void Streams_Finish_Conformance_IndexTables (); //SMPTE ST 377-1, Index Table Segments of an Index Stream, version 1.3 only
     void Streams_Finish_Conformance_RiffChunks (); //SMPTE ST 2131
     void Streams_Finish_Conformance_References ();
     #endif //MEDIAINFO_CONFORMANCE
@@ -1641,6 +1643,29 @@ protected :
     bool                            Partitions_IsFooter;
     #if MEDIAINFO_CONFORMANCE
         int64u                      GenericStreamPartition_PackEnd; //Offset after the Generic Stream Partition Pack just parsed, (int64u)-1 if the last Partition Pack is not a Generic Stream one
+
+        //KLV coding and Header Metadata (SMPTE ST 377-1), checked while parsing and reported once streams are known
+        struct headermetadata_error
+        {
+            int64u                  Offset;
+            const char*             Field;
+            std::string             Value;
+        };
+        std::vector<headermetadata_error> HeaderMetadata_Errors; //Errors found while parsing
+        std::map<int128u, int64u>   SetKeys; //Key is InstanceUID of a Header Metadata Set (including dark sets), value is the low part of the set key
+        std::map<int16u, int64u>    HeaderMetadata_TagsNotInPrimer; //Local Tags used in Header Metadata Sets but not in the Primer Pack of their partition, value is the offset of the first set using it
+        std::map<int64u, std::set<int128u> > HeaderMetadata_Prefaces; //Key is the offset of the partition, value is the Instance UIDs of its Preface sets
+        std::map<int64u, std::set<int128u> > HeaderMetadata_ContentStorages; //Key is the offset of the partition, value is the Instance UIDs of its Content Storage sets
+        std::set<int16u>            PrimerPack_Tags; //Local Tags of the Primer Pack of the current partition
+        bool                        PrimerPack_IsParsed; //The Primer Pack of the current partition is parsed
+        int64u                      HeaderMetadata_Partition; //Offset of the partition of the Header Metadata being parsed
+        int64u                      HeaderMetadata_End; //Offset after the Header Metadata being parsed, (int64u)-1 if none
+        int8u                       HeaderMetadata_Step; //KLV packet sequence: 0 not tested, 1 after the Partition Pack (Primer Pack expected), 2 after the Primer Pack (Preface expected as first set)
+        bool                        HeaderMetadata_FillIsParsed; //A KLV Fill item is between the Partition Pack and the Primer Pack
+        int64u                      Klv_Ber80_Offset; //Offset of the first BER length using the 80h token, (int64u)-1 if none
+        int64u                      Klv_BerTooLong_Offset; //Offset of the first BER length longer than 9 bytes, (int64u)-1 if none
+        int8u                       Klv_BerTooLong_Size;
+        void HeaderMetadata_Sequence_Test();
     #endif //MEDIAINFO_CONFORMANCE
 
     //Config

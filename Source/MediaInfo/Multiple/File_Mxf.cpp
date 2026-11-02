@@ -2135,6 +2135,14 @@ File_Mxf::File_Mxf()
     Partitions_IsFooter=false;
     #if MEDIAINFO_CONFORMANCE
         GenericStreamPartition_PackEnd=(int64u)-1;
+        PrimerPack_IsParsed=false;
+        HeaderMetadata_Partition=(int64u)-1;
+        HeaderMetadata_End=(int64u)-1;
+        HeaderMetadata_Step=0;
+        HeaderMetadata_FillIsParsed=false;
+        Klv_Ber80_Offset=(int64u)-1;
+        Klv_BerTooLong_Offset=(int64u)-1;
+        Klv_BerTooLong_Size=0;
     #endif //MEDIAINFO_CONFORMANCE
 
     #if MEDIAINFO_SEEK
@@ -2972,6 +2980,10 @@ void File_Mxf::Streams_Finish()
 
     #if MEDIAINFO_CONFORMANCE
         Streams_Finish_Conformance_References();
+
+        //After the requested profiles and the references, as the count of conformance items is limited
+        Streams_Finish_Conformance_HeaderMetadata();
+        Streams_Finish_Conformance_IndexTables();
     #endif //MEDIAINFO_CONFORMANCE
     Streams_Finish_Conformance();
 
@@ -3193,6 +3205,568 @@ void File_Mxf::Streams_Finish_ContentStorage_Conformance (const int128u ContentS
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_CONFORMANCE
+static string Mxf_LocalTag_Text(int16u Tag)
+{
+    string Result;
+    for (int Shift=12; Shift>=0; Shift-=4)
+        Result+="0123456789ABCDEF"[(Tag>>Shift)&0xF];
+    return Result+'h';
+}
+
+//---------------------------------------------------------------------------
+//Same raw value for rationals with the same value, e.g. 25/1 for 50/2
+static string Mxf_Rational_Normalized(const string& Value)
+{
+    if (Value.size()!=8)
+        return Value;
+    auto Num=BigEndian2int32u(Value.data());
+    auto Den=BigEndian2int32u(Value.data()+4);
+    if (!Den)
+        return Value; //Invalid values are compared as is
+    auto Gcd=Num;
+    for (auto Remainder=Den; Remainder;)
+    {
+        const auto Temp=Gcd%Remainder;
+        Gcd=Remainder;
+        Remainder=Temp;
+    }
+    if (Gcd<=1)
+        return Value;
+    Num/=Gcd;
+    Den/=Gcd;
+    string Result(8, '\0');
+    int32u2BigEndian(&Result[0], Num);
+    int32u2BigEndian(&Result[4], Den);
+    return Result;
+}
+
+//---------------------------------------------------------------------------
+//Properties which shall be encoded (Req, E/req and B.Effort) in SMPTE ST 377-1:2009 and later, Annex A and Annex B
+struct mxf_property_required
+{
+    int64u      SetKey;
+    int16u      Tag;
+    const char* Field; //Set and property names
+};
+static const mxf_property_required Mxf_Properties_Required[]=
+{
+    { Groups::Preface,          0x3B02, "Preface LastModifiedDate" },
+    { Groups::Preface,          0x3B05, "Preface Version" },
+    { Groups::Preface,          0x3B06, "Preface Identifications" },
+    { Groups::Preface,          0x3B03, "Preface ContentStorage" },
+    { Groups::Preface,          0x3B09, "Preface OperationalPattern" },
+    { Groups::Preface,          0x3B0A, "Preface EssenceContainers" },
+    { Groups::Preface,          0x3B0B, "Preface DMSchemes" },
+    { Groups::Identification,   0x3C09, "Identification ThisGenerationUID" },
+    { Groups::Identification,   0x3C01, "Identification CompanyName" },
+    { Groups::Identification,   0x3C02, "Identification ProductName" },
+    { Groups::Identification,   0x3C04, "Identification VersionString" },
+    { Groups::Identification,   0x3C05, "Identification ProductUID" },
+    { Groups::Identification,   0x3C06, "Identification ModificationDate" },
+    { Groups::ContentStorage,   0x1901, "ContentStorage Packages" },
+    { Groups::EssenceData,      0x2701, "EssenceContainerData LinkedPackageUID" },
+    { Groups::EssenceData,      0x3F07, "EssenceContainerData BodySID" },
+    { Groups::MaterialPackage,  0x4401, "MaterialPackage PackageUID" },
+    { Groups::MaterialPackage,  0x4405, "MaterialPackage PackageCreationDate" },
+    { Groups::MaterialPackage,  0x4404, "MaterialPackage PackageModifiedDate" },
+    { Groups::MaterialPackage,  0x4403, "MaterialPackage Tracks" },
+    { Groups::SourcePackage,    0x4401, "SourcePackage PackageUID" },
+    { Groups::SourcePackage,    0x4405, "SourcePackage PackageCreationDate" },
+    { Groups::SourcePackage,    0x4404, "SourcePackage PackageModifiedDate" },
+    { Groups::SourcePackage,    0x4403, "SourcePackage Tracks" },
+    { Groups::TimelineTrack,    0x4804, "TimelineTrack TrackNumber" },
+    { Groups::TimelineTrack,    0x4803, "TimelineTrack Sequence" },
+    { Groups::TimelineTrack,    0x4B01, "TimelineTrack EditRate" },
+    { Groups::TimelineTrack,    0x4B02, "TimelineTrack Origin" },
+    { Groups::StaticTrack,      0x4804, "StaticTrack TrackNumber" },
+    { Groups::StaticTrack,      0x4803, "StaticTrack Sequence" },
+    { Groups::Sequence,         0x0201, "Sequence DataDefinition" },
+    { Groups::Sequence,         0x1001, "Sequence StructuralComponents" },
+    { Groups::SourceClip,       0x0201, "SourceClip DataDefinition" },
+    { Groups::SourceClip,       0x1201, "SourceClip StartPosition" },
+    { Groups::SourceClip,       0x1101, "SourceClip SourcePackageID" },
+    { Groups::SourceClip,       0x1102, "SourceClip SourceTrackID" },
+    { Groups::TimecodeGroup,    0x0201, "TimecodeComponent DataDefinition" },
+    { Groups::TimecodeGroup,    0x1501, "TimecodeComponent StartTimecode" },
+    { Groups::TimecodeGroup,    0x1502, "TimecodeComponent RoundedTimecodeBase" },
+    { Groups::TimecodeGroup,    0x1503, "TimecodeComponent DropFrame" },
+    { Groups::FillerGroup,      0x0201, "Filler DataDefinition" },
+};
+
+//---------------------------------------------------------------------------
+//Strong references of the Header Metadata structure, their target is in the file (SMPTE ST 377-1)
+struct mxf_property_reference
+{
+    int64u      Key; //Static local tag or low part of the dynamic property UL
+    bool        IsArray; //Batch or array of references
+    const char* Name;
+};
+static const mxf_property_reference Mxf_Properties_StrongReference[]=
+{
+    { 0x3B03,                       false,  "ContentStorage of the Preface" },
+    { 0x3B06,                       true,   "Identifications of the Preface" },
+    { 0x1901,                       true,   "Packages of the Content Storage" },
+    { 0x1902,                       true,   "EssenceContainerData of the Content Storage" },
+    { 0x4403,                       true,   "Tracks of a Package" },
+    { 0x4701,                       false,  "Descriptor of a Source Package" },
+    { 0x4803,                       false,  "Sequence of a Track" },
+    { 0x1001,                       true,   "StructuralComponents of a Sequence" },
+    { 0x3F01,                       true,   "FileDescriptors of a Multiple Descriptor" },
+    { 0x2F01,                       true,   "Locators of a Descriptor" },
+    { Elements::SubDescriptors,     true,   "SubDescriptors of a Descriptor" },
+};
+
+//---------------------------------------------------------------------------
+void File_Mxf::HeaderMetadata_Sequence_Test()
+{
+    //Header Metadata KLV packet sequence (SMPTE ST 377-1)
+    const auto Offset=File_Offset+Buffer_Offset-Header_Size;
+    if (Offset>=HeaderMetadata_End)
+    {
+        HeaderMetadata_Step=0; //Header Metadata is not parsed or is finished
+        return;
+    }
+    const auto IsFill=(Code.hi>>24)==0x060E2B3401 && (Code.lo==Elements::FillerData || Code.lo==Elements::TerminatingFillerData);
+    if (HeaderMetadata_Step==1)
+    {
+        //One KLV Fill item may separate the Partition Pack and the Primer Pack, Header Byte Count starts at the Primer Pack
+        if (IsFill && !HeaderMetadata_FillIsParsed)
+        {
+            HeaderMetadata_FillIsParsed=true;
+            HeaderMetadata_End+=Header_Size+Element_Size;
+            return;
+        }
+        const auto IsPrimerPack=(Code.hi>>24)==0x060E2B3402 && Code.lo==GroupsPacks::PrimerPack;
+        if (!IsPrimerPack)
+            HeaderMetadata_Errors.push_back({Offset, "MXF PrimerPack", "Header Metadata does not start with the Primer Pack"});
+        HeaderMetadata_Step=IsPrimerPack?2:0;
+        return;
+    }
+
+    //The first Header Metadata Set after the Primer Pack is the Preface, other KLV packets may be inserted before it
+    if ((Code.hi>>24)==0x060E2B3402 && (Code.lo>>16)==0x0D0101010101)
+    {
+        if (Code.lo!=Groups::Preface)
+        {
+            const auto Name=Mxf_Param_Info((int32u)Code.hi, Code.lo);
+            HeaderMetadata_Errors.push_back({Offset, "MXF Preface", string("First Header Metadata Set after the Primer Pack is not the Preface (actual ")+(Name?Name:Ztring().From_UUID(Code).To_UTF8().c_str())+')'});
+        }
+        HeaderMetadata_Step=0;
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Streams_Finish_Conformance_HeaderMetadata ()
+{
+    if (IsSub || Partitions.empty() || Partitions[0].Kind!=0x02)
+        return; //Header Partition is not parsed
+    const auto& HeaderPartition=Partitions[0];
+    if (HeaderPartition.MajorVersion!=1 || HeaderPartition.MinorVersion!=3)
+        return; //Rules of SMPTE ST 377-1:2009 and later, checked for version 1.3 only
+
+    const auto Fill_Conformance_AtOffset=[&](int64u Offset, const char* Field, const string& Value) {
+        //Conformance offset is the one of the item, no offset if (int64u)-1, no frame or time
+        const auto File_Offset_Save=File_Offset;
+        const auto Frame_Count_Save=Frame_Count;
+        const auto Frame_Count_NotParsedIncluded_Save=Frame_Count_NotParsedIncluded;
+        const auto PTS_Save=FrameInfo.PTS;
+        const auto DTS_Save=FrameInfo.DTS;
+        File_Offset=Offset-(Buffer_Offset+Element_Offset);
+        Frame_Count=(int64u)-1;
+        Frame_Count_NotParsedIncluded=(int64u)-1;
+        FrameInfo.PTS=(int64u)-1;
+        FrameInfo.DTS=(int64u)-1;
+        Fill_Conformance(Field, Value);
+        Merge_Conformance();
+        File_Offset=File_Offset_Save;
+        Frame_Count=Frame_Count_Save;
+        Frame_Count_NotParsedIncluded=Frame_Count_NotParsedIncluded_Save;
+        FrameInfo.PTS=PTS_Save;
+        FrameInfo.DTS=DTS_Save;
+    };
+    const auto UUID_Get=[](const char* Data) {
+        int128u Value;
+        Value.hi=BigEndian2int64u(Data);
+        Value.lo=BigEndian2int64u(Data+8);
+        return Value;
+    };
+    const auto UIDs_Get=[&](const string* Value, bool IsArray, vector<int128u>& List) {
+        //Complete references only, long values are truncated
+        List.clear();
+        if (!Value)
+            return;
+        if (!IsArray)
+        {
+            if (Value->size()==16)
+                List.push_back(UUID_Get(Value->data()));
+            return;
+        }
+        if (Value->size()<8 || BigEndian2int32u(Value->data()+4)!=16)
+            return;
+        const auto Count=min((size_t)BigEndian2int32u(Value->data()), (Value->size()-8)/16);
+        for (size_t i=0; i<Count; i++)
+            List.push_back(UUID_Get(Value->data()+8+i*16));
+    };
+    const auto UUIDs_Text=[](const set<int128u>& List) {
+        string Result;
+        size_t i=0;
+        for (const auto& Item : List)
+        {
+            if (i==3)
+            {
+                Result+=", ...";
+                break;
+            }
+            if (i++)
+                Result+=", ";
+            Result+=Ztring().From_UUID(Item).To_UTF8();
+        }
+        return Result;
+    };
+
+    //KLV coding
+    if (Klv_Ber80_Offset!=(int64u)-1)
+        Fill_Conformance_AtOffset(Klv_Ber80_Offset, "MXF KLV Length", "BER encoded length uses the 80h token (unspecified length)");
+    if (Klv_BerTooLong_Offset!=(int64u)-1)
+        Fill_Conformance_AtOffset(Klv_BerTooLong_Offset, "MXF KLV Length", "BER encoded length is longer than 9 bytes (actual "+to_string(Klv_BerTooLong_Size)+')');
+
+    //Primer Pack and KLV packet sequence of the Header Metadata, once per item as a partition may be parsed more than once
+    set<pair<int64u, string> > HeaderMetadata_Errors_Filled;
+    for (const auto& Error : HeaderMetadata_Errors)
+        if (HeaderMetadata_Errors_Filled.emplace(Error.Offset, Error.Value).second)
+            Fill_Conformance_AtOffset(Error.Offset, Error.Field, Error.Value);
+    if (!HeaderMetadata_TagsNotInPrimer.empty())
+    {
+        string List;
+        auto Offset=(int64u)-1;
+        for (const auto& Tag : HeaderMetadata_TagsNotInPrimer)
+        {
+            if (!List.empty())
+                List+=", ";
+            List+=Mxf_LocalTag_Text(Tag.first);
+            Offset=min(Offset, Tag.second);
+        }
+        Fill_Conformance_AtOffset(Offset, "MXF PrimerPack LocalTag", "Local Tags used in Header Metadata Sets are not in the Primer Pack (actual "+List+')');
+    }
+
+    //Preface and Content Storage, one per Header Metadata
+    for (const auto& Partition : HeaderMetadata_Prefaces)
+        if (Partition.second.size()>1)
+            Fill_Conformance_AtOffset(Partition.first, "MXF Preface", "Preface is present more than once in the Header Metadata (actual "+to_string(Partition.second.size())+')');
+    for (const auto& Partition : HeaderMetadata_ContentStorages)
+        if (Partition.second.size()>1)
+            Fill_Conformance_AtOffset(Partition.first, "MXF ContentStorage", "Content Storage is present more than once in the Header Metadata (actual "+to_string(Partition.second.size())+')');
+
+    //Required properties, except Start Position of the Source Clips referencing a Static Track (SMPTE ST 377-1 B.10), and Track Number of the Timecode Tracks other than the default one in a Package with several ones (SMPTE ST 377-1 B.15)
+    vector<int128u> UIDs;
+    set<int128u> Required_Exceptions, StaticTracks_Components;
+    for (const auto& Set : SetKeys)
+        if (Set.second==Groups::StaticTrack)
+        {
+            UIDs_Get(Property_Get(SetProperties_Get(Set.first), 0x4803), false, UIDs);
+            if (UIDs.empty())
+                continue;
+            UIDs_Get(Property_Get(SetProperties_Get(UIDs[0]), 0x1001), true, UIDs);
+            StaticTracks_Components.insert(UIDs.begin(), UIDs.end());
+        }
+    map<pair<string, int64u>, int64u> Tracks_Keys; //Set key of each track, per Package UID and Track ID
+    for (const auto& Package : Packages)
+    {
+        const auto PackageUID=Property_Get(SetProperties_Get(Package.first), 0x4401);
+        if (PackageUID)
+            for (const auto& TrackUID : Package.second.Tracks)
+            {
+                const auto TrackKey=SetKeys.find(TrackUID);
+                int64u TrackID;
+                if (TrackKey!=SetKeys.end() && Raw_UInt_Get(Property_Get(SetProperties_Get(TrackUID), 0x4801), 4, TrackID))
+                    Tracks_Keys.emplace(make_pair(*PackageUID, TrackID), TrackKey->second);
+            }
+        vector<track_info> List;
+        string Kinds;
+        conformance_errors Errors;
+        Package_Tracks(Package.second, List, Kinds, Errors);
+        if (count(Kinds.begin(), Kinds.end(), 'T')<=1)
+            continue;
+        auto HasDefault=false; //Exactly one Timecode Track has Track Number 1, the other ones may omit it
+        for (const auto& Track : List)
+            if (Track.Kind=='T' && Track.TrackNumber==1)
+                HasDefault=true;
+        for (const auto& Track : List)
+            if (Track.Kind=='T')
+            {
+                if (!HasDefault && !Property_Get(*Track.Properties, 0x4804))
+                {
+                    HasDefault=true; //Missing default Track Number is reported once
+                    continue;
+                }
+                Required_Exceptions.insert(Track.Track->first);
+            }
+    }
+    for (const auto& Set : SetKeys)
+        if (Set.second==Groups::SourceClip)
+        {
+            //Referenced track, else track containing the Source Clip (end of the reference chain, or Package not in the file)
+            const auto& Properties=SetProperties_Get(Set.first);
+            const auto SourcePackageID=Property_Get(Properties, 0x1101);
+            int64u SourceTrackID;
+            auto Track=Tracks_Keys.end();
+            if (SourcePackageID && SourcePackageID->find_first_not_of('\0')!=string::npos && Raw_UInt_Get(Property_Get(Properties, 0x1102), 4, SourceTrackID))
+                Track=Tracks_Keys.find(make_pair(*SourcePackageID, SourceTrackID));
+            if (Track!=Tracks_Keys.end()?(Track->second==Groups::StaticTrack):(StaticTracks_Components.find(Set.first)!=StaticTracks_Components.end()))
+                Required_Exceptions.insert(Set.first);
+        }
+    for (const auto& Required : Mxf_Properties_Required)
+    {
+        size_t Missing=0;
+        const auto HasExceptions=(Required.SetKey==Groups::SourceClip && Required.Tag==0x1201) || (Required.SetKey==Groups::TimelineTrack && Required.Tag==0x4804);
+        for (const auto& Set : SetKeys)
+        {
+            if (Set.second!=Required.SetKey || (HasExceptions && Required_Exceptions.find(Set.first)!=Required_Exceptions.end()))
+                continue;
+            const auto Properties=SetProperties.find(Set.first);
+            if (Properties!=SetProperties.end() && !Property_Get(Properties->second, Required.Tag))
+                Missing++;
+        }
+        if (Missing)
+        {
+            const auto Field=string("MXF ")+Required.Field;
+            Fill_Conformance_AtOffset((int64u)-1, Field.c_str(), Field.substr(Field.rfind(' ')+1)+" is not present"+(Missing>1?(" (actual "+to_string(Missing)+" sets)"):string()));
+        }
+    }
+
+    //Strong references to sets not present in the file
+    for (const auto& Reference : Mxf_Properties_StrongReference)
+    {
+        set<int128u> Missing;
+        for (const auto& Properties : SetProperties)
+        {
+            UIDs_Get(Property_Get(Properties.second, Reference.Key), Reference.IsArray, UIDs);
+            for (const auto& UID : UIDs)
+                if ((UID.hi || UID.lo) && SetKeys.find(UID)==SetKeys.end())
+                    Missing.insert(UID);
+        }
+        if (!Missing.empty())
+            Fill_Conformance_AtOffset((int64u)-1, "MXF StrongReference", string(Reference.Name)+" references a set which is not present (actual "+UUIDs_Text(Missing)+')');
+    }
+
+    //Generation UID of the sets, equal to the This Generation UID of an Identification
+    set<int128u> ThisGenerationUIDs;
+    for (const auto& Set : SetKeys)
+        if (Set.second==Groups::Identification)
+        {
+            UIDs_Get(Property_Get(SetProperties_Get(Set.first), 0x3C09), false, UIDs);
+            ThisGenerationUIDs.insert(UIDs.begin(), UIDs.end());
+        }
+    set<int128u> GenerationUIDs_Unknown;
+    for (const auto& Set : SetKeys)
+    {
+        if (Set.second==Groups::Identification)
+            continue;
+        UIDs_Get(Property_Get(SetProperties_Get(Set.first), 0x0102), false, UIDs);
+        for (const auto& UID : UIDs)
+            if (ThisGenerationUIDs.find(UID)==ThisGenerationUIDs.end())
+                GenerationUIDs_Unknown.insert(UID);
+    }
+    if (!GenerationUIDs_Unknown.empty())
+        Fill_Conformance_AtOffset((int64u)-1, "MXF GenerationUID", "GenerationUID is not the ThisGenerationUID of an Identification (actual "+UUIDs_Text(GenerationUIDs_Unknown)+')');
+
+    //Duration of a Sequence of a Timeline Track, sum of the Durations of its Structural Components
+    for (const auto& Set : SetKeys)
+    {
+        if (Set.second!=Groups::TimelineTrack)
+            continue;
+        UIDs_Get(Property_Get(SetProperties_Get(Set.first), 0x4803), false, UIDs);
+        if (UIDs.empty())
+            continue;
+        const auto& Sequence=SetProperties_Get(UIDs[0]);
+        int64u Duration;
+        const auto Components=Property_Get(Sequence, 0x1001);
+        if (!Raw_UInt_Get(Property_Get(Sequence, 0x0202), 8, Duration) || Duration==(int64u)-1 || !Components || Components->size()<8 || Components->size()!=8+(size_t)BigEndian2int32u(Components->data())*16)
+            continue; //Unknown duration or truncated list
+        UIDs_Get(Components, true, UIDs);
+        int64u Sum=0;
+        auto IsKnown=true;
+        for (const auto& UID : UIDs)
+        {
+            int64u Component_Duration;
+            if (!Raw_UInt_Get(Property_Get(SetProperties_Get(UID), 0x0202), 8, Component_Duration) || Component_Duration==(int64u)-1)
+            {
+                IsKnown=false;
+                break;
+            }
+            Sum+=Component_Duration;
+        }
+        if (IsKnown && Sum!=Duration)
+            Fill_Conformance_AtOffset((int64u)-1, "MXF Sequence Duration", "Duration of the Sequence is not the sum of the Durations of its Structural Components (actual "+to_string((int64s)Duration)+", expected "+to_string((int64s)Sum)+')');
+    }
+
+    //Edit Rate and Origin, identical for all Essence Tracks of a Top-Level File Package
+    set<string> TopLevelPackageUIDs; //Packages linked to an Essence Container
+    for (const auto& Set : SetKeys)
+        if (Set.second==Groups::EssenceData)
+        {
+            const auto LinkedPackageUID=Property_Get(SetProperties_Get(Set.first), 0x2701);
+            if (LinkedPackageUID && LinkedPackageUID->size()==32)
+                TopLevelPackageUIDs.insert(*LinkedPackageUID);
+        }
+    for (const auto& Set : SetKeys)
+    {
+        if (Set.second!=Groups::SourcePackage)
+            continue;
+        const auto PackageUID=Property_Get(SetProperties_Get(Set.first), 0x4401);
+        const auto Package=Packages.find(Set.first);
+        if (!PackageUID || TopLevelPackageUIDs.find(*PackageUID)==TopLevelPackageUIDs.end() || Package==Packages.end())
+            continue;
+        vector<track_info> List;
+        string Kinds;
+        conformance_errors Errors;
+        Package_Tracks(Package->second, List, Kinds, Errors);
+        map<string, string> EditRates, Origins; //Key is the value, normalized for rationals
+        for (const auto& Track : List)
+        {
+            const auto TrackKey=SetKeys.find(Track.Track->first);
+            if ((Track.Kind!='V' && Track.Kind!='A' && Track.Kind!='D') || TrackKey==SetKeys.end() || TrackKey->second!=Groups::TimelineTrack)
+                continue;
+            const auto EditRate=Property_Get(*Track.Properties, 0x4B01);
+            if (EditRate)
+                EditRates.emplace(Mxf_Rational_Normalized(*EditRate), *EditRate);
+            const auto Origin=Property_Get(*Track.Properties, 0x4B02);
+            if (Origin)
+                Origins.emplace(*Origin, *Origin);
+        }
+        const auto Values_Text=[](const map<string, string>& Values, bool IsRational) {
+            string Result;
+            for (const auto& Value : Values)
+            {
+                if (!Result.empty())
+                    Result+=", ";
+                Result+=Raw_Text(Value.second, IsRational);
+            }
+            return Result;
+        };
+        if (EditRates.size()>1)
+            Fill_Conformance_AtOffset((int64u)-1, "MXF Track EditRate", "Edit Rate is not the same for all Essence Tracks of the Top-Level File Package (actual "+Values_Text(EditRates, true)+')');
+        if (Origins.size()>1)
+            Fill_Conformance_AtOffset((int64u)-1, "MXF Track Origin", "Origin is not the same for all Essence Tracks of the Top-Level File Package (actual "+Values_Text(Origins, false)+')');
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Streams_Finish_Conformance_IndexTables ()
+{
+    if (IsSub || Partitions.empty() || Partitions[0].Kind!=0x02 || IndexTableSegments.empty())
+        return; //Header Partition is not parsed
+    const auto& HeaderPartition=Partitions[0];
+    if (HeaderPartition.MajorVersion!=1 || HeaderPartition.MinorVersion!=3)
+        return; //Rules of SMPTE ST 377-1:2009 and later, checked for version 1.3 only
+
+    const auto Fill_Conformance_AtOffset=[&](int64u Offset, const char* Field, const string& Value) {
+        //Conformance offset is the one of the item, no offset if (int64u)-1, no frame or time
+        const auto File_Offset_Save=File_Offset;
+        const auto Frame_Count_Save=Frame_Count;
+        const auto Frame_Count_NotParsedIncluded_Save=Frame_Count_NotParsedIncluded;
+        const auto PTS_Save=FrameInfo.PTS;
+        const auto DTS_Save=FrameInfo.DTS;
+        File_Offset=Offset-(Buffer_Offset+Element_Offset);
+        Frame_Count=(int64u)-1;
+        Frame_Count_NotParsedIncluded=(int64u)-1;
+        FrameInfo.PTS=(int64u)-1;
+        FrameInfo.DTS=(int64u)-1;
+        Fill_Conformance(Field, Value);
+        Merge_Conformance();
+        File_Offset=File_Offset_Save;
+        Frame_Count=Frame_Count_Save;
+        Frame_Count_NotParsedIncluded=Frame_Count_NotParsedIncluded_Save;
+        FrameInfo.PTS=PTS_Save;
+        FrameInfo.DTS=DTS_Save;
+    };
+
+    //Edit Rates of the Essence Tracks of each Package, then of the Top-Level File Package of each essence container
+    map<string, map<string, string> > Packages_EditRates; //Key is the Package UID, then the normalized Edit Rate
+    for (const auto& Package : Packages)
+    {
+        const auto PackageUID=Property_Get(SetProperties_Get(Package.first), 0x4401);
+        if (!PackageUID)
+            continue;
+        vector<track_info> List;
+        string Kinds;
+        conformance_errors Errors;
+        Package_Tracks(Package.second, List, Kinds, Errors);
+        auto& Package_EditRates=Packages_EditRates[*PackageUID];
+        for (const auto& Track : List)
+        {
+            const auto EditRate=Property_Get(*Track.Properties, 0x4B01);
+            if (EditRate && (Track.Kind=='V' || Track.Kind=='A' || Track.Kind=='D'))
+                Package_EditRates.emplace(Mxf_Rational_Normalized(*EditRate), *EditRate);
+        }
+    }
+    map<int64u, map<string, string> > EditRates; //Key is BodySID, then the normalized Edit Rate
+    for (const auto& Set : SetKeys)
+    {
+        if (Set.second!=Groups::EssenceData)
+            continue;
+        const auto& EssenceContainerData=SetProperties_Get(Set.first);
+        int64u BodySID;
+        const auto LinkedPackageUID=Property_Get(EssenceContainerData, 0x2701);
+        if (!LinkedPackageUID || !Raw_UInt_Get(Property_Get(EssenceContainerData, 0x3F07), 4, BodySID))
+            continue;
+        const auto Package_EditRates=Packages_EditRates.find(*LinkedPackageUID);
+        if (Package_EditRates!=Packages_EditRates.end())
+            EditRates[BodySID].insert(Package_EditRates->second.begin(), Package_EditRates->second.end());
+    }
+
+    //Index Table Segments of an Index Stream have the same BodySID, Slice Count, Delta Entry Array and Edit Rate, the Edit Rate of the indexed Tracks
+    struct property_check
+    {
+        int16u      Tag;
+        const char* Name;
+        bool        IsRational;
+    };
+    static const property_check Properties_Same[]=
+    {
+        { 0x3F07, "BodySID", false },
+        { 0x3F08, "SliceCount", false },
+        { 0x3F09, "DeltaEntryArray", false },
+        { 0x3F0B, "IndexEditRate", true },
+    };
+    map<int64u, const indextablesegment*> IndexStreams; //Key is IndexSID, value is the first Index Table Segment
+    set<int64u> IndexStreams_EditRate_Reported;
+    for (const auto& Segment : IndexTableSegments)
+    {
+        //Duration of an Index Table Segment without Edit Unit Byte Count
+        int64u EditUnitByteCount, IndexDuration, IndexSID;
+        if (Raw_UInt_Get(Property_Get(Segment.Properties, 0x3F05), 4, EditUnitByteCount) && !EditUnitByteCount
+         && Raw_UInt_Get(Property_Get(Segment.Properties, 0x3F0D), 8, IndexDuration) && !IndexDuration)
+            Fill_Conformance_AtOffset(Segment.StreamOffset, "MXF IndexTableSegment IndexDuration", "IndexDuration is 0 but EditUnitByteCount is 0");
+
+        if (!Raw_UInt_Get(Property_Get(Segment.Properties, 0x3F06), 4, IndexSID))
+            continue;
+        const auto IndexStream=IndexStreams.emplace(IndexSID, &Segment);
+        if (!IndexStream.second)
+            for (const auto& Property : Properties_Same)
+            {
+                const auto Value=Property_Get(Segment.Properties, Property.Tag);
+                const auto Value_First=Property_Get(IndexStream.first->second->Properties, Property.Tag);
+                if (Value && Value_First && (Property.IsRational?(Mxf_Rational_Normalized(*Value)!=Mxf_Rational_Normalized(*Value_First)):(*Value!=*Value_First)))
+                    Fill_Conformance_AtOffset(Segment.StreamOffset, (string("MXF IndexTableSegment ")+Property.Name).c_str(), string(Property.Name)+" is not the same in all Index Table Segments of the Index Stream (actual "+Raw_Text(*Value, Property.IsRational)+", expected "+Raw_Text(*Value_First, Property.IsRational)+", IndexSID "+to_string(IndexSID)+')');
+            }
+
+        //Edit Rate of the indexed Tracks, reported once per Index Stream
+        int64u BodySID;
+        const auto IndexEditRate=Property_Get(Segment.Properties, 0x3F0B);
+        if (!IndexEditRate || !Raw_UInt_Get(Property_Get(Segment.Properties, 0x3F07), 4, BodySID))
+            continue;
+        const auto Track_EditRates=EditRates.find(BodySID);
+        if (Track_EditRates==EditRates.end())
+            continue;
+        const auto IndexEditRate_Normalized=Mxf_Rational_Normalized(*IndexEditRate);
+        for (const auto& Track_EditRate : Track_EditRates->second)
+            if (IndexEditRate_Normalized!=Track_EditRate.first && IndexStreams_EditRate_Reported.insert(IndexSID).second)
+                Fill_Conformance_AtOffset(Segment.StreamOffset, "MXF IndexTableSegment IndexEditRate", "IndexEditRate is not the Edit Rate of the indexed Tracks (actual "+Raw_Text(*IndexEditRate, true)+", expected "+Raw_Text(Track_EditRate.second, true)+", IndexSID "+to_string(IndexSID)+')');
+    }
+}
+
+//---------------------------------------------------------------------------
 void File_Mxf::Streams_Finish_Conformance_FileFormat ()
 {
     if (IsSub || Partitions.empty() || Partitions[0].Kind!=0x02)
@@ -8290,6 +8864,14 @@ void File_Mxf::Read_Buffer_Unsynched()
     Frame_Count_NotParsedIncluded=(int64u)-1;
     SystemItem_Checks.TimeCode_Count=0; //Timecode continuity is tested only between contiguous System Items
     SystemItem_Checks.ContentPackage_Offset=(int64u)-1; //Content Package size is tested only between contiguous System Items
+    #if MEDIAINFO_CONFORMANCE
+        //Header Metadata is tested only from its Partition Pack
+        HeaderMetadata_Partition=(int64u)-1;
+        HeaderMetadata_End=0;
+        HeaderMetadata_Step=0;
+        PrimerPack_IsParsed=false;
+        PrimerPack_Tags.clear();
+    #endif //MEDIAINFO_CONFORMANCE
     #if MEDIAINFO_DEMUX || MEDIAINFO_SEEK
         if (!Tracks.empty() && Tracks.begin()->second.EditRate) //TODO: use the corresponding track instead of the first one
             FrameInfo.DUR=float64_int64s(1000000000/Tracks.begin()->second.EditRate);
@@ -9399,6 +9981,11 @@ void File_Mxf::Data_Parse()
         return;
     }
 
+    #if MEDIAINFO_CONFORMANCE
+        if (HeaderMetadata_Step)
+            HeaderMetadata_Sequence_Test();
+    #endif //MEDIAINFO_CONFORMANCE
+
     #if MEDIAINFO_TRACE
     if (Trace_Activated) {
         auto Name = Mxf_Param_Info((int32u)Code.hi, Code.lo);
@@ -9478,6 +10065,11 @@ void File_Mxf::Data_Parse()
                     Length3 = Length2;
                 }
                 Element_End0();
+                #if MEDIAINFO_CONFORMANCE
+                    //The Primer Pack contains all Local Tags used in Header Metadata Sets of its partition, Index Table Segments do not use it (SMPTE ST 377-1)
+                    if (IsLocalSet && PrimerPack_IsParsed && Code.lo!=Groups::IndexTableSegment && File_Offset+Buffer_Offset<HeaderMetadata_End && PrimerPack_Tags.find(Code2)==PrimerPack_Tags.end())
+                        HeaderMetadata_TagsNotInPrimer.emplace(Code2, File_Offset+Buffer_Offset-Header_Size);
+                #endif //MEDIAINFO_CONFORMANCE
                 #if MEDIAINFO_TRACE
                 if (Trace_Activated) {
                     std::map<int16u, int128u>::iterator Primer_Value = Primer_Values.find(Code2);
@@ -10291,7 +10883,40 @@ void File_Mxf::Data_Parse()
             ManageGroup(&File_Mxf::Arri_BinaryPack);
         }
         else
+        {
+            #if MEDIAINFO_CONFORMANCE
+                //Instance UID of the set (local tag and BER length for each item), as a target of strong references
+                const auto Begin=Buffer+Buffer_Offset;
+                const auto End=Buffer_Offset+Element_Size<=Buffer_Size?(size_t)Element_Size:0;
+                for (size_t Pos=0; Pos+3<=End;)
+                {
+                    const auto Tag=BigEndian2int16u(Begin+Pos);
+                    Pos+=2;
+                    int64u Size=Begin[Pos++];
+                    if (Size&0x80)
+                    {
+                        const auto Size_Size=(size_t)(Size&0x7F);
+                        if (Size_Size>8 || Pos+Size_Size>End)
+                            break;
+                        Size=0;
+                        for (size_t i=0; i<Size_Size; i++)
+                            Size=(Size<<8)|Begin[Pos++];
+                    }
+                    if (Size>End-Pos)
+                        break;
+                    if (Tag==0x3C0A && Size==16)
+                    {
+                        int128u SetUID;
+                        SetUID.hi=BigEndian2int64u(Begin+Pos);
+                        SetUID.lo=BigEndian2int64u(Begin+Pos+8);
+                        SetKeys[SetUID]=Code.lo;
+                        break;
+                    }
+                    Pos+=(size_t)Size;
+                }
+            #endif //MEDIAINFO_CONFORMANCE
             Skip_XX(Element_Size,                               "Unknown");
+        }
         break;
     default:
         Skip_XX(Element_Size,                                   "Unknown");
@@ -11168,6 +11793,14 @@ void File_Mxf::Preface()
 //---------------------------------------------------------------------------
 void File_Mxf::PrimerPack()
 {
+    #if MEDIAINFO_CONFORMANCE
+        PrimerPack_IsParsed=true;
+        PrimerPack_Tags.clear();
+        const auto Offset=File_Offset+Buffer_Offset-Header_Size;
+        auto Tag0_IsPresent=false;
+        set<int16u> Tags_Duplicated;
+    #endif //MEDIAINFO_CONFORMANCE
+
     //Parsing
     VECTOR(2+16);
     for (int32u i=0; i<Count; i++)
@@ -11181,8 +11814,31 @@ void File_Mxf::PrimerPack()
 
         FILLING_BEGIN();
             Primer_Values[LocalTag]=UID;
+            #if MEDIAINFO_CONFORMANCE
+                //Local Tag 0000h shall not be used, Local Tags are unique within a partition (SMPTE ST 377-1)
+                if (!LocalTag)
+                    Tag0_IsPresent=true;
+                if (!PrimerPack_Tags.insert(LocalTag).second)
+                    Tags_Duplicated.insert(LocalTag);
+            #endif //MEDIAINFO_CONFORMANCE
         FILLING_END();
     }
+
+    #if MEDIAINFO_CONFORMANCE
+        if (Tag0_IsPresent)
+            HeaderMetadata_Errors.push_back({Offset, "MXF PrimerPack LocalTag", "Local Tag 0000h is used"});
+        if (!Tags_Duplicated.empty())
+        {
+            string List;
+            for (const auto Tag : Tags_Duplicated)
+            {
+                if (!List.empty())
+                    List+=", ";
+                List+=Mxf_LocalTag_Text(Tag);
+            }
+            HeaderMetadata_Errors.push_back({Offset, "MXF PrimerPack LocalTag", "Local Tag is present more than once (actual "+List+')'});
+        }
+    #endif //MEDIAINFO_CONFORMANCE
 }
 
 //---------------------------------------------------------------------------
@@ -15691,6 +16347,16 @@ void File_Mxf::PartitionMetadata()
     Get_B4 (BodySID,                                            "BodySID");
     Get_UL (OperationalPattern,                                 "OperationalPattern", Mxf_OperationalPattern);
 
+    #if MEDIAINFO_CONFORMANCE
+        //Header Metadata of this partition, the scope of the Primer Pack is the partition (SMPTE ST 377-1)
+        HeaderMetadata_Partition=File_Offset+Buffer_Offset-Header_Size;
+        HeaderMetadata_End=HeaderByteCount?(File_Offset+Buffer_Offset+Element_Size+HeaderByteCount):(int64u)-1;
+        HeaderMetadata_Step=HeaderByteCount?1:0;
+        HeaderMetadata_FillIsParsed=false;
+        PrimerPack_IsParsed=false;
+        PrimerPack_Tags.clear();
+    #endif //MEDIAINFO_CONFORMANCE
+
     Element_Begin1("EssenceContainers"); //Vector
         auto Count=Vector(16);
         if (Count==(int32u)-1)
@@ -18671,6 +19337,20 @@ void File_Mxf::Get_BER(int64u &Value, const char* Name)
         return;
     }
 
+    //The 80h token (unspecified length) and long-form coding exceeding a 9-byte BER encoded length are not permitted (SMPTE ST 377-1)
+    #if MEDIAINFO_CONFORMANCE
+        if (Length==0x80)
+        {
+            if (Klv_Ber80_Offset==(int64u)-1)
+                Klv_Ber80_Offset=File_Offset+Buffer_Offset+Element_Offset-1;
+        }
+        else if (Length>0x88 && Klv_BerTooLong_Offset==(int64u)-1)
+        {
+            Klv_BerTooLong_Offset=File_Offset+Buffer_Offset+Element_Offset-1;
+            Klv_BerTooLong_Size=(int8u)(Length-0x7F);
+        }
+    #endif //MEDIAINFO_CONFORMANCE
+
     Length&=0x7F;
     switch (Length)
     {
@@ -20538,6 +21218,25 @@ void File_Mxf::Properties_Store(properties& Properties)
                 else if (Set->second.StreamOffset!=SetOffset) //Not the same set parsed again
                     InstanceUID_Duplicates[SetOffset]={SetUID, Set->second.Key, SetKey};
             }
+        }
+        //Class of each set, Instance UID is taken from the raw properties for dark sets
+        auto SetUID=InstanceUID;
+        if (!SetUID.hi && !SetUID.lo)
+        {
+            const auto Value=Property_Get(Properties, 0x3C0A);
+            if (Value && Value->size()==16)
+            {
+                SetUID.hi=BigEndian2int64u(Value->data());
+                SetUID.lo=BigEndian2int64u(Value->data()+8);
+            }
+        }
+        if (SetUID.hi || SetUID.lo)
+        {
+            SetKeys[SetUID]=Code.lo;
+            if (Code.lo==Groups::Preface)
+                HeaderMetadata_Prefaces[HeaderMetadata_Partition].insert(SetUID);
+            else if (Code.lo==Groups::ContentStorage)
+                HeaderMetadata_ContentStorages[HeaderMetadata_Partition].insert(SetUID);
         }
     #endif //MEDIAINFO_CONFORMANCE
     if (InstanceUID.hi || InstanceUID.lo)
