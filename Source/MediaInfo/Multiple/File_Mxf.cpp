@@ -2092,6 +2092,9 @@ File_Mxf::File_Mxf()
         for (size_t Profile_Pos=0; Profile_Pos<ArdZdf_Profiles_Size; Profile_Pos++)
             if (MxfProfiles.find(','+string(ArdZdf_Profiles[Profile_Pos].Name)+',')!=string::npos)
                 ArdZdf_IsRequested|=1<<Profile_Pos;
+        St2067204_IsRequested=MxfProfiles.find(",SMPTE_ST_2067-204,")!=string::npos;
+        St2067204_IsTested=false;
+        RiffChunks_ErrorCount=0;
     #endif //MEDIAINFO_CONFORMANCE
     #if MEDIAINFO_TRACE
         SDTI_SystemMetadataPack_Trace_Count=0;
@@ -2891,9 +2894,11 @@ void File_Mxf::Streams_Finish()
             }
         }
     }
-    //Conformance with SMPTE ST 2131, before filling the ADM content as its parsed items are then cleared
+
+    //Conformance with SMPTE ST 2131 and compliance with SMPTE ST 2067-204, before filling the ADM content as its parsed items are then cleared
     #if MEDIAINFO_CONFORMANCE
         Streams_Finish_Conformance_RiffChunks();
+        St2067204_Errors=CompliantWith_St2067204(St2067204_Warnings);
     #endif //MEDIAINFO_CONFORMANCE
 
     if (DolbyAudioMetadata) //Before ADM for having content before all ADM stuff
@@ -3532,6 +3537,7 @@ void File_Mxf::Streams_Finish_Conformance_RiffChunks ()
         }
         Errors.Add(Value);
         Fill_Conformance_Specification(Field, string(), Errors);
+        RiffChunks_ErrorCount++;
     };
 
     //Generic Streams, from the parsed Generic Stream Data Elements
@@ -3903,6 +3909,273 @@ void File_Mxf::Streams_Finish_Conformance_RiffChunks ()
                 Error(Definition==Definitions_BySID.end()?nullptr:&Definition->second->first, "MXF ADMSoundfieldGroupLabelSubDescriptor", "RIFF Chunk with ADM metadata is not referenced by an ADMSoundfieldGroupLabelSubDescriptor (Stream ID "+to_string(SID)+')');
             }
     }
+}
+
+//---------------------------------------------------------------------------
+// ADM Audio Track File (SMPTE ST 2067-204:2026-05), tested if RIFF Chunks or ADM sets are present
+// Audio Track File constraints of SMPTE ST 2067-2:2020 about the essence, its wrapping and the Wave Audio Essence Descriptor (overall Track File constraints are not checked)
+// Operational Mode A is assumed, as the mode is signaled in the Composition Playlist and it is the only one defined
+// Done before filling the ADM content, as its parsed items are then cleared
+File_Mxf::conformance_errors File_Mxf::CompliantWith_St2067204 (conformance_errors& Warnings)
+{
+    conformance_errors Errors;
+    St2067204_IsTested=false;
+    if (IsSub)
+        return Errors;
+
+    //Sets
+    vector<descriptors::iterator> Sounds, Labels;
+    map<int32u, descriptors::iterator> Definitions_BySID;
+    set<int32u> SIDs_WithMetadata, SIDs_WithProfiles;
+    size_t Essences=0, OtherLabels=0;
+    auto IsCandidate=false;
+    for (auto Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
+    {
+        const auto& Properties=SetProperties_Get(Descriptor->first);
+        int64u SID;
+        if (Descriptor->second.StreamKind!=Stream_Max)
+            Essences++;
+        if (Descriptor->second.StreamKind==Stream_Audio)
+            Sounds.push_back(Descriptor);
+        switch (Descriptor->second.Type)
+        {
+            case descriptor::Type_RIFFChunkDefinitionSubDescriptor :
+                                    IsCandidate=true;
+                                    if (Raw_UInt_Get(Property_Get(Properties, Elements::RIFFChunkStreamID), 4, SID))
+                                        Definitions_BySID.emplace((int32u)SID, Descriptor);
+                                    break;
+            case descriptor::Type_ADMAudioMetadataSubDescriptor :
+                                    IsCandidate=true;
+                                    if (Raw_UInt_Get(Property_Get(Properties, Elements::RIFFChunkStreamID_link1), 4, SID))
+                                    {
+                                        SIDs_WithMetadata.insert((int32u)SID);
+                                        if (Property_Get(Properties, Elements::ADMProfileLevelULBatch))
+                                            SIDs_WithProfiles.insert((int32u)SID);
+                                    }
+                                    break;
+            case descriptor::Type_ADMSoundfieldGroupLabelSubDescriptor :
+                                    IsCandidate=true;
+                                    Labels.push_back(Descriptor);
+                                    break;
+            case descriptor::Type_RIFFChunkReferencesSubDescriptor :
+            case descriptor::Type_ADM_CHNASubDescriptor :
+                                    IsCandidate=true;
+                                    break;
+            case descriptor::Type_AudioChannelLabelSubDescriptor :
+            case descriptor::Type_SoundfieldGroupLabelSubDescriptor :
+            case descriptor::Type_GroupOfSoundfieldGroupsLabelSubDescriptor :
+                                    OtherLabels++;
+                                    break;
+            default                 : ;
+        }
+    }
+    if (!IsCandidate && !St2067204_IsRequested)
+        return Errors;
+    St2067204_IsTested=true;
+
+    //Sound Track
+    if (Essences!=1 || Sounds.size()!=1)
+    {
+        Errors.Add("Essence is not a single Sound Track (actual "+to_string(Essences)+" essence descriptors, "+to_string(Sounds.size())+" for sound)");
+        return Errors;
+    }
+    const auto Sound=Sounds.front();
+    const auto& Sound_Properties=SetProperties_Get(Sound->first);
+    if (Sound->second.LinkedTrackID!=(int32u)-1)
+        Errors.StreamID=Warnings.StreamID=to_string(Sound->second.LinkedTrackID);
+    else if (Count_Get(Stream_Audio)==1)
+        Errors.StreamID=Warnings.StreamID=Retrieve_Const(Stream_Audio, 0, Audio_ID).To_UTF8();
+
+    //Audio essence, wrapping and Wave Audio Essence Descriptor (SMPTE ST 2067-2:2020)
+    const auto& EssenceContainer=Sound->second.EssenceContainer;
+    const auto WaveClipWrapped=Raw_UL(0x060E2B3404010101LL, 0x0D01030102060200LL);
+    if (EssenceContainer.hi==(int64u)-1 || !Raw_IsSame(Raw_UL(EssenceContainer.hi, EssenceContainer.lo), WaveClipWrapped))
+        Errors.Add("Essence Container is not Wave Clip-Wrapped (actual "+(EssenceContainer.hi==(int64u)-1?string("none"):Raw_Hex(Raw_UL(EssenceContainer.hi, EssenceContainer.lo)))+", expected "+Raw_Hex(WaveClipWrapped)+')');
+    const auto AudioSamplingRate=Property_Get(Sound_Properties, 0x3D03);
+    if (!AudioSamplingRate || (*AudioSamplingRate!=Raw_Rational(48000, 1) && *AudioSamplingRate!=Raw_Rational(96000, 1)))
+        Errors.Add("Audio Sampling Rate is not 48000 or 96000 Hz (actual "+(AudioSamplingRate?Raw_Text(*AudioSamplingRate, true):string("none"))+')');
+    else
+    {
+        const auto SampleRate=Property_Get(Sound_Properties, 0x3001);
+        if (!SampleRate || *SampleRate!=*AudioSamplingRate)
+            Errors.Add("Sample Rate is not the Audio Sampling Rate (actual "+(SampleRate?Raw_Text(*SampleRate, true):string("none"))+", expected "+Raw_Text(*AudioSamplingRate, true)+')');
+    }
+    const auto QuantizationBits=Property_Get(Sound_Properties, 0x3D01);
+    if (!QuantizationBits || *QuantizationBits!=Raw_UInt(24, 4))
+        Errors.Add("Quantization Bits is not 24 (actual "+(QuantizationBits?Raw_Text(*QuantizationBits):string("none"))+')');
+    const auto ChannelAssignment=Property_Get(Sound_Properties, 0x3D32);
+    const auto AudioLabelingFrameworkADMContent=Raw_UL(0x060E2B340401010DLL, 0x0402021005010000LL);
+    if (!ChannelAssignment || !Raw_IsSame(*ChannelAssignment, AudioLabelingFrameworkADMContent))
+        Errors.Add("Channel Assignment is not the AudioLabelingFrameworkADMContent label (actual "+(ChannelAssignment?Raw_Hex(*ChannelAssignment):string("none"))+", expected "+Raw_Hex(AudioLabelingFrameworkADMContent)+')');
+    if (!Property_Get(Sound_Properties, Elements::ReferenceAudioAlignmentLevel))
+        Warnings.Add("Reference Audio Alignment Level is not present");
+    if (!Property_Get(Sound_Properties, Elements::ReferenceImageEditRate))
+        Warnings.Add("Reference Image Edit Rate is not present");
+
+    //SMPTE ST 2131
+    if (RiffChunks_ErrorCount)
+        Errors.Add("RIFF Chunks or ADM sets are not compliant with SMPTE ST 2131");
+
+    //Standard ADM Constraints configuration (SMPTE ST 2131)
+    size_t Chnas=0, References=0;
+    const descriptor* Chna=nullptr;
+    set<int32u> SIDs;
+    for (const auto& SubDescriptor_UID : Sound->second.SubDescriptors)
+    {
+        const auto SubDescriptor=Descriptors.find(SubDescriptor_UID);
+        if (SubDescriptor==Descriptors.end())
+            continue;
+        if (SubDescriptor->second.Type==descriptor::Type_ADM_CHNASubDescriptor)
+        {
+            Chnas++;
+            Chna=&SubDescriptor->second;
+        }
+        else if (SubDescriptor->second.Type==descriptor::Type_RIFFChunkReferencesSubDescriptor)
+        {
+            References++;
+            const auto Array=Property_Get(SetProperties_Get(SubDescriptor->first), Elements::RIFFChunkStreamIDsArray);
+            if (Array && Array->size()>=8)
+                for (size_t i=8; i+4<=Array->size(); i+=4)
+                    SIDs.insert(BigEndian2int32u(Array->data()+i));
+        }
+    }
+    if (Chnas!=1)
+        Errors.Add("File Descriptor of the Sound Track does not reference one ADM_CHNASubDescriptor (actual "+to_string(Chnas)+')');
+    if (References!=1)
+        Errors.Add("File Descriptor of the Sound Track does not reference one RIFFChunkReferencesSubDescriptor (actual "+to_string(References)+')');
+    size_t Axml_Count=0;
+    int32u Axml_SID=0;
+    for (const auto SID : SIDs)
+    {
+        const auto Definition=Definitions_BySID.find(SID);
+        if (Definition==Definitions_BySID.end())
+            continue;
+        switch (Definition->second->second.RIFFChunkID)
+        {
+            case 0x61786D6C :   Axml_Count++; //"axml"
+                                Axml_SID=SID;
+                                break;
+            case 0x62786D6C :   Errors.Add("Sound Track references a <bxml> RIFF Chunk"); break;
+            case 0x73786D6C :   Errors.Add("Sound Track references a <sxml> RIFF Chunk"); break;
+            default         :   ;
+        }
+    }
+    if (Axml_Count!=1)
+        Errors.Add("Sound Track does not reference one <axml> RIFF Chunk (actual "+to_string(Axml_Count)+')');
+    #if defined(MEDIAINFO_ADM_YES)
+        File_Adm* AdmContent=nullptr;
+    #endif //defined(MEDIAINFO_ADM_YES)
+    if (Axml_Count==1)
+    {
+        const generic_stream_data_element_key* GenericStream=nullptr;
+        for (const auto& Elem : MXFGenericStreamDataElementKey)
+            if (Elem.second.SID==Axml_SID)
+            {
+                GenericStream=&Elem.second;
+                break;
+            }
+        if (!GenericStream)
+            Errors.Add("<axml> RIFF Chunk is not found (Stream ID "+to_string(Axml_SID)+')');
+        else if (GenericStream->Format!="ADM")
+            Errors.Add("<axml> RIFF Chunk does not contain an ADM XML document (Stream ID "+to_string(Axml_SID)+')');
+        #if defined(MEDIAINFO_ADM_YES)
+            else if (Adm)
+            {
+                AdmContent=(File_Adm*)Adm;
+                const auto Count=AdmContent->audioFormatExtended_Count();
+                if (Count!=1)
+                    Errors.Add("<axml> RIFF Chunk does not contain one audioFormatExtended element (actual "+to_string(Count)+')');
+            }
+        #endif //defined(MEDIAINFO_ADM_YES)
+        if (SIDs_WithMetadata.find(Axml_SID)==SIDs_WithMetadata.end())
+            Errors.Add("<axml> RIFF Chunk is not accompanied by an ADMAudioMetadataSubDescriptor");
+        else if (SIDs_WithProfiles.find(Axml_SID)==SIDs_WithProfiles.end())
+            Warnings.Add("ADMProfileLevelULBatch is not present");
+    }
+
+    //Audio labeling
+    if (OtherLabels)
+        Errors.Add("AudioChannelLabelSubDescriptor, SoundfieldGroupLabelSubDescriptor or GroupOfSoundfieldGroupsLabelSubDescriptor is present (actual "+to_string(OtherLabels)+')');
+    if (Labels.empty())
+        Errors.Add("No ADMSoundfieldGroupLabelSubDescriptor");
+    static const struct
+    {
+        int64u      Key;
+        const char* Name;
+        bool        IsRequired;
+    } Label_Items[]=
+    {
+        { Elements::MCALabelDictionaryID, "MCALabelDictionaryID", true },
+        { Elements::MCATagSymbol, "MCATagSymbol", true },
+        { Elements::MCATagName, "MCATagName", true },
+        { Elements::MCAContent, "MCAContent", false },
+        { Elements::MCAUseClass, "MCAUseClass", false },
+        { Elements::MCATitle, "MCATitle", false },
+        { Elements::MCATitleVersion, "MCATitleVersion", false },
+    };
+    map<string, size_t> Programmes_Labels; //Count of ADMSoundfieldGroupLabelSubDescriptor per audioProgramme
+    for (size_t i=0; i<Labels.size(); i++)
+    {
+        const auto& Properties=SetProperties_Get(Labels[i]->first);
+        const auto ProgrammeID_Raw=Property_Get(Properties, Elements::ADMAudioProgrammeID_ST2131);
+        const auto ProgrammeID=Raw_UTF16_Get(ProgrammeID_Raw);
+        const auto Name=ProgrammeID.empty()?("ADMSoundfieldGroupLabelSubDescriptor "+to_string(i+1)):("ADMSoundfieldGroupLabelSubDescriptor of "+ProgrammeID);
+        for (const auto& Label_Item : Label_Items)
+            if (!Property_Get(Properties, Label_Item.Key))
+                (Label_Item.IsRequired?Errors:Warnings).Add(string(Label_Item.Name)+" of "+Name+" is not present");
+        if (Property_Get(Properties, Elements::MCAChannelID))
+            Errors.Add("MCAChannelID of "+Name+" is present");
+
+        //Operational Mode A
+        if (!ProgrammeID_Raw)
+            Errors.Add("ADMAudioProgrammeID_ST2131 of "+Name+" is not present (Operational Mode A)");
+        else
+            Programmes_Labels[ProgrammeID]++;
+        if (Property_Get(Properties, Elements::ADMAudioContentID_ST2131))
+            Errors.Add("ADMAudioContentID_ST2131 of "+Name+" is present (Operational Mode A)");
+        if (Property_Get(Properties, Elements::ADMAudioObjectID_ST2131))
+            Errors.Add("ADMAudioObjectID_ST2131 of "+Name+" is present (Operational Mode A)");
+        #if defined(MEDIAINFO_ADM_YES)
+            const auto Title_Raw=Property_Get(Properties, Elements::MCATitle);
+            string Programme_Name, Programme_Label;
+            if (AdmContent && Title_Raw && ProgrammeID_Raw && AdmContent->audioProgramme_Get(ProgrammeID, Programme_Name, Programme_Label))
+            {
+                const auto Title=Raw_UTF16_Get(Title_Raw);
+                if (!Programme_Label.empty() && Title!=Programme_Label)
+                    Errors.Add("MCATitle of "+Name+" is not the first audioProgrammeLabel of the audioProgramme (actual \""+Title+"\", expected \""+Programme_Label+"\", Operational Mode A)");
+                else if (Programme_Label.empty() && Title!=Programme_Name)
+                    Warnings.Add("MCATitle of "+Name+" is not the audioProgrammeName of the audioProgramme (actual \""+Title+"\", expected \""+Programme_Name+"\", Operational Mode A)");
+            }
+        #endif //defined(MEDIAINFO_ADM_YES)
+    }
+
+    //Operational Mode A, ADM content
+    #if defined(MEDIAINFO_ADM_YES)
+        if (AdmContent)
+        {
+            const auto Programmes=AdmContent->ID_List("audioProgramme");
+            if (Programmes.empty())
+                Errors.Add("ADM metadata does not define an audioProgramme (Operational Mode A)");
+            for (const auto& Programme : Programmes)
+            {
+                const auto Programme_Labels=Programmes_Labels.find(Programme);
+                const auto Count=Programme_Labels==Programmes_Labels.end()?0:Programme_Labels->second;
+                if (Count!=1)
+                    Errors.Add("audioProgramme "+Programme+" is not referenced by one ADMSoundfieldGroupLabelSubDescriptor (actual "+to_string(Count)+", Operational Mode A)");
+            }
+            if (Chna)
+            {
+                set<string> UIDs_Mapped;
+                for (const auto& Mapping : Chna->ADMChannelMappings)
+                    UIDs_Mapped.insert(Raw_UTF16_Get(Property_Get(SetProperties_Get(Mapping), Elements::ADMAudioTrackUID)));
+                for (const auto& UID : AdmContent->ID_List("audioTrackUID"))
+                    if (UIDs_Mapped.find(UID)==UIDs_Mapped.end())
+                        Errors.Add("audioTrackUID "+UID+" of the ADM metadata is not mapped to a channel of the Sound Track (Operational Mode A)");
+            }
+        }
+    #endif //defined(MEDIAINFO_ADM_YES)
+
+    return Errors;
 }
 
 //---------------------------------------------------------------------------
@@ -5896,6 +6169,20 @@ void File_Mxf::Streams_Finish_CompliantWith ()
                 Fill_Conformance_Specification("MXF MxfProfile", ProfileName, Errors);
         #endif //MEDIAINFO_CONFORMANCE
     }
+
+    //SMPTE ST 2067-204, tested before filling the ADM content
+    #if MEDIAINFO_CONFORMANCE
+        if (St2067204_IsTested)
+        {
+            if (St2067204_Errors.empty())
+                Fill(Stream_General, 0, General_CompliantWith, "SMPTE_ST_2067-204");
+            if (St2067204_IsRequested) //Conformance errors and warnings only if this profile is requested
+            {
+                Fill_Conformance_Specification("MXF MxfProfile", "SMPTE_ST_2067-204", St2067204_Errors);
+                Fill_Conformance_Specification("MXF MxfProfile", "SMPTE_ST_2067-204", St2067204_Warnings, Conformance_Warning);
+            }
+        }
+    #endif //MEDIAINFO_CONFORMANCE
 }
 
 //---------------------------------------------------------------------------

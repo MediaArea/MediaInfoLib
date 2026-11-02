@@ -112,6 +112,9 @@ protected :
     conformance_errors CompliantWith_ArdZdf (size_t Profile_Pos, bool IsCandidateTest=false); //Profile_Pos is the position in the list of ARD/ZDF profiles, candidate test is done before parsing all partitions, without tests needing all partitions or the essence
     bool CompliantWith_ArdZdf_IsCandidate (); //Candidate for an ARD/ZDF profile with Body Partitions
     size_t CompliantWith_ArdZdf_FromContent (std::string& Content); //Position of the ARD/ZDF profile matching the kind of content, (size_t)-1 if none, Content is filled with a description of the content
+    #if MEDIAINFO_CONFORMANCE
+    conformance_errors CompliantWith_St2067204 (conformance_errors& Warnings); //ADM Audio Track File, to be done before filling the ADM content, Warnings are filled with the recommendations not followed
+    #endif //MEDIAINFO_CONFORMANCE
 
     //Buffer - Global
     void Read_Buffer_Init ();
@@ -1623,6 +1626,13 @@ protected :
     void SystemItem_Checks_TimeCode(int32u Seconds, int8u Frames, int8u FrameRate, int8u PairCount);
     int32u                          ArdZdf_IsRequested; //Bit per ARD/ZDF profile requested by the user, conformance errors are reported
     bool                            ArdZdf_FromContent_IsRequested; //ARD/ZDF profile matching the kind of content requested by the user ("ARD_ZDF"), conformance errors are reported
+    #if MEDIAINFO_CONFORMANCE
+        bool                        St2067204_IsRequested; //SMPTE ST 2067-204 requested by the user, conformance errors are reported
+        bool                        St2067204_IsTested; //Candidate (RIFF Chunks or ADM sets) or requested
+        conformance_errors          St2067204_Errors;
+        conformance_errors          St2067204_Warnings;
+        size_t                      RiffChunks_ErrorCount; //Count of SMPTE ST 2131 errors
+    #endif //MEDIAINFO_CONFORMANCE
     int64u                          Anc_ElementSize; //Size of the ANC Data Elements, (int64u)-1 if not yet parsed, (int64u)-2 if not constant
     void Property_Store(properties& Properties, int64u Size);
     void Properties_Store(properties& Properties);
