@@ -254,7 +254,7 @@ void File_Icc::FileHeader_Parse()
     Fill(Stream_General, 0, General_Format_Version, __T("Version ")+Ztring::ToZtring(Version_M)+__T('.')+Ztring::ToZtring(Version_m));
     if (Version_M!=2 && Version_M!=4)
     {
-        Finish();
+        ForceFinish(); //Tags are not parsed for other versions, nothing else to do (Finish() continues parsing if ParseSpeed>=1)
         return;
     }
     Stream_Prepare(StreamKind);
@@ -382,7 +382,7 @@ void File_Icc::Read_Buffer_Continue()
         P->Tags.pop();
     }
 
-    Finish();
+    ForceFinish(); //All tags are parsed, nothing else to do (Finish() continues parsing if ParseSpeed>=1)
 }
 
 //***************************************************************************
