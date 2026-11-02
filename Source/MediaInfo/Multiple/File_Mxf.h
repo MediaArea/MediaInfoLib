@@ -1515,6 +1515,22 @@ protected :
     std::map<int128u, properties>   SetProperties; //Key is InstanceUID of the set
     std::set<std::pair<int64u, int64u> > SetProperties_FooterDifferences; //Low part of the set key and property key, for properties having another value in the Footer Partition
     std::set<std::pair<int64u, int64u> > SetProperties_FooterPresenceDifferences; //Low part of the set key and property key, for properties present in only one of the Header Metadata repetitions
+    #if MEDIAINFO_CONFORMANCE
+        struct instanceuid_set
+        {
+            int64u                  Partition; //Offset of the partition of the Header Metadata
+            int64u                  StreamOffset; //Offset of the set
+            int64u                  Key; //Low part of the set key
+        };
+        std::map<int128u, instanceuid_set> InstanceUID_Sets; //Key is InstanceUID, value is the first set with this Instance UID in the last Header Metadata parsed containing it
+        struct instanceuid_duplicate
+        {
+            int128u                 InstanceUID;
+            int64u                  Key; //Low part of the key of the first set with this Instance UID
+            int64u                  Key_Duplicate; //Low part of the key of the set reusing it
+        };
+        std::map<int64u, instanceuid_duplicate> InstanceUID_Duplicates; //Key is the offset of a set reusing the Instance UID of another set of the same Header Metadata
+    #endif //MEDIAINFO_CONFORMANCE
 
     //Helpers for checking compliance with specifications, on raw values of local set properties
     struct property_expected
