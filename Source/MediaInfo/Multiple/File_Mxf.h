@@ -159,6 +159,8 @@ protected :
     void MCAEpisode();
     void MCAAudioContentKind();
     void MCAAudioElementKind();
+    void MCAContent();
+    void MCAUseClass();
     void TextDataDescription();
     void ResourceID();
     void NamespaceURI();
@@ -902,7 +904,8 @@ protected :
     //Descriptor
     struct descriptor
     {
-        std::vector<int128u> SubDescriptors;
+        std::vector<int128u> SubDescriptors; //File Descriptors for a Multiple Descriptor
+        std::vector<int128u> SubDescriptors_Multiple; //Sub-descriptors of a Multiple Descriptor
         std::vector<int128u> Locators;
 
         Ztring  ScanType;
@@ -957,6 +960,8 @@ protected :
             Type_AudioChannelLabelSubDescriptor,
             Type_SoundfieldGroupLabelSubDescriptor,
             Type_GroupOfSoundfieldGroupsLabelSubDescriptor,
+            Type_ADMSoundfieldGroupLabelSubDescriptor,
+            Type_RIFFChunkDefinitionSubDescriptor,
         };
         type Type;
         bool HasBFrames;
@@ -984,7 +989,10 @@ protected :
         //AudioChannelLabelSubDescriptor specific
         int128u     SoundfieldGroupLinkID;
 
-        //DescriptiveMarker
+        //RIFFChunkDefinitionSubDescriptor specific
+        int32u      RIFFChunkID;
+
+        //DescriptiveMarker, GenericStreamTextBasedSet, RIFFChunkDefinitionSubDescriptor
         int32u      SID;
 
         descriptor()
@@ -1047,7 +1055,10 @@ protected :
             SoundfieldGroupLinkID.hi=(int64u)-1;
             SoundfieldGroupLinkID.lo=(int64u)-1;
 
-            //DescriptiveMarker
+            //RIFFChunkDefinitionSubDescriptor specific
+            RIFFChunkID=0;
+
+            //DescriptiveMarker, GenericStreamTextBasedSet, RIFFChunkDefinitionSubDescriptor
             SID=0;
         }
         descriptor(const descriptor&) = delete;
@@ -1069,6 +1080,7 @@ protected :
     typedef std::map<int128u, descriptor> descriptors; //Key is InstanceUID of Descriptor
     descriptors Descriptors;
     void Descriptor_Fill(const char* Name, const Ztring& Value);
+    void Descriptor_Type_Set(descriptor::type Type, descriptor::type ReplacedType=descriptor::Type_Unknown); //After the parsing of an item, when Instance UID is known
     bool SubDescriptor_IsDangling(const descriptors::iterator& Descriptor);
     descriptors::iterator Descriptor_Single(bool IncludeLinkedToTrack=false);
     descriptors::iterator Descriptor_FromTrackID(int32u TrackID);
@@ -1757,6 +1769,7 @@ protected :
     #endif //MEDIAINFO_DEMUX || MEDIAINFO_SEEK
 
     void Streams_Finish_Descriptor (descriptors::iterator Descriptor);
+    void Streams_Finish_SoundfieldGroupLabel (const descriptor& Label, size_t StreamPos);
 };
 
 } //NameSpace

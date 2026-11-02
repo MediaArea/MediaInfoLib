@@ -4290,6 +4290,15 @@ void File_Mxf::Streams_Finish_Descriptor(const int128u DescriptorUID, const int1
     {
         for (size_t Pos=0; Pos<Descriptor->second.SubDescriptors.size(); Pos++)
             Streams_Finish_Descriptor(Descriptor->second.SubDescriptors[Pos], PackageUID);
+
+        //ADM soundfield groups of the Multiple Descriptor (SMPTE ST 2131), in the first audio stream as the ADM metadata
+        if (Count_Get(Stream_Audio))
+            for (const auto& SubDescriptorUID : Descriptor->second.SubDescriptors_Multiple)
+            {
+                const auto SubDescriptor=Descriptors.find(SubDescriptorUID);
+                if (SubDescriptor!=Descriptors.end() && SubDescriptor->second.Type==descriptor::Type_ADMSoundfieldGroupLabelSubDescriptor)
+                    Streams_Finish_SoundfieldGroupLabel(SubDescriptor->second, 0);
+            }
         return; //Is not a real descriptor
     }
 
@@ -4869,14 +4878,8 @@ void File_Mxf::Streams_Finish_Descriptor(descriptors::iterator Descriptor)
                                                 AudioChannelLabels_MCALabelDictionaryID.push_back(SubDescriptor->second.MCALabelDictionaryID);
                                                 break;
                         case descriptor::Type_SoundfieldGroupLabelSubDescriptor:
-                                                Fill(Stream_Audio, StreamPos_Last, "MCA Partition kind", SubDescriptor->second.MCAPartitionKind);
-                                                Fill(Stream_Audio, StreamPos_Last, "MCA Partition Number", SubDescriptor->second.MCAPartitionNumber);
-                                                Fill(Stream_Audio, StreamPos_Last, "MCA Title", SubDescriptor->second.MCATitle);
-                                                Fill(Stream_Audio, StreamPos_Last, "MCA Title Version", SubDescriptor->second.MCATitleVersion);
-                                                Fill(Stream_Audio, StreamPos_Last, "MCA Title Sub-Version", SubDescriptor->second.MCATitleSubVersion);
-                                                Fill(Stream_Audio, StreamPos_Last, "MCA Episode", SubDescriptor->second.MCAEpisode);
-                                                Fill(Stream_Audio, StreamPos_Last, "MCA Audio Content Kind", SubDescriptor->second.MCAAudioContentKind);
-                                                Fill(Stream_Audio, StreamPos_Last, "MCA Audio Element Kind", SubDescriptor->second.MCAAudioElementKind);
+                        case descriptor::Type_ADMSoundfieldGroupLabelSubDescriptor:
+                                                Streams_Finish_SoundfieldGroupLabel(SubDescriptor->second, StreamPos_Last);
                                                 //if (SubDescriptor->second.MCALabelDictionaryID.lo!=(int64u)-1)
                                                 //{
                                                 //    Ztring ChannelAssignment2;
@@ -4887,8 +4890,6 @@ void File_Mxf::Streams_Finish_Descriptor(descriptors::iterator Descriptor)
                                                 //        ChannelAssignment+=__T('-');
                                                 //    ChannelAssignment+=ChannelAssignment2;
                                                 //}
-                                                for (std::map<std::string, Ztring>::iterator Info=SubDescriptor->second.Infos.begin(); Info!=SubDescriptor->second.Infos.end(); ++Info)
-                                                    Fill(Stream_Audio, StreamPos_Last, Info->first.c_str(), Info->second, true);
                                                 break;
                         default:                ;
                                                 #if MEDIAINFO_ADVANCED
@@ -4971,6 +4972,21 @@ void File_Mxf::Streams_Finish_Descriptor(descriptors::iterator Descriptor)
     //Fallback on partition data if classic methods failed
     if (StreamKind_Last!=Stream_Max && StreamPos_Last!=(size_t)-1 && Retrieve(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Format)).empty() && Descriptors.size()==1 && Count_Get(StreamKind_Last)==1)
         Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Format), Mxf_EssenceContainer(EssenceContainer_FromPartitionMetadata));
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Streams_Finish_SoundfieldGroupLabel(const descriptor& Label, size_t StreamPos)
+{
+    Fill(Stream_Audio, StreamPos, "MCA Partition kind", Label.MCAPartitionKind);
+    Fill(Stream_Audio, StreamPos, "MCA Partition Number", Label.MCAPartitionNumber);
+    Fill(Stream_Audio, StreamPos, "MCA Title", Label.MCATitle);
+    Fill(Stream_Audio, StreamPos, "MCA Title Version", Label.MCATitleVersion);
+    Fill(Stream_Audio, StreamPos, "MCA Title Sub-Version", Label.MCATitleSubVersion);
+    Fill(Stream_Audio, StreamPos, "MCA Episode", Label.MCAEpisode);
+    Fill(Stream_Audio, StreamPos, "MCA Audio Content Kind", Label.MCAAudioContentKind);
+    Fill(Stream_Audio, StreamPos, "MCA Audio Element Kind", Label.MCAAudioElementKind);
+    for (const auto& Info : Label.Infos)
+        Fill(Stream_Audio, StreamPos, Info.first.c_str(), Info.second, true);
 }
 
 //---------------------------------------------------------------------------
@@ -10043,6 +10059,7 @@ void File_Mxf::RIFFChunkDefinitionSubDescriptor()
     ELEM____UUID_(RIFFChunkHashSHA1)
     ELEMENT_END()
     GenerationInterchangeObject();
+    Descriptor_Type_Set(descriptor::Type_RIFFChunkDefinitionSubDescriptor);
 }
 
 //---------------------------------------------------------------------------
@@ -10120,7 +10137,8 @@ void File_Mxf::ADMSoundfieldGroupLabelSubDescriptor()
     ELEM____UUID_(ADMAudioContentID_ST2131)
     ELEM____UUID_(ADMAudioObjectID_ST2131)
     ELEMENT_END()
-    GenerationInterchangeObject();
+    SoundfieldGroupLabelSubDescriptor(); //Subclass of SoundfieldGroupLabelSubDescriptor (SMPTE ST 2131)
+    Descriptor_Type_Set(descriptor::Type_ADMSoundfieldGroupLabelSubDescriptor, descriptor::Type_SoundfieldGroupLabelSubDescriptor);
 }
 
 //---------------------------------------------------------------------------
@@ -10307,7 +10325,7 @@ void File_Mxf::MultipleDescriptor()
     ELEMENT_BEGIN()
     ELEMENT(3F01, MultipleDescriptor_FileDescriptors)
     ELEMENT_MIDDLE()
-    //ELEM____UUID_(SubDescriptors) //TODO: check when MPEG-4 Visual subdescriptor, it disabled stream info merge
+    ELEM____UUID_(SubDescriptors) //Stored apart from the File Descriptors
     ELEMENT_END()
     FileDescriptor();
 }
@@ -11449,20 +11467,38 @@ void File_Mxf::MXFGenericStreamDataElementKey_09_01()
     if (Partitions_Pos<Partitions.size())
         Elem.SID=Partitions[Partitions_Pos].BodySID;
 
+    //RIFF Chunk carried by this Generic Stream (SMPTE ST 2131)
+    int32u RIFFChunkID=0;
+    if (Elem.SID)
+        for (const auto& Descriptor : Descriptors)
+            if (Descriptor.second.Type==descriptor::Type_RIFFChunkDefinitionSubDescriptor && Descriptor.second.SID==Elem.SID)
+            {
+                RIFFChunkID=Descriptor.second.RIFFChunkID;
+                break;
+            }
+
     //Preparing
     vector<File__Analyze*> Parsers;
-    #if 1
-        Parsers.push_back(new File_DolbyVisionMetadata);
-    #endif
-    #if 1
-        Parsers.push_back(new File_HdrVividMetadata);
-    #endif
-    #if defined(MEDIAINFO_ADM_YES)
-        Parsers.push_back(new File_Adm);
-    #endif
-    #if 1
-        Parsers.push_back(new File_DolbyAudioMetadata(true));
-    #endif
+    if (RIFFChunkID==0x64626D64) //"dbmd" RIFF Chunk, binary content without synchronization so parsed only if the RIFF Chunk is identified
+        Parsers.push_back(new File_DolbyAudioMetadata);
+    else
+    {
+        #if 1
+            Parsers.push_back(new File_DolbyVisionMetadata);
+        #endif
+        #if 1
+            Parsers.push_back(new File_HdrVividMetadata);
+        #endif
+        #if defined(MEDIAINFO_ADM_YES)
+            auto Adm_New=new File_Adm;
+            if (RIFFChunkID==0x61786D6C) //"axml" RIFF Chunk
+                Adm_New->MuxingMode="axml";
+            Parsers.push_back(Adm_New);
+        #endif
+        #if 1
+            Parsers.push_back(new File_DolbyAudioMetadata(true));
+        #endif
+    }
 
     //Parsing
     for (auto& Parser : Parsers)
@@ -11659,6 +11695,8 @@ void File_Mxf::MCALabelSubDescriptor()
     ELEM____UUID_(MCAAudioContentKind)
     ELEM____UUID_(MCAAudioElementKind)
     ELEM____UUID_(RFC5646SpokenLanguage)
+    ELEM____UUID_(MCAContent)
+    ELEM____UUID_(MCAUseClass)
     ELEMENT_END()
     GenerationInterchangeObject();
 }
@@ -11988,6 +12026,20 @@ void File_Mxf::MCAAudioElementKind()
 }
 
 //---------------------------------------------------------------------------
+void File_Mxf::MCAContent()
+{
+    //Parsing
+    Info_UTF16B (Length2, Value,                                "Value"); Element_Info1(Value);
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::MCAUseClass()
+{
+    //Parsing
+    Info_UTF16B (Length2, Value,                                "Value"); Element_Info1(Value);
+}
+
+//---------------------------------------------------------------------------
 void File_Mxf::TextDataDescription()
 {
     //Parsing
@@ -12058,7 +12110,9 @@ void File_Mxf::XMLDocumentText_Indirect()
 //---------------------------------------------------------------------------
 void File_Mxf::SubDescriptors()
 {
-    Descriptors[InstanceUID].SubDescriptors.clear();
+    auto& Descriptor=Descriptors[InstanceUID];
+    auto& List=Descriptor.Type==descriptor::type_Mutiple?Descriptor.SubDescriptors_Multiple:Descriptor.SubDescriptors; //SubDescriptors of the Multiple Descriptor is used for its File Descriptors
+    List.clear();
 
     //Parsing
     VECTOR(16);
@@ -12068,7 +12122,7 @@ void File_Mxf::SubDescriptors()
         Get_UUID(Data,                                          "Sub Descriptor");
 
         FILLING_BEGIN();
-            Descriptors[InstanceUID].SubDescriptors.push_back(Data);
+            List.push_back(Data);
         FILLING_END();
     }
 }
@@ -14230,13 +14284,20 @@ void File_Mxf::RIFFChunkStreamID()
 
     FILLING_BEGIN();
          ExtraMetadata_SID.insert(Data);
+         Descriptors[InstanceUID].SID=Data;
     FILLING_END();
 }
 
 //---------------------------------------------------------------------------
 void File_Mxf::RIFFChunkID()
 {
-    Skip_C4(                                                    "Data");
+    //Parsing
+    int32u Data;
+    Get_C4 (Data,                                               "Data"); Element_Info1(Ztring().From_CC4(Data));
+
+    FILLING_BEGIN();
+        Descriptors[InstanceUID].RIFFChunkID=Data;
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -19473,6 +19534,19 @@ bool File_Mxf::BookMark_Needed()
 }
 
 //---------------------------------------------------------------------------
+void File_Mxf::Descriptor_Type_Set(descriptor::type Type, descriptor::type ReplacedType)
+{
+    //Only when Instance UID is known, the entry would else be moved later to this Instance UID, replacing a File Descriptor with the same Instance UID (seen in some files)
+    if (!InstanceUID.hi && !InstanceUID.lo)
+        return;
+
+    //Not for a File Descriptor with the same Instance UID
+    auto& Descriptor=Descriptors[InstanceUID];
+    if ((Descriptor.Type==descriptor::Type_Unknown || Descriptor.Type==ReplacedType) && Descriptor.StreamKind==Stream_Max)
+        Descriptor.Type=Type;
+}
+
+//---------------------------------------------------------------------------
 void File_Mxf::Descriptor_Fill(const char* Name, const Ztring& Value)
 {
     descriptor& Descriptor = Descriptors[InstanceUID];
@@ -19749,6 +19823,7 @@ struct adm_ul_to_string
     const char* Name;
 };
 static adm_ul_to_string Mxf_ADM_UL_To_String[] = {
+    { 0x0402021101010000LL, "" }, // ADM (Recommendation ITU-R BS.2076) not further constrained by a profile, nothing to compare
     { 0x0402021102010000LL, "AdvSS Emission, Version 1, Level 0" },
     { 0x0402021102020000LL, "AdvSS Emission, Version 1, Level 1" },
     { 0x0402021102030000LL, "AdvSS Emission, Version 1, Level 2" },
@@ -19781,9 +19856,13 @@ void File_Mxf::CompareAdmProfiles()
             CanNotCompare = true;
             continue;
         }
+        if (!*Item_String)
+            continue; // Not a profile
 
         Profile_List_Container.insert(Item_String);
     }
+    if (Profile_List_Container.empty())
+        return; // No known profile in the container, e.g. only ADM not further constrained by a profile
 
     auto Max = Adm->Count_Get(Stream_Audio, 0);
     std::set<string> Profile_List_Stream;
