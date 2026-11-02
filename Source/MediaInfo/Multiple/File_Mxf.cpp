@@ -2902,13 +2902,16 @@ void File_Mxf::Streams_Finish()
         {
             //Check if compatible
             size_t End=(Stream_Audio<S.size() && !S[Stream_Audio].empty())?S[Stream_Audio][0].size():0;
+            bool Adm_HasNumberOfDynamicObjects=!Retrieve_Const(Stream_Audio, 0, "NumberOfDynamicObjects").empty(); //Beds and dynamic objects are in ADM only for Dolby Atmos
             for (size_t i=Start; i<End; i++)
             {
                 const auto& Field_Name=S[Stream_Audio][0][i][Info_Name];
+                if (!Adm_HasNumberOfDynamicObjects && (Field_Name==__T("NumberOfDynamicObjects") || Field_Name==__T("NumberOfBeds") || Field_Name.rfind(__T("BedChannel"), 0)==0))
+                    continue;
                 const auto& Field_Text_Iab=S[Stream_Audio][0][i][Info_Text];
                 const auto& Field_Text_Adm=Retrieve_Const(Stream_Audio, 0, Field_Name.To_UTF8().c_str());
                 if ((Field_Text_Iab==__T("Yes") && Field_Text_Adm.empty())
-                 || (Field_Text_Iab!=__T("Yes") && Field_Text_Iab!=Field_Text_Adm && (Field_Name.find(__T(" ChannelLayout"))==string::npos
+                 || (Field_Text_Iab!=__T("Yes") && Field_Text_Iab!=Field_Text_Adm && ((Field_Name.find(__T(" ChannelLayout"))==string::npos && Field_Name!=__T("BedChannelConfiguration"))
                                                                                    || ChannelLayout_2018_Rename(Field_Text_Iab, __T("IAB"))!=ChannelLayout_2018_Rename(Field_Text_Adm, __T("ADM")))))
                 {
                     Fill(Stream_Audio, 0, "Warnings", "Potential IAB/ADM coherency issues detected");
