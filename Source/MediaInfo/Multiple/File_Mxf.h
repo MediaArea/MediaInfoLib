@@ -96,6 +96,7 @@ protected :
     void Streams_Finish_Conformance_HeaderMetadata (); //SMPTE ST 377-1, KLV coding, Primer Pack and Header Metadata, version 1.3 only
     void Streams_Finish_Conformance_IndexTables (); //SMPTE ST 377-1, Index Table Segments of an Index Stream, version 1.3 only
     void Streams_Finish_Conformance_OperationalPattern (); //SMPTE ST 378 (OP1a), and for version 1.3 SMPTE ST 377-1 (generalized patterns) and SMPTE ST 390 (OP-Atom)
+    void Streams_Finish_Conformance_MCA (); //SMPTE ST 377-4 and SMPTE ST 377-41, MCA Label Sub-Descriptors
     void Streams_Finish_Conformance_RiffChunks (); //SMPTE ST 2131
     void Streams_Finish_Conformance_References ();
     #endif //MEDIAINFO_CONFORMANCE
@@ -1654,6 +1655,7 @@ protected :
         };
         std::vector<headermetadata_error> HeaderMetadata_Errors; //Errors found while parsing
         std::map<int128u, int64u>   SetKeys; //Key is InstanceUID of a Header Metadata Set (including dark sets), value is the low part of the set key
+        std::map<int128u, int64u>   SetPartitions; //Key is InstanceUID of a Header Metadata Set, value is the offset of the partition of its last occurrence
         std::map<int16u, int64u>    HeaderMetadata_TagsNotInPrimer; //Local Tags used in Header Metadata Sets but not in the Primer Pack of their partition, value is the offset of the first set using it
         std::map<int64u, std::set<int128u> > HeaderMetadata_Prefaces; //Key is the offset of the partition, value is the Instance UIDs of its Preface sets
         std::map<int64u, std::set<int128u> > HeaderMetadata_ContentStorages; //Key is the offset of the partition, value is the Instance UIDs of its Content Storage sets

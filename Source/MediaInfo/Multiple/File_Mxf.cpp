@@ -2911,6 +2911,7 @@ void File_Mxf::Streams_Finish()
     //Conformance with SMPTE ST 2131 and compliance with SMPTE ST 2067-204, before filling the ADM content as its parsed items are then cleared
     #if MEDIAINFO_CONFORMANCE
         Streams_Finish_Conformance_RiffChunks();
+        Streams_Finish_Conformance_MCA(); //ADM labels are also MCA labels (SMPTE ST 2131)
         St2067204_Errors=CompliantWith_St2067204(St2067204_Warnings);
     #endif //MEDIAINFO_CONFORMANCE
 
@@ -4195,6 +4196,466 @@ void File_Mxf::Streams_Finish_Conformance_OperationalPattern ()
 }
 
 //---------------------------------------------------------------------------
+void File_Mxf::Streams_Finish_Conformance_MCA ()
+{
+    if (IsSub)
+        return;
+
+    //File Package of each MCA Label Sub-Descriptor, through its File Descriptor and the Multiple Descriptor (raw value of SubDescriptors too, e.g. for the Multiple Descriptor)
+    map<int128u, int128u> Parents; //Key is the Instance UID of a sub-descriptor or of a File Descriptor of a Multiple Descriptor
+    for (const auto& Descriptor : Descriptors)
+    {
+        for (const auto& SubDescriptor : Descriptor.second.SubDescriptors)
+            Parents.emplace(SubDescriptor, Descriptor.first);
+        const auto Value=Property_Get(SetProperties_Get(Descriptor.first), Elements::SubDescriptors);
+        if (Value && Value->size()>=8 && BigEndian2int32u(Value->data()+4)==16)
+            for (size_t i=8; i+16<=Value->size(); i+=16)
+            {
+                int128u UID;
+                UID.hi=BigEndian2int64u(Value->data()+i);
+                UID.lo=BigEndian2int64u(Value->data()+i+8);
+                Parents.emplace(UID, Descriptor.first);
+            }
+    }
+    map<int128u, int128u> PackageDescriptors; //Key is the descriptor of a File Package, value is the File Package
+    for (const auto& Package : Packages)
+        if (Package.second.IsSourcePackage)
+            PackageDescriptors.emplace(Package.second.Descriptor, Package.first);
+    const auto Package_Get=[&](int128u UID) -> int128u { //0 if unknown
+        for (int Level=0; Level<3; Level++) //Label, File Descriptor, Multiple Descriptor
+        {
+            const auto Parent=Parents.find(UID);
+            if (Parent==Parents.end())
+                break;
+            UID=Parent->second;
+            const auto PackageDescriptor=PackageDescriptors.find(UID);
+            if (PackageDescriptor!=PackageDescriptors.end())
+                return PackageDescriptor->second;
+        }
+        return int128u();
+    };
+
+    //MCA Label Sub-Descriptors, including the subclasses of the Soundfield Group Label Sub-Descriptor
+    typedef pair<int64u, int128u> scope; //Partition and File Package, MCA Link IDs are unique and resolved in it as Soundfield Groups and Groups of Soundfield Groups may be duplicated in other File Packages
+    struct mca_label
+    {
+        int128u             InstanceUID;
+        const properties*   Properties;
+        char                Kind; //C=Audio Channel, S=Soundfield Group, G=Group of Soundfield Groups
+        bool                IsSubclass; //Subclass of the Soundfield Group Label Sub-Descriptor (IAB, MGA, ADM) with its own channel rules
+        bool                IsAdm; //ADM Soundfield Group Label Sub-Descriptor, its errors are also errors of SMPTE ST 2131
+        bool                Is2021; //Rules of SMPTE ST 377-4:2021, as items introduced in this edition are present or the label is defined after it
+        scope               Scope;
+        bool                Package_IsKnown; //False if the label is not referenced by a File Descriptor of a File Package, its links are then resolved in any File Package
+    };
+    vector<mca_label> Labels;
+    for (const auto& Set : SetKeys)
+    {
+        char Kind;
+        auto IsSubclass=false;
+        switch (Set.second)
+        {
+            case Groups::AudioChannelLabelSubDescriptor             : Kind='C'; break;
+            case Groups::SoundfieldGroupLabelSubDescriptor          : Kind='S'; break;
+            case Groups::GroupOfSoundfieldGroupsLabelSubDescriptor  : Kind='G'; break;
+            case Groups::IABSoundfieldLabelSubDescriptor            :
+            case Groups::MGASoundfieldGroupLabelSubDescriptor       :
+            case Groups::ADMSoundfieldGroupLabelSubDescriptor       : Kind='S'; IsSubclass=true; break;
+            default                                                 : continue;
+        }
+        const auto Properties=SetProperties.find(Set.first);
+        if (Properties==SetProperties.end())
+            continue;
+        auto Is2021=Set.second==Groups::ADMSoundfieldGroupLabelSubDescriptor; //SMPTE ST 2131 references the current edition of SMPTE ST 377-4
+        for (const auto Key : {Elements::MCAContent, Elements::MCAUseClass, Elements::MCAContentSubtype, Elements::MCAContentDifferentiator, Elements::MCASpokenLanguageAttribute, Elements::RFC5646AdditionalSpokenLanguages, Elements::MCAAdditionalLanguageAttributes})
+            if (Property_Get(Properties->second, Key))
+                Is2021=true;
+        const auto Partition=SetPartitions.find(Set.first);
+        const auto Package=Package_Get(Set.first);
+        Labels.push_back({Set.first, &Properties->second, Kind, IsSubclass, Set.second==Groups::ADMSoundfieldGroupLabelSubDescriptor, Is2021, scope(Partition==SetPartitions.end()?(int64u)-1:Partition->second, Package), Package.hi || Package.lo});
+    }
+    if (Labels.empty())
+        return;
+
+    const auto Fill_Conformance_MCA_Level=[&](const char* Field, const string& Value, conformance_type Level) {
+        //No offset, no frame or time
+        const auto File_Offset_Save=File_Offset;
+        const auto Frame_Count_Save=Frame_Count;
+        const auto Frame_Count_NotParsedIncluded_Save=Frame_Count_NotParsedIncluded;
+        const auto PTS_Save=FrameInfo.PTS;
+        const auto DTS_Save=FrameInfo.DTS;
+        File_Offset=(int64u)-1-(Buffer_Offset+Element_Offset);
+        Frame_Count=(int64u)-1;
+        Frame_Count_NotParsedIncluded=(int64u)-1;
+        FrameInfo.PTS=(int64u)-1;
+        FrameInfo.DTS=(int64u)-1;
+        Fill_Conformance(Field, Value, {}, Level);
+        Merge_Conformance();
+        File_Offset=File_Offset_Save;
+        Frame_Count=Frame_Count_Save;
+        Frame_Count_NotParsedIncluded=Frame_Count_NotParsedIncluded_Save;
+        FrameInfo.PTS=PTS_Save;
+        FrameInfo.DTS=DTS_Save;
+    };
+    const auto Fill_Conformance_MCA=[&](const char* Field, const string& Value) {
+        Fill_Conformance_MCA_Level(Field, Value, Conformance_Error);
+    };
+    const auto Fill_Conformance_MCA_Warning=[&](const char* Field, const string& Value) {
+        Fill_Conformance_MCA_Level(Field, Value, Conformance_Warning);
+    };
+    size_t AdmLabels_ErrorCount=0;
+    const auto Error_Count=[&](const mca_label& Label) {
+        if (Label.IsAdm)
+            AdmLabels_ErrorCount++;
+    };
+    const auto UUID_Get=[](const string* Value, int128u& UUID) {
+        if (!Value || Value->size()!=16)
+            return false;
+        UUID.hi=BigEndian2int64u(Value->data());
+        UUID.lo=BigEndian2int64u(Value->data()+8);
+        return true;
+    };
+    const auto List_Text=[](const set<string>& List) {
+        string Result;
+        size_t i=0;
+        for (const auto& Item : List)
+        {
+            if (i==3)
+            {
+                Result+=", ...";
+                break;
+            }
+            if (i++)
+                Result+=", ";
+            Result+=Item;
+        }
+        return Result;
+    };
+    const auto Count_Text=[](size_t Count) {
+        return Count>1?(" (actual "+to_string(Count)+" sets)"):string();
+    };
+
+    //Required items (SMPTE ST 377-4)
+    struct item
+    {
+        int64u      Key;
+        const char* Name;
+    };
+    static const item Items_Required[]=
+    {
+        { Elements::MCALabelDictionaryID,   "MCALabelDictionaryID" },
+        { Elements::MCALinkID,              "MCALinkID" },
+        { Elements::MCATagSymbol,           "MCATagSymbol" },
+    };
+    for (const auto& Item : Items_Required)
+    {
+        size_t Missing=0;
+        for (const auto& Label : Labels)
+            if (!Property_Get(*Label.Properties, Item.Key))
+            {
+                Missing++;
+                Error_Count(Label);
+            }
+        if (Missing)
+            Fill_Conformance_MCA((string("MXF MCA ")+Item.Name).c_str(), string(Item.Name)+" is not present"+Count_Text(Missing));
+    }
+
+    //MCA Tag Symbol with 2 to 8 alphanumeric characters starting with an alpha character
+    set<string> TagSymbols_Wrong;
+    for (const auto& Label : Labels)
+    {
+        const auto Value=Property_Get(*Label.Properties, Elements::MCATagSymbol);
+        if (!Value)
+            continue;
+        const auto TagSymbol=Raw_UTF16_Get(Value);
+        auto IsValid=TagSymbol.size()>=2 && TagSymbol.size()<=8;
+        for (size_t i=0; i<TagSymbol.size() && IsValid; i++)
+        {
+            const auto c=TagSymbol[i];
+            const auto IsAlpha=(c>='A' && c<='Z') || (c>='a' && c<='z');
+            if (!IsAlpha && (!i || c<'0' || c>'9'))
+                IsValid=false;
+        }
+        if (!IsValid)
+        {
+            TagSymbols_Wrong.insert('\"'+TagSymbol+'\"');
+            Error_Count(Label);
+        }
+    }
+    if (!TagSymbols_Wrong.empty())
+        Fill_Conformance_MCA("MXF MCA MCATagSymbol", "MCATagSymbol does not have 2 to 8 alphanumeric characters starting with an alpha character (actual "+List_Text(TagSymbols_Wrong)+')');
+
+    //Labels not referenced by a File Descriptor of a File Package
+    size_t Labels_NoPackage=0;
+    for (const auto& Label : Labels)
+        if (!Label.Package_IsKnown)
+        {
+            Labels_NoPackage++;
+            Error_Count(Label);
+        }
+    if (Labels_NoPackage)
+        Fill_Conformance_MCA("MXF MCA MCALabelSubDescriptor", "MCA Label Sub-Descriptor is not referenced by a File Descriptor of a File Package"+Count_Text(Labels_NoPackage));
+
+    //MCA Link ID, unique in a File Package of a Header Metadata
+    set<pair<scope, int128u> > LinkIDs, LinkIDs_SoundfieldGroup, LinkIDs_GroupOfSoundfieldGroups;
+    set<int128u> LinkIDs_SoundfieldGroup_Any, LinkIDs_GroupOfSoundfieldGroups_Any; //In any File Package
+    set<int128u> LinkIDs_SoundfieldGroup_Packages, LinkIDs_GroupOfSoundfieldGroups_Packages; //In a File Package
+    set<string> LinkIDs_Duplicated;
+    for (const auto& Label : Labels)
+    {
+        int128u LinkID;
+        if (!UUID_Get(Property_Get(*Label.Properties, Elements::MCALinkID), LinkID))
+            continue;
+        const auto Item=make_pair(Label.Scope, LinkID);
+        if (Label.Package_IsKnown && !LinkIDs.insert(Item).second)
+        {
+            LinkIDs_Duplicated.insert(Ztring().From_UUID(LinkID).To_UTF8());
+            Error_Count(Label);
+        }
+        if (Label.Kind=='S')
+        {
+            LinkIDs_SoundfieldGroup.insert(Item);
+            LinkIDs_SoundfieldGroup_Any.insert(LinkID);
+            if (Label.Package_IsKnown)
+                LinkIDs_SoundfieldGroup_Packages.insert(LinkID);
+        }
+        if (Label.Kind=='G')
+        {
+            LinkIDs_GroupOfSoundfieldGroups.insert(Item);
+            LinkIDs_GroupOfSoundfieldGroups_Any.insert(LinkID);
+            if (Label.Package_IsKnown)
+                LinkIDs_GroupOfSoundfieldGroups_Packages.insert(LinkID);
+        }
+    }
+    if (!LinkIDs_Duplicated.empty())
+        Fill_Conformance_MCA("MXF MCA MCALinkID", "MCALinkID is used by more than one MCA Label Sub-Descriptor of the File Package (actual "+List_Text(LinkIDs_Duplicated)+')');
+
+    //Links from Audio Channels to Soundfield Groups and from Soundfield Groups to Groups of Soundfield Groups, within the same File Package (in any File Package for labels not referenced by a File Descriptor of a File Package)
+    set<pair<scope, int128u> > SoundfieldGroups_Referenced, GroupOfSoundfieldGroups_Referenced;
+    set<string> SoundfieldGroups_Missing, SoundfieldGroups_OtherPackage, SoundfieldGroups_NoPackage, GroupOfSoundfieldGroups_Missing, GroupOfSoundfieldGroups_OtherPackage, GroupOfSoundfieldGroups_NoPackage;
+    for (const auto& Label : Labels)
+    {
+        int128u LinkID;
+        if (Label.Kind=='C' && UUID_Get(Property_Get(*Label.Properties, Elements::SoundfieldGroupLinkID), LinkID))
+        {
+            const auto Item=make_pair(Label.Scope, LinkID);
+            SoundfieldGroups_Referenced.insert(Item);
+            if (LinkIDs_SoundfieldGroup.find(Item)==LinkIDs_SoundfieldGroup.end() && (Label.Package_IsKnown || LinkIDs_SoundfieldGroup_Any.find(LinkID)==LinkIDs_SoundfieldGroup_Any.end()))
+            {
+                (LinkIDs_SoundfieldGroup_Any.find(LinkID)==LinkIDs_SoundfieldGroup_Any.end()?SoundfieldGroups_Missing:(LinkIDs_SoundfieldGroup_Packages.find(LinkID)==LinkIDs_SoundfieldGroup_Packages.end()?SoundfieldGroups_NoPackage:SoundfieldGroups_OtherPackage)).insert(Ztring().From_UUID(LinkID).To_UTF8());
+                Error_Count(Label);
+            }
+        }
+        const auto GroupOfSoundfieldGroupsLinkID=Property_Get(*Label.Properties, Elements::GroupOfSoundfieldGroupsLinkID);
+        if (Label.Kind=='S' && GroupOfSoundfieldGroupsLinkID && GroupOfSoundfieldGroupsLinkID->size()>=8 && BigEndian2int32u(GroupOfSoundfieldGroupsLinkID->data()+4)==16)
+            for (size_t Pos=8; Pos+16<=GroupOfSoundfieldGroupsLinkID->size(); Pos+=16)
+            {
+                LinkID.hi=BigEndian2int64u(GroupOfSoundfieldGroupsLinkID->data()+Pos);
+                LinkID.lo=BigEndian2int64u(GroupOfSoundfieldGroupsLinkID->data()+Pos+8);
+                const auto Item=make_pair(Label.Scope, LinkID);
+                GroupOfSoundfieldGroups_Referenced.insert(Item);
+                if (LinkIDs_GroupOfSoundfieldGroups.find(Item)==LinkIDs_GroupOfSoundfieldGroups.end() && (Label.Package_IsKnown || LinkIDs_GroupOfSoundfieldGroups_Any.find(LinkID)==LinkIDs_GroupOfSoundfieldGroups_Any.end()))
+                {
+                    (LinkIDs_GroupOfSoundfieldGroups_Any.find(LinkID)==LinkIDs_GroupOfSoundfieldGroups_Any.end()?GroupOfSoundfieldGroups_Missing:(LinkIDs_GroupOfSoundfieldGroups_Packages.find(LinkID)==LinkIDs_GroupOfSoundfieldGroups_Packages.end()?GroupOfSoundfieldGroups_NoPackage:GroupOfSoundfieldGroups_OtherPackage)).insert(Ztring().From_UUID(LinkID).To_UTF8());
+                    Error_Count(Label);
+                }
+            }
+    }
+    if (!SoundfieldGroups_Missing.empty())
+        Fill_Conformance_MCA("MXF MCA SoundfieldGroupLinkID", "SoundfieldGroupLinkID is not the MCALinkID of a Soundfield Group Label Sub-Descriptor (actual "+List_Text(SoundfieldGroups_Missing)+')');
+    if (!SoundfieldGroups_OtherPackage.empty())
+        Fill_Conformance_MCA("MXF MCA SoundfieldGroupLinkID", "SoundfieldGroupLinkID is the MCALinkID of a Soundfield Group Label Sub-Descriptor of another File Package (actual "+List_Text(SoundfieldGroups_OtherPackage)+')');
+    if (!SoundfieldGroups_NoPackage.empty())
+        Fill_Conformance_MCA("MXF MCA SoundfieldGroupLinkID", "SoundfieldGroupLinkID is the MCALinkID of a Soundfield Group Label Sub-Descriptor which is not referenced by a File Descriptor of a File Package (actual "+List_Text(SoundfieldGroups_NoPackage)+')');
+    if (!GroupOfSoundfieldGroups_Missing.empty())
+        Fill_Conformance_MCA("MXF MCA GroupOfSoundfieldGroupsLinkID", "GroupOfSoundfieldGroupsLinkID is not the MCALinkID of a Group Of Soundfield Groups Label Sub-Descriptor (actual "+List_Text(GroupOfSoundfieldGroups_Missing)+')');
+    if (!GroupOfSoundfieldGroups_OtherPackage.empty())
+        Fill_Conformance_MCA("MXF MCA GroupOfSoundfieldGroupsLinkID", "GroupOfSoundfieldGroupsLinkID is the MCALinkID of a Group Of Soundfield Groups Label Sub-Descriptor of another File Package (actual "+List_Text(GroupOfSoundfieldGroups_OtherPackage)+')');
+    if (!GroupOfSoundfieldGroups_NoPackage.empty())
+        Fill_Conformance_MCA("MXF MCA GroupOfSoundfieldGroupsLinkID", "GroupOfSoundfieldGroupsLinkID is the MCALinkID of a Group Of Soundfield Groups Label Sub-Descriptor which is not referenced by a File Descriptor of a File Package (actual "+List_Text(GroupOfSoundfieldGroups_NoPackage)+')');
+    size_t SoundfieldGroups_NotReferenced=0, GroupOfSoundfieldGroups_NotReferenced=0;
+    for (const auto& Label : Labels)
+    {
+        int128u LinkID;
+        if (!UUID_Get(Property_Get(*Label.Properties, Elements::MCALinkID), LinkID))
+            continue;
+        const auto Item=make_pair(Label.Scope, LinkID);
+        if (!Label.Package_IsKnown)
+            continue; //Already reported
+        if (Label.Kind=='S' && !Label.IsSubclass && SoundfieldGroups_Referenced.find(Item)==SoundfieldGroups_Referenced.end())
+            SoundfieldGroups_NotReferenced++;
+        if (Label.Kind=='G' && GroupOfSoundfieldGroups_Referenced.find(Item)==GroupOfSoundfieldGroups_Referenced.end())
+            GroupOfSoundfieldGroups_NotReferenced++;
+    }
+    if (SoundfieldGroups_NotReferenced)
+        Fill_Conformance_MCA("MXF MCA SoundfieldGroupLabelSubDescriptor", "Soundfield Group Label Sub-Descriptor is not referenced by an Audio Channel Label Sub-Descriptor of the File Package"+Count_Text(SoundfieldGroups_NotReferenced));
+    if (GroupOfSoundfieldGroups_NotReferenced)
+        Fill_Conformance_MCA("MXF MCA GroupOfSoundfieldGroupsLabelSubDescriptor", "Group Of Soundfield Groups Label Sub-Descriptor is not referenced by a Soundfield Group Label Sub-Descriptor of the File Package"+Count_Text(GroupOfSoundfieldGroups_NotReferenced));
+
+    //Items present together, items depending on a Spoken Language (SMPTE ST 377-4:2021, MCA Partition Kind and MCA Partition Number are independent in SMPTE ST 377-4:2012)
+    size_t Content_Alone=0, Partition_Alone=0, Partition_Alone_2012=0, Languages_Alone=0, AdditionalLanguages_Alone=0;
+    for (const auto& Label : Labels)
+    {
+        const auto& Properties=*Label.Properties;
+        if (!Property_Get(Properties, Elements::MCAContent)!=!Property_Get(Properties, Elements::MCAUseClass))
+        {
+            Content_Alone++;
+            Error_Count(Label);
+        }
+        if (!Property_Get(Properties, Elements::MCAPartitionKind)!=!Property_Get(Properties, Elements::MCAPartitionNumber))
+        {
+            if (Label.Is2021)
+            {
+                Partition_Alone++;
+                Error_Count(Label);
+            }
+            else
+                Partition_Alone_2012++;
+        }
+        const auto SpokenLanguage=Property_Get(Properties, Elements::RFC5646SpokenLanguage);
+        if ((!SpokenLanguage && Property_Get(Properties, Elements::RFC5646AdditionalSpokenLanguages))
+         || ((!SpokenLanguage || SpokenLanguage->find_first_not_of('\0')==string::npos) && Property_Get(Properties, Elements::MCASpokenLanguageAttribute)))
+        {
+            Languages_Alone++;
+            Error_Count(Label);
+        }
+        if (!Property_Get(Properties, Elements::RFC5646AdditionalSpokenLanguages) && Property_Get(Properties, Elements::MCAAdditionalLanguageAttributes))
+        {
+            AdditionalLanguages_Alone++;
+            Error_Count(Label);
+        }
+    }
+    if (Content_Alone)
+        Fill_Conformance_MCA("MXF MCA MCAContent", "MCAContent and MCAUseClass are not both present"+Count_Text(Content_Alone));
+    if (Partition_Alone)
+        Fill_Conformance_MCA("MXF MCA MCAPartitionNumber", "MCAPartitionKind and MCAPartitionNumber are not both present"+Count_Text(Partition_Alone));
+    if (Partition_Alone_2012)
+        Fill_Conformance_MCA_Warning("MXF MCA MCAPartitionNumber", "MCAPartitionKind and MCAPartitionNumber are not both present"+Count_Text(Partition_Alone_2012));
+    if (Languages_Alone)
+        Fill_Conformance_MCA("MXF MCA RFC5646SpokenLanguage", "RFC5646AdditionalSpokenLanguages or MCASpokenLanguageAttribute is present without RFC5646SpokenLanguage"+Count_Text(Languages_Alone));
+    if (AdditionalLanguages_Alone)
+        Fill_Conformance_MCA("MXF MCA RFC5646AdditionalSpokenLanguages", "MCAAdditionalLanguageAttributes is present without RFC5646AdditionalSpokenLanguages"+Count_Text(AdditionalLanguages_Alone));
+
+    //Controlled vocabulary of MCA Content and MCA Use Class (SMPTE ST 377-41:2023), a recommendation as SMPTE ST 377-4 does not reference it
+    struct vocabulary
+    {
+        const char* Content;
+        const char* UseClasses; //Valid MCA Use Class values for this MCA Content, Table 4
+    };
+    static const vocabulary Vocabulary[]=
+    {
+        { "PRM",    " FCMP SMPL " },
+        { "SAP",    " FCMP SMPL " },
+        { "HI",     " FCMP " },
+        { "DV",     " FCMP " },
+        { "CM",     " FCMP SING " },
+        { "DX",     " ICMP SMPL " },
+        { "MX",     " ICMP SMPL " },
+        { "FX",     " ICMP SMPL " },
+        { "ME",     " ICMP SMPL " },
+        { "OP",     " ICMP SMPL " },
+        { "MESP",   " ICMP SMPL " },
+        { "DME",    " ICMP SMPL " },
+        { "NDME",   " ICMP SMPL " },
+        { "FFX",    " ICMP SMPL " },
+        { "PNAR",   " SING " },
+        { "ONAR",   " SING " },
+        { "LCM",    " SING " },
+        { "VO",     " SING " },
+        { "VI",     " SING " },
+        { "MOS",    " FCMP SMPL " },
+        { "ADR",    " ICMP " },
+        { "GRP",    " ICMP " },
+        { "CRD",    " ICMP " },
+        { "WLA",    " ICMP " },
+        { "VOC",    " ICMP SMPL " },
+        { "FOL",    " ICMP " },
+        { "BG",     " ICMP " },
+    };
+    set<string> Contents_Wrong, UseClasses_Wrong, Combinations_Wrong, PartitionNumbers_Wrong;
+    for (const auto& Label : Labels)
+    {
+        const auto& Properties=*Label.Properties;
+        const auto Content_Value=Property_Get(Properties, Elements::MCAContent);
+        const auto UseClass_Value=Property_Get(Properties, Elements::MCAUseClass);
+        const auto UseClass=Raw_UTF16_Get(UseClass_Value);
+        const auto UseClass_IsValid=UseClass=="FCMP" || UseClass=="ICMP" || UseClass=="SMPL" || UseClass=="SING";
+        if (UseClass_Value && !UseClass_IsValid)
+            UseClasses_Wrong.insert('\"'+UseClass+'\"');
+        if (Content_Value)
+        {
+            const auto Content=Raw_UTF16_Get(Content_Value);
+            const auto IsPrivate=!Content.rfind("x-", 0) && Content.size()>=3 && Content.size()<=6;
+            const vocabulary* Item=nullptr;
+            for (const auto& Vocabulary_Item : Vocabulary)
+                if (Content==Vocabulary_Item.Content)
+                    Item=&Vocabulary_Item;
+            if (!Item && !IsPrivate)
+                Contents_Wrong.insert('\"'+Content+'\"');
+            else if (Item && UseClass_Value && UseClass_IsValid && !strstr(Item->UseClasses, (' '+UseClass+' ').c_str()))
+                Combinations_Wrong.insert(Content+'/'+UseClass);
+        }
+        const auto PartitionNumber_Value=Property_Get(Properties, Elements::MCAPartitionNumber);
+        if (PartitionNumber_Value && Raw_UTF16_Get(Property_Get(Properties, Elements::MCAPartitionKind))=="FL")
+        {
+            const auto PartitionNumber=Raw_UTF16_Get(PartitionNumber_Value);
+            if (PartitionNumber!="1")
+                PartitionNumbers_Wrong.insert('\"'+PartitionNumber+'\"');
+        }
+    }
+    if (!Contents_Wrong.empty())
+        Fill_Conformance_MCA_Warning("MXF MCA MCAContent", "MCAContent is not in the controlled vocabulary (actual "+List_Text(Contents_Wrong)+')');
+    if (!UseClasses_Wrong.empty())
+        Fill_Conformance_MCA_Warning("MXF MCA MCAUseClass", "MCAUseClass is not in the controlled vocabulary (actual "+List_Text(UseClasses_Wrong)+')');
+    if (!Combinations_Wrong.empty())
+        Fill_Conformance_MCA_Warning("MXF MCA MCAUseClass", "MCAUseClass is not a valid one for the MCAContent (actual "+List_Text(Combinations_Wrong)+')');
+    if (!PartitionNumbers_Wrong.empty())
+        Fill_Conformance_MCA_Warning("MXF MCA MCAPartitionNumber", "MCAPartitionNumber is not 1 for the FL MCAPartitionKind (actual "+List_Text(PartitionNumbers_Wrong)+')');
+
+    //MCA Channel ID of the Audio Channel Label Sub-Descriptors of a Sound Track, a channel of the Sound Track used once, bits 31-16 may select a subchannel (SMPTE ST 382 Annex E)
+    set<string> ChannelIDs_Duplicated, ChannelIDs_OutOfRange;
+    for (const auto& Descriptor : Descriptors)
+    {
+        const auto ChannelCount=Descriptor.second.ChannelCount;
+        if (ChannelCount==(int32u)-1)
+            continue;
+        set<int64u> ChannelIDs;
+        auto SubDescriptors=Descriptor.second.SubDescriptors;
+        if (SubDescriptors.empty()) //SubDescriptors item is not parsed for some descriptors, e.g. Generic Sound Essence Descriptor
+        {
+            const auto Value=Property_Get(SetProperties_Get(Descriptor.first), Elements::SubDescriptors);
+            if (Value && Value->size()>=8 && BigEndian2int32u(Value->data()+4)==16)
+                for (size_t i=8; i+16<=Value->size(); i+=16)
+                {
+                    int128u UID;
+                    UID.hi=BigEndian2int64u(Value->data()+i);
+                    UID.lo=BigEndian2int64u(Value->data()+i+8);
+                    SubDescriptors.push_back(UID);
+                }
+        }
+        for (const auto& SubDescriptorUID : SubDescriptors)
+        {
+            const auto SubDescriptorKey=SetKeys.find(SubDescriptorUID);
+            int64u ChannelID;
+            if (SubDescriptorKey==SetKeys.end() || SubDescriptorKey->second!=Groups::AudioChannelLabelSubDescriptor || !Raw_UInt_Get(Property_Get(SetProperties_Get(SubDescriptorUID), Elements::MCAChannelID), 4, ChannelID))
+                continue;
+            if (!ChannelIDs.insert(ChannelID).second)
+                ChannelIDs_Duplicated.insert(to_string(ChannelID));
+            const auto Channel=ChannelID&0xFFFF;
+            if (!Channel || Channel>ChannelCount)
+                ChannelIDs_OutOfRange.insert(to_string(ChannelID)+" for "+to_string(ChannelCount)+" channels");
+        }
+    }
+    if (!ChannelIDs_Duplicated.empty())
+        Fill_Conformance_MCA("MXF MCA MCAChannelID", "MCAChannelID is used by more than one Audio Channel Label Sub-Descriptor of the Sound Track (actual "+List_Text(ChannelIDs_Duplicated)+')');
+    if (!ChannelIDs_OutOfRange.empty())
+        Fill_Conformance_MCA("MXF MCA MCAChannelID", "MCAChannelID is not a channel of the Sound Track (actual "+List_Text(ChannelIDs_OutOfRange)+')');
+
+    //Errors on ADM labels are also errors of SMPTE ST 2131, and they are checked before the SMPTE ST 2067-204 compliance test
+    RiffChunks_ErrorCount+=AdmLabels_ErrorCount;
+}
+
+//---------------------------------------------------------------------------
 void File_Mxf::Streams_Finish_Conformance_FileFormat ()
 {
     if (IsSub || Partitions.empty() || Partitions[0].Kind!=0x02)
@@ -4868,8 +5329,9 @@ void File_Mxf::Streams_Finish_Conformance_RiffChunks ()
         const auto DictionaryID=Property_Get(Properties, Elements::MCALabelDictionaryID);
         if (DictionaryID && DictionaryID->size()==16 && (BigEndian2int64u(DictionaryID->data())&0xFFFFFFFFFFFFFF00LL)==0x060E2B3404010100LL && BigEndian2int64u(DictionaryID->data()+8)==0x0302022300000000LL)
         {
-            const auto TagSymbol=Raw_UTF16_Get(Property_Get(Properties, Elements::MCATagSymbol));
-            if (TagSymbol!="ADM")
+            const auto TagSymbol_Value=Property_Get(Properties, Elements::MCATagSymbol);
+            const auto TagSymbol=Raw_UTF16_Get(TagSymbol_Value);
+            if (TagSymbol_Value && TagSymbol!="ADM") //Absence is reported by the MCA checks
                 Error_Label("MXF ADMSoundfieldGroupLabelSubDescriptor MCATagSymbol", "MCATagSymbol is not the one of the ADM Soundfield label (actual \""+TagSymbol+"\", expected \"ADM\")");
             const auto TagName=Raw_UTF16_Get(Property_Get(Properties, Elements::MCATagName));
             if (TagName!="ADM")
@@ -21603,8 +22065,8 @@ void File_Mxf::Property_Store(properties& Properties, int64u Size)
         Key=Primer_Value->second.lo;
     }
 
-    //Raw content, only the beginning of long values (e.g. index entries) is kept
-    if (Size>256)
+    //Raw content, only the beginning of long values (e.g. index entries) is kept, except for the references to sub-descriptors
+    if (Size>256 && Key!=Elements::SubDescriptors)
         Size=256;
     if (Buffer_Offset+Element_Offset+Size>Buffer_Size)
         return;
@@ -21661,6 +22123,7 @@ void File_Mxf::Properties_Store(properties& Properties)
         if (SetUID.hi || SetUID.lo)
         {
             SetKeys[SetUID]=Code.lo;
+            SetPartitions[SetUID]=HeaderMetadata_Partition;
             if (Code.lo==Groups::Preface)
                 HeaderMetadata_Prefaces[HeaderMetadata_Partition].insert(SetUID);
             else if (Code.lo==Groups::ContentStorage)
