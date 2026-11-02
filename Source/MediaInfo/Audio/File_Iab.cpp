@@ -73,6 +73,27 @@ const float32 Iab_FrameRate[16]=
 };
 
 //---------------------------------------------------------------------------
+const int8u Iab_NumPanSubBlocks[16]=
+{
+    8,
+    8,
+    8,
+    4,
+    4,
+    4,
+    2,
+    2,
+    2,
+    8,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+};
+
+//---------------------------------------------------------------------------
 const char* Iab_Channel(int32u Code)
 {
     static const char* Iab_Channel_Values[]=
@@ -91,15 +112,15 @@ const char* Iab_Channel(int32u Code)
         "Tsl",
         "Tsr",
         "LFE",
-        "Left Height",
-        "Right Height",
-        "Center Height",
-        "Left Surround Height",
-        "Right Surround Height",
-        "Left Side Surround Height",
-        "Right Side Surround Height",
-        "Left Rear Surround Height",
-        "Right Rear Surround Height",
+        "Lh",
+        "Rh",
+        "Ch",
+        "Lsh",
+        "Rsh",
+        "Lssh",
+        "Rssh",
+        "Lrsh",
+        "Rrsh",
         "Tc",
         //0x18-0x7F reserved
         "Tfl",
@@ -653,10 +674,10 @@ void File_Iab::BedDefinition()
         if (ChannelDecorInfoExists)
         {
             int8u ChannelDecorCoefPrefix;
-            Skip_S2(2,                                          "Reserved");
+            Skip_S1(4,                                          "Reserved");
             Get_S1 (2, ChannelDecorCoefPrefix,                  "ChannelDecorCoefPrefix");
             if (ChannelDecorCoefPrefix>1)
-                Skip_S1(10,                                     "ChannelDecorCoef");
+                Skip_S1(8,                                      "ChannelDecorCoef");
         }
         Element_End0();
         F.Objects.back().ChannelLayout.push_back(ChannelID);
@@ -668,12 +689,14 @@ void File_Iab::BedDefinition()
     Get_B1 (AudioDescription,                                   "AudioDescription");
     if (AudioDescription&0x80)
     {
-        size_t Pos=(size_t)Element_Offset+1;
-        while (Pos<Element_Size-1 && Buffer[Buffer_Offset+Pos])
+        size_t Pos=(size_t)Element_Offset;
+        while (Pos<Element_Size && Buffer[Buffer_Offset+Pos])
             Pos++;
-        Skip_XX(Pos-Element_Offset,                             "AudioDescriptionText");
+        Skip_String(Pos-Element_Offset,                         "AudioDescriptionText");
+        if (Element_Offset<Element_Size)
+            Element_Offset++; //NULL terminator
     }
-    Skip_B1(                                                    "SubElementCount");
+    Skip_Plex8(                                                 "SubElementCount");
     Element_ThisIsAList();
 }
 
@@ -684,18 +707,18 @@ void File_Iab::ObjectDefinition()
 
     //Parsing
     int8u AudioDescription;
-    bool ConditionalBed;
+    bool ConditionalObject;
     Skip_Plex8(                                                 "MetaID");
     Skip_Plex8(                                                 "AudioDataID");
     BS_Begin();
-    Get_SB (ConditionalBed,                                     "ConditionalBed");
-    if (ConditionalBed)
+    Get_SB (ConditionalObject,                                  "ConditionalObject");
+    if (ConditionalObject)
     {
         Skip_SB(                                                "1");
         Skip_S1(8,                                              "ObjectUseCase");
     }
     Skip_SB(                                                    "0");
-    int32u NumPanSubBlocks=8;
+    int32u NumPanSubBlocks=(FrameRate<16 && Iab_NumPanSubBlocks[FrameRate])?Iab_NumPanSubBlocks[FrameRate]:8;
     for (int32u sb=0; sb<NumPanSubBlocks; sb++)
     {
         Element_Begin1("PanSubBlock");
@@ -741,13 +764,17 @@ void File_Iab::ObjectDefinition()
             Get_S1 (2, ObjectSpreadMode,                        "ObjectSpreadMode");
             switch (ObjectSpreadMode)
             {
-                case 0:
-                case 2:
+                case 0: //OBJECT_SPREAD_LOWREZ
                 {
                     Skip_S1( 8,                                 "ObjectSpread");
                 }
                 break;
-                case 3:
+                case 2: //OBJECT_SPREAD_1D
+                {
+                    Skip_S2(12,                                 "ObjectSpread");
+                }
+                break;
+                case 3: //OBJECT_SPREAD_3D
                 {
                     Skip_S2(12,                                 "ObjectSpreadX");
                     Skip_S2(12,                                 "ObjectSpreadY");
@@ -760,7 +787,7 @@ void File_Iab::ObjectDefinition()
             int8u ObjectDecorCoefPrefix;
             Get_S1 (2, ObjectDecorCoefPrefix,                   "ObjectDecorCoefPrefix");
             if (ObjectDecorCoefPrefix>1)
-                Skip_S1(8,                                      "ObjectDecorCoefPrefix");
+                Skip_S1(8,                                      "ObjectDecorCoef");
         }
         Element_End0();
     }
@@ -768,12 +795,14 @@ void File_Iab::ObjectDefinition()
     Get_B1 (AudioDescription,                                   "AudioDescription");
     if (AudioDescription&0x80)
     {
-        size_t Pos=(size_t)Element_Offset+1;
-        while (Pos<Element_Size-1 && Buffer[Buffer_Offset+Pos])
+        size_t Pos=(size_t)Element_Offset;
+        while (Pos<Element_Size && Buffer[Buffer_Offset+Pos])
             Pos++;
-        Skip_XX(Pos-Element_Offset,                             "AudioDescriptionText");
+        Skip_String(Pos-Element_Offset,                         "AudioDescriptionText");
+        if (Element_Offset<Element_Size)
+            Element_Offset++; //NULL terminator
     }
-    Skip_B1(                                                    "SubElementCount");
+    Skip_Plex8(                                                 "SubElementCount");
     //Element_ThisIsAList(); // TODO: handle SubElements here
 }
 
@@ -786,7 +815,7 @@ void File_Iab::BedRemap()
     BS_Begin();
     Get_Plex (4, SourceChannels,                                "SourceChannels");
     Get_Plex (4, DestinationChannels,                           "DestinationChannels");
-    int32u NumPanSubBlocks=8;
+    int32u NumPanSubBlocks=(FrameRate<16 && Iab_NumPanSubBlocks[FrameRate])?Iab_NumPanSubBlocks[FrameRate]:8;
     for (int32u sb=0; sb<NumPanSubBlocks; sb++)
     {
         Element_Begin1("PanSubBlock");
