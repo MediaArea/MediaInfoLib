@@ -668,10 +668,12 @@ void File_Iab::BedDefinition()
     Get_B1 (AudioDescription,                                   "AudioDescription");
     if (AudioDescription&0x80)
     {
-        size_t Pos=(size_t)Element_Offset+1;
-        while (Pos<Element_Size-1 && Buffer[Buffer_Offset+Pos])
+        size_t Pos=(size_t)Element_Offset;
+        while (Pos<Element_Size && Buffer[Buffer_Offset+Pos])
             Pos++;
-        Skip_XX(Pos-Element_Offset,                             "AudioDescriptionText");
+        Skip_String(Pos-Element_Offset,                         "AudioDescriptionText");
+        if (Element_Offset<Element_Size)
+            Element_Offset++; //NULL terminator
     }
     Skip_Plex8(                                                 "SubElementCount");
     Element_ThisIsAList();
@@ -772,10 +774,12 @@ void File_Iab::ObjectDefinition()
     Get_B1 (AudioDescription,                                   "AudioDescription");
     if (AudioDescription&0x80)
     {
-        size_t Pos=(size_t)Element_Offset+1;
-        while (Pos<Element_Size-1 && Buffer[Buffer_Offset+Pos])
+        size_t Pos=(size_t)Element_Offset;
+        while (Pos<Element_Size && Buffer[Buffer_Offset+Pos])
             Pos++;
-        Skip_XX(Pos-Element_Offset,                             "AudioDescriptionText");
+        Skip_String(Pos-Element_Offset,                         "AudioDescriptionText");
+        if (Element_Offset<Element_Size)
+            Element_Offset++; //NULL terminator
     }
     Skip_Plex8(                                                 "SubElementCount");
     //Element_ThisIsAList(); // TODO: handle SubElements here
