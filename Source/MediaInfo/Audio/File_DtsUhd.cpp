@@ -1004,8 +1004,7 @@ int File_DtsUhd::Frame()
     int32u SyncWord;
     Get_B4 (SyncWord,                                           "SyncWord");
     SyncFrameFlag=SyncWord==DTSUHD_SYNCWORD;
-    if (SyncFrameFlag)
-        Element_Info1("Key frame");
+    Element_Info1C(SyncFrameFlag, "Key frame");
     BS_Begin();
     static constexpr int8u Table[4]={5, 8, 10, 12};
     Get_VR (Table, FTOCPayloadinBytes,                          "FTOCPayloadinBytes");

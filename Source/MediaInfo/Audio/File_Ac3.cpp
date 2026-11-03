@@ -4028,8 +4028,7 @@ void File_Ac3::emdf_container()
             emdf_payload_id += add;
         }
 
-        if (emdf_payload_id<16)
-            Element_Info1(Ac3_emdf_payload_id[emdf_payload_id]);
+        Element_Info1C(emdf_payload_id<16, Ac3_emdf_payload_id[emdf_payload_id]);
         if (emdf_payload_id == 0x00)
         {
             Element_End0();

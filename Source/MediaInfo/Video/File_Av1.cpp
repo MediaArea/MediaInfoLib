@@ -888,8 +888,7 @@ void File_Av1::metadata_itu_t_t35_B5_003B_00000800()
             emdf_payload_id += add;
         }
 
-        if (emdf_payload_id == 256)
-            Element_Info1("Dolby Vision Reference Processing Unit (RPU)");
+        Element_Info1C(emdf_payload_id == 256, "Dolby Vision Reference Processing Unit (RPU)");
         if (emdf_payload_id == 0x00)
         {
             Element_End0();

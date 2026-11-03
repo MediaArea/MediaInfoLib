@@ -2191,8 +2191,7 @@ void File_DolbyE::evo_frame()
             payload_id += add;
         }
 
-        if (payload_id<16)
-            Element_Info1(Ac3_emdf_payload_id[payload_id]);
+        Element_Info1C(payload_id<16, Ac3_emdf_payload_id[payload_id]);
         if (!payload_id)
         {
             Element_End0();

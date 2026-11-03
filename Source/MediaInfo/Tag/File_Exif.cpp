@@ -2806,10 +2806,9 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
         auto Count = IfdItem.Count > 16 ? 16 : IfdItem.Count;
         for (int16u Pos=0; Pos<Count; Pos++)
         {
-            int16u Ret16u;
             int16s Ret16;
             #if MEDIAINFO_TRACE
-                Get_X2 (Ret16u,                                 "Data");
+                Info_X2(Ret16u,                                 "Data");
                 Ret16 = static_cast<int16s>(Ret16u);
                 Element_Info1(Ztring::ToZtring(Ret16));
             #else //MEDIAINFO_TRACE
@@ -2836,10 +2835,9 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
         auto Count = IfdItem.Count > 16 ? 16 : IfdItem.Count;
         for (int16u Pos=0; Pos<Count; Pos++)
         {
-            int32u Ret32u;
             int32s Ret32;
             #if MEDIAINFO_TRACE
-                Get_X4 (Ret32u,                                 "Data");
+                Info_X4(Ret32u,                                 "Data");
                 Ret32 = static_cast<int32s>(Ret32u);
                 Element_Info1(Ztring::ToZtring(Ret32));
             #else //MEDIAINFO_TRACE
@@ -2868,11 +2866,10 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
         auto Count = IfdItem.Count > 16 ? 16 : IfdItem.Count;
         for (int16u Pos=0; Pos<Count; Pos++)
         {
-            int32u NU, DU;
             int32s N, D;
             #if MEDIAINFO_TRACE
-                Get_X4 (NU,                                     "Numerator");
-                Get_X4 (DU,                                     "Denominator");
+                Info_X4(NU,                                     "Numerator");
+                Info_X4(DU,                                     "Denominator");
                 N = static_cast<int32s>(NU);
                 D = static_cast<int32s>(DU);
                 if (D)
