@@ -437,6 +437,7 @@ public :
     int64u        File_IgnoreEditsBefore;
     int64u        File_IgnoreEditsAfter;
     float64       File_EditRate;
+    bool          File_ProbeCaption_QuickPass; //Caption probe also in a quick pass
     int64u        File_Size;
     float32       ParseSpeed;
     bool          ParseSpeed_FromFile;

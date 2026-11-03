@@ -285,6 +285,7 @@ MediaInfo_Config_MediaInfo::MediaInfo_Config_MediaInfo()
     File_IgnoreEditsBefore=0;
     File_IgnoreEditsAfter=(int64u)-1;
     File_EditRate=0;
+    File_ProbeCaption_QuickPass=false;
     File_Size=(int64u)-1;
     ParseSpeed=MediaInfoLib::Config.ParseSpeed_Get();
     ParseSpeed_FromFile=false;
@@ -1298,6 +1299,10 @@ Ztring MediaInfo_Config_MediaInfo::Option (const String &Option, const String &V
     else if (Option_Lower==__T("file_displaycaptions"))
     {
         return File_DisplayCaptions_Set(Value);
+    }
+    else if (Option_Lower==__T("file_displaycaptions_get"))
+    {
+        return Ztring().From_UTF8(DisplayCaptions_Strings[File_DisplayCaptions_Get()]);
     }
     else if (Option_Lower==__T("file_eia708_displayemptystream"))
     {
@@ -3865,7 +3870,7 @@ config_probe MediaInfo_Config_MediaInfo::File_ProbeCaption_Get(const string& Par
 {
     //Item for this parser, else first item for all parsers, else default if this parser is not excluded (the same one for each file)
     CriticalSectionLocker CSL(CS);
-    if (ParseSpeed<=0 || ParseSpeed>=1)
+    if ((ParseSpeed<=0 && !File_ProbeCaption_QuickPass) || ParseSpeed>=1)
         return {}; //No probe if quick pass or full pass
     for (const auto& Item : File_ProbeCaption) {
         if (Item.Parser == ParserName) {

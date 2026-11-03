@@ -640,6 +640,7 @@ void File_Bdmv::BDMV()
         //Merging
         MediaInfo_Internal MI;
         MI.Option(__T("File_IsReferenced"), __T("1"));
+        MI.Option(__T("File_DisplayCaptions"), Config->Option(__T("File_DisplayCaptions_Get"), Ztring()));
         MI.Open(List[MaxDuration_Pos]); //Open it again for having the M2TS part
         Merge(MI);
 
@@ -701,6 +702,7 @@ void File_Bdmv::Clpi_ProgramInfo()
         MediaInfo_Internal MI;
         MI.Option(__T("File_Bdmv_ParseTargetedFile"), __T("0"));
         MI.Option(__T("File_IsReferenced"), __T("1"));
+        MI.Option(__T("File_DisplayCaptions"), Config->Option(__T("File_DisplayCaptions_Get"), Ztring()));
         if (MI.Open(M2TS_File))
         {
             Merge(MI);
@@ -1200,6 +1202,7 @@ void File_Bdmv::Mpls_PlayList_PlayItem()
         MediaInfo_Internal MI;
         MI.Option(__T("File_Bdmv_ParseTargetedFile"), Config->File_Bdmv_ParseTargetedFile_Get()?__T("1"):__T("0"));
         MI.Option(__T("File_IsReferenced"), __T("1"));
+        MI.Option(__T("File_DisplayCaptions"), Config->Option(__T("File_DisplayCaptions_Get"), Ztring()));
         if (MI.Open(CLPI_File))
         {
             for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
