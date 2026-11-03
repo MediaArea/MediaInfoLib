@@ -2566,6 +2566,22 @@ void File_Mpeg4::mdat_ProbeCaption()
             return Item.Offset<ProbeCaption_OffsetMin || Item.Offset>=ProbeCaption_OffsetEnd; //Without its own window, a stream is parsed in the byte range of the first window
         return Item.SamplePos<Window->second.first || Item.SamplePos>=Window->second.second;
     }), mdat_Pos.end());
+    #if MEDIAINFO_DEMUX
+        //Frame position of each stream, it counts the parsed samples and must not ignore the ones which are skipped
+        for (auto& Stream : Streams)
+        {
+            const auto First=std::find_if(mdat_Pos.begin(), mdat_Pos.end(), [&](const mdat_Pos_Type& Item) {
+                return Item.StreamID==Stream.first;
+            });
+            if (First!=mdat_Pos.end())
+            {
+                Stream.second.stts_FramePos=First->SamplePos;
+                Stream.second.stts_Durations_Pos=0;
+                while (Stream.second.stts_Durations_Pos<Stream.second.stts_Durations.size() && First->SamplePos>=Stream.second.stts_Durations[Stream.second.stts_Durations_Pos].Pos_End)
+                    Stream.second.stts_Durations_Pos++;
+            }
+        }
+    #endif //MEDIAINFO_DEMUX
     if (mdat_Pos.empty())
     {
         mdat_Pos_Temp=nullptr;
