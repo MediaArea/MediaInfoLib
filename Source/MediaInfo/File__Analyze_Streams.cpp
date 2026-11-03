@@ -1893,18 +1893,21 @@ int16u File__Analyze::DolbyVision_Nits_ToPQ12(float64 Nits)
         return 4095;
     return (int16u)float64_int64s(DV_Nits_ToPQ(Nits)*4095);
 }
-// Simplest luminance value having the same 12-bit PQ code, e.g. 1000 instead of 1001.42
-static float64 DV_PQ12_ToNits(int16u Code)
+// Simplest luminance value having the same 12-bit PQ code, e.g. 1000 instead of 1001.42 (code 3079)
+// For declared values (mastering display, target displays), also 1 code away as encoders do not always round the same way, e.g. 4000 instead of 4008.77 (code 3697, 4000 is 3696.03)
+static float64 DV_PQ12_ToNits(int16u Code, bool IsMeasured=false)
 {
     if (!Code)
         return 0;
     auto Nits=DV_PQ_ToNits(((float64)Code)/4095);
     auto Magnitude=floor(log10(Nits));
+    int Tolerance=IsMeasured?0:1;
     for (int Digits=1; Digits<=6; Digits++)
     {
         auto Scale=pow(10.0, Digits-1-Magnitude);
         auto Candidate=round(Nits*Scale)/Scale;
-        if (float64_int64s(DV_Nits_ToPQ(Candidate)*4095)==Code)
+        auto Candidate_Code=float64_int64s(DV_Nits_ToPQ(Candidate)*4095);
+        if (Candidate_Code>=Code-Tolerance && Candidate_Code<=Code+Tolerance)
             return Candidate;
     }
     return Nits;
@@ -2397,8 +2400,8 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
     {
         if (Data.L1_max_PQ)
         {
-            LightLevel_Fill("MaxCLL_Analysis", { DV_PQ12_ToNits(Data.L1_max_PQ) });
-            LightLevel_Fill("MaxFALL_Analysis", { DV_PQ12_ToNits(Data.L1_avg_PQ) });
+            LightLevel_Fill("MaxCLL_Analysis", { DV_PQ12_ToNits(Data.L1_max_PQ, true) });
+            LightLevel_Fill("MaxFALL_Analysis", { DV_PQ12_ToNits(Data.L1_avg_PQ, true) });
         }
         if (Data.Count_Shot || (IsRPU && Data.Count_CMv29))
             Fill(Stream_Video, 0, "DolbyVision ShotCount", Data.Count_Shot);
