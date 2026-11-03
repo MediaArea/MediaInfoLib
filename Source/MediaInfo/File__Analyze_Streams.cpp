@@ -605,6 +605,31 @@ void File__Analyze::Attachment(const char* MuxingMode, const Ztring& Description
 }
 
 //---------------------------------------------------------------------------
+// Display aspect ratio with its usual name (e.g. 16:9, 2.39:1)
+static Ztring DisplayAspectRatio_String(float DAR)
+{
+    Ztring DARS;
+         if (DAR>=(float)1.23 && DAR<(float)1.27)   DARS=__T("5:4");
+    else if (DAR>=(float)1.30 && DAR<(float)1.37)   DARS=__T("4:3");
+    else if (DAR>=(float)1.45 && DAR<(float)1.55)   DARS=__T("3:2");
+    else if (DAR>=(float)1.55 && DAR<(float)1.65)   DARS=__T("16:10");
+    else if (DAR>=(float)1.65 && DAR<(float)1.70)   DARS=__T("5:3");
+    else if (DAR>=(float)1.74 && DAR<(float)1.82)   DARS=__T("16:9");
+    else if (DAR>=(float)1.82 && DAR<(float)1.88)   DARS=__T("1.85:1");
+    else if (DAR>=(float)2.15 && DAR<(float)2.22)   DARS=__T("2.2:1");
+    else if (DAR>=(float)2.23 && DAR<(float)2.30)   DARS=__T("2.25:1");
+    else if (DAR>=(float)2.30 && DAR<(float)2.37)   DARS=__T("2.35:1");
+    else if (DAR>=(float)2.37 && DAR<(float)2.395)  DARS=__T("2.39:1");
+    else if (DAR>=(float)2.395 && DAR<(float)2.45)  DARS=__T("2.40:1");
+    else if (DAR>=(float)0.54 && DAR<(float)0.58)   DARS=__T("9:16");
+    else                                            DARS.From_Number(DAR);
+      DARS.FindAndReplace(__T("."), MediaInfoLib::Config.Language_Get(__T("  Config_Text_FloatSeparator")));
+    if (MediaInfoLib::Config.Language_Get(__T("  Language_ISO639"))==__T("fr") &&   DARS.find(__T(":1"))==string::npos)
+          DARS.FindAndReplace(__T(":"), __T("/"));
+    return DARS;
+}
+
+//---------------------------------------------------------------------------
 #if defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MPEGTS_YES)
 void File__Analyze::Get_MasteringDisplayColorVolume(Ztring &MasteringDisplay_ColorPrimaries, Ztring &MasteringDisplay_Luminance, bool FromAV1)
 {
@@ -2353,16 +2378,26 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
             }
         }
         sort(AspectRatios.begin(), AspectRatios.end());
-        ZtringList List;
+        // Numeric value for XML/JSON, value with its usual name for text
+        ZtringList List, List_String;
         List.Separator_Set(0, __T(" / "));
+        List_String.Separator_Set(0, __T(" / "));
         for (auto AspectRatio : AspectRatios)
         {
             auto Value=Ztring::ToZtring(AspectRatio, 3);
             if (List.Find(Value)==Error)
                 List.push_back(Value);
+            auto Value_String=DisplayAspectRatio_String((float)AspectRatio);
+            if (List_String.Find(Value_String)==Error)
+                List_String.push_back(Value_String);
         }
         if (!List.empty())
+        {
             Fill(Stream_Video, 0, "DolbyVision Active_DisplayAspectRatio", List.Read());
+            Fill_SetOptions(Stream_Video, 0, "DolbyVision Active_DisplayAspectRatio", "N NFY");
+            Fill(Stream_Video, 0, "DolbyVision Active_DisplayAspectRatio/String", List_String.Read());
+            Fill_SetOptions(Stream_Video, 0, "DolbyVision Active_DisplayAspectRatio/String", "Y NTN");
+        }
     }
 
     // Content type
@@ -5887,25 +5922,7 @@ void File__Analyze::DisplayAspectRatio_Fill(const Ztring &Value, stream_t Stream
     }
 
     // /String version
-    Ztring DARS;
-         if (DAR>=(float)1.23 && DAR<(float)1.27)   DARS=__T("5:4");
-    else if (DAR>=(float)1.30 && DAR<(float)1.37)   DARS=__T("4:3");
-    else if (DAR>=(float)1.45 && DAR<(float)1.55)   DARS=__T("3:2");
-    else if (DAR>=(float)1.55 && DAR<(float)1.65)   DARS=__T("16:10");
-    else if (DAR>=(float)1.65 && DAR<(float)1.70)   DARS=__T("5:3");
-    else if (DAR>=(float)1.74 && DAR<(float)1.82)   DARS=__T("16:9");
-    else if (DAR>=(float)1.82 && DAR<(float)1.88)   DARS=__T("1.85:1");
-    else if (DAR>=(float)2.15 && DAR<(float)2.22)   DARS=__T("2.2:1");
-    else if (DAR>=(float)2.23 && DAR<(float)2.30)   DARS=__T("2.25:1");
-    else if (DAR>=(float)2.30 && DAR<(float)2.37)   DARS=__T("2.35:1");
-    else if (DAR>=(float)2.37 && DAR<(float)2.395)  DARS=__T("2.39:1");
-    else if (DAR>=(float)2.395 && DAR<(float)2.45)  DARS=__T("2.40:1");
-    else if (DAR>=(float)0.54 && DAR<(float)0.58)   DARS=__T("9:16");
-    else                                            DARS.From_Number(DAR);
-      DARS.FindAndReplace(__T("."), MediaInfoLib::Config.Language_Get(__T("  Config_Text_FloatSeparator")));
-    if (MediaInfoLib::Config.Language_Get(__T("  Language_ISO639"))==__T("fr") &&   DARS.find(__T(":1"))==string::npos)
-          DARS.FindAndReplace(__T(":"), __T("/"));
-    Fill(StreamKind, StreamPos, Parameter_DisplayAspectRatio+1, DARS, true);
+    Fill(StreamKind, StreamPos, Parameter_DisplayAspectRatio+1, DisplayAspectRatio_String(DAR), true);
 }
 
 //---------------------------------------------------------------------------

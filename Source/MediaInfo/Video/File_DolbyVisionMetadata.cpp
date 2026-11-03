@@ -405,6 +405,8 @@ bool File_DolbyVisionMetadata::FileHeader_Begin()
         if (find(DV.L9.begin(), DV.L9.end(), L9) == DV.L9.end())
             DV.L9.push_back(L9);
     };
+    bool Shot_HasL5 = false, Shot_WithoutL5 = false; // The default active aspect ratio is used only by the shots without a specific one
+    float64 ImageAspectRatio_Default = 0;
     auto Level_Parse = [&](XMLElement* Level_Item)
     {
         int Level = Level_Item->IntAttribute("level", -1);
@@ -433,6 +435,7 @@ bool File_DolbyVisionMetadata::FileHeader_Begin()
             }
             if (Level == 5 && Is(Item, "AspectRatios"))
             {
+                Shot_HasL5 = true;
                 auto Values = Values_Get(Text); // Canvas, image
                 if (Values.size() == 2 && Values[1] > 0 && find(DV.Active_DisplayAspectRatios.begin(), DV.Active_DisplayAspectRatios.end(), Values[1]) == DV.Active_DisplayAspectRatios.end())
                     DV.Active_DisplayAspectRatios.push_back(Values[1]);
@@ -536,7 +539,10 @@ bool File_DolbyVisionMetadata::FileHeader_Begin()
             {
                 if (const char* Text = Output_Item->GetText())
                     if (float32 TextF = Ztring().From_UTF8(Text).To_float32())
+                    {
                         Fill(Stream_Video, 0, Video_Active_DisplayAspectRatio, TextF);
+                        ImageAspectRatio_Default = TextF;
+                    }
             }
         }
         if (MasterElements[1])
@@ -565,6 +571,7 @@ bool File_DolbyVisionMetadata::FileHeader_Begin()
             if (In_Text && Duration_Text)
                 Shot_Add(Ztring().From_UTF8(In_Text).To_int64u(), Ztring().From_UTF8(Duration_Text).To_int64u());
         }
+        Shot_HasL5 = false;
         for (XMLElement* Shot_Item = Shot->FirstChildElement(); Shot_Item; Shot_Item = Shot_Item->NextSiblingElement())
         {
             if (Is(Shot_Item, "PluginNode"))
@@ -573,6 +580,8 @@ bool File_DolbyVisionMetadata::FileHeader_Begin()
                 if (XMLElement* PluginNode = Child(Shot_Item, "PluginNode"))
                     DynamicData_Parse(PluginNode);
         }
+        if (!Shot_HasL5)
+            Shot_WithoutL5 = true;
     };
     // Version 6.x, tracks with channels
     const auto Gamut_Get = [&](XMLElement* Gamut, mastering_metadata_2086& Mastering)
@@ -1215,6 +1224,8 @@ bool File_DolbyVisionMetadata::FileHeader_Begin()
             DV.FrameRange_End = Shot_Out - 1;
         }
     }
+    if (Shot_WithoutL5 && ImageAspectRatio_Default > 0 && find(DV.Active_DisplayAspectRatios.begin(), DV.Active_DisplayAspectRatios.end(), ImageAspectRatio_Default) == DV.Active_DisplayAspectRatios.end())
+        DV.Active_DisplayAspectRatios.push_back(ImageAspectRatio_Default);
     if (!Structure_Missing)
         DolbyVision_Streams_Fill(DV, DV_Source_XML);
 
