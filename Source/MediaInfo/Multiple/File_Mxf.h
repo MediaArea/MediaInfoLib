@@ -221,6 +221,7 @@ protected :
     void ApplicationPlugInObject();
     void ApplicationReferencedObject();
     void MCALabelSubDescriptor();
+    void MCALabelSubDescriptor_Items();
     void DCTimedTextDescriptor();
     void DCTimedTextResourceSubDescriptor();
     void ContainerConstraintsSubDescriptor();
@@ -1100,7 +1101,8 @@ protected :
     typedef std::map<int128u, descriptor> descriptors; //Key is InstanceUID of Descriptor
     descriptors Descriptors;
     void Descriptor_Fill(const char* Name, const Ztring& Value);
-    void Descriptor_Type_Set(descriptor::type Type, descriptor::type ReplacedType=descriptor::Type_Unknown); //After the parsing of an item, when Instance UID is known
+    void Descriptor_Type_Set(descriptor::type Type); //After the parsing of each item, the type is not set for a File Descriptor or a set of another type with the same Instance UID
+    descriptor::type Descriptor_Type_Pending; //Type set by Descriptor_Type_Set() before the Instance UID item of the set
     bool SubDescriptor_IsDangling(const descriptors::iterator& Descriptor);
     descriptors::iterator Descriptor_Single(bool IncludeLinkedToTrack=false);
     descriptors::iterator Descriptor_FromTrackID(int32u TrackID);
@@ -1838,6 +1840,7 @@ protected :
 
     void Streams_Finish_Descriptor (descriptors::iterator Descriptor);
     void Streams_Finish_SoundfieldGroupLabel (const descriptor& Label, size_t StreamPos);
+    std::map<size_t, std::vector<Ztring> > ADMSoundfieldGroupLabel_Languages; //Spoken languages of the ADM soundfield groups, per audio stream
 };
 
 } //NameSpace

@@ -2049,6 +2049,7 @@ File_Mxf::File_Mxf()
     //Temp
     RandomIndexPacks_AlreadyParsed=false;
     Streams_Count=(size_t)-1;
+    Descriptor_Type_Pending=descriptor::Type_Unknown;
     IndexTable_SegmentCount=0;
     IndexTable_SegmentCount_Cbe=0;
     OperationalPattern=0;
@@ -7776,6 +7777,8 @@ void File_Mxf::Streams_Finish_Descriptor(descriptors::iterator Descriptor)
                         case descriptor::Type_SoundfieldGroupLabelSubDescriptor:
                         case descriptor::Type_ADMSoundfieldGroupLabelSubDescriptor:
                                                 Streams_Finish_SoundfieldGroupLabel(SubDescriptor->second, StreamPos_Last);
+                                                if (SubDescriptor->second.Type==descriptor::Type_ADMSoundfieldGroupLabelSubDescriptor)
+                                                    continue; //Items are already filled
                                                 //if (SubDescriptor->second.MCALabelDictionaryID.lo!=(int64u)-1)
                                                 //{
                                                 //    Ztring ChannelAssignment2;
@@ -7881,8 +7884,41 @@ void File_Mxf::Streams_Finish_SoundfieldGroupLabel(const descriptor& Label, size
     Fill(Stream_Audio, StreamPos, "MCA Episode", Label.MCAEpisode);
     Fill(Stream_Audio, StreamPos, "MCA Audio Content Kind", Label.MCAAudioContentKind);
     Fill(Stream_Audio, StreamPos, "MCA Audio Element Kind", Label.MCAAudioElementKind);
+    if (Label.Type!=descriptor::Type_ADMSoundfieldGroupLabelSubDescriptor)
+    {
+        for (const auto& Info : Label.Infos)
+            Fill(Stream_Audio, StreamPos, Info.first.c_str(), Info.second, true);
+        return;
+    }
+
+    //ADM soundfield groups (e.g. one per audioProgramme): spoken languages of all of them, other items if not yet present
     for (const auto& Info : Label.Infos)
-        Fill(Stream_Audio, StreamPos, Info.first.c_str(), Info.second, true);
+    {
+        if (Info.first!="Language")
+        {
+            if (Retrieve_Const(Stream_Audio, StreamPos, Info.first.c_str()).empty())
+                Fill(Stream_Audio, StreamPos, Info.first.c_str(), Info.second);
+            continue;
+        }
+        if (Info.second.empty())
+            continue;
+        auto& Languages=ADMSoundfieldGroupLabel_Languages[StreamPos];
+        auto IsPresent=false;
+        for (const auto& Language : Languages)
+            if (Ztring(Language).MakeLowerCase()==Ztring(Info.second).MakeLowerCase())
+                IsPresent=true;
+        if (IsPresent)
+            continue;
+        Languages.push_back(Info.second);
+        Ztring List;
+        for (const auto& Language : Languages)
+        {
+            if (!List.empty())
+                List+=__T(" / ");
+            List+=Language;
+        }
+        Fill(Stream_Audio, StreamPos, Audio_Language, List, true);
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -11592,6 +11628,7 @@ void File_Mxf::Data_Parse()
 {
     //Clearing
     InstanceUID=0;
+    Descriptor_Type_Pending=descriptor::Type_Unknown;
     PrivateMetadata_Test(Code);
     if (!Essences_FirstEssence_Parsed)
     {
@@ -13168,8 +13205,8 @@ void File_Mxf::ADMSoundfieldGroupLabelSubDescriptor()
     ELEM____UUID_(ADMAudioContentID_ST2131)
     ELEM____UUID_(ADMAudioObjectID_ST2131)
     ELEMENT_END()
-    SoundfieldGroupLabelSubDescriptor(); //Subclass of SoundfieldGroupLabelSubDescriptor (SMPTE ST 2131)
-    Descriptor_Type_Set(descriptor::Type_ADMSoundfieldGroupLabelSubDescriptor, descriptor::Type_SoundfieldGroupLabelSubDescriptor);
+    MCALabelSubDescriptor_Items(); //Subclass of SoundfieldGroupLabelSubDescriptor (SMPTE ST 2131), items only as the type is set after each item
+    Descriptor_Type_Set(descriptor::Type_ADMSoundfieldGroupLabelSubDescriptor);
 }
 
 //---------------------------------------------------------------------------
@@ -14766,6 +14803,12 @@ void File_Mxf::MCALabelSubDescriptor()
     if (Descriptors[InstanceUID].Type==descriptor::Type_Unknown)
         Descriptors[InstanceUID].Type=descriptor::Type_MCALabelSubDescriptor;
 
+    MCALabelSubDescriptor_Items();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::MCALabelSubDescriptor_Items()
+{
     ELEMENT_BEGIN()
     ELEMENT_MIDDLE()
     ELEM____UUID_(MCAChannelID)
@@ -16205,6 +16248,18 @@ void File_Mxf::InterchangeObject_InstanceUID()
             Tracks.erase(Track);
         }
         descriptors::iterator Descriptor=Descriptors.find(0);
+        if (Descriptor!=Descriptors.end() && Descriptor_Type_Pending!=descriptor::Type_Unknown)
+        {
+            //Set typed by Descriptor_Type_Set() with items before its Instance UID item: as when the Instance UID item is the first item, a File Descriptor or a set of another type with the same Instance UID (seen in some files) is not replaced
+            descriptors::iterator Descriptor_Previous=Descriptors.find(InstanceUID);
+            if (Descriptor_Previous!=Descriptors.end() && (Descriptor_Previous->second.StreamKind!=Stream_Max || (Descriptor_Previous->second.Type!=descriptor::Type_Unknown && Descriptor_Previous->second.Type!=Descriptor_Type_Pending)))
+            {
+                for (const auto& Info : Descriptor->second.Infos)
+                    Descriptor_Fill(Info.first.c_str(), Info.second);
+                Descriptors.erase(Descriptor);
+                Descriptor=Descriptors.end();
+            }
+        }
         if (Descriptor!=Descriptors.end())
         {
             descriptors::iterator Descriptor_Previous=Descriptors.find(InstanceUID);
@@ -22646,15 +22701,18 @@ bool File_Mxf::BookMark_Needed()
 }
 
 //---------------------------------------------------------------------------
-void File_Mxf::Descriptor_Type_Set(descriptor::type Type, descriptor::type ReplacedType)
+void File_Mxf::Descriptor_Type_Set(descriptor::type Type)
 {
-    //Only when Instance UID is known, the entry would else be moved later to this Instance UID, replacing a File Descriptor with the same Instance UID (seen in some files)
+    //Only when Instance UID is known, else the type is kept for the Instance UID item, so the entry of the items before it does not replace a File Descriptor with the same Instance UID (seen in some files)
     if (!InstanceUID.hi && !InstanceUID.lo)
+    {
+        Descriptor_Type_Pending=Type;
         return;
+    }
 
-    //Not for a File Descriptor with the same Instance UID
+    //Not for a File Descriptor or a set of another type with the same Instance UID
     auto& Descriptor=Descriptors[InstanceUID];
-    if ((Descriptor.Type==descriptor::Type_Unknown || Descriptor.Type==ReplacedType) && Descriptor.StreamKind==Stream_Max)
+    if (Descriptor.Type==descriptor::Type_Unknown && Descriptor.StreamKind==Stream_Max)
         Descriptor.Type=Type;
 }
 
