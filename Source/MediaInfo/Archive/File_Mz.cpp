@@ -333,8 +333,7 @@ void File_Mz::Read_Buffer_Continue()
                 Loop_CheckValue(NumberOfRvaAndSizes, 8, "NumberOfRvaAndSizes");
                 for (int32u i = 0; i < NumberOfRvaAndSizes; ++i) {
                     Element_Begin1("Data Directory");
-                    if (i < sizeof(Mz_Directories) / sizeof(Mz_Directories[0]))
-                        Element_Info1(Mz_Directories[i]);
+                    Element_Info1C(i < sizeof(Mz_Directories) / sizeof(Mz_Directories[0]), Mz_Directories[i]);
                     int32u VirtualAddress, Size;
                     Get_L4(VirtualAddress,                      "VirtualAddress");
                     Get_L4(Size,                                "Size");

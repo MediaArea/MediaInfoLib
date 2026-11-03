@@ -609,10 +609,8 @@ void File_Nsv::Header_Parse()
 //---------------------------------------------------------------------------
 void File_Nsv::Data_Parse()
 {
-    if (P->IsMajorSynched)
-        Element_Info1(Frame_Count);
-    if (FrameInfo.PTS!=(int64u)-1)
-        Element_Info1(FrameInfo.PTS/1000000000.0);
+    Element_Info1C(P->IsMajorSynched, Frame_Count);
+    Element_Info1C(FrameInfo.PTS!=(int64u)-1, FrameInfo.PTS/1000000000.0);
 
     for (int i=0; i<2; i++)
     {

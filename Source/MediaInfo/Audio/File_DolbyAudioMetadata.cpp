@@ -50,7 +50,7 @@ static const char* metadata_segment_Name[] =
     "Dolby Atmos Metadata",
     "Dolby Atmos Supplemental Metadata",
 };
-static size_t metadata_segment_Name_Size=sizeof(metadata_segment_Name)/sizeof(const char*);
+static const size_t metadata_segment_Name_Size=sizeof(metadata_segment_Name)/sizeof(const char*);
 
 static const char* binaural_render_mode_Name[] =
 {
@@ -200,8 +200,7 @@ void File_DolbyAudioMetadata::Read_Buffer_Continue()
         Element_Begin1("metadata_segment");
         int8u metadata_segment_id;
         Get_L1 (metadata_segment_id,                            "metadata_segment_id"); Element_Info1(Ztring::ToZtring(metadata_segment_id));
-        if (metadata_segment_id<metadata_segment_Name_Size && metadata_segment_Name[metadata_segment_id])
-            Element_Info1(metadata_segment_Name[metadata_segment_id]);
+        Element_Info1C(metadata_segment_id<metadata_segment_Name_Size && metadata_segment_Name[metadata_segment_id], metadata_segment_Name[metadata_segment_id]);
         if (!metadata_segment_id)
         {
             Element_End0();

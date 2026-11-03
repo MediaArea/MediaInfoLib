@@ -577,8 +577,7 @@ void File_Avs3V::Data_Parse()
 void File_Avs3V::slice()
 {
     Element_Name("Slice");
-    if (!LastElementIsSlice)
-        Element_Info1(Ztring::ToZtring(Frame_Count));
+    Element_Info1C(!LastElementIsSlice, Ztring::ToZtring(Frame_Count));
 
     //Parsing
     Skip_XX(Element_Size,                                       "Unknown");
