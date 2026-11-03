@@ -10827,6 +10827,7 @@ void File_Mxf::Read_Buffer_AfterParsing()
     {
         Fill();
         Open_Buffer_Unsynch();
+        File_Offset=File_Size; //Same position as without caption probe
         Finish();
         return;
     }
