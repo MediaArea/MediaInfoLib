@@ -1156,6 +1156,7 @@ void File_Mpeg4_Descriptors::Descriptor_06()
                     SLConfig->timeStampResolution               =0;
                     SLConfig->OCRResolution                     =0;
                     SLConfig->timeStampLength                   =0;
+                    SLConfig->OCRLength                         =0;
                     SLConfig->AU_Length                         =0;
                     SLConfig->instantBitrateLength              =0;
                     SLConfig->degradationPriorityLength         =0;
