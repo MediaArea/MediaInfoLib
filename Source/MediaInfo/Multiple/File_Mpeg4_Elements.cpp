@@ -2430,6 +2430,7 @@ void File_Mpeg4::mdat_xxxx()
                     std::sort(mdat_Pos.begin(), mdat_Pos.end(), &mdat_pos_sort);
                     size_t mdat_Pos_Min=(size_t)-1;
                     size_t mdat_Pos_Max=0;
+                    bool ProbeCaption_IsSet=false;
                     for (auto& Stream : Streams)
                     {
                         auto HandleAllContent = Stream.second.IsCaption || (!Stream.second.Parsers.empty() && Stream.second.Parsers.front()->MustExtendParsingDuration);
@@ -2443,8 +2444,9 @@ void File_Mpeg4::mdat_xxxx()
                                 auto FrameRateRatio=(float)Stream.second.stts_Duration/Stream.second.stts_FrameCount;
                                 auto FrameRate=Stream.second.mdhd_TimeScale/FrameRateRatio;
                                 auto Duration=(float)Stream.second.stts_Duration/Stream.second.mdhd_TimeScale;
-                                if (FrameRate)
+                                if (FrameRate && !ProbeCaption_IsSet)
                                 {
+                                    ProbeCaption_IsSet=true; //Probe window from the first stream only, the other streams are parsed in the same byte range
                                     auto Probe=Config->File_ProbeCaption_Get(ParserName);
                                     switch (Probe.Start_Type) {
                                         case config_probe_none:
@@ -2482,6 +2484,7 @@ void File_Mpeg4::mdat_xxxx()
                             }
                             if (ProbeCaption_mdatPos!=(int64u)-1 && ProbeCaption_mdatDur!=(int64u)-1)
                             {
+                                //Probe window limited to the stream content, whatever its size
                                 size_t mdat_Pos_PerStream=0;
                                 auto ProbeCaption_mdatPosEnd=ProbeCaption_mdatPos+ProbeCaption_mdatDur;
                                 for (size_t i=0; i<mdat_Pos.size(); i++)
@@ -2489,16 +2492,17 @@ void File_Mpeg4::mdat_xxxx()
                                     const auto& mdat=mdat_Pos[i];
                                     if (mdat.StreamID==Stream.first)
                                     {
+                                        if (mdat_Pos_PerStream>=ProbeCaption_mdatPos && mdat_Pos_PerStream<ProbeCaption_mdatPosEnd)
+                                        {
+                                            if (mdat_Pos_Min>i)
+                                                mdat_Pos_Min=i;
+                                            if (mdat_Pos_Max<=i)
+                                                mdat_Pos_Max=i+1;
+                                        }
                                         mdat_Pos_PerStream++;
-                                        if (mdat_Pos_PerStream==ProbeCaption_mdatPos && mdat_Pos_Min>i)
-                                            mdat_Pos_Min=i;
-                                        if (mdat_Pos_PerStream==ProbeCaption_mdatPosEnd && mdat_Pos_Max<=i)
-                                            mdat_Pos_Max=i+1;
                                     }
                                 }
                             }
-                            else
-                                mdat_Pos_Max=0;
                         }
                     }
                     if (mdat_Pos_Max<mdat_Pos.size())

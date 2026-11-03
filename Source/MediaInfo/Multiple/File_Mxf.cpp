@@ -2060,6 +2060,7 @@ File_Mxf::File_Mxf()
     Preface_Current.hi=0;
     Preface_Current.lo=0;
     IsParsingMiddle_MaxOffset=(int64u)-1;
+    ProbeCaption_IsChecked=false;
     Track_Number_IsAvailable=false;
     IsParsingEnd=false;
     IsCheckingRandomAccessTable=false;
@@ -22921,8 +22922,16 @@ bool File_Mxf::BookMark_Needed()
 {
     Frame_Count_NotParsedIncluded=(int64u)-1;
 
-    if (MayHaveCaptionsInStream && !IsSub && IsParsingEnd && IsParsingMiddle_MaxOffset==(int64u)-1)
+    if (ExtraMetadata_Offset!=(int64u)-1)
     {
+        GoTo(ExtraMetadata_Offset);
+        ExtraMetadata_Offset=(int64u)-1;
+        return false; //Caption probe decided after the parsing of the extra metadata
+    }
+
+    if (MayHaveCaptionsInStream && !IsSub && IsParsingEnd && IsParsingMiddle_MaxOffset==(int64u)-1 && !ProbeCaption_IsChecked && !Status[IsFinished])
+    {
+        ProbeCaption_IsChecked=true; //Only one probe decision per file, even if no probe is done
         int64u ProbeCaptionBytePos=(int64u)-1;
         int64u ProbeCaptionByteDur=(int64u)-1;
         float32 Duration=0;
@@ -22959,26 +22968,27 @@ bool File_Mxf::BookMark_Needed()
         {
             const auto& FirstPartition=Partitions.front();
             HeaderSize=FirstPartition.PartitionPackByteCount+FirstPartition.HeaderByteCount+FirstPartition.IndexByteCount;
-            ContentSize-=HeaderSize;
+            int64u FooterSize=0;
             const auto& LastPartition=Partitions.back();
-            if (LastPartition.StreamOffset==FirstPartition.FooterPartition)
+            if (FirstPartition.FooterPartition && LastPartition.StreamOffset==FirstPartition.FooterPartition)
+                FooterSize=File_Size-LastPartition.StreamOffset;
+            if (HeaderSize>File_Size || FooterSize>File_Size-HeaderSize) //Header and footer sizes not coherent with the file size, content after the header partition pack
             {
-                 int64u FooterSize=File_Size-LastPartition.StreamOffset;
-                 ContentSize-=FooterSize;
+                HeaderSize=FirstPartition.PartitionPackByteCount<=File_Size?FirstPartition.PartitionPackByteCount:0;
+                FooterSize=0;
             }
+            ContentSize-=HeaderSize+FooterSize;
         }
         switch (Probe.Start_Type)
         {
-            case config_probe_none:
-                ProbeCaptionBytePos=0;
-                break;
             case config_probe_size:
                 ProbeCaptionBytePos=Probe.Start;
                 break;
             case config_probe_dur:
                 if (Duration)
                 {
-                    ProbeCaptionBytePos=HeaderSize+(float32)Probe.Start/Duration*ContentSize; //TODO: real timestamp
+                    auto Ratio=(float32)Probe.Start/Duration;
+                    ProbeCaptionBytePos=HeaderSize+(Ratio<1?(int64u)(Ratio*ContentSize):ContentSize); //TODO: real timestamp
                 }
                 else
                     ProbeCaptionBytePos=HeaderSize+ContentSize/2;
@@ -22986,19 +22996,17 @@ bool File_Mxf::BookMark_Needed()
             case config_probe_percent:
                 ProbeCaptionBytePos=HeaderSize+ContentSize/100*Probe.Start;
                 break;
-            default:;
+            default:; //No probe for this parser
         }
         switch (Probe.Duration_Type) {
-            case config_probe_none:
-                ProbeCaptionByteDur=ContentSize;
-                break;
             case config_probe_size:
                 ProbeCaptionByteDur=Probe.Duration;
                 break;
             case config_probe_dur:
                 if (Duration)
                 {
-                    ProbeCaptionByteDur=(float32)Probe.Duration/Duration*ContentSize; //TODO: real timestamp
+                    auto Ratio=(float32)Probe.Duration/Duration;
+                    ProbeCaptionByteDur=Ratio<1?(int64u)(Ratio*ContentSize):ContentSize; //TODO: real timestamp
                 }
                 else
                     ProbeCaptionByteDur=ContentSize/100;
@@ -23006,24 +23014,18 @@ bool File_Mxf::BookMark_Needed()
             case config_probe_percent:
                 ProbeCaptionByteDur=ContentSize/100*Probe.Duration;
                 break;
+            default:; //No probe for this parser
         }
         if (ProbeCaptionBytePos!=(int64u)-1 && ProbeCaptionByteDur!=(int64u)-1)
         {
-            if (File_Size/2<ProbeCaptionByteDur &&
-                HeaderSize+ContentSize-ProbeCaptionBytePos>0x4000000 && ContentSize/2>0x4000000)
+            //Probe window limited to the content, whatever its size
+            auto ContentEnd=HeaderSize+ContentSize;
+            auto ProbeCaptionByteEnd=(ProbeCaptionBytePos<ContentEnd && ProbeCaptionByteDur<ContentEnd-ProbeCaptionBytePos)?(ProbeCaptionBytePos+ProbeCaptionByteDur):ContentEnd;
+            if (ProbeCaptionBytePos<HeaderSize)
+                ProbeCaptionBytePos=HeaderSize;
+            if (ProbeCaptionBytePos<ProbeCaptionByteEnd)
             {
-                // Clamp probe window to file size as long as it can be at least
-                // 64 MB. (For example, if a file is under 60 seconds total and
-                // is probed with the default duration window of 30 seconds,
-                // then there will be less than 30s of content after the halfway
-                // point of the file.)
-                ProbeCaptionByteDur=std::min(HeaderSize+ContentSize-ProbeCaptionBytePos, ContentSize/2);
-            }
-            auto MaxOffset=ProbeCaptionBytePos+ProbeCaptionByteDur;
-            auto CurrentEnd=File_Offset+Buffer_Offset;
-            if (File_Size/2>=ProbeCaptionByteDur)
-            {
-                IsParsingMiddle_MaxOffset=MaxOffset;
+                IsParsingMiddle_MaxOffset=ProbeCaptionByteEnd;
                 GoTo(ProbeCaptionBytePos);
                 Open_Buffer_Unsynch();
                 IsParsingEnd=false;
@@ -23031,12 +23033,6 @@ bool File_Mxf::BookMark_Needed()
                 Streams_Count=(size_t)-1;
             }
         }
-    }
-
-    if (ExtraMetadata_Offset!=(int64u)-1)
-    {
-        GoTo(ExtraMetadata_Offset);
-        ExtraMetadata_Offset=(int64u)-1;
     }
 
     return false;

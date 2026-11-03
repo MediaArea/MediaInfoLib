@@ -745,6 +745,7 @@ protected :
     int16u Length2;
     int64u File_Size_Total; //Used only in Finish()
     int64u IsParsingMiddle_MaxOffset;
+    bool   ProbeCaption_IsChecked;
     bool   Track_Number_IsAvailable;
     bool   IsParsingEnd;
     bool   IsCheckingRandomAccessTable;

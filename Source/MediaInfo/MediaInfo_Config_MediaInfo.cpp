@@ -3828,7 +3828,6 @@ Ztring MediaInfo_Config_MediaInfo::File_ProbeCaption_Set (const Ztring& NewValue
         }
         File_ProbeCaption.push_back(Item);
     }
-    File_ProbeCaption_Pos=0;
     if (!HasForAll) {
         config_probe Probe;
         Probe.Start_Type = config_probe_percent;
@@ -3847,26 +3846,19 @@ config_probe MediaInfo_Config_MediaInfo::File_ProbeCaption_Get(const string& Par
     if (ParseSpeed<=0 && ParseSpeed>=1)
         return {};
 
+    //Item for this parser, else first item for all parsers (the same one for each file)
     CriticalSectionLocker CSL(CS);
-    for (;;)
-    {
-        if (File_ProbeCaption_Pos >= File_ProbeCaption.size())
-            return {};
-        const auto& Item = File_ProbeCaption[File_ProbeCaption_Pos];
-        File_ProbeCaption_Pos++;
-        if (!Item.Parser.empty()) {
-            if (Item.Parser[0] == '-') {
-                if (Item.Parser.substr(1) == ParserName) {
-                    continue;
-                }
-            }
-            else if (Item.Parser != ParserName) {
-                continue;
-            }
+    for (const auto& Item : File_ProbeCaption) {
+        if (Item.Parser == ParserName) {
+            return Item;
         }
-
-        return Item;
     }
+    for (const auto& Item : File_ProbeCaption) {
+        if (Item.Parser.empty() || (Item.Parser[0] == '-' && Item.Parser.substr(1) != ParserName)) {
+            return Item;
+        }
+    }
+    return {};
 }
 
 //---------------------------------------------------------------------------
