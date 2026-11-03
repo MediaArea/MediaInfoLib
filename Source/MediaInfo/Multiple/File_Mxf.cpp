@@ -12622,7 +12622,8 @@ void File_Mxf::Data_Parse()
                                 for (descriptors::iterator Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
                                     if (Descriptor->second.StreamKind==Stream_Video)
                                     {
-                                        ((File_Ancillary*)(*Parser))->HasBFrames=Descriptor->second.HasBFrames;
+                                        if (IsParsingMiddle_MaxOffset==(int64u)-1) //Same value as in the first pass after the jump of the caption probe, whatever the place of the jump
+                                            ((File_Ancillary*)(*Parser))->HasBFrames=Descriptor->second.HasBFrames;
                                         ((File_Ancillary*)(*Parser))->AspectRatio=Descriptor->second.DisplayAspectRatio;
                                         ((File_Ancillary*)(*Parser))->FrameRate=Descriptor->second.SampleRate;
                                         break;
