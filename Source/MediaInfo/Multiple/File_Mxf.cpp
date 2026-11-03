@@ -2076,6 +2076,7 @@ File_Mxf::File_Mxf()
     Preface_Current.lo=0;
     IsParsingMiddle_MaxOffset=(int64u)-1;
     ProbeCaption_IsChecked=false;
+    ProbeCaption_IsInContentPackage=false;
     Track_Number_IsAvailable=false;
     IsParsingEnd=false;
     IsCheckingRandomAccessTable=false;
@@ -10863,6 +10864,12 @@ void File_Mxf::Read_Buffer_AfterParsing()
 //---------------------------------------------------------------------------
 void File_Mxf::Read_Buffer_Unsynched()
 {
+    Position_Update(File_GoTo==(int64u)-1?(File_Offset+Buffer_Offset):File_GoTo, true);
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Position_Update(int64u FutureFileOffset, bool UnsynchParsers)
+{
     //Adapting DataSizeToParse
     if (Buffer_End)
     {
@@ -10901,13 +10908,25 @@ void File_Mxf::Read_Buffer_Unsynched()
             FrameInfo.DUR=float64_int64s(1000000000/IndexTables[0].IndexEditRate);
 
         //Calculating the byte count not included in seek information (partition, index...)
-        int64u FutureFileOffset=File_GoTo==(int64u)-1?(File_Offset+Buffer_Offset):File_GoTo;
-        int64u StreamOffset_Offset=0;
+        const bool IsCaptionProbe=IsParsingMiddle_MaxOffset!=(int64u)-1; //After the jump of the caption probe, offsets are from the first content package as other data may be before it (e.g. Generic Stream partition)
+        int64u StreamOffset_Offset=IsCaptionProbe?FirstPass_ContentPackage_First:0;
+        int32u BodySID=0;
         Partitions_Pos=0;
         while (Partitions_Pos<Partitions.size() && Partitions[Partitions_Pos].StreamOffset<=FutureFileOffset)
         {
-            StreamOffset_Offset+=Partitions[Partitions_Pos].PartitionPackByteCount+Partitions[Partitions_Pos].HeaderByteCount+Partitions[Partitions_Pos].IndexByteCount;
+            const auto& Partition=Partitions[Partitions_Pos];
+            const auto ByteCount=Partition.PartitionPackByteCount+Partition.HeaderByteCount+Partition.IndexByteCount;
             Partitions_Pos++;
+            if (!IsCaptionProbe)
+                StreamOffset_Offset+=ByteCount;
+            else if (Partition.StreamOffset<=FirstPass_ContentPackage_First)
+                BodySID=Partition.BodySID;
+            else if (Partition.BodySID==BodySID && Partition.BodyOffset && Partition.BodyOffset<=Partition.StreamOffset-FirstPass_ContentPackage_First)
+                StreamOffset_Offset=Partition.StreamOffset+ByteCount-Partition.BodyOffset; //Exact, whatever is in the partitions before this one
+            else if (Partition.BodySID!=BodySID && Partitions_Pos<Partitions.size() && Partitions[Partitions_Pos].StreamOffset<=FutureFileOffset)
+                StreamOffset_Offset+=Partitions[Partitions_Pos].StreamOffset-Partition.StreamOffset; //No essence of this stream up to the next partition
+            else
+                StreamOffset_Offset+=ByteCount;
         }
 
         if (Partitions_Pos==2 && Partitions[1].StreamOffset==FutureFileOffset && Descriptors.size()==1 && Descriptors.begin()->second.StreamKind==Stream_Text)
@@ -11052,7 +11071,8 @@ void File_Mxf::Read_Buffer_Unsynched()
     for (essences::iterator Essence=Essences.begin(); Essence!=Essences.end(); ++Essence)
         for (parsers::iterator Parser=Essence->second.Parsers.begin(); Parser!=Essence->second.Parsers.end(); ++Parser)
         {
-            (*Parser)->Open_Buffer_Unsynch();
+            if (UnsynchParsers)
+                (*Parser)->Open_Buffer_Unsynch();
             Essence->second.FrameInfo=FrameInfo;
             Essence->second.Frame_Count_NotParsedIncluded=Frame_Count_NotParsedIncluded;
         }
@@ -12199,6 +12219,13 @@ void File_Mxf::Data_Parse()
         {
             NextRandomIndexPack();
             return;
+        }
+
+        //The jump of the caption probe is usually in the middle of a content package, its frame is not the frame of the next content package
+        if (ProbeCaption_IsInContentPackage && Code_Compare4==Essences_UsedForFrameCount && !Buffer_End)
+        {
+            ProbeCaption_IsInContentPackage=false;
+            Position_Update(File_Offset+Buffer_Offset-Header_Size, false);
         }
 
         essences::iterator Essence=Essences.find(Code_Compare4);
@@ -23083,6 +23110,7 @@ bool File_Mxf::BookMark_Needed()
                 IsParsingMiddle_MaxOffset=ProbeCaptionByteEnd;
                 GoTo(ProbeCaptionBytePos);
                 Open_Buffer_Unsynch();
+                ProbeCaption_IsInContentPackage=true;
                 IsParsingEnd=false;
                 IsCheckingRandomAccessTable=false;
                 Streams_Count=(size_t)-1;

@@ -135,6 +135,7 @@ protected :
     #endif //defined(MEDIAINFO_FILE_YES)
     void Read_Buffer_AfterParsing ();
     void Read_Buffer_Unsynched();
+    void Position_Update(int64u FutureFileOffset, bool UnsynchParsers);
     #if MEDIAINFO_SEEK
     size_t Read_Buffer_Seek (size_t Method, int64u Value, int64u ID);
     #endif //MEDIAINFO_SEEK
@@ -746,6 +747,7 @@ protected :
     int64u File_Size_Total; //Used only in Finish()
     int64u IsParsingMiddle_MaxOffset;
     bool   ProbeCaption_IsChecked;
+    bool   ProbeCaption_IsInContentPackage; //After the jump of the caption probe, until the next content package
     bool   Track_Number_IsAvailable;
     bool   IsParsingEnd;
     bool   IsCheckingRandomAccessTable;
