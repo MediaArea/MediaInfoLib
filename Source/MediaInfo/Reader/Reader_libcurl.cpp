@@ -38,6 +38,12 @@
 #endif
 #include <ctime>
 #include <algorithm> //For Url
+#if !defined(MEDIAINFO_LIBCURL_DLL_RUNTIME) && defined(__linux__) && LIBCURL_VERSION_NUM>=0x074600 //7.70.0, curl_version_info_data::cainfo
+    #define MEDIAINFO_LIBCURL_CAINFO_FALLBACK 1
+    #include <cerrno>
+    #include <cstring>
+    #include <unistd.h> //For access()
+#endif
 #define MEDIAINFO_HMAC 1
 #if MEDIAINFO_HMAC
     #include "hmac.h"
@@ -433,6 +439,42 @@ struct Reader_libcurl::curl_data
         #endif // MEDIAINFO_DEBUG
     }
 };
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_LIBCURL_CAINFO_FALLBACK
+//A libcurl built elsewhere, e.g. a static build, may have a default CA bundle path which doesn't exist on this system: use the system bundle instead
+static void Reader_libcurl_CertificateAuthorityFallback(CURL* Curl)
+{
+    const curl_version_info_data* Info=curl_version_info(CURLVERSION_NOW);
+    if (!Info || Info->age<CURLVERSION_SEVENTH || !Info->cainfo || !access(Info->cainfo, F_OK) || errno!=ENOENT)
+        return;
+    #if LIBCURL_VERSION_NUM>=0x075700 //7.87.0, curl_version_info_data::feature_names
+        //Setting a CA bundle would disable the native CA store
+        if (Info->age>=CURLVERSION_ELEVENTH && Info->feature_names)
+            for (size_t Pos=0; Info->feature_names[Pos]; Pos++)
+                if (!strcmp(Info->feature_names[Pos], "NativeCA"))
+                    return;
+    #endif
+
+    //From the list and in the order of Go's crypto/x509
+    static const char* const FileNames[]=
+    {
+        "/etc/ssl/certs/ca-certificates.crt",
+        "/etc/pki/tls/certs/ca-bundle.crt",
+        "/etc/ssl/ca-bundle.pem",
+        "/etc/pki/tls/cacert.pem",
+        "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem",
+        "/etc/ssl/cert.pem",
+    };
+    for (size_t Pos=0; Pos<sizeof(FileNames)/sizeof(FileNames[0]); Pos++)
+        if (!access(FileNames[Pos], R_OK))
+        {
+            //On failure, libcurl keeps its default and fails as it did without this fallback
+            curl_easy_setopt(Curl, CURLOPT_CAINFO, FileNames[Pos]);
+            return;
+        }
+}
+#endif //MEDIAINFO_LIBCURL_CAINFO_FALLBACK
 
 //---------------------------------------------------------------------------
 struct Reader_libcurl_curl_data_getregion
@@ -1109,6 +1151,10 @@ size_t Reader_libcurl::Format_Test_PerParser(MediaInfo_Internal* MI, const Strin
     Curl_Data->Curl=curl_easy_init();
     if (Curl_Data->Curl==NULL)
         return 0;
+    #if MEDIAINFO_LIBCURL_CAINFO_FALLBACK
+        if (Curl_Data->Ssl_CertificateAuthorityFileName.empty() && Curl_Data->Ssl_CertificateAuthorityPath.empty() && !Curl_Data->Ssl_IgnoreSecurity)
+            Reader_libcurl_CertificateAuthorityFallback(Curl_Data->Curl);
+    #endif //MEDIAINFO_LIBCURL_CAINFO_FALLBACK
     #if MEDIAINFO_NEXTPACKET
         if (MI->Config.NextPacket_Get())
         {
