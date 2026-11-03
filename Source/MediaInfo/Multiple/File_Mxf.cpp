@@ -2126,6 +2126,9 @@ File_Mxf::File_Mxf()
     StereoscopicPictureSubDescriptor_IsPresent=false;
     UserDefinedAcquisitionMetadata_UdamSetIdentifier_IsSony=false;
     Essences_UsedForFrameCount=(int32u)-1;
+    FirstPass_ContentPackage_First=(int64u)-1;
+    FirstPass_ContentPackage_End=0;
+    FirstPass_ContentPackage_Count=0;
     IndexTable_NSL=0;
     IndexTable_NPE=0;
     #if MEDIAINFO_ADVANCED
@@ -12342,7 +12345,10 @@ void File_Mxf::Data_Parse()
 
             //Check of Essence used as a reference for frame count
             if (Essences_UsedForFrameCount==(int32u)-1)
+            {
                 Essences_UsedForFrameCount=Essence->first;
+                FirstPass_ContentPackage_First=File_Offset+Buffer_Offset-Header_Size;
+            }
 
             //Demux
             #if MEDIAINFO_DEMUX
@@ -12430,6 +12436,13 @@ void File_Mxf::Data_Parse()
                 Essence->second.Element_Size_Constant=Element_Size;
             else if (Essence->second.Element_Size_Constant!=Element_Size)
                 Essence->second.Element_Size_Constant=(int64u)-1;
+
+            //Content packages of the first pass, for estimating the size of an edit unit
+            if (Essence->first==Essences_UsedForFrameCount && IsParsingMiddle_MaxOffset==(int64u)-1)
+            {
+                FirstPass_ContentPackage_End=File_Offset+Buffer_Offset+Element_Size;
+                FirstPass_ContentPackage_Count++;
+            }
         }
 
         //Frame info is specific to the container, and it is not updated
@@ -22998,19 +23011,45 @@ bool File_Mxf::BookMark_Needed()
             }
             ContentSize-=HeaderSize+FooterSize;
         }
+        if (!Duration)
+        {
+            //Not in the metadata (e.g. open or growing file), estimated from the size of an edit unit in the index, even if partial, else from the first pass
+            float64 EditUnitSize=0;
+            float64 EditRate=0;
+            #if MEDIAINFO_DEMUX || MEDIAINFO_SEEK
+                for (const auto& IndexTable : IndexTables)
+                {
+                    const auto LastEditUnit=IndexTable.IndexStartPosition+IndexTable.Entries.size()-1;
+                    if (IndexTable.EditUnitByteCount)
+                        EditUnitSize=IndexTable.EditUnitByteCount+SDTI_SizePerFrame;
+                    else if (!IndexTable.Entries.empty() && LastEditUnit)
+                        EditUnitSize=((float64)IndexTable.Entries.back().StreamOffset)/LastEditUnit+SDTI_SizePerFrame;
+                    else
+                        continue;
+                    EditRate=IndexTable.IndexEditRate;
+                }
+            #endif //MEDIAINFO_DEMUX || MEDIAINFO_SEEK
+            if ((!EditUnitSize || !EditRate) && FirstPass_ContentPackage_Count)
+            {
+                EditUnitSize=((float64)(FirstPass_ContentPackage_End-FirstPass_ContentPackage_First))/FirstPass_ContentPackage_Count;
+                for (const auto& Track : Tracks)
+                    if (Track.second.EditRate && (!EditRate || Track.second.EditRate<EditRate))
+                        EditRate=Track.second.EditRate; //Lowest one, the track of a sound element may use the sampling rate
+            }
+
+            //Else 50 minutes: time values are still proportional, a time start of 0 is the content start and 30 s (default probe) are 1% of the content
+            Duration=(EditUnitSize && EditRate)?(ContentSize/EditUnitSize/EditRate):3000;
+        }
         switch (Probe.Start_Type)
         {
             case config_probe_size:
                 ProbeCaptionBytePos=Probe.Start;
                 break;
             case config_probe_dur:
-                if (Duration)
                 {
                     auto Ratio=(float32)Probe.Start/Duration;
                     ProbeCaptionBytePos=HeaderSize+(Ratio<1?(int64u)(Ratio*ContentSize):ContentSize); //TODO: real timestamp
                 }
-                else
-                    ProbeCaptionBytePos=HeaderSize+ContentSize/2;
                 break;
             case config_probe_percent:
                 ProbeCaptionBytePos=HeaderSize+ContentSize/100*Probe.Start;
@@ -23022,13 +23061,10 @@ bool File_Mxf::BookMark_Needed()
                 ProbeCaptionByteDur=Probe.Duration;
                 break;
             case config_probe_dur:
-                if (Duration)
                 {
                     auto Ratio=(float32)Probe.Duration/Duration;
                     ProbeCaptionByteDur=Ratio<1?(int64u)(Ratio*ContentSize):ContentSize; //TODO: real timestamp
                 }
-                else
-                    ProbeCaptionByteDur=ContentSize/100;
                 break;
             case config_probe_percent:
                 ProbeCaptionByteDur=ContentSize/100*Probe.Duration;

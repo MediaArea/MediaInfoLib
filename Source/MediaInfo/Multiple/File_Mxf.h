@@ -1477,6 +1477,9 @@ protected :
     bool   StereoscopicPictureSubDescriptor_IsPresent;
     bool   UserDefinedAcquisitionMetadata_UdamSetIdentifier_IsSony;
     int32u Essences_UsedForFrameCount;
+    int64u FirstPass_ContentPackage_First; //Offset of the first element of the first content package
+    int64u FirstPass_ContentPackage_End; //Offset of the end of the first element of the last content package
+    int64u FirstPass_ContentPackage_Count;
     int32u IndexTable_NSL;
     int32u IndexTable_NPE;
     struct systemscheme1
