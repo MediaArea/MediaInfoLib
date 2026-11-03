@@ -4088,7 +4088,9 @@ static const char* const MxfProfile_Names[] =
     "ARD_ZDF_SDF-02",
     "ARD_ZDF_XDF-01",
     "ARD_ZDF_XDF-02",
+    "SMPTE_ST_2067-2", //IMF Track File (Image, Audio, Timed Text or Ancillary Data)
     "SMPTE_ST_2067-204", //ADM Audio Track File (IMF), with Operational Mode A
+    "SMPTE_ST_2067-5", //IMF Essence Component
     "SMPTE_ST_337_2008", //Editions of SMPTE ST 337 and associated standards, only one can be requested (by default, latest edition without check of the data types)
     "SMPTE_ST_337_2015",
     "SMPTE_ST_337_2016",

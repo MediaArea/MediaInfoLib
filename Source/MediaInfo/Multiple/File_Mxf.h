@@ -93,6 +93,10 @@ protected :
     #if MEDIAINFO_CONFORMANCE
     void Streams_Finish_ContentStorage_Conformance (const int128u ContentStorageUID);
     void Streams_Finish_Conformance_FileFormat (); //SMPTE ST 377-1, edition depending on the version in the file
+    void Streams_Finish_Conformance_HeaderMetadata (); //SMPTE ST 377-1, KLV coding, Primer Pack and Header Metadata, version 1.3 only
+    void Streams_Finish_Conformance_IndexTables (); //SMPTE ST 377-1, Index Table Segments of an Index Stream, version 1.3 only
+    void Streams_Finish_Conformance_OperationalPattern (); //SMPTE ST 378 (OP1a), and for version 1.3 SMPTE ST 377-1 (generalized patterns) and SMPTE ST 390 (OP-Atom)
+    void Streams_Finish_Conformance_MCA (); //SMPTE ST 377-4 and SMPTE ST 377-41, MCA Label Sub-Descriptors
     void Streams_Finish_Conformance_RiffChunks (); //SMPTE ST 2131
     void Streams_Finish_Conformance_References ();
     #endif //MEDIAINFO_CONFORMANCE
@@ -114,7 +118,12 @@ protected :
     size_t CompliantWith_ArdZdf_FromContent (std::string& Content); //Position of the ARD/ZDF profile matching the kind of content, (size_t)-1 if none, Content is filled with a description of the content
     #if MEDIAINFO_CONFORMANCE
     conformance_errors CompliantWith_St2067204 (conformance_errors& Warnings); //ADM Audio Track File, to be done before filling the ADM content, Warnings are filled with the recommendations not followed
+    conformance_errors CompliantWith_St20675 (conformance_errors& Warnings, bool IsTrackFile); //IMF Essence Component, with the overall constraints of IMF Track Files if IsTrackFile, Warnings are filled with the recommendations not followed
+    conformance_errors CompliantWith_St20672 (conformance_errors& Warnings); //IMF Track File, Warnings are filled with the recommendations not followed
+    bool CompliantWith_St20672_IsDeclared (); //SMPTE ST 2067-2 declared by the file (Channel Assignment label)
+    bool CompliantWith_St20672_IsCandidate (); //Candidate for an IMF Track File (Audio or Timed Text)
     #endif //MEDIAINFO_CONFORMANCE
+    bool CompliantWith_St20672_IsTested (bool WithSt2067204=false); //IMF Track File or IMF Essence Component requested (or ADM Audio Track File if WithSt2067204), or candidate for an IMF Track File
 
     //Buffer - Global
     void Read_Buffer_Init ();
@@ -1629,7 +1638,14 @@ protected :
         bool                        St2067204_IsTested; //Candidate (RIFF Chunks or ADM sets) or requested
         conformance_errors          St2067204_Errors;
         conformance_errors          St2067204_Warnings;
+        bool                        St20672_IsRequested; //SMPTE ST 2067-2 requested by the user, conformance errors are reported
+        bool                        St20675_IsRequested; //SMPTE ST 2067-5 requested by the user, conformance errors are reported
         size_t                      RiffChunks_ErrorCount; //Count of SMPTE ST 2131 errors
+        size_t                      McaLabels_ErrorCount; //Count of SMPTE ST 377-4 errors on Audio Channel, Soundfield Group and Group of Soundfield Groups labels
+        void                        CompliantWith_St20672_Audio(const descriptor& Sound, const properties& Sound_Properties, conformance_errors& Errors, conformance_errors& Warnings); //Audio Track File constraints, except the Channel Assignment and the audio labeling
+        void                        CompliantWith_St20672_Labels(const properties& Sound_Properties, const std::vector<int128u>& SubDescriptors, conformance_errors& Errors); //Audio labeling of a Sound Track
+        std::vector<int128u>        SubDescriptors_Get(const int128u& DescriptorUID); //Sub-descriptors of a File Descriptor, also if the SubDescriptors item is not parsed
+        void                        ContentStorage_Packages_Get(std::vector<int128u>& MaterialPackages, std::vector<int128u>& TopLevelPackages, std::vector<int128u>& EssenceContainerDatas); //Content Storage of the current Preface, once per Package UID
     #endif //MEDIAINFO_CONFORMANCE
     int64u                          Anc_ElementSize; //Size of the ANC Data Elements, (int64u)-1 if not yet parsed, (int64u)-2 if not constant
     void Property_Store(properties& Properties, int64u Size);
@@ -1641,6 +1657,30 @@ protected :
     bool                            Partitions_IsFooter;
     #if MEDIAINFO_CONFORMANCE
         int64u                      GenericStreamPartition_PackEnd; //Offset after the Generic Stream Partition Pack just parsed, (int64u)-1 if the last Partition Pack is not a Generic Stream one
+
+        //KLV coding and Header Metadata (SMPTE ST 377-1), checked while parsing and reported once streams are known
+        struct headermetadata_error
+        {
+            int64u                  Offset;
+            const char*             Field;
+            std::string             Value;
+        };
+        std::vector<headermetadata_error> HeaderMetadata_Errors; //Errors found while parsing
+        std::map<int128u, int64u>   SetKeys; //Key is InstanceUID of a Header Metadata Set (including dark sets), value is the low part of the set key
+        std::map<int128u, int64u>   SetPartitions; //Key is InstanceUID of a Header Metadata Set, value is the offset of the partition of its last occurrence
+        std::map<int16u, int64u>    HeaderMetadata_TagsNotInPrimer; //Local Tags used in Header Metadata Sets but not in the Primer Pack of their partition, value is the offset of the first set using it
+        std::map<int64u, std::set<int128u> > HeaderMetadata_Prefaces; //Key is the offset of the partition, value is the Instance UIDs of its Preface sets
+        std::map<int64u, std::set<int128u> > HeaderMetadata_ContentStorages; //Key is the offset of the partition, value is the Instance UIDs of its Content Storage sets
+        std::set<int16u>            PrimerPack_Tags; //Local Tags of the Primer Pack of the current partition
+        bool                        PrimerPack_IsParsed; //The Primer Pack of the current partition is parsed
+        int64u                      HeaderMetadata_Partition; //Offset of the partition of the Header Metadata being parsed
+        int64u                      HeaderMetadata_End; //Offset after the Header Metadata being parsed, (int64u)-1 if none
+        int8u                       HeaderMetadata_Step; //KLV packet sequence: 0 not tested, 1 after the Partition Pack (Primer Pack expected), 2 after the Primer Pack (Preface expected as first set)
+        bool                        HeaderMetadata_FillIsParsed; //A KLV Fill item is between the Partition Pack and the Primer Pack
+        int64u                      Klv_Ber80_Offset; //Offset of the first BER length using the 80h token, (int64u)-1 if none
+        int64u                      Klv_BerTooLong_Offset; //Offset of the first BER length longer than 9 bytes, (int64u)-1 if none
+        int8u                       Klv_BerTooLong_Size;
+        void HeaderMetadata_Sequence_Test();
     #endif //MEDIAINFO_CONFORMANCE
 
     //Config
