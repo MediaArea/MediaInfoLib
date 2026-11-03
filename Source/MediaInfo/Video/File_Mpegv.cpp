@@ -3480,8 +3480,8 @@ void File_Mpegv::user_data_start_3()
                         if (Scte_Parser->PTS_DTS_Needed)
                         {
                             Scte_Parser->FrameInfo.PCR=FrameInfo.PCR;
-                            Scte_Parser->FrameInfo.PTS=FrameInfo.PTS-(TemporalReference.size()-1-Scte20_Pos)*tc;
-                            Scte_Parser->FrameInfo.DTS=FrameInfo.DTS-(TemporalReference.size()-1-Scte20_Pos)*tc;
+                            Scte_Parser->FrameInfo.PTS=FrameInfo.PTS-(FrameInfo.PTS!=(int64u)-1?((TemporalReference.size()-1-Scte20_Pos)*tc):0);
+                            Scte_Parser->FrameInfo.DTS=FrameInfo.DTS-(FrameInfo.DTS!=(int64u)-1?((TemporalReference.size()-1-Scte20_Pos)*tc):0);
                         }
                         #if MEDIAINFO_DEMUX
                             int8u Demux_Level_Save=Demux_Level;

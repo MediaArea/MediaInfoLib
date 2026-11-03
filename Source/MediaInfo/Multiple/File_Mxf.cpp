@@ -10929,7 +10929,7 @@ void File_Mxf::Position_Update(int64u FutureFileOffset, bool UnsynchParsers)
                 StreamOffset_Offset+=ByteCount;
         }
 
-        if (Partitions_Pos==2 && Partitions[1].StreamOffset==FutureFileOffset && Descriptors.size()==1 && Descriptors.begin()->second.StreamKind==Stream_Text)
+        if (FutureFileOffset==FirstPass_ContentPackage_First || (Partitions_Pos==2 && Partitions[1].StreamOffset==FutureFileOffset && Descriptors.size()==1 && Descriptors.begin()->second.StreamKind==Stream_Text))
             Frame_Count_NotParsedIncluded=0;
 
         if (Descriptors.size()==1 && Descriptors.begin()->second.ByteRate!=(int32u)-1 && Descriptors.begin()->second.SampleRate)
@@ -10986,6 +10986,11 @@ void File_Mxf::Position_Update(int64u FutureFileOffset, bool UnsynchParsers)
                             FrameInfo.PTS=FrameInfo.DTS=float64_int64s(DTS_Delay*1000000000+((float64)Frame_Count_NotParsedIncluded)*1000000000/IndexTables[Pos].IndexEditRate);
                         }
                     }
+                    else if (IsCaptionProbe)
+                    {
+                        Frame_Count_NotParsedIncluded+=FramesToAdd;
+                        FrameInfo.PTS=FrameInfo.DTS=FrameInfo.DUR==(int64u)-1?(int64u)-1:(FrameInfo.DTS+Frame_Count_NotParsedIncluded*FrameInfo.DUR); //From the edit rate of the track
+                    }
                     else
                         FrameInfo.PTS=FrameInfo.DTS=(int64u)-1;
                     #if MEDIAINFO_DEMUX
@@ -11036,6 +11041,8 @@ void File_Mxf::Position_Update(int64u FutureFileOffset, bool UnsynchParsers)
                             Frame_Count_NotParsedIncluded=IndexTables[Pos].IndexStartPosition+EntryPos;
                             if (IndexTables[Pos].IndexEditRate)
                                 FrameInfo.DTS=float64_int64s(DTS_Delay*1000000000+((float64)Frame_Count_NotParsedIncluded)/IndexTables[Pos].IndexEditRate*1000000000);
+                            else if (IsCaptionProbe)
+                                FrameInfo.DTS=FrameInfo.DUR==(int64u)-1?(int64u)-1:(FrameInfo.DTS+Frame_Count_NotParsedIncluded*FrameInfo.DUR); //From the edit rate of the track
 
 
                             #if MEDIAINFO_DEMUX
@@ -11067,6 +11074,18 @@ void File_Mxf::Position_Update(int64u FutureFileOffset, bool UnsynchParsers)
         else if (!IndexTables.empty() && IndexTables[0].IndexEditRate)
             FrameInfo.DUR=float64_int64s(1000000000/IndexTables[0].IndexEditRate);
     #endif //if MEDIAINFO_DEMUX || MEDIAINFO_SEEK
+
+    //After the jump of the caption probe, timestamps are from the first frame as in the first pass, not from the start timecode, and unknown if the frame is unknown
+    if (IsParsingMiddle_MaxOffset!=(int64u)-1)
+    {
+        const int64u Delay=float64_int64s(DTS_Delay*1000000000);
+        if (Frame_Count_NotParsedIncluded==(int64u)-1)
+            FrameInfo.PTS=FrameInfo.DTS=(int64u)-1;
+        if (FrameInfo.DTS!=(int64u)-1)
+            FrameInfo.DTS-=Delay;
+        if (FrameInfo.PTS!=(int64u)-1)
+            FrameInfo.PTS-=Delay;
+    }
 
     for (essences::iterator Essence=Essences.begin(); Essence!=Essences.end(); ++Essence)
         for (parsers::iterator Parser=Essence->second.Parsers.begin(); Parser!=Essence->second.Parsers.end(); ++Parser)
