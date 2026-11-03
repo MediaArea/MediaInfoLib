@@ -1555,6 +1555,9 @@ protected :
             int64u                  Partition; //Offset of the partition of the Header Metadata
             int64u                  StreamOffset; //Offset of the set
             int64u                  Key; //Low part of the set key
+            int64u                  StreamOffset_Kept; //Offset of the first parsed set with this Instance UID, the one in SetKeys and SetProperties, (int64u)-1 if only dark sets
+            int64u                  Key_Kept; //Low part of its set key
+            int64u                  Key_FileDescriptor; //Low part of the set key of the first parsed File Descriptor with this Instance UID, 0 if none
         };
         std::map<int128u, instanceuid_set> InstanceUID_Sets; //Key is InstanceUID, value is the first set with this Instance UID in the last Header Metadata parsed containing it
         struct instanceuid_duplicate
@@ -1564,6 +1567,7 @@ protected :
             int64u                  Key_Duplicate; //Low part of the key of the set reusing it
         };
         std::map<int64u, instanceuid_duplicate> InstanceUID_Duplicates; //Key is the offset of a set reusing the Instance UID of another set of the same Header Metadata
+        std::map<std::pair<int128u, int64u>, properties> SetProperties_Duplicates; //Key is InstanceUID and low part of the set key, for the first parsed set of each kind with an Instance UID reused in its Header Metadata (SetProperties and SetKeys have the first parsed set)
     #endif //MEDIAINFO_CONFORMANCE
 
     //Helpers for checking compliance with specifications, on raw values of local set properties
@@ -1591,6 +1595,7 @@ protected :
     static bool                 Raw_UInt_Get(const std::string* Value, size_t Size, int64u& Result); //Big endian, returns false if absent or with another size
     static std::string          Raw_UTF16_Get(const std::string* Value); //UTF-16 big endian, characters out of ISO 7 replaced by '?', null characters at the end ignored, empty if absent
     const properties&           SetProperties_Get(const int128u& InstanceUID) const; //Empty if the set is not parsed
+    const properties&           SetProperties_Get(const int128u& InstanceUID, int64u Key) const; //Set of this kind (low part of the set key), also if another set of the same Header Metadata reuses its Instance UID
     static const std::string*   Property_Get(const properties& Properties, int64u Key);
     static const std::string*   Property_Get(const properties& Properties, int16u Tag, int64u UL_Lo); //Static tag or dynamic tag
     static bool                 Properties_Test(const properties& Properties, const std::vector<property_expected>& List, conformance_errors& Errors); //Returns true if the test must stop
@@ -1647,7 +1652,7 @@ protected :
         void                        CompliantWith_St20672_Audio(const descriptor& Sound, const properties& Sound_Properties, conformance_errors& Errors, conformance_errors& Warnings); //Audio Track File constraints, except the Channel Assignment and the audio labeling
         void                        CompliantWith_St20672_Labels(const properties& Sound_Properties, const std::vector<int128u>& SubDescriptors, conformance_errors& Errors); //Audio labeling of a Sound Track
         std::vector<int128u>        SubDescriptors_Get(const int128u& DescriptorUID); //Sub-descriptors of a File Descriptor, also if the SubDescriptors item is not parsed
-        std::set<int128u>           Descriptors_InUse(); //Descriptors and sub-descriptors of the Source Packages of the Header Metadata in use, empty if all Header Metadata instances have the same Instance UIDs
+        std::set<int128u>           Descriptors_InUse(); //Descriptors and sub-descriptors of the Header Metadata in use, empty if all descriptors are in use
         void                        ContentStorage_Packages_Get(std::vector<int128u>& MaterialPackages, std::vector<int128u>& TopLevelPackages, std::vector<int128u>& EssenceContainerDatas); //Content Storage of the current Preface, once per Package UID
     #endif //MEDIAINFO_CONFORMANCE
     int64u                          Anc_ElementSize; //Size of the ANC Data Elements, (int64u)-1 if not yet parsed, (int64u)-2 if not constant
@@ -1670,6 +1675,10 @@ protected :
         };
         std::vector<headermetadata_error> HeaderMetadata_Errors; //Errors found while parsing
         std::map<int128u, int64u>   SetKeys; //Key is InstanceUID of a Header Metadata Set (including dark sets), value is the low part of the set key
+        bool                        SetKey_Is(const int128u& InstanceUID, int64u Key) const; //A set with this Instance UID is of this kind (low part of the set key), also if another set of the same Header Metadata reuses its Instance UID
+        int64u                      SetKey_FileDescriptor_Get(const int128u& InstanceUID) const; //Low part of the key of the File Descriptor with this Instance UID, also if another set of the same Header Metadata reuses its Instance UID, else of the set with this Instance UID, 0 if not present
+        bool                        InstanceUID_IsReused(const int128u& InstanceUID) const; //Another set of a Header Metadata (also a dark set) reuses this Instance UID
+        bool                        Set_IsFileDescriptor; //The set being parsed is a File Descriptor
         std::map<int128u, int64u>   SetPartitions; //Key is InstanceUID of a Header Metadata Set, value is the offset of the partition of its last occurrence
         std::map<int16u, int64u>    HeaderMetadata_TagsNotInPrimer; //Local Tags used in Header Metadata Sets but not in the Primer Pack of their partition, value is the offset of the first set using it
         std::map<int64u, std::set<int128u> > HeaderMetadata_Prefaces; //Key is the offset of the partition, value is the Instance UIDs of its Preface sets
