@@ -2935,7 +2935,7 @@ bool File_Mpeg4::BookMark_Needed()
         }
 
         #if MEDIAINFO_DEMUX
-            if (!stco_IsDifferent && Muxing.size()==2)
+            if (!stco_IsDifferent && Muxing.size()==2 && !Streams[Muxing.begin()->first].IsPriorityStream && !Streams[Muxing.rbegin()->first].IsPriorityStream)
             {
                 std::map<int32u, struct Mpeg4_muxing>::iterator Muxing_1=Muxing.begin();
                 std::map<int32u, struct Mpeg4_muxing>::iterator Muxing_2=Muxing.begin(); ++Muxing_2;
