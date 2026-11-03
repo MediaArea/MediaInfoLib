@@ -2216,6 +2216,7 @@ void File_Mpeg4::mdat_xxxx()
         mdat_StreamJump();
         return;
     }
+    Stream_Temp.ParsedEndOffset=File_Offset+Buffer_Offset+Element_Size;
 
     int64u Element_Size2;
     if (Stream_Temp.HasAtomStyle)
@@ -2419,95 +2420,8 @@ void File_Mpeg4::mdat_xxxx()
                 for (mdat_Pos_Type* mdat_Pos_Item=&mdat_Pos[0]; mdat_Pos_Item<mdat_Pos_Max; ++mdat_Pos_Item)
                     if (mdat_Pos_Item->StreamID!=(int32u)Element_Code)
                         mdat_Pos_New.push_back(*mdat_Pos_Item);
-                if (!mdat_Pos_New.empty())
-                {
-                    mdat_Pos=std::move(mdat_Pos_New);
-                    std::sort(mdat_Pos.begin(), mdat_Pos.end(), &mdat_pos_sort);
-                }
-                else
-                {
-                    mdat_Pos=std::move(mdat_Pos_Caption);
-                    std::sort(mdat_Pos.begin(), mdat_Pos.end(), &mdat_pos_sort);
-                    size_t mdat_Pos_Min=(size_t)-1;
-                    size_t mdat_Pos_Max=0;
-                    bool ProbeCaption_IsSet=false;
-                    for (auto& Stream : Streams)
-                    {
-                        auto HandleAllContent = Stream.second.IsCaption || (!Stream.second.Parsers.empty() && Stream.second.Parsers.front()->MustExtendParsingDuration);
-                        if (!Stream.second.Parsers.empty() && HandleAllContent)
-                        {
-                            Stream.second.Parsers.front()->Open_Buffer_Unsynch();
-                            int64u ProbeCaption_mdatPos=(int64u)-1;
-                            int64u ProbeCaption_mdatDur=(int64u)-1;
-                            if (Stream.second.stts_Duration && Stream.second.stts_FrameCount && Stream.second.mdhd_TimeScale)
-                            {
-                                auto FrameRateRatio=(float)Stream.second.stts_Duration/Stream.second.stts_FrameCount;
-                                auto FrameRate=Stream.second.mdhd_TimeScale/FrameRateRatio;
-                                auto Duration=(float)Stream.second.stts_Duration/Stream.second.mdhd_TimeScale;
-                                if (FrameRate && !ProbeCaption_IsSet)
-                                {
-                                    ProbeCaption_IsSet=true; //Probe window from the first stream only, the other streams are parsed in the same byte range
-                                    auto Probe=Config->File_ProbeCaption_Get(ParserName);
-                                    switch (Probe.Start_Type) {
-                                        case config_probe_none:
-                                            ProbeCaption_mdatPos=File_Size;
-                                            break;
-                                        case config_probe_dur:
-                                            ProbeCaption_mdatPos=(int64u)(Probe.Start*FrameRate);
-                                            break;
-                                        case config_probe_size:
-                                            ProbeCaption_mdatPos=Probe.Start<File_Size?(int64u)(((float64)Probe.Start)/File_Size*Stream.second.stts_FrameCount):Stream.second.stts_FrameCount; //File pos is not relevant there
-                                            break;
-                                        case config_probe_percent:
-                                            ProbeCaption_mdatPos=Stream.second.stts_FrameCount*Probe.Start/100;
-                                            break;
-                                    }
-                                    switch (Probe.Duration_Type) {
-                                        case config_probe_none:
-                                            ProbeCaption_mdatDur=0;
-                                            break;
-                                        case config_probe_dur:
-                                            ProbeCaption_mdatDur=(int64u)(Probe.Duration*FrameRate);
-                                            break;
-                                        case config_probe_size:
-                                            ProbeCaption_mdatDur=Probe.Duration<File_Size?(int64u)(((float64)Probe.Duration)/File_Size*Stream.second.stts_FrameCount):Stream.second.stts_FrameCount; //File pos is not relevant there
-                                            if (!ProbeCaption_mdatDur && Probe.Duration)
-                                                ProbeCaption_mdatDur=1;
-                                            break;
-                                        case config_probe_percent:
-                                            ProbeCaption_mdatDur=Stream.second.stts_FrameCount*Probe.Duration/100;
-                                            break;
-                                    }
-                                }
-                            }
-                            if (ProbeCaption_mdatPos!=(int64u)-1 && ProbeCaption_mdatDur!=(int64u)-1)
-                            {
-                                //Probe window limited to the stream content, whatever its size
-                                size_t mdat_Pos_PerStream=0;
-                                auto ProbeCaption_mdatPosEnd=ProbeCaption_mdatPos+ProbeCaption_mdatDur;
-                                for (size_t i=0; i<mdat_Pos.size(); i++)
-                                {
-                                    const auto& mdat=mdat_Pos[i];
-                                    if (mdat.StreamID==Stream.first)
-                                    {
-                                        if (mdat_Pos_PerStream>=ProbeCaption_mdatPos && mdat_Pos_PerStream<ProbeCaption_mdatPosEnd)
-                                        {
-                                            if (mdat_Pos_Min>i)
-                                                mdat_Pos_Min=i;
-                                            if (mdat_Pos_Max<=i)
-                                                mdat_Pos_Max=i+1;
-                                        }
-                                        mdat_Pos_PerStream++;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    if (mdat_Pos_Max<mdat_Pos.size())
-                        mdat_Pos.resize(mdat_Pos_Max);
-                    if (mdat_Pos_Min<=mdat_Pos.size())
-                        mdat_Pos.erase(mdat_Pos.begin(), mdat_Pos.begin()+mdat_Pos_Min);
-                }
+                mdat_Pos=std::move(mdat_Pos_New);
+                std::sort(mdat_Pos.begin(), mdat_Pos.end(), &mdat_pos_sort);
                 if (mdat_Pos.empty())
                 {
                     mdat_Pos_Temp=nullptr;
@@ -2555,7 +2469,114 @@ void File_Mpeg4::mdat_xxxx()
     //Next piece of data
     Element_Offset=Element_Size;
     Element_Show();
+    if (mdat_Pos_Temp==mdat_Pos_Max && mdat_Pos_NormalParsing && Config->ParseSpeed<1 && !mdat_Pos_Caption.empty())
+        mdat_ProbeCaption(); //Whatever the reason for the end of the first pass, e.g. a stream never filled
     mdat_StreamJump();
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::mdat_ProbeCaption()
+{
+    mdat_Pos=std::move(mdat_Pos_Caption);
+    mdat_Pos_Caption.clear();
+    std::sort(mdat_Pos.begin(), mdat_Pos.end(), &mdat_pos_sort);
+    size_t mdat_Pos_Min=(size_t)-1;
+    size_t mdat_Pos_End=0;
+    bool ProbeCaption_IsSet=false;
+    for (auto& Stream : Streams)
+    {
+        auto HandleAllContent = Stream.second.IsCaption || (!Stream.second.Parsers.empty() && Stream.second.Parsers.front()->MustExtendParsingDuration);
+        auto HasContentLeft = HandleAllContent && std::any_of(mdat_Pos.begin(), mdat_Pos.end(), [&](const mdat_Pos_Type& Item) { //A stream entirely parsed is not concerned
+            return Item.StreamID==Stream.first && Item.Offset>=Stream.second.ParsedEndOffset;
+        });
+        if (!Stream.second.Parsers.empty() && HasContentLeft)
+        {
+            Stream.second.Parsers.front()->Open_Buffer_Unsynch();
+            int64u ProbeCaption_mdatPos=(int64u)-1;
+            int64u ProbeCaption_mdatDur=(int64u)-1;
+            if (Stream.second.stts_Duration && Stream.second.stts_FrameCount && Stream.second.mdhd_TimeScale)
+            {
+                auto FrameRateRatio=(float)Stream.second.stts_Duration/Stream.second.stts_FrameCount;
+                auto FrameRate=Stream.second.mdhd_TimeScale/FrameRateRatio;
+                auto Duration=(float)Stream.second.stts_Duration/Stream.second.mdhd_TimeScale;
+                if (FrameRate && !ProbeCaption_IsSet)
+                {
+                    ProbeCaption_IsSet=true; //Probe window from the first stream only, the other streams are parsed in the same byte range
+                    auto Probe=Config->File_ProbeCaption_Get(ParserName);
+                    switch (Probe.Start_Type) {
+                        case config_probe_none:
+                            ProbeCaption_mdatPos=File_Size;
+                            break;
+                        case config_probe_dur:
+                            ProbeCaption_mdatPos=(int64u)(Probe.Start*FrameRate);
+                            break;
+                        case config_probe_size:
+                            ProbeCaption_mdatPos=Probe.Start<File_Size?(int64u)(((float64)Probe.Start)/File_Size*Stream.second.stts_FrameCount):Stream.second.stts_FrameCount; //File pos is not relevant there
+                            break;
+                        case config_probe_percent:
+                            ProbeCaption_mdatPos=Stream.second.stts_FrameCount*Probe.Start/100;
+                            break;
+                    }
+                    switch (Probe.Duration_Type) {
+                        case config_probe_none:
+                            ProbeCaption_mdatDur=0;
+                            break;
+                        case config_probe_dur:
+                            ProbeCaption_mdatDur=(int64u)(Probe.Duration*FrameRate);
+                            break;
+                        case config_probe_size:
+                            ProbeCaption_mdatDur=Probe.Duration<File_Size?(int64u)(((float64)Probe.Duration)/File_Size*Stream.second.stts_FrameCount):Stream.second.stts_FrameCount; //File pos is not relevant there
+                            if (!ProbeCaption_mdatDur && Probe.Duration)
+                                ProbeCaption_mdatDur=1;
+                            break;
+                        case config_probe_percent:
+                            ProbeCaption_mdatDur=Stream.second.stts_FrameCount*Probe.Duration/100;
+                            break;
+                    }
+                }
+            }
+            if (ProbeCaption_mdatPos!=(int64u)-1 && ProbeCaption_mdatDur!=(int64u)-1)
+            {
+                //Probe window limited to the stream content, whatever its size
+                size_t mdat_Pos_PerStream=0;
+                auto ProbeCaption_mdatPosEnd=ProbeCaption_mdatPos+ProbeCaption_mdatDur;
+                for (size_t i=0; i<mdat_Pos.size(); i++)
+                {
+                    const auto& mdat=mdat_Pos[i];
+                    if (mdat.StreamID==Stream.first)
+                    {
+                        if (mdat_Pos_PerStream>=ProbeCaption_mdatPos && mdat_Pos_PerStream<ProbeCaption_mdatPosEnd)
+                        {
+                            if (mdat_Pos_Min>i)
+                                mdat_Pos_Min=i;
+                            if (mdat_Pos_End<=i)
+                                mdat_Pos_End=i+1;
+                        }
+                        mdat_Pos_PerStream++;
+                    }
+                }
+            }
+        }
+    }
+    if (mdat_Pos_End<mdat_Pos.size())
+        mdat_Pos.erase(mdat_Pos.begin()+mdat_Pos_End, mdat_Pos.end());
+    if (mdat_Pos_Min<=mdat_Pos.size())
+        mdat_Pos.erase(mdat_Pos.begin(), mdat_Pos.begin()+mdat_Pos_Min);
+    if (mdat_Pos.empty())
+    {
+        mdat_Pos_Temp=nullptr;
+        mdat_Pos_Max=nullptr;
+    }
+    else
+    {
+        mdat_Pos_Temp=&mdat_Pos[0];
+        mdat_Pos_Max=mdat_Pos_Temp+mdat_Pos.size();
+    }
+    for (; mdat_Pos_Temp<mdat_Pos_Max; ++mdat_Pos_Temp)
+    {
+        if (mdat_Pos_Temp->Offset>=File_Offset+Buffer_Offset+Element_Size)
+            break;
+    }
 }
 
 //---------------------------------------------------------------------------

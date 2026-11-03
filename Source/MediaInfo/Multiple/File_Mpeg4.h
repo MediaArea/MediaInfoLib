@@ -98,6 +98,7 @@ private :
     void jp2h_ricc() {jp2h_colr(); }
     void mdat();
     void mdat_xxxx();
+    void mdat_ProbeCaption();
     void mdat_StreamJump();
     void meta();
     void meta_CreateStream();
@@ -588,6 +589,7 @@ private :
         int64u                  stts_SampleDuration;
         int64u                  FirstUsedOffset;
         int64u                  LastUsedOffset;
+        int64u                  ParsedEndOffset; //Offset after the last parsed sample
         int32u                  mvex_trex_default_sample_duration;
         int32u                  mvex_trex_default_sample_size;
         int32u                  TimeCode_TrackID;
@@ -692,6 +694,7 @@ private :
             stts_SampleDuration = 0;
             FirstUsedOffset=(int64u)-1;
             LastUsedOffset=(int64u)-1;
+            ParsedEndOffset=0;
             mvex_trex_default_sample_duration=0;
             mvex_trex_default_sample_size=0;
             TimeCode_TrackID=(int32u)-1;
