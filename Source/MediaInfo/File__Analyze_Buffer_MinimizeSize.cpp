@@ -675,12 +675,12 @@ void File__Analyze::Get_EB(int64u &Info)
     //Element size
     INTEGRITY_SIZE_ATLEAST_INT(1);
     int8u  Size=0;
-    int8u  Size_Mark=0;
+    int32u Size_Mark=0;
     BS_Begin();
     while (Size_Mark==0 && BS->Remain() && Size<=8)
     {
         Size++;
-        Peek_S1(Size, Size_Mark);
+        Peek_BS(Size, Size_Mark);
     }
     BS_End();
 
@@ -755,12 +755,12 @@ void File__Analyze::Get_ES(int64s &Info)
     //Element size
     INTEGRITY_SIZE_ATLEAST_INT(1);
     int8u  Size=0;
-    int8u  Size_Mark=0;
+    int32u Size_Mark=0;
     BS_Begin();
     while (Size_Mark==0 && BS->Remain() && Size<=8)
     {
         Size++;
-        Peek_S1(Size, Size_Mark);
+        Peek_BS(Size, Size_Mark);
     }
     BS_End();
 
