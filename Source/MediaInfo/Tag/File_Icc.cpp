@@ -193,7 +193,7 @@ void File_Icc::FileHeader_Parse()
         Get_B2 (hh,                                             "Hour");
         Get_B2 (mm,                                             "Minute");
         Get_B2 (ss,                                             "Second");
-        if (!IsSub && (YY || MM || DD || hh || mm || ss) && (YY<=1970 || MM>=12 || DD>=31 || hh>=24 || mm>=60 || ss>=60))
+        if (!IsSub && (YY || MM || DD || hh || mm || ss) && (YY<=1970 || MM>12 || DD>31 || hh>=24 || mm>=60 || ss>=60))
         {
             Element_End0();
             Reject();
