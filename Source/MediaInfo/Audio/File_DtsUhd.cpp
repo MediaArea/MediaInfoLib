@@ -232,7 +232,7 @@ void File_DtsUhd::UpdateDescriptor()
 }
 
 /* Table 6-17 p47 */
-int File_DtsUhd::ExtractExplicitObjectsLists(int DepAuPresExplObjListMask, int CurrentAuPresInd)
+int File_DtsUhd::ExtractExplicitObjectsLists(int64u DepAuPresExplObjListMask, int CurrentAuPresInd)
 {
     Element_Begin1("ExtractExplicitObjectsLists");
     constexpr int8u Table[4] = {4, 8, 16, 32};
@@ -283,15 +283,15 @@ int File_DtsUhd::ResolveAudPresParams()
         {
             if (SyncFrameFlag)
             {
-                int32u DepAuPresMask;
-                Get_S4 (AuPresInd, DepAuPresMask,               "DepAuPresMask");
+                int64u DepAuPresMask;
+                Get_S8 (AuPresInd, DepAuPresMask,               "DepAuPresMask");
                 AudPresParam[AuPresInd].DepAuPresMask=0;
                 for (int i = 0; DepAuPresMask; i++, DepAuPresMask>>=1)
                     if (DepAuPresMask&1)
                     {
                         bool DepAuPresMask;
                         Get_SB (DepAuPresMask,                  "DepAuPresExplObjListPresMask");
-                        AudPresParam[AuPresInd].DepAuPresMask|=DepAuPresMask<<i;
+                        AudPresParam[AuPresInd].DepAuPresMask|=(int64u)DepAuPresMask<<i;
                     }
             }
 
