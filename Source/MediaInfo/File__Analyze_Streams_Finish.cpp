@@ -4169,7 +4169,10 @@ void File__Analyze::Streams_Finish_StreamOnly_Video(size_t Pos)
             const auto& Active_DisplayAspectRatio_Video=Retrieve_Const(Stream_Video, Pos, Video_Active_DisplayAspectRatio);
             const auto& DisplayAspectRatio_Video=Active_DisplayAspectRatio_Video.empty()?Retrieve_Const(Stream_Video, Pos, Video_DisplayAspectRatio):Active_DisplayAspectRatio_Video;
             if (!DisplayAspectRatio_Video.empty() && Ztring::ToZtring(DisplayAspectRatio_Video.To_float64(), 3)==Active_DisplayAspectRatio)
+            {
                 Clear(Stream_Video, Pos, "DolbyVision Active_DisplayAspectRatio");
+                Clear(Stream_Video, Pos, "DolbyVision Active_DisplayAspectRatio/String");
+            }
         }
     }
 
