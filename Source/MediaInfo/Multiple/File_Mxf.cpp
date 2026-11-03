@@ -10823,7 +10823,7 @@ void File_Mxf::Read_Buffer_CheckFileModifications()
 //---------------------------------------------------------------------------
 void File_Mxf::Read_Buffer_AfterParsing()
 {
-    if (File_GoTo==(int64u)-1 && File_Offset+Buffer_Offset>=IsParsingMiddle_MaxOffset)
+    if (File_GoTo==(int64u)-1 && IsParsingMiddle_MaxOffset!=(int64u)-1 && (File_Offset+Buffer_Offset>=IsParsingMiddle_MaxOffset || Config->IsFinishing))
     {
         Fill();
         Open_Buffer_Unsynch();
