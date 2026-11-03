@@ -4928,13 +4928,11 @@ void File_Mxf::Streams_Finish_Conformance_FileFormat ()
 }
 
 //---------------------------------------------------------------------------
-// Descriptors and sub-descriptors of the Source Packages of the Header Metadata in use (current Preface), empty if all Header Metadata instances have the same Instance UIDs
+// Descriptors and sub-descriptors of the Header Metadata in use (current Preface), empty if all descriptors are in use
+// Header Metadata repetitions may have other Instance UIDs (SMPTE ST 377-1), also if the Preface keeps its Instance UID
 set<int128u> File_Mxf::Descriptors_InUse ()
 {
-    //Only if Header Metadata instances have other Instance UIDs (SMPTE ST 377-1)
     set<int128u> List;
-    if (Prefaces.size()<2)
-        return List;
     const auto Preface=Prefaces.find(Preface_Current);
     if (Preface==Prefaces.end())
         return List;
@@ -4961,6 +4959,22 @@ set<int128u> File_Mxf::Descriptors_InUse ()
         const auto SubDescriptors=SubDescriptors_Get(Descriptor->first);
         ToDo.insert(ToDo.end(), SubDescriptors.begin(), SubDescriptors.end());
     }
+
+    //Also the other sets of the Header Metadata of the current Preface (e.g. ADMChannelMapping sets, sets not referenced) and the sets of an unknown Header Metadata, so only the sets seen only in another Header Metadata are not in use
+    const auto Preface_Partition=SetPartitions.find(Preface_Current);
+    auto IsFiltered=false;
+    for (const auto& Descriptor : Descriptors)
+    {
+        if (List.find(Descriptor.first)!=List.end())
+            continue;
+        const auto Partition=SetPartitions.find(Descriptor.first);
+        if (Partition==SetPartitions.end() || Preface_Partition==SetPartitions.end() || Partition->second==Preface_Partition->second)
+            List.insert(Descriptor.first);
+        else
+            IsFiltered=true;
+    }
+    if (!IsFiltered)
+        List.clear();
     return List;
 }
 
