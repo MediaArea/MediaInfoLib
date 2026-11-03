@@ -118,7 +118,12 @@ protected :
     size_t CompliantWith_ArdZdf_FromContent (std::string& Content); //Position of the ARD/ZDF profile matching the kind of content, (size_t)-1 if none, Content is filled with a description of the content
     #if MEDIAINFO_CONFORMANCE
     conformance_errors CompliantWith_St2067204 (conformance_errors& Warnings); //ADM Audio Track File, to be done before filling the ADM content, Warnings are filled with the recommendations not followed
+    conformance_errors CompliantWith_St20675 (conformance_errors& Warnings, bool IsTrackFile); //IMF Essence Component, with the overall constraints of IMF Track Files if IsTrackFile, Warnings are filled with the recommendations not followed
+    conformance_errors CompliantWith_St20672 (conformance_errors& Warnings); //IMF Track File, Warnings are filled with the recommendations not followed
+    bool CompliantWith_St20672_IsDeclared (); //SMPTE ST 2067-2 declared by the file (Channel Assignment label)
+    bool CompliantWith_St20672_IsCandidate (); //Candidate for an IMF Track File (Audio or Timed Text)
     #endif //MEDIAINFO_CONFORMANCE
+    bool CompliantWith_St20672_IsTested (bool WithSt2067204=false); //IMF Track File or IMF Essence Component requested (or ADM Audio Track File if WithSt2067204), or candidate for an IMF Track File
 
     //Buffer - Global
     void Read_Buffer_Init ();
@@ -1633,7 +1638,14 @@ protected :
         bool                        St2067204_IsTested; //Candidate (RIFF Chunks or ADM sets) or requested
         conformance_errors          St2067204_Errors;
         conformance_errors          St2067204_Warnings;
+        bool                        St20672_IsRequested; //SMPTE ST 2067-2 requested by the user, conformance errors are reported
+        bool                        St20675_IsRequested; //SMPTE ST 2067-5 requested by the user, conformance errors are reported
         size_t                      RiffChunks_ErrorCount; //Count of SMPTE ST 2131 errors
+        size_t                      McaLabels_ErrorCount; //Count of SMPTE ST 377-4 errors on Audio Channel, Soundfield Group and Group of Soundfield Groups labels
+        void                        CompliantWith_St20672_Audio(const descriptor& Sound, const properties& Sound_Properties, conformance_errors& Errors, conformance_errors& Warnings); //Audio Track File constraints, except the Channel Assignment and the audio labeling
+        void                        CompliantWith_St20672_Labels(const properties& Sound_Properties, const std::vector<int128u>& SubDescriptors, conformance_errors& Errors); //Audio labeling of a Sound Track
+        std::vector<int128u>        SubDescriptors_Get(const int128u& DescriptorUID); //Sub-descriptors of a File Descriptor, also if the SubDescriptors item is not parsed
+        void                        ContentStorage_Packages_Get(std::vector<int128u>& MaterialPackages, std::vector<int128u>& TopLevelPackages, std::vector<int128u>& EssenceContainerDatas); //Content Storage of the current Preface, once per Package UID
     #endif //MEDIAINFO_CONFORMANCE
     int64u                          Anc_ElementSize; //Size of the ANC Data Elements, (int64u)-1 if not yet parsed, (int64u)-2 if not constant
     void Property_Store(properties& Properties, int64u Size);
