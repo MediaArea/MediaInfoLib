@@ -2779,6 +2779,7 @@ bool File_Mpeg4::BookMark_Needed()
                             //Each sample has its own size
                             int64u Chunk_Offset = 0;
                             for (size_t Pos = 0; Pos < stsc_Current->SamplesPerChunk; Pos++)
+                            {
                                 if (*stsz_Current)
                                 {
                                     mdat_Pos_Type mdat_Pos_Temp2;
@@ -2792,12 +2793,15 @@ bool File_Mpeg4::BookMark_Needed()
                                     if (HandleAllContent)
                                         mdat_Pos_Caption.push_back(mdat_Pos_Temp2);
                                     Chunk_Offset += *stsz_Current;
-                                    stsz_Current++;
-                                    if (stsz_Current2)
-                                        stsz_Current2++;
-                                    if (stsz_Current >= stsz_Max)
-                                        break;
                                 }
+                                stsz_Current++;
+                                if (stsz_Current2)
+                                    stsz_Current2++;
+                                if (stsz_Current >= stsz_Max)
+                                    break;
+                            }
+                            if (!Chunk_Offset)
+                                stco_IsDifferent = true; //Only zero-size samples, this chunk has the same offset as the next one
                             if (stsz_Current >= stsz_Max)
                                 break;
                         }
@@ -3019,7 +3023,8 @@ bool File_Mpeg4::BookMark_Needed()
 ((float64)StreamsTemp[*Temp].stts_Current)/Streams[*Temp].mdhd_TimeScale<Time+0.001) // 1ms margin in order to be a bit more logcial with 1/1.001 frame rates
                             {
                                 int64u NextPos=Streams[*Temp].stco[StreamsTemp[*Temp].stco_Pos]+StreamsTemp[*Temp].stsc_SampleSizeOffset;
-                                if (CurrentPos!=NextPos)
+                                bool IsInList=Streams[*Temp].stsz.empty() || Streams[*Temp].stsz[StreamsTemp[*Temp].stsz_Pos]; //Zero-size samples are not in mdat_Pos
+                                if (IsInList && CurrentPos!=NextPos)
                                 {
                                     if (OldPos==(int64u)-1)
                                     {
@@ -3036,7 +3041,7 @@ bool File_Mpeg4::BookMark_Needed()
                                 mdat_Pos_Type CurrentPos_mdat_Pos_Type;
                                 CurrentPos_mdat_Pos_Type.Offset=CurrentPos;
                                 mdat_pos::iterator CurrentPos_mdat_Pos_Lower=std::lower_bound(mdat_Pos.begin(), mdat_Pos.end(), CurrentPos_mdat_Pos_Type);
-                                if (CurrentPos_mdat_Pos_Lower!=mdat_Pos.end() && CurrentPos_mdat_Pos_Lower->Offset==CurrentPos)
+                                if (IsInList && CurrentPos_mdat_Pos_Lower!=mdat_Pos.end() && CurrentPos_mdat_Pos_Lower->Offset==CurrentPos)
                                 {
                                     OldPos=CurrentPos+CurrentPos_mdat_Pos_Lower->Size;
                                     ++CurrentPos_mdat_Pos_Lower;

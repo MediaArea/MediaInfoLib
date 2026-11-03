@@ -2246,6 +2246,12 @@ void File_Mpeg4::mdat_xxxx()
         if (Stream_Temp.StreamKind!=Stream_Other && Stream_Temp.StreamKind!=Stream_Max)
         {
             //DTS
+            while (Stream_Temp.stts_FramePos<Stream_Temp.stsz.size() && !Stream_Temp.stsz[(size_t)Stream_Temp.stts_FramePos]) //Zero-size samples are not in mdat_Pos
+            {
+                Stream_Temp.stts_FramePos++;
+                if (Stream_Temp.stts_Durations_Pos<Stream_Temp.stts_Durations.size() && Stream_Temp.stts_FramePos>=Stream_Temp.stts_Durations[Stream_Temp.stts_Durations_Pos].Pos_End)
+                    Stream_Temp.stts_Durations_Pos++;
+            }
             Frame_Count_NotParsedIncluded=Stream_Temp.stts_FramePos;
             if (Stream_Temp.stts_Durations_Pos<Stream_Temp.stts_Durations.size())
             {
@@ -2481,7 +2487,13 @@ void File_Mpeg4::mdat_ProbeCaption()
     mdat_Pos_Caption.clear();
     std::map<int32u, int64u> SamplePos_Next;
     for (auto& Item : mdat_Pos) //Each stream is still in sample order
-        Item.SamplePos=SamplePos_Next[Item.StreamID]++;
+    {
+        const auto& stsz=Streams[Item.StreamID].stsz;
+        auto& SamplePos=SamplePos_Next[Item.StreamID];
+        while (SamplePos<stsz.size() && !stsz[(size_t)SamplePos]) //Zero-size samples are not in mdat_Pos
+            SamplePos++;
+        Item.SamplePos=SamplePos++;
+    }
     std::sort(mdat_Pos.begin(), mdat_Pos.end(), &mdat_pos_sort);
     const auto CanGoBack=!IsSub && Config->File_IsSeekable_Get();
     std::map<int32u, std::pair<int64u, int64u>> ProbeCaption_Windows; //In sample numbers, per stream
