@@ -2456,7 +2456,7 @@ void File_DolbyE::program_assignment()
             int8u reserved_data_size_bits;
             Get_S1 (4, reserved_data_size_bits,                 "reserved_data_size_bits");
             int8u padding = 8 - (reserved_data_size_bits % 8);
-            Skip_S1(reserved_data_size_bits,                    "reserved_data()");
+            Skip_S2(reserved_data_size_bits,                    "reserved_data()");
             Skip_S1(padding,                                    "padding");
         }
     }
@@ -2541,7 +2541,7 @@ void File_DolbyE::block_update_info()
                     if (b_use_ramp_duration_idx)
                         Skip_S1( 4,                             "ramp_duration_idx");
                     else
-                        Skip_S1(11,                             "ramp_duration_bits");
+                        Skip_S2(11,                             "ramp_duration_bits");
                 }
                 break;
         default:;

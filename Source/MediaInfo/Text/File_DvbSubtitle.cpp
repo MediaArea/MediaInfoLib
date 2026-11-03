@@ -377,9 +377,9 @@ void File_DvbSubtitle::region_composition_segment()
         BS_Begin();
         Get_S1 ( 2, object_type,                                "object_type");
         Skip_S1( 2,                                             "object_provider_flag");
-        Skip_S1(12,                                             "object_horizontal_position");
+        Skip_S2(12,                                             "object_horizontal_position");
         Skip_S1( 4,                                             "reserved");
-        Skip_S1(12,                                             "object_vertical_position");
+        Skip_S2(12,                                             "object_vertical_position");
         BS_End();
         switch (object_type)
         {

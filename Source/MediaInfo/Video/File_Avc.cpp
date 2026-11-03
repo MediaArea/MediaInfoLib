@@ -4873,7 +4873,7 @@ void File_Avc::nal_unit_header_mvc_extension()
     Element_Begin1("nal_unit_header_mvc_extension");
     Skip_SB(                                                    "non_idr_flag");
     Skip_S1( 6,                                                 "priority_id");
-    Skip_S1(10,                                                 "view_id");
+    Skip_S2(10,                                                 "view_id");
     Skip_S1( 3,                                                 "temporal_id");
     Skip_SB(                                                    "anchor_pic_flag");
     Skip_SB(                                                    "inter_view_flag");

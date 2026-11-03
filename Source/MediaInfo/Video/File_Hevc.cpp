@@ -3756,7 +3756,7 @@ void File_Hevc::sei_time_code()
                 Get_S1 (5, hours_value,                         "hours_value");
             Get_S1 (5, time_offset_length,                      "time_offset_length");
             if (time_offset_length)
-                Skip_S1(time_offset_length,                     "time_offset_value");
+                Skip_S4(time_offset_length,                     "time_offset_value");
             FILLING_BEGIN();
                 if (!i && seconds_flag && minutes_flag && hours_flag && Frame_Count_NotParsedIncluded<16)
                 {
