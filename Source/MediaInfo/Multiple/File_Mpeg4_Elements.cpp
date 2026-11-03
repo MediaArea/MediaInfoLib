@@ -2430,6 +2430,7 @@ void File_Mpeg4::mdat_xxxx()
                     std::sort(mdat_Pos.begin(), mdat_Pos.end(), &mdat_pos_sort);
                     size_t mdat_Pos_Min=(size_t)-1;
                     size_t mdat_Pos_Max=0;
+                    bool ProbeCaption_IsSet=false;
                     for (auto& Stream : Streams)
                     {
                         auto HandleAllContent = Stream.second.IsCaption || (!Stream.second.Parsers.empty() && Stream.second.Parsers.front()->MustExtendParsingDuration);
@@ -2443,8 +2444,9 @@ void File_Mpeg4::mdat_xxxx()
                                 auto FrameRateRatio=(float)Stream.second.stts_Duration/Stream.second.stts_FrameCount;
                                 auto FrameRate=Stream.second.mdhd_TimeScale/FrameRateRatio;
                                 auto Duration=(float)Stream.second.stts_Duration/Stream.second.mdhd_TimeScale;
-                                if (FrameRate)
+                                if (FrameRate && !ProbeCaption_IsSet)
                                 {
+                                    ProbeCaption_IsSet=true; //Probe window from the first stream only, the other streams are parsed in the same byte range
                                     auto Probe=Config->File_ProbeCaption_Get(ParserName);
                                     switch (Probe.Start_Type) {
                                         case config_probe_none:
