@@ -4974,7 +4974,7 @@ void File_Mxf::Streams_Finish_Conformance_RiffChunks ()
 
     //Sets, of the Header Metadata in use if Header Metadata repetitions have other Instance UIDs (SMPTE ST 377-1)
     const auto InUse=Descriptors_InUse();
-    vector<descriptors::iterator> Definitions, References, Metadatas, Chnas, Labels;
+    vector<descriptors::iterator> Definitions, References, Metadatas, Chnas, Labels, GroupsOfSoundfieldGroups;
     auto Framework_IsIdentified=false; //AudioLabelingFrameworkADMContent label in the Channel Assignment of a File Descriptor
     for (auto Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
     {
@@ -4987,6 +4987,7 @@ void File_Mxf::Streams_Finish_Conformance_RiffChunks ()
             case descriptor::Type_ADMAudioMetadataSubDescriptor         : Metadatas.push_back(Descriptor); break;
             case descriptor::Type_ADM_CHNASubDescriptor                 : Chnas.push_back(Descriptor); break;
             case descriptor::Type_ADMSoundfieldGroupLabelSubDescriptor  : Labels.push_back(Descriptor); break;
+            case descriptor::Type_GroupOfSoundfieldGroupsLabelSubDescriptor : GroupsOfSoundfieldGroups.push_back(Descriptor); break; //Checked only if referenced by an ADMSoundfieldGroupLabelSubDescriptor
             default                                                     : ;
         }
         if ((Descriptor->second.ChannelAssignment.hi&0xFFFFFFFFFFFFFF00LL)==0x060E2B3404010100LL && Descriptor->second.ChannelAssignment.lo==0x0402021005010000LL)
@@ -5349,8 +5350,88 @@ void File_Mxf::Streams_Finish_Conformance_RiffChunks ()
         #endif //defined(MEDIAINFO_ADM_YES)
     }
 
+    //MCA Label Controlled Vocabulary (SMPTE ST 377-42:2021, with the labels of SMPTE ST 428-12:2013 and ST 2067-8:2013) for Soundfield Groups and Groups of Soundfield Groups, recommended for ADM-described content (SMPTE ST 2131 10.3 option (b) and 10.5)
+    struct vocabulary_label
+    {
+        int64u      UL_Lo; //The version byte of the UL is not tested
+        const char* Symbol; //MCATagSymbol is this symbol prepended with "sg" or "gg"
+        const char* Name; //MCATagName
+    };
+    static const vocabulary_label SoundfieldGroups_Vocabulary[]=
+    {
+        { 0x0302020100000000LL, "51",       "5.1" },
+        { 0x0302020200000000LL, "71",       "7.1DS" },
+        { 0x0302020300000000LL, "SDS",      "7.1SDS" },
+        { 0x0302020400000000LL, "61",       "6.1" },
+        { 0x0302020500000000LL, "M",        "1.0 Monaural" },
+        { 0x0302022001000000LL, "ST",       "Standard Stereo" },
+        { 0x0302022002000000LL, "DM",       "Dual Mono" },
+        { 0x0302022003000000LL, "DNS",      "Discrete Numbered Sources" },
+        { 0x0302022004000000LL, "30",       "3.0" },
+        { 0x0302022005000000LL, "40",       "4.0" },
+        { 0x0302022006000000LL, "50",       "5.0" },
+        { 0x0302022007000000LL, "60",       "6.0" },
+        { 0x0302022008000000LL, "70",       "7.0DS" },
+        { 0x0302022009000000LL, "LtRt",     "Lt-Rt" },
+        { 0x030202200A000000LL, "51EX",     "5.1EX" },
+        { 0x030202200B000000LL, "HA",       "Hearing Accessibility" },
+        { 0x030202200C000000LL, "VA",       "Visual Accessibility" },
+        { 0x0E09010105020000LL, "514",      "5.1.4" },
+        { 0x0E09010105040000LL, "714",      "7.1.4" },
+        { 0x0E09010105060000LL, "914",      "9.1.4" },
+        { 0x0E09010105070000LL, "916",      "9.1.6" },
+        { 0x0302023001010000LL, "60HT",     "6.0 Height" },
+        { 0x0302023001020000LL, "80HT",     "8.0 Height" },
+        { 0x0302023001030000LL, "91OH",     "9.1 Overhead" },
+        { 0x0302023001040000LL, "91HT",     "9.1 Height" },
+        { 0x0302023001050000LL, "101HT",    "10.1 Height" },
+        { 0x0302023001060000LL, "111HT",    "11.1 Height" },
+        { 0x0302023001070000LL, "131HT",    "13.1 Height" },
+        { 0x0302023001080000LL, "151HT",    "15.1 Height" },
+        { 0x0302023001090000LL, "120CH",    "12.0 Center Height" },
+        { 0x03020230010A0000LL, "121CH",    "12.1 Center Height" },
+        { 0x03020230010B0000LL, "60CH",     "6.0 Center Height" },
+        { 0x03020230010C0000LL, "61CH",     "6.1 Center Height" },
+        { 0x03020230010D0000LL, "222",      "22.2 UHDTV" },
+        { 0x0D01080101020100LL, "ADSS",     "Audio Description Studio Signal" },
+        { 0x0302022100000000LL, "IAB",      "IAB" },
+    };
+    static const vocabulary_label GroupsOfSoundfieldGroups_Vocabulary[]=
+    {
+        { 0x0302032001000000LL, "MPg",      "Main Program" },
+        { 0x0302032002000000LL, "DVS",      "Descriptive Video Service" },
+        { 0x0302032003000000LL, "Dcm",      "Dialog Centric Mix" },
+        { 0x0302033001010000LL, "MESP",     "Music and Effects with Optional" },
+        { 0x0302033001020000LL, "DME",      "DME" },
+        { 0x0302033001030000LL, "NDME",     "NDME" },
+    };
+    const auto Vocabulary_Check=[&](const int128u& InstanceUID, const properties& Properties, const vocabulary_label* Vocabulary, size_t Vocabulary_Size, const char* Prefix, const string& Field, const char* NotInVocabulary) {
+        const auto DictionaryID=Property_Get(Properties, Elements::MCALabelDictionaryID);
+        if (!DictionaryID || DictionaryID->size()!=16)
+            return; //Absence is reported by the MCA checks
+        const vocabulary_label* Item=nullptr;
+        if ((BigEndian2int64u(DictionaryID->data())&0xFFFFFFFFFFFFFF00LL)==0x060E2B3404010100LL)
+            for (size_t i=0; i<Vocabulary_Size; i++)
+                if (BigEndian2int64u(DictionaryID->data()+8)==Vocabulary[i].UL_Lo)
+                    Item=Vocabulary+i;
+        if (!Item)
+        {
+            Warning(&InstanceUID, (Field+" MCALabelDictionaryID").c_str(), string("MCALabelDictionaryID is ")+NotInVocabulary+" (actual "+Raw_Hex(*DictionaryID)+')');
+            return;
+        }
+        const auto TagSymbol_Value=Property_Get(Properties, Elements::MCATagSymbol);
+        const auto TagSymbol=Raw_UTF16_Get(TagSymbol_Value);
+        const auto TagSymbol_Expected=Prefix+string(Item->Symbol);
+        if (TagSymbol_Value && TagSymbol!=TagSymbol_Expected) //Absence is reported by the MCA checks
+            Warning(&InstanceUID, (Field+" MCATagSymbol").c_str(), "MCATagSymbol is not the one of the "+string(Item->Name)+" label of the MCA Label Controlled Vocabulary (actual \""+TagSymbol+"\", expected \""+TagSymbol_Expected+"\")");
+        const auto TagName=Raw_UTF16_Get(Property_Get(Properties, Elements::MCATagName));
+        if (TagName!=Item->Name)
+            Warning(&InstanceUID, (Field+" MCATagName").c_str(), "MCATagName is not the one of the "+string(Item->Name)+" label of the MCA Label Controlled Vocabulary (actual \""+TagName+"\", expected \""+Item->Name+"\")");
+    };
+
     //ADMSoundfieldGroupLabelSubDescriptor
     set<int32u> SIDs_Labeled;
+    set<string> GroupsOfSoundfieldGroups_LinkIDs; //Referenced by an ADMSoundfieldGroupLabelSubDescriptor, raw values
     for (const auto& Label : Labels)
     {
         const auto& Properties=SetProperties_Get(Label->first);
@@ -5393,6 +5474,14 @@ void File_Mxf::Streams_Finish_Conformance_RiffChunks ()
             if (TagName!="ADM")
                 Error_Label("MXF ADMSoundfieldGroupLabelSubDescriptor MCATagName", "MCATagName is not the one of the ADM Soundfield label (actual \""+TagName+"\", expected \"ADM\")");
         }
+        else //Soundfield Group label of the MCA Label Controlled Vocabulary (recommendation if the ADM Soundfield label is not used)
+            Vocabulary_Check(Label->first, Properties, SoundfieldGroups_Vocabulary, sizeof(SoundfieldGroups_Vocabulary)/sizeof(*SoundfieldGroups_Vocabulary), "sg", "MXF ADMSoundfieldGroupLabelSubDescriptor", "neither the ADM Soundfield label nor a Soundfield Group label of the MCA Label Controlled Vocabulary of SMPTE ST 377-42");
+
+        //Groups of Soundfield Groups of the soundfield group
+        const auto GroupOfSoundfieldGroupsLinkID=Property_Get(Properties, Elements::GroupOfSoundfieldGroupsLinkID);
+        if (GroupOfSoundfieldGroupsLinkID && GroupOfSoundfieldGroupsLinkID->size()>=8 && BigEndian2int32u(GroupOfSoundfieldGroupsLinkID->data()+4)==16)
+            for (size_t i=8; i+16<=GroupOfSoundfieldGroupsLinkID->size(); i+=16)
+                GroupsOfSoundfieldGroups_LinkIDs.insert(GroupOfSoundfieldGroupsLinkID->substr(i, 16));
 
         //ADM IDs present in the ADM metadata
         #if defined(MEDIAINFO_ADM_YES)
@@ -5420,6 +5509,15 @@ void File_Mxf::Streams_Finish_Conformance_RiffChunks ()
                 }
             }
         #endif //defined(MEDIAINFO_ADM_YES)
+    }
+
+    //GroupOfSoundfieldGroupsLabelSubDescriptor referenced by an ADMSoundfieldGroupLabelSubDescriptor, Group of Soundfield Groups label of the MCA Label Controlled Vocabulary (recommendation)
+    for (const auto& Group : GroupsOfSoundfieldGroups)
+    {
+        const auto& Properties=SetProperties_Get(Group->first);
+        const auto LinkID=Property_Get(Properties, Elements::MCALinkID);
+        if (LinkID && GroupsOfSoundfieldGroups_LinkIDs.find(*LinkID)!=GroupsOfSoundfieldGroups_LinkIDs.end())
+            Vocabulary_Check(Group->first, Properties, GroupsOfSoundfieldGroups_Vocabulary, sizeof(GroupsOfSoundfieldGroups_Vocabulary)/sizeof(*GroupsOfSoundfieldGroups_Vocabulary), "gg", "MXF GroupOfSoundfieldGroupsLabelSubDescriptor", "not a Group of Soundfield Groups label of the MCA Label Controlled Vocabulary of SMPTE ST 377-42");
     }
 
     //Audio Labeling Framework for ADM-described Content
@@ -22914,8 +23012,8 @@ void File_Mxf::Property_Store(properties& Properties, int64u Size)
         Key=Primer_Value->second.lo;
     }
 
-    //Raw content, only the beginning of long values (e.g. index entries) is kept, except for the references to sub-descriptors
-    if (Size>256 && Key!=Elements::SubDescriptors)
+    //Raw content, only the beginning of long values (e.g. index entries) is kept, except for the references to sub-descriptors and to Groups of Soundfield Groups
+    if (Size>256 && Key!=Elements::SubDescriptors && Key!=Elements::GroupOfSoundfieldGroupsLinkID)
         Size=256;
     if (Buffer_Offset+Element_Offset+Size>Buffer_Size)
         return;
