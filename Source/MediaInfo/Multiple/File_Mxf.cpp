@@ -4366,6 +4366,41 @@ void File_Mxf::Streams_Finish_Conformance_MCA ()
             Fill_Conformance_MCA((string("MXF MCA ")+Item.Name).c_str(), string(Item.Name)+" is not present"+Count_Text(Missing));
     }
 
+    //Items of the UL or UUID type and array of UUIDs (SMPTE ST 377-4), the other checks ignore their values if the size is wrong
+    static const item Items_16Bytes[]=
+    {
+        { Elements::MCALabelDictionaryID,   "MCALabelDictionaryID" },
+        { Elements::MCALinkID,              "MCALinkID" },
+        { Elements::SoundfieldGroupLinkID,  "SoundfieldGroupLinkID" },
+    };
+    for (const auto& Item : Items_16Bytes)
+    {
+        set<string> Sizes_Wrong;
+        for (const auto& Label : Labels)
+        {
+            const auto Value=Property_Get(*Label.Properties, Item.Key);
+            if (Value && Value->size()!=16)
+            {
+                Sizes_Wrong.insert(to_string(Value->size()));
+                Error_Count(Label);
+            }
+        }
+        if (!Sizes_Wrong.empty())
+            Fill_Conformance_MCA((string("MXF MCA ")+Item.Name).c_str(), string(Item.Name)+" is not 16 bytes (actual "+List_Text(Sizes_Wrong)+" bytes)");
+    }
+    size_t GroupOfSoundfieldGroupsLinkIDs_Wrong=0;
+    for (const auto& Label : Labels)
+    {
+        const auto Value=Property_Get(*Label.Properties, Elements::GroupOfSoundfieldGroupsLinkID);
+        if (Value && (Value->size()<8 || BigEndian2int32u(Value->data()+4)!=16 || Value->size()!=8+(int64u)BigEndian2int32u(Value->data())*16))
+        {
+            GroupOfSoundfieldGroupsLinkIDs_Wrong++;
+            Error_Count(Label);
+        }
+    }
+    if (GroupOfSoundfieldGroupsLinkIDs_Wrong)
+        Fill_Conformance_MCA("MXF MCA GroupOfSoundfieldGroupsLinkID", "GroupOfSoundfieldGroupsLinkID is not an array of UUIDs"+Count_Text(GroupOfSoundfieldGroupsLinkIDs_Wrong));
+
     //MCA Tag Symbol with 2 to 8 alphanumeric characters starting with an alpha character
     set<string> TagSymbols_Wrong;
     for (const auto& Label : Labels)
