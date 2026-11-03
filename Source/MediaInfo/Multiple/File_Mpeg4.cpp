@@ -466,7 +466,7 @@ void File_Mpeg4::Streams_Finish()
                 File__Analyze* Parser=Stream->second.Parsers[Pos];
                 if (!Parser)
                     continue;
-                Parser->Finish();
+                Finish(Parser);
                 if (Parser->Count_Get(Stream_Text))
                 {
                     Stream_Prepare(Stream_Text);
