@@ -4700,7 +4700,8 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data()
                                      || Key=="com.arri.camera.look.lut3d_with_cdl"
                                      || Key=="com.arri.camera.look.information"
                                      || Key=="com.arri.camera.look.video_param"
-                                     || Key=="com.arri.camera.look.video_param_with_target_colorspace")
+                                     || Key=="com.arri.camera.look.video_param_with_target_colorspace"
+                                     || Key=="com.arri.camera.audio.Configuration")
                                     {
                                         moov_meta_ilst_xxxx_data_arri();
                                         return;
@@ -5232,32 +5233,112 @@ void File_Mpeg4::moov_meta_ilst_xxxx_data_arri()
     if (Key=="com.arri.camera.look.video_param" || Key=="com.arri.camera.look.video_param_with_target_colorspace")
     {
         //Parsing
-        bool WithTargetColorSpace=Key.size()>sizeof("com.arri.camera.look.video_param"); //Else the older layout, without size and target color space
+        static const char* Names[]=
+        {
+            "Knee",
+            "BlackGamma",
+            "Gamma",
+            "Saturation",
+            "SaturationByHue_Red",
+            "SaturationByHue_Yellow",
+            "SaturationByHue_Green",
+            "SaturationByHue_Cyan",
+            "SaturationByHue_Blue",
+            "SaturationByHue_Magenta",
+            "VideoSlope_R",
+            "VideoSlope_G",
+            "VideoSlope_B",
+            "VideoGamma_R",
+            "VideoGamma_G",
+            "VideoGamma_B",
+            "VideoPedestal_R",
+            "VideoPedestal_G",
+            "VideoPedestal_B",
+        };
+        bool WithTargetColorSpace=Key.size()>sizeof("com.arri.camera.look.video_param");
+        size_t Count=WithTargetColorSpace?19:10;
+        if (Element_Size-Element_Offset<(WithTargetColorSpace?8:4)+Count*4)
+        {
+            Skip_XX(Element_Size-Element_Offset,                "Data");
+            return;
+        }
+        float32 Values[19];
         int16u TargetColorSpace_Size;
         Element_Begin1("ARRI Video look parameters");
         if (WithTargetColorSpace)
             Skip_B4(                                            "Size");
-        Skip_B4(                                                "Version");
-        Skip_BF4(                                               "Knee");
-        Skip_BF4(                                               "Black gamma");
-        Skip_BF4(                                               "Gamma");
-        Skip_BF4(                                               "Saturation");
-        for (size_t i=0; i<6; i++)
-            Skip_BF4(                                           "Saturation by hue");
-        if (!WithTargetColorSpace)
+        Skip_B2(                                                "Version");
+        Skip_B2(                                                "Flags");
+        for (size_t i=0; i<Count; i++)
+            Get_BF4(Values[i],                                  Names[i]);
+        if (WithTargetColorSpace)
         {
-            Element_End0();
+            if (Element_Offset+2<=Element_Size)
+            {
+                Get_B2 (TargetColorSpace_Size,                  "Target color space size");
+                if (Element_Offset+TargetColorSpace_Size<=Element_Size)
+                    Skip_String(TargetColorSpace_Size,          "Target color space");
+            }
+            Skip_XX(Element_Size-Element_Offset,                "Padding");
+        }
+        Element_End0();
+
+        //Filling
+        FILLING_BEGIN();
+            for (size_t i=0; i<Count; i++)
+                Fill(Stream_General, 0, (Key+'.'+Names[i]).c_str(), Ztring().From_Number(Values[i], 3), true);
+        FILLING_END();
+        return;
+    }
+
+    if (Key=="com.arri.camera.audio.Configuration")
+    {
+        if (Element_Size-Element_Offset!=4+5*24)
+        {
+            Skip_XX(Element_Size-Element_Offset,                "Data");
             return;
         }
-        for (size_t i=0; i<9 && Element_Offset+4<=Element_Size; i++)
-            Skip_BF4(                                           "Unknown");
-        if (Element_Offset+2<=Element_Size)
+
+        //Parsing
+        static const char* Inputs[]={"", "A MIC 1", "A MIC 2", "A LINE 1", "A LINE 2", "B MIC", "B LINE", "B AES 1", "B AES 2", "C MIC", "C LINE", "C AES 1", "C AES 2", "Bluetooth"}; //Connector and signal type
+        static const char* LevelModes[]={"FIX", "MAN", "MAN+L", "AUTO"}; //Gain control mode
+        int8u Enabled;
+        Element_Begin1("ARRI Audio configuration");
+        Skip_B2(                                                "Version");
+        Get_B1 (Enabled,                                        "Enabled");
+        Skip_B1(                                                "Reserved");
+        FILLING_BEGIN();
+            Fill(Stream_General, 0, (Key+".Enabled").c_str(), Enabled?"Yes":"No", Unlimited, true, true);
+        FILLING_END();
+        for (size_t i=0; i<5; i++) //4 recording channels + talk-back channel
         {
-            Get_B2 (TargetColorSpace_Size,                      "Target color space size");
-            if (Element_Offset+TargetColorSpace_Size<=Element_Size)
-                Skip_String(TargetColorSpace_Size,              "Target color space");
+            int16u Gain, HighpassFilter, Mute;
+            int8u Input, LevelMode;
+            Element_Begin1("Channel");
+            Element_Info1(i+1);
+            Get_B1 (Input,                                      "Input"); Param_Info1C(Input && Input<14, Inputs[Input]);
+            Get_B1 (LevelMode,                                  "Level mode"); Param_Info1C(LevelMode<4, LevelModes[LevelMode]);
+            Get_B2 (Gain,                                       "Gain"); Param_Info1(Ztring::ToZtring((int16s)Gain)+__T(" dB"));
+            Get_B2 (HighpassFilter,                             "Highpass filter"); Param_Info1C(!HighpassFilter, "Off");
+            Get_B2 (Mute,                                       "Mute");
+            Skip_XX(16,                                         "Reserved");
+            Element_End0();
+
+            //Filling
+            FILLING_BEGIN();
+                if (!Input || Input>=14)
+                    continue;
+                string Prefix=Key+".Channel"+std::to_string(i+1)+'_';
+                Fill(Stream_General, 0, (Prefix+"Input").c_str(), Inputs[Input], Unlimited, true, true);
+                if (LevelMode<4)
+                    Fill(Stream_General, 0, (Prefix+"LevelMode").c_str(), LevelModes[LevelMode], Unlimited, true, true);
+                Fill(Stream_General, 0, (Prefix+"Gain").c_str(), (int16s)Gain, 10, true);
+                if (HighpassFilter)
+                    Fill(Stream_General, 0, (Prefix+"HighpassFilter").c_str(), HighpassFilter, 10, true);
+                if (Mute)
+                    Fill(Stream_General, 0, (Prefix+"Mute").c_str(), "Yes", Unlimited, true, true);
+            FILLING_END();
         }
-        Skip_XX(Element_Size-Element_Offset,                    "Padding");
         Element_End0();
         return;
     }
