@@ -2456,10 +2456,8 @@ void File_Mpeg4::mdat_xxxx()
                                             ProbeCaption_mdatPos=(int64u)(Probe.Start*FrameRate);
                                             break;
                                         case config_probe_size:
-                                            Probe.Start=Probe.Start*100/File_Size; //File pos is not relevant there
-                                            if (!Probe.Start)
-                                                Probe.Start=50;
-                                            [[fallthrough]];
+                                            ProbeCaption_mdatPos=Probe.Start<File_Size?(int64u)(((float64)Probe.Start)/File_Size*Stream.second.stts_FrameCount):Stream.second.stts_FrameCount; //File pos is not relevant there
+                                            break;
                                         case config_probe_percent:
                                             ProbeCaption_mdatPos=Stream.second.stts_FrameCount*Probe.Start/100;
                                             break;
@@ -2472,10 +2470,10 @@ void File_Mpeg4::mdat_xxxx()
                                             ProbeCaption_mdatDur=(int64u)(Probe.Duration*FrameRate);
                                             break;
                                         case config_probe_size:
-                                            Probe.Duration=Probe.Duration*100/File_Size; //File pos is not relevant there
-                                            if (!Probe.Duration)
-                                                Probe.Duration++;
-                                            [[fallthrough]];
+                                            ProbeCaption_mdatDur=Probe.Duration<File_Size?(int64u)(((float64)Probe.Duration)/File_Size*Stream.second.stts_FrameCount):Stream.second.stts_FrameCount; //File pos is not relevant there
+                                            if (!ProbeCaption_mdatDur && Probe.Duration)
+                                                ProbeCaption_mdatDur=1;
+                                            break;
                                         case config_probe_percent:
                                             ProbeCaption_mdatDur=Stream.second.stts_FrameCount*Probe.Duration/100;
                                             break;
