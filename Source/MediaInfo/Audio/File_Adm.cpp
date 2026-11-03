@@ -7912,6 +7912,88 @@ void File_Adm::chna_Move(File_Adm* Adm)
     File_Adm_Private->OldLocale = std::move(Adm->File_Adm_Private->OldLocale);
 }
 
+//***************************************************************************
+// Out
+//***************************************************************************
+
+bool File_Adm::ID_IsPresent(const string& Element, const string& ID)
+{
+    const auto List = ID_List(Element);
+    return find(List.begin(), List.end(), ID) != List.end();
+}
+
+vector<string> File_Adm::ID_List(const string& Element)
+{
+    vector<string> List;
+    if (!File_Adm_Private)
+        return List;
+    for (size_t i = 0; i < item_Max; i++) {
+        const auto& Info = item_Infos[i];
+        if (!Info.Name || Info.ID_Pos == (int8u)-1 || Element != string("audio") + Info.Name)
+            continue;
+        for (const auto& Item : File_Adm_Private->Items[i].Items) {
+            if (Info.ID_Pos < Item.Attributes.size())
+                List.push_back(Item.Attributes[Info.ID_Pos]);
+        }
+        break;
+    }
+    return List;
+}
+
+bool File_Adm::audioTrackUID_Get(const string& UID, string& TrackFormatIDRef, string& ChannelFormatIDRef, string& PackFormatIDRef)
+{
+    if (!File_Adm_Private)
+        return false;
+    for (const auto& Item : File_Adm_Private->Items[item_audioTrackUID].Items) {
+        if (Item.Attributes.size() <= audioTrackUID_UID || Item.Attributes[audioTrackUID_UID] != UID || Item.Elements.size() < audioTrackUID_Element_Max)
+            continue;
+        const auto First = [&](size_t Element_Pos) {
+            const auto& List = Item.Elements[Element_Pos];
+            return List.empty() ? string() : List[0];
+        };
+        TrackFormatIDRef = First(audioTrackUID_audioTrackFormatIDRef);
+        ChannelFormatIDRef = First(audioTrackUID_audioChannelFormatIDRef);
+        PackFormatIDRef = First(audioTrackUID_audioPackFormatIDRef);
+        return true;
+    }
+    return false;
+}
+
+bool File_Adm::audioProgramme_Get(const string& ID, string& Name, string& FirstLabel)
+{
+    if (!File_Adm_Private)
+        return false;
+    for (const auto& Item : File_Adm_Private->Items[item_audioProgramme].Items) {
+        if (Item.Attributes.size() < audioProgramme_Attribute_Max || Item.Attributes[audioProgramme_audioProgrammeID] != ID || Item.Elements.size() < audioProgramme_Element_Max)
+            continue;
+        Name = Item.Attributes[audioProgramme_audioProgrammeName];
+        const auto& Labels = Item.Elements[audioProgramme_audioProgrammeLabel];
+        FirstLabel = Labels.empty() ? string() : Labels[0];
+        if (FirstLabel.size() == 1 && !FirstLabel[0])
+            FirstLabel.clear(); // Element without value
+        return true;
+    }
+    return false;
+}
+
+size_t File_Adm::audioFormatExtended_Count()
+{
+    if (!File_Adm_Private)
+        return 0;
+    return File_Adm_Private->Items[item_audioFormatExtended].Items.size();
+}
+
+bool File_Adm::audioMXFLookUp_IsPresent()
+{
+    if (!File_Adm_Private)
+        return false;
+    for (const auto& Item : File_Adm_Private->Items[item_audioTrackUID].Items) {
+        if (Item.Elements.size() > audioTrackUID_audioMXFLookUp && !Item.Elements[audioTrackUID_audioMXFLookUp].empty())
+            return true;
+    }
+    return false;
+}
+
 } //NameSpace
 
 #endif //MEDIAINFO_ADM_YES

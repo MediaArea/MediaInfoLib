@@ -93,6 +93,7 @@ protected :
     #if MEDIAINFO_CONFORMANCE
     void Streams_Finish_ContentStorage_Conformance (const int128u ContentStorageUID);
     void Streams_Finish_Conformance_FileFormat (); //SMPTE ST 377-1, edition depending on the version in the file
+    void Streams_Finish_Conformance_RiffChunks (); //SMPTE ST 2131
     void Streams_Finish_Conformance_References ();
     #endif //MEDIAINFO_CONFORMANCE
     void Streams_Finish_Track (const int128u TrackUID);
@@ -111,6 +112,9 @@ protected :
     conformance_errors CompliantWith_ArdZdf (size_t Profile_Pos, bool IsCandidateTest=false); //Profile_Pos is the position in the list of ARD/ZDF profiles, candidate test is done before parsing all partitions, without tests needing all partitions or the essence
     bool CompliantWith_ArdZdf_IsCandidate (); //Candidate for an ARD/ZDF profile with Body Partitions
     size_t CompliantWith_ArdZdf_FromContent (std::string& Content); //Position of the ARD/ZDF profile matching the kind of content, (size_t)-1 if none, Content is filled with a description of the content
+    #if MEDIAINFO_CONFORMANCE
+    conformance_errors CompliantWith_St2067204 (conformance_errors& Warnings); //ADM Audio Track File, to be done before filling the ADM content, Warnings are filled with the recommendations not followed
+    #endif //MEDIAINFO_CONFORMANCE
 
     //Buffer - Global
     void Read_Buffer_Init ();
@@ -159,6 +163,8 @@ protected :
     void MCAEpisode();
     void MCAAudioContentKind();
     void MCAAudioElementKind();
+    void MCAContent();
+    void MCAUseClass();
     void TextDataDescription();
     void ResourceID();
     void NamespaceURI();
@@ -902,7 +908,8 @@ protected :
     //Descriptor
     struct descriptor
     {
-        std::vector<int128u> SubDescriptors;
+        std::vector<int128u> SubDescriptors; //File Descriptors for a Multiple Descriptor
+        std::vector<int128u> SubDescriptors_Multiple; //Sub-descriptors of a Multiple Descriptor
         std::vector<int128u> Locators;
 
         Ztring  ScanType;
@@ -957,6 +964,12 @@ protected :
             Type_AudioChannelLabelSubDescriptor,
             Type_SoundfieldGroupLabelSubDescriptor,
             Type_GroupOfSoundfieldGroupsLabelSubDescriptor,
+            Type_ADMSoundfieldGroupLabelSubDescriptor,
+            Type_RIFFChunkDefinitionSubDescriptor,
+            Type_RIFFChunkReferencesSubDescriptor,
+            Type_ADMAudioMetadataSubDescriptor,
+            Type_ADM_CHNASubDescriptor,
+            Type_ADMChannelMapping,
         };
         type Type;
         bool HasBFrames;
@@ -984,7 +997,13 @@ protected :
         //AudioChannelLabelSubDescriptor specific
         int128u     SoundfieldGroupLinkID;
 
-        //DescriptiveMarker
+        //RIFFChunkDefinitionSubDescriptor specific
+        int32u      RIFFChunkID;
+
+        //ADM_CHNASubDescriptor specific
+        std::vector<int128u> ADMChannelMappings; //Entries of ADMChannelMappingsArray
+
+        //DescriptiveMarker, GenericStreamTextBasedSet, RIFFChunkDefinitionSubDescriptor
         int32u      SID;
 
         descriptor()
@@ -1047,7 +1066,10 @@ protected :
             SoundfieldGroupLinkID.hi=(int64u)-1;
             SoundfieldGroupLinkID.lo=(int64u)-1;
 
-            //DescriptiveMarker
+            //RIFFChunkDefinitionSubDescriptor specific
+            RIFFChunkID=0;
+
+            //DescriptiveMarker, GenericStreamTextBasedSet, RIFFChunkDefinitionSubDescriptor
             SID=0;
         }
         descriptor(const descriptor&) = delete;
@@ -1069,6 +1091,7 @@ protected :
     typedef std::map<int128u, descriptor> descriptors; //Key is InstanceUID of Descriptor
     descriptors Descriptors;
     void Descriptor_Fill(const char* Name, const Ztring& Value);
+    void Descriptor_Type_Set(descriptor::type Type, descriptor::type ReplacedType=descriptor::Type_Unknown); //After the parsing of an item, when Instance UID is known
     bool SubDescriptor_IsDangling(const descriptors::iterator& Descriptor);
     descriptors::iterator Descriptor_Single(bool IncludeLinkedToTrack=false);
     descriptors::iterator Descriptor_FromTrackID(int32u TrackID);
@@ -1554,6 +1577,9 @@ protected :
     static bool                 Raw_IsSame(const std::string& Value, const std::string& Expected); //Version byte of UL is ignored
     static std::string          Raw_Hex(const std::string& Value); //Bytes in hexadecimal with a dot every 4 bytes, e.g. "060E2B34.0401010D.04010202.01316001"
     static std::string          Raw_Text(const std::string& Value, bool IsRational=false); //Value for messages, e.g. "10", "50/1", "060E2B34.0401010D.04010202.01316001" or "{21, 584}"
+    static bool                 Raw_UInt_Get(const std::string* Value, size_t Size, int64u& Result); //Big endian, returns false if absent or with another size
+    static std::string          Raw_UTF16_Get(const std::string* Value); //UTF-16 big endian, characters out of ISO 7 replaced by '?', null characters at the end ignored, empty if absent
+    const properties&           SetProperties_Get(const int128u& InstanceUID) const; //Empty if the set is not parsed
     static const std::string*   Property_Get(const properties& Properties, int64u Key);
     static const std::string*   Property_Get(const properties& Properties, int16u Tag, int64u UL_Lo); //Static tag or dynamic tag
     static bool                 Properties_Test(const properties& Properties, const std::vector<property_expected>& List, conformance_errors& Errors); //Returns true if the test must stop
@@ -1598,6 +1624,13 @@ protected :
     void SystemItem_Checks_TimeCode(int32u Seconds, int8u Frames, int8u FrameRate, int8u PairCount);
     int32u                          ArdZdf_IsRequested; //Bit per ARD/ZDF profile requested by the user, conformance errors are reported
     bool                            ArdZdf_FromContent_IsRequested; //ARD/ZDF profile matching the kind of content requested by the user ("ARD_ZDF"), conformance errors are reported
+    #if MEDIAINFO_CONFORMANCE
+        bool                        St2067204_IsRequested; //SMPTE ST 2067-204 requested by the user, conformance errors are reported
+        bool                        St2067204_IsTested; //Candidate (RIFF Chunks or ADM sets) or requested
+        conformance_errors          St2067204_Errors;
+        conformance_errors          St2067204_Warnings;
+        size_t                      RiffChunks_ErrorCount; //Count of SMPTE ST 2131 errors
+    #endif //MEDIAINFO_CONFORMANCE
     int64u                          Anc_ElementSize; //Size of the ANC Data Elements, (int64u)-1 if not yet parsed, (int64u)-2 if not constant
     void Property_Store(properties& Properties, int64u Size);
     void Properties_Store(properties& Properties);
@@ -1606,6 +1639,9 @@ protected :
     bool                            Partitions_IsCalculatingHeaderByteCount;
     bool                            Partitions_IsCalculatingSdtiByteCount;
     bool                            Partitions_IsFooter;
+    #if MEDIAINFO_CONFORMANCE
+        int64u                      GenericStreamPartition_PackEnd; //Offset after the Generic Stream Partition Pack just parsed, (int64u)-1 if the last Partition Pack is not a Generic Stream one
+    #endif //MEDIAINFO_CONFORMANCE
 
     //Config
     bool                            TimeCodeFromMaterialPackage;
@@ -1668,6 +1704,12 @@ protected :
     {
         File__Analyze* Parser = {};
         int32u SID = {};
+        #if MEDIAINFO_CONFORMANCE
+            int64u Key_Lo = {}; //Low part of the key of the Generic Stream Data Element
+            bool IsAfterPartitionPack = {}; //Directly after a Generic Stream Partition Pack
+            std::string Format; //Format of the content, empty if unknown
+            std::string SHA1; //SHA-1 digest of the content, empty if not computed
+        #endif //MEDIAINFO_CONFORMANCE
 
         generic_stream_data_element_key() = default;
         generic_stream_data_element_key(const generic_stream_data_element_key& Value) = delete;
@@ -1684,11 +1726,9 @@ protected :
     File__Analyze* DolbyAudioMetadata;
     #if defined(MEDIAINFO_ADM_YES)
     File__Analyze* Adm;
-    int32u ADMChannelMapping_LocalChannelID;
-    string ADMChannelMapping_ADMAudioTrackUID;
-    std::bitset<2> ADMChannelMapping_Presence;
     std::map<int128u, set<int128u> > ADMProfileLevelULBatch_List;
     void CompareAdmProfiles();
+    void Streams_Finish_ADM_CHNA();
     #endif
     #if defined(MEDIAINFO_IAB_YES)
     File__Analyze* Adm_ForLaterMerge;
@@ -1757,6 +1797,7 @@ protected :
     #endif //MEDIAINFO_DEMUX || MEDIAINFO_SEEK
 
     void Streams_Finish_Descriptor (descriptors::iterator Descriptor);
+    void Streams_Finish_SoundfieldGroupLabel (const descriptor& Label, size_t StreamPos);
 };
 
 } //NameSpace
