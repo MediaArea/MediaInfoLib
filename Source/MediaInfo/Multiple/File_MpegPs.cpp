@@ -3632,20 +3632,20 @@ void File_MpegPs::SL_packetized_stream()
             {
                 bool DegPrioflag=false;
                 if (SLConfig->packetSeqNumLength>0)
-                    Skip_S2(SLConfig->packetSeqNumLength,           "packetSequenceNumber");
+                    Skip_BS(SLConfig->packetSeqNumLength,           "packetSequenceNumber");
                 if (SLConfig->degradationPriorityLength>0)
                     Get_SB (DegPrioflag,                            "DegPrioflag");
                 if (DegPrioflag)
                     Skip_S2(SLConfig->degradationPriorityLength,    "degradationPriority");
                 if (OCRflag)
-                    Skip_S8(SLConfig->OCRLength,                    "objectClockReference");
+                    Skip_BS(SLConfig->OCRLength,                    "objectClockReference");
                 if (accessUnitStartFlag)
                 {
                     bool decodingTimeStampFlag=false, compositionTimeStampFlag=false, instantBitrateFlag=false;
                     if (SLConfig->useRandomAccessPointFlag)
                         Skip_SB(                                    "randomAccessPointFlag");
                     if (SLConfig->AU_seqNumLength >0)
-                        Skip_S2(SLConfig->AU_seqNumLength,          "AU_sequenceNumber");
+                        Skip_BS(SLConfig->AU_seqNumLength,          "AU_sequenceNumber");
                     if (SLConfig->useTimeStampsFlag)
                     {
                         Get_SB (decodingTimeStampFlag,              "decodingTimeStampFlag");
@@ -3654,11 +3654,11 @@ void File_MpegPs::SL_packetized_stream()
                     if (SLConfig->instantBitrateLength>0)
                         Get_SB (instantBitrateFlag,                 "instantBitrateFlag");
                     if (decodingTimeStampFlag)
-                        Skip_S8(SLConfig->timeStampLength,          "decodingTimeStamp");
+                        Skip_BS(SLConfig->timeStampLength,          "decodingTimeStamp");
                     if (compositionTimeStampFlag)
-                        Skip_S8(SLConfig->timeStampLength,          "compositionTimeStamp");
+                        Skip_BS(SLConfig->timeStampLength,          "compositionTimeStamp");
                     if (SLConfig->AU_Length > 0)
-                        Skip_S4(SLConfig->AU_Length,                "accessUnitLength");
+                        Skip_BS(SLConfig->AU_Length,                "accessUnitLength");
                     if (instantBitrateFlag)
                         Skip_BS(SLConfig->instantBitrateLength,     "instantBitrate");
                 }
