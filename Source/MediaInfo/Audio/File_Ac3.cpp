@@ -2594,8 +2594,8 @@ void File_Ac3::Core_Frame()
                     TEST_SB_END();
                     if (acmod == 0x0)
                     {
-                        TEST_SB_SKIP(                               "pgmscle12e");
-                            Skip_S1 (6,                             "pgmscl12e");
+                        TEST_SB_SKIP(                               "pgmscl2e");
+                            Skip_S1 (6,                             "pgmscl2");
                         TEST_SB_END();
                     }
                     TEST_SB_SKIP(                                   "extpgmscle");
@@ -2628,11 +2628,11 @@ void File_Ac3::Core_Frame()
                             TEST_SB_SKIP(                           "extpgmrscle");
                                 Skip_S1 (4,                         "extpgmrscl");
                             TEST_SB_END();
-                            TEST_SB_SKIP(                           "extpgmlssle");
-                                Skip_S1 (4,                         "extpgmlssl");
+                            TEST_SB_SKIP(                           "extpgmlsscle");
+                                Skip_S1 (4,                         "extpgmlsscl");
                             TEST_SB_END();
-                            TEST_SB_SKIP(                           "extpgmrssle");
-                                Skip_S1 (4,                         "extpgmrssl");
+                            TEST_SB_SKIP(                           "extpgmrsscle");
+                                Skip_S1 (4,                         "extpgmrsscl");
                             TEST_SB_END();
                             TEST_SB_SKIP(                           "extpgmlfescle");
                                 Skip_S1 (4,                         "extpgmlfescl");
@@ -2654,7 +2654,7 @@ void File_Ac3::Core_Frame()
                             TEST_SB_SKIP(                           "addspchdate");
                                 Skip_S1 (5,                         "spchdat1");
                                 Skip_S1 (2,                         "spchan1att");
-                                TEST_SB_SKIP(                       "addspdat1e");
+                                TEST_SB_SKIP(                       "addspchdat1e");
                                     Skip_S1 (5,                     "spchdat2");
                                     Skip_S1 (3,                     "spchan2att");
                                 TEST_SB_END();
