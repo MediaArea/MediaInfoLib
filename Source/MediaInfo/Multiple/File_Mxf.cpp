@@ -4928,6 +4928,43 @@ void File_Mxf::Streams_Finish_Conformance_FileFormat ()
 }
 
 //---------------------------------------------------------------------------
+// Descriptors and sub-descriptors of the Source Packages of the Header Metadata in use (current Preface), empty if all Header Metadata instances have the same Instance UIDs
+set<int128u> File_Mxf::Descriptors_InUse ()
+{
+    //Only if Header Metadata instances have other Instance UIDs (SMPTE ST 377-1)
+    set<int128u> List;
+    if (Prefaces.size()<2)
+        return List;
+    const auto Preface=Prefaces.find(Preface_Current);
+    if (Preface==Prefaces.end())
+        return List;
+    const auto ContentStorage=ContentStorages.find(Preface->second.ContentStorage);
+    if (ContentStorage==ContentStorages.end())
+        return List;
+
+    //Descriptors of the Source Packages, File Descriptors of a Multiple Descriptor, sub-descriptors
+    vector<int128u> ToDo;
+    for (const auto& PackageUID : ContentStorage->second.Packages)
+    {
+        const auto Package=Packages.find(PackageUID);
+        if (Package!=Packages.end() && Package->second.IsSourcePackage)
+            ToDo.push_back(Package->second.Descriptor);
+    }
+    while (!ToDo.empty())
+    {
+        const auto Descriptor=Descriptors.find(ToDo.back());
+        ToDo.pop_back();
+        if (Descriptor==Descriptors.end() || !List.insert(Descriptor->first).second)
+            continue;
+        if (Descriptor->second.Type==descriptor::type_Mutiple)
+            ToDo.insert(ToDo.end(), Descriptor->second.SubDescriptors.begin(), Descriptor->second.SubDescriptors.end());
+        const auto SubDescriptors=SubDescriptors_Get(Descriptor->first);
+        ToDo.insert(ToDo.end(), SubDescriptors.begin(), SubDescriptors.end());
+    }
+    return List;
+}
+
+//---------------------------------------------------------------------------
 // RIFF Chunks mapped to Generic Streams and ADM metadata (SMPTE ST 2131:2026-05), checked if such sets are present
 // Generic Streams are checked if they are parsed (Generic Stream Data Element, SHA-1 digest, content)
 void File_Mxf::Streams_Finish_Conformance_RiffChunks ()
@@ -4935,11 +4972,14 @@ void File_Mxf::Streams_Finish_Conformance_RiffChunks ()
     if (IsSub)
         return;
 
-    //Sets
+    //Sets, of the Header Metadata in use if Header Metadata repetitions have other Instance UIDs (SMPTE ST 377-1)
+    const auto InUse=Descriptors_InUse();
     vector<descriptors::iterator> Definitions, References, Metadatas, Chnas, Labels;
     auto Framework_IsIdentified=false; //AudioLabelingFrameworkADMContent label in the Channel Assignment of a File Descriptor
     for (auto Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
     {
+        if (!InUse.empty() && InUse.find(Descriptor->first)==InUse.end())
+            continue;
         switch (Descriptor->second.Type)
         {
             case descriptor::Type_RIFFChunkDefinitionSubDescriptor      : Definitions.push_back(Descriptor); break;
@@ -4966,26 +5006,12 @@ void File_Mxf::Streams_Finish_Conformance_RiffChunks ()
         return true;
     };
 
-    //File Descriptor referencing each sub-descriptor (raw value of SubDescriptors if not parsed)
+    //File Descriptor referencing each sub-descriptor
     map<int128u, descriptors::iterator> Parents;
     for (auto Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
-    {
-        auto List=Descriptor->second.Type==descriptor::type_Mutiple?Descriptor->second.SubDescriptors_Multiple:Descriptor->second.SubDescriptors; //SubDescriptors of the Multiple Descriptor is used for its File Descriptors
-        if (List.empty())
-        {
-            const auto Value=Property_Get(SetProperties_Get(Descriptor->first), Elements::SubDescriptors);
-            if (Value && Value->size()>=8 && BigEndian2int32u(Value->data()+4)==16)
-                for (size_t i=8; i+16<=Value->size(); i+=16)
-                {
-                    int128u UID;
-                    UID.hi=BigEndian2int64u(Value->data()+i);
-                    UID.lo=BigEndian2int64u(Value->data()+i+8);
-                    List.push_back(UID);
-                }
-        }
-        for (const auto& SubDescriptor : List)
-            Parents.emplace(SubDescriptor, Descriptor);
-    }
+        if (InUse.empty() || InUse.find(Descriptor->first)!=InUse.end())
+            for (const auto& SubDescriptor : SubDescriptors_Get(Descriptor->first))
+                Parents.emplace(SubDescriptor, Descriptor);
     const auto Parent_Get=[&](const int128u& InstanceUID) {
         const auto Parent=Parents.find(InstanceUID);
         return Parent==Parents.end()?Descriptors.end():Parent->second;
@@ -5294,9 +5320,11 @@ void File_Mxf::Streams_Finish_Conformance_RiffChunks ()
         const auto Definition_Parent=Parent_Get(Definition->second->first);
         if (Parent!=Descriptors.end() && Definition_Parent!=Descriptors.end() && Parent!=Definition_Parent)
             Error_Metadata("MXF ADMAudioMetadataSubDescriptor", "ADMAudioMetadataSubDescriptor is not referenced by the File Descriptor referencing the RIFFChunkDefinitionSubDescriptor (Stream ID "+to_string(SID)+')');
-        const auto Format=GenericStream_Format((int32u)SID);
-        if (Format && *Format!="ADM" && Definition->second->second.RIFFChunkID!=0x62786D6C) //"bxml" RIFF Chunk (compressed) is not parsed
-            Error_Metadata("MXF ADMAudioMetadataSubDescriptor RIFFChunkStreamID_link1", "No ADM metadata in the RIFF Chunk (actual "+(Format->empty()?string("unknown content"):*Format)+", Stream ID "+to_string(SID)+')');
+        #if defined(MEDIAINFO_ADM_YES)
+            const auto Format=GenericStream_Format((int32u)SID);
+            if (Format && *Format!="ADM" && (!Format->empty() || Definition->second->second.RIFFChunkID==0x61786D6C)) //Content of another format, or "axml" RIFF Chunk (XML) without ADM, content of other RIFF Chunks is not parsed (e.g. "bxml" compressed, "sxml" with a binary header)
+                Error_Metadata("MXF ADMAudioMetadataSubDescriptor RIFFChunkStreamID_link1", "No ADM metadata in the RIFF Chunk (actual "+(Format->empty()?string("unknown content"):*Format)+", Stream ID "+to_string(SID)+')');
+        #endif //defined(MEDIAINFO_ADM_YES)
     }
 
     //ADMSoundfieldGroupLabelSubDescriptor
@@ -6285,8 +6313,12 @@ void File_Mxf::CompliantWith_St20672_Labels (const properties& Sound_Properties,
 vector<int128u> File_Mxf::SubDescriptors_Get (const int128u& DescriptorUID)
 {
     const auto Descriptor=Descriptors.find(DescriptorUID);
-    if (Descriptor!=Descriptors.end() && Descriptor->second.Type!=descriptor::type_Mutiple && !Descriptor->second.SubDescriptors.empty())
-        return Descriptor->second.SubDescriptors;
+    if (Descriptor!=Descriptors.end())
+    {
+        const auto& SubDescriptors=Descriptor->second.Type==descriptor::type_Mutiple?Descriptor->second.SubDescriptors_Multiple:Descriptor->second.SubDescriptors; //SubDescriptors of the Multiple Descriptor is used for its File Descriptors
+        if (!SubDescriptors.empty())
+            return SubDescriptors;
+    }
     vector<int128u> List;
     const auto Value=Property_Get(SetProperties_Get(DescriptorUID), Elements::SubDescriptors);
     if (Value && Value->size()>=8 && BigEndian2int32u(Value->data()+4)==16)
