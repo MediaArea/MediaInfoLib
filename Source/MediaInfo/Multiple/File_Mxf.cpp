@@ -5448,7 +5448,8 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St2067204 (conformance_erro
     if (IsSub)
         return Errors;
 
-    //Sets
+    //Sets, of the Header Metadata in use if Header Metadata repetitions have other Instance UIDs (SMPTE ST 377-1)
+    const auto InUse=Descriptors_InUse();
     vector<descriptors::iterator> Sounds, Labels;
     map<int32u, descriptors::iterator> Definitions_BySID;
     set<int32u> SIDs_WithMetadata, SIDs_WithProfiles;
@@ -5456,6 +5457,8 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St2067204 (conformance_erro
     auto IsCandidate=false;
     for (auto Descriptor=Descriptors.begin(); Descriptor!=Descriptors.end(); ++Descriptor)
     {
+        if (!InUse.empty() && InUse.find(Descriptor->first)==InUse.end())
+            continue;
         const auto& Properties=SetProperties_Get(Descriptor->first);
         int64u SID;
         if (Descriptor->second.StreamKind!=Stream_Max)
@@ -5650,7 +5653,7 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St2067204 (conformance_erro
             string Programme_Name, Programme_Label;
             if (AdmContent && Title_Raw && ProgrammeID_Raw && AdmContent->audioProgramme_Get(ProgrammeID, Programme_Name, Programme_Label))
             {
-                const auto Title=Raw_UTF16_Get(Title_Raw);
+                const auto Title=Labels[i]->second.MCATitle.To_UTF8(); //Full value, not the raw one (limited in size and ISO 7)
                 if (!Programme_Label.empty() && Title!=Programme_Label)
                     Errors.Add("MCATitle of "+Name+" is not the first audioProgrammeLabel of the audioProgramme (actual \""+Title+"\", expected \""+Programme_Label+"\", Operational Mode A)");
                 else if (Programme_Label.empty() && Title!=Programme_Name)
