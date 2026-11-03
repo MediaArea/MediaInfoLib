@@ -217,6 +217,7 @@ File_MpegPs::File_MpegPs()
     #ifdef MEDIAINFO_MPEG4_YES
         ParserFromTs=NULL;
         SLConfig=NULL;
+        SL_accessUnitEndFlag_Last=true; //The stream is expected to start with an access unit
     #endif
     #if MEDIAINFO_DEMUX
         SubStream_Demux=NULL;
@@ -989,6 +990,9 @@ void File_MpegPs::Read_Buffer_Unsynched()
     video_stream_Unlimited=false;
     Buffer_DataSizeToParse=0;
     PES_FirstByte_IsAvailable=false;
+    #ifdef MEDIAINFO_MPEG4_YES
+        SL_accessUnitEndFlag_Last=true;
+    #endif //MEDIAINFO_MPEG4_YES
 }
 
 //---------------------------------------------------------------------------
@@ -3615,11 +3619,13 @@ void File_MpegPs::SL_packetized_stream()
         {
             BS_Begin();
             int8u paddingBits=0;
-            bool paddingFlag=false, idleFlag=false, OCRflag=false, accessUnitStartFlag=false;
+            bool paddingFlag=false, idleFlag=false, OCRflag=false, accessUnitStartFlag=true;
             if (SLConfig->useAccessUnitStartFlag)
                 Get_SB (accessUnitStartFlag,                        "accessUnitStartFlag");
+            else if (SLConfig->useAccessUnitEndFlag)
+                accessUnitStartFlag=SL_accessUnitEndFlag_Last; //From the previous SL packet, else each SL packet is an access unit (ISO/IEC 14496-1:2001 10.2.4.2)
             if (SLConfig->useAccessUnitEndFlag)
-                Skip_SB(                                            "accessUnitEndFlag");
+                Get_SB (SL_accessUnitEndFlag_Last,                  "accessUnitEndFlag");
             if (SLConfig->OCRLength>0)
                 Get_SB (OCRflag,                                    "OCRflag");
             if (SLConfig->useIdleFlag)
