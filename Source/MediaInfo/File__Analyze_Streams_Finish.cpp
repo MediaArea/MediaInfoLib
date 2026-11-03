@@ -4174,19 +4174,34 @@ void File__Analyze::Streams_Finish_StreamOnly_Video(size_t Pos)
     }
 
     //Commercial name
-    if (Retrieve(Stream_Video, Pos, Video_HDR_Format_Compatibility).rfind(__T("HDR10"), 0)==0
-     && ((!Retrieve(Stream_Video, Pos, Video_BitDepth).empty() && Retrieve(Stream_Video, Pos, Video_BitDepth).To_int64u()<10) //e.g. ProRes has not bitdepth info
+    if ((!Retrieve(Stream_Video, Pos, Video_BitDepth).empty() && Retrieve(Stream_Video, Pos, Video_BitDepth).To_int64u()<10) //e.g. ProRes has not bitdepth info
      || Retrieve(Stream_Video, Pos, Video_colour_primaries)!=__T("BT.2020")
      || Retrieve(Stream_Video, Pos, Video_transfer_characteristics)!=__T("PQ")
-     || Retrieve(Stream_Video, Pos, Video_MasteringDisplay_ColorPrimaries).empty()
-        ))
+     || Retrieve(Stream_Video, Pos, Video_MasteringDisplay_ColorPrimaries).empty())
     {
-        //If HDR10+ Profile A with HLG, it is actually HLG+
-        if (Retrieve(Stream_Video, Pos, Video_transfer_characteristics) == __T("HLG") && Retrieve(Stream_Video, Pos, Video_HDR_Format_Compatibility).rfind(__T("HDR10+ Profile A"), 0) == 0)
-            Fill(Stream_Video, Pos, Video_HDR_Format_Compatibility, "HLG+", Unlimited, true, true);
-        else
-            //We actually fill HDR10/HDR10+ by default, so it will be removed below if not fitting in the color related rules
-            Clear(Stream_Video, Pos, Video_HDR_Format_Compatibility);
+        //We actually fill HDR10/HDR10+ by default, so it is removed if not fitting in the color related rules, per HDR format (e.g. after Dolby Vision)
+        ZtringList Compatibilities;
+        Compatibilities.Separator_Set(0, __T(" / "));
+        Compatibilities.Write(Retrieve(Stream_Video, Pos, Video_HDR_Format_Compatibility));
+        bool IsModified=false;
+        for (auto& Compatibility : Compatibilities)
+            if (Compatibility.rfind(__T("HDR10"), 0)==0)
+            {
+                //If HDR10+ Profile A with HLG, it is actually HLG+
+                if (Retrieve(Stream_Video, Pos, Video_transfer_characteristics)==__T("HLG") && Compatibility.rfind(__T("HDR10+ Profile A"), 0)==0)
+                    Compatibility=__T("HLG+");
+                else
+                    Compatibility.clear();
+                IsModified=true;
+            }
+        if (IsModified)
+        {
+            auto Value=Compatibilities.Read();
+            if (Value.size()>(Compatibilities.size()-1)*3)
+                Fill(Stream_Video, Pos, Video_HDR_Format_Compatibility, Value, true);
+            else
+                Clear(Stream_Video, Pos, Video_HDR_Format_Compatibility);
+        }
     }
     if (Retrieve(Stream_Video, Pos, Video_HDR_Format_String).empty())
     {
