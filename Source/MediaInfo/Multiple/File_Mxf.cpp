@@ -2139,6 +2139,7 @@ File_Mxf::File_Mxf()
     Partitions_IsFooter=false;
     #if MEDIAINFO_CONFORMANCE
         GenericStreamPartition_PackEnd=(int64u)-1;
+        Set_IsFileDescriptor=false;
         PrimerPack_IsParsed=false;
         HeaderMetadata_Partition=(int64u)-1;
         HeaderMetadata_End=(int64u)-1;
@@ -4103,8 +4104,7 @@ void File_Mxf::Streams_Finish_Conformance_OperationalPattern ()
                 DescriptorUID.hi=BigEndian2int64u(Descriptor->data());
                 DescriptorUID.lo=BigEndian2int64u(Descriptor->data()+8);
                 vector<int128u> FileDescriptorUIDs;
-                const auto DescriptorKey=SetKeys.find(DescriptorUID);
-                if (DescriptorKey!=SetKeys.end() && DescriptorKey->second==Groups::MultipleDescriptor)
+                if (SetKey_FileDescriptor_Get(DescriptorUID)==Groups::MultipleDescriptor) //Also if another set of the same Header Metadata reuses its Instance UID
                 {
                     const auto MultipleDescriptor=Descriptors.find(DescriptorUID);
                     if (MultipleDescriptor!=Descriptors.end())
@@ -4114,7 +4114,7 @@ void File_Mxf::Streams_Finish_Conformance_OperationalPattern ()
                     FileDescriptorUIDs.push_back(DescriptorUID);
                 for (const auto& FileDescriptorUID : FileDescriptorUIDs)
                 {
-                    const auto EssenceContainer=Property_Get(SetProperties_Get(FileDescriptorUID), 0x3004);
+                    const auto EssenceContainer=Property_Get(SetProperties_Get(FileDescriptorUID, SetKey_FileDescriptor_Get(FileDescriptorUID)), 0x3004);
                     if (!EssenceContainer || EssenceContainer->size()!=16)
                         continue;
                     auto IsListed=false;
@@ -4179,8 +4179,7 @@ void File_Mxf::Streams_Finish_Conformance_OperationalPattern ()
             int128u DescriptorUID;
             DescriptorUID.hi=BigEndian2int64u(Descriptor->data());
             DescriptorUID.lo=BigEndian2int64u(Descriptor->data()+8);
-            const auto DescriptorKey=SetKeys.find(DescriptorUID);
-            if (DescriptorKey!=SetKeys.end() && DescriptorKey->second==Groups::MultipleDescriptor)
+            if (SetKey_FileDescriptor_Get(DescriptorUID)==Groups::MultipleDescriptor) //Also if another set of the same Header Metadata reuses its Instance UID
                 Fill_Conformance_OP(Field, "Descriptor of the Top-Level File Package is a Multiple Descriptor");
         }
 
@@ -4211,7 +4210,7 @@ void File_Mxf::Streams_Finish_Conformance_MCA ()
     {
         for (const auto& SubDescriptor : Descriptor.second.SubDescriptors)
             Parents.emplace(SubDescriptor, Descriptor.first);
-        const auto Value=Property_Get(SetProperties_Get(Descriptor.first), Elements::SubDescriptors);
+        const auto Value=Property_Get(SetProperties_Get(Descriptor.first, SetKey_FileDescriptor_Get(Descriptor.first)), Elements::SubDescriptors); //Also if another set of the same Header Metadata reuses its Instance UID
         if (Value && Value->size()>=8 && BigEndian2int32u(Value->data()+4)==16)
             for (size_t i=8; i+16<=Value->size(); i+=16)
             {
@@ -4253,11 +4252,25 @@ void File_Mxf::Streams_Finish_Conformance_MCA ()
         bool                Package_IsKnown; //False if the label is not referenced by a File Descriptor of a File Package, its links are then resolved in any File Package
     };
     vector<mca_label> Labels;
+    vector<pair<pair<int128u, int64u>, const properties*> > Sets; //Instance UID, low part of the set key, properties
     for (const auto& Set : SetKeys)
     {
+        const auto Properties=SetProperties.find(Set.first);
+        if (Properties!=SetProperties.end())
+            Sets.emplace_back(make_pair(Set.first, Set.second), &Properties->second);
+    }
+    for (const auto& Set : SetProperties_Duplicates) //Also the sets reusing the Instance UID of another set of the same Header Metadata
+    {
+        const auto SetKey=SetKeys.find(Set.first.first);
+        if (SetKey==SetKeys.end() || SetKey->second!=Set.first.second)
+            Sets.emplace_back(Set.first, &Set.second);
+    }
+    for (const auto& Set : Sets)
+    {
+        const auto& SetUID=Set.first.first;
         char Kind;
         auto IsSubclass=false;
-        switch (Set.second)
+        switch (Set.first.second)
         {
             case Groups::AudioChannelLabelSubDescriptor             : Kind='C'; break;
             case Groups::SoundfieldGroupLabelSubDescriptor          : Kind='S'; break;
@@ -4267,16 +4280,14 @@ void File_Mxf::Streams_Finish_Conformance_MCA ()
             case Groups::ADMSoundfieldGroupLabelSubDescriptor       : Kind='S'; IsSubclass=true; break;
             default                                                 : continue;
         }
-        const auto Properties=SetProperties.find(Set.first);
-        if (Properties==SetProperties.end())
-            continue;
-        auto Is2021=Set.second==Groups::ADMSoundfieldGroupLabelSubDescriptor; //SMPTE ST 2131 references the current edition of SMPTE ST 377-4
+        const auto& Properties=*Set.second;
+        auto Is2021=Set.first.second==Groups::ADMSoundfieldGroupLabelSubDescriptor; //SMPTE ST 2131 references the current edition of SMPTE ST 377-4
         for (const auto Key : {Elements::MCAContent, Elements::MCAUseClass, Elements::MCAContentSubtype, Elements::MCAContentDifferentiator, Elements::MCASpokenLanguageAttribute, Elements::RFC5646AdditionalSpokenLanguages, Elements::MCAAdditionalLanguageAttributes})
-            if (Property_Get(Properties->second, Key))
+            if (Property_Get(Properties, Key))
                 Is2021=true;
-        const auto Partition=SetPartitions.find(Set.first);
-        const auto Package=Package_Get(Set.first);
-        Labels.push_back({Set.first, &Properties->second, Kind, IsSubclass, Set.second==Groups::ADMSoundfieldGroupLabelSubDescriptor, Is2021, scope(Partition==SetPartitions.end()?(int64u)-1:Partition->second, Package), Package.hi || Package.lo});
+        const auto Partition=SetPartitions.find(SetUID);
+        const auto Package=Package_Get(SetUID);
+        Labels.push_back({SetUID, &Properties, Kind, IsSubclass, Set.first.second==Groups::ADMSoundfieldGroupLabelSubDescriptor, Is2021, scope(Partition==SetPartitions.end()?(int64u)-1:Partition->second, Package), Package.hi || Package.lo});
     }
     if (Labels.empty())
         return;
@@ -4664,7 +4675,7 @@ void File_Mxf::Streams_Finish_Conformance_MCA ()
         auto SubDescriptors=Descriptor.second.SubDescriptors;
         if (SubDescriptors.empty()) //SubDescriptors item is not parsed for some descriptors, e.g. Generic Sound Essence Descriptor
         {
-            const auto Value=Property_Get(SetProperties_Get(Descriptor.first), Elements::SubDescriptors);
+            const auto Value=Property_Get(SetProperties_Get(Descriptor.first, SetKey_FileDescriptor_Get(Descriptor.first)), Elements::SubDescriptors); //Also if another set of the same Header Metadata reuses its Instance UID
             if (Value && Value->size()>=8 && BigEndian2int32u(Value->data()+4)==16)
                 for (size_t i=8; i+16<=Value->size(); i+=16)
                 {
@@ -4674,11 +4685,11 @@ void File_Mxf::Streams_Finish_Conformance_MCA ()
                     SubDescriptors.push_back(UID);
                 }
         }
+        set<int128u> SubDescriptors_Done; //An Instance UID reused by another set may be listed once per set
         for (const auto& SubDescriptorUID : SubDescriptors)
         {
-            const auto SubDescriptorKey=SetKeys.find(SubDescriptorUID);
             int64u ChannelID;
-            if (SubDescriptorKey==SetKeys.end() || SubDescriptorKey->second!=Groups::AudioChannelLabelSubDescriptor || !Raw_UInt_Get(Property_Get(SetProperties_Get(SubDescriptorUID), Elements::MCAChannelID), 4, ChannelID))
+            if ((InstanceUID_IsReused(SubDescriptorUID) && !SubDescriptors_Done.insert(SubDescriptorUID).second) || !SetKey_Is(SubDescriptorUID, Groups::AudioChannelLabelSubDescriptor) || !Raw_UInt_Get(Property_Get(SetProperties_Get(SubDescriptorUID, Groups::AudioChannelLabelSubDescriptor), Elements::MCAChannelID), 4, ChannelID))
                 continue;
             if (!ChannelIDs.insert(ChannelID).second)
                 ChannelIDs_Duplicated.insert(to_string(ChannelID));
@@ -5029,18 +5040,34 @@ void File_Mxf::Streams_Finish_Conformance_RiffChunks ()
     {
         if (!InUse.empty() && InUse.find(Descriptor->first)==InUse.end())
             continue;
-        switch (Descriptor->second.Type)
+        switch (Descriptor->second.Type) //Only if a set of this kind has this Instance UID, not for the type of a set of another Header Metadata with this Instance UID
         {
-            case descriptor::Type_RIFFChunkDefinitionSubDescriptor      : Definitions.push_back(Descriptor); break;
-            case descriptor::Type_RIFFChunkReferencesSubDescriptor      : References.push_back(Descriptor); break;
-            case descriptor::Type_ADMAudioMetadataSubDescriptor         : Metadatas.push_back(Descriptor); break;
-            case descriptor::Type_ADM_CHNASubDescriptor                 : Chnas.push_back(Descriptor); break;
-            case descriptor::Type_ADMSoundfieldGroupLabelSubDescriptor  : Labels.push_back(Descriptor); break;
-            case descriptor::Type_GroupOfSoundfieldGroupsLabelSubDescriptor : GroupsOfSoundfieldGroups.push_back(Descriptor); break; //Checked only if referenced by an ADMSoundfieldGroupLabelSubDescriptor
+            case descriptor::Type_RIFFChunkDefinitionSubDescriptor      : if (SetKey_Is(Descriptor->first, Groups::RIFFChunkDefinitionSubDescriptor)) Definitions.push_back(Descriptor); break;
+            case descriptor::Type_RIFFChunkReferencesSubDescriptor      : if (SetKey_Is(Descriptor->first, Groups::RIFFChunkReferencesSubDescriptor)) References.push_back(Descriptor); break;
+            case descriptor::Type_ADMAudioMetadataSubDescriptor         : if (SetKey_Is(Descriptor->first, Groups::ADMAudioMetadataSubDescriptor)) Metadatas.push_back(Descriptor); break;
+            case descriptor::Type_ADM_CHNASubDescriptor                 : if (SetKey_Is(Descriptor->first, Groups::ADM_CHNASubDescriptor)) Chnas.push_back(Descriptor); break;
+            case descriptor::Type_ADMSoundfieldGroupLabelSubDescriptor  : if (SetKey_Is(Descriptor->first, Groups::ADMSoundfieldGroupLabelSubDescriptor)) Labels.push_back(Descriptor); break;
+            case descriptor::Type_GroupOfSoundfieldGroupsLabelSubDescriptor : if (SetKey_Is(Descriptor->first, Groups::GroupOfSoundfieldGroupsLabelSubDescriptor)) GroupsOfSoundfieldGroups.push_back(Descriptor); break; //Checked only if referenced by an ADMSoundfieldGroupLabelSubDescriptor
             default                                                     : ;
         }
         if ((Descriptor->second.ChannelAssignment.hi&0xFFFFFFFFFFFFFF00LL)==0x060E2B3404010100LL && Descriptor->second.ChannelAssignment.lo==0x0402021005010000LL)
             Framework_IsIdentified=true;
+    }
+    for (const auto& Set : SetProperties_Duplicates) //Also the sets reusing the Instance UID of another set of the same Header Metadata, their items are in the entry of this Instance UID
+    {
+        const auto Descriptor=Descriptors.find(Set.first.first);
+        if (Descriptor==Descriptors.end() || (!InUse.empty() && InUse.find(Descriptor->first)==InUse.end()))
+            continue;
+        switch (Set.first.second)
+        {
+            case Groups::RIFFChunkDefinitionSubDescriptor           : if (Descriptor->second.Type!=descriptor::Type_RIFFChunkDefinitionSubDescriptor) Definitions.push_back(Descriptor); break;
+            case Groups::RIFFChunkReferencesSubDescriptor           : if (Descriptor->second.Type!=descriptor::Type_RIFFChunkReferencesSubDescriptor) References.push_back(Descriptor); break;
+            case Groups::ADMAudioMetadataSubDescriptor              : if (Descriptor->second.Type!=descriptor::Type_ADMAudioMetadataSubDescriptor) Metadatas.push_back(Descriptor); break;
+            case Groups::ADM_CHNASubDescriptor                      : if (Descriptor->second.Type!=descriptor::Type_ADM_CHNASubDescriptor) Chnas.push_back(Descriptor); break;
+            case Groups::ADMSoundfieldGroupLabelSubDescriptor       : if (Descriptor->second.Type!=descriptor::Type_ADMSoundfieldGroupLabelSubDescriptor) Labels.push_back(Descriptor); break;
+            case Groups::GroupOfSoundfieldGroupsLabelSubDescriptor  : if (Descriptor->second.Type!=descriptor::Type_GroupOfSoundfieldGroupsLabelSubDescriptor) GroupsOfSoundfieldGroups.push_back(Descriptor); break;
+            default                                                 : ;
+        }
     }
     if (Definitions.empty() && References.empty() && Metadatas.empty() && Chnas.empty() && Labels.empty() && !Framework_IsIdentified)
         return;
@@ -5108,7 +5135,7 @@ void File_Mxf::Streams_Finish_Conformance_RiffChunks ()
     set<string> UUIDs;
     for (const auto& Definition : Definitions)
     {
-        const auto& Properties=SetProperties_Get(Definition->first);
+        const auto& Properties=SetProperties_Get(Definition->first, Groups::RIFFChunkDefinitionSubDescriptor);
         const auto Error_Definition=[&](const char* Field, const string& Value) { Error(&Definition->first, Field, Value); };
 
         //Location
@@ -5229,7 +5256,7 @@ void File_Mxf::Streams_Finish_Conformance_RiffChunks ()
     {
         const auto Error_Reference=[&](const char* Field, const string& Value) { Error(&Reference->first, Field, Value); };
         set<int32u> SIDs;
-        const auto Array=Property_Get(SetProperties_Get(Reference->first), Elements::RIFFChunkStreamIDsArray);
+        const auto Array=Property_Get(SetProperties_Get(Reference->first, Groups::RIFFChunkReferencesSubDescriptor), Elements::RIFFChunkStreamIDsArray);
         if (!Array || Array->size()<8)
             Error_Reference("MXF RIFFChunkReferencesSubDescriptor RIFFChunkStreamIDsArray", "RIFFChunkStreamIDsArray is not present");
         else
@@ -5264,7 +5291,7 @@ void File_Mxf::Streams_Finish_Conformance_RiffChunks ()
     map<int128u, size_t> Chnas_ByParent;
     for (const auto& Chna : Chnas)
     {
-        const auto& Properties=SetProperties_Get(Chna->first);
+        const auto& Properties=SetProperties_Get(Chna->first, Groups::ADM_CHNASubDescriptor);
         const auto Error_Chna=[&](const char* Field, const string& Value) { Error(&Chna->first, Field, Value); };
 
         //Location, channels of a Sound Track mapped with SMPTE ST 382 are identified with a 1-based index
@@ -5302,13 +5329,12 @@ void File_Mxf::Streams_Finish_Conformance_RiffChunks ()
         set<string> UIDs;
         for (size_t i=0; i<Mappings.size(); i++)
         {
-            const auto Mapping=Descriptors.find(Mappings[i]);
-            if (Mapping==Descriptors.end() || Mapping->second.Type!=descriptor::Type_ADMChannelMapping)
+            if (!SetKey_Is(Mappings[i], Groups::ADMChannelMapping)) //Also if the Instance UID is reused by another set
             {
                 Error_Chna("MXF ADM_CHNASubDescriptor ADMChannelMappingsArray", "ADMChannelMapping "+to_string(i+1)+" is not present");
                 continue;
             }
-            const auto& Mapping_Properties=SetProperties_Get(Mapping->first);
+            const auto& Mapping_Properties=SetProperties_Get(Mappings[i], Groups::ADMChannelMapping);
             const auto UID=Raw_UTF16_Get(Property_Get(Mapping_Properties, Elements::ADMAudioTrackUID));
             const auto Name=UID.empty()?("ADMChannelMapping "+to_string(i+1)):UID;
             int64u LocalChannelID;
@@ -5374,7 +5400,7 @@ void File_Mxf::Streams_Finish_Conformance_RiffChunks ()
     {
         const auto Error_Metadata=[&](const char* Field, const string& Value) { Error(&Metadata->first, Field, Value); };
         int64u SID;
-        if (!Raw_UInt_Get(Property_Get(SetProperties_Get(Metadata->first), Elements::RIFFChunkStreamID_link1), 4, SID))
+        if (!Raw_UInt_Get(Property_Get(SetProperties_Get(Metadata->first, Groups::ADMAudioMetadataSubDescriptor), Elements::RIFFChunkStreamID_link1), 4, SID))
         {
             Error_Metadata("MXF ADMAudioMetadataSubDescriptor RIFFChunkStreamID_link1", "RIFFChunkStreamID_link1 is not present");
             continue;
@@ -5483,7 +5509,7 @@ void File_Mxf::Streams_Finish_Conformance_RiffChunks ()
     set<string> GroupsOfSoundfieldGroups_LinkIDs; //Referenced by an ADMSoundfieldGroupLabelSubDescriptor, raw values
     for (const auto& Label : Labels)
     {
-        const auto& Properties=SetProperties_Get(Label->first);
+        const auto& Properties=SetProperties_Get(Label->first, Groups::ADMSoundfieldGroupLabelSubDescriptor);
         const auto Error_Label=[&](const char* Field, const string& Value) { Error(&Label->first, Field, Value); };
         int64u SID;
         if (!Raw_UInt_Get(Property_Get(Properties, Elements::RIFFChunkStreamID_link2), 4, SID))
@@ -5563,7 +5589,7 @@ void File_Mxf::Streams_Finish_Conformance_RiffChunks ()
     //GroupOfSoundfieldGroupsLabelSubDescriptor referenced by an ADMSoundfieldGroupLabelSubDescriptor, Group of Soundfield Groups label of the MCA Label Controlled Vocabulary (recommendation)
     for (const auto& Group : GroupsOfSoundfieldGroups)
     {
-        const auto& Properties=SetProperties_Get(Group->first);
+        const auto& Properties=SetProperties_Get(Group->first, Groups::GroupOfSoundfieldGroupsLabelSubDescriptor);
         const auto LinkID=Property_Get(Properties, Elements::MCALinkID);
         if (LinkID && GroupsOfSoundfieldGroups_LinkIDs.find(*LinkID)!=GroupsOfSoundfieldGroups_LinkIDs.end())
             Vocabulary_Check(Group->first, Properties, GroupsOfSoundfieldGroups_Vocabulary, sizeof(GroupsOfSoundfieldGroups_Vocabulary)/sizeof(*GroupsOfSoundfieldGroups_Vocabulary), "gg", "MXF GroupOfSoundfieldGroupsLabelSubDescriptor", "not a Group of Soundfield Groups label of the MCA Label Controlled Vocabulary of SMPTE ST 377-42");
@@ -5606,40 +5632,99 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St2067204 (conformance_erro
     {
         if (!InUse.empty() && InUse.find(Descriptor->first)==InUse.end())
             continue;
-        const auto& Properties=SetProperties_Get(Descriptor->first);
         int64u SID;
         if (Descriptor->second.StreamKind!=Stream_Max)
             Essences++;
         if (Descriptor->second.StreamKind==Stream_Audio)
             Sounds.push_back(Descriptor);
-        switch (Descriptor->second.Type)
+        switch (Descriptor->second.Type) //Only if a set of this kind has this Instance UID, not for the type of a set of another Header Metadata with this Instance UID
         {
             case descriptor::Type_RIFFChunkDefinitionSubDescriptor :
+                                    if (!SetKey_Is(Descriptor->first, Groups::RIFFChunkDefinitionSubDescriptor))
+                                        break;
                                     IsCandidate=true;
-                                    if (Raw_UInt_Get(Property_Get(Properties, Elements::RIFFChunkStreamID), 4, SID))
+                                    if (Raw_UInt_Get(Property_Get(SetProperties_Get(Descriptor->first, Groups::RIFFChunkDefinitionSubDescriptor), Elements::RIFFChunkStreamID), 4, SID))
                                         Definitions_BySID.emplace((int32u)SID, Descriptor);
                                     break;
             case descriptor::Type_ADMAudioMetadataSubDescriptor :
+                                    {
+                                    if (!SetKey_Is(Descriptor->first, Groups::ADMAudioMetadataSubDescriptor))
+                                        break;
                                     IsCandidate=true;
+                                    const auto& Properties=SetProperties_Get(Descriptor->first, Groups::ADMAudioMetadataSubDescriptor);
                                     if (Raw_UInt_Get(Property_Get(Properties, Elements::RIFFChunkStreamID_link1), 4, SID))
                                     {
                                         SIDs_WithMetadata.insert((int32u)SID);
                                         if (Property_Get(Properties, Elements::ADMProfileLevelULBatch))
                                             SIDs_WithProfiles.insert((int32u)SID);
                                     }
+                                    }
                                     break;
             case descriptor::Type_ADMSoundfieldGroupLabelSubDescriptor :
+                                    if (!SetKey_Is(Descriptor->first, Groups::ADMSoundfieldGroupLabelSubDescriptor))
+                                        break;
                                     IsCandidate=true;
                                     Labels.push_back(Descriptor);
                                     break;
             case descriptor::Type_RIFFChunkReferencesSubDescriptor :
+                                    if (SetKey_Is(Descriptor->first, Groups::RIFFChunkReferencesSubDescriptor))
+                                        IsCandidate=true;
+                                    break;
             case descriptor::Type_ADM_CHNASubDescriptor :
-                                    IsCandidate=true;
+                                    if (SetKey_Is(Descriptor->first, Groups::ADM_CHNASubDescriptor))
+                                        IsCandidate=true;
                                     break;
             case descriptor::Type_AudioChannelLabelSubDescriptor :
+                                    if (SetKey_Is(Descriptor->first, Groups::AudioChannelLabelSubDescriptor))
+                                        OtherLabels++;
+                                    break;
             case descriptor::Type_SoundfieldGroupLabelSubDescriptor :
+                                    if (SetKey_Is(Descriptor->first, Groups::SoundfieldGroupLabelSubDescriptor))
+                                        OtherLabels++;
+                                    break;
             case descriptor::Type_GroupOfSoundfieldGroupsLabelSubDescriptor :
-                                    OtherLabels++;
+                                    if (SetKey_Is(Descriptor->first, Groups::GroupOfSoundfieldGroupsLabelSubDescriptor))
+                                        OtherLabels++;
+                                    break;
+            default                 : ;
+        }
+    }
+    for (const auto& Set : SetProperties_Duplicates) //Also the sets reusing the Instance UID of another set of the same Header Metadata, their items are in the entry of this Instance UID
+    {
+        const auto Descriptor=Descriptors.find(Set.first.first);
+        if (Descriptor==Descriptors.end() || (!InUse.empty() && InUse.find(Descriptor->first)==InUse.end()))
+            continue;
+        int64u SID;
+        switch (Set.first.second)
+        {
+            case Groups::RIFFChunkDefinitionSubDescriptor :
+                                    IsCandidate=true;
+                                    if (Descriptor->second.Type!=descriptor::Type_RIFFChunkDefinitionSubDescriptor && Raw_UInt_Get(Property_Get(Set.second, Elements::RIFFChunkStreamID), 4, SID))
+                                        Definitions_BySID.emplace((int32u)SID, Descriptor);
+                                    break;
+            case Groups::ADMAudioMetadataSubDescriptor :
+                                    IsCandidate=true;
+                                    if (Descriptor->second.Type!=descriptor::Type_ADMAudioMetadataSubDescriptor && Raw_UInt_Get(Property_Get(Set.second, Elements::RIFFChunkStreamID_link1), 4, SID))
+                                    {
+                                        SIDs_WithMetadata.insert((int32u)SID);
+                                        if (Property_Get(Set.second, Elements::ADMProfileLevelULBatch))
+                                            SIDs_WithProfiles.insert((int32u)SID);
+                                    }
+                                    break;
+            case Groups::ADMSoundfieldGroupLabelSubDescriptor :
+                                    IsCandidate=true;
+                                    if (Descriptor->second.Type!=descriptor::Type_ADMSoundfieldGroupLabelSubDescriptor)
+                                        Labels.push_back(Descriptor);
+                                    break;
+            case Groups::RIFFChunkReferencesSubDescriptor :
+            case Groups::ADM_CHNASubDescriptor :
+                                    IsCandidate=true;
+                                    break;
+            case Groups::AudioChannelLabelSubDescriptor :
+            case Groups::SoundfieldGroupLabelSubDescriptor :
+            case Groups::GroupOfSoundfieldGroupsLabelSubDescriptor :
+                                    if (Descriptor->second.Type!=descriptor::Type_AudioChannelLabelSubDescriptor && Descriptor->second.Type!=descriptor::Type_SoundfieldGroupLabelSubDescriptor && Descriptor->second.Type!=descriptor::Type_GroupOfSoundfieldGroupsLabelSubDescriptor)
+                                        OtherLabels++;
                                     break;
             default                 : ;
         }
@@ -5655,7 +5740,7 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St2067204 (conformance_erro
         return Errors;
     }
     const auto Sound=Sounds.front();
-    const auto& Sound_Properties=SetProperties_Get(Sound->first);
+    const auto& Sound_Properties=SetProperties_Get(Sound->first, SetKey_FileDescriptor_Get(Sound->first)); //Also if another set of the same Header Metadata reuses its Instance UID
     if (Sound->second.LinkedTrackID!=(int32u)-1)
         Errors.StreamID=Warnings.StreamID=to_string(Sound->second.LinkedTrackID);
     else if (Count_Get(Stream_Audio)==1)
@@ -5680,20 +5765,21 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St2067204 (conformance_erro
     size_t Chnas=0, References=0;
     const descriptor* Chna=nullptr;
     set<int32u> SIDs;
+    set<int128u> SubDescriptors_Done; //An Instance UID reused by another set may be listed once per set
     for (const auto& SubDescriptor_UID : Sound->second.SubDescriptors)
     {
         const auto SubDescriptor=Descriptors.find(SubDescriptor_UID);
-        if (SubDescriptor==Descriptors.end())
+        if (SubDescriptor==Descriptors.end() || (InstanceUID_IsReused(SubDescriptor_UID) && !SubDescriptors_Done.insert(SubDescriptor_UID).second))
             continue;
-        if (SubDescriptor->second.Type==descriptor::Type_ADM_CHNASubDescriptor)
+        if (SetKey_Is(SubDescriptor_UID, Groups::ADM_CHNASubDescriptor)) //Also if the Instance UID is reused by another set
         {
             Chnas++;
             Chna=&SubDescriptor->second;
         }
-        else if (SubDescriptor->second.Type==descriptor::Type_RIFFChunkReferencesSubDescriptor)
+        if (SetKey_Is(SubDescriptor_UID, Groups::RIFFChunkReferencesSubDescriptor))
         {
             References++;
-            const auto Array=Property_Get(SetProperties_Get(SubDescriptor->first), Elements::RIFFChunkStreamIDsArray);
+            const auto Array=Property_Get(SetProperties_Get(SubDescriptor->first, Groups::RIFFChunkReferencesSubDescriptor), Elements::RIFFChunkStreamIDsArray);
             if (Array && Array->size()>=8)
                 for (size_t i=8; i+4<=Array->size(); i+=4)
                     SIDs.insert(BigEndian2int32u(Array->data()+i));
@@ -5776,7 +5862,7 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St2067204 (conformance_erro
     map<string, size_t> Programmes_Labels; //Count of ADMSoundfieldGroupLabelSubDescriptor per audioProgramme
     for (size_t i=0; i<Labels.size(); i++)
     {
-        const auto& Properties=SetProperties_Get(Labels[i]->first);
+        const auto& Properties=SetProperties_Get(Labels[i]->first, Groups::ADMSoundfieldGroupLabelSubDescriptor);
         const auto ProgrammeID_Raw=Property_Get(Properties, Elements::ADMAudioProgrammeID_ST2131);
         const auto ProgrammeID=Raw_UTF16_Get(ProgrammeID_Raw);
         const auto Name=ProgrammeID.empty()?("ADMSoundfieldGroupLabelSubDescriptor "+to_string(i+1)):("ADMSoundfieldGroupLabelSubDescriptor of "+ProgrammeID);
@@ -5827,7 +5913,7 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St2067204 (conformance_erro
             {
                 set<string> UIDs_Mapped;
                 for (const auto& Mapping : Chna->ADMChannelMappings)
-                    UIDs_Mapped.insert(Raw_UTF16_Get(Property_Get(SetProperties_Get(Mapping), Elements::ADMAudioTrackUID)));
+                    UIDs_Mapped.insert(Raw_UTF16_Get(Property_Get(SetProperties_Get(Mapping, Groups::ADMChannelMapping), Elements::ADMAudioTrackUID)));
                 for (const auto& UID : AdmContent->ID_List("audioTrackUID"))
                     if (UIDs_Mapped.find(UID)==UIDs_Mapped.end())
                         Errors.Add("audioTrackUID "+UID+" of the ADM metadata is not mapped to a channel of the Sound Track (Operational Mode A)");
@@ -5919,6 +6005,10 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St20675 (conformance_errors
         return Errors;
     const auto StreamID_Save=Warnings.StreamID;
     Warnings.StreamID.clear();
+
+    //Instance UIDs unique in a Header Metadata (SMPTE ST 377-1), the other checks use the first set with a reused Instance UID
+    if (!InstanceUID_Duplicates.empty())
+        Errors.Add("Instance UID of a set is the one of another set of the same Header Metadata (actual "+to_string(InstanceUID_Duplicates.size())+(InstanceUID_Duplicates.size()==1?" set)":" sets)"));
 
     //Content Storage (Table 9)
     vector<int128u> MaterialPackages, TopLevelPackages, EssenceContainerDatas;
@@ -6023,13 +6113,13 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St20675 (conformance_errors
     if (TopLevelPackages.size()==1)
     {
         const auto Descriptor_UID=Packages[TopLevelPackages[0]].Descriptor;
-        const auto DescriptorKey=SetKeys.find(Descriptor_UID);
+        const auto DescriptorKey=SetKey_FileDescriptor_Get(Descriptor_UID); //Also if another set of the same Header Metadata reuses its Instance UID
         const auto Descriptor_Item=Descriptors.find(Descriptor_UID);
-        if (DescriptorKey!=SetKeys.end() && Descriptor_Item!=Descriptors.end())
+        if (DescriptorKey && Descriptor_Item!=Descriptors.end())
         {
             Descriptor=&Descriptor_Item->second;
-            Descriptor_Properties=&SetProperties_Get(Descriptor_UID);
-            Descriptor_Key=DescriptorKey->second;
+            Descriptor_Properties=&SetProperties_Get(Descriptor_UID, DescriptorKey);
+            Descriptor_Key=DescriptorKey;
         }
         else
             Errors.Add("Top-Level File Package does not reference a File Descriptor");
@@ -6042,8 +6132,8 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St20675 (conformance_errors
         size_t VbiAnc=0, Others=0;
         for (const auto& SubDescriptor : Descriptor->SubDescriptors)
         {
-            const auto SubDescriptorKey=SetKeys.find(SubDescriptor);
-            if (SubDescriptorKey!=SetKeys.end() && (SubDescriptorKey->second==Groups::VBIDataDescriptor || SubDescriptorKey->second==Groups::ANCDataDescriptor))
+            const auto SubDescriptorKey=SetKey_FileDescriptor_Get(SubDescriptor);
+            if (SubDescriptorKey==Groups::VBIDataDescriptor || SubDescriptorKey==Groups::ANCDataDescriptor)
                 VbiAnc++;
             else
                 Others++;
@@ -6323,7 +6413,7 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St20672 (conformance_errors
         return Errors;
     const auto& Package=Packages[TopLevelPackages[0]];
     const auto Descriptor=Descriptors.find(Package.Descriptor);
-    const auto DescriptorKey=SetKeys.find(Package.Descriptor);
+    const auto DescriptorKey=SetKey_FileDescriptor_Get(Package.Descriptor); //Also if another set of the same Header Metadata reuses its Instance UID
     vector<track_info> Tracks_List;
     string Kinds;
     conformance_errors Tracks_Errors; //Reported elsewhere
@@ -6332,15 +6422,15 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St20672 (conformance_errors
     for (const auto& Track : Tracks_List)
         if (Track.Kind=='V' || Track.Kind=='A' || Track.Kind=='D')
             EssenceTrack=&Track;
-    if (Descriptor==Descriptors.end() || DescriptorKey==SetKeys.end() || DescriptorKey->second==Groups::MultipleDescriptor || !EssenceTrack)
+    if (Descriptor==Descriptors.end() || !DescriptorKey || DescriptorKey==Groups::MultipleDescriptor || !EssenceTrack)
         return Errors; //A Multiple Descriptor is reported as not mono-essence
     const auto StreamID_Save=Warnings.StreamID;
     if (EssenceTrack->Track->second.TrackID!=(int32u)-1)
         Errors.StreamID=Warnings.StreamID=to_string(EssenceTrack->Track->second.TrackID);
-    const auto& Descriptor_Properties=SetProperties_Get(Package.Descriptor);
+    const auto& Descriptor_Properties=SetProperties_Get(Package.Descriptor, DescriptorKey);
     const auto SubDescriptors=SubDescriptors_Get(Package.Descriptor);
 
-    if (EssenceTrack->Kind=='A' || DescriptorKey->second==Groups::WAVEPCMDescriptor || DescriptorKey->second==Groups::AES3PCMDescriptor) //Also if the kind of the track is not the one of the File Descriptor
+    if (EssenceTrack->Kind=='A' || DescriptorKey==Groups::WAVEPCMDescriptor || DescriptorKey==Groups::AES3PCMDescriptor) //Also if the kind of the track is not the one of the File Descriptor
     {
         //Audio Track File (5.3)
         CompliantWith_St20672_Audio(Descriptor->second, Descriptor_Properties, Errors, Warnings);
@@ -6356,7 +6446,7 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St20672 (conformance_errors
     }
     else if (EssenceTrack->Kind=='D')
     {
-        if (DescriptorKey->second==Groups::DCTimedTextDescriptor)
+        if (DescriptorKey==Groups::DCTimedTextDescriptor)
         {
             //Timed Text Track File (5.4)
             if (Property_Get(Descriptor_Properties, 0x3E01))
@@ -6376,10 +6466,9 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St20672 (conformance_errors
                 Errors.Add("UCSEncoding of the Timed Text Descriptor is not UTF-8 (actual "+(UCSEncoding.empty()?string("none"):('"'+UCSEncoding+'"'))+')');
             for (const auto& SubDescriptor : SubDescriptors)
             {
-                const auto SubDescriptorKey=SetKeys.find(SubDescriptor);
-                if (SubDescriptorKey==SetKeys.end() || SubDescriptorKey->second!=Groups::DCTimedTextResourceSubDescriptor)
+                if (!SetKey_Is(SubDescriptor, Groups::DCTimedTextResourceSubDescriptor)) //Also if another set of the same Header Metadata reuses its Instance UID
                     continue;
-                const auto MIMEMediaType=Raw_UTF16_Get(Property_Get(SetProperties_Get(SubDescriptor), Elements::MIMEType));
+                const auto MIMEMediaType=Raw_UTF16_Get(Property_Get(SetProperties_Get(SubDescriptor, Groups::DCTimedTextResourceSubDescriptor), Elements::MIMEType));
                 if (MIMEMediaType=="application/x-font-opentype")
                     Warnings.Add("MIMEMediaType of a font resource is application/x-font-opentype");
                 else if (MIMEMediaType!="image/png" && MIMEMediaType!="font/otf")
@@ -6389,7 +6478,7 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St20672 (conformance_errors
         else if ((Descriptor->second.EssenceContainer.lo&0xFFFFFFFFFFFF0000LL)==Labels::MXFGCGenericANCDataMappingUndefinedPayload)
         {
             //Ancillary Data Track File (5.5)
-            if (DescriptorKey->second!=Groups::ANCDataDescriptor)
+            if (DescriptorKey!=Groups::ANCDataDescriptor)
                 Errors.Add("File Descriptor of the Ancillary Data Track File is not an ANC Data Descriptor");
         }
     }
@@ -6409,16 +6498,15 @@ void File_Mxf::CompliantWith_St20672_Labels (const properties& Sound_Properties,
     set<int128u> SubDescriptors_Done;
     for (const auto& SubDescriptor : SubDescriptors)
     {
-        const auto SubDescriptorKey=SetKeys.find(SubDescriptor);
-        if (SubDescriptorKey==SetKeys.end() || !SubDescriptors_Done.insert(SubDescriptor).second)
+        if (!SubDescriptors_Done.insert(SubDescriptor).second)
             continue;
-        const auto& Properties=SetProperties_Get(SubDescriptor);
-        if (SubDescriptorKey->second==Groups::AudioChannelLabelSubDescriptor)
-            ChannelLabels.push_back(&Properties);
-        else if (SubDescriptorKey->second==Groups::SoundfieldGroupLabelSubDescriptor)
-            SoundfieldGroups.push_back(&Properties);
-        else if (SubDescriptorKey->second==Groups::GroupOfSoundfieldGroupsLabelSubDescriptor)
-            GroupsOfSoundfieldGroups.push_back(&Properties);
+        //Also if another set of the same Header Metadata reuses its Instance UID
+        if (SetKey_Is(SubDescriptor, Groups::AudioChannelLabelSubDescriptor))
+            ChannelLabels.push_back(&SetProperties_Get(SubDescriptor, Groups::AudioChannelLabelSubDescriptor));
+        if (SetKey_Is(SubDescriptor, Groups::SoundfieldGroupLabelSubDescriptor))
+            SoundfieldGroups.push_back(&SetProperties_Get(SubDescriptor, Groups::SoundfieldGroupLabelSubDescriptor));
+        if (SetKey_Is(SubDescriptor, Groups::GroupOfSoundfieldGroupsLabelSubDescriptor))
+            GroupsOfSoundfieldGroups.push_back(&SetProperties_Get(SubDescriptor, Groups::GroupOfSoundfieldGroupsLabelSubDescriptor));
     }
     if (ChannelLabels.size()!=ChannelCount)
         Errors.Add("AudioChannelLabelSubDescriptor count is not the Channel Count (actual "+to_string(ChannelLabels.size())+", expected "+to_string(ChannelCount)+')');
@@ -6492,7 +6580,7 @@ vector<int128u> File_Mxf::SubDescriptors_Get (const int128u& DescriptorUID)
             return SubDescriptors;
     }
     vector<int128u> List;
-    const auto Value=Property_Get(SetProperties_Get(DescriptorUID), Elements::SubDescriptors);
+    const auto Value=Property_Get(SetProperties_Get(DescriptorUID, SetKey_FileDescriptor_Get(DescriptorUID)), Elements::SubDescriptors); //Also if another set of the same Header Metadata reuses its Instance UID
     if (Value && Value->size()>=8 && BigEndian2int32u(Value->data()+4)==16)
         for (size_t i=8; i+16<=Value->size(); i+=16)
         {
@@ -6518,6 +6606,13 @@ bool File_Mxf::CompliantWith_St20672_IsDeclared ()
             if (ChannelAssignment && Raw_IsSame(*ChannelAssignment, ChannelAssignment_Expected))
                 return true;
         }
+    for (const auto& Set : SetProperties_Duplicates) //Also the sets reusing the Instance UID of another set of the same Header Metadata
+        if (Set.first.second==Groups::WAVEPCMDescriptor || Set.first.second==Groups::AES3PCMDescriptor)
+        {
+            const auto ChannelAssignment=Property_Get(Set.second, 0x3D32);
+            if (ChannelAssignment && Raw_IsSame(*ChannelAssignment, ChannelAssignment_Expected))
+                return true;
+        }
     return false;
 }
 
@@ -6531,6 +6626,9 @@ bool File_Mxf::CompliantWith_St20672_IsCandidate ()
         return true;
     for (const auto& Set : SetKeys)
         if (Set.second==Groups::DCTimedTextDescriptor && !Raw_UTF16_Get(Property_Get(SetProperties_Get(Set.first), Elements::NamespaceURI)).rfind("http://www.w3.org/ns/ttml/profile/imsc", 0))
+            return true;
+    for (const auto& Set : SetProperties_Duplicates) //Also the sets reusing the Instance UID of another set of the same Header Metadata
+        if (Set.first.second==Groups::DCTimedTextDescriptor && !Raw_UTF16_Get(Property_Get(Set.second, Elements::NamespaceURI)).rfind("http://www.w3.org/ns/ttml/profile/imsc", 0))
             return true;
     return false;
 }
@@ -8341,6 +8439,47 @@ const File_Mxf::properties& File_Mxf::SetProperties_Get(const int128u& InstanceU
 }
 
 //---------------------------------------------------------------------------
+const File_Mxf::properties& File_Mxf::SetProperties_Get(const int128u& InstanceUID, int64u Key) const
+{
+    #if MEDIAINFO_CONFORMANCE
+        const auto Properties=SetProperties_Duplicates.find(make_pair(InstanceUID, Key));
+        if (Properties!=SetProperties_Duplicates.end())
+            return Properties->second;
+    #endif //MEDIAINFO_CONFORMANCE
+    return SetProperties_Get(InstanceUID);
+}
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
+bool File_Mxf::SetKey_Is(const int128u& InstanceUID, int64u Key) const
+{
+    if (SetProperties_Duplicates.find(make_pair(InstanceUID, Key))!=SetProperties_Duplicates.end())
+        return true;
+    const auto SetKey=SetKeys.find(InstanceUID);
+    return SetKey!=SetKeys.end() && SetKey->second==Key;
+}
+
+//---------------------------------------------------------------------------
+int64u File_Mxf::SetKey_FileDescriptor_Get(const int128u& InstanceUID) const
+{
+    const auto Set=InstanceUID_Sets.find(InstanceUID);
+    if (Set!=InstanceUID_Sets.end() && Set->second.Key_FileDescriptor)
+        return Set->second.Key_FileDescriptor;
+    const auto SetKey=SetKeys.find(InstanceUID);
+    return SetKey==SetKeys.end()?0:SetKey->second;
+}
+
+//---------------------------------------------------------------------------
+bool File_Mxf::InstanceUID_IsReused(const int128u& InstanceUID) const
+{
+    for (const auto& Duplicate : InstanceUID_Duplicates)
+        if (Duplicate.second.InstanceUID==InstanceUID)
+            return true;
+    return false;
+}
+#endif //MEDIAINFO_CONFORMANCE
+
+//---------------------------------------------------------------------------
 const string* File_Mxf::Property_Get(const properties& Properties, int64u Key)
 {
     const auto Property=Properties.find(Key);
@@ -8594,7 +8733,7 @@ void File_Mxf::Streams_Finish_CompliantWith ()
                 const auto ChannelAssignment_St20672=Raw_UL(0x060E2B340401010DLL, 0x0402021004010000LL);
                 for (const auto& Descriptor : Descriptors)
                 {
-                    const auto& Properties=SetProperties_Get(Descriptor.first);
+                    const auto& Properties=SetProperties_Get(Descriptor.first, SetKey_FileDescriptor_Get(Descriptor.first)); //Also if another set of the same Header Metadata reuses its Instance UID
                     const auto ChannelAssignment=Property_Get(Properties, 0x3D32);
                     if (Descriptor.second.StreamKind!=Stream_Audio || Descriptor.second.StreamPos==(size_t)-1 || !ChannelAssignment || !Raw_IsSame(*ChannelAssignment, ChannelAssignment_St20672))
                         continue;
@@ -11833,6 +11972,9 @@ void File_Mxf::Data_Parse()
     //Clearing
     InstanceUID=0;
     Descriptor_Type_Pending=descriptor::Type_Unknown;
+    #if MEDIAINFO_CONFORMANCE
+        Set_IsFileDescriptor=false;
+    #endif //MEDIAINFO_CONFORMANCE
     PrivateMetadata_Test(Code);
     if (!Essences_FirstEssence_Parsed)
     {
@@ -12771,10 +12913,10 @@ void File_Mxf::Data_Parse()
                         break;
                     if (Tag==0x3C0A && Size==16)
                     {
-                        int128u SetUID;
-                        SetUID.hi=BigEndian2int64u(Begin+Pos);
-                        SetUID.lo=BigEndian2int64u(Begin+Pos+8);
-                        SetKeys[SetUID]=Code.lo;
+                        //As for dark sets with 2-byte lengths, the reuse of an Instance UID in a Header Metadata is reported and a dark set does not take the place of a parsed set
+                        properties Properties;
+                        Properties[0x3C0A].assign((const char*)Begin+Pos, 16);
+                        Properties_Store(Properties);
                         break;
                     }
                     Pos+=(size_t)Size;
@@ -13169,6 +13311,10 @@ void File_Mxf::EventTrack()
 //---------------------------------------------------------------------------
 void File_Mxf::FileDescriptor()
 {
+    #if MEDIAINFO_CONFORMANCE
+        Set_IsFileDescriptor=true;
+    #endif //MEDIAINFO_CONFORMANCE
+
     ELEMENT_BEGIN()
     ELEMENT(3001, FileDescriptor_SampleRate)
     ELEMENT(3002, FileDescriptor_ContainerDuration)
@@ -15004,10 +15150,8 @@ void File_Mxf::ApplicationReferencedObject()
 //---------------------------------------------------------------------------
 void File_Mxf::MCALabelSubDescriptor()
 {
-    if (Descriptors[InstanceUID].Type==descriptor::Type_Unknown)
-        Descriptors[InstanceUID].Type=descriptor::Type_MCALabelSubDescriptor;
-
-    MCALabelSubDescriptor_Items();
+    MCALabelSubDescriptor_Items(); //Items only as the type is set after each item
+    Descriptor_Type_Set(descriptor::Type_MCALabelSubDescriptor);
 }
 
 //---------------------------------------------------------------------------
@@ -15119,28 +15263,22 @@ void File_Mxf::UCSEncoding()
 //---------------------------------------------------------------------------
 void File_Mxf::AudioChannelLabelSubDescriptor()
 {
-    if (Descriptors[InstanceUID].Type==descriptor::Type_Unknown)
-        Descriptors[InstanceUID].Type=descriptor::Type_AudioChannelLabelSubDescriptor;
-
-    MCALabelSubDescriptor();
+    MCALabelSubDescriptor_Items(); //Subclass of MCALabelSubDescriptor, items only as the type is set after each item
+    Descriptor_Type_Set(descriptor::Type_AudioChannelLabelSubDescriptor);
 }
 
 //---------------------------------------------------------------------------
 void File_Mxf::SoundfieldGroupLabelSubDescriptor()
 {
-    if (Descriptors[InstanceUID].Type==descriptor::Type_Unknown)
-        Descriptors[InstanceUID].Type=descriptor::Type_SoundfieldGroupLabelSubDescriptor;
-
-    MCALabelSubDescriptor();
+    MCALabelSubDescriptor_Items(); //Subclass of MCALabelSubDescriptor, items only as the type is set after each item
+    Descriptor_Type_Set(descriptor::Type_SoundfieldGroupLabelSubDescriptor);
 }
 
 //---------------------------------------------------------------------------
 void File_Mxf::GroupOfSoundfieldGroupsLabelSubDescriptor()
 {
-    if (Descriptors[InstanceUID].Type==descriptor::Type_Unknown)
-        Descriptors[InstanceUID].Type=descriptor::Type_GroupOfSoundfieldGroupsLabelSubDescriptor;
-
-    MCALabelSubDescriptor();
+    MCALabelSubDescriptor_Items(); //Subclass of MCALabelSubDescriptor, items only as the type is set after each item
+    Descriptor_Type_Set(descriptor::Type_GroupOfSoundfieldGroupsLabelSubDescriptor);
 }
 
 //---------------------------------------------------------------------------
@@ -23083,6 +23221,7 @@ void File_Mxf::Properties_Store(properties& Properties)
         IndexTableSegments.push_back({StreamOffset, std::move(Properties), std::move(Flags)});
         return;
     }
+    auto IsDuplicate=false; //Set reusing the Instance UID of another set of the same Header Metadata, the first parsed set is kept as the set with this Instance UID
     #if MEDIAINFO_CONFORMANCE
         //Instance UID is unique in a Header Metadata, its repetitions in other partitions reuse it (SMPTE ST 377-1), Instance UID is taken from the raw properties for dark sets
         const auto SetOffset=File_Offset+Buffer_Offset-Header_Size;
@@ -23098,11 +23237,39 @@ void File_Mxf::Properties_Store(properties& Properties)
                 SetUID.hi=BigEndian2int64u(SetUID_Value->data());
                 SetUID.lo=BigEndian2int64u(SetUID_Value->data()+8);
                 const int64u SetKey=Code.lo; //Copied as a packed field can not be bound to a reference
+                const auto IsParsed=InstanceUID.hi || InstanceUID.lo; //Properties of dark sets are not in SetProperties, a dark set does not take the place of a parsed set
+                const int64u Key_FileDescriptor=(IsParsed && Set_IsFileDescriptor)?SetKey:0;
                 const auto Set=InstanceUID_Sets.find(SetUID);
                 if (Set==InstanceUID_Sets.end() || Set->second.Partition!=Partition->StreamOffset)
-                    InstanceUID_Sets[SetUID]={Partition->StreamOffset, SetOffset, SetKey}; //First set with this Instance UID in this Header Metadata
-                else if (Set->second.StreamOffset!=SetOffset) //Not the same set parsed again
-                    InstanceUID_Duplicates[SetOffset]={SetUID, Set->second.Key, SetKey};
+                {
+                    //First set with this Instance UID in this Header Metadata, the sets of another Header Metadata reusing this Instance UID are no longer used
+                    InstanceUID_Sets[SetUID]={Partition->StreamOffset, SetOffset, SetKey, IsParsed?SetOffset:(int64u)-1, SetKey, Key_FileDescriptor};
+                    SetProperties_Duplicates.erase(SetProperties_Duplicates.lower_bound(make_pair(SetUID, (int64u)0)), SetProperties_Duplicates.upper_bound(make_pair(SetUID, (int64u)-1)));
+                }
+                else
+                {
+                    auto& Item=Set->second;
+                    if (Item.StreamOffset!=SetOffset) //Not the same set parsed again
+                        InstanceUID_Duplicates[SetOffset]={SetUID, Item.Key, SetKey};
+                    if (!Item.Key_FileDescriptor)
+                        Item.Key_FileDescriptor=Key_FileDescriptor;
+                    if (Item.StreamOffset_Kept==(int64u)-1 && IsParsed)
+                    {
+                        //First parsed set with this Instance UID, after dark sets
+                        Item.StreamOffset_Kept=SetOffset;
+                        Item.Key_Kept=SetKey;
+                    }
+                    else if (Item.StreamOffset_Kept!=SetOffset) //Not the kept set parsed again
+                    {
+                        //Properties of the first parsed set of each kind with this Instance UID, for checks of a kind of set
+                        if (IsParsed)
+                        {
+                            SetProperties_Duplicates.emplace(make_pair(SetUID, Item.Key_Kept), SetProperties_Get(SetUID));
+                            SetProperties_Duplicates.emplace(make_pair(SetUID, SetKey), Properties);
+                        }
+                        IsDuplicate=true;
+                    }
+                }
             }
         }
         //Class of each set, Instance UID is taken from the raw properties for dark sets
@@ -23116,7 +23283,7 @@ void File_Mxf::Properties_Store(properties& Properties)
                 SetUID.lo=BigEndian2int64u(Value->data()+8);
             }
         }
-        if (SetUID.hi || SetUID.lo)
+        if ((SetUID.hi || SetUID.lo) && !IsDuplicate)
         {
             SetKeys[SetUID]=Code.lo;
             SetPartitions[SetUID]=HeaderMetadata_Partition;
@@ -23126,7 +23293,7 @@ void File_Mxf::Properties_Store(properties& Properties)
                 HeaderMetadata_ContentStorages[HeaderMetadata_Partition].insert(SetUID);
         }
     #endif //MEDIAINFO_CONFORMANCE
-    if (InstanceUID.hi || InstanceUID.lo)
+    if ((InstanceUID.hi || InstanceUID.lo) && !IsDuplicate)
     {
         auto& Properties_Previous=SetProperties[InstanceUID];
         if (Partitions_IsFooter && !Properties_Previous.empty()) //Header Metadata repeated in the Footer Partition
@@ -23324,7 +23491,7 @@ void File_Mxf::Streams_Finish_ADM_CHNA()
     const auto Chna_Add=[&](const vector<int128u>& MappingUIDs, int32u ChannelOffset, int32u ChannelCount) {
         for (const auto& MappingUID : MappingUIDs)
         {
-            const auto& Properties=SetProperties_Get(MappingUID);
+            const auto& Properties=SetProperties_Get(MappingUID, Groups::ADMChannelMapping);
             int64u LocalChannelID;
             if (!Raw_UInt_Get(Property_Get(Properties, Elements::LocalChannelID), 4, LocalChannelID) || !LocalChannelID || LocalChannelID>ChannelCount)
                 continue;
