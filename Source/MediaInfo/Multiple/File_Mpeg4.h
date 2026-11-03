@@ -513,7 +513,7 @@ private :
         int64u Size;
         int32u StreamID;
         int32u Reserved1;
-        int64u Reserved2;
+        int64u SamplePos; //Sample number in the stream, only for the caption probe
         bool operator<(const mdat_Pos_Type& r) const
         {
             return Offset<r.Offset;
