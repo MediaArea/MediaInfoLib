@@ -18545,7 +18545,7 @@ void File_Mxf::SystemScheme1_TimeCodeArray()
         }
         if (!IsNotContinuous)
         {
-            SystemScheme.TimeCodeArray_StartTimecodes.resize(1);
+            SystemScheme.TimeCodeArray_StartTimecodes.erase(SystemScheme.TimeCodeArray_StartTimecodes.begin()+1, SystemScheme.TimeCodeArray_StartTimecodes.end()); //Not resize(), its code for adding items gives a false warning (stringop-overflow) with some GCC versions
         }
     }
 }
