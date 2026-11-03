@@ -51,6 +51,7 @@
 #endif //MEDIAINFO_HMAC
 #include "MediaInfo/HashWrapper.h"
 #include "ZenLib/File.h"
+#include "ZenLib/OS_Utils.h"
 #include "ZenLib/Format/Http/Http_Utils.h"
 #include "tinyxml2.h"
 using namespace tinyxml2;
@@ -884,14 +885,14 @@ Ztring Reader_libcurl_ExpandFileName(const Ztring &FileName)
             #pragma warning(suppress : 4996) //'getenv': This function or variable may be unsafe.
             char* env=getenv("HOME");
             if (env)
-                FileName_Modified.FindAndReplace(__T("$HOME"), Ztring().From_Local(env));
+                FileName_Modified.FindAndReplace(__T("$HOME"), FileName_From_Native(env));
         }
         if (FileName_Modified.find(__T('~'))==0)
         {
             #pragma warning(suppress : 4996) //'getenv': This function or variable may be unsafe.
             char* env=getenv("HOME");
             if (env)
-                FileName_Modified.FindAndReplace(__T("~"), Ztring().From_Local(env));
+                FileName_Modified.FindAndReplace(__T("~"), FileName_From_Native(env));
         }
         return FileName_Modified;
     #endif
@@ -940,7 +941,7 @@ size_t Reader_libcurl::Format_Test(MediaInfo_Internal* MI, String File_Name)
 
     #if MEDIAINFO_EVENTS
         {
-            string File_Name_Local=Ztring(File_Name).To_Local();
+            string File_Name_Local=FileName_To_Native(File_Name);
             wstring File_Name_Unicode=Ztring(File_Name).To_Unicode();
             struct MediaInfo_Event_General_Start_0 Event;
             memset(&Event, 0xFF, sizeof(struct MediaInfo_Event_General_Start_0));
@@ -1101,22 +1102,22 @@ size_t Reader_libcurl::Format_Test_PerParser(MediaInfo_Internal* MI, const Strin
     #endif //defined MEDIAINFO_LIBCURL_DLL_RUNTIME
 
     Curl_Data=new curl_data();
-    Curl_Data->Ssl_CertificateFileName=MediaInfoLib::Config.Ssl_CertificateFileName_Get().To_Local();
+    Curl_Data->Ssl_CertificateFileName=FileName_To_Native(MediaInfoLib::Config.Ssl_CertificateFileName_Get());
     Curl_Data->Ssl_CertificateFormat=MediaInfoLib::Config.Ssl_CertificateFormat_Get().To_Local();
-    Curl_Data->Ssl_PrivateKeyFileName=MediaInfoLib::Config.Ssl_PrivateKeyFileName_Get().To_Local();
+    Curl_Data->Ssl_PrivateKeyFileName=FileName_To_Native(MediaInfoLib::Config.Ssl_PrivateKeyFileName_Get());
     Curl_Data->Ssl_PrivateKeyFormat=MediaInfoLib::Config.Ssl_PrivateKeyFormat_Get().To_Local();
-    Curl_Data->Ssl_CertificateAuthorityFileName=MediaInfoLib::Config.Ssl_CertificateAuthorityFileName_Get().To_Local();
-    Curl_Data->Ssl_CertificateAuthorityPath=MediaInfoLib::Config.Ssl_CertificateAuthorityPath_Get().To_Local();
-    Curl_Data->Ssl_CertificateRevocationListFileName=MediaInfoLib::Config.Ssl_CertificateRevocationListFileName_Get().To_Local();
+    Curl_Data->Ssl_CertificateAuthorityFileName=FileName_To_Native(MediaInfoLib::Config.Ssl_CertificateAuthorityFileName_Get());
+    Curl_Data->Ssl_CertificateAuthorityPath=FileName_To_Native(MediaInfoLib::Config.Ssl_CertificateAuthorityPath_Get());
+    Curl_Data->Ssl_CertificateRevocationListFileName=FileName_To_Native(MediaInfoLib::Config.Ssl_CertificateRevocationListFileName_Get());
     Curl_Data->Ssl_IgnoreSecurity=MediaInfoLib::Config.Ssl_IgnoreSecurity_Get();
-    Curl_Data->Ssh_PublicKeyFileName=Reader_libcurl_ExpandFileName(MediaInfoLib::Config.Ssh_PublicKeyFileName_Get()).To_Local();
+    Curl_Data->Ssh_PublicKeyFileName=FileName_To_Native(Reader_libcurl_ExpandFileName(MediaInfoLib::Config.Ssh_PublicKeyFileName_Get()));
     if (Curl_Data->Ssh_PublicKeyFileName.empty())
     {
         if (Reader_libcurl_HomeIsSet())
         {
             Ztring Temp=Reader_libcurl_ExpandFileName(__T("$HOME/.ssh/id_rsa.pub"));
             if (File::Exists(Temp))
-                Curl_Data->Ssh_PublicKeyFileName=Temp.To_Local();
+                Curl_Data->Ssh_PublicKeyFileName=FileName_To_Native(Temp);
         }
         else
         {
@@ -1124,14 +1125,14 @@ size_t Reader_libcurl::Format_Test_PerParser(MediaInfo_Internal* MI, const Strin
                 Curl_Data->Ssh_PublicKeyFileName="id_rsa.pub";
         }
     }
-    Curl_Data->Ssh_PrivateKeyFileName=Reader_libcurl_ExpandFileName(MediaInfoLib::Config.Ssh_PrivateKeyFileName_Get()).To_Local();
+    Curl_Data->Ssh_PrivateKeyFileName=FileName_To_Native(Reader_libcurl_ExpandFileName(MediaInfoLib::Config.Ssh_PrivateKeyFileName_Get()));
     if (Curl_Data->Ssh_PrivateKeyFileName.empty())
     {
         if (Reader_libcurl_HomeIsSet())
         {
             Ztring Temp=Reader_libcurl_ExpandFileName(__T("$HOME/.ssh/id_rsa"));
             if (File::Exists(Temp))
-                Curl_Data->Ssh_PrivateKeyFileName=Temp.To_Local();
+                Curl_Data->Ssh_PrivateKeyFileName=FileName_To_Native(Temp);
         }
         else
         {
@@ -1139,11 +1140,11 @@ size_t Reader_libcurl::Format_Test_PerParser(MediaInfo_Internal* MI, const Strin
                 Curl_Data->Ssh_PrivateKeyFileName = "id_rsa";
         }
     }
-    Curl_Data->Ssh_KnownHostsFileName=Reader_libcurl_ExpandFileName(MediaInfoLib::Config.Ssh_KnownHostsFileName_Get()).To_Local();
+    Curl_Data->Ssh_KnownHostsFileName=FileName_To_Native(Reader_libcurl_ExpandFileName(MediaInfoLib::Config.Ssh_KnownHostsFileName_Get()));
     if (Curl_Data->Ssh_KnownHostsFileName.empty())
     {
         if (Reader_libcurl_HomeIsSet())
-            Curl_Data->Ssh_KnownHostsFileName=Reader_libcurl_ExpandFileName(__T("$HOME/.ssh/known_hosts")).To_Local();
+            Curl_Data->Ssh_KnownHostsFileName=FileName_To_Native(Reader_libcurl_ExpandFileName(__T("$HOME/.ssh/known_hosts")));
         else
             Curl_Data->Ssh_KnownHostsFileName="known_hosts";
     }

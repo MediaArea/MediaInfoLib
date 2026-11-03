@@ -26,6 +26,7 @@
 #include "MediaInfo/Reader/Reader_File.h"
 #include "MediaInfo/File__Analyze.h"
 #include "ZenLib/FileName.h"
+#include "ZenLib/OS_Utils.h"
 #ifdef WINDOWS
     #undef __TEXT
     #include <windows.h>
@@ -164,7 +165,7 @@ size_t Reader_File::Format_Test(MediaInfo_Internal* MI, String File_Name)
     //std::cout<<Ztring(File_Name).To_Local().c_str()<<std::endl;
     #if MEDIAINFO_EVENTS
         {
-            string File_Name_Local=Ztring(File_Name).To_Local();
+            string File_Name_Local=FileName_To_Native(File_Name);
             wstring File_Name_Unicode=Ztring(File_Name).To_Unicode();
             struct MediaInfo_Event_General_Start_0 Event;
             memset(&Event, 0xFF, sizeof(struct MediaInfo_Event_Generic));
