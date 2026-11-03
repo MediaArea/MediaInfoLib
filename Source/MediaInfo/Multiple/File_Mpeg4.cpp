@@ -1066,6 +1066,7 @@ void File_Mpeg4::Streams_Finish()
 
                     //Erasing former streams data
                     stream_t NewKind=StreamKind_Last;
+                    size_t New_Count=Temp->second.Parsers[0]->Count_Get(NewKind);
                     size_t NewPos1;
                     Ztring ID;
                     vector<Ztring> StreamOrders;
@@ -1101,10 +1102,17 @@ void File_Mpeg4::Streams_Finish()
                         NewPos1=StreamPos_Last;
                         ID=Retrieve(StreamKind_Last, NewPos1, General_ID);
                         Stream_Erase(StreamKind_Last, StreamPos_Last);
+
+                        //The former stream is replaced by the streams of the parser, there may be none
+                        for (streams::iterator NextStream=Streams.begin(); NextStream!=Streams.end(); ++NextStream)
+                            if (NextStream->second.StreamKind==NewKind && NextStream->second.StreamPos>NewPos1)
+                            {
+                                NextStream->second.StreamPos--;
+                                NextStream->second.StreamPos+=New_Count;
+                            }
                     }
 
                     //After
-                    size_t New_Count=Temp->second.Parsers[0]->Count_Get(NewKind);
                     for (size_t StreamPos=0; StreamPos<New_Count; StreamPos++)
                     {
                         Stream_Prepare(NewKind, NewPos1+StreamPos);
