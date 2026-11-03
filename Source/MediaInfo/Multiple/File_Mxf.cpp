@@ -5024,8 +5024,8 @@ void File_Mxf::Streams_Finish_Conformance_RiffChunks ()
         if (Package.second.IsSourcePackage)
             PackageDescriptors.insert(Package.second.Descriptor);
 
-    //Errors, in the stream of the Sound Track if the set is referenced by its File Descriptor
-    const auto Error=[&](const int128u* InstanceUID, const char* Field, const string& Value) {
+    //Errors and warnings, in the stream of the Sound Track if the set is referenced by its File Descriptor
+    const auto Report=[&](const int128u* InstanceUID, const char* Field, const string& Value, conformance_type Level) {
         conformance_errors Errors;
         const auto Parent=InstanceUID?Parent_Get(*InstanceUID):Descriptors.end();
         if (IsSoundDescriptor(Parent))
@@ -5036,9 +5036,12 @@ void File_Mxf::Streams_Finish_Conformance_RiffChunks ()
                 Errors.StreamID=Retrieve_Const(Stream_Audio, 0, Audio_ID).To_UTF8();
         }
         Errors.Add(Value);
-        Fill_Conformance_Specification(Field, string(), Errors);
-        RiffChunks_ErrorCount++;
+        Fill_Conformance_Specification(Field, string(), Errors, Level);
+        if (Level==Conformance_Error)
+            RiffChunks_ErrorCount++;
     };
+    const auto Error=[&](const int128u* InstanceUID, const char* Field, const string& Value) { Report(InstanceUID, Field, Value, Conformance_Error); };
+    const auto Warning=[&](const int128u* InstanceUID, const char* Field, const string& Value) { Report(InstanceUID, Field, Value, Conformance_Warning); };
 
     //Generic Streams, from the parsed Generic Stream Data Elements
     map<int32u, vector<const generic_stream_data_element_key*> > GenericStreams;
@@ -5133,6 +5136,25 @@ void File_Mxf::Streams_Finish_Conformance_RiffChunks ()
                 break;
             }
         }
+    }
+
+    //Generic Stream Partitions of the RIFF Chunks physically adjacent (recommendation), from the Random Index Pack listing all partitions
+    if (RandomIndexPack_Offset!=(int64u)-1)
+    {
+        auto Entries=RandomIndexPack_Entries;
+        sort(Entries.begin(), Entries.end(), [](const randomindexpack& A, const randomindexpack& B) { return A.ByteOffset<B.ByteOffset; });
+        size_t First=(size_t)-1, Last=0, Count=0;
+        for (size_t i=0; i<Entries.size(); i++)
+        {
+            if (Definitions_BySID.find(Entries[i].BodySID)==Definitions_BySID.end())
+                continue;
+            if (First==(size_t)-1)
+                First=i;
+            Last=i;
+            Count++;
+        }
+        if (Count>1 && Last-First+1!=Count)
+            Warning(nullptr, "MXF GenericStreamPartition", "Generic Stream Partitions of the RIFF Chunks are not physically adjacent");
     }
 
     //ADM metadata parsed from a single RIFF Chunk, for checking the references to its content
