@@ -2183,7 +2183,7 @@ bool File__Analyze::FileHeader_Begin_0x000001()
 }
 
 //---------------------------------------------------------------------------
-bool File__Analyze::FileHeader_Begin_XML(XMLDocument &Document)
+bool File__Analyze::FileHeader_Begin_XML(XMLDocument &Document, bool Reject_IfMalformed)
 {
     //Element_Size
     //IMF Composition Playlist documents can be larger than 16 MB
@@ -2251,7 +2251,8 @@ bool File__Analyze::FileHeader_Begin_XML(XMLDocument &Document)
 
     if (Document.Parse(DataUTF8.c_str()))
     {
-        Reject();
+        if (Reject_IfMalformed)
+            Reject();
         return false;
     }
 

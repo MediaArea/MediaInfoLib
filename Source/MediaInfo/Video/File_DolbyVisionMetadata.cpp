@@ -103,6 +103,46 @@ static std::vector<float64> Values_Get(const char* Text)
     return Values;
 }
 
+//---------------------------------------------------------------------------
+// Root element of a malformed XML document, after the XML declaration and the comments
+static bool Root_IsMDF(const int8u* Buffer, size_t Buffer_Size)
+{
+    static const char Root_Name[] = "DolbyLabsMDF";
+    const char* Text = (const char*)Buffer;
+    const char* Text_End = Text + Buffer_Size;
+    if (Text_End - Text >= 3 && !memcmp(Text, "\xEF\xBB\xBF", 3))
+        Text += 3;
+    for (;;)
+    {
+        while (Text < Text_End && (*Text == ' ' || *Text == '\t' || *Text == '\r' || *Text == '\n'))
+            Text++;
+        if (Text_End - Text >= 2 && (!memcmp(Text, "<?", 2) || !memcmp(Text, "<!", 2)))
+        {
+            Text = (const char*)memchr(Text, '>', Text_End - Text);
+            if (!Text)
+                return false;
+            Text++;
+            continue;
+        }
+        break;
+    }
+    if (Text >= Text_End || *Text != '<')
+        return false;
+    const char* Name_Begin = ++Text;
+    while (Text < Text_End && *Text != ' ' && *Text != '\t' && *Text != '\r' && *Text != '\n' && *Text != '>' && *Text != '/')
+        Text++;
+    string Name(Name_Begin, Text - Name_Begin);
+    return !strcmp(Local(Name.c_str()), Root_Name);
+}
+
+//---------------------------------------------------------------------------
+// Versions with a known structure: 2.x (CM v2.9), 4.x and 5.x (CM v4.0), 6.x
+static bool Version_IsSupported(const string& Version)
+{
+    auto Version_Major = atoi(Version.c_str());
+    return Version_Major == 2 || (Version_Major >= 4 && Version_Major <= 6);
+}
+
 //***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
@@ -126,8 +166,27 @@ bool File_DolbyVisionMetadata::FileHeader_Begin()
         StreamSource=IsContainer; // Standalone file, not extra metadata of a container
 
     XMLDocument document;
-    if (!FileHeader_Begin_XML(document))
-       return false;
+    if (!FileHeader_Begin_XML(document, false))
+    {
+        if (!document.Error())
+            return false; // Rejected or waiting for more data
+
+        // Malformed XML, the root element is enough for detecting a Dolby Vision MDF and the issue is reported
+        if (!Root_IsMDF(Buffer, Buffer_Size))
+        {
+            Reject("DolbyVisionMetadata");
+            return false;
+        }
+        Accept("DolbyVisionMetadata");
+        Fill(Stream_General, 0, General_Format, "Dolby Vision Metadata");
+        Stream_Prepare(Stream_Video);
+        Fill(Stream_Video, 0, Video_HDR_Format, "Dolby Vision Metadata");
+        Stream_Prepare(Stream_Other);
+        Fill(Stream_Other, 0, Other_Format, "Dolby Vision MDF");
+        Fill_Conformance("DolbyVision XML", "XML is malformed (line " + std::to_string(document.ErrorLineNum()) + ')', {}, Conformance_Error, Stream_Video, 0);
+        Element_Offset=File_Size;
+        return true;
+    }
 
     string Version;
     float32 AspectRatio=0;
@@ -228,7 +287,9 @@ bool File_DolbyVisionMetadata::FileHeader_Begin()
     }
 
     // Version 6.x: tracks instead of the previous structure
+    // Dolby Vision MDF without the expected structure (e.g. unsupported version) is not rejected, the root element is enough for detecting it and the issue is reported
     const auto IsV6 = !Version.empty() && atoi(Version.c_str()) >= 6;
+    const char* Structure_Missing = nullptr;
     if (IsV6)
     {
         for (auto& MasterElement : MasterElements)
@@ -238,14 +299,22 @@ bool File_DolbyVisionMetadata::FileHeader_Begin()
             Tracks.push_back(Track);
         if (Tracks.empty())
         {
-            Reject("DolbyVisionMetadata");
-            return false;
+            if (!Is(Root, "DolbyLabsMDF"))
+            {
+                Reject("DolbyVisionMetadata");
+                return false;
+            }
+            Structure_Missing = "Track";
         }
     }
     else if (Is(Root, "DolbyLabsMDF") ? !MDF_Output : (!MasterElements[0] && !MasterElements[1] && !MasterElements[2]))
     {
-        Reject("DolbyVisionMetadata");
-        return false;
+        if (!Is(Root, "DolbyLabsMDF"))
+        {
+            Reject("DolbyVisionMetadata");
+            return false;
+        }
+        Structure_Missing = "Outputs/Output";
     }
 
     const auto IsWholeStream = Is(Root, "DolbyLabsMDF"); // Not only the data of a frame
@@ -411,7 +480,7 @@ bool File_DolbyVisionMetadata::FileHeader_Begin()
         }
     };
 
-    if (IsV6 && Is(Root, "DolbyLabsMDF"))
+    if (IsV6 && Version_IsSupported(Version) && Is(Root, "DolbyLabsMDF"))
         DV.CMVersion.From_UTF8("4.0");
     if (MDF_Output)
     {
@@ -1146,11 +1215,14 @@ bool File_DolbyVisionMetadata::FileHeader_Begin()
             DV.FrameRange_End = Shot_Out - 1;
         }
     }
-    DolbyVision_Streams_Fill(DV, DV_Source_XML);
+    if (!Structure_Missing)
+        DolbyVision_Streams_Fill(DV, DV_Source_XML);
 
     auto HasSchema = Conformance_Schema(Root, Version);
-    if (MDF_Output)
+    if (MDF_Output || Structure_Missing)
         Conformance_MDF(Root, MasterElements[1], Version, HasSchema);
+    if (Structure_Missing && Version_IsSupported(Version))
+        Fill_Conformance("DolbyVision Structure", string(Structure_Missing) + " element is missing", {}, Conformance_Error, Stream_Video, 0);
     if (IsV6)
         Conformance_V6(Root);
 
@@ -2301,6 +2373,19 @@ void File_DolbyVisionMetadata::Conformance_MDF(XMLElement* Root, XMLElement* Tra
     if (Version.empty())
     {
         Fill_Conformance("DolbyVision Version", "Version is missing", {}, Conformance_Error, Stream_Video, 0);
+        static const char Namespace_Prefix[] = "http://www.dolby.com/schemas/dvmd/";
+        if (const char* Namespace = Root->Attribute("xmlns"))
+            if (!strncmp(Namespace, Namespace_Prefix, sizeof(Namespace_Prefix) - 1))
+            {
+                string Namespace_Version(Namespace + sizeof(Namespace_Prefix) - 1);
+                if (!Version_IsSupported(Namespace_Version))
+                    Fill_Conformance("DolbyVision Namespace", "Namespace " + string(Namespace) + " is not supported", {}, Conformance_Warning, Stream_Video, 0);
+            }
+        return;
+    }
+    if (!Version_IsSupported(Version))
+    {
+        Fill_Conformance("DolbyVision Version", "Version " + Version + " is not supported", {}, Conformance_Warning, Stream_Video, 0);
         return;
     }
     const int Version_Major = atoi(Version.c_str());
