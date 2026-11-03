@@ -745,6 +745,7 @@ protected :
     int16u Code2;
     int16u Length2;
     int64u File_Size_Total; //Used only in Finish()
+    int64u IsParsingMiddle_MinOffset; //End of the essences parsed contiguously from the start of the file, (int64u)-1 after a seek
     int64u IsParsingMiddle_MaxOffset;
     bool   ProbeCaption_IsChecked;
     bool   ProbeCaption_IsInContentPackage; //After the jump of the caption probe, until the next content package
@@ -1454,6 +1455,7 @@ protected :
     #endif //defined(MEDIAINFO_REFERENCES_YES)
     void NextRandomIndexPack();
     bool BookMark_Needed();
+    bool ProbeCaption_IsPossible();
 
     //Temp
     int128u EssenceContainer_FromPartitionMetadata;

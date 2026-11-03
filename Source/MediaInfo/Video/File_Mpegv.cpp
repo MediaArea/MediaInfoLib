@@ -2081,6 +2081,13 @@ bool File_Mpegv::Demux_UnpacketizeContainer_Test()
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+void File_Mpegv::UserData_Search()
+{
+    Streams[0xB2].Searching_Payload=true;
+    EOF_AlreadyDetected=true; //As if the parsing is complete, Detect_EOF() would disable it again if there are few frames
+}
+
+//---------------------------------------------------------------------------
 void File_Mpegv::Read_Buffer_Unsynched()
 {
     for (int8u Pos=0x00; Pos<0xB9; Pos++)

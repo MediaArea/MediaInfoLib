@@ -47,6 +47,9 @@ public :
     File_Mpegv();
     ~File_Mpegv();
 
+    //Captions are still searched after the fill
+    void UserData_Search();
+
 private :
     //Streams management
     void Streams_Accept();

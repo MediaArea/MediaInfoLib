@@ -2074,6 +2074,7 @@ File_Mxf::File_Mxf()
     Buffer_Header_Size=0;
     Preface_Current.hi=0;
     Preface_Current.lo=0;
+    IsParsingMiddle_MinOffset=0;
     IsParsingMiddle_MaxOffset=(int64u)-1;
     ProbeCaption_IsChecked=false;
     ProbeCaption_IsInContentPackage=false;
@@ -2559,6 +2560,15 @@ void File_Mxf::Streams_Finish()
             return;
         }
     #endif //MEDIAINFO_NEXTPACKET && defined(MEDIAINFO_REFERENCES_YES)
+
+    //Parsers of the essences were kept for a caption probe continuing the parsing
+    if (IsParsingEnd && ProbeCaption_IsPossible())
+    {
+        for (const auto& Essence : Essences)
+            for (const auto& Parser : Essence.second.Parsers)
+                Parser->Open_Buffer_Unsynch();
+        IsParsingEnd=false;
+    }
 
     //Per stream
     for (essences::iterator Essence=Essences.begin(); Essence!=Essences.end(); ++Essence)
@@ -11087,14 +11097,15 @@ void File_Mxf::Position_Update(int64u FutureFileOffset, bool UnsynchParsers)
             FrameInfo.PTS-=Delay;
     }
 
-    for (essences::iterator Essence=Essences.begin(); Essence!=Essences.end(); ++Essence)
-        for (parsers::iterator Parser=Essence->second.Parsers.begin(); Parser!=Essence->second.Parsers.end(); ++Parser)
-        {
-            if (UnsynchParsers)
-                (*Parser)->Open_Buffer_Unsynch();
-            Essence->second.FrameInfo=FrameInfo;
-            Essence->second.Frame_Count_NotParsedIncluded=Frame_Count_NotParsedIncluded;
-        }
+    if (!IsParsingEnd || !ProbeCaption_IsPossible()) //Else essences are not parsed, the parsers and the exact position are kept for a caption probe continuing the parsing, parsers are reset in BookMark_Needed() or Streams_Finish() else
+        for (essences::iterator Essence=Essences.begin(); Essence!=Essences.end(); ++Essence)
+            for (parsers::iterator Parser=Essence->second.Parsers.begin(); Parser!=Essence->second.Parsers.end(); ++Parser)
+            {
+                if (UnsynchParsers)
+                    (*Parser)->Open_Buffer_Unsynch();
+                Essence->second.FrameInfo=FrameInfo;
+                Essence->second.Frame_Count_NotParsedIncluded=Frame_Count_NotParsedIncluded;
+            }
 
     Partitions_Pos=0;
     if (Partitions_IsCalculatingHeaderByteCount)
@@ -11186,6 +11197,8 @@ size_t File_Mxf::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
         if (!DetectDuration())
             return 0;
     }
+    IsParsingMiddle_MinOffset=(int64u)-1; //Essences are not parsed contiguously from now, a caption probe can not continue the parsing
+    ProbeCaption_IsInContentPackage=false;
 
     //Config
     if (!Essences_FirstEssence_Parsed)
@@ -12239,6 +12252,8 @@ void File_Mxf::Data_Parse()
             NextRandomIndexPack();
             return;
         }
+        if (IsParsingMiddle_MaxOffset==(int64u)-1 && IsParsingMiddle_MinOffset!=(int64u)-1)
+            IsParsingMiddle_MinOffset=File_Offset+Buffer_Offset+Element_Size; //The caption probe must not give again this content to the parsers, they would count it twice
 
         //The jump of the caption probe is usually in the middle of a content package, its frame is not the frame of the next content package
         if (ProbeCaption_IsInContentPackage && Code_Compare4==Essences_UsedForFrameCount && !Buffer_End)
@@ -22997,6 +23012,12 @@ void File_Mxf::NextRandomIndexPack()
 }
 
 //---------------------------------------------------------------------------
+bool File_Mxf::ProbeCaption_IsPossible()
+{
+    return MayHaveCaptionsInStream && !IsSub && Config->File_ProbeCaption_Get(ParserName).Start_Type!=config_probe_none;
+}
+
+//---------------------------------------------------------------------------
 bool File_Mxf::BookMark_Needed()
 {
     Frame_Count_NotParsedIncluded=(int64u)-1;
@@ -23125,15 +23146,35 @@ bool File_Mxf::BookMark_Needed()
             auto ProbeCaptionByteEnd=(ProbeCaptionBytePos<ContentEnd && ProbeCaptionByteDur<ContentEnd-ProbeCaptionBytePos)?(ProbeCaptionBytePos+ProbeCaptionByteDur):ContentEnd;
             if (ProbeCaptionBytePos<HeaderSize)
                 ProbeCaptionBytePos=HeaderSize;
+            auto IsContinuing=IsParsingMiddle_MinOffset!=(int64u)-1 && ProbeCaptionBytePos<=IsParsingMiddle_MinOffset; //Content already parsed is not parsed twice
+            if (IsContinuing)
+                ProbeCaptionBytePos=IsParsingMiddle_MinOffset;
             if (ProbeCaptionBytePos<ProbeCaptionByteEnd)
             {
+                #if MEDIAINFO_DEMUX || MEDIAINFO_SEEK
+                    if (IsContinuing && Clip_Begin<ProbeCaptionBytePos && ProbeCaptionBytePos<Clip_End) //No element header at this position
+                    {
+                        Buffer_Begin=Clip_Begin;
+                        Buffer_End=Clip_End;
+                        Buffer_Header_Size=Clip_Header_Size;
+                        Code=Clip_Code;
+                        MustSynchronize=false;
+                    }
+                #endif //MEDIAINFO_DEMUX || MEDIAINFO_SEEK
                 IsParsingMiddle_MaxOffset=ProbeCaptionByteEnd;
                 GoTo(ProbeCaptionBytePos);
+                IsParsingEnd=IsContinuing; //Parsers of the essences and their position are kept if continuing, else they are reset and the position comes from the file position
                 Open_Buffer_Unsynch();
-                ProbeCaption_IsInContentPackage=true;
+                ProbeCaption_IsInContentPackage=!IsContinuing;
                 IsParsingEnd=false;
                 IsCheckingRandomAccessTable=false;
                 Streams_Count=(size_t)-1;
+                #if defined(MEDIAINFO_MPEGV_YES)
+                    for (auto& Essence : Essences)
+                        for (auto Parser : Essence.second.Parsers)
+                            if (Parser->ParserName=="MPEG Video")
+                                ((File_Mpegv*)Parser)->UserData_Search(); //Else disabled up to the next sequence header after the fill
+                #endif //defined(MEDIAINFO_MPEGV_YES)
             }
         }
     }
