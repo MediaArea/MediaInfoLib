@@ -165,6 +165,13 @@ jobs:
         run: |
           git -C .. clone --depth=1 https://github.com/MediaArea/zlib.git
           sh .github/clone_branch.sh ZenLib ../ZenLib
+      - name: Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: 3.x
+          architecture: ${{ matrix.vcvarsall }} # Same architecture as the DLL
+      - name: pymediainfo
+        run: python -m pip install pymediainfo
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v3
         with:
