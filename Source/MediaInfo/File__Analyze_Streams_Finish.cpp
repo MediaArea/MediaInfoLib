@@ -40,6 +40,7 @@
     #ifndef WINDOWS
     //ZenLib has File::Copy only for Windows for the moment. //TODO: support correctly (including meta)
     #include <fstream>
+    #include "ZenLib/OS_Utils.h"
     #endif //WINDOWS
 #endif //MEDIAINFO_FIXITY
 #include <algorithm>
@@ -2868,10 +2869,10 @@ bool File__Analyze::FixFile(int64u FileOffsetForWriting, const int8u* ToWrite, c
     //ZenLib has File::Copy only for Windows for the moment. //TODO: support correctly (including meta)
     if (!File::Exists(Config->File_Names[0]+__T(".Fixed")))
     {
-        std::ofstream  Dest(Ztring(Config->File_Names[0]+__T(".Fixed")).To_Local().c_str(), std::ios::binary);
+        std::ofstream  Dest(FileName_To_Native(Config->File_Names[0]+__T(".Fixed")).c_str(), std::ios::binary);
         if (Dest.fail())
             return false;
-        std::ifstream  Source(Config->File_Names[0].To_Local().c_str(), std::ios::binary);
+        std::ifstream  Source(FileName_To_Native(Config->File_Names[0]).c_str(), std::ios::binary);
         if (Source.fail())
             return false;
         Dest << Source.rdbuf();

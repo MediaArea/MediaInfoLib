@@ -20,6 +20,7 @@
 #include <process.h>
 #include <wchar.h>
 #else
+#include "ZenLib/OS_Utils.h"
 #include <sys/wait.h>
 #include <unistd.h>
 #include <cstring>
@@ -79,7 +80,7 @@ Ztring External_Command_Exists(const ZtringList& PossibleNames)
     const Ztring EnvSep = __T(";");
     const Ztring PathSep = __T("\\");
     #else
-    Path.From_Local(getenv("PATH"));
+    Path=FileName_From_Native(getenv("PATH"));
     const Ztring EnvSep=__T(":");
     const Ztring PathSep=__T("/");
     #endif //WINDOWS
@@ -110,7 +111,7 @@ Ztring External_Command_Exists(const ZtringList& PossibleNames)
             if (_wstat64(FullPath.To_Unicode().c_str(), &Buf)==0 && Buf.st_mode&S_IFREG && Buf.st_mode&S_IEXEC)
             #else
             struct stat Buf;
-            if (stat(FullPath.To_Local().c_str(), &Buf)==0 && Buf.st_mode&S_IFREG && Buf.st_mode&S_IXUSR)
+            if (stat(FileName_To_Native(FullPath).c_str(), &Buf)==0 && Buf.st_mode&S_IFREG && Buf.st_mode&S_IXUSR)
             #endif //WINDOWS
                 return FullPath;
 
@@ -296,7 +297,7 @@ int External_Command_Run(const Ztring& Command, const ZtringList& Arguments, Ztr
         char** ArgumentsArr=new char*[Count+1]; // Add final nullptr
         for (size_t Pos=0; Pos<Count; Pos++)
         {
-            string Argument=(Pos==0)?Command.To_Local():Arguments[Pos-1].To_Local();
+            string Argument=FileName_To_Native((Pos==0)?Command:Arguments[Pos-1]);
 
             ArgumentsArr[Pos]=new char[Argument.size()+1];
             memcpy(ArgumentsArr[Pos], Argument.c_str(), Argument.size());
@@ -304,7 +305,7 @@ int External_Command_Run(const Ztring& Command, const ZtringList& Arguments, Ztr
         }
         ArgumentsArr[Count]=nullptr;
 
-        execvp(Command.To_UTF8().c_str(), ArgumentsArr);
+        execvp(ArgumentsArr[0], ArgumentsArr);
 
         for (size_t Pos=0; Pos<Count; Pos++)
             delete[] ArgumentsArr[Pos];
