@@ -1845,7 +1845,7 @@ std::bitset<32> MediaInfo_Internal::Open_NextPacket ()
     CriticalSectionLocker CSL(CS);
 
     bool Demux_EventWasSent=false;
-    if (Info==NULL || !Info->Status[File__Analyze::IsFinished])
+    if (Info && !Info->Status[File__Analyze::IsFinished]) //There is no more Info after the end of the parsing
     {
         #if !defined(MEDIAINFO_READER_NO)
             if (Reader)
