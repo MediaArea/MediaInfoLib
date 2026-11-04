@@ -2091,6 +2091,7 @@ File_Mxf::File_Mxf()
     IdIsAlwaysSame_Offset=0;
     PartitionMetadata_PreviousPartition=(int64u)-1;
     PartitionMetadata_FooterPartition=(int64u)-1;
+    PartitionMetadata_BodySID=0;
     RandomIndexPacks_MaxOffset=(int64u)-1;
     DTS_Delay=0;
     SDTI_TimeCode_RepetitionCount=0;
@@ -12131,7 +12132,43 @@ void File_Mxf::Header_Parse()
 
     if (Buffer_Offset+Element_Offset+Length>(size_t)-1 || Buffer_Offset+(size_t)(Element_Offset+Length)>Buffer_Size) //Not complete
     {
-        if (Length>File_Size/2) //Divided by 2 for testing if this is a big chunk = Clip based and not frames.
+        auto IsTooBig=Element_Offset+Length>Buffer_MaximumSize; //Header_Fill_Size() does not accept it and parsing ends if the buffer is over the limit
+        const auto IsEssence=(Code.hi>>8)==0x060E2B34010201LL;
+        if (!IsEssence)
+        {
+            const auto Offset=File_Offset+Buffer_Offset+Element_Offset;
+            const auto IsGenericStream=(Code.hi>>8)==0x060E2B34010101LL && (Code.lo>>40)==Elements::MXFGenericStreamDataElementKey>>40;
+            const auto IsParsed=IsGenericStream && MXFGenericStreamDataElementKey.find(Offset)!=MXFGenericStreamDataElementKey.end();
+            const auto IsNeeded=!IsParsed && Element_Offset+Length<=256*1024*1024 && ((Code.hi>>24)==0x060E2B3402LL || (IsGenericStream && ExtraMetadata_SID.find(PartitionMetadata_BodySID)!=ExtraMetadata_SID.end())); //Metadata to parse, it needs all the element in the buffer
+            if (IsNeeded && IsTooBig)
+            {
+                Buffer_MaximumSize=(size_t)(Element_Offset+Length);
+                Buffer_PaddingBytes+=Element_Offset+Length; //Not counted as content in the parsing limit
+                IsTooBig=false;
+            }
+            else if (!IsNeeded && (IsTooBig || IsParsed) && !IsSub
+                #if MEDIAINFO_HASH
+                 && !Hash
+                #endif //MEDIAINFO_HASH
+            )
+            {
+                //No need of this element, jumping after it
+                Buffer_PaddingBytes+=Element_Offset+Length; //Not counted as content in the parsing limit
+                if (IsFiller)
+                    DataMustAlwaysBeComplete=true;
+                if (IsParsingMiddle_MaxOffset!=(int64u)-1 && Length>=IsParsingMiddle_MaxOffset-Offset)
+                    IsParsingMiddle_MaxOffset=File_Offset+Buffer_Offset; //Nothing more in the window of the caption probe
+                else if (Length<File_Size-Offset)
+                    GoTo(Offset+Length);
+                else
+                    GoToFromEnd(0); //Up to the end of the file or truncated
+                Element_WaitForMoreData();
+                return;
+            }
+        }
+
+        const auto IsClip=IsTooBig || (IsEssence && Length>File_Size/2); //Divided by 2 for testing if this is a big chunk = Clip based and not frames.
+        if (IsClip)
         {
             //Calculating the byte count not included in seek information (partition, index...)
             int64u StreamOffset_Offset;
@@ -12169,7 +12206,7 @@ void File_Mxf::Header_Parse()
 
         if (Buffer_Begin==(int64u)-1)
         {
-            if (Length<=File_Size/2) //Divided by 2 for testing if this is a big chunk = Clip based and not frames.))
+            if (!IsClip || Length<=File_Size/2)
             {
                 if (File_Buffer_Size_Hint_Pointer)
                 {
@@ -15195,6 +15232,13 @@ void File_Mxf::GenericStreamID()
 //---------------------------------------------------------------------------
 void File_Mxf::MXFGenericStreamDataElementKey_09_01()
 {
+    //Too big, read only because all the bytes are needed e.g. for a hash
+    if (Buffer_End)
+    {
+        Skip_XX(Element_Size,                                   "Data");
+        return;
+    }
+
     // Check if already parsed
     auto Offset=File_Offset+Buffer_Offset+Element_Offset;
     auto Found=MXFGenericStreamDataElementKey.find(Offset);
@@ -18706,6 +18750,7 @@ void File_Mxf::PartitionMetadata()
     }
 
     PartitionPack_Parsed=true;
+    PartitionMetadata_BodySID=BodySID;
     Partitions_IsFooter=(Code.lo&0x00FF0000)==0x00040000;
     #if MEDIAINFO_CONFORMANCE
         GenericStreamPartition_PackEnd=(Code.lo&0x00FFFF00)==0x00031100?(File_Offset+Buffer_Offset+Element_Size):(int64u)-1;

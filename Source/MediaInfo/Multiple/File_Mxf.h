@@ -1470,6 +1470,7 @@ protected :
     int128u EssenceContainer_FromPartitionMetadata;
     int64u PartitionMetadata_PreviousPartition;
     int64u PartitionMetadata_FooterPartition;
+    int32u PartitionMetadata_BodySID;
     int64u RandomIndexPacks_MaxOffset;
     mxftimecode MxfTimeCodeForDelay;
     mxftimecode MxfTimeCodeMaterial;
