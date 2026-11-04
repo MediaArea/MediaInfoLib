@@ -2500,12 +2500,12 @@ void File_Mpeg4::mdat_ProbeCaption()
     for (auto& Stream : Streams)
     {
         auto HandleAllContent = Stream.second.IsCaption || (!Stream.second.Parsers.empty() && Stream.second.Parsers.front()->MustExtendParsingDuration);
-        auto HasContentLeft = HandleAllContent && std::any_of(mdat_Pos_Caption.begin(), mdat_Pos_Caption.end(), [&](const mdat_Pos_Type& Item) { //A stream entirely parsed is not concerned
+        const auto NextSample = !HandleAllContent ? mdat_Pos_Caption.end() : std::find_if(mdat_Pos_Caption.begin(), mdat_Pos_Caption.end(), [&](const mdat_Pos_Type& Item) { //A stream entirely parsed is not concerned
             return Item.StreamID==Stream.first && Item.Offset>=Stream.second.ParsedEndOffset && Item.Offset+Item.Size<=File_Size;
         });
-        if (!Stream.second.Parsers.empty() && HasContentLeft)
+        if (!Stream.second.Parsers.empty() && NextSample!=mdat_Pos_Caption.end())
         {
-            Stream.second.Parsers.front()->Open_Buffer_Unsynch();
+            auto IsContinuing=false;
             int64u ProbeCaption_mdatPos=(int64u)-1;
             int64u ProbeCaption_mdatDur=(int64u)-1;
             if (Stream.second.stts_Duration && Stream.second.stts_FrameCount && Stream.second.mdhd_TimeScale)
@@ -2562,7 +2562,10 @@ void File_Mpeg4::mdat_ProbeCaption()
                                 ProbeCaption_OffsetEnd=Item.Offset+1;
                         }
                 ProbeCaption_Windows[Stream.first]={ProbeCaption_mdatPos, ProbeCaption_mdatPosEnd};
+                IsContinuing=NextSample->SamplePos>=ProbeCaption_mdatPos && NextSample->SamplePos<ProbeCaption_mdatPosEnd && (CanGoBack || NextSample->Offset>=File_Offset+Buffer_Offset+Element_Size);
             }
+            if (!IsContinuing || Stream.second.Parsers.front()->Status[IsFinished]) //Nothing to reset if no sample is skipped, except for a parser which stopped
+                Stream.second.Parsers.front()->Open_Buffer_Unsynch();
         }
         if (!HandleAllContent || !CanGoBack)
             Stream.second.ParsedEndOffset=File_Offset+Buffer_Offset+Element_Size; //Going back is only for the samples of the probed streams
