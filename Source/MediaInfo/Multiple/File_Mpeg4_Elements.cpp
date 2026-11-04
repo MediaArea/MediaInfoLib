@@ -2475,18 +2475,16 @@ void File_Mpeg4::mdat_xxxx()
     //Next piece of data
     Element_Offset=Element_Size;
     Element_Show();
-    if (mdat_Pos_Temp==mdat_Pos_Max && mdat_Pos_NormalParsing && Config->ParseSpeed<1 && !mdat_Pos_Caption.empty())
-        mdat_ProbeCaption(); //Whatever the reason for the end of the first pass, e.g. a stream never filled
+    if (mdat_Pos_NormalParsing && Config->ParseSpeed<1 && !mdat_Pos_Caption.empty() && (mdat_Pos_Temp==mdat_Pos_Max || mdat_Pos_Temp->Offset+mdat_Pos_Temp->Size>File_Size))
+        mdat_ProbeCaption(); //Whatever the reason for the end of the first pass, e.g. a stream never filled or a truncated file
     mdat_StreamJump();
 }
 
 //---------------------------------------------------------------------------
 void File_Mpeg4::mdat_ProbeCaption()
 {
-    mdat_Pos=std::move(mdat_Pos_Caption);
-    mdat_Pos_Caption.clear();
     std::map<int32u, int64u> SamplePos_Next;
-    for (auto& Item : mdat_Pos) //Each stream is still in sample order
+    for (auto& Item : mdat_Pos_Caption) //Each stream is still in sample order
     {
         const auto& stsz=Streams[Item.StreamID].stsz;
         auto& SamplePos=SamplePos_Next[Item.StreamID];
@@ -2494,7 +2492,7 @@ void File_Mpeg4::mdat_ProbeCaption()
             SamplePos++;
         Item.SamplePos=SamplePos++;
     }
-    std::sort(mdat_Pos.begin(), mdat_Pos.end(), &mdat_pos_sort);
+    std::sort(mdat_Pos_Caption.begin(), mdat_Pos_Caption.end(), &mdat_pos_sort);
     const auto CanGoBack=!IsSub && Config->File_IsSeekable_Get();
     std::map<int32u, std::pair<int64u, int64u>> ProbeCaption_Windows; //In sample numbers, per stream
     int64u ProbeCaption_OffsetMin=(int64u)-1;
@@ -2502,8 +2500,8 @@ void File_Mpeg4::mdat_ProbeCaption()
     for (auto& Stream : Streams)
     {
         auto HandleAllContent = Stream.second.IsCaption || (!Stream.second.Parsers.empty() && Stream.second.Parsers.front()->MustExtendParsingDuration);
-        auto HasContentLeft = HandleAllContent && std::any_of(mdat_Pos.begin(), mdat_Pos.end(), [&](const mdat_Pos_Type& Item) { //A stream entirely parsed is not concerned
-            return Item.StreamID==Stream.first && Item.Offset>=Stream.second.ParsedEndOffset;
+        auto HasContentLeft = HandleAllContent && std::any_of(mdat_Pos_Caption.begin(), mdat_Pos_Caption.end(), [&](const mdat_Pos_Type& Item) { //A stream entirely parsed is not concerned
+            return Item.StreamID==Stream.first && Item.Offset>=Stream.second.ParsedEndOffset && Item.Offset+Item.Size<=File_Size;
         });
         if (!Stream.second.Parsers.empty() && HasContentLeft)
         {
@@ -2555,7 +2553,7 @@ void File_Mpeg4::mdat_ProbeCaption()
                 //Probe window limited to the stream content, whatever its size
                 auto ProbeCaption_mdatPosEnd=ProbeCaption_mdatPos+ProbeCaption_mdatDur;
                 if (ProbeCaption_Windows.empty()) //Byte range for the streams without window
-                    for (const auto& Item : mdat_Pos)
+                    for (const auto& Item : mdat_Pos_Caption)
                         if (Item.StreamID==Stream.first && Item.SamplePos>=ProbeCaption_mdatPos && Item.SamplePos<ProbeCaption_mdatPosEnd)
                         {
                             if (ProbeCaption_OffsetMin>Item.Offset)
@@ -2569,7 +2567,7 @@ void File_Mpeg4::mdat_ProbeCaption()
         if (!HandleAllContent || !CanGoBack)
             Stream.second.ParsedEndOffset=File_Offset+Buffer_Offset+Element_Size; //Going back is only for the samples of the probed streams
     }
-    mdat_Pos.erase(std::remove_if(mdat_Pos.begin(), mdat_Pos.end(), [&](const mdat_Pos_Type& Item) { //Each stream continues after its last parsed sample, the streams may have been filled at different places
+    mdat_Pos_Caption.erase(std::remove_if(mdat_Pos_Caption.begin(), mdat_Pos_Caption.end(), [&](const mdat_Pos_Type& Item) { //Each stream continues after its last parsed sample, the streams may have been filled at different places
         const auto& Stream_Item=Streams[Item.StreamID];
         if (Stream_Item.IsPriorityStream || Item.Offset<Stream_Item.ParsedEndOffset)
             return true;
@@ -2577,7 +2575,11 @@ void File_Mpeg4::mdat_ProbeCaption()
         if (Window==ProbeCaption_Windows.end())
             return Item.Offset<ProbeCaption_OffsetMin || Item.Offset>=ProbeCaption_OffsetEnd; //Without its own window, a stream is parsed in the byte range of the first window
         return Item.SamplePos<Window->second.first || Item.SamplePos>=Window->second.second;
-    }), mdat_Pos.end());
+    }), mdat_Pos_Caption.end());
+    if (mdat_Pos_Caption.empty() && mdat_Pos_Temp!=mdat_Pos_Max)
+        return; //Nothing to probe, the first pass continues with what remains in a truncated file
+    mdat_Pos=std::move(mdat_Pos_Caption);
+    mdat_Pos_Caption.clear();
     #if MEDIAINFO_DEMUX
         //Frame position of each stream, it counts the parsed samples and must not ignore the ones which are skipped
         for (auto& Stream : Streams)
