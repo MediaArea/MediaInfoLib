@@ -14128,6 +14128,7 @@ void File_Mxf::RandomIndexPack()
         FILLING_BEGIN();
             if (!RandomIndexPacks_AlreadyParsed)
                 RandomIndexPack_Entries.push_back(RandomIndexPack);
+            RandomIndexPack.ByteOffset+=Partitions.empty()?0:Partitions.front().StreamOffset; //Byte offsets are relative to the Header Partition
             if (!RandomIndexPacks_AlreadyParsed && PartitionPack_AlreadyParsed.find(RandomIndexPack.ByteOffset)==PartitionPack_AlreadyParsed.end())
                 RandomIndexPacks.push_back(RandomIndexPack);
             if (!RandomIndexPacks_AlreadyParsed && ExtraMetadata_SID.find(RandomIndexPack.BodySID)!=ExtraMetadata_SID.end() && RandomIndexPack.ByteOffset<ExtraMetadata_Offset)
@@ -18650,10 +18651,11 @@ void File_Mxf::PartitionMetadata()
     #if MEDIAINFO_CONFORMANCE
         GenericStreamPartition_PackEnd=(Code.lo&0x00FFFF00)==0x00031100?(File_Offset+Buffer_Offset+Element_Size):(int64u)-1;
     #endif //MEDIAINFO_CONFORMANCE
-    if (PreviousPartition!=File_Offset+Buffer_Offset-Header_Size)
-        PartitionMetadata_PreviousPartition=PreviousPartition;
+    const auto RunIn=Partitions.empty()?(File_Offset+Buffer_Offset-Header_Size):Partitions.front().StreamOffset; //Byte offsets are relative to the Header Partition
+    if (PreviousPartition+RunIn!=File_Offset+Buffer_Offset-Header_Size)
+        PartitionMetadata_PreviousPartition=PreviousPartition+RunIn;
     if (FooterPartition)
-        PartitionMetadata_FooterPartition=FooterPartition;
+        PartitionMetadata_FooterPartition=FooterPartition+RunIn;
     partition Partition;
     Partition.StreamOffset=File_Offset+Buffer_Offset-Header_Size;
     const auto Partition_Next=lower_bound(Partitions.begin(), Partitions.end(), Partition); //Partitions are sorted by offset
@@ -23223,7 +23225,7 @@ bool File_Mxf::BookMark_Needed()
             HeaderSize=FirstPartition.PartitionPackByteCount+FirstPartition.HeaderByteCount+FirstPartition.IndexByteCount;
             int64u FooterSize=0;
             const auto& LastPartition=Partitions.back();
-            if (FirstPartition.FooterPartition && LastPartition.StreamOffset==FirstPartition.FooterPartition)
+            if (FirstPartition.FooterPartition && LastPartition.StreamOffset-FirstPartition.StreamOffset==FirstPartition.FooterPartition)
                 FooterSize=File_Size-LastPartition.StreamOffset;
             if (HeaderSize>File_Size || FooterSize>File_Size-HeaderSize) //Header and footer sizes not coherent with the file size, content after the header partition pack
             {
