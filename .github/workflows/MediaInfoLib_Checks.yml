@@ -47,6 +47,9 @@ jobs:
           - environement: gcc
             CXXFLAGS: ""
             RUN_TESTS: "all"
+          - environement: utf8
+            CXXFLAGS: ""
+            RUN_TESTS: "all"
           - environement: cmake
             CXXFLAGS: ""
             RUN_TESTS: "all"
