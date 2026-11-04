@@ -632,6 +632,15 @@ bool File_Vc3::Header_Begin()
     if (Buffer_Offset+0x00000280>Buffer_Size)
         return false;
 
+    //Padding after a frame, it is not another frame
+    if (IsSub && Frame_Count && BigEndian2int32u(Buffer+Buffer_Offset)<0x00000280)
+    {
+        if (!Status[IsFilled] && Frame_Count>=Frame_Count_Valid)
+            Fill("VC-3");
+        Buffer_Offset=Buffer_Size;
+        return false;
+    }
+
     return true;
 }
 
