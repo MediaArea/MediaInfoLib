@@ -12588,8 +12588,9 @@ void File_Mxf::Data_Parse()
                     ChooseParser__FromCodingScheme(Essence, Descriptor); //Searching by the descriptor
                     if (Essence->second.Parsers.empty())
                         ChooseParser__FromEssence(Essence, Descriptor); //Searching by the track identifier
-                    if (Essence->second.Parsers.size()==1 && Descriptor->second.Infos["Format_Settings_Wrapping"].rfind(__T("Frame"), 0)==0 || Essence->second.Infos["Format_Settings_Wrapping"].rfind(__T("Frame"), 0)==0) //TODO: Parsers.size()==1 is for avoiding Dolby E issues, it should be fixed instead
-                        Essence->second.Parsers[0]->FrameIsAlwaysComplete=true;
+                    if ((Essence->second.Parsers.size()==1 || Essence->second.StreamKind==Stream_Video) && Descriptor->second.Infos["Format_Settings_Wrapping"].rfind(__T("Frame"), 0)==0 || Essence->second.Infos["Format_Settings_Wrapping"].rfind(__T("Frame"), 0)==0) //TODO: Parsers.size()==1 is for avoiding Dolby E issues, it should be fixed instead
+                        for (const auto Parser : Essence->second.Parsers)
+                            Parser->FrameIsAlwaysComplete=true;
 
                     #ifdef MEDIAINFO_DEMUX
                         if (Ztring().From_UTF8(Mxf_EssenceContainer(Descriptor->second.EssenceContainer))==__T("AVC"))
