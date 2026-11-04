@@ -14220,7 +14220,11 @@ void File_Mxf::RandomIndexPack()
             if (!RandomIndexPacks_AlreadyParsed && IsInFile && PartitionPack_AlreadyParsed.find(RandomIndexPack.ByteOffset)==PartitionPack_AlreadyParsed.end())
                 RandomIndexPacks.push_back(RandomIndexPack);
             if (!RandomIndexPacks_AlreadyParsed && IsInFile && ExtraMetadata_SID.find(RandomIndexPack.BodySID)!=ExtraMetadata_SID.end() && RandomIndexPack.ByteOffset<ExtraMetadata_Offset)
-                ExtraMetadata_Offset=RandomIndexPack.ByteOffset;
+            {
+                const auto Elem=MXFGenericStreamDataElementKey.lower_bound(RandomIndexPack.ByteOffset);
+                if (Config->ParseSpeed<1 || Elem==MXFGenericStreamDataElementKey.end() || Elem->second.SID!=RandomIndexPack.BodySID) //Else already parsed by the full parsing, it would be read a second time. Below full parsing the jump is also how the index tables after the essence are reached
+                    ExtraMetadata_Offset=RandomIndexPack.ByteOffset;
+            }
         FILLING_END();
     }
     int32u Length;
