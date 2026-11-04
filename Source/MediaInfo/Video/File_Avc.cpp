@@ -3585,7 +3585,7 @@ void File_Avc::sei_message_user_data_registered_itu_t_t35_GA94_03_Delayed(int32u
             {
                 GA94_03_Parser->FrameInfo.PCR=FrameInfo.PCR;
                 GA94_03_Parser->FrameInfo.PTS=FrameInfo.PTS;
-                GA94_03_Parser->FrameInfo.DTS=FrameInfo.DTS;
+                GA94_03_Parser->FrameInfo.DTS=(IsSub || tc)?FrameInfo.DTS:((int64u)-1); //No time in a raw stream without frame rate
             }
             #if MEDIAINFO_DEMUX
                 if (TemporalReferences[TemporalReferences_Min]->GA94_03)
