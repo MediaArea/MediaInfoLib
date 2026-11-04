@@ -860,6 +860,7 @@ protected :
         std::map<std::string, Ztring> Infos;
         int64u Stream_Size;
         int64u Element_Size_Constant; //Size of parsed elements if it is always the same, 0 if no element is parsed, (int64u)-1 if not constant
+        int64u Element_Count; //Count of parsed complete elements
         int32u TrackID;
         bool   TrackID_WasLookedFor;
         bool   Stream_Finish_Done;
@@ -882,6 +883,7 @@ protected :
             StreamPos_Initial=(size_t)-1;
             Stream_Size=(int64u)-1;
             Element_Size_Constant=0;
+            Element_Count=0;
             TrackID=(int32u)-1;
             TrackID_WasLookedFor=false;
             Stream_Finish_Done=false;
@@ -1153,11 +1155,17 @@ protected :
         #endif //MEDIAINFO_CONFORMANCE
         std::vector<int128u> StructuralComponents; //Sequence from MaterialPackage only
         mxftimecode MxfTimeCode;
+        #if MEDIAINFO_ADVANCED
+            bool IsTruncated; //Duration is the count of elements in the file, not the declared one
+        #endif //MEDIAINFO_ADVANCED
 
         component()
         {
             Duration=(int64u)-1;
             SourceTrackID=(int32u)-1;
+            #if MEDIAINFO_ADVANCED
+                IsTruncated=false;
+            #endif //MEDIAINFO_ADVANCED
             #if MEDIAINFO_CONFORMANCE
                 SourceTrackID_Offset=(int64u)-1;
             #endif //MEDIAINFO_CONFORMANCE
@@ -1496,6 +1504,7 @@ protected :
     systemscheme1s SystemScheme1s;
     #if MEDIAINFO_ADVANCED
         int64u Footer_Position;
+        float64 Truncated_Duration;
     #endif //MEDIAINFO_ADVANCED
     #if defined(MEDIAINFO_ANCILLARY_YES)
         File_Ancillary* Ancillary;

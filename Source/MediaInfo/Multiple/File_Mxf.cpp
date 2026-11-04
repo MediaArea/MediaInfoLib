@@ -2136,6 +2136,7 @@ File_Mxf::File_Mxf()
     IndexTable_NPE=0;
     #if MEDIAINFO_ADVANCED
         Footer_Position=(int64u)-1;
+        Truncated_Duration=0;
     #endif //MEDIAINFO_ADVANCED
     #if MEDIAINFO_NEXTPACKET
         ReferenceFiles_IsParsing=false;
@@ -2641,6 +2642,72 @@ void File_Mxf::Streams_Finish()
                 }
         }
     }
+
+    //Frames really present in a truncated file (no footer), if it is parsed up to its end
+    #if MEDIAINFO_ADVANCED
+        if (Config->ParseSpeed>=1 && Footer_Position==(int64u)-1 && !Config->File_IgnoreEditsBefore && Config->File_IgnoreEditsAfter==(int64u)-1
+            #if MEDIAINFO_NEXTPACKET
+                && !Config->NextPacket_Get() //Elements may be skipped by a seek
+            #endif //MEDIAINFO_NEXTPACKET
+        )
+        {
+            //Complete elements of frame wrapped video and audio, one per content package, or frames of the parser for a clip
+            struct track_count
+            {
+                component* Component;
+                float64 EditRate;
+                int64u Count;
+            };
+            std::vector<track_count> TrackCounts;
+            float64 ContentPackage_Rate=0;
+            float64 ContentPackage_Size=0; //Declared size of an edit unit of the audio tracks
+            bool HasVideo=false;
+            int64u Count_Max=0;
+            for (const auto& Track : Tracks)
+            {
+                const auto Essence=Essences.find(Track.second.TrackNumber);
+                const auto Component=Components.find(Track.second.Sequence);
+                const auto EditRate=Track.second.EditRate_Real?Track.second.EditRate_Real:Track.second.EditRate;
+                auto Descriptor=Descriptor_FromTrackID(Track.second.TrackID);
+                if (Descriptor==Descriptors.end())
+                    Descriptor=Descriptor_Single();
+                if (Descriptor!=Descriptors.end() && Descriptor->second.StreamKind==Stream_Video)
+                    HasVideo=true;
+                if (Essence==Essences.end() || Component==Components.end() || Component->second.Duration==(int64u)-1 || !EditRate || Descriptor==Descriptors.end() || (Descriptor->second.StreamKind!=Stream_Video && Descriptor->second.StreamKind!=Stream_Audio))
+                    continue;
+                const auto Wrapping=Descriptor->second.Infos.find("Format_Settings_Wrapping");
+                int64u Count=(Wrapping!=Descriptor->second.Infos.end() && Wrapping->second.rfind(__T("Frame"), 0)==0)?Essence->second.Element_Count:0;
+                if (Descriptor->second.StreamKind==Stream_Video && Essence->second.Parsers.size()==1)
+                {
+                    auto Count_Parser=Essence->second.Parsers[0]->Retrieve_Const(Stream_Video, 0, Video_FrameCount).To_int64u();
+                    if (Essence->second.Field_Count_InThisBlock_1 && !Essence->second.Field_Count_InThisBlock_2)
+                        Count_Parser*=2; //Parser counts frames, the edit unit is a field
+                    if (Count_Parser>2*Count) //Clip, also if it is not declared as a clip
+                        Count=Count_Parser;
+                }
+                if (!Count)
+                    continue;
+                if (!ContentPackage_Rate && Descriptor->second.StreamKind==Stream_Video)
+                    ContentPackage_Rate=EditRate;
+                if (Descriptor->second.StreamKind==Stream_Audio && Descriptor->second.ByteRate!=(int32u)-1)
+                    ContentPackage_Size+=Descriptor->second.ByteRate/EditRate;
+                if (Count_Max<Count)
+                    Count_Max=Count;
+                TrackCounts.push_back({&Component->second, EditRate, Count});
+            }
+            if (!HasVideo && !TrackCounts.empty() && FirstPass_ContentPackage_Count && FirstPass_ContentPackage_End-FirstPass_ContentPackage_First<2*FirstPass_ContentPackage_Count*ContentPackage_Size) //Else an element is not an edit unit, e.g. it holds all the content or the edit rate is the sampling rate
+                ContentPackage_Rate=TrackCounts.front().EditRate;
+
+            //A track is cut only if at least 1 element is missing, the count of audio samples is not always a whole count of elements. Other tracks can not be longer than the content present
+            for (const auto& Track : TrackCounts)
+                if (Track.Count+0.5<Track.Component->Duration*ContentPackage_Rate/Track.EditRate)
+                {
+                    Track.Component->Duration=float64_int64s(Track.Count*Track.EditRate/ContentPackage_Rate);
+                    Track.Component->IsTruncated=true;
+                    Truncated_Duration=Count_Max/ContentPackage_Rate;
+                }
+        }
+    #endif //MEDIAINFO_ADVANCED
 
     File_Size_Total=File_Size;
     StreamKind_Last=Stream_Max;
@@ -10094,6 +10161,10 @@ void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 Edit
     if (EditRate && StreamKind_Last!=Stream_Max && Component->second.Duration!=(int64u)-1)
     {
         int64u FrameCount=Component->second.Duration;
+        #if MEDIAINFO_ADVANCED
+            if (Truncated_Duration && FrameCount>Truncated_Duration*EditRate)
+                FrameCount=float64_int64s(Truncated_Duration*EditRate);
+        #endif //MEDIAINFO_ADVANCED
         if (StreamKind_Last==Stream_Video || Config->File_EditRate)
         {
             int64u File_IgnoreEditsBefore=Config->File_IgnoreEditsBefore;
@@ -10138,6 +10209,11 @@ void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 Edit
                     }
                     break;
                 }
+
+        #if MEDIAINFO_ADVANCED
+            if (Component->second.IsTruncated && StreamKind_Last==Stream_Video)
+                Fill(Stream_Video, StreamPos_Last, Video_FrameCount, FrameCount, 10, true); //Elements are complete, the parser may also count the partial frame at the end
+        #endif //MEDIAINFO_ADVANCED
 
         FillAllMergedStreams=true;
 
@@ -12537,6 +12613,10 @@ void File_Mxf::Data_Parse()
                 }
             }
         }
+
+        //Element count, an element parsed in several parts is complete when its end is reached
+        if (!Buffer_End || File_Offset+Buffer_Offset+Element_Size>=Buffer_End)
+            Essence->second.Element_Count++;
 
         //Element size, for the stream size if all elements have the same size
         if (!Buffer_End)
