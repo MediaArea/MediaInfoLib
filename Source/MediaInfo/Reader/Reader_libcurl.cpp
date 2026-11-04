@@ -44,6 +44,9 @@
     #include <cstring>
     #include <unistd.h> //For access()
 #endif
+#if defined(MEDIAINFO_LIBCURL_DLL_RUNTIME) || LIBCURL_VERSION_NUM>=0x073400 //7.52.0, settings of HTTPS proxies
+    #define MEDIAINFO_LIBCURL_HTTPS_PROXY 1
+#endif
 #define MEDIAINFO_HMAC 1
 #if MEDIAINFO_HMAC
     #include "hmac.h"
@@ -471,6 +474,7 @@ static void Reader_libcurl_CertificateAuthorityFallback(CURL* Curl)
         {
             //On failure, libcurl keeps its default and fails as it did without this fallback
             curl_easy_setopt(Curl, CURLOPT_CAINFO, FileNames[Pos]);
+            curl_easy_setopt(Curl, CURLOPT_PROXY_CAINFO, FileNames[Pos]);
             return;
         }
 }
@@ -1180,6 +1184,18 @@ size_t Reader_libcurl::Format_Test_PerParser(MediaInfo_Internal* MI, const Strin
     }
     if (!MI->Config.File_Curl_Get(__T("Proxy")).empty())
         curl_easy_setopt(Curl_Data->Curl, CURLOPT_PROXY, MI->Config.File_Curl_Get(__T("Proxy")).To_Local().c_str());
+    #if MEDIAINFO_LIBCURL_HTTPS_PROXY
+        //Not in SetOptions(): the proxy may come from the environment and be used with any protocol. The result is not checked: a libcurl without HTTPS proxy support refuses these options.
+        if (!Curl_Data->Ssl_CertificateAuthorityFileName.empty())
+            curl_easy_setopt(Curl_Data->Curl, CURLOPT_PROXY_CAINFO, Curl_Data->Ssl_CertificateAuthorityFileName.c_str());
+        if (!Curl_Data->Ssl_CertificateAuthorityPath.empty())
+            curl_easy_setopt(Curl_Data->Curl, CURLOPT_PROXY_CAPATH, Curl_Data->Ssl_CertificateAuthorityPath.c_str());
+        if (Curl_Data->Ssl_IgnoreSecurity)
+        {
+            curl_easy_setopt(Curl_Data->Curl, CURLOPT_PROXY_SSL_VERIFYPEER, 0);
+            curl_easy_setopt(Curl_Data->Curl, CURLOPT_PROXY_SSL_VERIFYHOST, 0);
+        }
+    #endif //MEDIAINFO_LIBCURL_HTTPS_PROXY
     ZtringList HttpHeaderStrings; HttpHeaderStrings.Separator_Set(0, EOL); //End of line is set depending of the platform: \n on Linux, \r on Mac, or \r\n on Windows
     HttpHeaderStrings.Write(MI->Config.File_Curl_Get(__T("HttpHeader")));
     if (!HttpHeaderStrings.empty())
