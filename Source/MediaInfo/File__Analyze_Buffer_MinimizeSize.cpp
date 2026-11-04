@@ -1292,7 +1292,7 @@ void File__Analyze::Get_ISO_6937_2(int64u Bytes, Ztring &Info)
                     Info+=Ztring().From_Unicode(ISO_6937_2_Tables[((Buffer[Pos]-0xC0))*0x40+(Buffer[Pos+1]-0x40)]);
                 else
                 {
-                Info+=(Char)(Buffer[Pos+1]);
+                Info+=Ztring().From_Unicode((wchar_t)Buffer[Pos+1]);
                 Info+=Ztring().From_Unicode(&EscapeChar, 1); //(EscapeChar) after new ZenLib release
                 }
                 EscapeChar=L'\x0000';
