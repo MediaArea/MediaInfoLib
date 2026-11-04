@@ -1188,7 +1188,7 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
             delete Hash; Hash=NULL;
         }
 
-        if (Hash && Buffer_Offset>=Buffer_Size && Hash_Offset>File_Offset+Buffer_Size && Buffer_Offset<Buffer_Size+16*1024*1024)
+        if (Hash && File_GoTo==(int64u)-1 && Buffer_Offset>=Buffer_Size && Hash_Offset>File_Offset+Buffer_Size && Buffer_Offset<Buffer_Size+16*1024*1024)
         {
             //We need the next data
             Hash_ParseUpTo=File_Offset+Buffer_Offset;
