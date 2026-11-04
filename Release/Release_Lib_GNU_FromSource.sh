@@ -39,6 +39,12 @@ cp ../Project/GNU/Library/Makefile.in MediaInfo_Lib_GNU_FromSource/Project/GNU/L
 cp ../Project/GNU/Library/missing MediaInfo_Lib_GNU_FromSource/Project/GNU/Library/
 cp ../Project/GNU/Library/libmediainfo.pc.in MediaInfo_Lib_GNU_FromSource/Project/GNU/Library/
 cp ../Project/GNU/Library/libmediainfo-config.in MediaInfo_Lib_GNU_FromSource/Project/GNU/Library/
+cp ../Project/GNU/Library/test-driver MediaInfo_Lib_GNU_FromSource/Project/GNU/Library/
+mkdir -p MediaInfo_Lib_GNU_FromSource/Project/GNU/Library/test/Source
+cp ../Project/GNU/Library/test/Makefile.am MediaInfo_Lib_GNU_FromSource/Project/GNU/Library/test/
+cp ../Project/GNU/Library/test/Makefile.in MediaInfo_Lib_GNU_FromSource/Project/GNU/Library/test/
+cp ../Project/GNU/Library/test/*.sh MediaInfo_Lib_GNU_FromSource/Project/GNU/Library/test/
+cp ../Project/GNU/Library/test/Source/*.cpp MediaInfo_Lib_GNU_FromSource/Project/GNU/Library/test/Source/
 
 #-----------------------------------------------------------------------
 # Copying : Source
