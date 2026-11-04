@@ -971,8 +971,15 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
                      if (!lang.compare(__T("ja")) || !lang.compare(__T("ko")) || !lang.compare(__T("zh-CN")) || !lang.compare(__T("zh-HK")) || !lang.compare(__T("zh-TW")))
                      {
                         #if !defined(UNICODE) && !defined(_UNICODE)
+                        #if defined(_MSC_VER)
+                            #pragma warning(push)
+                            #pragma warning(disable:4996)
+                        #endif //defined(_MSC_VER)
                         std::wstring_convert<std::codecvt_utf8<wchar_t>> Converter;
                         std::wstring Nom_Wide=Converter.from_bytes(Nom);
+                        #if defined(_MSC_VER)
+                            #pragma warning(pop)
+                        #endif //defined(_MSC_VER)
                         Nom_Wide.resize(Nom_Size, ' ');
                         Nom=Ztring().From_Unicode(ToFullWidth(Nom_Wide)); //Align Japanese, Korean and Chinese characters with ASCII characters
                         #else
