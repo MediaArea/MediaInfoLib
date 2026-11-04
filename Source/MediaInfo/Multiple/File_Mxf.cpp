@@ -199,6 +199,21 @@ extern const char* AfdBarData_active_format_4_3[];
 extern const char* AfdBarData_active_format_16_9[];
 
 //---------------------------------------------------------------------------
+// Name from the SMPTE registers, for texts which can use the value instead
+// Without trace the registers are not called so the linker removes them: more than 2000 cases of a switch are as many nested blocks in WebAssembly, too many for the JavaScript optimizer of the asm.js build
+#if MEDIAINFO_TRACE
+static const char* Mxf_Param_Info_IfAny(int32u CategoryRegistryStructureVersion, int64u Value)
+{
+    return Mxf_Param_Info(CategoryRegistryStructureVersion, Value);
+}
+#else //MEDIAINFO_TRACE
+static const char* Mxf_Param_Info_IfAny(int32u, int64u)
+{
+    return nullptr;
+}
+#endif //MEDIAINFO_TRACE
+
+//---------------------------------------------------------------------------
 static const char* Mxf_Category(int8u Category)
 {
     switch(Category)
@@ -3356,7 +3371,7 @@ void File_Mxf::HeaderMetadata_Sequence_Test()
     {
         if (Code.lo!=Groups::Preface)
         {
-            const auto Name=Mxf_Param_Info((int32u)Code.hi, Code.lo);
+            const auto Name=Mxf_Param_Info_IfAny((int32u)Code.hi, Code.lo);
             HeaderMetadata_Errors.push_back({Offset, "MXF Preface", string("First Header Metadata Set after the Primer Pack is not the Preface (actual ")+(Name?Name:Ztring().From_UUID(Code).To_UTF8().c_str())+')'});
         }
         HeaderMetadata_Step=0;
@@ -4967,7 +4982,7 @@ void File_Mxf::Streams_Finish_Conformance_FileFormat ()
 
     //Instance UIDs are unique in a Header Metadata
     const auto Set_Name=[](int64u Key) {
-        const auto Name=Mxf_Param_Info(0x02530100, Key);
+        const auto Name=Mxf_Param_Info_IfAny(0x02530100, Key);
         return Name?string(Name):Ztring().From_Number(Key, 16).To_UTF8();
     };
     for (const auto& Duplicate : InstanceUID_Duplicates)
@@ -8661,8 +8676,8 @@ vector<string> File_Mxf::HeaderMetadata_FooterDifferences(bool WithPresence) con
             const auto Primer_Value=Primer_Values.find((int16u)Property);
             Property=Primer_Value==Primer_Values.end()?0:Primer_Value->second.lo;
         }
-        const auto SetName=Mxf_Param_Info(0x02530100, Difference.first);
-        const auto PropertyName=Property?Mxf_Param_Info(0x01010100, Property):nullptr;
+        const auto SetName=Mxf_Param_Info_IfAny(0x02530100, Difference.first);
+        const auto PropertyName=Property?Mxf_Param_Info_IfAny(0x01010100, Property):nullptr;
         List.push_back((PropertyName?string(PropertyName):Ztring().From_Number(Difference.second, 16).To_UTF8())
             +" of "+(SetName?string(SetName):Ztring().From_Number(Difference.first, 16).To_UTF8()));
     }
