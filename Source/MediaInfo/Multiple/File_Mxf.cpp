@@ -2166,14 +2166,14 @@ File_Mxf::File_Mxf()
         Klv_BerTooLong_Size=0;
     #endif //MEDIAINFO_CONFORMANCE
 
-    #if MEDIAINFO_SEEK
+    #if MEDIAINFO_DEMUX || MEDIAINFO_SEEK
         IndexTables_Pos=0;
         Clip_Header_Size=0;
         Clip_Begin=(int64u)-1;
         Clip_End=0;
         OverallBitrate_IsCbrForSure=0;
         Duration_Detected=false;
-    #endif //MEDIAINFO_SEEK
+    #endif //MEDIAINFO_DEMUX || MEDIAINFO_SEEK
     #if MEDIAINFO_DEMUX
         DemuxedSampleCount_Total=(int64u)-1;
         DemuxedSampleCount_Current=(int64u)-1;
@@ -11896,8 +11896,10 @@ void File_Mxf::Header_Parse()
             //Testing locators
             Locators_CleanUp();
 
-            if (Config->File_IgnoreEditsBefore && !Config->File_IsDetectingDuration_Get() && Config->Event_CallBackFunction_IsSet()) //Only if demux packet may be requested
-                Open_Buffer_Seek(3, 0, (int64u)-1); //Forcing seek to Config->File_IgnoreEditsBefore
+            #if MEDIAINFO_SEEK
+                if (Config->File_IgnoreEditsBefore && !Config->File_IsDetectingDuration_Get() && Config->Event_CallBackFunction_IsSet()) //Only if demux packet may be requested
+                    Open_Buffer_Seek(3, 0, (int64u)-1); //Forcing seek to Config->File_IgnoreEditsBefore
+            #endif //MEDIAINFO_SEEK
             if (Config->NextPacket_Get() && Config->Event_CallBackFunction_IsSet())
             {
                 if (Locators.empty())
@@ -13193,8 +13195,10 @@ void File_Mxf::BodyPartition()
             //Testing locators
             Locators_CleanUp();
 
-            if (Config->File_IgnoreEditsBefore && !Config->File_IsDetectingDuration_Get() && Config->Event_CallBackFunction_IsSet()) //Only if demux packet may be requested
-                Open_Buffer_Seek(3, 0, (int64u)-1); //Forcing seek to Config->File_IgnoreEditsBefore
+            #if MEDIAINFO_SEEK
+                if (Config->File_IgnoreEditsBefore && !Config->File_IsDetectingDuration_Get() && Config->Event_CallBackFunction_IsSet()) //Only if demux packet may be requested
+                    Open_Buffer_Seek(3, 0, (int64u)-1); //Forcing seek to Config->File_IgnoreEditsBefore
+            #endif //MEDIAINFO_SEEK
             if (Config->NextPacket_Get() && Config->Event_CallBackFunction_IsSet())
             {
                 if (Locators.empty())
