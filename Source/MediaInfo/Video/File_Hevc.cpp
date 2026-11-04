@@ -1686,6 +1686,9 @@ void File_Hevc::slice_segment_layer()
             }
             if (!Status[IsFilled])
             {
+                #if defined(MEDIAINFO_DTVCCTRANSPORT_YES)
+                    if (!GA94_03_IsPresent)
+                #endif //defined(MEDIAINFO_DTVCCTRANSPORT_YES)
                 if (IFrame_Count>=8)
                     Frame_Count_Valid=Frame_Count; //We have enough frames
                 if (Frame_Count>=Frame_Count_Valid)
@@ -3030,6 +3033,8 @@ void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_0031_GA94_03()
         GA94_03_IsPresent=true;
         MustExtendParsingDuration=true;
         Buffer_TotalBytes_Fill_Max=(int64u)-1; //Disabling this feature for this format, this is done in the parser
+        if (Config->ParseSpeed>=0.3 && Frame_Count_Valid<512)
+            Frame_Count_Valid=512; //Captions may start later, same count of frames as for AVC
 
         Element_Info1("DTVCC Transport");
 
