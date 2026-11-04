@@ -668,7 +668,7 @@ void File_N19::Data_Parse()
                         Get_ISO_8859_1(112, TF,                 "TF - Text Field");
     }
     //Count
-    TF.TrimRight(0x8F);
+    TF.TrimRight((Char)0x8F);
     if (EBN<0xF0 || EBN==0xFF)
     {
         for (auto Value : TF)
