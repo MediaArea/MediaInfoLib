@@ -14128,10 +14128,12 @@ void File_Mxf::RandomIndexPack()
         FILLING_BEGIN();
             if (!RandomIndexPacks_AlreadyParsed)
                 RandomIndexPack_Entries.push_back(RandomIndexPack);
-            RandomIndexPack.ByteOffset+=Partitions.empty()?0:Partitions.front().StreamOffset; //Byte offsets are relative to the Header Partition
-            if (!RandomIndexPacks_AlreadyParsed && PartitionPack_AlreadyParsed.find(RandomIndexPack.ByteOffset)==PartitionPack_AlreadyParsed.end())
+            const auto RunIn=Partitions.empty()?0:Partitions.front().StreamOffset; //Byte offsets are relative to the Header Partition
+            const auto IsInFile=RandomIndexPack.ByteOffset<File_Size-RunIn;
+            RandomIndexPack.ByteOffset+=RunIn;
+            if (!RandomIndexPacks_AlreadyParsed && IsInFile && PartitionPack_AlreadyParsed.find(RandomIndexPack.ByteOffset)==PartitionPack_AlreadyParsed.end())
                 RandomIndexPacks.push_back(RandomIndexPack);
-            if (!RandomIndexPacks_AlreadyParsed && ExtraMetadata_SID.find(RandomIndexPack.BodySID)!=ExtraMetadata_SID.end() && RandomIndexPack.ByteOffset<ExtraMetadata_Offset)
+            if (!RandomIndexPacks_AlreadyParsed && IsInFile && ExtraMetadata_SID.find(RandomIndexPack.BodySID)!=ExtraMetadata_SID.end() && RandomIndexPack.ByteOffset<ExtraMetadata_Offset)
                 ExtraMetadata_Offset=RandomIndexPack.ByteOffset;
         FILLING_END();
     }
