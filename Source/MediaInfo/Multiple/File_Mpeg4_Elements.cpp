@@ -2384,7 +2384,7 @@ void File_Mpeg4::mdat_xxxx()
 
         Open_Buffer_Continue(Stream_Temp.Parsers[Pos], Buffer+Buffer_Offset+(size_t)Element_Offset, (size_t)(Element_Size-Element_Offset));
         #if MEDIAINFO_DEMUX
-            if (Config->Demux_EventWasSent && Config->Demux_Unpacketize_Get())
+            if (Config->Demux_EventWasSent && (Config->Demux_Unpacketize_Get() || Stream_Temp.Demux_Level==4)) //Intermediate, the parser demuxes also without unpacketize option
                 Stream_Temp.Demux_EventWasSent=true;
         #endif //MEDIAINFO_DEMUX
         Element_Show();

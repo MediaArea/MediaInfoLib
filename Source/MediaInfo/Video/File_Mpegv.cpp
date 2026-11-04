@@ -2048,8 +2048,13 @@ bool File_Mpegv::Demux_UnpacketizeContainer_Test()
                 Demux_Offset++;
             }
 
-            if (Demux_Offset+4>Buffer_Size && !Config->IsFinishing)
-                return false; //No complete frame
+            if (Demux_Offset+4>Buffer_Size)
+            {
+                if (FrameIsAlwaysComplete)
+                    Demux_Offset=Buffer_Size; //We are sure that the next bytes are a start
+                else if (!Config->IsFinishing)
+                    return false; //No complete frame
+            }
         }
 
         bool RandomAccess=Buffer[Buffer_Offset+3]==0xB3;
@@ -2058,6 +2063,7 @@ bool File_Mpegv::Demux_UnpacketizeContainer_Test()
             if (Config->Demux_EventWasSent)
                 return false;
             File_Mpegv* MI=new File_Mpegv;
+            MI->FrameIsAlwaysComplete=FrameIsAlwaysComplete;
             Element_Code=(int64u)-1;
             Open_Buffer_Init(MI);
             Open_Buffer_Continue(MI, Buffer, Buffer_Size);

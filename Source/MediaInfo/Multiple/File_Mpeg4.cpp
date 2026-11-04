@@ -428,8 +428,6 @@ void File_Mpeg4::Streams_Finish()
 {
     #if MEDIAINFO_DEMUX
                 //Handling of multiple frames in one block
-        if (Config->Demux_Unpacketize_Get())
-         {
         streams::iterator Stream_Temp = Streams.find((int32u)Element_Code);
         if (Stream_Temp != Streams.end() && Stream_Temp->second.Demux_EventWasSent)
              {
@@ -439,7 +437,6 @@ void File_Mpeg4::Streams_Finish()
                  return;
             Stream_Temp->second.Demux_EventWasSent = false;
             }
-        }
     #endif //MEDIAINFO_DEMUX
     Frame_Count_NotParsedIncluded=(int64u)-1; //Number of the last parsed sample of any stream, it must not be used as the frame count of the audio or video stream
     #if defined(MEDIAINFO_REFERENCES_YES) && MEDIAINFO_NEXTPACKET
@@ -2263,16 +2260,16 @@ bool File_Mpeg4::Header_Begin()
 {
     #if MEDIAINFO_DEMUX
         //Handling of multiple frames in one block
-        if (IsParsing_mdat && Config->Demux_Unpacketize_Get())
+        if (IsParsing_mdat)
         {
-            stream &Stream_Temp=Streams[(int32u)Element_Code];
-            if (Stream_Temp.Demux_EventWasSent)
+            streams::iterator Stream_Temp=Streams.find((int32u)Element_Code);
+            if (Stream_Temp!=Streams.end() && Stream_Temp->second.Demux_EventWasSent)
             {
                 Frame_Count_NotParsedIncluded=(int64u)-1;
-                Open_Buffer_Continue(Stream_Temp.Parsers[0], Buffer+Buffer_Offset, 0);
+                Open_Buffer_Continue(Stream_Temp->second.Parsers[0], Buffer+Buffer_Offset, 0);
                 if (Config->Demux_EventWasSent)
                     return false;
-                Stream_Temp.Demux_EventWasSent=false;
+                Stream_Temp->second.Demux_EventWasSent=false;
             }
         }
     #endif //MEDIAINFO_DEMUX
