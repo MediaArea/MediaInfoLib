@@ -2911,7 +2911,11 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
         return
             ((c < 0x20 &&
               c != 0x09 && c != 0x0A && c != 0x0D)) // C0 Keep TAB, LF, CR
+            #if defined(UNICODE) || defined (_UNICODE)
             || (c >= 0x7F && c < 0xA0);             // DEL + C1
+            #else
+            || c == 0x7F;                           // DEL, C1 values are bytes of multibyte characters
+            #endif
     };
     auto it = std::find_if(Value.begin(), Value.end(), IsBadChar);
     if (it != Value.end()) {
