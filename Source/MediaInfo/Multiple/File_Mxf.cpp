@@ -11234,7 +11234,10 @@ void File_Mxf::Position_Update(int64u FutureFileOffset, bool UnsynchParsers)
     Partitions_Pos=0;
     if (Partitions_IsCalculatingHeaderByteCount)
     {
-        Partitions.erase(Partitions.end()-1);
+        //Partitions are sorted by offset, the last one is not always the one being parsed
+        const auto Partition=find_if(Partitions.begin(), Partitions.end(), [](const partition& Item) {return Item.PartitionPackByteCount==(int64u)-1;});
+        if (Partition!=Partitions.end())
+            Partitions.erase(Partition);
         Partitions_IsCalculatingHeaderByteCount=false;
     }
     Partitions_IsCalculatingSdtiByteCount=false;
