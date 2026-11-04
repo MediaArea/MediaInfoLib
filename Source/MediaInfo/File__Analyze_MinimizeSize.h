@@ -101,6 +101,7 @@ public :
         int64u PTS; //In nanoseconds
         int64u DTS; //In nanoseconds
         int64u DUR; //In nanoseconds
+        int64u DTS_Delay; //In nanoseconds, delay of the pictures removed from the DTS by the container e.g. with an edit list
         #if MEDIAINFO_ADVANCED2
         int64s PTSc; //In 1/Frequency_c
         int64s DTSc; //In 1/Frequency_c
@@ -114,6 +115,7 @@ public :
             PTS=(int64u)-1;
             DTS=(int64u)-1;
             DUR=(int64u)-1;
+            DTS_Delay=0;
             #if MEDIAINFO_ADVANCED2
             PTSc=NoTs;
             DTSc=NoTs;

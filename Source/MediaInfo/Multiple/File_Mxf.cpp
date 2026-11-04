@@ -11241,16 +11241,15 @@ void File_Mxf::Position_Update(int64u FutureFileOffset, bool UnsynchParsers)
             FrameInfo.DUR=float64_int64s(1000000000/IndexTables[0].IndexEditRate);
     #endif //if MEDIAINFO_DEMUX || MEDIAINFO_SEEK
 
-    //After the jump of the caption probe, timestamps are from the first frame as in the first pass, not from the start timecode, and unknown if the frame is unknown
+    //After the jump of the caption probe, timestamps are from the first frame as in the first pass, not from the start timecode, and unknown if the frame is unknown. The position gives the DTS, as in the first pass there is no PTS, frames may be reordered
     if (IsParsingMiddle_MaxOffset!=(int64u)-1)
     {
         const int64u Delay=float64_int64s(DTS_Delay*1000000000);
+        FrameInfo.PTS=(int64u)-1;
         if (Frame_Count_NotParsedIncluded==(int64u)-1)
-            FrameInfo.PTS=FrameInfo.DTS=(int64u)-1;
+            FrameInfo.DTS=(int64u)-1;
         if (FrameInfo.DTS!=(int64u)-1)
             FrameInfo.DTS-=Delay;
-        if (FrameInfo.PTS!=(int64u)-1)
-            FrameInfo.PTS-=Delay;
     }
 
     if (!IsParsingEnd || !ProbeCaption_IsPossible()) //Else essences are not parsed, the parsers and the exact position are kept for a caption probe continuing the parsing, parsers are reset in BookMark_Needed() or Streams_Finish() else

@@ -250,6 +250,12 @@ File_Hevc::File_Hevc()
     prevPicOrderCntMsb=0;
     prevPicOrderCntLsb=(int32u)-1;
     PicOrderCntVal_Ref=0;
+    Pictures_Decoded=0;
+    Pictures_Decoded_PTS=(int64u)-1;
+    Pictures_Decoded_DTS=(int64u)-1;
+    Pictures_Decoded_SameDts=0;
+    Pictures_Output_PTS=(int64u)-1;
+    Pictures_Duration=(int64u)-1;
 
     //Text
     #if defined(MEDIAINFO_DTVCCTRANSPORT_YES)
@@ -1213,6 +1219,11 @@ void File_Hevc::Read_Buffer_Unsynched()
     TemporalReferences_pic_order_cnt_Min=0;
     prevPicOrderCntMsb=0;
     prevPicOrderCntLsb=(int32u)-1;
+    Pictures_Decoded=0;
+    Pictures_Decoded_PTS=(int64u)-1;
+    Pictures_Decoded_DTS=(int64u)-1;
+    Pictures_Decoded_SameDts=0;
+    Pictures_Output_PTS=(int64u)-1;
 
     //Text
     #if defined(MEDIAINFO_DTVCCTRANSPORT_YES)
@@ -3088,9 +3099,23 @@ void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_0031_GA94_03_Delay
             }
             if (GA94_03_Parser->PTS_DTS_Needed)
             {
+                //Time of the picture carrying the captions, if the container does not provide it pictures are output at the pace they are decoded, so it is before the picture being decoded by the pictures waiting
+                auto PTS=TemporalReferences[TemporalReferences_Min]->PTS;
+                if (PTS==(int64u)-1)
+                {
+                    if (FrameInfo.DTS!=(int64u)-1 && FrameInfo.DUR!=(int64u)-1)
+                    {
+                        const auto Waiting_Duration=(Pictures_Waiting-1)*FrameInfo.DUR;
+                        PTS=FrameInfo.DTS+FrameInfo.DTS_Delay+Pictures_Decoded_SameDts*FrameInfo.DUR/(Interlacement_Detect(seq_parameter_sets[seq_parameter_set_id]).SeparatedFields?2:1);
+                        PTS=PTS>Waiting_Duration?(PTS-Waiting_Duration):0;
+                    }
+                    else if (Pictures_Output_PTS!=(int64u)-1)
+                        PTS=Pictures_Output_PTS+(Pictures_Duration!=(int64u)-1?Pictures_Duration:0); //Only some pictures have a PTS (e.g. MPEG-TS), this picture comes after the previous picture output
+                }
+                Pictures_Output_PTS=PTS;
                 GA94_03_Parser->FrameInfo.PCR=FrameInfo.PCR;
-                GA94_03_Parser->FrameInfo.PTS=FrameInfo.PTS;
-                GA94_03_Parser->FrameInfo.DTS=FrameInfo.DTS;
+                GA94_03_Parser->FrameInfo.PTS=PTS;
+                GA94_03_Parser->FrameInfo.DTS=PTS;
             }
             #if MEDIAINFO_DEMUX
                 if (TemporalReferences[TemporalReferences_Min]->GA94_03)
@@ -3107,7 +3132,16 @@ void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_0031_GA94_03_Delay
                 #if defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
                     GA94_03_Parser->ServiceDescriptors=ServiceDescriptors;
                 #endif
+
+                //Frame number of the picture carrying the captions, all pictures decoded except the pictures waiting are before it, the parent knows the jumps and this parser the pictures before an IDR picture
+                const auto Frame_Count_NotParsedIncluded_Save=Frame_Count_NotParsedIncluded;
+                if (Frame_Count_NotParsedIncluded!=(int64u)-1)
+                {
+                    const auto Pictures_Count=max(Frame_Count_NotParsedIncluded+1, Pictures_Decoded);
+                    Frame_Count_NotParsedIncluded=Pictures_Count>Pictures_Waiting?(Pictures_Count-Pictures_Waiting):0;
+                }
                 Open_Buffer_Continue(GA94_03_Parser, TemporalReferences[TemporalReferences_Min]->GA94_03->Data, TemporalReferences[TemporalReferences_Min]->GA94_03->Size);
+                Frame_Count_NotParsedIncluded=Frame_Count_NotParsedIncluded_Save;
             }
 
             Element_End0();
@@ -4179,6 +4213,21 @@ void File_Hevc::slice_segment_header()
     //Frame order from the slice header, whatever the container provides as timestamps
     if (first_slice_segment_in_pic_flag && !MustParse_VPS_SPS_PPS_FromFlv && !nuh_layer_id && TemporalReferences_Reserved && IsSub)
     {
+        Pictures_Decoded++;
+
+        //Duration of a picture from the frame rate if present
+        const auto vui_parameters=(*seq_parameter_set_Item)->vui_parameters;
+        if (vui_parameters && vui_parameters->time_scale && vui_parameters->num_units_in_tick)
+            Pictures_Duration=float64_int64s(((float64)vui_parameters->num_units_in_tick)*1000000000/vui_parameters->time_scale);
+
+        //The container keeps the last PTS if a picture has none, e.g. in a PES without PTS or after the first picture of a PES
+        const auto PTS=FrameInfo.PTS!=Pictures_Decoded_PTS?FrameInfo.PTS:(int64u)-1;
+        Pictures_Decoded_PTS=FrameInfo.PTS;
+
+        //The container may give a DTS only at the start of several pictures (e.g. clip wrapped MXF, or 2 fields in a frame wrapped element), a block which is a frame has its own DTS even if it has the same value (e.g. MP4 DTS before the start of the edit list)
+        Pictures_Decoded_SameDts=(FrameInfo.DTS==Pictures_Decoded_DTS && (Frame_Count_InThisBlock || !FrameIsAlwaysComplete))?(Pictures_Decoded_SameDts+1):0;
+        Pictures_Decoded_DTS=FrameInfo.DTS;
+
         const auto MaxPicOrderCntLsb=(int32s)1<<((*seq_parameter_set_Item)->log2_max_pic_order_cnt_lsb_minus4+4);
         auto PicOrderCntMsb=prevPicOrderCntMsb;
         if (RapPicFlag || prevPicOrderCntLsb==(int32u)-1)
@@ -4309,6 +4358,7 @@ void File_Hevc::slice_segment_header()
         }
         if (TemporalReferences[TemporalReferences_Offset_pic_order_cnt_lsb_Last]==NULL)
             TemporalReferences[TemporalReferences_Offset_pic_order_cnt_lsb_Last]=new temporal_reference();
+        TemporalReferences[TemporalReferences_Offset_pic_order_cnt_lsb_Last]->PTS=PTS;
         /*
         TemporalReferences[TemporalReferences_Offset_pic_order_cnt_lsb_Last]->frame_num=frame_num;
         TemporalReferences[TemporalReferences_Offset_pic_order_cnt_lsb_Last]->slice_type=(int8u)slice_type;

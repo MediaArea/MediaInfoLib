@@ -473,6 +473,7 @@ private :
             buffer_data* GA94_03;
         #endif //MEDIAINFO_DTVCCTRANSPORT_YES
 
+        int64u PTS{(int64u)-1};
         int32u frame_num{};
         int8u  slice_type;
         bool   IsTop{};
@@ -506,6 +507,12 @@ private :
     int32s                              prevPicOrderCntMsb;
     int32u                              prevPicOrderCntLsb;
     int32s                              PicOrderCntVal_Ref;
+    int64u                              Pictures_Decoded;
+    int64u                              Pictures_Decoded_PTS;
+    int64u                              Pictures_Decoded_DTS;
+    int64u                              Pictures_Decoded_SameDts; //Count of pictures after the picture which got this DTS from the container
+    int64u                              Pictures_Output_PTS;
+    int64u                              Pictures_Duration;
 
     //Text
     #if defined(MEDIAINFO_DTVCCTRANSPORT_YES)

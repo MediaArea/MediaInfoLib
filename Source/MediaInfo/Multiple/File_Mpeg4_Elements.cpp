@@ -2258,9 +2258,11 @@ void File_Mpeg4::mdat_xxxx()
                 stream::stts_durations::iterator stts_Duration=Stream_Temp.stts_Durations.begin()+Stream_Temp.stts_Durations_Pos;
                 int64u stts_Offset=stts_Duration->DTS_Begin+(((int64u)stts_Duration->SampleDuration)*(Frame_Count_NotParsedIncluded-stts_Duration->Pos_Begin));
                 FrameInfo.DTS=Stream_Temp.mdhd_TimeScale?(TimeCode_DtsOffset+stts_Offset*1000000000/Stream_Temp.mdhd_TimeScale):((int64u)-1);
+                FrameInfo.DTS_Delay=0;
                 if (!Stream_Temp.edts.empty())
                 {
                     int64s Delay=0;
+                    int64u MediaTime=0;
                     switch (Stream_Temp.edts.size())
                     {
                         case 0 :
@@ -2269,12 +2271,14 @@ void File_Mpeg4::mdat_xxxx()
                                 if (Stream_Temp.edts[0].Duration==Stream_Temp.tkhd_Duration && Stream_Temp.edts[0].Rate==0x00010000 && moov_mvhd_TimeScale)
                                 {
                                     Delay=-((int64s)Stream_Temp.edts[0].Delay);
+                                    MediaTime=Stream_Temp.edts[0].Delay;
                                 }
                                 break;
                         case 2 :
                                 if (Stream_Temp.edts[0].Delay==(int32u)-1 && Stream_Temp.edts[0].Duration+Stream_Temp.edts[1].Duration==Stream_Temp.tkhd_Duration && Stream_Temp.edts[0].Rate==0x00010000 && Stream_Temp.edts[1].Rate==0x00010000 && moov_mvhd_TimeScale)
                                 {
                                     Delay=((int64s)Stream_Temp.edts[0].Duration)*Stream_Temp.mdhd_TimeScale/moov_mvhd_TimeScale-Stream_Temp.edts[1].Delay;
+                                    MediaTime=Stream_Temp.edts[1].Delay;
                                 }
                                 break;
                         default:
@@ -2285,6 +2289,10 @@ void File_Mpeg4::mdat_xxxx()
                         FrameInfo.DTS+=Delay*1000000000/Stream_Temp.mdhd_TimeScale;
                     else
                         FrameInfo.DTS=TimeCode_DtsOffset;
+                    if (!IsFragmented && MediaTime>Stream_Temp.ctts_FirstOffset)
+                        MediaTime=Stream_Temp.ctts_FirstOffset; //The first pictures are trimmed, this part is not a delay of the pictures
+                    if (Stream_Temp.mdhd_TimeScale)
+                        FrameInfo.DTS_Delay=MediaTime*1000000000/Stream_Temp.mdhd_TimeScale;
                 }
                 FrameInfo.PTS=Stream_Temp.PtsDtsAreSame?FrameInfo.DTS:(int64u)-1;
                 FrameInfo.DUR=Stream_Temp.mdhd_TimeScale?(((int64u)stts_Duration->SampleDuration)*1000000000/Stream_Temp.mdhd_TimeScale):((int64u)-1);
@@ -6429,7 +6437,19 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_ctts()
     int32u entry_count;
     Get_B4 (entry_count,                                        "entry_count");
 
-    //Currently no usage
+    //Only the first offset is used, for the display time of the first picture
+    #if MEDIAINFO_DEMUX
+        if (entry_count && Element_Offset+8<=Element_Size)
+        {
+            int32u sample_offset;
+            Skip_B4(                                            "sample_count");
+            Get_B4 (sample_offset,                              "sample_offset");
+            if (!(sample_offset>>31)) //Negative with version 1
+                Streams[moov_trak_tkhd_TrackID].ctts_FirstOffset=sample_offset;
+        }
+    #endif //MEDIAINFO_DEMUX
+
+    //Other entries are currently not used
     //for (int32u Pos=0; Pos<entry_count; Pos++)
     {
         //int32u sample_count, sample_offset;
