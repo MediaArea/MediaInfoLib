@@ -23165,8 +23165,9 @@ bool File_Mxf::BookMark_Needed()
 
     if (ExtraMetadata_Offset!=(int64u)-1)
     {
-        GoTo(ExtraMetadata_Offset);
-        ExtraMetadata_Offset=(int64u)-1;
+        const auto ByteOffset=ExtraMetadata_Offset;
+        ExtraMetadata_Offset=(int64u)-1; //Before GoTo(), it calls BookMark_Needed() if this is the end of the file
+        GoTo(ByteOffset);
         return false; //Caption probe decided after the parsing of the extra metadata
     }
 
