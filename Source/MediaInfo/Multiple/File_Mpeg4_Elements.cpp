@@ -2508,45 +2508,42 @@ void File_Mpeg4::mdat_ProbeCaption()
             auto IsContinuing=false;
             int64u ProbeCaption_mdatPos=(int64u)-1;
             int64u ProbeCaption_mdatDur=(int64u)-1;
+            const auto FrameCount=(Stream.second.stts_Duration && Stream.second.stts_FrameCount)?Stream.second.stts_FrameCount:SamplePos_Next[Stream.first];
+            float FrameRate=0; //Unknown without timing information, it is needed only for time values
             if (Stream.second.stts_Duration && Stream.second.stts_FrameCount && Stream.second.mdhd_TimeScale)
-            {
-                auto FrameRateRatio=(float)Stream.second.stts_Duration/Stream.second.stts_FrameCount;
-                auto FrameRate=Stream.second.mdhd_TimeScale/FrameRateRatio;
-                auto Duration=(float)Stream.second.stts_Duration/Stream.second.mdhd_TimeScale;
-                if (FrameRate)
-                {
-                    auto Probe=Config->File_ProbeCaption_Get(ParserName);
-                    switch (Probe.Start_Type) {
-                        case config_probe_none:
-                            ProbeCaption_mdatPos=File_Size;
-                            break;
-                        case config_probe_dur:
-                            ProbeCaption_mdatPos=(int64u)(Probe.Start*FrameRate);
-                            break;
-                        case config_probe_size:
-                            ProbeCaption_mdatPos=Probe.Start<File_Size?(int64u)(((float64)Probe.Start)/File_Size*Stream.second.stts_FrameCount):Stream.second.stts_FrameCount; //File pos is not relevant there
-                            break;
-                        case config_probe_percent:
-                            ProbeCaption_mdatPos=Stream.second.stts_FrameCount*Probe.Start/100;
-                            break;
-                    }
-                    switch (Probe.Duration_Type) {
-                        case config_probe_none:
-                            ProbeCaption_mdatDur=0;
-                            break;
-                        case config_probe_dur:
-                            ProbeCaption_mdatDur=(int64u)(Probe.Duration*FrameRate);
-                            break;
-                        case config_probe_size:
-                            ProbeCaption_mdatDur=Probe.Duration<File_Size?(int64u)(((float64)Probe.Duration)/File_Size*Stream.second.stts_FrameCount):Stream.second.stts_FrameCount; //File pos is not relevant there
-                            if (!ProbeCaption_mdatDur && Probe.Duration)
-                                ProbeCaption_mdatDur=1;
-                            break;
-                        case config_probe_percent:
-                            ProbeCaption_mdatDur=Stream.second.stts_FrameCount*Probe.Duration/100;
-                            break;
-                    }
-                }
+                FrameRate=Stream.second.mdhd_TimeScale/((float)Stream.second.stts_Duration/Stream.second.stts_FrameCount);
+            auto Probe=Config->File_ProbeCaption_Get(ParserName);
+            switch (Probe.Start_Type) {
+                case config_probe_none:
+                    ProbeCaption_mdatPos=File_Size;
+                    break;
+                case config_probe_dur:
+                    if (FrameRate)
+                        ProbeCaption_mdatPos=(int64u)(Probe.Start*FrameRate);
+                    break;
+                case config_probe_size:
+                    ProbeCaption_mdatPos=Probe.Start<File_Size?(int64u)(((float64)Probe.Start)/File_Size*FrameCount):FrameCount; //File pos is not relevant there
+                    break;
+                case config_probe_percent:
+                    ProbeCaption_mdatPos=FrameCount*Probe.Start/100;
+                    break;
+            }
+            switch (Probe.Duration_Type) {
+                case config_probe_none:
+                    ProbeCaption_mdatDur=0;
+                    break;
+                case config_probe_dur:
+                    if (FrameRate)
+                        ProbeCaption_mdatDur=(int64u)(Probe.Duration*FrameRate);
+                    break;
+                case config_probe_size:
+                    ProbeCaption_mdatDur=Probe.Duration<File_Size?(int64u)(((float64)Probe.Duration)/File_Size*FrameCount):FrameCount; //File pos is not relevant there
+                    if (!ProbeCaption_mdatDur && Probe.Duration)
+                        ProbeCaption_mdatDur=1;
+                    break;
+                case config_probe_percent:
+                    ProbeCaption_mdatDur=FrameCount*Probe.Duration/100;
+                    break;
             }
             if (ProbeCaption_mdatPos!=(int64u)-1 && ProbeCaption_mdatDur!=(int64u)-1)
             {
