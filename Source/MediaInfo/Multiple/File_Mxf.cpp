@@ -10921,6 +10921,7 @@ void File_Mxf::Position_Update(int64u FutureFileOffset, bool UnsynchParsers)
 
         //Calculating the byte count not included in seek information (partition, index...)
         const bool IsCaptionProbe=IsParsingMiddle_MaxOffset!=(int64u)-1; //After the jump of the caption probe, offsets are from the first content package as other data may be before it (e.g. Generic Stream partition)
+        const bool IsClipJump=ProbeCaption_IsInContentPackage && Buffer_End && File_GoTo!=(int64u)-1; //Jump of the caption probe in clip wrapped essence, parsers need a start of frame
         int64u StreamOffset_Offset=IsCaptionProbe?FirstPass_ContentPackage_First:0;
         int32u BodySID=0;
         Partitions_Pos=0;
@@ -11000,6 +11001,11 @@ void File_Mxf::Position_Update(int64u FutureFileOffset, bool UnsynchParsers)
                         FramesToAdd=(FutureFileOffset-((Buffer_End?Buffer_Begin:(StreamOffset_Offset+Buffer_Header_Size))+Position))/IndexTables[Pos].EditUnitByteCount;
                     else
                         FramesToAdd=0;
+                    if (IsClipJump && FutureFileOffset>Buffer_Begin+Position+FramesToAdd*IndexTables[Pos].EditUnitByteCount)
+                    {
+                        FramesToAdd++; //Next frame
+                        File_GoTo=Buffer_Begin+Position+FramesToAdd*IndexTables[Pos].EditUnitByteCount;
+                    }
                     Position+=(SDTI_SizePerFrame+IndexTables[Pos].EditUnitByteCount)*FramesToAdd;
                     if (IndexTables[Pos].IndexEditRate)
                     {
@@ -11032,6 +11038,8 @@ void File_Mxf::Position_Update(int64u FutureFileOffset, bool UnsynchParsers)
         }
         else if (!IndexTables.empty() && !IndexTables[0].Entries.empty())
         {
+            if (IsCaptionProbe && Buffer_End)
+                StreamOffset_Offset=Buffer_Begin;
             int64u StreamOffset;
             if (StreamOffset_Offset<FutureFileOffset)
                 StreamOffset=FutureFileOffset-StreamOffset_Offset;
@@ -11067,6 +11075,20 @@ void File_Mxf::Position_Update(int64u FutureFileOffset, bool UnsynchParsers)
                             if (EntryPos+1==IndexTables[Pos].Entries.size() && (Pos+1==IndexTables.size() || IndexTables[Pos].IndexStartPosition+EntryPos+1!=IndexTables[Pos+1].IndexStartPosition))
                                 break;
 
+                            //Entries are not per edit unit (some files have each edit unit twice), an entry for the end of the essence is accepted
+                            if (IsCaptionProbe && IndexTables[Pos].IndexDuration && IndexTables[Pos].Entries.size()>IndexTables[Pos].IndexDuration+1)
+                                break;
+
+                            //Next random access point
+                            if (IsClipJump)
+                            {
+                                while (EntryPos<IndexTables[Pos].Entries.size() && (IndexTables[Pos].Entries[EntryPos].Type || IndexTables[Pos].Entries[EntryPos].StreamOffset+(IndexTables[Pos].IndexStartPosition+EntryPos)*SDTI_SizePerFrame<StreamOffset))
+                                    EntryPos++;
+                                if (EntryPos==IndexTables[Pos].Entries.size())
+                                    break;
+                                File_GoTo=Buffer_Begin+IndexTables[Pos].Entries[EntryPos].StreamOffset+(IndexTables[Pos].IndexStartPosition+EntryPos)*SDTI_SizePerFrame;
+                            }
+
                             Frame_Count_NotParsedIncluded=IndexTables[Pos].IndexStartPosition+EntryPos;
                             if (IndexTables[Pos].IndexEditRate)
                                 FrameInfo.DTS=float64_int64s(DTS_Delay*1000000000+((float64)Frame_Count_NotParsedIncluded)/IndexTables[Pos].IndexEditRate*1000000000);
@@ -11093,6 +11115,13 @@ void File_Mxf::Position_Update(int64u FutureFileOffset, bool UnsynchParsers)
         else if (Frame_Count_NotParsedIncluded==0)
         {
             FrameInfo.DTS=float64_int64s(DTS_Delay*1000000000);
+        }
+
+        //Index table may be wrong
+        if (IsClipJump && File_GoTo>=Buffer_End)
+        {
+            File_GoTo=FutureFileOffset;
+            Frame_Count_NotParsedIncluded=(int64u)-1;
         }
 
     #endif //if MEDIAINFO_DEMUX || MEDIAINFO_SEEK
@@ -23225,7 +23254,7 @@ bool File_Mxf::BookMark_Needed()
                 ProbeCaption_IsParsingPartitions=false;
 
                 #if MEDIAINFO_DEMUX || MEDIAINFO_SEEK
-                    if (IsContinuing && Clip_Begin<ProbeCaptionBytePos && ProbeCaptionBytePos<Clip_End) //No element header at this position
+                    if (Clip_Begin<ProbeCaptionBytePos && ProbeCaptionBytePos<Clip_End) //No element header at this position
                     {
                         Buffer_Begin=Clip_Begin;
                         Buffer_End=Clip_End;
@@ -23237,8 +23266,8 @@ bool File_Mxf::BookMark_Needed()
                 IsParsingMiddle_MaxOffset=ProbeCaptionByteEnd;
                 GoTo(ProbeCaptionBytePos);
                 IsParsingEnd=IsContinuing; //Parsers of the essences and their position are kept if continuing, else they are reset and the position comes from the file position
-                Open_Buffer_Unsynch();
                 ProbeCaption_IsInContentPackage=!IsContinuing;
+                Open_Buffer_Unsynch();
                 IsParsingEnd=false;
                 IsCheckingRandomAccessTable=false;
                 Streams_Count=(size_t)-1;
