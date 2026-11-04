@@ -2363,6 +2363,8 @@ String MediaInfo_Internal::Option (const String &Option, const String &Value)
             #if !defined(MEDIAINFO_READER_NO)
                 if (Reader==NULL && Info==NULL)
                     return __T("Error: Reader pointer is empty");
+                if (Info==NULL)
+                    return __T("Error: the parsing is already finished");
             #endif //MEDIAINFO_READER_NO
 
             size_t Method=(size_t)-1;
