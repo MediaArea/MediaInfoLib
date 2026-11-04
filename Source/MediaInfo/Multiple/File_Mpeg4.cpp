@@ -441,6 +441,7 @@ void File_Mpeg4::Streams_Finish()
             }
         }
     #endif //MEDIAINFO_DEMUX
+    Frame_Count_NotParsedIncluded=(int64u)-1; //Number of the last parsed sample of any stream, it must not be used as the frame count of the audio or video stream
     #if defined(MEDIAINFO_REFERENCES_YES) && MEDIAINFO_NEXTPACKET
         //Locators only
         if (ReferenceFiles_IsParsing)
