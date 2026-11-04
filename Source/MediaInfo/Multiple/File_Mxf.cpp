@@ -12618,6 +12618,16 @@ void File_Mxf::Data_Parse()
             }
         }
 
+        //A part is not a frame if the essence has several frames, even if the metadata says it is frame wrapped
+        if (Buffer_End)
+            for (const auto& Track : Tracks)
+            {
+                const auto Component=Components.find(Track.second.Sequence);
+                if (Track.second.TrackID==Essence->second.TrackID && Component!=Components.end() && Component->second.Duration!=(int64u)-1 && Component->second.Duration>1)
+                    for (auto Parser : Essence->second.Parsers)
+                        Parser->FrameIsAlwaysComplete=false;
+            }
+
         //Element count, an element parsed in several parts is complete when its end is reached
         if (!Buffer_End || File_Offset+Buffer_Offset+Element_Size>=Buffer_End)
             Essence->second.Element_Count++;
