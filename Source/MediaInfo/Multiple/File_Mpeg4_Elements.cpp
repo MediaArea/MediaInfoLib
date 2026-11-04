@@ -2274,15 +2274,15 @@ void File_Mpeg4::mdat_xxxx()
                         case 2 :
                                 if (Stream_Temp.edts[0].Delay==(int32u)-1 && Stream_Temp.edts[0].Duration+Stream_Temp.edts[1].Duration==Stream_Temp.tkhd_Duration && Stream_Temp.edts[0].Rate==0x00010000 && Stream_Temp.edts[1].Rate==0x00010000 && moov_mvhd_TimeScale)
                                 {
-                                    Delay=((int64s)Stream_Temp.edts[0].Duration)-Stream_Temp.edts[1].Delay;
+                                    Delay=((int64s)Stream_Temp.edts[0].Duration)*Stream_Temp.mdhd_TimeScale/moov_mvhd_TimeScale-Stream_Temp.edts[1].Delay;
                                 }
                                 break;
                         default:
                                 break; //TODO: handle more complex Edit Lists
                     }
 
-                    if (FrameInfo.DTS!=(int64u)-1 && -Delay<(int64s)stts_Offset && moov_mvhd_TimeScale) //TODO: check potential incoherency between movie timescale and track timescale
-                        FrameInfo.DTS+=Delay*1000000000/moov_mvhd_TimeScale;
+                    if (FrameInfo.DTS!=(int64u)-1 && -Delay<(int64s)stts_Offset) //Delay is in the time scale of the track
+                        FrameInfo.DTS+=Delay*1000000000/Stream_Temp.mdhd_TimeScale;
                     else
                         FrameInfo.DTS=TimeCode_DtsOffset;
                 }
