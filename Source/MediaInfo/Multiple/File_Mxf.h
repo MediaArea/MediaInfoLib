@@ -1495,6 +1495,7 @@ protected :
     int64u FirstPass_ContentPackage_Count;
     int32u IndexTable_NSL;
     int32u IndexTable_NPE;
+    bool   IndexTable_IsAlreadyParsed;
     struct systemscheme1
     {
         vector<TimeCode> TimeCodeArray_StartTimecodes;

@@ -2134,6 +2134,7 @@ File_Mxf::File_Mxf()
     FirstPass_ContentPackage_Count=0;
     IndexTable_NSL=0;
     IndexTable_NPE=0;
+    IndexTable_IsAlreadyParsed=false;
     #if MEDIAINFO_ADVANCED
         Footer_Position=(int64u)-1;
         Truncated_Duration=0;
@@ -13575,11 +13576,13 @@ void File_Mxf::IndexTableSegment()
 {
     if (Element_Offset==4)
     {
+        IndexTable_IsAlreadyParsed=false;
         #if MEDIAINFO_DEMUX || MEDIAINFO_SEEK
             //Testing if already parsed
             for (size_t Pos=0; Pos<IndexTables.size(); Pos++)
                 if (File_Offset+Buffer_Offset-Header_Size==IndexTables[Pos].StreamOffset)
                 {
+                    IndexTable_IsAlreadyParsed=true; //For all the items of this segment, else they would be added to the last segment
                     Element_Offset=Element_Size;
                     return;
                 }
@@ -13588,6 +13591,11 @@ void File_Mxf::IndexTableSegment()
             IndexTables[IndexTables.size()-1].StreamOffset=File_Offset+Buffer_Offset-Header_Size;
         #endif //MEDIAINFO_DEMUX || MEDIAINFO_SEEK
         IndexTable_SegmentCount++;
+    }
+    else if (IndexTable_IsAlreadyParsed)
+    {
+        Element_Offset=Element_Size;
+        return;
     }
 
     ELEMENT_BEGIN()
