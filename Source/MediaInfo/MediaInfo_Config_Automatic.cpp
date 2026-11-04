@@ -1453,7 +1453,7 @@ void MediaInfo_Config_Format (InfoMap &Info)
     "Flash Video;;;M;Flv;;flv;video/x-flv;http://www.macromedia.com/go/getflashplayer\n"
     "GXF;;;M;Gxf;SMPTE 360M;gxf\n"
     "HDS F4M;Flash Media Manifest;;M;HdsF4m;;f4m\n"
-    "HEIF;;;M;Mpeg4;;heif avci avcs heic heics avif avis\n"
+    "HEIF;;;M;Mpeg4;;heif hif avci avcs heic heics avif avis\n"
     "HLS;;;M;Hls;;m3u8\n"
     "Google Video;;;M;Riff;Hack of AVI;gvi;;http://video.google.com/playerdownload.html\n"
     "ICC;;;;Icc;;icc icm\n"
