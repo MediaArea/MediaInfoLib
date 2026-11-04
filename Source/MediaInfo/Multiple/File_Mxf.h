@@ -748,7 +748,7 @@ protected :
     int64u IsParsingMiddle_MinOffset; //End of the essences parsed contiguously from the start of the file, (int64u)-1 after a seek
     int64u IsParsingMiddle_MaxOffset;
     bool   ProbeCaption_IsChecked;
-    bool   ProbeCaption_IsInContentPackage; //After the jump of the caption probe, until the next content package
+    bool   ProbeCaption_IsInContentPackage; //After the jump of the caption probe or at a partition with an unknown frame, the frame is computed at the next content package
     bool   ProbeCaption_IsParsingPartitions; //Before the jump of the caption probe
     bool   Track_Number_IsAvailable;
     bool   IsParsingEnd;
@@ -1493,6 +1493,7 @@ protected :
     int64u FirstPass_ContentPackage_First; //Offset of the first element of the first content package
     int64u FirstPass_ContentPackage_End; //Offset of the end of the first element of the last content package
     int64u FirstPass_ContentPackage_Count;
+    int64u ContentPackage_Last; //Offset of the first element of the last content package
     int32u IndexTable_NSL;
     int32u IndexTable_NPE;
     bool   IndexTable_IsAlreadyParsed;

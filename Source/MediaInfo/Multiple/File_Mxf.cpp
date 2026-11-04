@@ -2132,6 +2132,7 @@ File_Mxf::File_Mxf()
     FirstPass_ContentPackage_First=(int64u)-1;
     FirstPass_ContentPackage_End=0;
     FirstPass_ContentPackage_Count=0;
+    ContentPackage_Last=(int64u)-1;
     IndexTable_NSL=0;
     IndexTable_NPE=0;
     IndexTable_IsAlreadyParsed=false;
@@ -11149,8 +11150,17 @@ void File_Mxf::Position_Update(int64u FutureFileOffset, bool UnsynchParsers)
                         if (StreamOffset>=Entry_StreamOffset && StreamOffset<Entry1_StreamOffset)
                         {
                             //Special case: we are not sure the last index is the last frame, or the next known index may be for a later frame, doing nothing
+                            size_t EntryPos_Next=0;
                             if (EntryPos+1==IndexTables[Pos].Entries.size() && (Pos+1==IndexTables.size() || IndexTables[Pos].IndexStartPosition+EntryPos+1!=IndexTables[Pos+1].IndexStartPosition))
-                                break;
+                            {
+                                //Except if the last content package parsed before this partition is this entry, from the size of this content package
+                                if (!IsCaptionProbe || !Partitions_Pos)
+                                    break;
+                                const auto& Partition=Partitions[Partitions_Pos-1];
+                                if (Partition.BodyOffset+Partition.PartitionPackByteCount+Partition.HeaderByteCount+Partition.IndexByteCount+ContentPackage_Last-FutureFileOffset!=Entry_StreamOffset)
+                                    break;
+                                EntryPos_Next=1;
+                            }
 
                             //Entries are not per edit unit (some files have each edit unit twice), an entry for the end of the essence is accepted
                             if (IsCaptionProbe && IndexTables[Pos].IndexDuration && IndexTables[Pos].Entries.size()>IndexTables[Pos].IndexDuration+1)
@@ -11166,7 +11176,7 @@ void File_Mxf::Position_Update(int64u FutureFileOffset, bool UnsynchParsers)
                                 File_GoTo=Buffer_Begin+IndexTables[Pos].Entries[EntryPos].StreamOffset+(IndexTables[Pos].IndexStartPosition+EntryPos)*SDTI_SizePerFrame;
                             }
 
-                            Frame_Count_NotParsedIncluded=IndexTables[Pos].IndexStartPosition+EntryPos;
+                            Frame_Count_NotParsedIncluded=IndexTables[Pos].IndexStartPosition+EntryPos+EntryPos_Next;
                             if (IndexTables[Pos].IndexEditRate)
                                 FrameInfo.DTS=float64_int64s(DTS_Delay*1000000000+((float64)Frame_Count_NotParsedIncluded)/IndexTables[Pos].IndexEditRate*1000000000);
                             else if (IsCaptionProbe)
@@ -11192,6 +11202,26 @@ void File_Mxf::Position_Update(int64u FutureFileOffset, bool UnsynchParsers)
         else if (Frame_Count_NotParsedIncluded==0)
         {
             FrameInfo.DTS=float64_int64s(DTS_Delay*1000000000);
+        }
+
+        //There may be unknown partitions before this position, except just after a partition or if parsing continues from the first pass. The frame would be an estimate
+        if (IsCaptionProbe && !IsParsingEnd && Partitions_Pos && Partitions[Partitions_Pos-1].StreamOffset<ContentPackage_Last)
+        {
+            //The next partition must say that it follows the partition before this position, else the Random Index Pack must list the partition it gives (e.g. a partition of another stream, it is not read), or the last partition if there is no next one
+            const auto Previous=Partitions[Partitions_Pos-1].StreamOffset-Partitions.front().StreamOffset;
+            const auto HasNext=Partitions_Pos<Partitions.size();
+            const auto Listed=HasNext?Partitions[Partitions_Pos].PreviousPartition:Previous;
+            auto IsKnown=HasNext && Listed==Previous;
+            for (const auto& Entry : RandomIndexPack_Entries)
+                if (Entry.ByteOffset==Listed)
+                    IsKnown=true;
+
+            //The size of partitions without BodyOffset is counted, so they must follow each other up to a partition with a BodyOffset
+            for (auto Pos=Partitions_Pos-1; IsKnown && Pos && Partitions[Pos].StreamOffset>FirstPass_ContentPackage_First && (Partitions[Pos].BodySID!=BodySID || !Partitions[Pos].BodyOffset); Pos--)
+                IsKnown=Partitions[Pos].PreviousPartition==Partitions[Pos-1].StreamOffset-Partitions.front().StreamOffset;
+
+            if (!IsKnown)
+                Frame_Count_NotParsedIncluded=(int64u)-1;
         }
 
         //Index table may be wrong
@@ -11238,7 +11268,12 @@ void File_Mxf::Position_Update(int64u FutureFileOffset, bool UnsynchParsers)
         //Partitions are sorted by offset, the last one is not always the one being parsed
         const auto Partition=find_if(Partitions.begin(), Partitions.end(), [](const partition& Item) {return Item.PartitionPackByteCount==(int64u)-1;});
         if (Partition!=Partitions.end())
-            Partitions.erase(Partition);
+        {
+            if (File_Offset+Buffer_Offset<File_Size)
+                Partitions.erase(Partition);
+            else
+                Partition->PartitionPackByteCount=File_Offset+Buffer_Offset-Partition->StreamOffset; //Last element of the file, size is known
+        }
         Partitions_IsCalculatingHeaderByteCount=false;
     }
     Partitions_IsCalculatingSdtiByteCount=false;
@@ -12388,7 +12423,11 @@ void File_Mxf::Data_Parse()
         {
             ProbeCaption_IsInContentPackage=false;
             Position_Update(File_Offset+Buffer_Offset-Header_Size, false);
+            if (Frame_Count_NotParsedIncluded!=(int64u)-1 && ContentPackage_Last!=(int64u)-1)
+                Position_Update(File_Offset+Buffer_Offset-Header_Size, true); //Content parsed with an unknown frame, parsers start again from here as after a jump to this position
         }
+        if (Code_Compare4==Essences_UsedForFrameCount)
+            ContentPackage_Last=File_Offset+Buffer_Offset-Header_Size;
 
         essences::iterator Essence=Essences.find(Code_Compare4);
         if (Essence==Essences.end())
@@ -18658,6 +18697,14 @@ void File_Mxf::PartitionMetadata()
         return;
     }
 
+    //Frame unknown after the jump of the caption probe, it may come from this partition. Else if the caption probe continues the parsing, the essences know it and their parsers are not reset
+    if (IsParsingMiddle_MaxOffset!=(int64u)-1 && Frame_Count_NotParsedIncluded==(int64u)-1 && BodyOffset)
+    {
+        const auto Essence=Essences.find(Essences_UsedForFrameCount);
+        if (Essence==Essences.end() || Essence->second.Frame_Count_NotParsedIncluded==(int64u)-1)
+            ProbeCaption_IsInContentPackage=true;
+    }
+
     PartitionPack_Parsed=true;
     Partitions_IsFooter=(Code.lo&0x00FF0000)==0x00040000;
     #if MEDIAINFO_CONFORMANCE
@@ -23318,7 +23365,7 @@ bool File_Mxf::BookMark_Needed()
                 ProbeCaptionBytePos=IsParsingMiddle_MinOffset;
             if (ProbeCaptionBytePos<ProbeCaptionByteEnd)
             {
-                //Position of the frames comes from the partition of the jump, and from the next one if its index table is after the essence
+                //Position of the frames comes from the partition of the jump and from the next two, as their index table may be after the essence
                 if (!IsContinuing && !ProbeCaption_IsParsingPartitions)
                 {
                     int32u BodySID=0;
@@ -23330,11 +23377,12 @@ bool File_Mxf::BookMark_Needed()
                     for (const auto& Entry : RandomIndexPack_Entries)
                         if (Entry.ByteOffset<File_Size-RunIn && (!Entry.BodySID || Entry.BodySID==BodySID))
                             Entries.push_back({Entry.ByteOffset+RunIn, Entry.BodySID});
+                    std::sort(Entries.begin(), Entries.end(), [](const randomindexpack& A, const randomindexpack& B) {return A.ByteOffset<B.ByteOffset;}); //Not always in order in a damaged file
                     RandomIndexPacks.clear();
                     size_t Pos=0;
                     while (Pos+1<Entries.size() && Entries[Pos+1].ByteOffset<=ProbeCaptionBytePos)
                         Pos++;
-                    for (const auto End=Pos+2; Pos<End && Pos<Entries.size(); Pos++)
+                    for (const auto End=Pos+3; Pos<End && Pos<Entries.size(); Pos++)
                     {
                         auto IsKnown=false; //A partition pack followed by a jump is not kept as its size is unknown, even if it was parsed
                         for (const auto& Partition : Partitions)
@@ -23370,6 +23418,7 @@ bool File_Mxf::BookMark_Needed()
                     }
                 #endif //MEDIAINFO_DEMUX || MEDIAINFO_SEEK
                 IsParsingMiddle_MaxOffset=ProbeCaptionByteEnd;
+                ContentPackage_Last=(int64u)-1;
                 GoTo(ProbeCaptionBytePos);
                 IsParsingEnd=IsContinuing; //Parsers of the essences and their position are kept if continuing, else they are reset and the position comes from the file position
                 ProbeCaption_IsInContentPackage=!IsContinuing;
