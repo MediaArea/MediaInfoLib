@@ -1377,6 +1377,28 @@ void File_Mk::Streams_Finish()
                 }
             #endif
 
+            //Video and Text are together, e.g. captions in the video stream
+            if (StreamKind_Last==Stream_Video)
+            {
+                size_t Text_Count=Temp->second.Parser->Count_Get(Stream_Text);
+                for (size_t Text_Pos=0; Text_Pos<Text_Count; Text_Pos++)
+                {
+                    Fill_Flush();
+                    Stream_Prepare(Stream_Text);
+                    Merge(*Temp->second.Parser, Stream_Text, Text_Pos, StreamPos_Last);
+                    Fill(Stream_Text, StreamPos_Last, "MuxingMode_MoreInfo", __T("Muxed in Video #")+Ztring().From_Number(Temp->second.StreamPos+1));
+                    const Ztring& Duration_Video=Retrieve_Const(Stream_Video, Temp->second.StreamPos, Video_Duration);
+                    Fill(Stream_Text, StreamPos_Last, Text_Duration, Duration_Video.empty()?Retrieve_Const(Stream_General, 0, General_Duration):Duration_Video); //Without statistics tags, the video duration comes later from the general one
+                    Ztring ID=Retrieve(Stream_Text, StreamPos_Last, Text_ID);
+                    Fill(Stream_Text, StreamPos_Last, Text_ID, Retrieve(Stream_Video, Temp->second.StreamPos, Video_ID)+__T("-")+ID, true);
+                    Fill(Stream_Text, StreamPos_Last, Text_Delay, Retrieve(Stream_Video, Temp->second.StreamPos, Video_Delay), true);
+                    Fill(Stream_Text, StreamPos_Last, Text_Delay_Source, Retrieve(Stream_Video, Temp->second.StreamPos, Video_Delay_Source), true);
+                }
+
+                StreamKind_Last=Stream_Video;
+                StreamPos_Last=Temp->second.StreamPos;
+            }
+
             //Special case: AAC
             if (StreamKind_Last==Stream_Audio
              && (Retrieve(Stream_Audio, StreamPos_Last, Audio_Format)==__T("AAC")
