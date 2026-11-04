@@ -749,6 +749,7 @@ protected :
     int64u IsParsingMiddle_MaxOffset;
     bool   ProbeCaption_IsChecked;
     bool   ProbeCaption_IsInContentPackage; //After the jump of the caption probe, until the next content package
+    bool   ProbeCaption_IsParsingPartitions; //Before the jump of the caption probe
     bool   Track_Number_IsAvailable;
     bool   IsParsingEnd;
     bool   IsCheckingRandomAccessTable;
