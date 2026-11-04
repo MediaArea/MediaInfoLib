@@ -753,6 +753,8 @@ void File_Hevc::Streams_Finish()
             {
                 Ztring MuxingMode=Retrieve(Stream_Text, Pos, "MuxingMode");
                 Fill(Stream_Text, Pos, "MuxingMode", __T("SCTE 128 / ")+MuxingMode, true);
+                if (!IsSub && !Config->IsFinishing)
+                    Clear(Stream_Text, Pos, Text_Duration); //Only the start of a raw stream is parsed, it must not be used as the duration of the stream
             }
         }
     #endif //defined(MEDIAINFO_DTVCCTRANSPORT_YES)
@@ -4211,14 +4213,24 @@ void File_Hevc::slice_segment_header()
         (*seq_parameter_set_Item)->pic_struct_FirstIrap=pic_struct_Pending;
 
     //Frame order from the slice header, whatever the container provides as timestamps
-    if (first_slice_segment_in_pic_flag && !MustParse_VPS_SPS_PPS_FromFlv && !nuh_layer_id && TemporalReferences_Reserved && IsSub)
+    if (first_slice_segment_in_pic_flag && !MustParse_VPS_SPS_PPS_FromFlv && !nuh_layer_id && TemporalReferences_Reserved)
     {
         Pictures_Decoded++;
 
-        //Duration of a picture from the frame rate if present
+        //Duration of a picture from the frame rate if present, it is also the only source of time in a raw stream
         const auto vui_parameters=(*seq_parameter_set_Item)->vui_parameters;
+        float64 Frame_Duration=0;
         if (vui_parameters && vui_parameters->time_scale && vui_parameters->num_units_in_tick)
-            Pictures_Duration=float64_int64s(((float64)vui_parameters->num_units_in_tick)*1000000000/vui_parameters->time_scale);
+        {
+            Frame_Duration=((float64)vui_parameters->num_units_in_tick)*1000000000/vui_parameters->time_scale;
+            Pictures_Duration=float64_int64s(Frame_Duration);
+            if (!IsSub)
+            {
+                FrameInfo.DUR=Pictures_Duration;
+                if (FrameInfo.DTS!=(int64u)-1) //Not known after a seek
+                    FrameInfo.DTS=float64_int64s(Frame_Duration*(Pictures_Decoded-1));
+            }
+        }
 
         //The container keeps the last PTS if a picture has none, e.g. in a PES without PTS or after the first picture of a PES
         const auto PTS=FrameInfo.PTS!=Pictures_Decoded_PTS?FrameInfo.PTS:(int64u)-1;
@@ -4370,6 +4382,10 @@ void File_Hevc::slice_segment_header()
             if (GA94_03_IsPresent)
                 sei_message_user_data_registered_itu_t_t35_B5_0031_GA94_03_Delayed((*pic_parameter_set_Item)->seq_parameter_set_id); //For each picture as a picture waiting must be read before the list of pictures is shifted
         #endif //defined(MEDIAINFO_DTVCCTRANSPORT_YES)
+
+        //The demux event of a picture is sent before its slices are parsed, so the time is now the one of the next picture
+        if (!IsSub && Frame_Duration && FrameInfo.DTS!=(int64u)-1)
+            FrameInfo.DTS=float64_int64s(Frame_Duration*Pictures_Decoded);
     }
 }
 
