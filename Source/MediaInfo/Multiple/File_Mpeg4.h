@@ -792,6 +792,7 @@ private :
         int64u          TimeCode_FrameOffset;
         int64u          TimeCode_DtsOffset;
         std::map<int64u, int64u> StreamOffset_Jump; //Key is the current position, value is the jump position
+        std::set<int64u> StreamOffset_Jump_Used; //Keys of StreamOffset_Jump already used since the last seek
     #endif //MEDIAINFO_DEMUX
     #if MEDIAINFO_CONFORMANCE
         bool            IsCmaf;

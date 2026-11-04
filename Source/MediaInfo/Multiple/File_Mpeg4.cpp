@@ -1846,6 +1846,9 @@ void File_Mpeg4::Read_Buffer_Unsynched()
         for (size_t Pos=0; Pos<Stream->second.Parsers.size(); Pos++)
             Stream->second.Parsers[Pos]->Open_Buffer_Unsynch();
     }
+    #if MEDIAINFO_DEMUX
+        StreamOffset_Jump_Used.clear();
+    #endif //MEDIAINFO_DEMUX
 
     if (mdat_Pos.empty())
     {

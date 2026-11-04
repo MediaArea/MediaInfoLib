@@ -2603,9 +2603,14 @@ void File_Mpeg4::mdat_StreamJump()
             std::map<int64u, int64u>::iterator StreamOffset_Jump_Temp=StreamOffset_Jump.find(File_Offset+Buffer_Offset+Element_Size);
             if (StreamOffset_Jump_Temp!=StreamOffset_Jump.end())
             {
-                mdat_Pos_Temp=&mdat_Pos[0];
-                while (mdat_Pos_Temp<mdat_Pos_Max && mdat_Pos_Temp->Offset!=StreamOffset_Jump_Temp->second)
-                    mdat_Pos_Temp++;
+                if (StreamOffset_Jump_Used.insert(StreamOffset_Jump_Temp->first).second)
+                {
+                    mdat_Pos_Temp=&mdat_Pos[0];
+                    while (mdat_Pos_Temp<mdat_Pos_Max && mdat_Pos_Temp->Offset!=StreamOffset_Jump_Temp->second)
+                        mdat_Pos_Temp++;
+                }
+                else
+                    StreamOffset_Jump.clear(); //Position reached twice: overlapping chunks, the jumps could loop forever
             }
         }
     #endif // MEDIAINFO_DEMUX
