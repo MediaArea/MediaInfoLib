@@ -122,6 +122,10 @@ File__ReferenceFilesHelper::File__ReferenceFilesHelper(File__Analyze* MI_, Media
     Sequences_Current=0;
     MI=MI_;
     Config=Config_;
+    #ifdef __WINDOWS__
+        if (MI->File_Name.find(__T("://"))==string::npos)
+            MI->File_Name.FindAndReplace(__T("/"), __T("\\"), 0, Ztring_Recursive); //File_Name normalization local file, needed for getting its path (General part is already filled)
+    #endif //__WINDOWS__
     Init_Done=false;
     FrameRate=0;
     Duration=0;
@@ -1628,7 +1632,7 @@ void File__ReferenceFilesHelper::List_Compute()
                     if (MI->Retrieve(StreamKind_Target, StreamPos_Target, "Source").empty())
                     {
                         Ztring SourcePath;
-                        Ztring SourceName=MI->Retrieve(Stream_General, 0, General_CompleteName);
+                        const Ztring& SourceName=MI->File_Name;
                         if (SourceName.find(__T("://"))==string::npos)
                             SourcePath=ZenLib::FileName::Path_Get(SourceName);
                         else
@@ -1668,7 +1672,7 @@ void File__ReferenceFilesHelper::List_Compute()
         if (!HasMainFile && Config->File_Source_List_Get())
         {
             Ztring SourcePath;
-            Ztring SourceName=MI->Retrieve(Stream_General, 0, General_CompleteName);
+            const Ztring& SourceName=MI->File_Name;
             if (SourceName.find(__T("://"))==string::npos)
                 SourcePath=ZenLib::FileName::Path_Get(SourceName);
             else

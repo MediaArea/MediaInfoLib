@@ -183,6 +183,8 @@ bool File_DcpPkl::FileHeader_Begin()
     //Merging with Assetmap
     if (!Config->File_IsReferenced_Get())
     {
+        ReferenceFiles_Accept(this, Config);
+
         FileName Directory(File_Name);
         Ztring DirPath = Directory.Path_Get();
         if (!DirPath.empty())
@@ -221,8 +223,6 @@ bool File_DcpPkl::FileHeader_Begin()
     //Creating the playlist
     if (!Config->File_IsReferenced_Get())
     {
-        ReferenceFiles_Accept(this, Config);
-
         for (File_DcpPkl::streams::iterator Stream=Streams.begin(); Stream!=Streams.end(); ++Stream)
             if (Stream->StreamKind==(stream_t)(Stream_Max+1) && Stream->ChunkList.size()==1) // Means CPL
             {
