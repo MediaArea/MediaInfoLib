@@ -342,6 +342,8 @@ int8u Mpeg4_Descriptors_ToAudioProfileLevelIndication(const profilelevel_struct&
 }
 string Mpeg4_Descriptors_AudioProfileLevelString(const profilelevel_struct& ProfileLevel)
 {
+    if (ProfileLevel.profile >= AudioProfile_Max) // UnknownAudio is not in the table
+        return {};
     const auto ProfileString = Mpeg4_Descriptors_AudioProfileLevelIndication_Profile[ProfileLevel.profile];
     if (!ProfileString)
         return {};
