@@ -204,7 +204,7 @@ size_t Reader_File::Format_Test(MediaInfo_Internal* MI, String File_Name)
             ZtringList Extensions;
             Extensions.Separator_Set(0, __T(" "));
             Extensions.Write(FormatList.Get(Format->first, InfoFormat_Extensions));
-            if (Extensions.Find(Extension)!=Error)
+            if (Extensions.Find(Extension)!=ZenLib::Error)
                 break;
             ++Format;
         }
