@@ -285,6 +285,7 @@ MediaInfo_Config_MediaInfo::MediaInfo_Config_MediaInfo()
     File_IgnoreEditsBefore=0;
     File_IgnoreEditsAfter=(int64u)-1;
     File_EditRate=0;
+    File_ProbeCaption_QuickPass=false;
     File_Size=(int64u)-1;
     ParseSpeed=MediaInfoLib::Config.ParseSpeed_Get();
     ParseSpeed_FromFile=false;
@@ -1299,6 +1300,10 @@ Ztring MediaInfo_Config_MediaInfo::Option (const String &Option, const String &V
     {
         return File_DisplayCaptions_Set(Value);
     }
+    else if (Option_Lower==__T("file_displaycaptions_get"))
+    {
+        return Ztring().From_UTF8(DisplayCaptions_Strings[File_DisplayCaptions_Get()]);
+    }
     else if (Option_Lower==__T("file_eia708_displayemptystream"))
     {
         return File_DisplayCaptions_Set(Ztring().From_UTF8(DisplayCaptions_Strings[Value==__T("0")?DisplayCaptions_Command:DisplayCaptions_Stream]));
@@ -1314,12 +1319,11 @@ Ztring MediaInfo_Config_MediaInfo::Option (const String &Option, const String &V
     }
     else if (Option_Lower==__T("file_probecaption"))
     {
-        File_ProbeCaption_Set(Value);
-        return __T("");
+        return File_ProbeCaption_Set(Value);
     }
     else if (Option_Lower==__T("file_probecaption_get"))
     {
-        return __T("(Not supported)");
+        return File_ProbeCaption_Get();
     }
     else if (Option_Lower==__T("file_ac3_ignorecrc"))
     {
@@ -3713,37 +3717,50 @@ Ztring MediaInfo_Config_MediaInfo::File_ProbeCaption_Set (const Ztring& NewValue
     List.Separator_Set(0, __T(","));
     List.Separator_Set(1, __T("+"));
     List.Write(NewValue);
-    CriticalSectionLocker CSL(CS);
-    File_ProbeCaption.clear();
-    bool HasForAll = false;
-    string AllMinus;
+    std::vector<config_probe> NewProbeCaption;
     for (const auto& Line : List) {
         config_probe Item;
+        bool HasValue = false;
         for (const auto& Value : Line) {
+            if (Value.empty()) {
+                continue;
+            }
+            HasValue = true;
             auto Pos = Value.find_first_not_of(__T("0123456789"));
             if (Pos == string::npos) {
-                Item.Start_Type = config_probe_size;
-                Item.Start = Value.To_int64u();
+                auto Value_Int = Value.To_int64u();
+                if (Item.Start_Type == config_probe_none) {
+                    Item.Start_Type = config_probe_size;
+                    Item.Start = Value_Int;
+                }
+                else if (Item.Duration_Type == config_probe_none) {
+                    Item.Duration_Type = config_probe_size;
+                    Item.Duration = Value_Int;
+                }
+                else {
+                    return Malformed;
+                }
             }
-            else if (!Value.empty() && ((Value[0] >= __T('A') && Value[0] <= __T('Z')) || (Value[0] >= __T('a') && Value[0] <= __T('z')))) {
+            else if ((Value[0] >= __T('A') && Value[0] <= __T('Z')) || (Value[0] >= __T('a') && Value[0] <= __T('z'))) {
                 string Value2(Ztring(Value).MakeUpperCase().To_UTF8());
                 bool Negative = false;
                 if (Value2.rfind("ALL", 0) == 0) {
                     if (Value2.size() > 3) {
-                        if (Value2[3] != __T('-'))
+                        if (Value2[3] != '-')
                             return Malformed;
                         Negative = true;
-                        Value2 = Value.To_UTF8().substr(4);
-                        AllMinus += '-';
-                        AllMinus += Value2;
                     }
+                    Value2.erase(0, 4);
                 }
-                if (Value2 != "MP4" && Value2 != "MPEG-4" && Value2 != "MXF" && !Value2.empty()) { //TODO: full list
+                if (Value2 == "MP4") {
+                    Value2 = "MPEG-4";
+                }
+                if (Value2 != "MPEG-4" && Value2 != "MXF" && !Value2.empty()) { //TODO: full list
                     return Malformed;
                 }
-                Item.Parser = Value2 != "MP4" ? Value2 : "MPEG-4";
+                Item.Parser = Value2;
                 if (Negative) {
-                    Item.Parser.insert(Item.Parser.begin(), __T('-'));
+                    Item.Parser.insert(Item.Parser.begin(), '-');
                 }
             }
             else if (Pos == Value.size() - 1 && Value[Pos] == __T('%')) {
@@ -3765,26 +3782,30 @@ Ztring MediaInfo_Config_MediaInfo::File_ProbeCaption_Set (const Ztring& NewValue
             }
             else if (Pos == Value.size() - 1 && (Value[Pos] == __T('E') || Value[Pos] == __T('G') || Value[Pos] == __T('K') || Value[Pos] == __T('M') || Value[Pos] == __T('P') || Value[Pos] == __T('T') || Value[Pos] == __T('k'))) {
                 auto Value_Int = Value.To_int64u();
+                int Shift = 10;
                 switch (Value[Pos])
                 {
                 case 'E':
-                    Value_Int <<= 10;
+                    Shift += 10;
                     [[fallthrough]];
                 case 'P':
-                    Value_Int <<= 10;
+                    Shift += 10;
                     [[fallthrough]];
                 case 'T':
-                    Value_Int <<= 10;
+                    Shift += 10;
                     [[fallthrough]];
                 case 'G':
-                    Value_Int <<= 10;
+                    Shift += 10;
                     [[fallthrough]];
                 case 'M':
-                    Value_Int <<= 10;
+                    Shift += 10;
                     [[fallthrough]];
-                default:
-                    Value_Int <<= 10;
+                default:;
                 }
+                if (Value_Int > ((int64u)-1 >> Shift)) {
+                    return Malformed;
+                }
+                Value_Int <<= Shift;
                 if (Item.Start_Type == config_probe_none) {
                     Item.Start_Type = config_probe_size;
                     Item.Start = Value_Int;
@@ -3819,46 +3840,64 @@ Ztring MediaInfo_Config_MediaInfo::File_ProbeCaption_Set (const Ztring& NewValue
                 }
             }
         }
-        if (Item.Parser.empty()) {
-            HasForAll=true;
+        if (!HasValue) {
+            continue;
+        }
+        if (Item.Start_Type == config_probe_none) { //Only a format, default seek and duration
+            Item.Start_Type = config_probe_percent;
+            Item.Start = 50;
         }
         if (Item.Duration_Type == config_probe_none) {
             Item.Duration_Type = config_probe_dur;
             Item.Duration = 30;
         }
-        File_ProbeCaption.push_back(Item);
-    }
-    if (!HasForAll) {
-        config_probe Probe;
-        Probe.Start_Type = config_probe_percent;
-        Probe.Start = 50;
-        Probe.Duration_Type = config_probe_dur;
-        Probe.Duration = 30;
-        Probe.Parser = AllMinus;
-        File_ProbeCaption.push_back(Probe);
+        NewProbeCaption.push_back(Item);
     }
 
+    CriticalSectionLocker CSL(CS);
+    File_ProbeCaption = std::move(NewProbeCaption);
+    File_ProbeCaption_Value = NewValue;
     return {};
+}
+
+Ztring MediaInfo_Config_MediaInfo::File_ProbeCaption_Get()
+{
+    CriticalSectionLocker CSL(CS);
+    return File_ProbeCaption_Value;
 }
 
 config_probe MediaInfo_Config_MediaInfo::File_ProbeCaption_Get(const string& ParserName)
 {
-    if (ParseSpeed<=0 && ParseSpeed>=1)
-        return {};
-
-    //Item for this parser, else first item for all parsers (the same one for each file)
+    //Item for this parser, else first item for all parsers, else default if this parser is not excluded (the same one for each file)
     CriticalSectionLocker CSL(CS);
+    if ((ParseSpeed<=0 && !File_ProbeCaption_QuickPass) || ParseSpeed>=1)
+        return {}; //No probe if quick pass or full pass
     for (const auto& Item : File_ProbeCaption) {
         if (Item.Parser == ParserName) {
             return Item;
         }
     }
+    bool IsExcluded = false;
     for (const auto& Item : File_ProbeCaption) {
-        if (Item.Parser.empty() || (Item.Parser[0] == '-' && Item.Parser.substr(1) != ParserName)) {
+        if (Item.Parser.empty()) {
             return Item;
         }
+        if (Item.Parser[0] == '-') {
+            if (Item.Parser.compare(1, string::npos, ParserName)) {
+                return Item;
+            }
+            IsExcluded = true;
+        }
     }
-    return {};
+    if (IsExcluded) {
+        return {};
+    }
+    config_probe Probe;
+    Probe.Start_Type = config_probe_percent;
+    Probe.Start = 50;
+    Probe.Duration_Type = config_probe_dur;
+    Probe.Duration = 30;
+    return Probe;
 }
 
 //---------------------------------------------------------------------------

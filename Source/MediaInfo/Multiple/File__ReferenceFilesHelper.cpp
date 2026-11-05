@@ -122,6 +122,10 @@ File__ReferenceFilesHelper::File__ReferenceFilesHelper(File__Analyze* MI_, Media
     Sequences_Current=0;
     MI=MI_;
     Config=Config_;
+    #ifdef __WINDOWS__
+        if (MI->File_Name.find(__T("://"))==string::npos)
+            MI->File_Name.FindAndReplace(__T("/"), __T("\\"), 0, Ztring_Recursive); //File_Name normalization local file, needed for getting its path (General part is already filled)
+    #endif //__WINDOWS__
     Init_Done=false;
     FrameRate=0;
     Duration=0;
@@ -1362,6 +1366,9 @@ void File__ReferenceFilesHelper::ParseReference_Finalize_PerStream ()
         {
             MediaInfo_Internal MI2;
             MI2.Option(__T("File_KeepInfo"), __T("1"));
+            MI2.Option(__T("File_DisplayCaptions"), Config->Option(__T("File_DisplayCaptions_Get"), Ztring())); //Same list of streams as the parsing of the sequence
+            MI2.Option(__T("File_ProbeCaption"), Config->File_ProbeCaption_Get());
+            MI2.Config.File_ProbeCaption_QuickPass=Config->ParseSpeed>0;
             Ztring ParseSpeed_Save=MI2.Option(__T("ParseSpeed_Get"), __T(""));
             Ztring Demux_Save=MI2.Option(__T("Demux_Get"), __T(""));
             MI2.Option(__T("ParseSpeed"), __T("0"));
@@ -1625,7 +1632,7 @@ void File__ReferenceFilesHelper::List_Compute()
                     if (MI->Retrieve(StreamKind_Target, StreamPos_Target, "Source").empty())
                     {
                         Ztring SourcePath;
-                        Ztring SourceName=MI->Retrieve(Stream_General, 0, General_CompleteName);
+                        const Ztring& SourceName=MI->File_Name;
                         if (SourceName.find(__T("://"))==string::npos)
                             SourcePath=ZenLib::FileName::Path_Get(SourceName);
                         else
@@ -1665,7 +1672,7 @@ void File__ReferenceFilesHelper::List_Compute()
         if (!HasMainFile && Config->File_Source_List_Get())
         {
             Ztring SourcePath;
-            Ztring SourceName=MI->Retrieve(Stream_General, 0, General_CompleteName);
+            const Ztring& SourceName=MI->File_Name;
             if (SourceName.find(__T("://"))==string::npos)
                 SourcePath=ZenLib::FileName::Path_Get(SourceName);
             else
@@ -1706,6 +1713,8 @@ MediaInfo_Internal* File__ReferenceFilesHelper::MI_Create()
 {
     //Configuration
     MediaInfo_Internal* MI_Temp=new MediaInfo_Internal();
+    MI_Temp->Option(__T("File_DisplayCaptions"), Config->Option(__T("File_DisplayCaptions_Get"), Ztring()));
+    MI_Temp->Option(__T("File_ProbeCaption"), Config->File_ProbeCaption_Get());
     for (std::map<string, Ztring>::iterator Config_Item=Sequences[Sequences_Current]->Config.begin(); Config_Item!=Sequences[Sequences_Current]->Config.end(); ++Config_Item)
         MI_Temp->Option(Ztring().From_UTF8(Config_Item->first.c_str()), Config_Item->second);
     MI_Temp->Option(__T("File_IsReferenced"), __T("1"));

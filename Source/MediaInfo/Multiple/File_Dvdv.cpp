@@ -296,6 +296,7 @@ void File_Dvdv::Streams_Finish()
 
         MediaInfo_Internal MI;
         MI.Option(__T("File_IsReferenced"), __T("1"));
+        MI.Option(__T("File_DisplayCaptions"), Config->Option(__T("File_DisplayCaptions_Get"), Ztring()));
         if (MI.Open(VOB_File))
         {
             Merge(MI);

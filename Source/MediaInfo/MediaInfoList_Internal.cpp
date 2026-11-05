@@ -507,6 +507,13 @@ String MediaInfoList_Internal::Option (const String &Option, const String &Value
     }
     else if (OptionLower.find(__T("file_"))==0)
     {
+        if (OptionLower==__T("file_displaycaptions") || OptionLower==__T("file_probecaption"))
+        {
+            //Value checked now, errors are not reported when the option is applied to each file
+            Ztring Result=MediaInfo_Config_MediaInfo().Option(Option, Value);
+            if (!Result.empty())
+                return Result;
+        }
         for (size_t i=0; i<Info.size(); i++) //Applies to both past and future items
             Info[i]->Option(Option, Value);
         Config_MediaInfo_Items[Option]=Value;

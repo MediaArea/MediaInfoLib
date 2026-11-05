@@ -102,6 +102,8 @@ bool File_Xdcam_Clip::FileHeader_Begin()
                     //MediaInfo::Option_Static(__T("ReadByHuman"), __T("0"));
                     MediaInfo_Internal MI;
                     MI.Option(__T("File_IsReferenced"), __T("1"));
+                    MI.Option(__T("File_DisplayCaptions"), Config->Option(__T("File_DisplayCaptions_Get"), Ztring()));
+                    MI.Option(__T("File_ProbeCaption"), Config->File_ProbeCaption_Get());
                     if (MI.Open(MXF_File))
                     {
                         //MediaInfo::Option_Static(__T("ReadByHuman"), ReadByHuman?__T("1"):__T("0"));

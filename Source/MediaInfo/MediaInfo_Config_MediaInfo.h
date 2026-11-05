@@ -398,6 +398,7 @@ public :
     Ztring        File_DisplayCaptions_Set (const Ztring& NewValue);
     display_captions File_DisplayCaptions_Get ();
     Ztring        File_ProbeCaption_Set(const Ztring& NewValue);
+    Ztring        File_ProbeCaption_Get();
     config_probe  File_ProbeCaption_Get(const string& Parser);
     #if defined(MEDIAINFO_AC3_YES)
     void          File_Ac3_IgnoreCrc_Set (bool NewValue);
@@ -436,6 +437,7 @@ public :
     int64u        File_IgnoreEditsBefore;
     int64u        File_IgnoreEditsAfter;
     float64       File_EditRate;
+    bool          File_ProbeCaption_QuickPass; //Caption probe also in a quick pass
     int64u        File_Size;
     float32       ParseSpeed;
     bool          ParseSpeed_FromFile;
@@ -633,6 +635,7 @@ private :
     #endif //defined(MEDIAINFO_LIBMMS_YES)
     display_captions        DisplayCaptions;
     std::vector<config_probe> File_ProbeCaption;
+    Ztring                  File_ProbeCaption_Value;
     #if defined(MEDIAINFO_AC3_YES)
     bool                    File_Ac3_IgnoreCrc;
     #endif //defined(MEDIAINFO_AC3_YES)
