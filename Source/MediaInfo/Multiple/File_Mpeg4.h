@@ -98,6 +98,7 @@ private :
     void jp2h_ricc() {jp2h_colr(); }
     void mdat();
     void mdat_xxxx();
+    void mdat_ProbeCaption();
     void mdat_StreamJump();
     void meta();
     void meta_CreateStream();
@@ -512,7 +513,7 @@ private :
         int64u Size;
         int32u StreamID;
         int32u Reserved1;
-        int64u Reserved2;
+        int64u SamplePos; //Sample number in the stream, only for the caption probe
         bool operator<(const mdat_Pos_Type& r) const
         {
             return Offset<r.Offset;
@@ -588,6 +589,7 @@ private :
         int64u                  stts_SampleDuration;
         int64u                  FirstUsedOffset;
         int64u                  LastUsedOffset;
+        int64u                  ParsedEndOffset; //Offset after the last parsed sample
         int32u                  mvex_trex_default_sample_duration;
         int32u                  mvex_trex_default_sample_size;
         int32u                  TimeCode_TrackID;
@@ -692,6 +694,7 @@ private :
             stts_SampleDuration = 0;
             FirstUsedOffset=(int64u)-1;
             LastUsedOffset=(int64u)-1;
+            ParsedEndOffset=0;
             mvex_trex_default_sample_duration=0;
             mvex_trex_default_sample_size=0;
             TimeCode_TrackID=(int32u)-1;
@@ -789,6 +792,7 @@ private :
         int64u          TimeCode_FrameOffset;
         int64u          TimeCode_DtsOffset;
         std::map<int64u, int64u> StreamOffset_Jump; //Key is the current position, value is the jump position
+        std::set<int64u> StreamOffset_Jump_Used; //Keys of StreamOffset_Jump already used since the last seek
     #endif //MEDIAINFO_DEMUX
     #if MEDIAINFO_CONFORMANCE
         bool            IsCmaf;
