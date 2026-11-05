@@ -2619,9 +2619,10 @@ void File_Mpeg4::mdat_StreamJump()
             {
                 if (StreamOffset_Jump_Used.insert(StreamOffset_Jump_Temp->first).second)
                 {
-                    mdat_Pos_Temp=&mdat_Pos[0];
-                    while (mdat_Pos_Temp<mdat_Pos_Max && mdat_Pos_Temp->Offset!=StreamOffset_Jump_Temp->second)
-                        mdat_Pos_Temp++;
+                    mdat_Pos_Type ToJump_mdat_Pos_Type;
+                    ToJump_mdat_Pos_Type.Offset=StreamOffset_Jump_Temp->second;
+                    mdat_pos::iterator ToJump_mdat_Pos_Lower=std::lower_bound(mdat_Pos.begin(), mdat_Pos.end(), ToJump_mdat_Pos_Type);
+                    mdat_Pos_Temp=(ToJump_mdat_Pos_Lower!=mdat_Pos.end() && ToJump_mdat_Pos_Lower->Offset==ToJump_mdat_Pos_Type.Offset)?&(*ToJump_mdat_Pos_Lower):mdat_Pos_Max;
 
                     //Hints, no need to read more than the samples up to the next jump
                     if (File_Buffer_Size_Hint_Pointer && mdat_Pos_Temp<mdat_Pos_Max)
