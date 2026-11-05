@@ -64,6 +64,9 @@ bool File_Gif::FileHeader_Begin()
 //---------------------------------------------------------------------------
 void File_Gif::Read_Buffer_Continue()
 {
+    if (!Element_Size)
+        return; //All is parsed in one call, the parser is called again if the parsing continues after Finish()
+
     if (!IsSub && Buffer_Offset+Element_Size<File_Size)
     {
         Element_WaitForMoreData();
