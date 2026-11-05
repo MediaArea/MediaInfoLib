@@ -1867,7 +1867,7 @@ void File_Mpeg4::free()
     #endif //MEDIAINFO_HASH
 
     //ISM
-    if (moof_traf_base_data_offset==(int64u)-1 && !data_offset_present)
+    if (moof_traf_base_data_offset==(int64u)-1 && !data_offset_present && Stream!=Streams.end())
         Stream->second.stco.push_back(File_Offset+Buffer_Offset);
 }
 
@@ -2190,7 +2190,7 @@ void File_Mpeg4::mdat()
     #endif //MEDIAINFO_HASH
 
     //ISM
-    if (moof_traf_base_data_offset==(int64u)-1 && !data_offset_present)
+    if (moof_traf_base_data_offset==(int64u)-1 && !data_offset_present && Stream!=Streams.end())
         Stream->second.stco.push_back(File_Offset+Buffer_Offset);
 }
 
@@ -2328,11 +2328,14 @@ void File_Mpeg4::mdat_xxxx()
                 {
                     //Checking if we need to add SPS/PPS
                     size_t CheckMax=Stream_Temp.Demux_Offset+0x10; //SPS uses to be in the first bytes only
-                    if (CheckMax>Element_Size-4)
+                    if (Element_Size<4)
+                        CheckMax=0;
+                    else if (CheckMax>Element_Size-4)
                         CheckMax=Element_Size-4;
                     ShouldDemux=false;
+                    const int8u* Sample=Buffer+Buffer_Offset;
                     for (size_t i=Stream_Temp.Demux_Offset; i<CheckMax; i++)
-                        if (Buffer[i]==0x00 && Buffer[i+1]==0x00 && Buffer[i+2]==0x01 && Buffer[i+3]==0x67)
+                        if (Sample[i]==0x00 && Sample[i+1]==0x00 && Sample[i+2]==0x01 && Sample[i+3]==0x67)
                         {
                             Stream_Temp.Demux_Level&=~((1<<7)|(1<<6)); //Remove the flag, SPS/PPS detected
                             ShouldDemux=true;
@@ -5568,7 +5571,13 @@ void File_Mpeg4::moov_trak()
     moov_trak_tkhd_DisplayAspectRatio=0;
     moov_trak_tkhd_Rotation=0;
     Stream_Prepare(Stream_Max); //clear filling
-    Streams.erase((int32u)-1);
+    const auto Temp=Streams.find((int32u)-1);
+    if (Temp!=Streams.end())
+    {
+        if (Stream==Temp)
+            Stream=Streams.end();
+        Streams.erase(Temp);
+    }
     Fill(StreamKind_Last, StreamPos_Last, General_StreamOrder, StreamOrder);
     ++StreamOrder;
 }
@@ -6393,8 +6402,9 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_co64()
     if (Count==0)
         return;
 
-    std::vector<int64u> &stco=Stream->second.stco;
-    auto HandleAllContent = Stream->second.TimeCode || Stream->second.IsCaption || (Stream->second.Parsers.empty() && Stream->second.StreamKind == Stream_Video) || (!Stream->second.Parsers.empty() && Stream->second.MayHaveCaption);
+    auto& Stream=Streams[moov_trak_tkhd_TrackID];
+    std::vector<int64u> &stco=Stream.stco;
+    auto HandleAllContent = Stream.TimeCode || Stream.IsCaption || (Stream.Parsers.empty() && Stream.StreamKind == Stream_Video) || (!Stream.Parsers.empty() && Stream.MayHaveCaption);
     stco.resize((Count<FrameCount_MaxPerStream || HandleAllContent)?Count:FrameCount_MaxPerStream);
     int64u* stco_Data=&stco[0];
 
@@ -6664,6 +6674,8 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsc()
     Get_B4 (Count,                                              "Number of entries");
     Loop_CheckValue(Count, 12, "entry_count");
     Stream=Streams.find(moov_trak_tkhd_TrackID);
+    if (Stream==Streams.end())
+        Stream=Streams.emplace(moov_trak_tkhd_TrackID, stream()).first; //No previous box created the stream (malformed file)
     auto HandleAllContent = Stream->second.TimeCode || Stream->second.IsCaption || (Stream->second.Parsers.empty() && Stream->second.StreamKind == Stream_Video) || (!Stream->second.Parsers.empty() && Stream->second.MayHaveCaption);
     for (int32u Pos=0; Pos<Count; Pos++)
     {
@@ -6712,8 +6724,21 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd()
 }
 
 //---------------------------------------------------------------------------
+bool File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_TimeCode_Mix(bool IsTimeCode)
+{
+    //The time code parser is expected to be the only parser of a time code track
+    const auto& Stream=Streams[moov_trak_tkhd_TrackID];
+    if (IsTimeCode?(Stream.Parsers.empty() || Stream.TimeCode):!Stream.TimeCode)
+        return false;
+    Skip_XX(Element_TotalSize_Get(),                            "Data (time code with other sample descriptions in the same track is not supported)");
+    return true;
+}
+
+//---------------------------------------------------------------------------
 void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_mebx()
 {
+    if (moov_trak_mdia_minf_stbl_stsd_TimeCode_Mix(false))
+        return;
     if (StreamKind_Last != Stream_Other)
     {
         Stream_Prepare(Stream_Other);
@@ -6832,6 +6857,8 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_mebx_keys_xxxx_dtyp() {
 //---------------------------------------------------------------------------
 void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_stpp()
 {
+    if (moov_trak_mdia_minf_stbl_stsd_TimeCode_Mix(false))
+        return;
     Element_Name("Subtitle (stpp)");
 
     //Parsing
@@ -6869,6 +6896,8 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_stpp()
 //---------------------------------------------------------------------------
 void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_text()
 {
+    if (moov_trak_mdia_minf_stbl_stsd_TimeCode_Mix(false))
+        return;
     Element_Name("Text (Apple)");
 
     //Parsing
@@ -6936,6 +6965,8 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_text()
 //---------------------------------------------------------------------------
 void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_tmcd()
 {
+    if (moov_trak_mdia_minf_stbl_stsd_TimeCode_Mix(true))
+        return;
     if (StreamKind_Last != Stream_Other)
     {
         Stream_Prepare(Stream_Other);
@@ -7049,6 +7080,8 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_tmcd_name()
 //---------------------------------------------------------------------------
 void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_tx3g()
 {
+    if (moov_trak_mdia_minf_stbl_stsd_TimeCode_Mix(false))
+        return;
     Element_Name("Text");
 
     //Parsing
@@ -7151,6 +7184,8 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_tx3g_ftab()
 //---------------------------------------------------------------------------
 void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx()
 {
+    if (moov_trak_mdia_minf_stbl_stsd_TimeCode_Mix(false))
+        return;
     //Parsing
     string CodecIDAddition;
     if (StreamKind_Last==Stream_Max)
@@ -10650,6 +10685,8 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsz()
     NAME_VERSION_FLAG("Sample Size", 0)
 
     Stream=Streams.find(moov_trak_tkhd_TrackID);
+    if (Stream==Streams.end())
+        Stream=Streams.emplace(moov_trak_tkhd_TrackID, stream()).first; //No previous box created the stream (malformed file)
     int32u Sample_Size, Sample_Count;
     int8u  FieldSize;
     if (Element_Code==Elements::moov_trak_mdia_minf_stbl_stsz)
@@ -10789,6 +10826,8 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stts()
     Get_B4(NumberOfEntries,                                     "Number of entries");
 
     Stream=Streams.find(moov_trak_tkhd_TrackID);
+    if (Stream==Streams.end())
+        Stream=Streams.emplace(moov_trak_tkhd_TrackID, stream()).first; //No previous box created the stream (malformed file)
     Stream->second.stts_Min=(int32u)-1;
     Stream->second.stts_Max=0;
     Stream->second.stts_FrameCount=0;
@@ -10868,6 +10907,17 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stts()
 
 //---------------------------------------------------------------------------
 void File_Mpeg4::moov_trak_mdia_minf_stbl_subs()
+{
+    //In moof, the stream is set by traf
+    Stream=Streams.find(moov_trak_tkhd_TrackID);
+    if (Stream==Streams.end())
+        Stream=Streams.emplace(moov_trak_tkhd_TrackID, stream()).first; //No previous box created the stream (malformed file)
+
+    moov_trak_mdia_minf_stbl_subs_Common();
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_subs_Common()
 {
     NAME_VERSION_FLAG("Sub-Sample Information", 1);
 
@@ -11063,7 +11113,10 @@ void File_Mpeg4::moov_trak_tkhd()
         {
             Streams[moov_trak_tkhd_TrackID]=Temp->second;
             Temp->second.Parsers_Clear(); //They are a copy, we don't want that the destructor deletes the Parser
+            const auto IsCurrentStream=Stream==Temp;
             Streams.erase(Temp);
+            if (IsCurrentStream)
+                Stream=Streams.find(moov_trak_tkhd_TrackID);
         }
         Streams[moov_trak_tkhd_TrackID].IsEnabled = Enabled;
         if (Alternate_Group) Fill(StreamKind_Last, StreamPos_Last, "AlternateGroup", Alternate_Group);

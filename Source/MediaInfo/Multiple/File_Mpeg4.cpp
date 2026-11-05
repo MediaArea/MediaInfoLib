@@ -362,6 +362,7 @@ File_Mpeg4::File_Mpeg4()
     meta_iprp_ipco_Buffer=NULL;
     moov_trak_mdia_minf_stbl_stsd_Pos=0;
     moov_trak_tkhd_TrackID=(int32u)-1;
+    Stream=Streams.end();
     mdat_Pos_NormalParsing=false;
     moof_traf_base_data_offset=(int64u)-1;
     data_offset_present=true;
@@ -1638,9 +1639,11 @@ void File_Mpeg4::Streams_Finish()
                                     SamplePos+=CountOfSamples;
                                 else
                                 {
+                                    if (!Stsc->SamplesPerChunk)
+                                        break;
                                     int64u CountOfChunks=(Value-SamplePos)/Stsc->SamplesPerChunk;
                                     size_t stco_Pos=(size_t)(Stsc->FirstChunk-1+CountOfChunks); //-1 because first chunk is number 1
-                                    if (stco_Pos<Stream->second.stco.size())
+                                    if (stco_Pos<Stream->second.stco.size() && Stream->second.stts_Durations_Pos<Stream->second.stts_Durations.size() && Stream->second.mdhd_TimeScale)
                                     {
                                         stream::stts_durations::iterator stts_Duration=Stream->second.stts_Durations.begin()+Stream->second.stts_Durations_Pos;
                                         ibi::stream::info IbiInfo;
@@ -1714,9 +1717,13 @@ void File_Mpeg4::Streams_Finish_Grid(const std::map<int32u, size_t>& Image_Strea
     for (auto Grid_ID : Grids.Grid_IDs)
     {
         const auto& Grid=Streams[Grid_ID];
-        const auto Grid_StreamPos=Image_StreamPos.find(Grid_ID)->second;
+        const auto Grid_StreamPos_Item=Image_StreamPos.find(Grid_ID);
+        const auto FirstTile_StreamPos_Item=Image_StreamPos.find(Grid.iref_dimg[0]);
+        if (Grid_StreamPos_Item==Image_StreamPos.end() || FirstTile_StreamPos_Item==Image_StreamPos.end())
+            continue; //No image stream for the grid or its first tile (malformed file)
+        const auto Grid_StreamPos=Grid_StreamPos_Item->second;
         const auto& FirstTile=Streams[Grid.iref_dimg[0]];
-        const auto FirstTile_StreamPos=Image_StreamPos.find(Grid.iref_dimg[0])->second;
+        const auto FirstTile_StreamPos=FirstTile_StreamPos_Item->second;
 
         //Characteristics of the tiles, except the ones specific to a tile or to the grid item
         const auto& Format=Retrieve_Const(Stream_Image, FirstTile_StreamPos, Image_Format);
@@ -2186,6 +2193,8 @@ size_t File_Mpeg4::Read_Buffer_Seek (size_t Method, int64u Value, int64u ID)
                                 SamplePos+=CountOfSamples;
                             else
                             {
+                                if (!Stsc->SamplesPerChunk)
+                                    return 2; //Invalid value
                                 int64u CountOfChunks=(Value-SamplePos)/Stsc->SamplesPerChunk;
                                 size_t stco_Pos=(size_t)(Stsc->FirstChunk-1+CountOfChunks); //-1 because first chunk is number 1
                                 if (stco_Pos>=Stream->second.stco.size())
@@ -2478,6 +2487,8 @@ void File_Mpeg4::stream::SplitAudio(File_Mpeg4::stream& Video, int32u moov_mvhd_
 
     //Check if we need to split
     if (Video.stts.size() != 1          //Complex video frame durations not supported
+        || !Video.stts[0].SampleDuration //Video frame duration must be valid
+        || Video.stsc.empty()           //At least 1 video stsc must be present
         || Video.edts.size() != 1       //Complex video edit lists are not supported
         || Video.edts[0].Delay != 0     //Complex video edit lists are not supported
         || ComplexAudioEditList         //Complex audio edit lists are not supported

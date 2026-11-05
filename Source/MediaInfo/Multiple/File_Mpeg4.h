@@ -147,7 +147,7 @@ private :
     void moof_traf_sbgp() { moov_trak_mdia_minf_stbl_sbgp(); }
     void moof_traf_sgpd() { moov_trak_mdia_minf_stbl_sgpd(); }
     void moof_traf_sdtp();
-    void moof_traf_subs() { moov_trak_mdia_minf_stbl_subs(); }
+    void moof_traf_subs() { moov_trak_mdia_minf_stbl_subs_Common(); }
     void moof_traf_tfdt();
     void moof_traf_tfhd();
     void moof_traf_trun();
@@ -223,6 +223,7 @@ private :
     void moov_trak_mdia_minf_stbl_stps();
     void moov_trak_mdia_minf_stbl_stsc();
     void moov_trak_mdia_minf_stbl_stsd();
+    bool moov_trak_mdia_minf_stbl_stsd_TimeCode_Mix(bool IsTimeCode);
     void moov_trak_mdia_minf_stbl_stsd_mebx();
     void moov_trak_mdia_minf_stbl_stsd_mebx_keys();
     void moov_trak_mdia_minf_stbl_stsd_mebx_keys_PHDR();
@@ -331,6 +332,7 @@ private :
     void moov_trak_mdia_minf_stbl_stsz();
     void moov_trak_mdia_minf_stbl_stts();
     void moov_trak_mdia_minf_stbl_subs();
+    void moov_trak_mdia_minf_stbl_subs_Common();
     void moov_trak_mdia_minf_stbl_stz2() {moov_trak_mdia_minf_stbl_stsz();}
     void moov_trak_meta() {moov_meta();}
     void moov_trak_meta_hdlr() {moov_meta_hdlr();}
