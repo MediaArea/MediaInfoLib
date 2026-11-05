@@ -1308,6 +1308,8 @@ void File_Avc::Streams_Finish()
             {
                 Ztring MuxingMode=Retrieve(Stream_Text, Pos, "MuxingMode");
                 Fill(Stream_Text, Pos, "MuxingMode", __T("SCTE 128 / ")+MuxingMode, true);
+                if (!IsSub && !Config->IsFinishing)
+                    Clear(Stream_Text, Pos, Text_Duration); //Only the start of a raw stream is parsed, it must not be used as the duration of the stream
             }
         }
     #endif //defined(MEDIAINFO_DTVCCTRANSPORT_YES)
