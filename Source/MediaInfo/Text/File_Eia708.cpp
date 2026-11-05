@@ -267,7 +267,7 @@ void File_Eia708::Read_Buffer_Unsynched()
     #if MEDIAINFO_EVENTS
         for (service_number=1; service_number<Streams.size(); service_number++)
             if (Streams[service_number])
-                HasChanged();
+                HasChanged(true);
     #endif //MEDIAINFO_EVENTS
 }
 
@@ -1551,13 +1551,14 @@ void File_Eia708::Window_HasChanged()
 }
 
 //---------------------------------------------------------------------------
-void File_Eia708::HasChanged()
+void File_Eia708::HasChanged(bool IsReset)
 {
     // Count lines and characters for stats
     stream* Stream=Streams[service_number];
     if (Stream)
     {
-        Stream->Events_Total++;  // Count this as an event
+        if (!IsReset)
+            Stream->Events_Total++;  // Count this as an event
 
         size_t LinesPerFrame=0;
         for (size_t Pos_Y=0; Pos_Y<Stream->Minimal.CC.size(); Pos_Y++)

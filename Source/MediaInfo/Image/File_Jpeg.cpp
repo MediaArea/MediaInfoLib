@@ -644,7 +644,7 @@ void File_Jpeg::Read_Buffer_Unsynched()
 //---------------------------------------------------------------------------
 void File_Jpeg::Read_Buffer_Continue()
 {
-    if (Config->ParseSpeed>=1.0 && IsSub && Status[IsFilled])
+    if (Config->ParseSpeed>=1.0 && IsSub && Status[IsFilled] && Buffer_Size && (FrameIsAlwaysComplete || MxfContentKind==(int8u)-1)) //In MXF, a frame may be parsed in parts
     {
         #if MEDIAINFO_DEMUX
             if (Buffer_TotalBytes<Demux_TotalBytes)

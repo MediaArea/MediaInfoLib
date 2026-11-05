@@ -95,6 +95,9 @@ void File_SmpteSt0331::Streams_Fill()
 //---------------------------------------------------------------------------
 void File_SmpteSt0331::Read_Buffer_Continue()
 {
+    if (!Buffer_Size)
+        return;
+
     if (!Status[IsAccepted])
         Accept("SMPTE ST 331");
 

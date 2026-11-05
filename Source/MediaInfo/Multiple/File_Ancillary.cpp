@@ -456,11 +456,12 @@ void File_Ancillary::Read_Buffer_Continue()
                 for (size_t Pos=0; Pos<Cdp_Data.size(); Pos++)
                 {
                     if (Cdp_Parser->PTS_DTS_Needed)
-                        Cdp_Parser->FrameInfo.DTS=FrameInfo.DTS-(Cdp_Data.size()-Pos)*FrameInfo.DUR;
+                        Cdp_Parser->FrameInfo.DTS=Cdp_Data_DTS[Pos]!=(int64u)-1?Cdp_Data_DTS[Pos]:(FrameInfo.DTS-(FrameInfo.DTS!=(int64u)-1?((Cdp_Data.size()-Pos)*FrameInfo.DUR):0));
                     Open_Buffer_Continue(Cdp_Parser, Cdp_Data[Pos]->Data, Cdp_Data[Pos]->Size);
                     delete Cdp_Data[Pos]; //Cdp_Data[0]=NULL;
                 }
                 Cdp_Data.clear();
+                Cdp_Data_DTS.clear();
             }
         #endif //defined(MEDIAINFO_CDP_YES)
 
@@ -499,6 +500,7 @@ void File_Ancillary::Read_Buffer_Unsynched()
         for (size_t Pos=0; Pos<Cdp_Data.size(); Pos++)
             delete Cdp_Data[Pos]; //Cdp_Data[Pos]=NULL;
         Cdp_Data.clear();
+        Cdp_Data_DTS.clear();
         if (Cdp_Parser)
             Cdp_Parser->Open_Buffer_Unsynch();
     #endif //defined(MEDIAINFO_CDP_YES)
@@ -915,6 +917,7 @@ void File_Ancillary::Data_Parse()
                                                 //Saving data for future use
                                                 buffer_data* Cdp=new buffer_data(Payload, (size_t)DataCount);
                                                 Cdp_Data.push_back(Cdp);
+                                                Cdp_Data_DTS.push_back(Frame_Count_NotParsedIncluded!=(int64u)-1?FrameInfo.DTS:(int64u)-1); //If the frame is unknown the time does not advance, time of the video frame is used
                                             }
                                         }
                                         #endif //MEDIAINFO_CDP_YES

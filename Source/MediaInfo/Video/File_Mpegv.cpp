@@ -2087,6 +2087,13 @@ bool File_Mpegv::Demux_UnpacketizeContainer_Test()
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+void File_Mpegv::UserData_Search()
+{
+    Streams[0xB2].Searching_Payload=true;
+    EOF_AlreadyDetected=true; //As if the parsing is complete, Detect_EOF() would disable it again if there are few frames
+}
+
+//---------------------------------------------------------------------------
 void File_Mpegv::Read_Buffer_Unsynched()
 {
     for (int8u Pos=0x00; Pos<0xB9; Pos++)
@@ -3486,8 +3493,8 @@ void File_Mpegv::user_data_start_3()
                         if (Scte_Parser->PTS_DTS_Needed)
                         {
                             Scte_Parser->FrameInfo.PCR=FrameInfo.PCR;
-                            Scte_Parser->FrameInfo.PTS=FrameInfo.PTS-(TemporalReference.size()-1-Scte20_Pos)*tc;
-                            Scte_Parser->FrameInfo.DTS=FrameInfo.DTS-(TemporalReference.size()-1-Scte20_Pos)*tc;
+                            Scte_Parser->FrameInfo.PTS=FrameInfo.PTS-(FrameInfo.PTS!=(int64u)-1?((TemporalReference.size()-1-Scte20_Pos)*tc):0);
+                            Scte_Parser->FrameInfo.DTS=FrameInfo.DTS-(FrameInfo.DTS!=(int64u)-1?((TemporalReference.size()-1-Scte20_Pos)*tc):0);
                         }
                         #if MEDIAINFO_DEMUX
                             int8u Demux_Level_Save=Demux_Level;

@@ -52,6 +52,7 @@ public :
     #endif //defined(MEDIAINFO_CDP_YES)
     #if defined(MEDIAINFO_CDP_YES)
         std::vector<buffer_data*> Cdp_Data;
+        std::vector<int64u> Cdp_Data_DTS;
         File__Analyze*  Cdp_Parser;
     #endif //defined(MEDIAINFO_CDP_YES)
     #if defined(MEDIAINFO_AFDBARDATA_YES)

@@ -135,6 +135,7 @@ protected :
     #endif //defined(MEDIAINFO_FILE_YES)
     void Read_Buffer_AfterParsing ();
     void Read_Buffer_Unsynched();
+    void Position_Update(int64u FutureFileOffset, bool UnsynchParsers);
     #if MEDIAINFO_SEEK
     size_t Read_Buffer_Seek (size_t Method, int64u Value, int64u ID);
     #endif //MEDIAINFO_SEEK
@@ -744,8 +745,11 @@ protected :
     int16u Code2;
     int16u Length2;
     int64u File_Size_Total; //Used only in Finish()
+    int64u IsParsingMiddle_MinOffset; //End of the essences parsed contiguously from the start of the file, (int64u)-1 after a seek
     int64u IsParsingMiddle_MaxOffset;
     bool   ProbeCaption_IsChecked;
+    bool   ProbeCaption_IsInContentPackage; //After the jump of the caption probe or at a partition with an unknown frame, the frame is computed at the next content package
+    bool   ProbeCaption_IsParsingPartitions; //Before the jump of the caption probe
     bool   Track_Number_IsAvailable;
     bool   IsParsingEnd;
     bool   IsCheckingRandomAccessTable;
@@ -856,6 +860,7 @@ protected :
         std::map<std::string, Ztring> Infos;
         int64u Stream_Size;
         int64u Element_Size_Constant; //Size of parsed elements if it is always the same, 0 if no element is parsed, (int64u)-1 if not constant
+        int64u Element_Count; //Count of parsed complete elements
         int32u TrackID;
         bool   TrackID_WasLookedFor;
         bool   Stream_Finish_Done;
@@ -878,6 +883,7 @@ protected :
             StreamPos_Initial=(size_t)-1;
             Stream_Size=(int64u)-1;
             Element_Size_Constant=0;
+            Element_Count=0;
             TrackID=(int32u)-1;
             TrackID_WasLookedFor=false;
             Stream_Finish_Done=false;
@@ -1149,11 +1155,17 @@ protected :
         #endif //MEDIAINFO_CONFORMANCE
         std::vector<int128u> StructuralComponents; //Sequence from MaterialPackage only
         mxftimecode MxfTimeCode;
+        #if MEDIAINFO_ADVANCED
+            bool IsTruncated; //Duration is the count of elements in the file, not the declared one
+        #endif //MEDIAINFO_ADVANCED
 
         component()
         {
             Duration=(int64u)-1;
             SourceTrackID=(int32u)-1;
+            #if MEDIAINFO_ADVANCED
+                IsTruncated=false;
+            #endif //MEDIAINFO_ADVANCED
             #if MEDIAINFO_CONFORMANCE
                 SourceTrackID_Offset=(int64u)-1;
             #endif //MEDIAINFO_CONFORMANCE
@@ -1452,11 +1464,13 @@ protected :
     #endif //defined(MEDIAINFO_REFERENCES_YES)
     void NextRandomIndexPack();
     bool BookMark_Needed();
+    bool ProbeCaption_IsPossible();
 
     //Temp
     int128u EssenceContainer_FromPartitionMetadata;
     int64u PartitionMetadata_PreviousPartition;
     int64u PartitionMetadata_FooterPartition;
+    int32u PartitionMetadata_BodySID;
     int64u RandomIndexPacks_MaxOffset;
     mxftimecode MxfTimeCodeForDelay;
     mxftimecode MxfTimeCodeMaterial;
@@ -1477,8 +1491,13 @@ protected :
     bool   StereoscopicPictureSubDescriptor_IsPresent;
     bool   UserDefinedAcquisitionMetadata_UdamSetIdentifier_IsSony;
     int32u Essences_UsedForFrameCount;
+    int64u FirstPass_ContentPackage_First; //Offset of the first element of the first content package
+    int64u FirstPass_ContentPackage_End; //Offset of the end of the first element of the last content package
+    int64u FirstPass_ContentPackage_Count;
+    int64u ContentPackage_Last; //Offset of the first element of the last content package
     int32u IndexTable_NSL;
     int32u IndexTable_NPE;
+    bool   IndexTable_IsAlreadyParsed;
     struct systemscheme1
     {
         vector<TimeCode> TimeCodeArray_StartTimecodes;
@@ -1488,6 +1507,7 @@ protected :
     systemscheme1s SystemScheme1s;
     #if MEDIAINFO_ADVANCED
         int64u Footer_Position;
+        float64 Truncated_Duration;
     #endif //MEDIAINFO_ADVANCED
     #if defined(MEDIAINFO_ANCILLARY_YES)
         File_Ancillary* Ancillary;
