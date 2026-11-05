@@ -13974,6 +13974,10 @@ void File_Mxf::RGBADescriptor()
 //---------------------------------------------------------------------------
 void File_Mxf::RandomIndexPack()
 {
+    //A malformed element does not stop the search of the partitions and a valid one may follow, but it must not give its entries each time this search comes back to it
+    if (!PartitionPack_AlreadyParsed.insert(File_Offset+Buffer_Offset-Header_Size).second)
+        RandomIndexPacks_AlreadyParsed=true;
+
     //Parsing
     while (Element_Offset+4<Element_Size)
     {
