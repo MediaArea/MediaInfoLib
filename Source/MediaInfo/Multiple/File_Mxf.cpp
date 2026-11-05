@@ -7509,7 +7509,7 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
          || Format == __T("HDR Vivid Metadata"))
         {
             ToMergeLater.push_back(*Parser);
-            *Parser = nullptr;
+            Essence->second.Parsers.erase(Parser); //Parsing may continue after this finish, e.g. with a seek to the end of the file
         }
     }
 }
