@@ -1845,7 +1845,7 @@ std::bitset<32> MediaInfo_Internal::Open_NextPacket ()
     CriticalSectionLocker CSL(CS);
 
     bool Demux_EventWasSent=false;
-    if (Info==NULL || !Info->Status[File__Analyze::IsFinished])
+    if (Info && !Info->Status[File__Analyze::IsFinished]) //There is no more Info after the end of the parsing
     {
         #if !defined(MEDIAINFO_READER_NO)
             if (Reader)
@@ -2363,6 +2363,8 @@ String MediaInfo_Internal::Option (const String &Option, const String &Value)
             #if !defined(MEDIAINFO_READER_NO)
                 if (Reader==NULL && Info==NULL)
                     return __T("Error: Reader pointer is empty");
+                if (Info==NULL)
+                    return __T("Error: the parsing is already finished");
             #endif //MEDIAINFO_READER_NO
 
             size_t Method=(size_t)-1;
