@@ -327,9 +327,10 @@ private :
         int8u   num_ref_idx_l1_default_active_minus1;
         int8u   num_extra_slice_header_bits;
         bool    dependent_slice_segments_enabled_flag;
+        bool    output_flag_present_flag;
 
         //Constructor/Destructor
-        pic_parameter_set_struct(int8u seq_parameter_set_id_, int8u num_ref_idx_l0_default_active_minus1_, int8u num_ref_idx_l1_default_active_minus1_, int8u num_extra_slice_header_bits_, bool dependent_slice_segments_enabled_flag_)
+        pic_parameter_set_struct(int8u seq_parameter_set_id_, int8u num_ref_idx_l0_default_active_minus1_, int8u num_ref_idx_l1_default_active_minus1_, int8u num_extra_slice_header_bits_, bool dependent_slice_segments_enabled_flag_, bool output_flag_present_flag_)
             :
             #if MEDIAINFO_DEMUX
             AnnexB_Buffer(NULL),
@@ -339,7 +340,8 @@ private :
             num_ref_idx_l0_default_active_minus1(num_ref_idx_l0_default_active_minus1_),
             num_ref_idx_l1_default_active_minus1(num_ref_idx_l1_default_active_minus1_),
             num_extra_slice_header_bits(num_extra_slice_header_bits_),
-            dependent_slice_segments_enabled_flag(dependent_slice_segments_enabled_flag_)
+            dependent_slice_segments_enabled_flag(dependent_slice_segments_enabled_flag_),
+            output_flag_present_flag(output_flag_present_flag_)
         {
         }
 
@@ -471,6 +473,7 @@ private :
             buffer_data* GA94_03;
         #endif //MEDIAINFO_DTVCCTRANSPORT_YES
 
+        int64u PTS{(int64u)-1};
         int32u frame_num{};
         int8u  slice_type;
         bool   IsTop{};
@@ -501,7 +504,15 @@ private :
     size_t                              TemporalReferences_Offset;
     size_t                              TemporalReferences_Offset_pic_order_cnt_lsb_Last;
     int64s                              TemporalReferences_pic_order_cnt_Min;
-    int64u                              pic_order_cnt_DTS_Ref;
+    int32s                              prevPicOrderCntMsb;
+    int32u                              prevPicOrderCntLsb;
+    int32s                              PicOrderCntVal_Ref;
+    int64u                              Pictures_Decoded;
+    int64u                              Pictures_Decoded_PTS;
+    int64u                              Pictures_Decoded_DTS;
+    int64u                              Pictures_Decoded_SameDts; //Count of pictures after the picture which got this DTS from the container
+    int64u                              Pictures_Output_PTS;
+    int64u                              Pictures_Duration;
 
     //Text
     #if defined(MEDIAINFO_DTVCCTRANSPORT_YES)
@@ -557,6 +568,7 @@ private :
     Ztring  maximum_content_light_level;
     Ztring  maximum_frame_average_light_level;
     int8u   nuh_layer_id{};
+    int8u   nuh_temporal_id_plus1{};
     int8u   preferred_transfer_characteristics{};
     float64 ambient_viewing_environment_illuminance{};
     Ztring  ambient_viewing_environment_illuminance_string;

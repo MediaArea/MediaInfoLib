@@ -654,6 +654,7 @@ private :
         #if MEDIAINFO_DEMUX
             bool            PtsDtsAreSame;
             bool            Demux_EventWasSent;
+            int32u          ctts_FirstOffset;
             int32u          CodecID;
             void            SplitAudio(File_Mpeg4::stream& Video, int32u moov_mvhd_TimeScale);
         #endif //MEDIAINFO_DEMUX
@@ -732,6 +733,7 @@ private :
             #if MEDIAINFO_DEMUX
                 PtsDtsAreSame=false;
                 Demux_EventWasSent=false;
+                ctts_FirstOffset=0;
                 CodecID=0x00000000;
             #endif //MEDIAINFO_DEMUX
             #if MEDIAINFO_CONFORMANCE

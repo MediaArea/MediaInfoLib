@@ -247,7 +247,15 @@ File_Hevc::File_Hevc()
     TemporalReferences_Offset=0;
     TemporalReferences_Offset_pic_order_cnt_lsb_Last=0;
     TemporalReferences_pic_order_cnt_Min=0;
-    pic_order_cnt_DTS_Ref=(int64u)-1;
+    prevPicOrderCntMsb=0;
+    prevPicOrderCntLsb=(int32u)-1;
+    PicOrderCntVal_Ref=0;
+    Pictures_Decoded=0;
+    Pictures_Decoded_PTS=(int64u)-1;
+    Pictures_Decoded_DTS=(int64u)-1;
+    Pictures_Decoded_SameDts=0;
+    Pictures_Output_PTS=(int64u)-1;
+    Pictures_Duration=(int64u)-1;
 
     //Text
     #if defined(MEDIAINFO_DTVCCTRANSPORT_YES)
@@ -286,7 +294,6 @@ void File_Hevc::Clean_Temp_References()
     for (size_t Pos = 0; Pos<TemporalReferences.size(); Pos++)
         delete TemporalReferences[Pos]; //TemporalReferences[Pos]=NULL;
     TemporalReferences.clear();
-    pic_order_cnt_DTS_Ref=(int64u)-1;
 }
 
 //***************************************************************************
@@ -746,6 +753,8 @@ void File_Hevc::Streams_Finish()
             {
                 Ztring MuxingMode=Retrieve(Stream_Text, Pos, "MuxingMode");
                 Fill(Stream_Text, Pos, "MuxingMode", __T("SCTE 128 / ")+MuxingMode, true);
+                if (!IsSub && !Config->IsFinishing)
+                    Clear(Stream_Text, Pos, Text_Duration); //Only the start of a raw stream is parsed, it must not be used as the duration of the stream
             }
         }
     #endif //defined(MEDIAINFO_DTVCCTRANSPORT_YES)
@@ -1210,13 +1219,32 @@ void File_Hevc::Read_Buffer_Unsynched()
     TemporalReferences_Offset=0;
     TemporalReferences_Offset_pic_order_cnt_lsb_Last=0;
     TemporalReferences_pic_order_cnt_Min=0;
-    pic_order_cnt_DTS_Ref=(int64u)-1;
+    prevPicOrderCntMsb=0;
+    prevPicOrderCntLsb=(int32u)-1;
+    Pictures_Decoded=0;
+    Pictures_Decoded_PTS=(int64u)-1;
+    Pictures_Decoded_DTS=(int64u)-1;
+    Pictures_Decoded_SameDts=0;
+    Pictures_Output_PTS=(int64u)-1;
 
     //Text
     #if defined(MEDIAINFO_DTVCCTRANSPORT_YES)
         if (GA94_03_Parser)
             GA94_03_Parser->Open_Buffer_Unsynch();
     #endif //defined(MEDIAINFO_DTVCCTRANSPORT_YES)
+
+    //parameter_sets
+    //SPS/PPS may be only in container header or at the beginning of the stream, rebuilding TemporalReferences
+    for (const auto seq_parameter_set_Item : seq_parameter_sets)
+        if (seq_parameter_set_Item)
+        {
+            size_t MaxNumber=((size_t)1)<<(seq_parameter_set_Item->log2_max_pic_order_cnt_lsb_minus4+4);
+            if (MaxNumber>TemporalReferences_Reserved)
+            {
+                TemporalReferences.resize(4*MaxNumber);
+                TemporalReferences_Reserved=MaxNumber;
+            }
+        }
 }
 
 //***************************************************************************
@@ -1235,7 +1263,7 @@ void File_Hevc::Header_Parse()
     }
 
     //Parsing
-    int8u nal_unit_type, nuh_temporal_id_plus1;
+    int8u nal_unit_type;
     if (!SizedBlocks || SizedBlocks_FileThenStream)
     {
         if (Buffer[Buffer_Offset+2]==0x00)
@@ -1658,6 +1686,9 @@ void File_Hevc::slice_segment_layer()
             }
             if (!Status[IsFilled])
             {
+                #if defined(MEDIAINFO_DTVCCTRANSPORT_YES)
+                    if (!GA94_03_IsPresent)
+                #endif //defined(MEDIAINFO_DTVCCTRANSPORT_YES)
                 if (IFrame_Count>=8)
                     Frame_Count_Valid=Frame_Count; //We have enough frames
                 if (Frame_Count>=Frame_Count_Valid)
@@ -2435,7 +2466,7 @@ void File_Hevc::pic_parameter_set()
     //Parsing
     int32u  pps_pic_parameter_set_id, pps_seq_parameter_set_id, num_ref_idx_l0_default_active_minus1, num_ref_idx_l1_default_active_minus1;
     int8u   num_extra_slice_header_bits;
-    bool    tiles_enabled_flag, dependent_slice_segments_enabled_flag;
+    bool    tiles_enabled_flag, dependent_slice_segments_enabled_flag, output_flag_present_flag;
     BS_Begin();
     Get_UE (    pps_pic_parameter_set_id,                       "pps_pic_parameter_set_id");
     if (pps_pic_parameter_set_id>=64)
@@ -2479,6 +2510,7 @@ void File_Hevc::pic_parameter_set()
                                                                                                     0,
                                                                                                     0,
                                                                                                     0,
+                                                                                                    false,
                                                                                                     false
                                                                                               );
 
@@ -2506,7 +2538,7 @@ void File_Hevc::pic_parameter_set()
         return;
     }
     Get_SB (    dependent_slice_segments_enabled_flag,          "dependent_slice_segments_enabled_flag");
-    Skip_SB(                                                    "output_flag_present_flag");
+    Get_SB (    output_flag_present_flag,                       "output_flag_present_flag");
     Get_S1 (3,  num_extra_slice_header_bits,                    "num_extra_slice_header_bits");
     Skip_SB(                                                    "sign_data_hiding_flag");
     Skip_SB(                                                    "cabac_init_present_flag");
@@ -2583,7 +2615,8 @@ void File_Hevc::pic_parameter_set()
                                                                                                     (int8u)num_ref_idx_l0_default_active_minus1,
                                                                                                     (int8u)num_ref_idx_l1_default_active_minus1,
                                                                                                     num_extra_slice_header_bits,
-                                                                                                    dependent_slice_segments_enabled_flag
+                                                                                                    dependent_slice_segments_enabled_flag,
+                                                                                                    output_flag_present_flag
                                                                                                 );
         }
 
@@ -3000,6 +3033,8 @@ void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_0031_GA94_03()
         GA94_03_IsPresent=true;
         MustExtendParsingDuration=true;
         Buffer_TotalBytes_Fill_Max=(int64u)-1; //Disabling this feature for this format, this is done in the parser
+        if (Config->ParseSpeed>=0.3 && Frame_Count_Valid<512)
+            Frame_Count_Valid=512; //Captions may start later, same count of frames as for AVC
 
         Element_Info1("DTVCC Transport");
 
@@ -3017,24 +3052,18 @@ void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_0031_GA94_03()
 
 void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_0031_GA94_03_Delayed(int32u seq_parameter_set_id)
 {
-    // Skipping missing frames
-    if (TemporalReferences_Max-TemporalReferences_Min>(size_t)(4*(seq_parameter_sets[seq_parameter_set_id]->sps_max_num_reorder_pics+3))) // max_num_ref_frames ref frame maximum
-    {
-        size_t TemporalReferences_Min_New=TemporalReferences_Max-4*(seq_parameter_sets[seq_parameter_set_id]->sps_max_num_reorder_pics+3);
-        while (TemporalReferences_Min_New>TemporalReferences_Min && TemporalReferences[TemporalReferences_Min_New-1])
-            TemporalReferences_Min_New--;
-        TemporalReferences_Min=TemporalReferences_Min_New;
-        while (TemporalReferences[TemporalReferences_Min]==NULL)
-        {
-            TemporalReferences_Min++;
-            if (TemporalReferences_Min>=TemporalReferences.size())
-                return;
-        }
-    }
+    // Picture order count from the slice header may have gaps, the lowest one is output when more pictures than sps_max_num_reorder_pics are waiting, as in a decoder
+    size_t Pictures_Waiting=0;
+    for (size_t Pos=TemporalReferences_Min; Pos<=TemporalReferences_Max; Pos++)
+        if (TemporalReferences[Pos])
+            Pictures_Waiting++;
 
     // Parsing captions
-    while (TemporalReferences[TemporalReferences_Min] && TemporalReferences_Min+2*seq_parameter_sets[seq_parameter_set_id]->sps_max_num_reorder_pics<TemporalReferences_Max)
+    while (Pictures_Waiting>seq_parameter_sets[seq_parameter_set_id]->sps_max_num_reorder_pics)
     {
+        while (!TemporalReferences[TemporalReferences_Min])
+            TemporalReferences_Min++;
+
         #if defined(MEDIAINFO_DTVCCTRANSPORT_YES)
             Element_Begin1("Reordered DTVCC Transport");
 
@@ -3077,9 +3106,23 @@ void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_0031_GA94_03_Delay
             }
             if (GA94_03_Parser->PTS_DTS_Needed)
             {
+                //Time of the picture carrying the captions, if the container does not provide it pictures are output at the pace they are decoded, so it is before the picture being decoded by the pictures waiting
+                auto PTS=TemporalReferences[TemporalReferences_Min]->PTS;
+                if (PTS==(int64u)-1)
+                {
+                    if (FrameInfo.DTS!=(int64u)-1 && FrameInfo.DUR!=(int64u)-1)
+                    {
+                        const auto Waiting_Duration=(Pictures_Waiting-1)*FrameInfo.DUR;
+                        PTS=FrameInfo.DTS+FrameInfo.DTS_Delay+Pictures_Decoded_SameDts*FrameInfo.DUR/(Interlacement_Detect(seq_parameter_sets[seq_parameter_set_id]).SeparatedFields?2:1);
+                        PTS=PTS>Waiting_Duration?(PTS-Waiting_Duration):0;
+                    }
+                    else if (Pictures_Output_PTS!=(int64u)-1)
+                        PTS=Pictures_Output_PTS+(Pictures_Duration!=(int64u)-1?Pictures_Duration:0); //Only some pictures have a PTS (e.g. MPEG-TS), this picture comes after the previous picture output
+                }
+                Pictures_Output_PTS=PTS;
                 GA94_03_Parser->FrameInfo.PCR=FrameInfo.PCR;
-                GA94_03_Parser->FrameInfo.PTS=FrameInfo.PTS;
-                GA94_03_Parser->FrameInfo.DTS=FrameInfo.DTS;
+                GA94_03_Parser->FrameInfo.PTS=PTS;
+                GA94_03_Parser->FrameInfo.DTS=PTS;
             }
             #if MEDIAINFO_DEMUX
                 if (TemporalReferences[TemporalReferences_Min]->GA94_03)
@@ -3096,13 +3139,24 @@ void File_Hevc::sei_message_user_data_registered_itu_t_t35_B5_0031_GA94_03_Delay
                 #if defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
                     GA94_03_Parser->ServiceDescriptors=ServiceDescriptors;
                 #endif
+
+                //Frame number of the picture carrying the captions, all pictures decoded except the pictures waiting are before it, the parent knows the jumps and this parser the pictures before an IDR picture
+                const auto Frame_Count_NotParsedIncluded_Save=Frame_Count_NotParsedIncluded;
+                if (Frame_Count_NotParsedIncluded!=(int64u)-1)
+                {
+                    const auto Pictures_Count=max(Frame_Count_NotParsedIncluded+1, Pictures_Decoded);
+                    Frame_Count_NotParsedIncluded=Pictures_Count>Pictures_Waiting?(Pictures_Count-Pictures_Waiting):0;
+                }
                 Open_Buffer_Continue(GA94_03_Parser, TemporalReferences[TemporalReferences_Min]->GA94_03->Data, TemporalReferences[TemporalReferences_Min]->GA94_03->Size);
+                Frame_Count_NotParsedIncluded=Frame_Count_NotParsedIncluded_Save;
             }
 
             Element_End0();
         #endif //defined(MEDIAINFO_DTVCCTRANSPORT_YES)
 
         //TemporalReferences_Min+=((seq_parameter_sets[seq_parameter_set_id]->frame_mbs_only_flag | !TemporalReferences[TemporalReferences_Min]->IsField)?2:1);
+        delete TemporalReferences[TemporalReferences_Min]; TemporalReferences[TemporalReferences_Min]=NULL; //Output only once, even if a lower picture order count comes after it in a stream with a wrong sps_max_num_reorder_pics
+        Pictures_Waiting--;
         TemporalReferences_Min++;
     }
 }
@@ -4085,6 +4139,7 @@ void File_Hevc::slice_segment_header()
 
     //Parsing
     bool    dependent_slice_segment_flag=false;
+    int32u  slice_pic_order_cnt_lsb=0;
     Get_SB (   first_slice_segment_in_pic_flag,                 "first_slice_segment_in_pic_flag");
     if (RapPicFlag)
         Skip_SB(                                                "no_output_of_prior_pics_flag");
@@ -4116,6 +4171,16 @@ void File_Hevc::slice_segment_header()
         if (!MustParse_VPS_SPS_PPS_FromFlv)
             Skip_S1((*pic_parameter_set_Item)->num_extra_slice_header_bits, "slice_reserved_flags");
         Get_UE (slice_type,                                     "slice_type"); Param_Info1(Hevc_slice_type(slice_type));
+        if (!MustParse_VPS_SPS_PPS_FromFlv && !nuh_layer_id && (*pic_parameter_set_Item)->seq_parameter_set_id<seq_parameter_sets.size() && seq_parameter_sets[(*pic_parameter_set_Item)->seq_parameter_set_id])
+        {
+            const auto seq_parameter_set=seq_parameter_sets[(*pic_parameter_set_Item)->seq_parameter_set_id];
+            if ((*pic_parameter_set_Item)->output_flag_present_flag)
+                Skip_SB(                                        "pic_output_flag");
+            if (seq_parameter_set->separate_colour_plane_flag)
+                Skip_S1(2,                                      "colour_plane_id");
+            if (Element_Code!=19 && Element_Code!=20) //Not IDR
+                Get_S4 (seq_parameter_set->log2_max_pic_order_cnt_lsb_minus4+4, slice_pic_order_cnt_lsb, "slice_pic_order_cnt_lsb");
+        }
     }
 
     //TODO...
@@ -4124,7 +4189,7 @@ void File_Hevc::slice_segment_header()
     Element_End0();
 
     #if MEDIAINFO_EVENTS
-        if (first_slice_segment_in_pic_flag)
+        if (first_slice_segment_in_pic_flag && !nuh_layer_id)
         {
             switch(Element_Code)
             {
@@ -4133,8 +4198,6 @@ void File_Hevc::slice_segment_header()
                 case 21 :
                 case 22 :
                 case 23 :
-                            TemporalReferences_Offset=TemporalReferences_Max+1;
-                            pic_order_cnt_DTS_Ref=FrameInfo.DTS;
                             if (Config->Config_PerPackage && Element_Code==0x05) // First slice of an IDR frame
                             {
                                 // IDR
@@ -4154,23 +4217,57 @@ void File_Hevc::slice_segment_header()
     if (RapPicFlag && (*seq_parameter_set_Item)->pic_struct_FirstIrap==(int8u)-1 && (pic_struct_Pending==1 || pic_struct_Pending==2))
         (*seq_parameter_set_Item)->pic_struct_FirstIrap=pic_struct_Pending;
 
-    if ((*seq_parameter_set_Item)->vui_parameters==NULL)
-        return;
-    float FrameRate=0;
-    if ((*seq_parameter_set_Item)->vui_parameters->time_scale && (*seq_parameter_set_Item)->vui_parameters->num_units_in_tick)
-        FrameRate=(float)((float64)(*seq_parameter_set_Item)->vui_parameters->time_scale/(*seq_parameter_set_Item)->vui_parameters->num_units_in_tick);
-    else
-        FrameRate=0;
-    if (first_slice_segment_in_pic_flag && pic_order_cnt_DTS_Ref!=(int64u)-1 && FrameInfo.PTS!=(int64u)-1 && FrameRate && TemporalReferences_Reserved)
+    //Frame order from the slice header, whatever the container provides as timestamps
+    if (first_slice_segment_in_pic_flag && !MustParse_VPS_SPS_PPS_FromFlv && !nuh_layer_id && TemporalReferences_Reserved)
     {
-        int64s pic_order_cnt=float64_int64s(int64s(FrameInfo.PTS-pic_order_cnt_DTS_Ref)*FrameRate/1000000000);
-        if (pic_order_cnt>=((int64s)TemporalReferences.size()/4) || pic_order_cnt<=-((int64s)TemporalReferences.size()/4))
-            pic_order_cnt_DTS_Ref=(int64u)-1; // Incoherency in DTS? Disabling compute by DTS, TODO: more generic test (all formats)
-    }
-    if (first_slice_segment_in_pic_flag && pic_order_cnt_DTS_Ref!=(int64u)-1 && FrameInfo.PTS!=(int64u)-1 && FrameRate && TemporalReferences_Reserved)
-    {
+        Pictures_Decoded++;
+
+        //Duration of a picture from the frame rate if present, it is also the only source of time in a raw stream
+        const auto vui_parameters=(*seq_parameter_set_Item)->vui_parameters;
+        float64 Frame_Duration=0;
+        if (vui_parameters && vui_parameters->time_scale && vui_parameters->num_units_in_tick)
+        {
+            Frame_Duration=((float64)vui_parameters->num_units_in_tick)*1000000000/vui_parameters->time_scale;
+            Pictures_Duration=float64_int64s(Frame_Duration);
+            if (!IsSub)
+            {
+                FrameInfo.DUR=Pictures_Duration;
+                if (FrameInfo.DTS!=(int64u)-1) //Not known after a seek
+                    FrameInfo.DTS=float64_int64s(Frame_Duration*(Pictures_Decoded-1));
+            }
+        }
+
+        //The container keeps the last PTS if a picture has none, e.g. in a PES without PTS or after the first picture of a PES
+        const auto PTS=FrameInfo.PTS!=Pictures_Decoded_PTS?FrameInfo.PTS:(int64u)-1;
+        Pictures_Decoded_PTS=FrameInfo.PTS;
+
+        //The container may give a DTS only at the start of several pictures (e.g. clip wrapped MXF, or 2 fields in a frame wrapped element), a block which is a frame has its own DTS even if it has the same value (e.g. MP4 DTS before the start of the edit list)
+        Pictures_Decoded_SameDts=(FrameInfo.DTS==Pictures_Decoded_DTS && (Frame_Count_InThisBlock || !FrameIsAlwaysComplete))?(Pictures_Decoded_SameDts+1):0;
+        Pictures_Decoded_DTS=FrameInfo.DTS;
+
+        const auto MaxPicOrderCntLsb=(int32s)1<<((*seq_parameter_set_Item)->log2_max_pic_order_cnt_lsb_minus4+4);
+        auto PicOrderCntMsb=prevPicOrderCntMsb;
+        if (RapPicFlag || prevPicOrderCntLsb==(int32u)-1)
+        {
+            //Only the order inside the sequence is needed, the next sequence is put after this one
+            PicOrderCntMsb=0;
+            PicOrderCntVal_Ref=slice_pic_order_cnt_lsb;
+            TemporalReferences_Offset=TemporalReferences_Max+1;
+            TemporalReferences_pic_order_cnt_Min=0;
+        }
+        else if (slice_pic_order_cnt_lsb<prevPicOrderCntLsb && prevPicOrderCntLsb-slice_pic_order_cnt_lsb>=(int32u)MaxPicOrderCntLsb/2)
+            PicOrderCntMsb+=MaxPicOrderCntLsb;
+        else if (slice_pic_order_cnt_lsb>prevPicOrderCntLsb && slice_pic_order_cnt_lsb-prevPicOrderCntLsb>(int32u)MaxPicOrderCntLsb/2)
+            PicOrderCntMsb-=MaxPicOrderCntLsb;
+        const int32s PicOrderCntVal=PicOrderCntMsb+slice_pic_order_cnt_lsb;
+        if (RapPicFlag || (nuh_temporal_id_plus1<=1 && (Element_Code>14 || (Element_Code&1)) && (Element_Code<6 || Element_Code>9))) //Not RADL, RASL or sub-layer non-reference picture, and the order always restarts from a random access picture
+        {
+            prevPicOrderCntMsb=PicOrderCntMsb;
+            prevPicOrderCntLsb=slice_pic_order_cnt_lsb;
+        }
+
         //Frame order detection
-        int64s pic_order_cnt=float64_int64s(int64s(FrameInfo.PTS-pic_order_cnt_DTS_Ref)*FrameRate/1000000000);
+        int64s pic_order_cnt=PicOrderCntVal-PicOrderCntVal_Ref;
         if (pic_order_cnt<TemporalReferences_pic_order_cnt_Min)
         {
             if (pic_order_cnt<0)
@@ -4179,7 +4276,7 @@ void File_Hevc::slice_segment_header()
                 size_t ToInsert=(size_t)(TemporalReferences_pic_order_cnt_Min-pic_order_cnt);
                 if (Base+ToInsert>=4*TemporalReferences_Reserved || Base>=4*TemporalReferences_Reserved || ToInsert+TemporalReferences_Max>=4*TemporalReferences_Reserved || TemporalReferences_Max>=4*TemporalReferences_Reserved || TemporalReferences_Max-Base>=4*TemporalReferences_Reserved)
                 {
-                    Trusted_IsNot("Problem in temporal references");
+                    prevPicOrderCntLsb=(int32u)-1; //Incoherency, restarting from the next picture, the stream itself may be fine
                     return;
                 }
                 Element_Info1(__T("Offset of ")+Ztring::ToZtring(ToInsert));
@@ -4195,7 +4292,7 @@ void File_Hevc::slice_segment_header()
 
         if (pic_order_cnt<0 && TemporalReferences_Offset<(size_t)(-pic_order_cnt)) //Found in playreadyEncryptedBlowUp.ts without encryption test
         {
-            Trusted_IsNot("Problem in temporal references");
+            prevPicOrderCntLsb=(int32u)-1; //Incoherency, restarting from the next picture, the stream itself may be fine
             return;
         }
 
@@ -4208,7 +4305,13 @@ void File_Hevc::slice_segment_header()
             {
                 TemporalReferences_Offset+=TemporalReferences_Reserved;
                 pic_order_cnt-=TemporalReferences_Reserved;
+                PicOrderCntVal_Ref+=(int32s)TemporalReferences_Reserved;
                 TemporalReferences_pic_order_cnt_Min-=TemporalReferences_Reserved/2;
+            }
+            if (pic_order_cnt>=3*(int64s)TemporalReferences_Reserved)
+            {
+                prevPicOrderCntLsb=(int32u)-1; //Incoherency, restarting from the next picture, the stream itself may be fine
+                return;
             }
             while (TemporalReferences_Offset+pic_order_cnt>=3*TemporalReferences_Reserved)
             {
@@ -4272,17 +4375,22 @@ void File_Hevc::slice_segment_header()
         }
         if (TemporalReferences[TemporalReferences_Offset_pic_order_cnt_lsb_Last]==NULL)
             TemporalReferences[TemporalReferences_Offset_pic_order_cnt_lsb_Last]=new temporal_reference();
+        TemporalReferences[TemporalReferences_Offset_pic_order_cnt_lsb_Last]->PTS=PTS;
         /*
         TemporalReferences[TemporalReferences_Offset_pic_order_cnt_lsb_Last]->frame_num=frame_num;
         TemporalReferences[TemporalReferences_Offset_pic_order_cnt_lsb_Last]->slice_type=(int8u)slice_type;
         TemporalReferences[TemporalReferences_Offset_pic_order_cnt_lsb_Last]->IsTop=!bottom_field_flag;
         TemporalReferences[TemporalReferences_Offset_pic_order_cnt_lsb_Last]->IsField=field_pic_flag;
         */
-        if (TemporalReferences_DelayedElement)
-        {
-            TemporalReferences_DelayedElement=NULL;
-            sei_message_user_data_registered_itu_t_t35_B5_0031_GA94_03_Delayed((*pic_parameter_set_Item)->seq_parameter_set_id);
-        }
+        TemporalReferences_DelayedElement=NULL;
+        #if defined(MEDIAINFO_DTVCCTRANSPORT_YES)
+            if (GA94_03_IsPresent)
+                sei_message_user_data_registered_itu_t_t35_B5_0031_GA94_03_Delayed((*pic_parameter_set_Item)->seq_parameter_set_id); //For each picture as a picture waiting must be read before the list of pictures is shifted
+        #endif //defined(MEDIAINFO_DTVCCTRANSPORT_YES)
+
+        //The demux event of a picture is sent before its slices are parsed, so the time is now the one of the next picture
+        if (!IsSub && Frame_Duration && FrameInfo.DTS!=(int64u)-1)
+            FrameInfo.DTS=float64_int64s(Frame_Duration*Pictures_Decoded);
     }
 }
 

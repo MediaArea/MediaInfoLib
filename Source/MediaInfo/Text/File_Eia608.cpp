@@ -1130,7 +1130,7 @@ void File_Eia608::Special_14(int8u cc_data_2)
     }
     if (FrameInfo.DTS!=(int64u)-1)
     {
-        Stream.Duration_End_Command=(FrameInfo.DTS+FrameInfo.DUR)/1000000.0;
+        Stream.Duration_End_Command=(FrameInfo.DTS+(FrameInfo.DUR!=(int64u)-1?FrameInfo.DUR:0))/1000000.0;
         Stream.Duration_End_Command_WasJustUpdated=true;
     }
 }
