@@ -1902,25 +1902,23 @@ void File_Mpeg4::Read_Buffer_Unsynched()
             int64u StreamOffset=(int64u)-1;
             if (StreamOffset_Jump.empty() || File_GoTo==mdat_Pos[0].Offset)
                 StreamOffset=mdat_Pos_Temp->Offset;
+            else if (Stream==Next_Stream)
+                StreamOffset=Next_Stream->second.stco[Next_Stream_Stco];
             else if (Next_Stream_Stco!=(size_t)-1)
             {
                 //Searching the right place for this stream
                 int64u StreamOffset_Temp=Next_Stream->second.stco[Next_Stream_Stco];
                 std::map<int64u, int64u>::iterator StreamOffset_Jump_Temp;
-                for (;;)
+                std::set<int64u> StreamOffset_Temp_Used; //The jumps may loop if the chunks are not in the order of the file
+                while (StreamOffset_Temp_Used.insert(StreamOffset_Temp).second)
                 {
                     StreamOffset_Jump_Temp=StreamOffset_Jump.find(StreamOffset_Temp);
                     if (StreamOffset_Jump_Temp==StreamOffset_Jump.end())
                         break;
-                    if (Stream==Next_Stream)
-                        StreamOffset_Temp=StreamOffset_Jump_Temp->first;
-                    else
-                    {
-                        ++StreamOffset_Jump_Temp;
-                        if (StreamOffset_Jump_Temp==StreamOffset_Jump.end())
-                            break;
-                        StreamOffset_Temp=StreamOffset_Jump_Temp->second;
-                    }
+                    ++StreamOffset_Jump_Temp;
+                    if (StreamOffset_Jump_Temp==StreamOffset_Jump.end())
+                        break;
+                    StreamOffset_Temp=StreamOffset_Jump_Temp->second;
 
                     if (!Stream->second.stco.empty() && StreamOffset_Temp>=Stream->second.stco[0] && StreamOffset_Temp<=Stream->second.stco[Stream->second.stco.size()-1])
                         for (size_t Stco_Pos=0; Stco_Pos<Stream->second.stco.size(); Stco_Pos++)
