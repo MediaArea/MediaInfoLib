@@ -368,7 +368,7 @@ File_Mpeg4::File_Mpeg4()
     #if MEDIAINFO_NEXTPACKET
         ReferenceFiles_IsParsing=false;
     #endif //MEDIAINFO_NEXTPACKET
-    mdat_Pos_Temp_ToJump=NULL;
+    mdat_Pos_Offset_ToJump=0;
     #if MEDIAINFO_DEMUX
         TimeCode_FrameOffset=0;
         TimeCode_DtsOffset=0;
@@ -1902,25 +1902,23 @@ void File_Mpeg4::Read_Buffer_Unsynched()
             int64u StreamOffset=(int64u)-1;
             if (StreamOffset_Jump.empty() || File_GoTo==mdat_Pos[0].Offset)
                 StreamOffset=mdat_Pos_Temp->Offset;
+            else if (Stream==Next_Stream)
+                StreamOffset=Next_Stream->second.stco[Next_Stream_Stco];
             else if (Next_Stream_Stco!=(size_t)-1)
             {
                 //Searching the right place for this stream
                 int64u StreamOffset_Temp=Next_Stream->second.stco[Next_Stream_Stco];
                 std::map<int64u, int64u>::iterator StreamOffset_Jump_Temp;
-                for (;;)
+                std::set<int64u> StreamOffset_Temp_Used; //The jumps may loop if the chunks are not in the order of the file
+                while (StreamOffset_Temp_Used.insert(StreamOffset_Temp).second)
                 {
                     StreamOffset_Jump_Temp=StreamOffset_Jump.find(StreamOffset_Temp);
                     if (StreamOffset_Jump_Temp==StreamOffset_Jump.end())
                         break;
-                    if (Stream==Next_Stream)
-                        StreamOffset_Temp=StreamOffset_Jump_Temp->first;
-                    else
-                    {
-                        ++StreamOffset_Jump_Temp;
-                        if (StreamOffset_Jump_Temp==StreamOffset_Jump.end())
-                            break;
-                        StreamOffset_Temp=StreamOffset_Jump_Temp->second;
-                    }
+                    ++StreamOffset_Jump_Temp;
+                    if (StreamOffset_Jump_Temp==StreamOffset_Jump.end())
+                        break;
+                    StreamOffset_Temp=StreamOffset_Jump_Temp->second;
 
                     if (!Stream->second.stco.empty() && StreamOffset_Temp>=Stream->second.stco[0] && StreamOffset_Temp<=Stream->second.stco[Stream->second.stco.size()-1])
                         for (size_t Stco_Pos=0; Stco_Pos<Stream->second.stco.size(); Stco_Pos++)
@@ -2935,7 +2933,7 @@ bool File_Mpeg4::BookMark_Needed()
         }
 
         #if MEDIAINFO_DEMUX
-            if (!stco_IsDifferent && Muxing.size()==2)
+            if (!stco_IsDifferent && Muxing.size()==2 && !Streams[Muxing.begin()->first].IsPriorityStream && !Streams[Muxing.rbegin()->first].IsPriorityStream)
             {
                 std::map<int32u, struct Mpeg4_muxing>::iterator Muxing_1=Muxing.begin();
                 std::map<int32u, struct Mpeg4_muxing>::iterator Muxing_2=Muxing.begin(); ++Muxing_2;
@@ -2951,7 +2949,7 @@ bool File_Mpeg4::BookMark_Needed()
                     StreamOffset_Jump[Streams[Muxing_2->first].stco[0]]=Streams[Muxing_2->first].stco[stco_Count-1];
                 }
             }
-            else if (!mdat_Pos.empty() && Config->ParseSpeed>=1)
+            else if (!mdat_Pos.empty() && Config->ParseSpeed>=1 && Config_Demux) //Time order is useful only for the demux, each parser gets its samples in the same order without jumps
             {
                 //Trying to see if we must interleave manually
                 std::vector<int32u> Audios;
@@ -2985,7 +2983,7 @@ bool File_Mpeg4::BookMark_Needed()
                             if (StreamsTemp[*Temp].stts_Durations_Pos_Offset==0 && !Streams[*Temp].stts_Durations.empty())
                             {
                                 stream::stts_durations::iterator stts_Duration = Streams[*Temp].stts_Durations.begin() + Streams[*Temp].stts_Durations_Pos;
-                                int64u stts_Offset=stts_Duration->DTS_Begin+(((int64u)stts_Duration->SampleDuration)*(Frame_Count_NotParsedIncluded-stts_Duration->Pos_Begin));
+                                int64u stts_Offset=stts_Duration->DTS_Begin; //First sample of the stream, no sample is parsed at this point
                                 if (!Streams[*Temp].edts.empty()) //TODO: common code about edit lists
                                 {
                                     int64s Delay=0;
@@ -3002,7 +3000,7 @@ bool File_Mpeg4::BookMark_Needed()
                                         case 2 :
                                                 if (Streams[*Temp].edts[0].Delay==(int32u)-1 && Streams[*Temp].edts[0].Duration+Streams[*Temp].edts[1].Duration==Streams[*Temp].tkhd_Duration && Streams[*Temp].edts[0].Rate==0x00010000 && Streams[*Temp].edts[1].Rate==0x00010000 && moov_mvhd_TimeScale)
                                                 {
-                                                    Delay=((int64s)Streams[*Temp].edts[0].Duration)-Streams[*Temp].edts[1].Delay;
+                                                    Delay=((int64s)Streams[*Temp].edts[0].Duration)*Streams[*Temp].mdhd_TimeScale/moov_mvhd_TimeScale-Streams[*Temp].edts[1].Delay;
                                                 }
                                                 break;
                                         default:
@@ -3014,8 +3012,13 @@ bool File_Mpeg4::BookMark_Needed()
                                     else
                                         stts_Offset=0;
                                 }
-                                StreamsTemp[*Temp].DTS_Offset=((float64)stts_Offset)/moov_mvhd_TimeScale;
+                                StreamsTemp[*Temp].DTS_Offset=((float64)stts_Offset)/Streams[*Temp].mdhd_TimeScale;
                             }
+
+                            if (StreamsTemp[*Temp].stco_Pos>=Streams[*Temp].stco.size()
+                             || StreamsTemp[*Temp].stts_Durations_Pos>=Streams[*Temp].stts_Durations.size()
+                             || (!Streams[*Temp].stsz.empty() && StreamsTemp[*Temp].stsz_Pos>=Streams[*Temp].stsz.size()))
+                                continue; //No sample left, the other streams must not wait for this one
 
                             float64 Temp_Time=StreamsTemp[*Temp].DTS_Offset+((float64)StreamsTemp[*Temp].stts_Current)/Streams[*Temp].mdhd_TimeScale;
                             if (Temp_Time<Time)
@@ -3033,13 +3036,7 @@ bool File_Mpeg4::BookMark_Needed()
                                 if (IsInList && CurrentPos!=NextPos)
                                 {
                                     if (OldPos==(int64u)-1)
-                                    {
-                                        mdat_Pos_Type CurrentPos_mdat_Pos_Type;
-                                        CurrentPos_mdat_Pos_Type.Offset=NextPos;
-                                        mdat_pos::iterator CurrentPos_mdat_Pos_Lower=std::lower_bound(mdat_Pos.begin(), mdat_Pos.end(), CurrentPos_mdat_Pos_Type);
-                                        if (CurrentPos_mdat_Pos_Lower!=mdat_Pos.end())
-                                            mdat_Pos_Temp_ToJump=&(*CurrentPos_mdat_Pos_Lower);
-                                    }
+                                        mdat_Pos_Offset_ToJump=NextPos;
                                     else
                                         StreamOffset_Jump[OldPos]=NextPos;
                                     CurrentPos=NextPos;
@@ -3190,7 +3187,10 @@ bool File_Mpeg4::BookMark_Needed()
         }
         else
         {
-            mdat_Pos_Temp=mdat_Pos_Temp_ToJump?mdat_Pos_Temp_ToJump:&mdat_Pos[0];
+            mdat_Pos_Type ToJump_mdat_Pos_Type; //Position in the list only now, the list was modified just before
+            ToJump_mdat_Pos_Type.Offset=mdat_Pos_Offset_ToJump;
+            mdat_pos::iterator ToJump_mdat_Pos_Lower=std::lower_bound(mdat_Pos.begin(), mdat_Pos.end(), ToJump_mdat_Pos_Type);
+            mdat_Pos_Temp=ToJump_mdat_Pos_Lower!=mdat_Pos.end()?&(*ToJump_mdat_Pos_Lower):&mdat_Pos[0];
             mdat_Pos_Max=&mdat_Pos[0]+mdat_Pos.size();
             ToJump=mdat_Pos_Temp->Offset;
             GoTo(ToJump);

@@ -781,7 +781,7 @@ private :
     mdat_pos mdat_Pos;
     mdat_pos mdat_Pos_Caption;
     mdat_Pos_Type* mdat_Pos_Temp;
-    mdat_Pos_Type* mdat_Pos_Temp_ToJump;
+    int64u mdat_Pos_Offset_ToJump;
     mdat_Pos_Type* mdat_Pos_Max;
     std::vector<int32u> mdat_Pos_ToParseInPriority_StreamIDs;
     std::vector<int32u> mdat_Pos_ToParseInPriority_StreamIDs_ToRemove;
