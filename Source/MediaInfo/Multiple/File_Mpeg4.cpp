@@ -2951,7 +2951,7 @@ bool File_Mpeg4::BookMark_Needed()
                     StreamOffset_Jump[Streams[Muxing_2->first].stco[0]]=Streams[Muxing_2->first].stco[stco_Count-1];
                 }
             }
-            else if (!mdat_Pos.empty() && Config->ParseSpeed>=1)
+            else if (!mdat_Pos.empty() && Config->ParseSpeed>=1 && Config_Demux) //Time order is useful only for the demux, each parser gets its samples in the same order without jumps
             {
                 //Trying to see if we must interleave manually
                 std::vector<int32u> Audios;
