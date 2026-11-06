@@ -145,6 +145,16 @@ private :
         int64u                  Size;
     };
     std::vector<chunk_size_64> DS64_Table;
+    struct cue_point
+    {
+        int32u                  SampleOffset=(int32u)-1;
+        Ztring                  Label;
+        Ztring                  Note;
+        Ztring                  Text;
+    };
+    std::map<int32u, cue_point> Cue_Points; //Key is the cue point ID
+    bool bext_Present;
+    bool ubxt_Present;
     Ztring INFO_ISMP;
     Ztring Tdat_tc_A;
     Ztring Tdat_tc_O;
@@ -201,6 +211,7 @@ private :
     #endif //defined(MEDIAINFO_GXF_YES)
 
     void TimeCode_Fill(const Ztring &Name, const Ztring &Value);
+    void Get_Text(int64u Bytes, Ztring& Value, const char* Name);
 
     //Chunks
     void AIFC ();
@@ -333,6 +344,7 @@ private :
     void WAVE_axml ();
     void WAVE_axml_Continue ();
     void WAVE_bext ();
+    void WAVE_bext_ubxt (bool IsUbxt);
     void WAVE_bxml () {WAVE_axml();}
     void WAVE_C2PA();
     void WAVE_chna();
@@ -352,6 +364,8 @@ private :
     void WAVE_iXML ();
     void WAVE_MD5_() { AVI__MD5_(); }
     void WAVE_mext ();
+    void WAVE_sxml ();
+    void WAVE_ubxt ();
     void wave ();
     void wave_data () {WAVE_data();}
     void wave_fmt_ () {WAVE_fmt_();}

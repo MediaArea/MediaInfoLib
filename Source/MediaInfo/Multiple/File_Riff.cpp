@@ -160,6 +160,8 @@ File_Riff::File_Riff()
     IsWave64=false;
     IsRIFF64=false;
     IsBW64=false;
+    bext_Present=false;
+    ubxt_Present=false;
     IsWaveBroken=false;
     IsNotWordAligned=false;
     IsNotWordAligned_Tested=false;
@@ -190,6 +192,42 @@ File_Riff::~File_Riff()
 //***************************************************************************
 // Streams management
 //***************************************************************************
+
+//---------------------------------------------------------------------------
+static string UMID_Normalize(const string& Value)
+{
+    //Accepted: hexadecimal with or without "0x" prefix, SMPTE ST 2029 URN, with or without separators
+    string Hex;
+    size_t Begin=0;
+    if (!Value.compare(0, 15, "urn:smpte:umid:"))
+        Begin=15;
+    else if (!Value.compare(0, 2, "0x") || !Value.compare(0, 2, "0X"))
+        Begin=2;
+    for (size_t i=Begin; i<Value.size(); i++)
+    {
+        char C=Value[i];
+        if (C>='a' && C<='f')
+            C-='a'-'A';
+        if ((C>='0' && C<='9') || (C>='A' && C<='F'))
+            Hex+=C;
+        else if (C!='.' && C!=' ' && C!='-')
+            return Value; //Unknown format
+    }
+    if (Hex.size()!=64 && Hex.size()!=128)
+        return Value; //Unknown format
+    return "0x"+Hex;
+}
+
+//---------------------------------------------------------------------------
+static string BroadcastMetadata_Clean(const string& Value)
+{
+    //XML values may be indented
+    size_t Begin=Value.find_first_not_of(" \t\r\n");
+    if (Begin==string::npos)
+        return string();
+    size_t End=Value.find_last_not_of(" \t\r\n");
+    return Value.substr(Begin, End-Begin+1);
+}
 
 //---------------------------------------------------------------------------
 void File_Riff::Streams_Finish ()
@@ -224,8 +262,45 @@ void File_Riff::Streams_Finish ()
             Adm->chna_Move(Adm_chna);
             delete Adm_chna; Adm_chna=NULL;
         }
+        bool HasAdm=Adm->audioFormatExtended_Count(); //Before Finish(), content is cleared after filling
         Finish(Adm);
-        Merge(*Adm, Stream_Audio, 0, 0);
+        const auto BroadcastMetadata=Adm->BroadcastMetadata_Get();
+        bool HasBroadcastMetadata=BroadcastMetadata && !BroadcastMetadata->empty();
+        if (HasAdm || !HasBroadcastMetadata) //XML chunks may carry only other metadata (ITU-R BS.2088-2 9)
+            Merge(*Adm, Stream_Audio, 0, 0);
+        if (HasBroadcastMetadata)
+        {
+            //ITU-R BS.2088-2: XML metadata should be used, bext or ubxt content is replaced
+            auto Fill_Item=[&](const char* Parameter, const char* Name, const string& Value_String, bool IsText)
+            {
+                if (Value_String.empty())
+                    return;
+                Ztring Current=Retrieve_Const(Stream_General, 0, Parameter);
+                Fill(Stream_General, 0, Parameter, Value_String, true, true);
+                const auto& New=Retrieve_Const(Stream_General, 0, Parameter);
+                if (!Current.empty() && Current!=New)
+                {
+                    const char* Legacy=IsText?(ubxt_Present?"ubxt":"bext"):(bext_Present?"bext":"ubxt");
+                    Fill_Conformance((string("Crosscheck ")+Legacy+' '+Name).c_str(), string(Legacy)+' '+Name+" is not same as "+Adm->MuxingMode+' '+Name+" (\""+Current.To_UTF8()+"\" vs \""+New.To_UTF8()+"\")", {}, Conformance_Warning);
+                }
+            };
+            Fill_Item("Description", "Description", BroadcastMetadata_Clean(BroadcastMetadata->Description), true);
+            //Originator is creator name, OriginatorReference is organisation name only for content converted from bext or ubxt (ITU-R BS.2088-2 11)
+            string CreatorName=BroadcastMetadata_Clean(BroadcastMetadata->CreatorName);
+            string OrganisationName=BroadcastMetadata_Clean(BroadcastMetadata->OrganisationName);
+            if (CreatorName.empty() && !BroadcastMetadata->IsFromBext)
+                CreatorName=OrganisationName;
+            Fill_Item("Producer", "Originator", CreatorName, true);
+            if (BroadcastMetadata->IsFromBext)
+                Fill_Item("Producer_Reference", "OriginatorReference", OrganisationName, true);
+            string Date=BroadcastMetadata_Clean(BroadcastMetadata->CreatedDate);
+            string Time=BroadcastMetadata_Clean(BroadcastMetadata->CreatedTime);
+            if (!Date.empty() && !Time.empty())
+                Date+=' ';
+            Fill_Item("Encoded_Date", "OriginationDate", Date+Time, false);
+            Fill_Item("Encoded_Library_Settings", "CodingHistory", BroadcastMetadata_Clean(BroadcastMetadata->CodingHistory), true);
+            Fill_Item("UMID", "UMID", UMID_Normalize(BroadcastMetadata_Clean(BroadcastMetadata->UMID)), false);
+        }
     }
     if (DolbyAudioMetadata) //After ADM for having content inside ADM stuff
         DolbyAudioMetadata->Merge(*this, 0);
@@ -698,6 +773,44 @@ void File_Riff::Streams_Finish ()
                 if (SamplingRate==44100*8 || SamplingRate==48000*8)
                     Fill(Stream_Audio, StreamPos_Last, Audio_Format_Commercial_IfAny, "DXD");
             }
+        }
+    }
+
+    //Cue points
+    if (!Cue_Points.empty() && SamplesPerSec)
+    {
+        std::multimap<int32u, const cue_point*> Cue_Points_Sorted;
+        for (const auto& Cue_Point : Cue_Points)
+            if (Cue_Point.second.SampleOffset!=(int32u)-1)
+                Cue_Points_Sorted.emplace(Cue_Point.second.SampleOffset, &Cue_Point.second);
+        if (!Cue_Points_Sorted.empty())
+        {
+            Stream_Prepare(Stream_Menu);
+            Fill(Stream_Menu, StreamPos_Last, Menu_Chapters_Pos_Begin, Count_Get(Stream_Menu, StreamPos_Last), 10, true);
+            for (const auto& Cue_Point : Cue_Points_Sorted)
+            {
+                Ztring Time=Ztring().Duration_From_Milliseconds((int64u)Cue_Point.first*1000/SamplesPerSec);
+                Ztring Text;
+                for (const auto Item : { &Cue_Point.second->Label, &Cue_Point.second->Text, &Cue_Point.second->Note })
+                {
+                    bool IsText=!Item->empty();
+                    for (const auto C : *Item)
+                        if (((int32u)C<0x20 && C!=__T('\t')) || C==0x7F)
+                        {
+                            IsText=false; //e.g. private data with key/value pairs, not a human readable marker
+                            break;
+                        }
+                    if (IsText)
+                    {
+                        Text=*Item;
+                        break;
+                    }
+                }
+                if (Text.empty())
+                    Text=Time;
+                Fill(Stream_Menu, StreamPos_Last, Time.To_UTF8().c_str(), Text);
+            }
+            Fill(Stream_Menu, StreamPos_Last, Menu_Chapters_Pos_End, Count_Get(Stream_Menu, StreamPos_Last), 10, true);
         }
     }
 }

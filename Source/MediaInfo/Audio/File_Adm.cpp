@@ -2845,6 +2845,10 @@ public:
     vector<size_t> ChannelFormat_BlockFormat_ReduceCount;
     string OldLocale;
     vector<string> Errors_Tips[error_Type_Max][source_Max];
+    File_Adm::broadcast_metadata BroadcastMetadata; // ITU-R BS.2088-2 11
+    int8u BroadcastMetadata_DescriptionType = 0; // 0 = no typeDefinition, 1 = bext, 2 = ubxt, 3 = other
+    bool BroadcastMetadata_IsUmid = false;
+    bool BroadcastMetadata_IsCodingHistory = false;
 
     file_adm_private()
     {
@@ -5375,6 +5379,91 @@ int file_adm_private::coreMetadata()
         {
             XML_SUB(format());
         }
+        // Broadcast metadata e.g. converted from BWF bext or ubxt chunks (ITU-R BS.2088-2 11)
+        else if (!tfsxml_strcmp_charp(b, "creator"))
+        {
+            XML_ELEM_START
+                if (!tfsxml_strcmp_charp(b, "contactDetails"))
+                {
+                    XML_ELEM_START
+                        if (!tfsxml_strcmp_charp(b, "name"))
+                        {
+                            XML_VALUE
+                            BroadcastMetadata.CreatorName = tfsxml_decode(v);
+                        }
+                    XML_ELEM_END
+                }
+                else if (!tfsxml_strcmp_charp(b, "organisationDetails"))
+                {
+                    XML_ELEM_START
+                        if (!tfsxml_strcmp_charp(b, "organisationName"))
+                        {
+                            XML_VALUE
+                            BroadcastMetadata.OrganisationName = tfsxml_decode(v);
+                        }
+                    XML_ELEM_END
+                }
+            XML_ELEM_END
+        }
+        else if (!tfsxml_strcmp_charp(b, "description"))
+        {
+            if (IsInit()) {
+                BroadcastMetadata_DescriptionType = 0;
+            }
+            XML_ATTR_START
+                else if (!tfsxml_strcmp_charp(b, "typeDefinition"))
+                {
+                    if (!tfsxml_strcmp_charp(v, "bextDescription"))
+                        BroadcastMetadata_DescriptionType = 1;
+                    else if (!tfsxml_strcmp_charp(v, "ubxtDescription"))
+                        BroadcastMetadata_DescriptionType = 2;
+                    else
+                        BroadcastMetadata_DescriptionType = 3;
+                    if (BroadcastMetadata_DescriptionType <= 2)
+                        BroadcastMetadata.IsFromBext = true;
+                }
+            XML_ATTR_END
+            XML_ELEM_START
+                if (!tfsxml_strcmp_charp(b, "dc:description"))
+                {
+                    XML_VALUE
+                    // ubxt (UTF-8) has priority over bext (ASCII)
+                    if (BroadcastMetadata_DescriptionType == 2 || (BroadcastMetadata_DescriptionType < 2 && BroadcastMetadata.Description.empty()))
+                        BroadcastMetadata.Description = tfsxml_decode(v);
+                }
+            XML_ELEM_END
+        }
+        else if (!tfsxml_strcmp_charp(b, "date"))
+        {
+            XML_ELEM_START
+                if (!tfsxml_strcmp_charp(b, "created"))
+                {
+                    XML_ATTR_START
+                        else if (!tfsxml_strcmp_charp(b, "startDate"))
+                            BroadcastMetadata.CreatedDate = tfsxml_decode(v);
+                        else if (!tfsxml_strcmp_charp(b, "startTime"))
+                            BroadcastMetadata.CreatedTime = tfsxml_decode(v);
+                    XML_ATTR_END
+                }
+            XML_ELEM_END
+        }
+        else if (!tfsxml_strcmp_charp(b, "identifier"))
+        {
+            if (IsInit()) {
+                BroadcastMetadata_IsUmid = false;
+            }
+            XML_ATTR_START
+                else if (!tfsxml_strcmp_charp(b, "formatLabel"))
+                    BroadcastMetadata_IsUmid = !tfsxml_strcmp_charp(v, "UMID");
+            XML_ATTR_END
+            XML_ELEM_START
+                if (BroadcastMetadata_IsUmid && !tfsxml_strcmp_charp(b, "dc:identifier"))
+                {
+                    XML_VALUE
+                    BroadcastMetadata.UMID = tfsxml_decode(v);
+                }
+            XML_ELEM_END
+        }
     XML_ELEM_END
     XML_END
 }
@@ -5433,6 +5522,19 @@ int file_adm_private::format()
 
         Items[item_profileList_frameHeader] = std::move(Items[item_profileList]);
         Items[item_profile_frameHeader] = std::move(Items[item_profile]);
+    }
+    else if (!tfsxml_strcmp_charp(b, "technicalAttributeString")) {
+        // Broadcast metadata e.g. converted from BWF bext or ubxt chunks (ITU-R BS.2088-2 11)
+        if (IsInit()) {
+            BroadcastMetadata_IsCodingHistory = false;
+        }
+        XML_ATTR_START
+            else if (!tfsxml_strcmp_charp(b, "typeDefinition"))
+                BroadcastMetadata_IsCodingHistory = !tfsxml_strcmp_charp(v, "CodingHistory");
+        XML_ATTR_END
+        XML_VALUE
+        if (BroadcastMetadata_IsCodingHistory)
+            BroadcastMetadata.CodingHistory = tfsxml_decode(v);
     }
     XML_ELEM_END
     XML_END
@@ -6015,7 +6117,7 @@ int file_adm_private::frameHeader()
             ELEMENT_M(changedIDs)
             ELEMENT_E(changedIDs, frameFormat)
         ELEMENT_e(frameFormat, frameHeader, frameFormat_Check(this))
-    ELEMENT_S(frameHeader, transportTrackFormat)
+    ELEMENT_s(frameHeader, transportTrackFormat, if (Items[item_transportTrackFormat].Items.empty()) Items[item_audioTrack].Items.clear()) // Has priority over e.g. BW64 chna
         ATTRIB_ID(transportTrackFormat, transportID)
         ATTRIBUTE(transportTrackFormat, transportName)
         ATTRIBUTE(transportTrackFormat, numTracks)
@@ -7974,6 +8076,13 @@ bool File_Adm::audioProgramme_Get(const string& ID, string& Name, string& FirstL
         return true;
     }
     return false;
+}
+
+const File_Adm::broadcast_metadata* File_Adm::BroadcastMetadata_Get()
+{
+    if (!File_Adm_Private)
+        return nullptr;
+    return &File_Adm_Private->BroadcastMetadata;
 }
 
 size_t File_Adm::audioFormatExtended_Count()

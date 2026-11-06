@@ -456,6 +456,8 @@ namespace Elements
     const int32u WAVE_iXML=0x69584D4C;
     const int32u WAVE_MD5_=0x4D443520;
     const int32u WAVE_mext=0x6D657874;
+    const int32u WAVE_sxml=0x73786D6C;
+    const int32u WAVE_ubxt=0x75627874;
     const int32u wave=0x77617665;
     const int32u wave_data=0x64617461;
     const int32u wave_fmt_=0x666D7420;
@@ -681,6 +683,8 @@ void File_Riff::Data_Parse()
         ATOM(WAVE_iXML)
         ATOM(WAVE_MD5_)
         ATOM(WAVE_mext)
+        ATOM_PARTIAL(WAVE_sxml)
+        ATOM(WAVE_ubxt)
         ATOM_END
     LIST(wave)
         ATOM_BEGIN
@@ -3659,6 +3663,50 @@ struct profile_info
     }
 };
 
+//---------------------------------------------------------------------------
+static int8u* Riff_Gunzip(const int8u* Data, size_t Data_Size, size_t& UncompressedData_Size)
+{
+    //Uncompress init
+    z_stream strm;
+    strm.next_in=(Bytef*)Data;
+    strm.avail_in=(uInt)Data_Size;
+    strm.next_out=NULL;
+    strm.avail_out=0;
+    strm.total_out=0;
+    strm.zalloc=Z_NULL;
+    strm.zfree=Z_NULL;
+    inflateInit2(&strm, 15+16); // 15 + 16 are magic values for gzip
+
+    //Prepare out
+    strm.avail_out=0x10000; //Blocks of 64 KiB, arbitrary chosen, as a begin
+    strm.next_out=(Bytef*)new Bytef[strm.avail_out];
+
+    //Parse compressed data, with handling of the case the output buffer is not big enough
+    for (;;)
+    {
+        //inflate
+        int inflate_Result=inflate(&strm, Z_NO_FLUSH);
+        if (inflate_Result<0)
+            break;
+
+        //Check if we need to stop
+        if (strm.avail_out || inflate_Result || strm.total_out>=0x4000000) //Arbitrary limit of 64 MiB
+            break;
+
+        //Need to increase buffer
+        size_t UncompressedData_NewMaxSize=strm.total_out*4;
+        int8u* UncompressedData_New=new int8u[UncompressedData_NewMaxSize];
+        memcpy(UncompressedData_New, strm.next_out-strm.total_out, strm.total_out);
+        delete[] (strm.next_out-strm.total_out); strm.next_out=UncompressedData_New;
+        strm.next_out=strm.next_out+strm.total_out;
+        strm.avail_out=UncompressedData_NewMaxSize-strm.total_out;
+    }
+    int8u* UncompressedData=strm.next_out-strm.total_out;
+    UncompressedData_Size=strm.total_out;
+    inflateEnd(&strm);
+    return UncompressedData;
+}
+
 void File_Riff::WAVE_axml()
 {
     //Preparing
@@ -3689,59 +3737,30 @@ void File_Riff::WAVE_axml()
             return; //Must wait for more data
         }
 
-        Element_Name("Compressed AXML");
+        Element_Name("BXML");
 
         //Header
-        int16u Version; // Maybe...
-        Get_L2 (Version,                                        "Version");
-        if (Version!=1)
+        int16u fmtType;
+        Get_L2 (fmtType,                                        "fmtType"); Param_Info1C(fmtType==0, "Uncompressed"); Param_Info1C(fmtType==1, "gzip");
+        if (fmtType==0)
+        {
+            //Parsing
+            Open_Buffer_Continue(Adm, Buffer+Buffer_Offset+(size_t)Element_Offset, (size_t)(Element_Size-Element_Offset));
+            Skip_UTF8(Element_Size-Element_Offset,              "XML data");
+            return;
+        }
+        if (fmtType!=1)
         {
             Skip_XX(Element_Size-Element_Offset,                "Data (Unsuported)");
             return;
         }
 
-        //Uncompress init
-        z_stream strm;
-        strm.next_in=(Bytef*)Buffer+Buffer_Offset+2;
-        strm.avail_in=(uInt)Element_Size-2;
-        strm.next_out=NULL;
-        strm.avail_out=0;
-        strm.total_out=0;
-        strm.zalloc=Z_NULL;
-        strm.zfree=Z_NULL;
-        inflateInit2(&strm, 15+16); // 15 + 16 are magic values for gzip
-
-        //Prepare out
-        strm.avail_out=0x10000; //Blocks of 64 KiB, arbitrary chosen, as a begin
-        strm.next_out=(Bytef*)new Bytef[strm.avail_out];
-
-        //Parse compressed data, with handling of the case the output buffer is not big enough
-        for (;;)
-        {
-            //inflate
-            int inflate_Result=inflate(&strm, Z_NO_FLUSH);
-            if (inflate_Result<0)
-                break;
-
-            //Check if we need to stop
-            if (strm.avail_out || inflate_Result || strm.total_out>=0x4000000) //Arbitrary limit of 64 MiB
-                break;
-
-            //Need to increase buffer
-            size_t UncompressedData_NewMaxSize=strm.total_out*4;
-            int8u* UncompressedData_New=new int8u[UncompressedData_NewMaxSize];
-            memcpy(UncompressedData_New, strm.next_out-strm.total_out, strm.total_out);
-            delete[] (strm.next_out-strm.total_out); strm.next_out=UncompressedData_New;
-            strm.next_out=strm.next_out+strm.total_out;
-            strm.avail_out=UncompressedData_NewMaxSize-strm.total_out;
-        }
-        int8u* UncompressedData=strm.next_out-strm.total_out;
-        size_t UncompressedData_Size=strm.total_out;
-        inflateEnd(&strm);
         //Parsing
+        size_t UncompressedData_Size;
+        int8u* UncompressedData=Riff_Gunzip(Buffer+Buffer_Offset+(size_t)Element_Offset, (size_t)(Element_Size-Element_Offset), UncompressedData_Size);
         Open_Buffer_Continue(Adm, UncompressedData, UncompressedData_Size);
         delete[] UncompressedData;
-        Skip_UTF8(Element_Size, "XML data");
+        Skip_XX(Element_Size-Element_Offset,                    "XML data (compressed)");
     }
     else
     {
@@ -3783,8 +3802,14 @@ void File_Riff::WAVE_adtl_labl()
     Element_Name("Label");
 
     //Parsing
-    Skip_L4(                                                    "Cue Point ID");
-    Skip_UTF8(Element_Size-Element_Offset,                      "Text");
+    Ztring Text;
+    int32u ID;
+    Get_L4 (ID,                                                 "Cue Point ID");
+    Get_Text(Element_Size-Element_Offset, Text,                 "Text");
+
+    FILLING_BEGIN();
+        Cue_Points[ID].Label=Text;
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -3793,14 +3818,20 @@ void File_Riff::WAVE_adtl_ltxt()
     Element_Name("Labeled Text");
 
     //Parsing
-    Skip_L4(                                                    "Cue Point ID");
+    Ztring Text;
+    int32u ID;
+    Get_L4 (ID,                                                 "Cue Point ID");
     Skip_L4(                                                    "Sample Length");
     Skip_C4(                                                    "Purpose ID");
     Skip_L2(                                                    "Country");
     Skip_L2(                                                    "Language");
     Skip_L2(                                                    "Dialect");
     Skip_L2(                                                    "Code Page");
-    Skip_UTF8(Element_Size-Element_Offset,                      "Text");
+    Get_Text(Element_Size-Element_Offset, Text,                 "Text");
+
+    FILLING_BEGIN();
+        Cue_Points[ID].Text=Text;
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -3809,8 +3840,54 @@ void File_Riff::WAVE_adtl_note()
     Element_Name("Note");
 
     //Parsing
-    Skip_L4(                                                    "Cue Point ID");
-    Skip_UTF8(Element_Size-Element_Offset,                      "Text");
+    Ztring Text;
+    int32u ID;
+    Get_L4 (ID,                                                 "Cue Point ID");
+    Get_Text(Element_Size-Element_Offset, Text,                 "Text");
+
+    FILLING_BEGIN();
+        Cue_Points[ID].Note=Text;
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Riff::Get_Text(int64u Bytes, Ztring& Value, const char* Name)
+{
+    //UTF-8 if valid, else the legacy code page
+    if (Element_Offset+Bytes>Element_Size)
+        Bytes=Element_Size-Element_Offset;
+    const int8u* Data=Buffer+Buffer_Offset+(size_t)Element_Offset;
+    bool IsUtf8=true;
+    for (size_t i=0; i<Bytes && Data[i] && IsUtf8; i++)
+    {
+        size_t Extra;
+        if (Data[i]<0x80)
+            continue;
+        else if ((Data[i]&0xE0)==0xC0)
+            Extra=1;
+        else if ((Data[i]&0xF0)==0xE0)
+            Extra=2;
+        else if ((Data[i]&0xF8)==0xF0)
+            Extra=3;
+        else
+        {
+            IsUtf8=false;
+            break;
+        }
+        for (; Extra; Extra--)
+        {
+            i++;
+            if (i>=Bytes || (Data[i]&0xC0)!=0x80)
+            {
+                IsUtf8=false;
+                break;
+            }
+        }
+    }
+    if (IsUtf8)
+        Get_UTF8(Bytes, Value, Name);
+    else
+        Get_Local(Bytes, Value, Name);
 }
 
 //---------------------------------------------------------------------------
@@ -3818,16 +3895,50 @@ void File_Riff::WAVE_bext()
 {
     Element_Name("Broadcast extension");
 
+    WAVE_bext_ubxt(false);
+}
+
+//---------------------------------------------------------------------------
+void File_Riff::WAVE_ubxt()
+{
+    Element_Name("Universal broadcast extension");
+
+    WAVE_bext_ubxt(true);
+}
+
+//---------------------------------------------------------------------------
+static string UMID_ToString(const int128u& Value)
+{
+    string ToReturn=uint128toString(Value, 16);
+    if (ToReturn.size()<32)
+        ToReturn.insert(0, 32-ToReturn.size(), '0');
+    return ToReturn;
+}
+
+//---------------------------------------------------------------------------
+void File_Riff::WAVE_bext_ubxt(bool IsUbxt)
+{
     //Parsing
     Ztring Description, Originator, OriginatorReference, OriginationDate, OriginationTime, History;
     int128u UMID1, UMID2, UMID3, UMID4;
+    int64u TimeReference_Chunk;
     int16u Version, LoudnessValue=0x7FFF, LoudnessRange=0x7FFF, MaxTruePeakLevel=0x7FFF, MaxMomentaryLoudness=0x7FFF, MaxShortTermLoudness=0x7FFF;
-    Get_Local(256, Description,                                 "Description");
-    Get_Local( 32, Originator,                                  "Originator");
-    Get_Local( 32, OriginatorReference,                         "OriginatorReference");
+    if (IsUbxt)
+    {
+        //ITU-R BS.1352-4: same structure as bext, human readable items in UTF-8 and 8 times bigger
+        Get_UTF8 (256*8, Description,                           "uDescription");
+        Get_UTF8 ( 32*8, Originator,                            "uOriginator");
+        Get_UTF8 ( 32*8, OriginatorReference,                   "uOriginatorReference");
+    }
+    else
+    {
+        Get_Local(256, Description,                             "Description");
+        Get_Local( 32, Originator,                              "Originator");
+        Get_Local( 32, OriginatorReference,                     "OriginatorReference");
+    }
     Get_Local( 10, OriginationDate,                             "OriginationDate");
     Get_Local(  8, OriginationTime,                             "OriginationTime");
-    Get_L8   (     TimeReference,                               "TimeReference"); //To be divided by SamplesPerSec
+    Get_L8   (     TimeReference_Chunk,                         "TimeReference"); //To be divided by SamplesPerSec
     Get_L2   (     Version,                                     "Version");
     if (Version>=1)
     {
@@ -3844,9 +3955,14 @@ void File_Riff::WAVE_bext()
         Get_L2 (MaxMomentaryLoudness,                           "MaxMomentaryLoudness");
         Get_L2 (MaxShortTermLoudness,                           "MaxShortTermLoudness");
     }
-    Skip_XX  (602-Element_Offset,                               "Reserved");
+    Skip_XX  ((IsUbxt?2842:602)-Element_Offset,                 "Reserved");
     if (Element_Offset<Element_Size)
-        Get_Local(Element_Size-Element_Offset, History,         "History");
+    {
+        if (IsUbxt)
+            Get_UTF8 (Element_Size-Element_Offset, History,     "uCodingHistory");
+        else
+            Get_Local(Element_Size-Element_Offset, History,     "History");
+    }
 
     FILLING_BEGIN();
         // Handle some buggy OriginationDate/OriginalTime, prefixed 0 are sometimes missing e.g. 2015-3-2
@@ -3895,39 +4011,63 @@ void File_Riff::WAVE_bext()
             }
         }
 
-        Fill(Stream_General, 0, "bext_Present", "Yes");
-        Fill_SetOptions(Stream_General, 0, "bext_Present", "N NT");
-        Fill(Stream_General, 0, "bext_Version", Version);
-        Fill_SetOptions(Stream_General, 0, "bext_Version", "N NIY");
-        Fill(Stream_General, 0, General_Description, Description);
-        Fill(Stream_General, 0, General_Producer, Originator);
-        Fill(Stream_General, 0, "Producer_Reference", OriginatorReference);
-        Fill(Stream_General, 0, General_Encoded_Date, OriginationDate+__T(' ')+OriginationTime);
-        Fill(Stream_General, 0, General_Encoded_Library_Settings, History);
-        if (SamplesPerSec && TimeReference!=(int64u)-1)
+        //Human readable items: ubxt (UTF-8) has priority over bext (ASCII)
+        //Other items: "shall have the same content" in ubxt and bext, bext has priority
+        bool FillText=IsUbxt || !ubxt_Present;
+        bool FillOther=!IsUbxt || !bext_Present;
+        bool ReplaceOther=!IsUbxt && ubxt_Present;
+        if (IsUbxt)
+            ubxt_Present=true;
+        else
+            bext_Present=true;
+
+        Fill(Stream_General, 0, IsUbxt?"ubxt_Present":"bext_Present", "Yes");
+        Fill_SetOptions(Stream_General, 0, IsUbxt?"ubxt_Present":"bext_Present", "N NT");
+        if (!IsUbxt)
         {
-            Fill(Stream_Audio, StreamPos_Last, Audio_Delay, ((float64)TimeReference*1000/SamplesPerSec), 6);
-            Fill(Stream_Audio, StreamPos_Last, Audio_Delay_Source, "Container (bext)");
+            Fill(Stream_General, 0, "bext_Version", Version);
+            Fill_SetOptions(Stream_General, 0, "bext_Version", "N NIY");
         }
-        if (Version>=1 && UMID1 != 0 && UMID2 != 0)
+        if (FillText)
         {
-            Ztring UMID=__T("0x")+Ztring().From_UTF8(uint128toString(UMID1, 16))+Ztring().From_UTF8(uint128toString(UMID2, 16));
-            if ((UMID1.lo&0xFF000000)==0x33000000)
-                UMID+=Ztring().From_UTF8(uint128toString(UMID3, 16))+Ztring().From_UTF8(uint128toString(UMID4, 16));
-            Fill(Stream_General, 0, "UMID", UMID);
+            if (!IsUbxt || !Description.empty())
+                Fill(Stream_General, 0, General_Description, Description, IsUbxt);
+            if (!IsUbxt || !Originator.empty())
+                Fill(Stream_General, 0, General_Producer, Originator, IsUbxt);
+            if (!IsUbxt || !OriginatorReference.empty())
+                Fill(Stream_General, 0, "Producer_Reference", OriginatorReference, IsUbxt);
+            if (!IsUbxt || !History.empty())
+                Fill(Stream_General, 0, General_Encoded_Library_Settings, History, IsUbxt);
         }
-        if (Version>=2)
+        if (FillOther)
         {
-            if (LoudnessValue!=0x7FFF)
-                Fill(Stream_Audio, StreamPos_Last, "LoudnessValue", (float)((int16s)LoudnessValue)/100, 2);
-            if (LoudnessRange!=0x7FFF)
-                Fill(Stream_Audio, StreamPos_Last, "LoudnessRange", (float)((int16s)LoudnessRange)/100, 2);
-            if (MaxTruePeakLevel!=0x7FFF)
-                Fill(Stream_Audio, StreamPos_Last, "MaxTruePeakLevel", (float)((int16s)MaxTruePeakLevel)/100, 2);
-            if (MaxMomentaryLoudness!=0x7FFF)
-                Fill(Stream_Audio, StreamPos_Last, "MaxMomentaryLoudness", (float)((int16s)MaxMomentaryLoudness)/100, 2);
-            if (MaxShortTermLoudness!=0x7FFF)
-                Fill(Stream_Audio, StreamPos_Last, "MaxShortTermLoudness", (float)((int16s)MaxShortTermLoudness)/100, 2);
+            TimeReference=TimeReference_Chunk;
+            Fill(Stream_General, 0, General_Encoded_Date, OriginationDate+__T(' ')+OriginationTime, ReplaceOther);
+            if (SamplesPerSec && TimeReference!=(int64u)-1)
+            {
+                Fill(Stream_Audio, StreamPos_Last, Audio_Delay, ((float64)TimeReference*1000/SamplesPerSec), 6, ReplaceOther);
+                Fill(Stream_Audio, StreamPos_Last, Audio_Delay_Source, "Container (bext)", Unlimited, true, ReplaceOther);
+            }
+            if (Version>=1 && UMID1 != 0 && UMID2 != 0)
+            {
+                string UMID="0x"+UMID_ToString(UMID1)+UMID_ToString(UMID2);
+                if ((UMID1.lo&0xFF000000)==0x33000000)
+                    UMID+=UMID_ToString(UMID3)+UMID_ToString(UMID4);
+                Fill(Stream_General, 0, "UMID", UMID, true, ReplaceOther);
+            }
+            if (Version>=2)
+            {
+                if (LoudnessValue!=0x7FFF)
+                    Fill(Stream_Audio, StreamPos_Last, "LoudnessValue", (float)((int16s)LoudnessValue)/100, 2, ReplaceOther);
+                if (LoudnessRange!=0x7FFF)
+                    Fill(Stream_Audio, StreamPos_Last, "LoudnessRange", (float)((int16s)LoudnessRange)/100, 2, ReplaceOther);
+                if (MaxTruePeakLevel!=0x7FFF)
+                    Fill(Stream_Audio, StreamPos_Last, "MaxTruePeakLevel", (float)((int16s)MaxTruePeakLevel)/100, 2, ReplaceOther);
+                if (MaxMomentaryLoudness!=0x7FFF)
+                    Fill(Stream_Audio, StreamPos_Last, "MaxMomentaryLoudness", (float)((int16s)MaxMomentaryLoudness)/100, 2, ReplaceOther);
+                if (MaxShortTermLoudness!=0x7FFF)
+                    Fill(Stream_Audio, StreamPos_Last, "MaxShortTermLoudness", (float)((int16s)MaxShortTermLoudness)/100, 2, ReplaceOther);
+            }
         }
     FILLING_END();
 }
@@ -3996,13 +4136,18 @@ void File_Riff::WAVE_cue_()
     for (int32u Pos=0; Pos<numCuePoints; Pos++)
     {
         Element_Begin1("Cue point");
-        Skip_L4(                                                "ID");
+        int32u ID, SampleOffset;
+        Get_L4 (ID,                                             "ID");
         Skip_L4(                                                "Position");
         Skip_C4(                                                "DataChunkID");
         Skip_L4(                                                "ChunkStart");
         Skip_L4(                                                "BlockStart");
-        Skip_L4(                                                "SampleOffset");
+        Get_L4 (SampleOffset,                                   "SampleOffset");
         Element_End0();
+
+        FILLING_BEGIN();
+            Cue_Points[ID].SampleOffset=SampleOffset;
+        FILLING_END();
     }
 }
 
@@ -4228,6 +4373,92 @@ void File_Riff::WAVE_mext()
         Skip_Flags(AncillaryDataDef,  1,                        "A private byte is free for internal use");
         Skip_Flags(AncillaryDataDef,  2,                        "Energy of right channel present ");
     Skip_L4(                                                    "Reserved");
+}
+
+//---------------------------------------------------------------------------
+void File_Riff::WAVE_sxml()
+{
+    Element_Name("SXML");
+
+    //The chunk may be huge, only the header and the first SubXMLChunk are needed
+    if (!Element_IsComplete_Get())
+    {
+        int64u Needed=2+8+4+8;
+        if (Element_Size>=Needed)
+            Needed+=LittleEndian2int32u(Buffer+Buffer_Offset+14);
+        if (Needed>Element_Size && Needed<=16*1024*1024 && File_Offset+Buffer_Size<File_Size) //Arbitrary limit
+        {
+            if (Buffer_MaximumSize<Needed)
+                Buffer_MaximumSize+=Needed;
+            size_t* File_Buffer_Size_Hint_Pointer=Config->File_Buffer_Size_Hint_Pointer_Get();
+            if (File_Buffer_Size_Hint_Pointer)
+                (*File_Buffer_Size_Hint_Pointer)=(size_t)(Needed-Element_Size);
+            Element_WaitForMoreData();
+            return; //Must wait for more data
+        }
+    }
+
+    //Parsing
+    int64u subXMLCkTbSize;
+    int32u nSubXMLChunks;
+    int16u fmtType;
+    Get_L2 (fmtType,                                            "fmtType"); Param_Info1C(fmtType==0, "Uncompressed"); Param_Info1C(fmtType==1, "gzip");
+    Get_L8 (subXMLCkTbSize,                                     "subXMLCkTbSize");
+    int64u Table_End=Element_Offset+subXMLCkTbSize;
+    Get_L4 (nSubXMLChunks,                                      "nSubXMLChunks");
+    if (nSubXMLChunks && Element_Offset+8<=Element_Size)
+    {
+        Element_Begin1("SubXMLChunk");
+        int32u subXMLChunkSize;
+        Get_L4 (subXMLChunkSize,                                "subXMLChunkSize");
+        Skip_L4(                                                "nSamplesSubDataChunk");
+        if (Element_Offset+subXMLChunkSize<=Element_Size)
+        {
+            if (!Adm && (fmtType==0 || fmtType==1)) //If both ADM and S-ADM are present, ADM has priority
+            {
+                Adm=new File_Adm;
+                Open_Buffer_Init(Adm);
+                if (Adm_chna)
+                {
+                    Adm->chna_Move(Adm_chna);
+                    delete Adm_chna; Adm_chna=NULL;
+                }
+                Adm->Container_Duration=Retrieve_Const(Stream_Audio, 0, Audio_Duration).To_float32()/1000;
+                Adm->MuxingMode="sxml";
+                if (fmtType==1)
+                {
+                    size_t UncompressedData_Size;
+                    int8u* UncompressedData=Riff_Gunzip(Buffer+Buffer_Offset+(size_t)Element_Offset, (size_t)subXMLChunkSize, UncompressedData_Size);
+                    Open_Buffer_Continue(Adm, UncompressedData, UncompressedData_Size);
+                    delete[] UncompressedData;
+                }
+                else
+                    Open_Buffer_Continue(Adm, Buffer+Buffer_Offset+(size_t)Element_Offset, (size_t)subXMLChunkSize);
+            }
+            if (fmtType==0)
+                Skip_UTF8(subXMLChunkSize,                      "xmlData");
+            else
+                Skip_XX(subXMLChunkSize,                        "xmlData");
+        }
+        Element_End0();
+    }
+    if (Table_End>Element_Offset && Table_End<=Element_Size)
+        Skip_XX(Table_End-Element_Offset,                       "Other SubXMLChunks");
+    if (Element_IsComplete_Get() && Element_Offset==Table_End && Element_Offset+4<=Element_Size)
+    {
+        int32u nAlignmentPoints;
+        Get_L4 (nAlignmentPoints,                               "nAlignmentPoints");
+        Loop_CheckValue(nAlignmentPoints, 16, "nAlignmentPoints");
+        for (int32u Pos=0; Pos<nAlignmentPoints; Pos++)
+        {
+            Element_Begin1("AlignmentPoint");
+            Skip_L8(                                            "subXMLChunkByteOffset");
+            Skip_L8(                                            "nSamplesAlignPoint");
+            Element_End0();
+        }
+    }
+    if (Element_Offset<Element_Size)
+        Skip_XX(Element_Size-Element_Offset,                    "(Not parsed)");
 }
 
 //---------------------------------------------------------------------------
