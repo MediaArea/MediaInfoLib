@@ -62,6 +62,8 @@ File_Mpeg4_TimeCode::File_Mpeg4_TimeCode()
 
     //Temp
     FrameMultiplier_Pos=0;
+    LastUsedOffset_IsParsed=false;
+    HasRedundantSample=false;
 }
 
 //***************************************************************************
@@ -171,15 +173,34 @@ void File_Mpeg4_TimeCode::Streams_Finish()
             FrameCount=0;
         if (FrameCount)
             Fill(Stream_Other, StreamPos_Last, Other_FrameCount, FrameCount);
+
+        //Stripped if no time code sample could be removed, a sample not in the file (e.g. truncated file) is considered as a discontinuity
+        bool IsStripped;
+        if (AllFramesParsed)
+            IsStripped=!HasRedundantSample;
+        else if (DurationsPerFrame && tmcd_Duration && tmcd_Duration_TimeScale && mdhd_Duration_TimeScale)
+        {
+            //Not all samples are parsed, a sample covering several frames is considered as a discontinuity
+            IsStripped=false;
+            for (const auto& Item : *DurationsPerFrame)
+                if (Item.SampleCount && (float64)Item.SampleDuration*tmcd_Duration_TimeScale>1.5*mdhd_Duration_TimeScale*tmcd_Duration)
+                {
+                    IsStripped=true;
+                    break;
+                }
+        }
+        else
+            IsStripped=Frame_Count==1;
+        Fill(Stream_Other, StreamPos_Last, Other_TimeCode_Stripped, IsStripped?"Yes":"No");
+
+        const auto IsLastSampleParsed=LastUsedOffset==(int64u)-1 || LastUsedOffset_IsParsed; //Time code of the last frame is unknown if the last time code sample is not parsed (e.g. beyond the end of a truncated file)
         if (Frame_Count==1)
         {
-            Fill(Stream_Other, StreamPos_Last, Other_TimeCode_Stripped, "Yes");
-            if (FrameCount)
+            if (FrameCount && IsLastSampleParsed)
                 Fill(Stream_Other, StreamPos_Last, Other_TimeCode_LastFrame, (TC+(FrameCount-1)).ToString().c_str());
         }
         else
         {
-            Fill(Stream_Other, StreamPos_Last, Other_TimeCode_Stripped, "No");
             TimeCode TC_Last((int64_t)Pos_Last, NumberOfFrames-1, TimeCode::DropFrame(DropFrame));
             if (FrameMultiplier>1)
             {
@@ -188,7 +209,8 @@ void File_Mpeg4_TimeCode::Streams_Finish()
                 TC_Last=TimeCode((int64_t)(TC_Last.ToFrames()*FrameMultiplier), NumberOfFrames*FrameMultiplier-1, TimeCode::DropFrame(DropFrame));
                 TC_Last+=Frames*FrameMultiplier+(AllFramesParsed?FrameMultiplier_Pos:(FrameMultiplier-1));
             }
-            Fill(Stream_Other, StreamPos_Last, Other_TimeCode_LastFrame, TC_Last.ToString().c_str());
+            if (IsLastSampleParsed)
+                Fill(Stream_Other, StreamPos_Last, Other_TimeCode_LastFrame, TC_Last.ToString().c_str());
         }
     }
 }
@@ -250,7 +272,9 @@ void File_Mpeg4_TimeCode::Read_Buffer_Continue()
                     if (i<DurationsPerFrame->size() && (*DurationsPerFrame)[i].SampleDuration==0)
                         ShouldIgnore=true;
                 }
-                if (!ShouldIgnore)
+                if (ShouldIgnore)
+                    HasRedundantSample=true; //Time code sample covering no frame
+                else
                 {
                 const Ztring& Discontinuities=Retrieve_Const(Stream_Other, 0, "Discontinuities");
                 if (Discontinuities.size()>25*10)
@@ -284,12 +308,16 @@ void File_Mpeg4_TimeCode::Read_Buffer_Continue()
                 }
                 }
             }
+            else
+                HasRedundantSample=true; //Time code sample continuing the previous one
         }
         Pos_Last=Pos_Last_Temp;
     }
 
     FILLING_BEGIN();
         int64u SamplesInThisBlock=Element_Size/4;
+        if (File_Offset+Buffer_Offset==LastUsedOffset)
+            LastUsedOffset_IsParsed=true;
         if (File_Offset+Buffer_Offset==LastUsedOffset && DurationsPerFrame)
         {
             //TODO: this compute should be generic in MP4 parser

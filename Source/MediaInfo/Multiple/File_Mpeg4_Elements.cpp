@@ -6972,6 +6972,16 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_tmcd()
         //Bug in one file
         if (tc->TimeScale==25 && tc->FrameDuration==100)
             tc->TimeScale=2500;
+
+        //Next time code sample descriptions of the track (e.g. one per reel), the samples are not dispatched per sample description so the time code parser of the first one gets all samples
+        if (const auto First_TimeCode=Streams[moov_trak_tkhd_TrackID].TimeCode)
+        {
+            if (tc->FrameDuration && (tc->TimeScale!=First_TimeCode->TimeScale || tc->FrameDuration!=First_TimeCode->FrameDuration))
+                Fill(Stream_Other, StreamPos_Last, Other_FrameRate, ((float64)tc->TimeScale)/tc->FrameDuration);
+            delete tc; //tc=NULL;
+            return;
+        }
+
         if (tc->FrameDuration)
             Fill(Stream_Other, StreamPos_Last, Other_FrameRate, ((float64)tc->TimeScale)/tc->FrameDuration);
 

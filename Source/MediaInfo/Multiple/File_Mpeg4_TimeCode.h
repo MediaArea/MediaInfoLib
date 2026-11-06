@@ -59,6 +59,10 @@ protected :
     //Buffer - Global
     void Read_Buffer_Init();
     void Read_Buffer_Continue();
+
+    //Temp
+    bool    LastUsedOffset_IsParsed;
+    bool    HasRedundantSample;
 };
 
 } //NameSpace
