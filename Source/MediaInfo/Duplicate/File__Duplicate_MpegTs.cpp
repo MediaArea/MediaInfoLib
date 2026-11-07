@@ -42,7 +42,7 @@ namespace MediaInfoLib
 // Init: int32u CRC_32 = 0xFFFFFFFF;
 // for each data byte do
 //     CRC_32=(CRC_32<<8) ^ CRC_32_Table[(CRC_32>>24)^(data_byte)];
-extern const int32u Psi_CRC_32_Table[256];
+extern const int32u CRC_32_MPEG_2_Table[256];
 
 //***************************************************************************
 // Constructor/Destructor
@@ -393,7 +393,7 @@ bool File__Duplicate_MpegTs::Parsing_Begin (const int8u* ToAdd, size_t ToAdd_Siz
     //Verifying CRC
     int32u CRC_32=0xFFFFFFFF;
     for (int32u CRC_32_Offset=(int32u)FromTS.Begin; CRC_32_Offset<FromTS.End+4; CRC_32_Offset++) //After syncword
-        CRC_32=(CRC_32<<8) ^ Psi_CRC_32_Table[(CRC_32>>24)^(FromTS.Buffer[CRC_32_Offset])];
+        CRC_32=(CRC_32<<8) ^ CRC_32_MPEG_2_Table[(CRC_32>>24)^(FromTS.Buffer[CRC_32_Offset])];
     if (CRC_32)
         return false; //Problem
 
@@ -439,7 +439,7 @@ void File__Duplicate_MpegTs::Parsing_End (std::map<int16u, buffer> &ToModify_)
     //CRC32
     int32u CRC_32=0xFFFFFFFF;
     for (size_t Buffer_CRC_Pos=ToModify.Begin; Buffer_CRC_Pos<ToModify.End; Buffer_CRC_Pos++)
-        CRC_32=(CRC_32<<8) ^ Psi_CRC_32_Table[(CRC_32>>24)^(ToModify.Buffer[Buffer_CRC_Pos])];
+        CRC_32=(CRC_32<<8) ^ CRC_32_MPEG_2_Table[(CRC_32>>24)^(ToModify.Buffer[Buffer_CRC_Pos])];
 
     ToModify.Buffer[ToModify.Offset+0]=(CRC_32>>24)&0xFF;
     ToModify.Buffer[ToModify.Offset+1]=(CRC_32>>16)&0xFF;

@@ -46,7 +46,7 @@ using namespace FFV1;
 // Const
 //***************************************************************************
 
-extern const int32u Psi_CRC_32_Table[256];
+extern const int32u CRC_32_MPEG_2_Table[256];
 const int32u Slice::Context::N0 = 128;
 const int32s Slice::Context::Cmax = 127;
 const int32s Slice::Context::Cmin = -128;
@@ -64,7 +64,7 @@ static int32u FFv1_CRC_Compute(const int8u* Buffer, size_t Size)
 
     while(CRC_32_Buffer<CRC_32_Buffer_End)
     {
-        CRC_32=(CRC_32<<8) ^ Psi_CRC_32_Table[(CRC_32>>24)^(*CRC_32_Buffer)];
+        CRC_32=(CRC_32<<8) ^ CRC_32_MPEG_2_Table[(CRC_32>>24)^(*CRC_32_Buffer)];
         CRC_32_Buffer++;
     }
     return CRC_32;
