@@ -3746,6 +3746,7 @@ void File_Riff::WAVE_axml()
         {
             //Parsing
             Open_Buffer_Continue(Adm, Buffer+Buffer_Offset+(size_t)Element_Offset, (size_t)(Element_Size-Element_Offset));
+            Element_Show(); //No trace from the ADM parser, the chunk must stay visible
             Skip_UTF8(Element_Size-Element_Offset,              "XML data");
             return;
         }
@@ -3761,6 +3762,7 @@ void File_Riff::WAVE_axml()
         Open_Buffer_Continue(Adm, UncompressedData, UncompressedData_Size);
         delete[] UncompressedData;
         Skip_XX(Element_Size-Element_Offset,                    "XML data (compressed)");
+        Element_Show(); //No trace from the ADM parser, the chunk must stay visible
     }
     else
     {
@@ -3776,6 +3778,7 @@ void File_Riff::WAVE_axml_Continue()
 {
     //Parsing
     Open_Buffer_Continue(Adm, Buffer+Buffer_Offset, (size_t)Element_Size);
+    Element_Show(); //No trace from the ADM parser, the chunk must stay visible
     if (Adm->NeedToJumpToEnd)
     {
         auto Size=Element_TotalSize_Get();
@@ -3787,7 +3790,7 @@ void File_Riff::WAVE_axml_Continue()
         else
             Adm->NeedToJumpToEnd=false;
     }
-    Element_Offset=Element_Size;
+    Skip_XX(Element_Size-Element_Offset,                        "XML data");
 }
 
 //---------------------------------------------------------------------------
@@ -4434,6 +4437,7 @@ void File_Riff::WAVE_sxml()
                 }
                 else
                     Open_Buffer_Continue(Adm, Buffer+Buffer_Offset+(size_t)Element_Offset, (size_t)subXMLChunkSize);
+                Element_Show(); //No trace from the ADM parser, the chunk must stay visible
             }
             if (fmtType==0)
                 Skip_UTF8(subXMLChunkSize,                      "xmlData");
