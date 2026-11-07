@@ -2,6 +2,11 @@ name: Checks
 
 on: [push, pull_request]
 
+# A new push cancels the run of the previous one on the same branch or pull request, except on master
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 env:
   BRANCH_OWNER: ${{ github.event.pull_request.head.repo.owner.login || github.repository_owner }}
   BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
@@ -13,12 +18,15 @@ jobs:
         os: [ubuntu-26.04, ubuntu-26.04-arm, macos-26, windows-latest]
         environement: [gcc, utf8, minified, minimal, minimal-with-xml, cmake, cmake-dll]
         exclude:
+          # 2 macOS jobs (the scarcest runners): with and without Unicode, curl and graphviz linked with Unicode
           - os: macos-26
             environement: minified
           - os: macos-26
             environement: minimal
           - os: macos-26
             environement: minimal-with-xml
+          - os: macos-26
+            environement: cmake
           - os: macos-26
             environement: cmake-dll
           - os: ubuntu-26.04-arm
@@ -41,8 +49,6 @@ jobs:
             environement: minimal-with-xml
         include:
           - os: ubuntu-26.04
-            environement: link-curl-graphviz
-          - os: macos-26
             environement: link-curl-graphviz
           - environement: gcc
             CXXFLAGS: ""
@@ -70,6 +76,13 @@ jobs:
       CXXFLAGS: -Werror ${{ matrix.CXXFLAGS }}
       MSVC_CXXFLAGS: //WX
       RUN_TESTS: ${{ matrix.RUN_TESTS }}
+      # curl and graphviz linked for this job, else loaded at run time
+      LINK_CURL_GRAPHVIZ: ${{ (matrix.environement == 'link-curl-graphviz' || (matrix.os == 'macos-26' && matrix.environement == 'gcc')) && 'yes' || '' }}
+      # CLI of MediaInfo with this library: with the C++ API, and with the C API loaded at run time
+      CLI_MODES: ${{ (matrix.os == 'ubuntu-26.04' || matrix.os == 'macos-26') && (matrix.environement == 'gcc' && 'shared dll dll_without_unicode' || (matrix.environement == 'utf8' && 'shared' || '')) || '' }}
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_MAXSIZE: 300M
+      CCACHE_COMPRESS: 1
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -80,35 +93,54 @@ jobs:
         run: |
           if [ "$RUNNER_OS" == "Linux" ]; then
             sudo apt-get update -y
-            sudo apt-get install -y libxml2-utils zlib1g-dev libcurl4-gnutls-dev libmms-dev ${{ matrix.environement == 'cmake-dll' && 'g++-mingw-w64-x86-64' || '' }} ${{ matrix.environement == 'link-curl-graphviz' && 'libgraphviz-dev' || '' }}
+            sudo apt-get install -y ccache libxml2-utils zlib1g-dev libcurl4-gnutls-dev libmms-dev ${{ matrix.environement == 'cmake-dll' && 'g++-mingw-w64-x86-64' || '' }} ${{ env.LINK_CURL_GRAPHVIZ && 'libgraphviz-dev' || '' }}
           fi
           if [ "$RUNNER_OS" == "macOS" ]; then
-            brew install libtool automake ${{ matrix.environement == 'link-curl-graphviz' && 'graphviz' || '' }}
+            brew install ccache libtool automake ${{ env.LINK_CURL_GRAPHVIZ && 'graphviz' || '' }}
           fi
+          # compiler cache (same objects for most of the runs)
+          if [[ "${{ matrix.environement }}" == cmake* ]]; then
+            echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> "${GITHUB_ENV}"
+            echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> "${GITHUB_ENV}"
+            echo "CCACHE_SLOPPINESS=pch_defines,time_macros,include_file_mtime,include_file_ctime" >> "${GITHUB_ENV}" # Precompiled headers
+          else
+            echo "CC=ccache ${CC:-cc}" >> "${GITHUB_ENV}"
+            echo "CXX=ccache ${CXX:-c++}" >> "${GITHUB_ENV}"
+          fi
+      - name: Compiler cache
+        if: ${{ runner.os != 'Windows' }}
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-${{ matrix.os }}-${{ matrix.environement }}-${{ github.sha }}
+          restore-keys: ccache-${{ matrix.os }}-${{ matrix.environement }}-
+      - name: pymediainfo
+        if: ${{ env.CLI_MODES && matrix.environement == 'gcc' }}
+        run: |
+          python3 -m venv "${RUNNER_TEMP}/venv"
+          "${RUNNER_TEMP}/venv/bin/pip" install pymediainfo
+          echo "${RUNNER_TEMP}/venv/bin" >> "${GITHUB_PATH}"
       - name: zlib
         if: ${{ (runner.os == 'Windows') || matrix.environement == 'cmake-dll' }}
         run: |
           git -C .. clone --depth=1 https://github.com/MediaArea/zlib.git
       - name: ZenLib
         shell: bash
-        run: |
-          # Branch of the same name in the same fork if any (change in both projects), else master of MediaArea
-          if [ "${BRANCH_NAME}" != "master" ] && GIT_TERMINAL_PROMPT=0 git ls-remote --exit-code "https://github.com/${BRANCH_OWNER}/ZenLib.git" "refs/heads/${BRANCH_NAME}" >/dev/null 2>&1 ; then
-            git -C .. clone --depth=1 --branch "${BRANCH_NAME}" "https://github.com/${BRANCH_OWNER}/ZenLib.git"
-          else
-            git -C .. clone --depth=1 https://github.com/MediaArea/ZenLib.git
-          fi
+        run: sh .github/clone_branch.sh ZenLib ../ZenLib
       - name: Configure
         if: ${{ (matrix.environement != 'cmake') && (matrix.environement != 'cmake-dll') }}
         run: |
           pushd ../ZenLib/Project/GNU/Library
             autoreconf -if
             ./configure --enable-silent-rules --enable-static ${{ matrix.environement == 'utf8' && '--disable-unicode' || '' }}
-            make
+            make -j4
+            if [ -n "${CLI_MODES}" ]; then
+              sudo make install # libmediainfo, pymediainfo and the CLI load the installed library
+            fi
           popd
           cd Project/GNU/Library
           autoreconf -if
-          ./configure --enable-silent-rules ${{ matrix.environement == 'link-curl-graphviz' && '--with-libcurl --with-graphviz' || '--with-libcurl=runtime --with-graphviz=runtime' }}
+          ./configure --enable-silent-rules ${{ env.LINK_CURL_GRAPHVIZ && '--with-libcurl --with-graphviz' || '--with-libcurl=runtime --with-graphviz=runtime' }}
       - name: Build
         if: ${{ (matrix.environement != 'cmake') && (matrix.environement != 'cmake-dll') }}
         run: |
@@ -125,6 +157,14 @@ jobs:
           sudo npm install -g jsonlint
           cd Project/GNU/Library
           make check
+      - name: Check CLI
+        if: ${{ env.CLI_MODES }}
+        run: |
+          (cd Project/GNU/Library && sudo make install)
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            sudo ldconfig
+          fi
+          sh .github/check_cli.sh ${CLI_MODES}
       - name: CMake Build
         if: ${{ (matrix.environement == 'cmake') || (matrix.environement == 'cmake-dll') }}
         shell: bash
@@ -141,35 +181,161 @@ jobs:
           cd Project/CMake/Build
           cmake -DBUILD_ZENLIB=1 -DZLIB_BUILD_SHARED=OFF -DZLIB_BUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release ${{ matrix.environement == 'cmake-dll' && '-DBUILD_SHARED_LIBS=ON' || '' }} ..
           cmake --build . ${{ runner.os == 'Windows' && '--config Release' || '-j4' }}
+      - name: Compiler cache statistics
+        if: ${{ runner.os != 'Windows' }}
+        run: ccache --show-stats || true
 
-  MSBuild:
-    runs-on: windows-latest
+  # File names with Alpine (musl) and FreeBSD, with and without Unicode, with the CLI
+  Alpine:
     strategy:
       matrix:
-        architecture: [ Win32, x64, ARM64 ]
+        unicode: ['yes', 'no']
       fail-fast: false
+    name: Alpine${{ matrix.unicode == 'no' && ' without Unicode' || '' }}
+    runs-on: ubuntu-latest
+    container: alpine:latest
+    env:
+      CXXFLAGS: -O0
+      CCACHE_MAXSIZE: 300M
+      CCACHE_COMPRESS: 1
+      CC: ccache cc
+      CXX: ccache c++
     steps:
+      - name: OS packets
+        run: apk add --no-cache autoconf automake bash build-base ccache git libtool pkgconf python3 tar zlib-dev zstd # tar and zstd for the cache
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+      - name: Compiler cache
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-alpine-${{ matrix.unicode }}-${{ github.sha }}
+          restore-keys: ccache-alpine-${{ matrix.unicode }}-
+      - name: Check
+        run: |
+          git config --global --add safe.directory '*' # For git clean, the container user is not the owner of the checkouts
+          export CCACHE_DIR="${PWD}/.ccache" # In the directory of the cache action, the path of the runner is not the one of the container
+          sh .github/clone_branch.sh ZenLib ../ZenLib
+          ( cd ../ZenLib/Project/GNU/Library && autoreconf -if && ./configure --enable-silent-rules --enable-unicode=${{ matrix.unicode }} && make -j4 && make install )
+          ( cd Project/GNU/Library && autoreconf -if && ./configure --enable-silent-rules && make -j4 && make check TESTS=filename.sh && make install )
+          sh .github/check_cli.sh shared
+          ccache --show-stats || true
+
+  FreeBSD:
+    strategy:
+      matrix:
+        unicode: ['yes', 'no']
+      fail-fast: false
+    name: FreeBSD${{ matrix.unicode == 'no' && ' without Unicode' || '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+      - name: Compiler cache
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-freebsd-${{ matrix.unicode }}-${{ github.sha }}
+          restore-keys: ccache-freebsd-${{ matrix.unicode }}-
+      - name: Check
+        uses: vmactions/freebsd-vm@v1
+        with:
+          envs: BRANCH_OWNER BRANCH_NAME
+          usesh: true
+          prepare: pkg install -y autoconf automake bash ccache git gmake libtool pkgconf python3
+          run: |
+            set -e
+            # compiler cache in the directory synchronized with the runner
+            export CCACHE_DIR="${PWD}/.ccache" CCACHE_MAXSIZE=300M CCACHE_COMPRESS=1 CC="ccache cc" CXX="ccache c++" CXXFLAGS=-O0 MAKE=gmake
+            sh .github/clone_branch.sh ZenLib ../ZenLib
+            ( cd ../ZenLib/Project/GNU/Library && autoreconf -if && ./configure --enable-silent-rules --enable-unicode=${{ matrix.unicode }} && gmake -j4 && gmake install )
+            ( cd Project/GNU/Library && autoreconf -if && ./configure --enable-silent-rules && gmake -j4 && gmake check TESTS=filename.sh && gmake install )
+            ldconfig -m /usr/local/lib
+            sh .github/check_cli.sh shared
+            ccache --show-stats || true
+
+  MSBuild:
+    strategy:
+      matrix:
+        include:
+          - architecture: Win32
+            runner: windows-latest
+            vcvarsall: x86
+            python: x86
+          - architecture: x64
+            runner: windows-latest
+            vcvarsall: x64
+            python: x64
+          - architecture: ARM64
+            runner: windows-11-vs2026-arm # Run of the tests on ARM64
+            vcvarsall: arm64
+            python: arm64
+      fail-fast: false
+    name: MSBuild (${{ matrix.architecture }})
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Line endings
+        run: git config --global core.autocrlf false # Test scripts with LF line endings
       - name: Checkout zlib
         uses: actions/checkout@v6
         with:
           repository: MediaArea/zlib
           path: zlib
-      - name: Clone ZenLib
-        shell: bash
-        run: |
-          # Branch of the same name in the same fork if any (change in both projects), else master of MediaArea
-          if [ "${BRANCH_NAME}" != "master" ] && GIT_TERMINAL_PROMPT=0 git ls-remote --exit-code "https://github.com/${BRANCH_OWNER}/ZenLib.git" "refs/heads/${BRANCH_NAME}" >/dev/null 2>&1 ; then
-            git clone --depth=1 --branch "${BRANCH_NAME}" "https://github.com/${BRANCH_OWNER}/ZenLib.git"
-          else
-            git clone --depth=1 https://github.com/MediaArea/ZenLib.git
-          fi
       - name: Checkout MediaInfoLib
         uses: actions/checkout@v6
         with:
           path: MediaInfoLib
+      - name: Clone ZenLib
+        run: sh MediaInfoLib/.github/clone_branch.sh ZenLib ZenLib
+      - name: Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: 3.x
+          architecture: ${{ matrix.python }} # Same architecture as the DLL
+      - name: pymediainfo
+        run: python -m pip install pymediainfo
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v3
         with:
-          msbuild-architecture: x64
+          msbuild-architecture: ${{ runner.arch == 'ARM64' && 'arm64' || 'x64' }}
       - name: Build
-        run: msbuild -p:Configuration=Release -p:Platform=${{ matrix.architecture }} ${{ github.workspace }}\MediaInfoLib\Project\MSVC2026\MediaInfoLib.slnx -verbosity:quiet -warnaserror
+        run: MSBuild.exe -p:Configuration=Release -p:Platform=${{ matrix.architecture }} MediaInfoLib/Project/MSVC2026/MediaInfoLib.slnx -verbosity:quiet -warnaserror -m
+      - name: Compile test
+        shell: cmd
+        working-directory: MediaInfoLib
+        run: |
+          for /f "usebackq delims=" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do call "%%i\VC\Auxiliary\Build\vcvarsall.bat" ${{ matrix.vcvarsall }}
+          rem Test program for the code page of the system (cp1252) and with the code page of its manifest
+          set Output=Project\MSVC2026\${{ matrix.architecture }}\Release
+          set Test=Project\GNU\Library\test
+          cl /nologo /EHsc /O1 /DUNICODE /D_UNICODE /Fo%Test%\mil_filename.obj /Fe%Test%\mil_filename_1252.exe %Test%\Source\filename.cpp %Output%\MediaInfo.lib || exit /b 1
+          for %%c in (65001 932) do (
+            copy /y %Test%\mil_filename_1252.exe %Test%\mil_filename_%%c.exe >nul
+            mt -nologo -manifest %Test%\codepage_%%c.manifest -outputresource:%Test%\mil_filename_%%c.exe;1 || exit /b 1
+          )
+          copy %Output%\MediaInfo.dll %Test%\
+      - name: Check
+        working-directory: MediaInfoLib/Project/GNU/Library/test
+        run: |
+          # Test of make check (no make in Git Bash), with each program
+          Status=0
+          for CodePage in 1252 65001 932 ; do
+            cp mil_filename_${CodePage}.exe mil_filename.exe
+            # Code page set by the manifest only if this version of Windows supports it for this code page
+            Output=$(./mil_filename.exe 0 0 "$(cygpath -m "$(mktemp -d)")" || true)
+            if [[ "${Output}" != *"OK: code page ${CodePage}"* ]] ; then
+              echo "SKIP: code page ${CodePage} not supported by the manifest"
+              continue
+            fi
+            echo "::group::Code page ${CodePage}"
+            bash filename.sh 9>&1 || Status=1
+            echo "::endgroup::"
+          done
+          exit ${Status}
