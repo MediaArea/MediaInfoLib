@@ -125,7 +125,7 @@ TAK;;;A;;;tak;;http://thbeck.de/Tak/Tak.html;Lossless
 TrueHD;;;A;Ac3;;mlp thd vr;;;Lossless
 TwinVQ;;;A;TwinVQ;Transform domain Weighted INterleave Vector Quantization;vqf;;http://www.twinvq.org/english/index_en.html;
 Vorbis;;;A;;;;audio/vorbis;http://www.vorbis.com/;Lossy
-Wave;;;A;Riff;;act at9 wav;audio/vnd.wave;;
+Wave;;;A;Riff;;act at9 bw64 wav;audio/vnd.wave;;
 Wave64;;;A;Riff;;w64;;;
 WavPack;;;A;Wvpk;;wv wvc;;http://www.wavpack.com;
 Amiga Icon;;;I;AmigaIcon;Amiga Workbench Icon;info;image/x-amiga-icon;;Lossless

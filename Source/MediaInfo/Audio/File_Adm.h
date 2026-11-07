@@ -49,6 +49,19 @@ public :
     bool audioTrackUID_Get(const string& UID, string& TrackFormatIDRef, string& ChannelFormatIDRef, string& PackFormatIDRef); //Returns false if the UID is not present
     bool audioProgramme_Get(const string& ID, string& Name, string& FirstLabel); //Returns false if the ID is not present
     size_t audioFormatExtended_Count();
+    struct broadcast_metadata // Broadcast metadata e.g. converted from BWF bext or ubxt chunks (ITU-R BS.2088-2 11)
+    {
+        string CreatorName;
+        string OrganisationName;
+        string Description;
+        string CreatedDate;
+        string CreatedTime;
+        string CodingHistory;
+        string UMID;
+        bool IsFromBext = false; // Description has a bext or ubxt typeDefinition
+        bool empty() const { return CreatorName.empty() && OrganisationName.empty() && Description.empty() && CreatedDate.empty() && CreatedTime.empty() && CodingHistory.empty() && UMID.empty(); }
+    };
+    const broadcast_metadata* BroadcastMetadata_Get();
     bool audioMXFLookUp_IsPresent();
 
     //Constructor/Destructor

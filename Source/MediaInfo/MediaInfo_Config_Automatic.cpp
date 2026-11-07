@@ -1561,7 +1561,7 @@ void MediaInfo_Config_Format (InfoMap &Info)
     "TrueHD;;;A;Ac3;;mlp thd vr;;;Lossless\n"
     "TwinVQ;;;A;TwinVQ;Transform domain Weighted INterleave Vector Quantization;vqf;;http://www.twinvq.org/english/index_en.html\n"
     "Vorbis;;;A;;;;audio/vorbis;http://www.vorbis.com/;Lossy\n"
-    "Wave;;;A;Riff;;act at9 wav;audio/vnd.wave\n"
+    "Wave;;;A;Riff;;act at9 bw64 wav;audio/vnd.wave\n"
     "Wave64;;;A;Riff;;w64\n"
     "WavPack;;;A;Wvpk;;wv wvc;;http://www.wavpack.com\n"
     "Amiga Icon;;;I;AmigaIcon;Amiga Workbench Icon;info;image/x-amiga-icon;;Lossless\n"
