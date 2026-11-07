@@ -15,10 +15,12 @@
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <vector>
 #if defined(_WIN32)
     #include <direct.h>
     #include <windows.h>
 #else
+    #include <cstdlib>
     #include <langinfo.h>
 #endif
 
@@ -55,6 +57,9 @@ extern "C"
 // The C API is only in the Unicode build: same names for the C++ classes, strings are the bytes of the names
 #include "MediaInfo/MediaInfo.h"
 #include "MediaInfo/MediaInfoList.h"
+#if defined(__APPLE__)
+    #include "ZenLib/OS_Utils.h" // Names listed in the locale encoding, from the UTF-8 names of the file system
+#endif
 typedef MediaInfoLib::MediaInfo     MediaInfo_Class;
 typedef MediaInfoLib::MediaInfoList MediaInfoList_Class;
 
@@ -246,7 +251,8 @@ static bool Is_UTF8(const char* Value)
     return Value && UTF8_To_Wide(Value, Wide);
 }
 
-// Latin-1 bytes of a UTF-8 text, false if it can't be encoded
+// Latin-1 bytes of a UTF-8 text, false if it can't be encoded (where the C library can't be the reference)
+#if !defined(_WIN32) && !defined(__STDC_ISO_10646__)
 static bool UTF8_To_Latin1(const std::string& Value, std::string& ToReturn)
 {
     std::wstring Wide;
@@ -261,10 +267,54 @@ static bool UTF8_To_Latin1(const std::string& Value, std::string& ToReturn)
     }
     return true;
 }
+#endif
+
+// Bytes of a UTF-8 text in the encoding of the locale by the C library or of the code page by the system, false if it can't be encoded
+// (Unix: only where wchar_t is Unicode with all locales, else Latin-1 only)
+static bool Locale_IsLatin1=false;
+static bool Local_Encode(const std::string& Value, std::string& ToReturn)
+{
+    // ASCII is the same in all the tested encodings
+    bool IsASCII=true;
+    for (size_t Pos=0; Pos<Value.size(); Pos++)
+        if ((unsigned char)Value[Pos]>=0x80)
+            IsASCII=false;
+    if (IsASCII)
+    {
+        ToReturn=Value;
+        return true;
+    }
+
+    #if defined(_WIN32)
+        std::wstring Wide;
+        if (!UTF8_To_Wide(Value, Wide))
+            return false;
+        BOOL UsedDefaultChar=FALSE;
+        int Size=WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, Wide.c_str(), -1, NULL, 0, NULL, &UsedDefaultChar);
+        if (Size<=0 || UsedDefaultChar)
+            return false;
+        std::vector<char> Buffer(Size);
+        WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, Wide.c_str(), -1, &Buffer[0], Size, NULL, NULL);
+        ToReturn.assign(&Buffer[0], Size-1);
+        return true;
+    #elif defined(__STDC_ISO_10646__)
+        std::wstring Wide;
+        if (!UTF8_To_Wide(Value, Wide))
+            return false;
+        size_t Size=wcstombs(NULL, Wide.c_str(), 0);
+        if (Size==(size_t)-1)
+            return false;
+        std::vector<char> Buffer(Size+1);
+        wcstombs(&Buffer[0], Wide.c_str(), Size+1);
+        ToReturn.assign(&Buffer[0], Size);
+        return true;
+    #else
+        return Locale_IsLatin1 && UTF8_To_Latin1(Value, ToReturn);
+    #endif
+}
 
 // Encoding of the strings of the narrow API
 static bool Narrow_IsUTF8=false;
-static bool Narrow_IsLatin1=false; // or cp1252, same bytes for the tested characters
 
 // Bytes of a UTF-8 text for the narrow API, false if it can't be encoded
 static bool To_Narrow(const std::string& Value, std::string& ToReturn)
@@ -274,7 +324,7 @@ static bool To_Narrow(const std::string& Value, std::string& ToReturn)
         ToReturn=Value;
         return true;
     }
-    return Narrow_IsLatin1 && UTF8_To_Latin1(Value, ToReturn);
+    return Local_Encode(Value, ToReturn);
 }
 
 // Name of a directory listing as the names of the tested files
@@ -283,8 +333,17 @@ static std::string Listed_Path(const char* Value)
     std::string ToReturn(Value?Value:"");
     #if defined(_WIN32)
         for (size_t Pos=0; Pos<ToReturn.size(); Pos++)
+        {
+            if (!Narrow_IsUTF8 && IsDBCSLeadByte((BYTE)ToReturn[Pos]))
+            {
+                Pos++; // The second byte may be "\", e.g. with cp932
+                continue;
+            }
             if (ToReturn[Pos]=='\\')
                 ToReturn[Pos]='/';
+        }
+    #elif defined(__APPLE__) && !defined(UNICODE)
+        ToReturn=ZenLib::FileName_To_Native(ToReturn);
     #endif
     return ToReturn;
 }
@@ -383,8 +442,10 @@ int main(int argc, char* argv[])
 
     // Encoding of the locale: ASCII (converted to UTF-8 by ZenLib), UTF-8, or another one (e.g. Latin-1, only a part of the names can be converted)
     #if defined(_WIN32)
+        // Code page of the system, or of the program (activeCodePage of its manifest), for the narrow strings, with or without setlocale()
+        printf("OK: code page %u\n", (unsigned)GetACP());
         bool IsASCII=false;
-        bool IsUnicode=false; // Code page of the system for the narrow strings, with or without setlocale()
+        bool IsUnicode=GetACP()==CP_UTF8;
         bool IsLatin1=GetACP()==1252;
         bool FileNames_IsUnicode=true; // Wide functions of the system
     #else
@@ -405,8 +466,8 @@ int main(int argc, char* argv[])
         IsLatin1=false;
         FileNames_IsUnicode=true;
     #endif
+    Locale_IsLatin1=IsLatin1;
     Narrow_IsUTF8=IsUnicode || CharSet_UTF8; // The option has the priority over the locale
-    Narrow_IsLatin1=!Narrow_IsUTF8 && IsLatin1;
 
     // Files, with a name in the encoding of the locale if file names use it
     std::string Files_Path=Directory+"/files";
@@ -433,10 +494,8 @@ int main(int argc, char* argv[])
         Files[i].Exists=true;
         if (FileNames_IsUnicode)
             Files[i].Path_System=Files[i].Path;
-        else if (!IsLatin1)
-            Files[i].Exists=i==0; // e.g. EUC-JP, ASCII name only
         else
-            Files[i].Exists=UTF8_To_Latin1(Files[i].Path, Files[i].Path_System);
+            Files[i].Exists=Local_Encode(Files[i].Path, Files[i].Path_System); // Only the names in the encoding of the locale
         if (i==0 && !FileNames_IsUnicode)
             Files[i].Path_System=Files[i].Path;
         if (Files[i].Exists)

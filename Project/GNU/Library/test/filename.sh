@@ -54,7 +54,7 @@ if [ -n "${python}" ] && [ -n "${library}" ] ; then
     title=$'caf\xC3\xA9 \xE6\xB5\x8B\xE8\xAF\x95 \xF0\x9F\x8E\xB5'
     code='import sys; from pymediainfo import MediaInfo; Track=MediaInfo.parse(sys.argv[2], library_file=sys.argv[1]).general_tracks[0]; sys.exit(0 if Track.complete_name==sys.argv[2] and Track.title==sys.argv[3] else "wrong name or title: %a, %a" % (Track.complete_name, Track.title))'
     for config in ${locale_configs} ; do
-        if [ "${config}" == "latin1" ] || [ "${config}" == "eucjp" ] ; then
+        if [ "${config}" == "latin1" ] || [ "${config}" == "eucjp" ] || [ "${config}" == "gb18030" ] ; then
             continue # files with UTF-8 names only, not with these locales
         fi
         for path in "${temp_path}/${config}_1_0/files"/*.flac ; do
