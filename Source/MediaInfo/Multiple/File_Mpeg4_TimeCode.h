@@ -63,6 +63,7 @@ protected :
     //Temp
     bool    LastUsedOffset_IsParsed;
     bool    HasRedundantSample;
+    bool    HasDiscontinuity;
 };
 
 } //NameSpace
