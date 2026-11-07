@@ -64,6 +64,7 @@ File_Mpeg4_TimeCode::File_Mpeg4_TimeCode()
     FrameMultiplier_Pos=0;
     LastUsedOffset_IsParsed=false;
     HasRedundantSample=false;
+    HasDiscontinuity=false;
 }
 
 //***************************************************************************
@@ -174,24 +175,25 @@ void File_Mpeg4_TimeCode::Streams_Finish()
         if (FrameCount)
             Fill(Stream_Other, StreamPos_Last, Other_FrameCount, FrameCount);
 
-        //Stripped if no time code sample could be removed, a sample not in the file (e.g. truncated file) is considered as a discontinuity
-        bool IsStripped;
+        //Stripped if no time code sample could be removed, discontinuities and samples not in the file (e.g. truncated file) are not taken into account, unknown if all parsed samples after the first one are discontinuities
+        const char* Stripped;
         if (AllFramesParsed)
-            IsStripped=!HasRedundantSample;
+            Stripped=HasRedundantSample?"No":(HasDiscontinuity?nullptr:"Yes");
         else if (DurationsPerFrame && tmcd_Duration && tmcd_Duration_TimeScale && mdhd_Duration_TimeScale)
         {
             //Not all samples are parsed, a sample covering several frames is considered as a discontinuity
-            IsStripped=false;
+            Stripped="No";
             for (const auto& Item : *DurationsPerFrame)
                 if (Item.SampleCount && (float64)Item.SampleDuration*tmcd_Duration_TimeScale>1.5*mdhd_Duration_TimeScale*tmcd_Duration)
                 {
-                    IsStripped=true;
+                    Stripped="Yes";
                     break;
                 }
         }
         else
-            IsStripped=Frame_Count==1;
-        Fill(Stream_Other, StreamPos_Last, Other_TimeCode_Stripped, IsStripped?"Yes":"No");
+            Stripped=Frame_Count==1?"Yes":"No";
+        if (Stripped)
+            Fill(Stream_Other, StreamPos_Last, Other_TimeCode_Stripped, Stripped);
 
         const auto IsLastSampleParsed=LastUsedOffset==(int64u)-1 || LastUsedOffset_IsParsed; //Time code of the last frame is unknown if the last time code sample is not parsed (e.g. beyond the end of a truncated file)
         if (Frame_Count==1)
@@ -276,6 +278,7 @@ void File_Mpeg4_TimeCode::Read_Buffer_Continue()
                     HasRedundantSample=true; //Time code sample covering no frame
                 else
                 {
+                HasDiscontinuity=true;
                 const Ztring& Discontinuities=Retrieve_Const(Stream_Other, 0, "Discontinuities");
                 if (Discontinuities.size()>25*10)
                 {
