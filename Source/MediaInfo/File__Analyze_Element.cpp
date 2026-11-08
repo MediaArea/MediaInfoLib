@@ -528,9 +528,9 @@ static inline void Xml_Content_Escape(const std::string &Content, std::string& T
 }
 
 //---------------------------------------------------------------------------
-// Output helpers, the output is appended to a std::string
+// Output helpers
 //---------------------------------------------------------------------------
-static void Append_Dec(std::string& Out, int64u Value)
+static void Append_Dec(element_details::Element_Node_Output& Out, int64u Value)
 {
     char Temp[20];
     char* const End=Temp+20;
@@ -545,7 +545,7 @@ static void Append_Dec(std::string& Out, int64u Value)
 }
 
 //---------------------------------------------------------------------------
-static void Append_Dec(std::string& Out, int64s Value)
+static void Append_Dec(element_details::Element_Node_Output& Out, int64s Value)
 {
     if (Value<0)
     {
@@ -558,7 +558,7 @@ static void Append_Dec(std::string& Out, int64s Value)
 
 //---------------------------------------------------------------------------
 // Uppercase, with zeros on the left up to Digits_Min digits
-static void Append_Hex(std::string& Out, int64u Value, size_t Digits_Min)
+static void Append_Hex(element_details::Element_Node_Output& Out, int64u Value, size_t Digits_Min)
 {
     static const char Digits[]="0123456789ABCDEF";
     char Temp[16];
@@ -578,7 +578,7 @@ static void Append_Hex(std::string& Out, int64u Value, size_t Digits_Min)
 
 //---------------------------------------------------------------------------
 // Hexadecimal value of an integer in tree format, Bits is the count of valid bits
-static void Append_Integer_Hex(std::string& Out, int64u Value, int8u Bits, int8u Bits_Default)
+static void Append_Integer_Hex(element_details::Element_Node_Output& Out, int64u Value, int8u Bits, int8u Bits_Default)
 {
     if (Bits==(int8u)-1)
         Bits=Bits_Default;
@@ -588,7 +588,7 @@ static void Append_Integer_Hex(std::string& Out, int64u Value, int8u Bits, int8u
 }
 
 //---------------------------------------------------------------------------
-void element_details::Element_Node_Data::Append(std::string& Out) const
+void element_details::Element_Node_Data::Append(Element_Node_Output& Out) const
 {
     switch (type)
     {
@@ -721,7 +721,7 @@ void element_details::Element_Node_Data::Append(std::string& Out) const
 // Element_Node_Info
 //***************************************************************************
 //---------------------------------------------------------------------------
-static void Append_Info(std::string& Out, const element_details::Element_Node_Info& v)
+static void Append_Info(element_details::Element_Node_Output& Out, const element_details::Element_Node_Info& v)
 {
     v.data.Append(Out);
     if (!v.Measure.empty())
@@ -729,7 +729,7 @@ static void Append_Info(std::string& Out, const element_details::Element_Node_In
 }
 
 //---------------------------------------------------------------------------
-static void Append_Xml_Content(std::string& Out, const char* Content, size_t Content_Size)
+static void Append_Xml_Content(element_details::Element_Node_Output& Out, const char* Content, size_t Content_Size)
 {
     size_t MustEscape=Xml_Content_Escape_MustEscape(Content, Content_Size);
     if (MustEscape!=(size_t)-1)
@@ -820,7 +820,7 @@ int element_details::Element_Node::Print_Micro_Xml(print_struc& s)
     if (NoShow)
         return 0;
 
-    std::string& Out=s.Out;
+    Element_Node_Output& Out=s.Out;
     if (IsCat || Name_Is_Empty())
         goto print_children;
 
@@ -905,7 +905,7 @@ int element_details::Element_Node::Print_Xml(print_struc& s)
     if (NoShow)
         return 0;
 
-    std::string& Out=s.Out;
+    Element_Node_Output& Out=s.Out;
     const size_t Level=s.level;
 
     if (IsCat || Name_Is_Empty())
@@ -994,7 +994,7 @@ print_children:
 //---------------------------------------------------------------------------
 int element_details::Element_Node::Print_Tree_Cat(print_struc& s)
 {
-    std::string& Out=s.Out;
+    Element_Node_Output& Out=s.Out;
 
     // 3 lines: minuses, "---   Name   ---", minuses
     for (int Line = 0; Line < 3; ++Line)
@@ -1026,7 +1026,7 @@ int element_details::Element_Node::Print_Tree(print_struc& s)
         goto print_children;
 
     {
-    std::string& Out=s.Out;
+    Element_Node_Output& Out=s.Out;
     Append_Hex(Out, Pos, s.offset_size);
     Out.append(s.level, ' ');
     Out.append(Name.data(), Name.size());
@@ -1103,7 +1103,8 @@ int element_details::Element_Node::Print(MediaInfo_Config::trace_Format Format, 
 
     Str.clear();
     int ret = -1;
-    print_struc s(Str, eol, offset_size);
+    Element_Node_Output Out(Str);
+    print_struc s(Out, eol, offset_size);
     switch (Format)
     {
         case MediaInfo_Config::Trace_Format_Tree:

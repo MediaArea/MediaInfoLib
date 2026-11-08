@@ -172,6 +172,57 @@ struct element_details
         }
     };
 
+    //Output of the trace, written in the output string without the cost of a std::string append for each part
+    //The string is bigger than the output while writing, it has the size of the output when this object is destroyed
+    class Element_Node_Output
+    {
+    public:
+        explicit Element_Node_Output(std::string& Str_) : Str(Str_), Data(NULL), Size(Str_.size()), Capacity(Str_.size()) {Grow(0);}
+        ~Element_Node_Output() {Str.resize(Size);}
+
+        void append(const char* Data_, size_t Size_)
+        {
+            if (Size_>Capacity-Size)
+                Grow(Size_);
+            std::memcpy(Data+Size, Data_, Size_);
+            Size+=Size_;
+        }
+        void append(size_t Count, char C)
+        {
+            if (Count>Capacity-Size)
+                Grow(Count);
+            std::memset(Data+Size, C, Count);
+            Size+=Count;
+        }
+        void operator+=(char C)
+        {
+            if (Size==Capacity)
+                Grow(1);
+            Data[Size++]=C;
+        }
+        void operator+=(const char* Data_) {append(Data_, std::strlen(Data_));}
+        void operator+=(const std::string& Data_) {append(Data_.data(), Data_.size());}
+
+    private:
+        std::string& Str;
+        char*  Data;
+        size_t Size;
+        size_t Capacity;
+        void Grow(size_t Size_)
+        {
+            size_t New=Capacity+Capacity/2;
+            if (New<Size+Size_)
+                New=Size+Size_;
+            if (New<0x10000)
+                New=0x10000;
+            Str.resize(New);
+            Data=&Str[0];
+            Capacity=New;
+        }
+        Element_Node_Output(const Element_Node_Output&);
+        Element_Node_Output& operator=(const Element_Node_Output&);
+    };
+
     class Element_Node_Data
     {
     public:
@@ -252,7 +303,7 @@ struct element_details
         bool empty() {return type == ELEMENT_NODE_NONE;}
         void set_Option(int8u c) {Option = c;}
         void Set_Output_Format(Value_Output_Format v) {format_out = v;}
-        void Append(std::string& Out) const; //Append the value to Out, in the current output format
+        void Append(Element_Node_Output& Out) const; //Append the value to Out, in the current output format
 
         static void get_hexa_from_deci_limited_by_bits(std::string& val, int8u bits, int8u default_bits);
 
@@ -344,12 +395,12 @@ struct element_details
     private:
         struct print_struc
         {
-            std::string& Out;
+            Element_Node_Output& Out;
             const string eol;
             const size_t offset_size;
             size_t level;
 
-            print_struc(std::string& Out_, const string& eol_, size_t offset_size_)
+            print_struc(Element_Node_Output& Out_, const string& eol_, size_t offset_size_)
                 :
                 Out(Out_),
                 eol(eol_),
