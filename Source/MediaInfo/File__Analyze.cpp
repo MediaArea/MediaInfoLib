@@ -589,6 +589,7 @@ File__Analyze::File__Analyze ()
         Config_Trace_Format=MediaInfoLib::Config.Trace_Format_Get();
         Trace_DoNotSave=false;
         Trace_Strings=NULL;
+        Trace_InfosToParent=false;
         Trace_Parent_Level=(size_t)-1;
         Trace_Parent_Pos=0;
         Trace_Layers.set();
@@ -980,6 +981,15 @@ void File__Analyze::Trace_Details_Handling(File__Analyze* Sub)
             if (!Sub->Element[0].TraceNode.Name_Is_Empty())
                 while (Sub->Element_Level)
                     Sub->Element_End0();
+
+            //Infos of the top level of Sub, which is not shown, are about this node
+            if (Sub->Trace_InfosToParent && !Sub->Element_Level)
+            {
+                auto& Infos=Sub->Element[0].TraceNode.Infos;
+                for (size_t i=0; i<Infos.size(); i++)
+                    Element[Element_Level].TraceNode.Infos.emplace_back(std::move(Infos[i]));
+                Infos.clear();
+            }
 
             //Add Sub to this node, only the elements already ended, the elements not ended yet are added after a next buffer or at finalization
             if (!Sub->Element[0].TraceNode.Name_Is_Empty() || Sub->Element[0].TraceNode.Children.size())
@@ -4894,6 +4904,29 @@ void File__Analyze::Merge_Conformance(bool FromConfig)
     }
     auto& Data = *(conformance_data*)Conformance_Data;
     Data.Merge_Conformance(FromConfig);
+}
+#endif
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
+void File__Analyze::Merge_Conformance(File__Analyze& Sub)
+{
+    if (!Sub.Conformance_Data) {
+        return;
+    }
+    auto& Sub_Data = *(conformance_data*)Sub.Conformance_Data;
+    bool IsFilled = false;
+    for (size_t Level = 0; Level < Conformance_Max; Level++) {
+        auto& Conformance = Sub_Data.ConformanceErrors[Level];
+        for (const auto& FieldValue : Conformance) {
+            Fill_Conformance(FieldValue.Field.c_str(), FieldValue.Value.c_str(), FieldValue.Flags.to_int8u(), (conformance_type)Level, FieldValue.StreamKind, FieldValue.StreamPos);
+            IsFilled = true;
+        }
+        Conformance.clear();
+    }
+    if (IsFilled) {
+        ((conformance_data*)Conformance_Data)->File_Offset = Sub_Data.File_Offset; //Position in the sub-parser, frame of this parser
+    }
 }
 #endif
 

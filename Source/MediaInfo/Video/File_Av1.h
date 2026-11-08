@@ -17,6 +17,10 @@
 namespace MediaInfoLib
 {
 
+#if defined(MEDIAINFO_T35_YES)
+    class File_T35;
+#endif //defined(MEDIAINFO_T35_YES)
+
 //***************************************************************************
 // Class File_Av1
 //***************************************************************************
@@ -60,14 +64,6 @@ private :
     void metadata_hdr_cll();
     void metadata_hdr_mdcv();
     void metadata_itu_t_t35();
-    void metadata_itu_t_t35_B5();
-    void metadata_itu_t_t35_B5_003B();
-    void metadata_itu_t_t35_B5_003B_00000800();
-    void metadata_itu_t_t35_B5_003C();
-    void metadata_itu_t_t35_B5_003C_0001();
-    void metadata_itu_t_t35_B5_003C_0001_04();
-    void metadata_itu_t_t35_B5_5890();
-    void metadata_itu_t_t35_B5_5890_01();
     void metadata_scalability();
     void scalability_structure();
     void metadata_timecode();
@@ -82,16 +78,12 @@ private :
     bool  reduced_still_picture_header{};
     bool  show_existing_frame{};
     string GOP;
-    enum hdr_format
-    {
-        HdrFormat_SmpteSt209440,
-        HdrFormat_SmpteSt2086,
-        HdrFormat_Max,
-    };
-    typedef std::map<video, Ztring[HdrFormat_Max]> hdr;
     hdr HDR;
     std::set<int8u> scalability_structure_seen;
     DV_RPU DV_RPU_data;
+    #if defined(MEDIAINFO_T35_YES)
+        File_T35* T35_Parser{};
+    #endif //defined(MEDIAINFO_T35_YES)
 
     //Helpers
     std::string GOP_Detect(std::string PictureTypes);

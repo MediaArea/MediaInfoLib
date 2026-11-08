@@ -611,6 +611,9 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_SequenceInfo.cpp">
       <Filter>Source Files\Multiple</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_T35.cpp">
+      <Filter>Source Files\Multiple</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\MediaInfo\Export\Export_reVTMD.cpp">
       <Filter>Source Files\Export</Filter>
     </ClCompile>
@@ -1376,6 +1379,9 @@
       <Filter>Header Files\Audio</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_SequenceInfo.h">
+      <Filter>Header Files\Multiple</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_T35.h">
       <Filter>Header Files\Multiple</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Export\Export_reVTMD.h">

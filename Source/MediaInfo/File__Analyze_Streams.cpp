@@ -653,7 +653,7 @@ void File__Analyze::Get_MasteringDisplayColorVolume(Ztring &MasteringDisplay_Col
 #endif
 
 //---------------------------------------------------------------------------
-#if defined(MEDIAINFO_APV_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AV2_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MK_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_MXF_YES) || defined(MEDIAINFO_PNG_YES)
+#if defined(MEDIAINFO_APV_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AV2_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MK_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_MXF_YES) || defined(MEDIAINFO_PNG_YES) || defined(MEDIAINFO_T35_YES)
 struct masteringdisplaycolorvolume_values
 {
     int8u Code; //ISO code
@@ -1013,7 +1013,7 @@ void File__Analyze::dvcC(bool has_dependency_pid, std::map<std::string, Ztring>*
 #endif
 
 //---------------------------------------------------------------------------
-#if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MXF_YES)
+#if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MXF_YES) || defined(MEDIAINFO_T35_YES)
 
 const char* DV_content_type(int8u content_type)
 {
@@ -1050,9 +1050,9 @@ const char* DV_white_point(int8u white_point)
     }
 }
 
-#endif // defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MXF_YES)
+#endif // defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MXF_YES) || defined(MEDIAINFO_T35_YES)
 
-#if defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_FFV1_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES)
+#if defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_FFV1_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_T35_YES)
 
 // CRC Table for CRC-32/MPEG-2
 // Polynomial - 0x04C11DB7
@@ -1092,9 +1092,9 @@ extern const int32u CRC_32_MPEG_2_Table[256] =
     0xAFB010B1, 0xAB710D06,  0xA6322BDF, 0xA2F33668,   0xBCB4666D, 0xB8757BDA,  0xB5365D03, 0xB1F740B4
 };
 
-#endif // defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_FFV1_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES)
+#endif // defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_FFV1_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_T35_YES)
 
-#if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES)
+#if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_T35_YES)
 
 // CRC32 check for Dolby Vision Rererence Processing Unit (RPU)
 // Supports non-byte aligned RPU
@@ -1922,7 +1922,7 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
     FILLING_END();
 }
 
-#endif // defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES)
+#endif // defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_T35_YES)
 
 #if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MXF_YES)
 
@@ -2553,7 +2553,7 @@ void File__Analyze::Get_LightLevel(Ztring &MaxCLL, Ztring &MaxFALL, int32u Divis
 #endif
 
 //---------------------------------------------------------------------------
-#if defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MK_YES)
+#if defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MK_YES) || defined(MEDIAINFO_T35_YES)
 void File__Analyze::Get_SMPTE_ST_2094_40(int8u& application_version, bool& IsHDRplus, bool& tone_mapping_flag)
 {
     Get_B1 (application_version,                                "application_version");

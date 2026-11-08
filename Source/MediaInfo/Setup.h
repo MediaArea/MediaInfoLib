@@ -704,6 +704,12 @@
 #endif
 
 //---------------------------------------------------------------------------
+// Multiple, carried by the formats above
+#if !defined(MEDIAINFO_T35_NO) && !defined(MEDIAINFO_T35_YES) && (defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MK_YES))
+    #define MEDIAINFO_T35_YES
+#endif
+
+//---------------------------------------------------------------------------
 // Audio
 #if !defined(MEDIAINFO_AUDIO_NO) && !defined(MEDIAINFO_AAC_NO) && !defined(MEDIAINFO_AAC_YES)
     #define MEDIAINFO_AAC_YES
