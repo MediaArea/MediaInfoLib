@@ -1624,7 +1624,9 @@ protected :
     static bool                 IsOP1a(int64u Hi, int64u Lo); //OP1a with internal essence
     bool                        Package_Tracks(const package& Package, std::vector<track_info>& List, std::string& Kinds, conformance_errors& Errors); //Kinds has a character per track except Descriptive Metadata, returns true if the test must stop
     static std::string          Tracks_Kinds_Description(const std::string& Kinds); //e.g. "1 Timecode, 1 Video, 16 Audio"
-    const randomindexpack*      RandomIndexPack_Find(int64u ByteOffset) const; //Entry of the Random Index Pack with this byte offset, nullptr if not listed
+    typedef std::vector<std::pair<int64u, size_t> > randomindexpack_sorted; //Byte offset and position of each entry of the Random Index Pack, sorted
+    randomindexpack_sorted      RandomIndexPack_Sorted() const;
+    const randomindexpack*      RandomIndexPack_Find(const randomindexpack_sorted& Sorted, int64u ByteOffset) const; //First entry of the Random Index Pack with this byte offset, nullptr if not listed
     std::vector<std::string>    HeaderMetadata_FooterDifferences(bool WithPresence=false) const; //Properties of the Header Metadata having another value in the Footer Partition (or present in only one of them if WithPresence), e.g. "Duration of Sequence"
     struct indextablesegment
     {

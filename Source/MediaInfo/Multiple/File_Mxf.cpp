@@ -4896,6 +4896,7 @@ void File_Mxf::Streams_Finish_Conformance_FileFormat ()
         Fill_Conformance_AtOffset(Partitions.back().StreamOffset, "MXF PartitionPack", "Partition is after the Footer Partition");
 
     //Random Index Pack
+    const auto RandomIndexPack_Order=RandomIndexPack_Sorted(); //For finding the entries of each partition
     auto RandomIndexPack_IsAscending=true;
     if (RandomIndexPack_Offset!=(int64u)-1)
     {
@@ -4908,7 +4909,7 @@ void File_Mxf::Streams_Finish_Conformance_FileFormat ()
             Fill_Conformance_AtOffset(RandomIndexPack_Offset, "MXF RandomIndexPack ByteOffset", "Byte Offsets are not in ascending order");
         for (const auto& Partition : Partitions)
         {
-            const auto Entry=RandomIndexPack_Find(Partition.StreamOffset-RunIn);
+            const auto Entry=RandomIndexPack_Find(RandomIndexPack_Order, Partition.StreamOffset-RunIn);
             if (!Entry)
                 Fill_Conformance_AtOffset(Partition.StreamOffset, "MXF RandomIndexPack ByteOffset", "Partition is not listed in the Random Index Pack");
             else if (Entry->BodySID!=Partition.BodySID)
@@ -4936,9 +4937,12 @@ void File_Mxf::Streams_Finish_Conformance_FileFormat ()
         else if (Partition.PreviousPartition>=ByteOffset)
             Fill_Conformance_AtOffset(Offset, "MXF PartitionPack PreviousPartition", "PreviousPartition is not the offset of a previous partition (actual "+Hex(Partition.PreviousPartition)+')');
         else if (RandomIndexPack_IsAscending)
-            for (size_t i=1; i<RandomIndexPack_Entries.size(); i++)
-                if (RandomIndexPack_Entries[i].ByteOffset==ByteOffset && Partition.PreviousPartition!=RandomIndexPack_Entries[i-1].ByteOffset)
+            for (auto Item=lower_bound(RandomIndexPack_Order.begin(), RandomIndexPack_Order.end(), make_pair(ByteOffset, (size_t)0)); Item!=RandomIndexPack_Order.end() && Item->first==ByteOffset; ++Item) //Entries with this byte offset, in file order
+            {
+                const auto i=Item->second;
+                if (i && Partition.PreviousPartition!=RandomIndexPack_Entries[i-1].ByteOffset)
                     Fill_Conformance_AtOffset(Offset, "MXF PartitionPack PreviousPartition", "PreviousPartition is not the offset of the previous partition listed in the Random Index Pack (actual "+Hex(Partition.PreviousPartition)+", expected "+Hex(RandomIndexPack_Entries[i-1].ByteOffset)+')');
+            }
 
         //Footer Partition offset
         if (Partition.Kind==0x04)
@@ -5003,11 +5007,11 @@ void File_Mxf::Streams_Finish_Conformance_FileFormat ()
             continue;
         const auto IndexSID=BigEndian2int32u(IndexSID_Value->data());
 
-        //Partition containing the segment, if the segment is in its index table area
-        const partition* Partition=nullptr;
-        for (const auto& Partition_Item : Partitions)
-            if (Partition_Item.StreamOffset<Segment.StreamOffset)
-                Partition=&Partition_Item;
+        //Partition containing the segment, if the segment is in its index table area (partitions are sorted by offset, it is the last one before the segment)
+        const auto Partition_Next=lower_bound(Partitions.begin(), Partitions.end(), Segment.StreamOffset, [](const partition& Item, int64u StreamOffset) {
+            return Item.StreamOffset<StreamOffset;
+        });
+        const partition* Partition=Partition_Next==Partitions.begin()?nullptr:&*(Partition_Next-1);
         if (!Partition || Partition->PartitionPackByteCount==(int64u)-1 || Segment.StreamOffset>=Partition->StreamOffset+Partition->PartitionPackByteCount+Partition->HeaderByteCount+Partition->IndexByteCount)
             continue;
         if (!Partition->IndexSID)
@@ -8738,12 +8742,23 @@ string File_Mxf::Tracks_Kinds_Description(const string& Kinds)
 }
 
 //---------------------------------------------------------------------------
-const File_Mxf::randomindexpack* File_Mxf::RandomIndexPack_Find(int64u ByteOffset) const
+File_Mxf::randomindexpack_sorted File_Mxf::RandomIndexPack_Sorted() const
 {
-    for (const auto& Entry : RandomIndexPack_Entries)
-        if (Entry.ByteOffset==ByteOffset)
-            return &Entry;
-    return nullptr;
+    randomindexpack_sorted Sorted;
+    Sorted.reserve(RandomIndexPack_Entries.size());
+    for (size_t i=0; i<RandomIndexPack_Entries.size(); i++)
+        Sorted.emplace_back(RandomIndexPack_Entries[i].ByteOffset, i);
+    sort(Sorted.begin(), Sorted.end()); //Entries with the same byte offset stay in file order
+    return Sorted;
+}
+
+//---------------------------------------------------------------------------
+const File_Mxf::randomindexpack* File_Mxf::RandomIndexPack_Find(const randomindexpack_sorted& Sorted, int64u ByteOffset) const
+{
+    const auto Item=lower_bound(Sorted.begin(), Sorted.end(), make_pair(ByteOffset, (size_t)0));
+    if (Item==Sorted.end() || Item->first!=ByteOffset)
+        return nullptr;
+    return &RandomIndexPack_Entries[Item->second];
 }
 
 //---------------------------------------------------------------------------
@@ -9177,8 +9192,9 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_ArdZdf (size_t Profile_Pos,
         for (const auto& Entry : RandomIndexPack_Entries)
             if (PartitionPack_AlreadyParsed.find(Entry.ByteOffset)==PartitionPack_AlreadyParsed.end())
                 Error("Partition is not parsed");
+        const auto RandomIndexPack_Order=RandomIndexPack_Sorted();
         for (const auto& Partition : Partitions)
-            if (!RandomIndexPack_Find(Partition.StreamOffset))
+            if (!RandomIndexPack_Find(RandomIndexPack_Order, Partition.StreamOffset))
                 Error("Random Index Pack does not list all partitions");
     }
     if (!IsCandidateTest && !IsXdf && !IsSD && HeaderPartition && HeaderPartition->Status==0x04)
