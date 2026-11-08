@@ -96,7 +96,7 @@ struct element_details
         bool empty() {return type == ELEMENT_NODE_NONE;}
         void set_Option(int8u c) {Option = c;}
         void Set_Output_Format(Value_Output_Format v) {format_out = v;}
-        friend std::ostream& operator<<(std::ostream& os, const element_details::Element_Node_Data& v);
+        void Append(std::string& Out) const; //Append the value to Out, in the current output format
 
         static void get_hexa_from_deci_limited_by_bits(std::string& val, int8u bits, int8u default_bits);
 
@@ -119,8 +119,6 @@ struct element_details
             if (_Measure)
                 Measure = _Measure;
         }
-
-        friend std::ostream& operator<<(std::ostream& os, element_details::Element_Node_Info* v);
 
         Element_Node_Data data;
         std::string       Measure;
@@ -169,23 +167,23 @@ struct element_details
     private:
         struct print_struc
         {
-            std::ostringstream& ss;
+            std::string& Out;
             const string eol;
             const size_t offset_size;
             size_t level;
 
-            print_struc(std::ostringstream& ss_, const string& eol_, size_t offset_size_)
+            print_struc(std::string& Out_, const string& eol_, size_t offset_size_)
                 :
-                ss(ss_),
+                Out(Out_),
                 eol(eol_),
                 offset_size(offset_size_),
                 level(0)
             {
             }
         };
-        int  Print_Xml(print_struc& s);                                            //Print the node in XML into ss
-        int  Print_Micro_Xml(print_struc& s);                                      //Print the node in micro XML into ss
-        int  Print_Tree(print_struc& s);                                           //Print the node into ss
+        int  Print_Xml(print_struc& s);                                            //Print the node in XML into s.Out
+        int  Print_Micro_Xml(print_struc& s);                                      //Print the node in micro XML into s.Out
+        int  Print_Tree(print_struc& s);                                           //Print the node into s.Out
         int  Print_Tree_Cat(print_struc& s);
     };
 #endif //MEDIAINFO_TRACE
