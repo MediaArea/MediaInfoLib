@@ -1219,6 +1219,9 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
         if (File_GoTo==File_Size)
         {
             File_GoTo=(int64u)-1;
+            #if MEDIAINFO_TRACE
+                Element[Element_Level].WaitForMoreData=false; //We must finalize the details, as Buffer_Clear() does for a jump elsewhere
+            #endif //MEDIAINFO_TRACE
             ForceFinish();
         }
     }

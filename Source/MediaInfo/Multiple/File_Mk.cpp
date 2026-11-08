@@ -5475,6 +5475,16 @@ void File_Mk::JumpTo (int64u GoToValue)
 
     //GoTo
     Open_Buffer_Unsynch();
+    if (GoToValue==File_Size && File_Size!=(int64u)-1 && !Config->File_IsGrowing
+        #if MEDIAINFO_DEMUX
+         && !Config->Demux_EventWasSent
+        #endif //MEDIAINFO_DEMUX
+        )
+    {
+        //Finishing is left to File__Analyze after the current element, GoTo() would finish now and close the elements still being parsed
+        File_GoTo=GoToValue;
+        return;
+    }
     GoTo(GoToValue);
 }
 
