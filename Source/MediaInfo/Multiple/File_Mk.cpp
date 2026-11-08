@@ -5520,9 +5520,9 @@ bool File_Mk::CRC32_Check_In_Node(const std::string& ToSearchInInfo, const std::
     //Check in the current node
     for (size_t i = 0; i < node->Infos.size(); ++i)
     {
-        if (node->Infos[i]->data == ToSearchInInfo)
+        if (node->Infos[i].data == ToSearchInInfo)
         {
-            node->Infos[i]->data = info;
+            node->Infos[i].data = info;
             return true;
         }
     }

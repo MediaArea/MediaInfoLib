@@ -419,12 +419,11 @@ protected :
     //Elements - Info
 #if MEDIAINFO_TRACE
     template<typename T>
-    element_details::Element_Node_Info* Trace_Info (T Parameter, const char* Measure, int8u AfterComma)
+    void Trace_Info (element_details::Element_Node& Node, T Parameter, const char* Measure, int8u AfterComma)
     {
-        element_details::Element_Node_Info* Info=new element_details::Element_Node_Info(Parameter, AfterComma);
+        element_details::Element_Node_Info& Info=Node.Infos.emplace_back(Parameter, AfterComma);
         if (Measure)
-            Info->Measure=Trace_String(Measure);
-        return Info;
+            Info.Measure=Trace_String(Measure);
     }
 
     template<typename T>
@@ -437,7 +436,7 @@ protected :
         if (Config_Trace_Level<=0.7)
             return;
 
-        Element[Element_Level].TraceNode.Infos.push_back(Trace_Info(Parameter, Measure, AfterComma));
+        Trace_Info(Element[Element_Level].TraceNode, Parameter, Measure, AfterComma);
     }
 
     void Element_Info (const char* Parameter, const char* Measure=NULL, int8u AfterComma=3)
@@ -452,7 +451,7 @@ protected :
         if ((Parameter && !strcmp(Parameter, "NOK")) || (Measure && !strcmp(Measure, "Error")))
             Element[Element_Level].TraceNode.HasError = true;
 
-        Element[Element_Level].TraceNode.Infos.push_back(Trace_Info(Parameter, Measure, AfterComma));
+        Trace_Info(Element[Element_Level].TraceNode, Parameter, Measure, AfterComma);
     }
 #endif //MEDIAINFO_TRACE
 
@@ -582,9 +581,9 @@ public :
         //     return;
         int32s child = Element[Element_Level].TraceNode.Current_Child;
         if (child >= 0 && Element[Element_Level].TraceNode.Children[child])
-            Element[Element_Level].TraceNode.Children[child]->Infos.push_back(Trace_Info(Parameter, Measure, AfterComma));
+            Trace_Info(*Element[Element_Level].TraceNode.Children[child], Parameter, Measure, AfterComma);
         else
-            Element[Element_Level].TraceNode.Infos.push_back(Trace_Info(Parameter, Measure, AfterComma));
+            Trace_Info(Element[Element_Level].TraceNode, Parameter, Measure, AfterComma);
     }
 
     void Param_Info(const char* Parameter, const char* Measure=NULL, int8u AfterComma=3)
@@ -602,9 +601,9 @@ public :
 
         int32s child = Element[Element_Level].TraceNode.Current_Child;
         if (child >= 0 && Element[Element_Level].TraceNode.Children[child])
-            Element[Element_Level].TraceNode.Children[child]->Infos.push_back(Trace_Info(Parameter, Measure, AfterComma));
+            Trace_Info(*Element[Element_Level].TraceNode.Children[child], Parameter, Measure, AfterComma);
         else
-            Element[Element_Level].TraceNode.Infos.push_back(Trace_Info(Parameter, Measure, AfterComma));
+            Trace_Info(Element[Element_Level].TraceNode, Parameter, Measure, AfterComma);
     }
     void Param_Info_Bits(int64u Bits); //"(Bits bits)"
 #endif //MEDIAINFO_TRACE

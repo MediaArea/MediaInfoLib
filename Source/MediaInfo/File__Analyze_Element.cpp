@@ -683,14 +683,11 @@ void element_details::Element_Node_Data::Append(std::string& Out) const
 // Element_Node_Info
 //***************************************************************************
 //---------------------------------------------------------------------------
-static void Append_Info(std::string& Out, const element_details::Element_Node_Info* v)
+static void Append_Info(std::string& Out, const element_details::Element_Node_Info& v)
 {
-    if (!v)
-        return;
-
-    v->data.Append(Out);
-    if (!v->Measure.empty())
-        Out.append(v->Measure.data(), v->Measure.size());
+    v.data.Append(Out);
+    if (!v.Measure.empty())
+        Out.append(v.Measure.data(), v.Measure.size());
 }
 
 //---------------------------------------------------------------------------
@@ -743,7 +740,8 @@ void element_details::Element_Node::TakeChilrenFrom(Element_Node& node)
     if (this == &node || !OwnChildren || !node.OwnChildren)
         return;
 
-    Children.insert(Children.end(), node.Children.begin(), node.Children.end());
+    for (size_t i = 0; i < node.Children.size(); ++i)
+        Children.push_back(node.Children[i]);
     node.Children.clear();
 }
 
@@ -756,10 +754,6 @@ element_details::Element_Node::~Element_Node()
     for (size_t i = 0; i < Children.size(); ++i)
         delete Children[i];
     Children.clear();
-
-    for (size_t i = 0; i < Infos.size(); ++i)
-        delete Infos[i];
-    Infos.clear();
 }
 
 //---------------------------------------------------------------------------
@@ -773,9 +767,6 @@ void element_details::Element_Node::Init()
         for (size_t i = 0; i < Children.size(); ++i)
             delete Children[i];
     Children.clear();
-    if (OwnChildren && Infos.size())
-        for (size_t i = 0; i < Infos.size(); ++i)
-            delete Infos[i];
     Infos.clear();
     Current_Child = -1;
     NoShow = false;
@@ -804,7 +795,7 @@ int element_details::Element_Node::Print_Micro_Xml(print_struc& s)
 
     for (size_t i = 0, info_nb = 0; i < Infos.size(); ++i)
     {
-        Element_Node_Info* Info = Infos[i];
+        Element_Node_Info* Info = &Infos[i];
 
         if (Info->Measure == "Parser")
         {
@@ -832,7 +823,7 @@ int element_details::Element_Node::Print_Micro_Xml(print_struc& s)
         if (info_nb > 1)
             Append_Dec(Out, (int64u)info_nb);
         Out+="=\"";
-        Append_Info(Out, Info);
+        Append_Info(Out, *Info);
         Out+='\"';
     }
 
@@ -892,7 +883,7 @@ int element_details::Element_Node::Print_Xml(print_struc& s)
 
     for (size_t i = 0, info_nb = 0; i < Infos.size(); ++i)
     {
-        Element_Node_Info* Info = Infos[i];
+        Element_Node_Info* Info = &Infos[i];
 
         if (Info->Measure == "Parser")
         {
@@ -920,7 +911,7 @@ int element_details::Element_Node::Print_Xml(print_struc& s)
         if (info_nb > 1)
             Append_Dec(Out, (int64u)info_nb);
         Out+="=\"";
-        Append_Info(Out, Info);
+        Append_Info(Out, *Info);
         Out+='\"';
     }
 
@@ -1015,10 +1006,7 @@ int element_details::Element_Node::Print_Tree(print_struc& s)
 
     for (size_t i = 0; i < Infos.size(); ++i)
     {
-        Element_Node_Info* Info = Infos[i];
-
-        if (!Info)
-            continue;
+        Element_Node_Info* Info = &Infos[i];
 
         if (Info->Measure == "Parser")
         {
@@ -1041,7 +1029,7 @@ int element_details::Element_Node::Print_Tree(print_struc& s)
 
         Info->data.Set_Output_Format(Element_Node_Data::Format_Tree);
         Out+=" - ";
-        Append_Info(Out, Info);
+        Append_Info(Out, *Info);
     }
 
     if (Value.empty())

@@ -3377,7 +3377,7 @@ void File__Analyze::Element_Parser(const char* Parser)
     if (Config_Trace_Level<=0.7)
         return;
 
-    Element[Element_Level].TraceNode.Infos.push_back(Trace_Info(Parser, "Parser", (int8u)-1));
+    Trace_Info(Element[Element_Level].TraceNode, Parser, "Parser", (int8u)-1);
 }
 #endif //MEDIAINFO_TRACE
 
@@ -3386,7 +3386,7 @@ void File__Analyze::Element_Parser(const char* Parser)
 void File__Analyze::Element_Error(const char* Message)
 {
     if (Trace_Activated)
-        Element[Element_Level].TraceNode.Infos.push_back(Trace_Info(Message, "Error", (int8u)-1));
+        Trace_Info(Element[Element_Level].TraceNode, Message, "Error", (int8u)-1);
 
     // Quick transform of old fashion error to new system. TODO: better wording of errors
     string M(Message);

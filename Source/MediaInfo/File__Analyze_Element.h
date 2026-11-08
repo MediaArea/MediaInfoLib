@@ -11,7 +11,9 @@
 
 #include "MediaInfo/MediaInfo_Config.h"
 #include <cstring>
+#include <new>
 #include <sstream>
+#include <utility>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -53,6 +55,117 @@ struct element_details
             size_t Size;
         };
         item* Item;
+    };
+
+    //Vector of pointers, only a pointer when empty (most of the nodes have no child)
+    //The count of items is stored before the items, the capacity is the count rounded up to a power of 2
+    template<typename T>
+    class Element_Node_Pointers
+    {
+    public:
+        Element_Node_Pointers() : Data(NULL) {}
+        Element_Node_Pointers(const Element_Node_Pointers& v) : Data(NULL) {*this=v;}
+        ~Element_Node_Pointers() {clear();}
+        Element_Node_Pointers& operator=(const Element_Node_Pointers& v)
+        {
+            if (this!=&v)
+            {
+                clear();
+                for (size_t i=0; i<v.size(); i++)
+                    push_back(v[i]);
+            }
+            return *this;
+        }
+
+        size_t size() const {return Data?*Data:0;}
+        bool empty() const {return !size();}
+        T*& operator[](size_t i) {return Items()[i];}
+        T* operator[](size_t i) const {return Items()[i];}
+        void push_back(T* v)
+        {
+            size_t Size=size();
+            if (!(Size&(Size-1))) //0 or a power of 2, the storage is full
+                Grow(Size);
+            Items()[Size]=v;
+            (*Data)++;
+        }
+        void clear() {::operator delete(Data); Data=NULL;}
+        void swap(Element_Node_Pointers& v) {size_t* Temp=Data; Data=v.Data; v.Data=Temp;}
+
+    private:
+        size_t* Data; //Count of items, followed by the items
+        T** Items() const {return (T**)(Data+1);}
+        void Grow(size_t Size)
+        {
+            size_t* New=(size_t*)::operator new(sizeof(size_t)+(Size?Size*2:1)*sizeof(T*));
+            *New=Size;
+            if (Size)
+                std::memcpy((void*)(New+1), (const void*)(Data+1), Size*sizeof(T*));
+            ::operator delete(Data);
+            Data=New;
+        }
+    };
+
+    //Vector of values, only a pointer when empty (most of the nodes have no info)
+    //The count of items is stored before the items (on 64 bits for the alignment of the items), the capacity is the count rounded up to a power of 2
+    template<typename T>
+    class Element_Node_Values
+    {
+    public:
+        Element_Node_Values() : Data(NULL) {}
+        Element_Node_Values(const Element_Node_Values& v) : Data(NULL) {*this=v;}
+        ~Element_Node_Values() {clear();}
+        Element_Node_Values& operator=(const Element_Node_Values& v)
+        {
+            if (this!=&v)
+            {
+                clear();
+                for (size_t i=0; i<v.size(); i++)
+                    emplace_back(v[i]);
+            }
+            return *this;
+        }
+
+        size_t size() const {return Data?(size_t)*Data:0;}
+        bool empty() const {return !size();}
+        T& operator[](size_t i) {return Items()[i];}
+        const T& operator[](size_t i) const {return Items()[i];}
+        template<typename... Args>
+        T& emplace_back(Args&&... args)
+        {
+            size_t Size=size();
+            if (!(Size&(Size-1))) //0 or a power of 2, the storage is full
+                Grow(Size);
+            T* Item=new (Items()+Size) T(std::forward<Args>(args)...);
+            (*Data)++;
+            return *Item;
+        }
+        void clear()
+        {
+            size_t Size=size();
+            for (size_t i=0; i<Size; i++)
+                Items()[i].~T();
+            ::operator delete(Data);
+            Data=NULL;
+        }
+        void swap(Element_Node_Values& v) {int64u* Temp=Data; Data=v.Data; v.Data=Temp;}
+
+    private:
+        int64u* Data; //Count of items, followed by the items
+        T* Items() const {return (T*)(Data+1);}
+        void Grow(size_t Size)
+        {
+            int64u* New=(int64u*)::operator new(sizeof(int64u)+(Size?Size*2:1)*sizeof(T));
+            *New=Size;
+            T* New_Items=(T*)(New+1);
+            for (size_t i=0; i<Size; i++)
+            {
+                new (New_Items+i) T(std::move(Items()[i]));
+                Items()[i].~T();
+            }
+            ::operator delete(Data);
+            Data=New;
+        }
     };
 
     class Element_Node_Data
@@ -104,7 +217,7 @@ struct element_details
             int128u     *i128u;
         };
 
-        Element_Node_Data() : type(ELEMENT_NODE_NONE), format_out(Format_Xml) {}
+        Element_Node_Data() : type(ELEMENT_NODE_NONE), format_out(Format_Xml), Option((int8u)-1) {}
         ~Element_Node_Data() { clear(); }
 
         Element_Node_Data& operator=(const Element_Node_Data&);
@@ -153,13 +266,22 @@ struct element_details
             data.set_Option(Option);
             data = parameter;
         }
+        Element_Node_Info(const Element_Node_Info& v)
+        {
+            data = v.data;
+            Measure = v.Measure;
+        }
+        Element_Node_Info(Element_Node_Info&& v)
+        {
+            data.swap(v.data);
+            Measure.swap(v.Measure);
+        }
 
         Element_Node_Data   data;
         Element_Node_String Measure;
 
     private:
         Element_Node_Info& operator=(const Element_Node_Info&);
-        Element_Node_Info(const Element_Node_Info&);
     };
 
     class Element_Node
@@ -178,14 +300,15 @@ struct element_details
         Element_Node_String              Name;            // Name planned for this element
     public:
         Element_Node_Data                Value;           // The value (currently used only with Trace XML)
-        std::vector<Element_Node_Info*>  Infos;           // More info about the element
-        std::vector<Element_Node*>       Children;        // Elements depending on this element
+        Element_Node_Values<Element_Node_Info> Infos;     // More info about the element
+        Element_Node_Pointers<Element_Node> Children;     // Elements depending on this element
         int32s                           Current_Child;   // Current child selected, used for param
-        bool                             NoShow;          // Don't show this element
-        bool                             OwnChildren;     // Child is owned by this node
-        bool                             IsCat;           // Node is a category
-        bool                             HasError;        // Node or sub-nodes has Nok
-        bool                             RemoveIfNoErrors;// Remove Children Node if no NOK appears
+        //Flags in 1 byte, so the node fits in 64 bytes
+        bool                             NoShow:1;        // Don't show this element
+        bool                             OwnChildren:1;   // Child is owned by this node
+        bool                             IsCat:1;         // Node is a category
+        bool                             HasError:1;      // Node or sub-nodes has Nok
+        bool                             RemoveIfNoErrors:1;// Remove Children Node if no NOK appears
 
         void                             Init();          //Initialize with common values
         void Add_Child(Element_Node* node);               //Add a subchild to the current node, the content of node is moved
