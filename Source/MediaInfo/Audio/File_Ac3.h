@@ -131,6 +131,31 @@ private :
         }
     };
     dolby  FirstFrame_Dolby;
+    struct hd_best //TrueHD major sync values of the most complete presentation found, used for the description
+    {
+        int32u nonstd_bed_channel_assignment_mask;
+        int16u BitRate_Max;
+        int16u Channels2;
+        int16u flags;
+        int8u  num_dynamic_objects;
+        int8u  dsurexmod;
+        int8u  Rank;
+        bool   HasAtmos;
+
+        hd_best()
+            :
+            nonstd_bed_channel_assignment_mask((int32u)-1),
+            BitRate_Max(0),
+            Channels2(0),
+            flags(0),
+            num_dynamic_objects((int8u)-1),
+            dsurexmod(0),
+            Rank(0),
+            HasAtmos(false)
+        {
+        }
+    };
+    hd_best HD_Best;
     int8u* addbsi_Buffer;
     size_t addbsi_Buffer_Size;
     int64u Formats[2]; // AC-3 or E-AC-3
