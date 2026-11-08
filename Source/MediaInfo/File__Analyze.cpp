@@ -588,6 +588,7 @@ File__Analyze::File__Analyze ()
         Config_Trace_Layers=MediaInfoLib::Config.Trace_Layers_Get();
         Config_Trace_Format=MediaInfoLib::Config.Trace_Format_Get();
         Trace_DoNotSave=false;
+        Trace_Strings=NULL;
         Trace_Layers.set();
         Trace_Layers_Update();
     #endif //MEDIAINFO_TRACE
@@ -797,6 +798,10 @@ File__Analyze::~File__Analyze ()
         if (!IsSub)
             delete IbiStream; //IbiStream=NULL;
     #endif //MEDIAINFO_IBIUSAGE
+
+    #if MEDIAINFO_TRACE
+        delete[] Trace_Strings; //Nodes keep their own reference to the strings
+    #endif //MEDIAINFO_TRACE
 }
 
 //***************************************************************************
@@ -2815,7 +2820,7 @@ bool File__Analyze::Header_Manage()
     if (Trace_Activated)
     {
         if (Elem1.TraceNode.Name_Is_Empty())
-            Elem1.TraceNode.Set_Name("Unknown");
+            Elem1.TraceNode.Set_Name(Trace_String("Unknown", 7));
         Elem2.TraceNode.Size=Element_Offset;
         if (Element_Offset==0)
             Element_DoNotShow();
@@ -3321,10 +3326,54 @@ void File__Analyze::Element_Name(const Ztring &Name)
             Name2.FindAndReplace(__T("\n"), __T("_"), 0, Ztring_Recursive);
             if (Name2[0]==__T(' '))
                 Name2[0]=__T('_');
-            Element[Element_Level].TraceNode.Set_Name(Name2.To_UTF8());
+            string Name2_UTF8=Name2.To_UTF8();
+            Element[Element_Level].TraceNode.Set_Name(Trace_String(Name2_UTF8.data(), Name2_UTF8.size()));
         }
         else
-            Element[Element_Level].TraceNode.Set_Name("(Empty)");
+            Element[Element_Level].TraceNode.Set_Name(Trace_String("(Empty)", 7));
+    }
+}
+#endif //MEDIAINFO_TRACE
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_TRACE
+void File__Analyze::Element_Name(const char* Name)
+{
+    //TraceNode
+    if (!Trace_Activated)
+        return;
+
+    //ASCII names (the usual case) are used without conversion, with the same changes as in the Ztring version
+    size_t Size=0;
+    bool HasLineBreak=false;
+    if (Name)
+    {
+        for (; Name[Size]; Size++)
+        {
+            const int8u C=(int8u)Name[Size];
+            if (C>=0x80)
+            {
+                Element_Name(Ztring().From_UTF8(Name));
+                return;
+            }
+            if (C=='\r' || C=='\n')
+                HasLineBreak=true;
+        }
+    }
+    auto& TraceNode=Element[Element_Level].TraceNode;
+    if (!Size)
+        TraceNode.Set_Name(Trace_String("(Empty)", 7));
+    else if (!HasLineBreak && Name[0]!=' ')
+        TraceNode.Set_Name(Trace_String(Name, Size));
+    else
+    {
+        string Name2(Name, Size);
+        for (size_t i=0; i<Size; i++)
+            if (Name2[i]=='\r' || Name2[i]=='\n')
+                Name2[i]='_';
+        if (Name2[0]==' ')
+            Name2[0]='_';
+        TraceNode.Set_Name(Trace_String(Name2.data(), Size));
     }
 }
 #endif //MEDIAINFO_TRACE
@@ -3337,7 +3386,7 @@ void File__Analyze::Element_Parser(const char* Parser)
     if (Config_Trace_Level<=0.7)
         return;
 
-    Element[Element_Level].TraceNode.Infos.push_back(new element_details::Element_Node_Info(Parser, "Parser"));
+    Trace_Info(Element[Element_Level].TraceNode, Parser, "Parser", (int8u)-1);
 }
 #endif //MEDIAINFO_TRACE
 
@@ -3346,7 +3395,7 @@ void File__Analyze::Element_Parser(const char* Parser)
 void File__Analyze::Element_Error(const char* Message)
 {
     if (Trace_Activated)
-        Element[Element_Level].TraceNode.Infos.push_back(new element_details::Element_Node_Info(Message, "Error"));
+        Trace_Info(Element[Element_Level].TraceNode, Message, "Error", (int8u)-1);
 
     // Quick transform of old fashion error to new system. TODO: better wording of errors
     string M(Message);
@@ -3440,10 +3489,71 @@ void File__Analyze::Element_End(const Ztring &Name)
         auto& Elem = Element[Element_Level]; 
         Elem.TraceNode.Size=Elem.Next-Elem.TraceNode.Pos;
         if (!Name.empty())
-            Elem.TraceNode.Set_Name(Name.To_UTF8());
+        {
+            string Name_UTF8=Name.To_UTF8();
+            Elem.TraceNode.Set_Name(Trace_String(Name_UTF8.data(), Name_UTF8.size()));
+        }
     }
 
     Element_End_Common_Flush();
+}
+#endif //MEDIAINFO_TRACE
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_TRACE
+void File__Analyze::Element_End(const char* Name)
+{
+    if (Element_Level_Overflow)
+    {
+        Element_End_Common_Flush();
+        return;
+    }
+
+    //TraceNode
+    if (Trace_Activated)
+    {
+        //ASCII names (the usual case) are used without conversion
+        size_t Size=0;
+        if (Name)
+        {
+            for (; Name[Size]; Size++)
+            {
+                if ((int8u)Name[Size]>=0x80)
+                {
+                    Element_End(Ztring().From_UTF8(Name));
+                    return;
+                }
+            }
+        }
+        auto& Elem = Element[Element_Level];
+        Elem.TraceNode.Size=Elem.Next-Elem.TraceNode.Pos;
+        if (Size)
+            Elem.TraceNode.Set_Name(Trace_String(Name, Size));
+    }
+
+    Element_End_Common_Flush();
+}
+#endif //MEDIAINFO_TRACE
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_TRACE
+const element_details::Element_Node_String& File__Analyze::Trace_String(const char* Data, size_t Size)
+{
+    static const element_details::Element_Node_String Empty;
+    if (!Size)
+        return Empty;
+
+    //One slot per content hash, the same name used in each packet is stored once
+    const size_t Trace_Strings_Size=1024;
+    if (!Trace_Strings)
+        Trace_Strings=new element_details::Element_Node_String[Trace_Strings_Size];
+    int32u Hash=0x811C9DC5; //FNV-1a
+    for (size_t i=0; i<Size; i++)
+        Hash=(Hash^(int8u)Data[i])*0x01000193;
+    element_details::Element_Node_String& String=Trace_Strings[Hash%Trace_Strings_Size];
+    if (String.size()!=Size || std::memcmp(String.data(), Data, Size))
+        String.assign(Data, Size);
+    return String;
 }
 #endif //MEDIAINFO_TRACE
 
@@ -3514,12 +3624,12 @@ void File__Analyze::Element_End_Common_Flush_Details()
         auto& Elem = Element[Element_Level];
         if (!Elem1.WaitForMoreData && (Elem1.IsComplete || !Elem1.UnTrusted) && !Elem1.TraceNode.NoShow)
         {
-            //Element
-            Elem.TraceNode.Add_Child(&Elem1.TraceNode);
-
             //Info
             if (!Elem1.TraceNode.Value.empty())
                 Elem.TraceNode.Value=Elem1.TraceNode.Value;
+
+            //Element (content is moved)
+            Elem.TraceNode.Add_Child(&Elem1.TraceNode);
             Elem1.TraceNode.Init();
         }
     }
@@ -3554,7 +3664,7 @@ void File__Analyze::Info(const std::string& Value, size_t Element_Level_Minus)
 
     element_details::Element_Node node;
     node.Init();
-    node.Set_Name(Value);
+    node.Set_Name(Trace_String(Value.data(), Value.size()));
     node.IsCat = true;
     node.Pos = File_Offset+Buffer_Offset+Element_Offset+BS->Offset_Get();
     Element[Element_Level].TraceNode.Add_Child(&node);

@@ -23,6 +23,7 @@
     #include <aescpp.h>
 #endif //MEDIAINFO_AES
 #include "MediaInfo/HashWrapper.h"
+#include <cstring>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -413,10 +414,27 @@ protected :
 
     //Elements - Name
     void Element_Name (const Ztring &Name);
-    inline void Element_Name (const char*   Name) {Element_Name(Ztring().From_UTF8(Name));}
+    void Element_Name (const char*   Name);
 
     //Elements - Info
 #if MEDIAINFO_TRACE
+    template<typename T>
+    void Trace_Info (element_details::Element_Node& Node, T Parameter, const char* Measure, int8u AfterComma)
+    {
+        element_details::Element_Node_Info& Info=Node.Infos.emplace_back(Parameter, AfterComma);
+        if (Measure)
+            Info.Measure=Trace_String(Measure);
+    }
+    void Trace_Info (element_details::Element_Node& Node, const char* Parameter, const char* Measure, int8u AfterComma)
+    {
+        element_details::Element_Node_Info& Info=Node.Infos.emplace_back();
+        Info.data.set_Option(AfterComma);
+        if (Parameter)
+            Info.data=Trace_String(Parameter); //Stored once, the same texts are in a lot of nodes
+        if (Measure)
+            Info.Measure=Trace_String(Measure);
+    }
+
     template<typename T>
     void Element_Info (T Parameter, const char* Measure=NULL, int8u AfterComma=3)
     {
@@ -427,7 +445,7 @@ protected :
         if (Config_Trace_Level<=0.7)
             return;
 
-        Element[Element_Level].TraceNode.Infos.push_back(new element_details::Element_Node_Info(Parameter, Measure, AfterComma));
+        Trace_Info(Element[Element_Level].TraceNode, Parameter, Measure, AfterComma);
     }
 
     void Element_Info (const char* Parameter, const char* Measure=NULL, int8u AfterComma=3)
@@ -439,10 +457,10 @@ protected :
         if (Config_Trace_Level<=0.7)
             return;
 
-        if ((Parameter && std::string(Parameter) == "NOK") || (Measure && std::string(Measure) == "Error"))
+        if ((Parameter && !strcmp(Parameter, "NOK")) || (Measure && !strcmp(Measure, "Error")))
             Element[Element_Level].TraceNode.HasError = true;
 
-        Element[Element_Level].TraceNode.Infos.push_back(new element_details::Element_Node_Info(Parameter, Measure, AfterComma));
+        Trace_Info(Element[Element_Level].TraceNode, Parameter, Measure, AfterComma);
     }
 #endif //MEDIAINFO_TRACE
 
@@ -462,7 +480,7 @@ protected :
     //Elements - End
     inline void Element_End () {Element_End_Common_Flush();}
     void Element_End (const Ztring &Name);
-    inline void Element_End (const char *Name) {Element_End(Ztring().From_UTF8(Name));}
+    void Element_End (const char *Name);
     #define Element_End0() Element_End()
     #define Element_End1(_NAME) Element_End(_NAME)
     #define Element_Trace_End0() Element_End()
@@ -491,22 +509,24 @@ public :
             return Ztring().From_Local(Value, Value_Size);
     }
 
+    //Trace - Strings stored once (names, measures), the same content is shared
+    const element_details::Element_Node_String& Trace_String(const char* Data, size_t Size);
+    const element_details::Element_Node_String& Trace_String(const char* Data) {return Trace_String(Data, Data?strlen(Data):0);}
+
     //Param - Main
-    template<typename T>
-    inline void Param(const std::string &Parameter, T Value, int8u GenericOption=(int8u)-1)
+    element_details::Element_Node* Param_Node(int8u GenericOption)
     {
         if (!Trace_Activated)
-            return;
+            return NULL;
 
         if (Config_Trace_Level==0 || !(Trace_Layers.to_ulong()&Config_Trace_Layers.to_ulong()))
-            return ;
+            return NULL;
 
         //Coherancy
         if (Element[Element_Level].UnTrusted)
-            return ;
+            return NULL;
 
         element_details::Element_Node *node = new element_details::Element_Node;
-        node->Set_Name(Parameter);
         node->Pos = File_Offset+Buffer_Offset+Element_Offset;
         if (BS_Size)
         {
@@ -516,9 +536,27 @@ public :
             node->Pos += BS_BitOffset>>3; //Including Bits to Bytes
         }
         node->Value.set_Option(GenericOption);
-        node->Value = Value;
         Element[Element_Level].TraceNode.Current_Child = Element[Element_Level].TraceNode.Children.size();
         Element[Element_Level].TraceNode.Children.push_back(node);
+        return node;
+    }
+    template<typename T>
+    inline void Param(const std::string &Parameter, T Value, int8u GenericOption=(int8u)-1)
+    {
+        element_details::Element_Node *node = Param_Node(GenericOption);
+        if (!node)
+            return;
+        node->Set_Name(Trace_String(Parameter.data(), Parameter.size()));
+        node->Value = Value;
+    }
+    template<typename T>
+    inline void Param(const char* Parameter, T Value, int8u GenericOption=(int8u)-1)
+    {
+        element_details::Element_Node *node = Param_Node(GenericOption);
+        if (!node)
+            return;
+        node->Set_Name(Trace_String(Parameter));
+        node->Value = Value;
     }
 
     inline void Param      (const char*   Parameter, const char*   Value, size_t Value_Size, bool Utf8=true) {Param(Parameter, ToZtring(Value, Value_Size, Utf8));}
@@ -552,9 +590,9 @@ public :
         //     return;
         int32s child = Element[Element_Level].TraceNode.Current_Child;
         if (child >= 0 && Element[Element_Level].TraceNode.Children[child])
-            Element[Element_Level].TraceNode.Children[child]->Infos.push_back(new element_details::Element_Node_Info(Parameter, Measure, AfterComma));
+            Trace_Info(*Element[Element_Level].TraceNode.Children[child], Parameter, Measure, AfterComma);
         else
-            Element[Element_Level].TraceNode.Infos.push_back(new element_details::Element_Node_Info(Parameter, Measure, AfterComma));
+            Trace_Info(Element[Element_Level].TraceNode, Parameter, Measure, AfterComma);
     }
 
     void Param_Info(const char* Parameter, const char* Measure=NULL, int8u AfterComma=3)
@@ -567,15 +605,16 @@ public :
         if (Config_Trace_Level<=0.7)
             return;
 
-        if ((Parameter && std::string(Parameter) == "NOK") || (Measure && std::string(Measure) == "Error"))
+        if ((Parameter && !strcmp(Parameter, "NOK")) || (Measure && !strcmp(Measure, "Error")))
             Element[Element_Level].TraceNode.HasError = true;
 
         int32s child = Element[Element_Level].TraceNode.Current_Child;
         if (child >= 0 && Element[Element_Level].TraceNode.Children[child])
-            Element[Element_Level].TraceNode.Children[child]->Infos.push_back(new element_details::Element_Node_Info(Parameter, Measure, AfterComma));
+            Trace_Info(*Element[Element_Level].TraceNode.Children[child], Parameter, Measure, AfterComma);
         else
-            Element[Element_Level].TraceNode.Infos.push_back(new element_details::Element_Node_Info(Parameter, Measure, AfterComma));
+            Trace_Info(Element[Element_Level].TraceNode, Parameter, Measure, AfterComma);
     }
+    void Param_Info_Bits(int64u Bits); //"(Bits bits)"
 #endif //MEDIAINFO_TRACE
 
     #ifdef SIZE_T_IS_LONG
@@ -1591,6 +1630,7 @@ public : //TO CHANGE
 protected :
     bool Trace_DoNotSave;
     bool Trace_Activated;
+    element_details::Element_Node_String* Trace_Strings; //Last string of each content hash slot, created on first use
     std::bitset<32> Trace_Layers;
     void Trace_Layers_Update (size_t Layer=(size_t)-1);
 private :

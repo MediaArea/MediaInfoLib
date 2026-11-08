@@ -20,13 +20,34 @@
 #include "MediaInfo/File__Analyze.h"
 #include "MediaInfo/File__Analyze_Element.h"
 #include "MediaInfo/MediaInfo_Internal.h"
-#include <iomanip>
 #include <cstring>
+#include <utility>
 #include "ThirdParty/base64/base64.h"
 
 namespace MediaInfoLib
 {
 #if MEDIAINFO_TRACE
+//***************************************************************************
+// Element_Node_String
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+void element_details::Element_Node_String::assign(const char* Data, size_t Size)
+{
+    item* New=NULL;
+    if (Size)
+    {
+        New=(item*)::operator new(sizeof(item)+Size+1);
+        New->Count=1;
+        New->Size=Size;
+        char* New_Data=(char*)(New+1);
+        std::memcpy(New_Data, Data, Size);
+        New_Data[Size]='\0';
+    }
+    clear(); //After the copy, Data may be in the previous string
+    Item=New;
+}
+
 //***************************************************************************
 // Element_Node_Data
 //***************************************************************************
@@ -58,6 +79,10 @@ element_details::Element_Node_Data& element_details::Element_Node_Data::operator
             val.i128u = new int128u;
             *val.i128u = *v.val.i128u;
             break;
+        case ELEMENT_NODE_STR_SHARED:
+            val.Shared = v.val.Shared;
+            ((Element_Node_String::item*)val.Shared)->Count++;
+            break;
         default:
             val = v.val;
             break;
@@ -88,6 +113,26 @@ void element_details::Element_Node_Data::operator=(const Ztring& v)
         val.Str = new char[len + 1];
         std::memcpy(val.Str, tmp.c_str(), len);
         val.Str[len] = '\0';
+    }
+}
+
+//---------------------------------------------------------------------------
+void element_details::Element_Node_Data::operator=(const Element_Node_String& v)
+{
+    clear();
+
+    size_t len = v.size();
+    if (len <= 8)
+    {
+        type = ELEMENT_NODE_CHAR8;
+        std::memcpy(val.Chars, v.data(), len);
+        set_Option(len);
+    }
+    else
+    {
+        type = ELEMENT_NODE_STR_SHARED;
+        val.Shared = v.Item;
+        v.Item->Count++;
     }
 }
 
@@ -262,6 +307,11 @@ bool element_details::Element_Node_Data::operator==(const std::string& v)
         return v == std::string(val.Chars, Option);
     if (type == ELEMENT_NODE_STR)
         return v == val.Str;
+    if (type == ELEMENT_NODE_STR_SHARED)
+    {
+        const Element_Node_String::item* Item = (const Element_Node_String::item*)val.Shared;
+        return v.size() == Item->Size && !std::memcmp(v.data(), Item + 1, Item->Size);
+    }
 
     return false;
 }
@@ -274,6 +324,13 @@ void element_details::Element_Node_Data::clear()
       case ELEMENT_NODE_STR:
           delete [] val.Str;
           break;
+      case ELEMENT_NODE_STR_SHARED:
+      {
+          Element_Node_String::item* Item = (Element_Node_String::item*)val.Shared;
+          if (!--Item->Count)
+              ::operator delete(Item);
+          break;
+      }
       case ELEMENT_NODE_FLOAT80:
           delete val.f80;
           break;
@@ -285,6 +342,15 @@ void element_details::Element_Node_Data::clear()
     }
 
     type = ELEMENT_NODE_NONE;
+}
+
+//---------------------------------------------------------------------------
+void element_details::Element_Node_Data::swap(Element_Node_Data& v)
+{
+    std::swap(val, v.val);
+    std::swap(type, v.type);
+    std::swap(format_out, v.format_out);
+    std::swap(Option, v.Option);
 }
 
 //---------------------------------------------------------------------------
@@ -461,156 +527,219 @@ static inline void Xml_Content_Escape(const std::string &Content, std::string& T
     Xml_Content_Escape(Content.c_str(), Content.size(), ToReturn, Pos);
 }
 
-#define VALUE_INTEGER_FORMATED(_val, _type, _length)                                                       \
-    do                                                                                                      \
-    {                                                                                                       \
-        os << std::dec << (_type)_val;                                                                      \
-        if (v.format_out == element_details::Element_Node_Data::Format_Tree)                                \
-        {                                                                                                   \
-            std::stringstream ss;                                                                           \
-            ss << std::hex << std::uppercase << (_type)_val;                                                                  \
-            std::string str = ss.str();                                                                     \
-            element_details::Element_Node_Data::get_hexa_from_deci_limited_by_bits(str, v.Option, _length); \
-            os << " (0x" << str << ")";                                                                     \
-        }                                                                                                   \
-    }                                                                                                       \
-    while(0);
-
+//---------------------------------------------------------------------------
+// Output helpers
+//---------------------------------------------------------------------------
+static void Append_Dec(element_details::Element_Node_Output& Out, int64u Value)
+{
+    char Temp[20];
+    char* const End=Temp+20;
+    char* Pos=End;
+    do
+    {
+        *--Pos=(char)('0'+Value%10);
+        Value/=10;
+    }
+    while (Value);
+    Out.append(Pos, End-Pos);
+}
 
 //---------------------------------------------------------------------------
-std::ostream& operator<<(std::ostream& os, const element_details::Element_Node_Data& v)
+static void Append_Dec(element_details::Element_Node_Output& Out, int64s Value)
 {
-    switch (v.type)
+    if (Value<0)
     {
-      case element_details::Element_Node_Data::ELEMENT_NODE_CHAR8:
+        Out+='-';
+        Append_Dec(Out, ((int64u)0)-(int64u)Value);
+    }
+    else
+        Append_Dec(Out, (int64u)Value);
+}
+
+//---------------------------------------------------------------------------
+// Uppercase, with zeros on the left up to Digits_Min digits
+static void Append_Hex(element_details::Element_Node_Output& Out, int64u Value, size_t Digits_Min)
+{
+    static const char Digits[]="0123456789ABCDEF";
+    char Temp[16];
+    char* const End=Temp+16;
+    char* Pos=End;
+    do
+    {
+        *--Pos=Digits[Value&0xF];
+        Value>>=4;
+    }
+    while (Value);
+    size_t Size=End-Pos;
+    if (Size<Digits_Min)
+        Out.append(Digits_Min-Size, '0');
+    Out.append(Pos, Size);
+}
+
+//---------------------------------------------------------------------------
+// Hexadecimal value of an integer in tree format, Bits is the count of valid bits
+static void Append_Integer_Hex(element_details::Element_Node_Output& Out, int64u Value, int8u Bits, int8u Bits_Default)
+{
+    if (Bits==(int8u)-1)
+        Bits=Bits_Default;
+    Out+=" (0x";
+    Append_Hex(Out, Value, Bits/4+((Bits%4)?1:0));
+    Out+=')';
+}
+
+//---------------------------------------------------------------------------
+void element_details::Element_Node_Data::Append(Element_Node_Output& Out) const
+{
+    switch (type)
+    {
+      case ELEMENT_NODE_CHAR8:
       {
-          if (v.format_out == element_details::Element_Node_Data::Format_Tree)
+          if (format_out==Format_Tree)
           {
-              for (int8u i = 0; i < v.Option; ++i)
-                  os.rdbuf()->sputc(v.val.Chars[i]?v.val.Chars[i]:' '); //Text output does not like NULL chars, replacing it by space
+              for (int8u i=0; i<Option; ++i)
+                  Out+=val.Chars[i]?val.Chars[i]:' '; //Text output does not like NULL chars, replacing it by space
               break;
           }
 
-          size_t MustEscape = Xml_Content_Escape_MustEscape(v.val.Chars, v.Option);
-
-          if (MustEscape != (size_t)-1)
+          size_t MustEscape=Xml_Content_Escape_MustEscape(val.Chars, Option);
+          if (MustEscape!=(size_t)-1)
           {
               std::string str;
-              Xml_Content_Escape(v.val.Chars, v.Option, str, MustEscape);
-              os << str;
+              Xml_Content_Escape(val.Chars, Option, str, MustEscape);
+              Out+=str;
           }
           else
-          {
-              for (int8u i = 0; i < v.Option; ++i)
-                  os.rdbuf()->sputc(v.val.Chars[i]);
-          }
+              Out.append(val.Chars, Option);
           break;
       }
-      case element_details::Element_Node_Data::ELEMENT_NODE_STR:
+      case ELEMENT_NODE_STR:
+      case ELEMENT_NODE_STR_SHARED:
       {
-          if (v.format_out == element_details::Element_Node_Data::Format_Tree)
+          const char* Str=type==ELEMENT_NODE_STR?val.Str:(const char*)(((const Element_Node_String::item*)val.Shared)+1);
+          if (format_out==Format_Tree)
           {
-              const char* a=v.val.Str;
+              const char* a=Str;
               for (;;)
               {
                   const char* b=strchr(a, '\n');
                   if (!b)
                       break;
-                  std::streamsize c=b-a;
+                  size_t c=b-a;
                   if (c && a[c-1]=='\r')
                       c--;
-                  os.write(a, c);
+                  Out.append(a, c);
                   a=b+1;
                   if (*a) // If it is not the last character
-                      os << " / ";
+                      Out+=" / ";
               }
-              os << a;
+              Out+=a;
               break;
           }
 
-          size_t MustEscape = Xml_Content_Escape_MustEscape(v.val.Str);
-          if (MustEscape != (size_t)-1)
+          size_t Size=type==ELEMENT_NODE_STR?strlen(Str):((const Element_Node_String::item*)val.Shared)->Size;
+          size_t MustEscape=Xml_Content_Escape_MustEscape(Str, Size);
+          if (MustEscape!=(size_t)-1)
           {
               std::string str;
-              Xml_Content_Escape(v.val.Str, str, MustEscape);
-              os << str;
+              Xml_Content_Escape(Str, Size, str, MustEscape);
+              Out+=str;
           }
           else
-              os << v.val.Str;
+              Out.append(Str, Size);
           break;
       }
-      case element_details::Element_Node_Data::ELEMENT_NODE_BOOL:
-          if (v.val.b)
-              os << "Yes";
-          else
-              os << "No";
+      case ELEMENT_NODE_BOOL:
+          Out+=val.b?"Yes":"No";
           break;
-      case element_details::Element_Node_Data::ELEMENT_NODE_INT8U:
-          VALUE_INTEGER_FORMATED(v.val.i8u, unsigned, 8); //use unsigned for stringstream
+      // The hexadecimal value of signed integers is the one of their type when they were displayed with a stream (int for 8-bit and 16-bit)
+      case ELEMENT_NODE_INT8U:
+          Append_Dec(Out, (int64u)val.i8u);
+          if (format_out==Format_Tree)
+              Append_Integer_Hex(Out, val.i8u, Option, 8);
           break;
-      case element_details::Element_Node_Data::ELEMENT_NODE_INT8S:
-          VALUE_INTEGER_FORMATED(v.val.i8s, int, 8); //use int for stringstream
+      case ELEMENT_NODE_INT8S:
+          Append_Dec(Out, (int64s)val.i8s);
+          if (format_out==Format_Tree)
+              Append_Integer_Hex(Out, (int32u)(int32s)val.i8s, Option, 8);
           break;
-
-      case element_details::Element_Node_Data::ELEMENT_NODE_INT16U:
-          VALUE_INTEGER_FORMATED(v.val.i16u, unsigned, 16); //use unsigned for stringstream
+      case ELEMENT_NODE_INT16U:
+          Append_Dec(Out, (int64u)val.i16u);
+          if (format_out==Format_Tree)
+              Append_Integer_Hex(Out, val.i16u, Option, 16);
           break;
-      case element_details::Element_Node_Data::ELEMENT_NODE_INT16S:
-          VALUE_INTEGER_FORMATED(v.val.i16s, int, 16); //use int for stringstream
+      case ELEMENT_NODE_INT16S:
+          Append_Dec(Out, (int64s)val.i16s);
+          if (format_out==Format_Tree)
+              Append_Integer_Hex(Out, (int32u)(int32s)val.i16s, Option, 16);
           break;
-
-      case element_details::Element_Node_Data::ELEMENT_NODE_INT32U:
-          VALUE_INTEGER_FORMATED(v.val.i32u, int32u, 32); //use unsigned for stringstream
+      case ELEMENT_NODE_INT32U:
+          Append_Dec(Out, (int64u)val.i32u);
+          if (format_out==Format_Tree)
+              Append_Integer_Hex(Out, val.i32u, Option, 32);
           break;
-      case element_details::Element_Node_Data::ELEMENT_NODE_INT32S:
-          VALUE_INTEGER_FORMATED(v.val.i32s, int32s, 32); //use int for stringstream
+      case ELEMENT_NODE_INT32S:
+          Append_Dec(Out, (int64s)val.i32s);
+          if (format_out==Format_Tree)
+              Append_Integer_Hex(Out, (int32u)val.i32s, Option, 32);
           break;
-
-      case element_details::Element_Node_Data::ELEMENT_NODE_INT64U:
-          VALUE_INTEGER_FORMATED(v.val.i64u, int64u, 64);
+      case ELEMENT_NODE_INT64U:
+          Append_Dec(Out, val.i64u);
+          if (format_out==Format_Tree)
+              Append_Integer_Hex(Out, val.i64u, Option, 64);
           break;
-      case element_details::Element_Node_Data::ELEMENT_NODE_INT64S:
-          VALUE_INTEGER_FORMATED(v.val.i64s, int64s, 64); //use int for stringstream
+      case ELEMENT_NODE_INT64S:
+          Append_Dec(Out, val.i64s);
+          if (format_out==Format_Tree)
+              Append_Integer_Hex(Out, (int64u)val.i64s, Option, 64);
           break;
-
-      case element_details::Element_Node_Data::ELEMENT_NODE_INT128U:
-          os << uint128toString(*v.val.i128u, 10);
-          if (v.format_out == element_details::Element_Node_Data::Format_Tree)
+      case ELEMENT_NODE_INT128U:
+          Out+=uint128toString(*val.i128u, 10);
+          if (format_out==Format_Tree)
           {
-              std::string str = uint128toString(*v.val.i128u, 16);
-              element_details::Element_Node_Data::get_hexa_from_deci_limited_by_bits(str, v.Option, 128);
-              os << " (0x" << str << ")";
+              std::string str=uint128toString(*val.i128u, 16);
+              get_hexa_from_deci_limited_by_bits(str, Option, 128);
+              Out+=" (0x";
+              Out+=str;
+              Out+=')';
           }
           break;
-      case element_details::Element_Node_Data::ELEMENT_NODE_FLOAT32:
-          os << Ztring::ToZtring(v.val.f32, v.Option == (int8u)-1 ? 3 : v.Option).To_UTF8();
+      case ELEMENT_NODE_FLOAT32:
+          Out+=Ztring::ToZtring(val.f32, Option==(int8u)-1?3:Option).To_UTF8();
           break;
-      case element_details::Element_Node_Data::ELEMENT_NODE_FLOAT64:
-          os << Ztring::ToZtring(v.val.f64, v.Option == (int8u)-1 ? 3 : v.Option).To_UTF8();
+      case ELEMENT_NODE_FLOAT64:
+          Out+=Ztring::ToZtring(val.f64, Option==(int8u)-1?3:Option).To_UTF8();
           break;
-      case element_details::Element_Node_Data::ELEMENT_NODE_FLOAT80:
-          os << Ztring::ToZtring(*v.val.f80, v.Option == (int8u)-1 ? 3 : v.Option).To_UTF8();
+      case ELEMENT_NODE_FLOAT80:
+          Out+=Ztring::ToZtring(*val.f80, Option==(int8u)-1?3:Option).To_UTF8();
+          break;
+      default:
           break;
     }
-    return os;
 }
-
-#undef VALUE_INTEGER_FORMATED
-
 
 //***************************************************************************
 // Element_Node_Info
 //***************************************************************************
-std::ostream& operator<<(std::ostream& os, element_details::Element_Node_Info* v)
+//---------------------------------------------------------------------------
+static void Append_Info(element_details::Element_Node_Output& Out, const element_details::Element_Node_Info& v)
 {
-    if (!v)
-        return os;
+    v.data.Append(Out);
+    if (!v.Measure.empty())
+        Out.append(v.Measure.data(), v.Measure.size());
+}
 
-    os << v->data;
-    if (!v->Measure.empty())
-        os << v->Measure;
-
-    return os;
+//---------------------------------------------------------------------------
+static void Append_Xml_Content(element_details::Element_Node_Output& Out, const char* Content, size_t Content_Size)
+{
+    size_t MustEscape=Xml_Content_Escape_MustEscape(Content, Content_Size);
+    if (MustEscape!=(size_t)-1)
+    {
+        std::string str;
+        Xml_Content_Escape(Content, Content_Size, str, MustEscape);
+        Out+=str;
+    }
+    else
+        Out.append(Content, Content_Size);
 }
 
 //***************************************************************************
@@ -649,7 +778,8 @@ void element_details::Element_Node::TakeChilrenFrom(Element_Node& node)
     if (this == &node || !OwnChildren || !node.OwnChildren)
         return;
 
-    Children.insert(Children.end(), node.Children.begin(), node.Children.end());
+    for (size_t i = 0; i < node.Children.size(); ++i)
+        Children.push_back(node.Children[i]);
     node.Children.clear();
 }
 
@@ -662,10 +792,6 @@ element_details::Element_Node::~Element_Node()
     for (size_t i = 0; i < Children.size(); ++i)
         delete Children[i];
     Children.clear();
-
-    for (size_t i = 0; i < Infos.size(); ++i)
-        delete Infos[i];
-    Infos.clear();
 }
 
 //---------------------------------------------------------------------------
@@ -679,9 +805,6 @@ void element_details::Element_Node::Init()
         for (size_t i = 0; i < Children.size(); ++i)
             delete Children[i];
     Children.clear();
-    if (OwnChildren && Infos.size())
-        for (size_t i = 0; i < Infos.size(); ++i)
-            delete Infos[i];
     Infos.clear();
     Current_Child = -1;
     NoShow = false;
@@ -697,57 +820,64 @@ int element_details::Element_Node::Print_Micro_Xml(print_struc& s)
     if (NoShow)
         return 0;
 
+    Element_Node_Output& Out=s.Out;
     if (IsCat || Name_Is_Empty())
         goto print_children;
 
-    if (Value.empty())
-        s.ss << "<b";
-    else
-        s.ss << "<d";
-
-    {
-    size_t MustEscape = Xml_Content_Escape_MustEscape(Name);
-    if (MustEscape != (size_t)-1)
-    {
-        std::string str;
-        Xml_Content_Escape(Name, str, MustEscape);
-        s.ss << " o=\"" << Pos << "\" n=\"" << str << "\"";
-    }
-    else
-        s.ss << " o=\"" << Pos << "\" n=\"" << Name << "\"";
-    }
+    Out+=Value.empty()?"<b":"<d";
+    Out+=" o=\"";
+    Append_Dec(Out, Pos);
+    Out+="\" n=\"";
+    Append_Xml_Content(Out, Name.data(), Name.size());
+    Out+='\"';
 
     for (size_t i = 0, info_nb = 0; i < Infos.size(); ++i)
     {
-        Element_Node_Info* Info = Infos[i];
+        Element_Node_Info* Info = &Infos[i];
 
         if (Info->Measure == "Parser")
         {
             if (!(Info->data == string()))
-                s.ss << " parser=\"" << Info->data << "\"";
+            {
+                Out+=" parser=\"";
+                Info->data.Append(Out);
+                Out+='\"';
+            }
             continue;
         }
         if (Info->Measure == "Error")
         {
             if (!(Info->data == string()))
-                s.ss << " e=\"" << Info->data << "\"";
+            {
+                Out+=" e=\"";
+                Info->data.Append(Out);
+                Out+='\"';
+            }
             continue;
         }
 
         info_nb++;
-        s.ss << " i";
+        Out+=" i";
         if (info_nb > 1)
-            s.ss << info_nb;
-        s.ss << "=\"" << Infos[i] << "\"";
+            Append_Dec(Out, (int64u)info_nb);
+        Out+="=\"";
+        Append_Info(Out, *Info);
+        Out+='\"';
     }
 
     if (!Value.empty())
     {
         Value.Set_Output_Format(Element_Node_Data::Format_Xml);
-        s.ss << ">" << Value << "</d>";
+        Out+='>';
+        Value.Append(Out);
+        Out+="</d>";
     }
     else
-        s.ss << " s=\"" << Size << "\">";
+    {
+        Out+=" s=\"";
+        Append_Dec(Out, Size);
+        Out+="\">";
+    }
 
     s.level += 4;
 print_children:
@@ -762,7 +892,7 @@ print_children:
         if (Value.empty())
         {
             //block
-            s.ss << "</b>";
+            Out+="</b>";
         }
     }
 
@@ -775,64 +905,69 @@ int element_details::Element_Node::Print_Xml(print_struc& s)
     if (NoShow)
         return 0;
 
-    std::string spaces;
+    Element_Node_Output& Out=s.Out;
+    const size_t Level=s.level;
 
     if (IsCat || Name_Is_Empty())
         goto print_children;
 
-    spaces.resize(s.level, ' ');
-    s.ss << spaces;
-
-    if (Value.empty())
-        s.ss << "<block";
-    else
-        s.ss << "<data";
-
-    {
-    size_t MustEscape = Xml_Content_Escape_MustEscape(Name);
-    if (MustEscape != (size_t)-1)
-    {
-        std::string str;
-        Xml_Content_Escape(Name, str, MustEscape);
-        s.ss << " offset=\"" << Pos << "\" name=\"" << str << "\"";
-    }
-    else
-        s.ss << " offset=\"" << Pos << "\" name=\"" << Name << "\"";
-    }
+    Out.append(Level, ' ');
+    Out+=Value.empty()?"<block":"<data";
+    Out+=" offset=\"";
+    Append_Dec(Out, Pos);
+    Out+="\" name=\"";
+    Append_Xml_Content(Out, Name.data(), Name.size());
+    Out+='\"';
 
     for (size_t i = 0, info_nb = 0; i < Infos.size(); ++i)
     {
-        Element_Node_Info* Info = Infos[i];
+        Element_Node_Info* Info = &Infos[i];
 
         if (Info->Measure == "Parser")
         {
             if (!(Info->data == string()))
-                s.ss << " parser=\"" << Info->data << "\"";
+            {
+                Out+=" parser=\"";
+                Info->data.Append(Out);
+                Out+='\"';
+            }
             continue;
         }
         if (Info->Measure == "Error")
         {
             if (!(Info->data == string()))
-                s.ss << " error=\"" << Info->data << "\"";
+            {
+                Out+=" error=\"";
+                Info->data.Append(Out);
+                Out+='\"';
+            }
             continue;
         }
 
         info_nb++;
-        s.ss << " info";
+        Out+=" info";
         if (info_nb > 1)
-            s.ss << info_nb;
-        s.ss << "=\"" << Info << "\"";
+            Append_Dec(Out, (int64u)info_nb);
+        Out+="=\"";
+        Append_Info(Out, *Info);
+        Out+='\"';
     }
 
     if (!Value.empty())
     {
         Value.Set_Output_Format(Element_Node_Data::Format_Xml);
-        s.ss << ">" << Value << "</data>";
+        Out+='>';
+        Value.Append(Out);
+        Out+="</data>";
     }
     else
-        s.ss << " size=\"" << Size << "\">";
+    {
+        Out+=" size=\"";
+        Append_Dec(Out, Size);
+        Out+="\">";
+    }
 
-    s.ss << s.eol;
+    Out+=s.eol;
 
     s.level += 4;
 print_children:
@@ -847,7 +982,9 @@ print_children:
         if (Value.empty())
         {
             //block
-            s.ss << spaces << "</block>" << s.eol;
+            Out.append(Level, ' ');
+            Out+="</block>";
+            Out+=s.eol;
         }
     }
 
@@ -857,31 +994,29 @@ print_children:
 //---------------------------------------------------------------------------
 int element_details::Element_Node::Print_Tree_Cat(print_struc& s)
 {
-    std::ostringstream offset;
-    offset << std::setfill('0') << std::setw(s.offset_size) << std::hex << std::uppercase << Pos << std::nouppercase << std::dec;
+    Element_Node_Output& Out=s.Out;
 
-    std::string spaces;
-    spaces.resize(s.level, ' ');
-
-    std::string ToShow;
-    ToShow += "---   ";
-    ToShow += Name;
-    ToShow += "   ---";
-
-    std::string minuses;
-    minuses.resize(ToShow.size(), '-');
-
-    s.ss << offset.str() << spaces << minuses << s.eol;
-    s.ss << offset.str() << spaces << ToShow << s.eol;
-    s.ss << offset.str() << spaces << minuses << s.eol;
+    // 3 lines: minuses, "---   Name   ---", minuses
+    for (int Line = 0; Line < 3; ++Line)
+    {
+        Append_Hex(Out, Pos, s.offset_size);
+        Out.append(s.level, ' ');
+        if (Line == 1)
+        {
+            Out+="---   ";
+            Out.append(Name.data(), Name.size());
+            Out+="   ---";
+        }
+        else
+            Out.append(Name.size()+12, '-');
+        Out+=s.eol;
+    }
     return 0;
 }
 
 //---------------------------------------------------------------------------
 int element_details::Element_Node::Print_Tree(print_struc& s)
 {
-    std::string spaces;
-
     if (NoShow)
         return 0;
 
@@ -890,53 +1025,60 @@ int element_details::Element_Node::Print_Tree(print_struc& s)
     else if (Name_Is_Empty())
         goto print_children;
 
-    s.ss << std::setfill('0') << std::setw(s.offset_size) << std::hex << std::uppercase << Pos << std::nouppercase << std::dec;
-    spaces.resize(s.level, ' ');
-    s.ss << spaces;
-    s.ss << Name;
-
-    spaces.clear();
+    {
+    Element_Node_Output& Out=s.Out;
+    Append_Hex(Out, Pos, s.offset_size);
+    Out.append(s.level, ' ');
+    Out.append(Name.data(), Name.size());
 
 #define NB_SPACES 40
     if (!Value.empty())
     {
-        s.ss << ":";
-        int nb_free = NB_SPACES - s.level - (Name_Is_Empty() ? 0 : Name.length()); // 40 - len(Name) - len(spaces)
-        spaces.resize(nb_free > 0 ? nb_free : 1, ' ');
+        Out+=':';
+        int nb_free = NB_SPACES - (int)s.level - (int)Name.size(); // 40 - len(Name) - len(spaces)
+        Out.append(nb_free > 0 ? nb_free : 1, ' ');
         Value.Set_Output_Format(Element_Node_Data::Format_Tree);
-        s.ss << spaces << Value;
-        spaces.clear();
+        Value.Append(Out);
     }
 #undef NB_SPACES
 
     for (size_t i = 0; i < Infos.size(); ++i)
     {
-        Element_Node_Info* Info = Infos[i];
-
-        if (!Info)
-            continue;
+        Element_Node_Info* Info = &Infos[i];
 
         if (Info->Measure == "Parser")
         {
             if (!(Info->data == string()))
-                s.ss << " - Parser=" << Info->data;
+            {
+                Out+=" - Parser=";
+                Info->data.Append(Out);
+            }
             continue;
         }
         if (Info->Measure == "Error")
         {
             if (!(Info->data == string()))
-                s.ss << " - Error=" << Info->data;
+            {
+                Out+=" - Error=";
+                Info->data.Append(Out);
+            }
             continue;
         }
 
         Info->data.Set_Output_Format(Element_Node_Data::Format_Tree);
-        s.ss << " - " << Info;
+        Out+=" - ";
+        Append_Info(Out, *Info);
     }
 
     if (Value.empty())
-        s.ss << " (" << Size << " bytes)";
+    {
+        Out+=" (";
+        Append_Dec(Out, Size);
+        Out+=" bytes)";
+    }
 
-    s.ss << s.eol;
+    Out+=s.eol;
+    }
 
     s.level++;
 print_children:
@@ -959,9 +1101,10 @@ int element_details::Element_Node::Print(MediaInfo_Config::trace_Format Format, 
     offset_size++;
     offset_size = (offset_size / 4) + ((offset_size % 4) ? 1 : 0); //4 bits per offset char
 
-    std::ostringstream ss;
+    Str.clear();
     int ret = -1;
-    print_struc s(ss, eol, offset_size);
+    Element_Node_Output Out(Str);
+    print_struc s(Out, eol, offset_size);
     switch (Format)
     {
         case MediaInfo_Config::Trace_Format_Tree:
@@ -979,7 +1122,6 @@ int element_details::Element_Node::Print(MediaInfo_Config::trace_Format Format, 
         default:
             break;
     }
-    Str = ss.str();
     return ret;
 }
 
@@ -999,7 +1141,20 @@ void element_details::Element_Node::Add_Child(Element_Node* node)
         return;
     }
 
-    Element_Node *new_node = new Element_Node(*node);
+    //Content is moved instead of copied, node is only reset after this call
+    Element_Node *new_node = new Element_Node;
+    new_node->Pos = node->Pos;
+    new_node->Size = node->Size;
+    new_node->Name.swap(node->Name);
+    new_node->Value.swap(node->Value);
+    new_node->Infos.swap(node->Infos);
+    new_node->Children.swap(node->Children);
+    new_node->Current_Child = node->Current_Child;
+    new_node->NoShow = node->NoShow;
+    new_node->OwnChildren = node->OwnChildren;
+    new_node->IsCat = node->IsCat;
+    new_node->HasError = node->HasError;
+    new_node->RemoveIfNoErrors = node->RemoveIfNoErrors;
     node->OwnChildren = false;
     Children.push_back(new_node);
 }
