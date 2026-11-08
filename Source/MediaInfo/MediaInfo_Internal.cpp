@@ -2560,6 +2560,19 @@ Ztring MediaInfo_Internal::Inform(MediaInfo_Internal* Info)
 }
 
 //---------------------------------------------------------------------------
+// Content may be big (e.g. a trace), if it has room for Result, Result is inserted in Content instead of copying Content
+static void Append_Big(Ztring& Result, Ztring& Content)
+{
+    if (Result.size()<=Content.capacity()-Content.size())
+    {
+        Content.insert(0, Result);
+        Result.swap(Content);
+    }
+    else
+        Result+=Content;
+}
+
+//---------------------------------------------------------------------------
 Ztring MediaInfo_Internal::Inform(std::vector<MediaInfo_Internal*>& Info)
 {
     Ztring Result;
@@ -2583,7 +2596,10 @@ Ztring MediaInfo_Internal::Inform(std::vector<MediaInfo_Internal*>& Info)
         Result+=MediaInfoLib::Config.LineSeparator_Get();
 
         for (size_t FilePos=0; FilePos<Info.size(); FilePos++)
-            Result+=Info[FilePos]->Inform();
+        {
+            Ztring Inform_File=Info[FilePos]->Inform();
+            Append_Big(Result, Inform_File);
+        }
 
         if (!Result.empty() && Result[Result.size()-1]!=__T('\r') && Result[Result.size()-1]!=__T('\n'))
             Result+=MediaInfoLib::Config.LineSeparator_Get();
@@ -2619,7 +2635,8 @@ Ztring MediaInfo_Internal::Inform(std::vector<MediaInfo_Internal*>& Info)
                 Result+=__T(" parser=\"")+Info[FilePos]->ParserName+=__T("\"");
             Result+= __T('>');
             Result+=MediaInfoLib::Config.LineSeparator_Get();
-            Result+=Info[FilePos]->Inform();
+            Ztring Inform_File=Info[FilePos]->Inform();
+            Append_Big(Result, Inform_File);
             if (!Result.empty() && Result[Result.size()-1]!=__T('\r') && Result[Result.size()-1]!=__T('\n'))
                 Result+=MediaInfoLib::Config.LineSeparator_Get();
             Result+=__T("</media>");
@@ -2653,7 +2670,8 @@ Ztring MediaInfo_Internal::Inform(std::vector<MediaInfo_Internal*>& Info)
             if (Info[FilePos] && !Info[FilePos]->ParserName.empty())
                 Result+=__T(" parser=\"")+Info[FilePos]->ParserName+=__T("\"");
             Result+= __T('>');
-            Result+=Info[FilePos]->Inform();
+            Ztring Inform_File=Info[FilePos]->Inform();
+            Append_Big(Result, Inform_File);
             Result+=__T("</media>");
         }
 
@@ -2750,7 +2768,8 @@ Ztring MediaInfo_Internal::Inform(std::vector<MediaInfo_Internal*>& Info)
         Result+=MediaInfo_Custom_View("Page_Begin");
         while (FilePos<Info.size())
         {
-            Result+=Info[FilePos]->Inform();
+            Ztring Inform_File=Info[FilePos]->Inform();
+            Append_Big(Result, Inform_File);
             if (FilePos<Info.size()-1)
             {
                 Result+=MediaInfo_Custom_View("Page_Middle");
@@ -2800,7 +2819,11 @@ Ztring MediaInfo_Internal::Inform(std::vector<MediaInfo_Internal*>& Info)
         }
     #endif //MEDIAINFO_COMPRESS
 
-    return Result.c_str();
+    //Up to the first NUL, as a copy of the C string would be, but without copy
+    size_t Result_Size=std::char_traits<Char>::length(Result.c_str());
+    if (Result_Size<Result.size())
+        Result.resize(Result_Size);
+    return Result;
 }
 
 } //NameSpace

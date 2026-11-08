@@ -24,6 +24,7 @@
 
 //---------------------------------------------------------------------------
 #include "ZenLib/Utils.h"
+#include <cstring>
 #if defined(MEDIAINFO_EBUCORE_YES)
     #include "MediaInfo/Export/Export_EbuCore.h"
 #endif //defined(MEDIAINFO_EBUCORE_YES)
@@ -147,6 +148,69 @@ void MediaInfo_Internal::ConvertRetourSCX(Ztring& Retour)
 }
 
 //---------------------------------------------------------------------------
+#if MEDIAINFO_TRACE
+// The trace is mostly ASCII: ASCII characters are copied, each run of other bytes is converted with the usual conversion,
+// the result is the one of the usual conversion of the whole trace (stop at the first NUL, empty if the UTF-8 is invalid)
+static Ztring Trace_To_Ztring(const string& Trace)
+{
+    Ztring ToReturn;
+    const char* Data=Trace.c_str();
+    const size_t Size=Trace.size();
+    ToReturn.reserve(Size+1024); //Room for the beginning and the end of the output added around the trace, without copying the trace
+    const size_t Out_Max=0x1000;
+    Char Out[Out_Max+8]; //Converted by blocks appended to the result, which is not filled before
+    size_t Out_Size=0;
+    size_t i=0;
+    while (i<Size)
+    {
+        if (Out_Size>=Out_Max)
+        {
+            ToReturn.append(Out, Out_Size);
+            Out_Size=0;
+        }
+
+        //8 ASCII characters without NUL at once
+        if (Size-i>=8)
+        {
+            int64u Bytes;
+            std::memcpy(&Bytes, Data+i, 8);
+            if (!(Bytes&0x8080808080808080ULL) && !((Bytes-0x0101010101010101ULL)&0x8080808080808080ULL))
+            {
+                for (size_t j=0; j<8; j++)
+                    Out[Out_Size+j]=(Char)Data[i+j];
+                Out_Size+=8;
+                i+=8;
+                continue;
+            }
+        }
+
+        const int8u C=(int8u)Data[i];
+        if (C && C<0x80)
+        {
+            Out[Out_Size++]=(Char)C;
+            i++;
+            continue;
+        }
+        if (!C)
+            break;
+        size_t Run_End=i+1;
+        while (Run_End<Size && (int8u)Data[Run_End]>=0x80)
+            Run_End++;
+        Ztring Run;
+        Run.From_UTF8(Data, i, Run_End-i);
+        if (Run.empty())
+            return Ztring(); //Invalid
+        ToReturn.append(Out, Out_Size);
+        Out_Size=0;
+        ToReturn.append(Run);
+        i=Run_End;
+    }
+    ToReturn.append(Out, Out_Size);
+    return ToReturn;
+}
+#endif //MEDIAINFO_TRACE
+
+//---------------------------------------------------------------------------
 Ztring MediaInfo_Internal::Inform()
 {
     {
@@ -159,7 +223,7 @@ Ztring MediaInfo_Internal::Inform()
         if (MediaInfoLib::Config.Inform_Get()!=__T("MAXML") && (MediaInfoLib::Config.Trace_Level_Get() || MediaInfoLib::Config.Inform_Get()==__T("Details")))
         {
             if (!Details.empty())
-                return Ztring().From_UTF8(Details);
+                return Trace_To_Ztring(Details);
             else if (Info)
                 return Info->Details_Get();
             else
@@ -711,7 +775,7 @@ Ztring MediaInfo_Internal::Inform()
             {
                 Retour+=__T("<MediaTrace xmlns=\"http")+(MediaInfoLib::Config.Https_Get()?Ztring(__T("s")):Ztring())+__T("://mediaarea.net/mediatrace\" version=\"0.1\">\n");
                 if (!Details.empty())
-                    Retour+=Ztring().From_UTF8(Details);
+                    Retour+=Trace_To_Ztring(Details);
                 else if (Info)
                     Retour+=Info->Details_Get();
                 Retour+=__T("\n");
