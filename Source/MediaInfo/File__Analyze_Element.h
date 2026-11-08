@@ -10,6 +10,7 @@
 //---------------------------------------------------------------------------
 
 #include "MediaInfo/MediaInfo_Config.h"
+#include <cstring>
 #include <sstream>
 //---------------------------------------------------------------------------
 
@@ -20,6 +21,40 @@ namespace MediaInfoLib
 struct element_details
 {
 #if MEDIAINFO_TRACE
+    //String stored once, shared by the nodes using it (e.g. the same element name in each packet)
+    class Element_Node_String
+    {
+    public:
+        Element_Node_String() : Item(NULL) {}
+        Element_Node_String(const Element_Node_String& v) : Item(v.Item) {if (Item) Item->Count++;}
+        ~Element_Node_String() {clear();}
+        Element_Node_String& operator=(const Element_Node_String& v)
+        {
+            item* New=v.Item;
+            if (New)
+                New->Count++;
+            clear();
+            Item=New;
+            return *this;
+        }
+
+        void assign(const char* Data, size_t Size); //New string, not shared yet
+        void clear() {if (Item && !--Item->Count) ::operator delete(Item); Item=NULL;}
+        void swap(Element_Node_String& v) {item* Temp=Item; Item=v.Item; v.Item=Temp;}
+        bool empty() const {return !Item;}
+        size_t size() const {return Item?Item->Size:0;}
+        const char* data() const {return Item?(const char*)(Item+1):"";}
+        bool operator==(const char* v) const {return !strcmp(data(), v);}
+
+    private:
+        struct item //Followed by the characters and a NUL
+        {
+            size_t Count;
+            size_t Size;
+        };
+        item* Item;
+    };
+
     class Element_Node_Data
     {
     public:
@@ -93,6 +128,7 @@ struct element_details
         bool operator==(const std::string& str);
 
         void clear();
+        void swap(Element_Node_Data& v);
         bool empty() {return type == ELEMENT_NODE_NONE;}
         void set_Option(int8u c) {Option = c;}
         void Set_Output_Format(Value_Output_Format v) {format_out = v;}
@@ -112,16 +148,14 @@ struct element_details
     struct Element_Node_Info
     {
         template<typename T>
-        Element_Node_Info(T parameter, const char* _Measure=NULL, int8u Option=(int8u)-1)
+        Element_Node_Info(T parameter, int8u Option=(int8u)-1)
         {
             data.set_Option(Option);
             data = parameter;
-            if (_Measure)
-                Measure = _Measure;
         }
 
-        Element_Node_Data data;
-        std::string       Measure;
+        Element_Node_Data   data;
+        Element_Node_String Measure;
 
     private:
         Element_Node_Info& operator=(const Element_Node_Info&);
@@ -141,7 +175,7 @@ struct element_details
         int64u                           Pos;             // Position of the element in the file
         int64u                           Size;            // Size of the element (including header and sub-elements)
     private:
-        std::string                      Name;            // Name planned for this element
+        Element_Node_String              Name;            // Name planned for this element
     public:
         Element_Node_Data                Value;           // The value (currently used only with Trace XML)
         std::vector<Element_Node_Info*>  Infos;           // More info about the element
@@ -154,8 +188,20 @@ struct element_details
         bool                             RemoveIfNoErrors;// Remove Children Node if no NOK appears
 
         void                             Init();          //Initialize with common values
-        void Add_Child(Element_Node* node);               //Add a subchild to the current node
+        void Add_Child(Element_Node* node);               //Add a subchild to the current node, the content of node is moved
         void Set_Name(const string &Name_)
+        {
+            Name.assign(Name_.data(), Name_.size());
+        }
+        void Set_Name(const char* Name_)
+        {
+            Name.assign(Name_, Name_?strlen(Name_):0);
+        }
+        void Set_Name(const char* Name_, size_t Size)
+        {
+            Name.assign(Name_, Size);
+        }
+        void Set_Name(const Element_Node_String& Name_)
         {
             Name = Name_;
         }

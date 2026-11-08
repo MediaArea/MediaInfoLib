@@ -29,6 +29,37 @@ namespace MediaInfoLib
 {
 
 //---------------------------------------------------------------------------
+// "(" + Value + " " + Unit + ")", e.g. "(8 bits)", in Temp (at least 32 bytes, Unit is 8 characters max)
+static const char* Trace_Count_In_Parenthesis(char* Temp, int64u Value, const char* Unit)
+{
+    char Digits[20];
+    size_t Digits_Size=0;
+    do
+    {
+        Digits[Digits_Size++]=(char)('0'+Value%10);
+        Value/=10;
+    }
+    while (Value);
+    char* Pos=Temp;
+    *Pos++='(';
+    while (Digits_Size)
+        *Pos++=Digits[--Digits_Size];
+    *Pos++=' ';
+    while (*Unit)
+        *Pos++=*Unit++;
+    *Pos++=')';
+    *Pos='\0';
+    return Temp;
+}
+
+//---------------------------------------------------------------------------
+void File__Analyze::Param_Info_Bits(int64u Bits)
+{
+    char Temp[32];
+    Param_Info(Trace_Count_In_Parenthesis(Temp, Bits, "bits"));
+}
+
+//---------------------------------------------------------------------------
 extern MediaInfo_Config Config;
 //---------------------------------------------------------------------------
 
@@ -2074,7 +2105,11 @@ void File__Analyze::Skip_XX(int64u Bytes, const char* Name)
     {
         INTEGRITY_SIZE_ATLEAST(Bytes);
     }
-    if (Trace_Activated && Bytes) Param(Name, Ztring("(")+Ztring::ToZtring(Bytes)+Ztring(" bytes)"));
+    if (Trace_Activated && Bytes)
+    {
+        char Temp[32];
+        Param(Name, Trace_Count_In_Parenthesis(Temp, Bytes, "bytes"));
+    }
     Element_Offset+=Bytes;
 }
 
@@ -2150,7 +2185,7 @@ void File__Analyze::Get_S1(int8u Bits, int8u &Info, const char* Name)
         if (Trace_Activated)
         {
             Param(Name, Info, Bits);
-            Param_Info(__T("(")+Ztring::ToZtring(Bits)+__T(" bits)"));
+            Param_Info_Bits(Bits);
         }
     #endif //MEDIAINFO_TRACE
 }
@@ -2164,7 +2199,7 @@ void File__Analyze::Get_S2(int8u Bits, int16u &Info, const char* Name)
         if (Trace_Activated)
         {
             Param(Name, Info, Bits);
-            Param_Info(__T("(")+Ztring::ToZtring(Bits)+__T(" bits)"));
+            Param_Info_Bits(Bits);
         }
     #endif //MEDIAINFO_TRACE
 }
@@ -2178,7 +2213,7 @@ void File__Analyze::Get_S3(int8u Bits, int32u &Info, const char* Name)
         if (Trace_Activated)
         {
             Param(Name, Info, Bits);
-            Param_Info(__T("(")+Ztring::ToZtring(Bits)+__T(" bits)"));
+            Param_Info_Bits(Bits);
         }
     #endif //MEDIAINFO_TRACE
 }
@@ -2192,7 +2227,7 @@ void File__Analyze::Get_S4(int8u Bits, int32u &Info, const char* Name)
         if (Trace_Activated)
         {
             Param(Name, Info, Bits);
-            Param_Info(__T("(")+Ztring::ToZtring(Bits)+__T(" bits)"));
+            Param_Info_Bits(Bits);
         }
     #endif //MEDIAINFO_TRACE
 }
@@ -2206,7 +2241,7 @@ void File__Analyze::Get_S5(int8u Bits, int64u &Info, const char* Name)
         if (Trace_Activated)
         {
             Param(Name, Info, Bits);
-            Param_Info(__T("(")+Ztring::ToZtring(Bits)+__T(" bits)"));
+            Param_Info_Bits(Bits);
         }
     #endif //MEDIAINFO_TRACE
 }
@@ -2220,7 +2255,7 @@ void File__Analyze::Get_S6(int8u Bits, int64u &Info, const char* Name)
         if (Trace_Activated)
         {
             Param(Name, Info, Bits);
-            Param_Info(__T("(")+Ztring::ToZtring(Bits)+__T(" bits)"));
+            Param_Info_Bits(Bits);
         }
     #endif //MEDIAINFO_TRACE
 }
@@ -2234,7 +2269,7 @@ void File__Analyze::Get_S7(int8u Bits, int64u &Info, const char* Name)
         if (Trace_Activated)
         {
             Param(Name, Info, Bits);
-            Param_Info(__T("(")+Ztring::ToZtring(Bits)+__T(" bits)"));
+            Param_Info_Bits(Bits);
         }
     #endif //MEDIAINFO_TRACE
 }
@@ -2248,7 +2283,7 @@ void File__Analyze::Get_S8(int8u Bits, int64u &Info, const char* Name)
         if (Trace_Activated)
         {
             Param(Name, Info, Bits);
-            Param_Info(__T("(")+Ztring::ToZtring(Bits)+__T(" bits)"));
+            Param_Info_Bits(Bits);
         }
     #endif //MEDIAINFO_TRACE
 }
@@ -2334,7 +2369,7 @@ void File__Analyze::Skip_BS(size_t Bits, const char* Name)
         if (Bits<=64) //TODO: in BitStream.h, handle >64 bit gets
         {
             Param(Name, BS->Get8((int8u)Bits), Bits);
-            Param_Info(__T("(")+Ztring::ToZtring(Bits)+__T(" bits)"));
+            Param_Info_Bits(Bits);
         }
         else
         {
@@ -2364,7 +2399,7 @@ void File__Analyze::Skip_S1(int8u Bits, const char* Name)
         if (Trace_Activated)
         {
             Param(Name, BS->Get1(Bits), Bits);
-            Param_Info(__T("(")+Ztring::ToZtring(Bits)+__T(" bits)"));
+            Param_Info_Bits(Bits);
         }
         else
     #endif //MEDIAINFO_TRACE
@@ -2379,7 +2414,7 @@ void File__Analyze::Skip_S2(int8u Bits, const char* Name)
         if (Trace_Activated)
         {
             Param(Name, BS->Get2(Bits), Bits);
-            Param_Info(__T("(")+Ztring::ToZtring(Bits)+__T(" bits)"));
+            Param_Info_Bits(Bits);
         }
         else
     #endif //MEDIAINFO_TRACE
@@ -2394,7 +2429,7 @@ void File__Analyze::Skip_S3(int8u Bits, const char* Name)
         if (Trace_Activated)
         {
             Param(Name, BS->Get4(Bits), Bits);
-            Param_Info(__T("(")+Ztring::ToZtring(Bits)+__T(" bits)"));
+            Param_Info_Bits(Bits);
         }
         else
     #endif //MEDIAINFO_TRACE
@@ -2409,7 +2444,7 @@ void File__Analyze::Skip_S4(int8u Bits, const char* Name)
         if (Trace_Activated)
         {
             Param(Name, BS->Get4(Bits), Bits);
-            Param_Info(__T("(")+Ztring::ToZtring(Bits)+__T(" bits)"));
+            Param_Info_Bits(Bits);
         }
         else
     #endif //MEDIAINFO_TRACE
@@ -2424,7 +2459,7 @@ void File__Analyze::Skip_S5(int8u Bits, const char* Name)
         if (Trace_Activated)
         {
             Param(Name, BS->Get8(Bits), Bits);
-            Param_Info(__T("(")+Ztring::ToZtring(Bits)+__T(" bits)"));
+            Param_Info_Bits(Bits);
         }
         else
     #endif //MEDIAINFO_TRACE
@@ -2439,7 +2474,7 @@ void File__Analyze::Skip_S6(int8u Bits, const char* Name)
         if (Trace_Activated)
         {
             Param(Name, BS->Get8(Bits), Bits);
-            Param_Info(__T("(")+Ztring::ToZtring(Bits)+__T(" bits)"));
+            Param_Info_Bits(Bits);
         }
         else
     #endif //MEDIAINFO_TRACE
@@ -2454,7 +2489,7 @@ void File__Analyze::Skip_S7(int8u Bits, const char* Name)
         if (Trace_Activated)
         {
             Param(Name, BS->Get8(Bits), Bits);
-            Param_Info(__T("(")+Ztring::ToZtring(Bits)+__T(" bits)"));
+            Param_Info_Bits(Bits);
         }
         else
     #endif //MEDIAINFO_TRACE
@@ -2469,7 +2504,7 @@ void File__Analyze::Skip_S8(int8u Bits, const char* Name)
         if (Trace_Activated)
         {
             Param(Name, BS->Get8(Bits), Bits);
-            Param_Info(__T("(")+Ztring::ToZtring(Bits)+__T(" bits)"));
+            Param_Info_Bits(Bits);
         }
         else
     #endif //MEDIAINFO_TRACE
@@ -2551,7 +2586,7 @@ void File__Analyze::Get_T1(size_t Bits, int8u &Info, const char* Name)
     Info=BT->Get1(Bits);
     if (Trace_Activated)
     {
-        Param_Info(__T("(")+Ztring::ToZtring(Bits)+__T(" bits)"));
+        Param_Info_Bits(Bits);
         Param(Name, Info);
     }
 }
@@ -2656,7 +2691,7 @@ void File__Analyze::Skip_T1(size_t Bits, const char* Name)
     INTEGRITY(Bits<=BT->Remain(), "Size is wrong", BT->Offset_Get())
     if (Trace_Activated)
     {
-        Param_Info(__T("(")+Ztring::ToZtring(Bits)+__T(" bits)"));
+        Param_Info_Bits(Bits);
         Param(Name, BT->Get1(Bits));
     }
     else

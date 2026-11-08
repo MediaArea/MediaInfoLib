@@ -21,11 +21,33 @@
 #include "MediaInfo/File__Analyze_Element.h"
 #include "MediaInfo/MediaInfo_Internal.h"
 #include <cstring>
+#include <utility>
 #include "ThirdParty/base64/base64.h"
 
 namespace MediaInfoLib
 {
 #if MEDIAINFO_TRACE
+//***************************************************************************
+// Element_Node_String
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+void element_details::Element_Node_String::assign(const char* Data, size_t Size)
+{
+    item* New=NULL;
+    if (Size)
+    {
+        New=(item*)::operator new(sizeof(item)+Size+1);
+        New->Count=1;
+        New->Size=Size;
+        char* New_Data=(char*)(New+1);
+        std::memcpy(New_Data, Data, Size);
+        New_Data[Size]='\0';
+    }
+    clear(); //After the copy, Data may be in the previous string
+    Item=New;
+}
+
 //***************************************************************************
 // Element_Node_Data
 //***************************************************************************
@@ -284,6 +306,15 @@ void element_details::Element_Node_Data::clear()
     }
 
     type = ELEMENT_NODE_NONE;
+}
+
+//---------------------------------------------------------------------------
+void element_details::Element_Node_Data::swap(Element_Node_Data& v)
+{
+    std::swap(val, v.val);
+    std::swap(type, v.type);
+    std::swap(format_out, v.format_out);
+    std::swap(Option, v.Option);
 }
 
 //---------------------------------------------------------------------------
@@ -1083,7 +1114,20 @@ void element_details::Element_Node::Add_Child(Element_Node* node)
         return;
     }
 
-    Element_Node *new_node = new Element_Node(*node);
+    //Content is moved instead of copied, node is only reset after this call
+    Element_Node *new_node = new Element_Node;
+    new_node->Pos = node->Pos;
+    new_node->Size = node->Size;
+    new_node->Name.swap(node->Name);
+    new_node->Value.swap(node->Value);
+    new_node->Infos.swap(node->Infos);
+    new_node->Children.swap(node->Children);
+    new_node->Current_Child = node->Current_Child;
+    new_node->NoShow = node->NoShow;
+    new_node->OwnChildren = node->OwnChildren;
+    new_node->IsCat = node->IsCat;
+    new_node->HasError = node->HasError;
+    new_node->RemoveIfNoErrors = node->RemoveIfNoErrors;
     node->OwnChildren = false;
     Children.push_back(new_node);
 }
