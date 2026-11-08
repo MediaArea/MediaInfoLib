@@ -1001,7 +1001,8 @@ void File__MultipleParsing::Read_Buffer_Continue()
 
                 //Clean
                 #if MEDIAINFO_TRACE
-                    Details->clear();
+                    if (Details)
+                        Details->clear();
                 #endif //MEDIAINFO_TRACE
             }
         }

@@ -895,7 +895,7 @@ void File__Analyze::Open_Buffer_Init (File__Analyze* Sub, int64u File_Size_)
 
     //Parsing
     #if MEDIAINFO_TRACE
-        Sub->Init(Config, Details);
+        Sub->Init(Config, nullptr); //The trace of a sub-parser goes in the trace tree of its parent, only the top level parser writes the trace output
     #else //MEDIAINFO_TRACE
         Sub->Init(Config);
     #endif //MEDIAINFO_TRACE
@@ -1823,6 +1823,15 @@ void File__Analyze::Open_Buffer_Finalize (File__Analyze* Sub)
     //Finalize
     Open_Buffer_Init(Sub);
     Sub->Open_Buffer_Finalize();
+
+    #if MEDIAINFO_TRACE
+        //Elements ended by the sub-parser during its finalization
+        if (Trace_Activated && !Trace_DoNotSave && !Sub->Element[0].TraceNode.Children.empty())
+        {
+            Element[Element_Level].TraceNode.Add_Child(&Sub->Element[0].TraceNode);
+            Sub->Element[0].TraceNode.Init();
+        }
+    #endif //MEDIAINFO_TRACE
 }
 
 //***************************************************************************
