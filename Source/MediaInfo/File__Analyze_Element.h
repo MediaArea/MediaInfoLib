@@ -23,9 +23,13 @@ namespace MediaInfoLib
 struct element_details
 {
 #if MEDIAINFO_TRACE
+    class Element_Node_Data;
+
     //String stored once, shared by the nodes using it (e.g. the same element name in each packet)
     class Element_Node_String
     {
+        friend class Element_Node_Data;
+
     public:
         Element_Node_String() : Item(NULL) {}
         Element_Node_String(const Element_Node_String& v) : Item(v.Item) {if (Item) Item->Count++;}
@@ -196,6 +200,7 @@ struct element_details
             ELEMENT_NODE_FLOAT32,
             ELEMENT_NODE_FLOAT64,
             ELEMENT_NODE_FLOAT80,
+            ELEMENT_NODE_STR_SHARED,
         };
 
         union Value
@@ -215,6 +220,7 @@ struct element_details
             float64      f64;
             float80     *f80;
             int128u     *i128u;
+            void        *Shared; //Item of an Element_Node_String
         };
 
         Element_Node_Data() : type(ELEMENT_NODE_NONE), format_out(Format_Xml), Option((int8u)-1) {}
@@ -224,6 +230,7 @@ struct element_details
         void operator=(const std::string& v);
         void operator=(const char* v);
         void operator=(const Ztring& v);
+        void operator=(const Element_Node_String& v); //Shared if not stored in the node
         void operator=(bool v);
         void operator=(int8u v);
         void operator=(int8s v);
@@ -260,6 +267,7 @@ struct element_details
 
     struct Element_Node_Info
     {
+        Element_Node_Info() {}
         template<typename T>
         Element_Node_Info(T parameter, int8u Option=(int8u)-1)
         {

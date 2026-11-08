@@ -425,6 +425,15 @@ protected :
         if (Measure)
             Info.Measure=Trace_String(Measure);
     }
+    void Trace_Info (element_details::Element_Node& Node, const char* Parameter, const char* Measure, int8u AfterComma)
+    {
+        element_details::Element_Node_Info& Info=Node.Infos.emplace_back();
+        Info.data.set_Option(AfterComma);
+        if (Parameter)
+            Info.data=Trace_String(Parameter); //Stored once, the same texts are in a lot of nodes
+        if (Measure)
+            Info.Measure=Trace_String(Measure);
+    }
 
     template<typename T>
     void Element_Info (T Parameter, const char* Measure=NULL, int8u AfterComma=3)

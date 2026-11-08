@@ -79,6 +79,10 @@ element_details::Element_Node_Data& element_details::Element_Node_Data::operator
             val.i128u = new int128u;
             *val.i128u = *v.val.i128u;
             break;
+        case ELEMENT_NODE_STR_SHARED:
+            val.Shared = v.val.Shared;
+            ((Element_Node_String::item*)val.Shared)->Count++;
+            break;
         default:
             val = v.val;
             break;
@@ -109,6 +113,26 @@ void element_details::Element_Node_Data::operator=(const Ztring& v)
         val.Str = new char[len + 1];
         std::memcpy(val.Str, tmp.c_str(), len);
         val.Str[len] = '\0';
+    }
+}
+
+//---------------------------------------------------------------------------
+void element_details::Element_Node_Data::operator=(const Element_Node_String& v)
+{
+    clear();
+
+    size_t len = v.size();
+    if (len <= 8)
+    {
+        type = ELEMENT_NODE_CHAR8;
+        std::memcpy(val.Chars, v.data(), len);
+        set_Option(len);
+    }
+    else
+    {
+        type = ELEMENT_NODE_STR_SHARED;
+        val.Shared = v.Item;
+        v.Item->Count++;
     }
 }
 
@@ -283,6 +307,11 @@ bool element_details::Element_Node_Data::operator==(const std::string& v)
         return v == std::string(val.Chars, Option);
     if (type == ELEMENT_NODE_STR)
         return v == val.Str;
+    if (type == ELEMENT_NODE_STR_SHARED)
+    {
+        const Element_Node_String::item* Item = (const Element_Node_String::item*)val.Shared;
+        return v.size() == Item->Size && !std::memcmp(v.data(), Item + 1, Item->Size);
+    }
 
     return false;
 }
@@ -295,6 +324,13 @@ void element_details::Element_Node_Data::clear()
       case ELEMENT_NODE_STR:
           delete [] val.Str;
           break;
+      case ELEMENT_NODE_STR_SHARED:
+      {
+          Element_Node_String::item* Item = (Element_Node_String::item*)val.Shared;
+          if (!--Item->Count)
+              ::operator delete(Item);
+          break;
+      }
       case ELEMENT_NODE_FLOAT80:
           delete val.f80;
           break;
@@ -577,10 +613,12 @@ void element_details::Element_Node_Data::Append(std::string& Out) const
           break;
       }
       case ELEMENT_NODE_STR:
+      case ELEMENT_NODE_STR_SHARED:
       {
+          const char* Str=type==ELEMENT_NODE_STR?val.Str:(const char*)(((const Element_Node_String::item*)val.Shared)+1);
           if (format_out==Format_Tree)
           {
-              const char* a=val.Str;
+              const char* a=Str;
               for (;;)
               {
                   const char* b=strchr(a, '\n');
@@ -598,16 +636,16 @@ void element_details::Element_Node_Data::Append(std::string& Out) const
               break;
           }
 
-          size_t Size=strlen(val.Str);
-          size_t MustEscape=Xml_Content_Escape_MustEscape(val.Str, Size);
+          size_t Size=type==ELEMENT_NODE_STR?strlen(Str):((const Element_Node_String::item*)val.Shared)->Size;
+          size_t MustEscape=Xml_Content_Escape_MustEscape(Str, Size);
           if (MustEscape!=(size_t)-1)
           {
               std::string str;
-              Xml_Content_Escape(val.Str, Size, str, MustEscape);
+              Xml_Content_Escape(Str, Size, str, MustEscape);
               Out+=str;
           }
           else
-              Out.append(val.Str, Size);
+              Out.append(Str, Size);
           break;
       }
       case ELEMENT_NODE_BOOL:
