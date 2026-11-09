@@ -438,6 +438,72 @@ extern "C"
         return (size_t)1;
     }
 
+    static size_t MediaInfoDLL_LoadFromPath(const char* Path)
+    {
+        size_t Errors = 0;
+
+        if (Module_Count > 0) {
+            Module_Count++;
+            return 1;
+        }
+
+    /* Load library */
+    #ifdef MEDIAINFO_GLIBC
+        MediaInfo_Module = g_module_open(Path, G_MODULE_BIND_LAZY);
+    #elif defined(_WIN32) || defined(WIN32)
+        MediaInfo_Module = LoadLibraryA(Path);
+    #else
+        MediaInfo_Module = dlopen(Path, RTLD_LAZY);
+    #endif
+        if (!MediaInfo_Module)
+            return (size_t) - 1;
+
+        /* Load methods */
+        MEDIAINFO_ASSIGN(New, "New")
+        MEDIAINFOLIST_ASSIGN(New, "New")
+        MEDIAINFO_ASSIGN(Delete, "Delete")
+        MEDIAINFOLIST_ASSIGN(Delete, "Delete")
+        MEDIAINFO_ASSIGN(Open, "Open")
+        MEDIAINFOLIST_ASSIGN(Open, "Open")
+        MEDIAINFO_ASSIGN(Open_Buffer_Init, "Open_Buffer_Init")
+        MEDIAINFO_ASSIGN(Open_Buffer_Continue, "Open_Buffer_Continue")
+        MEDIAINFO_ASSIGN(Open_Buffer_Continue_GoTo_Get, "Open_Buffer_Continue_GoTo_Get")
+        MEDIAINFO_ASSIGN(Open_Buffer_Finalize, "Open_Buffer_Finalize")
+        MEDIAINFO_ASSIGN(Open_NextPacket, "Open_NextPacket")
+        MEDIAINFO_ASSIGN(Close, "Close")
+        MEDIAINFOLIST_ASSIGN(Close, "Close")
+        MEDIAINFO_ASSIGN(Inform, "Inform")
+        MEDIAINFOLIST_ASSIGN(Inform, "Inform")
+        MEDIAINFO_ASSIGN(GetI, "GetI")
+        MEDIAINFOLIST_ASSIGN(GetI, "GetI")
+        MEDIAINFO_ASSIGN(Get, "Get")
+        MEDIAINFOLIST_ASSIGN(Get, "Get")
+        MEDIAINFO_ASSIGN(Output_Buffer_Get, "Output_Buffer_Get")
+        MEDIAINFO_ASSIGN(Output_Buffer_GetI, "Output_Buffer_GetI")
+        MEDIAINFO_ASSIGN(Option, "Option")
+        MEDIAINFOLIST_ASSIGN(Option, "Option")
+        MEDIAINFO_ASSIGN(State_Get, "State_Get")
+        MEDIAINFOLIST_ASSIGN(State_Get, "State_Get")
+        MEDIAINFO_ASSIGN(Count_Get, "Count_Get")
+        MEDIAINFOLIST_ASSIGN(Count_Get, "Count_Get")
+        MEDIAINFOLIST_ASSIGN(Count_Get_Files, "Count_Get_Files")
+        if (Errors > 0) {
+        // Unload DLL with errors
+        #ifdef MEDIAINFO_GLIBC
+            g_module_close(MediaInfo_Module);
+        #elif defined(_WIN32) || defined(WIN32)
+            FreeLibrary(MediaInfo_Module);
+        #else
+            dlclose(MediaInfo_Module);
+       #endif
+            MediaInfo_Module = NULL;
+            return (size_t) - 1;
+        }
+
+        Module_Count++;
+        return (size_t)1;
+    }
+
     static size_t MediaInfoDLL_IsLoaded()
     {
         if (MediaInfo_Module)
@@ -563,7 +629,7 @@ namespace MediaInfoDLL
     class MediaInfo
     {
     public :
-        MediaInfo()        {if (!MediaInfo_Module) MediaInfoDLL_Load(); if (!MediaInfo_Module) {Handle = NULL; return;}; Handle = MediaInfo_New();};
+        MediaInfo(const char* LibraryPath=NULL) {if (!LibraryPath) MediaInfoDLL_Load(); else MediaInfoDLL_LoadFromPath(LibraryPath); if (!MediaInfo_Module) MediaInfoDLL_Load(); if (!MediaInfo_Module) {Handle = NULL; return;}; Handle = MediaInfo_New();};
         ~MediaInfo()       {MEDIAINFO_TEST_VOID; MediaInfo_Delete(Handle);};
 
         //File
@@ -598,7 +664,7 @@ namespace MediaInfoDLL
     class MediaInfoList
     {
     public :
-        MediaInfoList()        {MediaInfoDLL_Load(); if (!MediaInfoDLL_IsLoaded()) {Handle = NULL; return;}; Handle = MediaInfoList_New();};
+        MediaInfoList(const char* LibraryPath=NULL)   {if (!LibraryPath) {MediaInfoDLL_Load();} else {MediaInfoDLL_LoadFromPath(LibraryPath);}; if (!MediaInfoDLL_IsLoaded()) {Handle = NULL; return;}; Handle = MediaInfoList_New();};
         ~MediaInfoList()       {MEDIAINFO_TEST_VOID; MediaInfoList_Delete(Handle); MediaInfoDLL_UnLoad();};
 
         //File
