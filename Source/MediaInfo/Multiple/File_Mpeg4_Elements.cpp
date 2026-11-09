@@ -492,6 +492,18 @@ static string Mpeg4_chan_ChannelDescription_Layout (int32u ChannelLabel)
         case  52 : return "Tbl"; // LeftTopRear
         case  53 : return "Tbc"; // CenterTopRear
         case  54 : return "Tbr"; // RightTopRear
+        case  55 : return "Lss"; // LeftSideSurround
+        case  56 : return "Rss"; // RightSideSurround
+        case  57 : return "Bfl"; // LeftBottom
+        case  58 : return "Bfr"; // RightBottom
+        case  59 : return "Bfc"; // CenterBottom
+        case  60 : return "Lvs"; // LeftTopSurround
+        case  61 : return "Rvs"; // RightTopSurround
+        case  62 : return "LFE3";
+        case  63 : return "Lb";  // LeftBackSurround
+        case  64 : return "Rb";  // RightBackSurround
+        case  65 : return "Lscr"; // LeftEdgeOfScreen
+        case  66 : return "Rscr"; // RightEdgeOfScreen
         case 200 : return "W";
         case 201 : return "X";
         case 202 : return "Y";
