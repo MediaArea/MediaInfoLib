@@ -483,16 +483,15 @@ static string Mpeg4_chan_ChannelDescription_Layout (int32u ChannelLabel)
         case  43 : return "DialogCentricMix";
         case  44 : return "CenterSurroundDirect";
         case  45 : return "Haptic";
-        case  46 : return "Ltf";
-        case  47 : return "Ctf";
-        case  48 : return "Rtf";
-        case  49 : return "Ltm";
-        case  50 : return "Ctm";
-        case  51 : return "Rtm";
-        case  52 : return "Ltr";
-        case  53 : return "Ctr";
-        case  54 : return "Rtr";
-
+        case  46 : return "Tfl"; // LeftTopFront, now an alias of 13
+        case  47 : return "Tfc"; // CenterTopFront, now an alias of 14
+        case  48 : return "Tfr"; // RightTopFront, now an alias of 15
+        case  49 : return "Tsl"; // LeftTopMiddle
+        case  50 : return "Tc";  // CenterTopMiddle, now an alias of 12
+        case  51 : return "Tsr"; // RightTopMiddle
+        case  52 : return "Tbl"; // LeftTopRear
+        case  53 : return "Tbc"; // CenterTopRear
+        case  54 : return "Tbr"; // RightTopRear
         case 200 : return "W";
         case 201 : return "X";
         case 202 : return "Y";
