@@ -4701,7 +4701,7 @@ void File_Ac3::object_audio_metadata_payload()
     Get_SB(b_alternate_object_data_present,                     "b_alternate_object_data_present");
     
     int8u oa_element_count_bits;
-    int8u num_obj_info_blocks;
+    int8u num_obj_info_blocks = 0; //No block info if there is no object_element before an extended_object_element
     std::vector<std::vector<bool>> b_obj_not_active_Vec;
     Get_S1(4, oa_element_count_bits,                            "oa_element_count_bits");
     if (oa_element_count_bits == 0xF)
@@ -4757,6 +4757,7 @@ void File_Ac3::object_audio_metadata_payload()
             if (!b_reserved_data_not_present)
                 Skip_S1(5,                                      "reserved");
             
+            b_obj_not_active_Vec.clear(); //Only the info of the last object_element, matching num_obj_info_blocks
             for (int8u j = 0; j < object_count; ++j) {
                 b_obj_not_active_Vec.push_back(std::vector<bool>());
                 Element_Begin1("object_data");
