@@ -255,6 +255,7 @@ void File_Riff::Streams_Finish ()
         Fill(Stream_General, 0, General_Format_Profile, IsBW64?"BW64":"RF64");
     if (DolbyAudioMetadata) //Before ADM for having content before all ADM stuff
         Merge(*DolbyAudioMetadata, Stream_Audio, 0, 0);
+    #if defined(MEDIAINFO_ADM_YES)
     if (Adm)
     {
         if (Adm_chna)
@@ -302,14 +303,17 @@ void File_Riff::Streams_Finish ()
             Fill_Item("UMID", "UMID", UMID_Normalize(BroadcastMetadata_Clean(BroadcastMetadata->UMID)), false);
         }
     }
+    #endif //defined(MEDIAINFO_ADM_YES)
     if (DolbyAudioMetadata) //After ADM for having content inside ADM stuff
         DolbyAudioMetadata->Merge(*this, 0);
+    #if defined(MEDIAINFO_ADM_YES)
     if (Adm && (!DolbyAudioMetadata || !DolbyAudioMetadata->HasSegment9) && Retrieve_Const(Stream_Audio, 0, "AdmProfile_Format")==__T("Dolby Atmos Master"))
     {
         Clear(Stream_Audio, 0, "AdmProfile");
         Clear(Stream_Audio, 0, "AdmProfile_Format");
         Clear(Stream_Audio, 0, "AdmProfile_Version");
     }
+    #endif //defined(MEDIAINFO_ADM_YES)
 
     //Time codes
     TimeCode_Fill(__T("ISMP"), INFO_ISMP);

@@ -1682,7 +1682,7 @@ void File_Lxf::Video_Stream_1()
 
     for (int8u Pos=0; Pos<Lines_Used; Pos++)
     {
-        #if defined(MEDIAINFO_CDP_YES)
+        #if defined(MEDIAINFO_ANCILLARY_YES) && defined(MEDIAINFO_CDP_YES)
             Element_Begin1("VANC line");
             if (Videos[1].Parsers.empty())
             {

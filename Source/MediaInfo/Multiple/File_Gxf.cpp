@@ -251,7 +251,9 @@ File_Gxf::File_Gxf()
 File_Gxf::~File_Gxf()
 {
     //Temp
-    delete Ancillary; //Ancillary=NULL;
+    #if defined(MEDIAINFO_ANCILLARY_YES)
+        delete Ancillary; //Ancillary=NULL;
+    #endif //defined(MEDIAINFO_ANCILLARY_YES)
     delete UMF_File; //UMF_File=NULL;
 }
 
@@ -1025,7 +1027,9 @@ void File_Gxf::map()
                                         #ifdef MEDIAINFO_MPEGV_YES
                                         File__Analyze* Parser=new File_Mpegv();
                                         ((File_Mpegv*)Parser)->FrameIsAlwaysComplete=true;
+                                        #if defined(MEDIAINFO_ANCILLARY_YES)
                                         ((File_Mpegv*)Parser)->Ancillary=&Ancillary;
+                                        #endif //defined(MEDIAINFO_ANCILLARY_YES)
                                         Open_Buffer_Init(Parser);
                                         Streams[TrackID].Parsers.push_back(Parser);
 
@@ -1041,12 +1045,14 @@ void File_Gxf::map()
                         case 25 :   // was found for DVCPro HD in some files (not in SMPTE ST 360-2009, maybe it is present in a later version)
                                     //DV
                                     {
+                                        #ifdef MEDIAINFO_DVDIF_YES
                                         File__Analyze* Parser=new File_DvDif();
                                         Open_Buffer_Init(Parser);
                                         Streams[TrackID].Parsers.push_back(Parser);
 
                                         Parsers_Count++;
                                         Streams[TrackID].Searching_Payload=true;
+                                        #endif //MEDIAINFO_DVDIF_YES
                                     }
                                     break;
                         case 17 :   //AC-3 in AES3 (half)
@@ -1066,7 +1072,7 @@ void File_Gxf::map()
                                     break;
                         case 21 :   //Ancillary Metadata
                                     {
-                                        #ifdef MEDIAINFO_RIFF_YES
+                                        #if defined(MEDIAINFO_RIFF_YES) && defined(MEDIAINFO_ANCILLARY_YES)
                                         File__Analyze* Parser=new File_Riff();
                                         ((File_Riff*)Parser)->Ancillary=&Ancillary;
                                         Open_Buffer_Init(Parser);
@@ -1082,28 +1088,32 @@ void File_Gxf::map()
                                         AncillaryData_StreamID=TrackID;
                                         if (SizeToAnalyze<8*16*1024*1024)
                                             SizeToAnalyze*=8; //10x more, to be sure to find captions
-                                        #endif //MEDIAINFO_RIFF_YES
+                                        #endif //defined(MEDIAINFO_RIFF_YES) && defined(MEDIAINFO_ANCILLARY_YES)
                                     }
                                     break;
                         case 26 :
                         case 29 :   //AVC
                                     {
+                                        #ifdef MEDIAINFO_AVC_YES
                                         File__Analyze* Parser=new File_Avc();
                                         Open_Buffer_Init(Parser);
                                         Streams[TrackID].Parsers.push_back(Parser);
 
                                         Parsers_Count++;
                                         Streams[TrackID].Searching_Payload=true;
+                                        #endif //MEDIAINFO_AVC_YES
                                     }
                                     break;
                         case 30 :   //VC-3
                                     {
+                                        #ifdef MEDIAINFO_VC3_YES
                                         File__Analyze* Parser=new File_Vc3();
                                         Open_Buffer_Init(Parser);
                                         Streams[TrackID].Parsers.push_back(Parser);
 
                                         Parsers_Count++;
                                         Streams[TrackID].Searching_Payload=true;
+                                        #endif //MEDIAINFO_VC3_YES
                                     }
                                     break;
                         default :   ;

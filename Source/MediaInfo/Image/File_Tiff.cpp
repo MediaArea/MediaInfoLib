@@ -29,53 +29,13 @@
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
-#if defined(MEDIAINFO_TIFF_YES)
-//---------------------------------------------------------------------------
-
-//---------------------------------------------------------------------------
-#include "MediaInfo/Image/File_Tiff.h"
-using namespace ZenLib;
+#if defined(MEDIAINFO_TIFF_YES) || defined(MEDIAINFO_EXIF_YES)
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
 {
 
-//***************************************************************************
-// Info
-//***************************************************************************
-
-//---------------------------------------------------------------------------
-namespace Tiff_Tag
-{
-    const int16u SubFileType                = 254;
-    const int16u ImageWidth                 = 256;
-    const int16u ImageLength                = 257;
-    const int16u BitsPerSample              = 258;
-    const int16u Compression                = 259;
-    const int16u PhotometricInterpretation  = 262;
-    const int16u Make                       = 271;
-    const int16u Model                      = 272;
-    const int16u StripOffsets               = 273;
-    const int16u SamplesPerPixel            = 277;
-    const int16u RowsPerStrip               = 278;
-    const int16u StripByteCounts            = 279;
-    const int16u XResolution                = 282;
-    const int16u YResolution                = 283;
-    const int16u PlanarConfiguration        = 284;
-    const int16u ResolutionUnit             = 296;
-    const int16u Software                   = 305;
-    const int16u ExtraSamples               = 338;
-    const int16u JPEGTables                 = 347;
-    const int16u JPEGProc                   = 512;
-    const int16u JPEGInterchangeFormat      = 513;
-    const int16u JPEGInterchangeFormatLngth = 514;
-    const int16u JPEGRestartInterval        = 515;
-    const int16u JPEGLosslessPredictors     = 517;
-    const int16u JPEGPointTransforms        = 518;
-    const int16u JPEGQTables                = 519;
-    const int16u JPEGDCTables               = 520;
-    const int16u JPEGACTables               = 521;
-}
+using namespace ZenLib;
 
 //---------------------------------------------------------------------------
 const char* Tiff_Compression_Name(int16u compression)
@@ -137,6 +97,65 @@ const char* Tiff_Compression_Name(int16u compression)
     case 65535: return "Pentax PEF";
     default: return "";
     }
+}
+
+} //NameSpace
+
+//---------------------------------------------------------------------------
+#endif //...
+//---------------------------------------------------------------------------
+
+//***************************************************************************
+//
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+#if defined(MEDIAINFO_TIFF_YES)
+//---------------------------------------------------------------------------
+
+//---------------------------------------------------------------------------
+#include "MediaInfo/Image/File_Tiff.h"
+using namespace ZenLib;
+//---------------------------------------------------------------------------
+
+namespace MediaInfoLib
+{
+
+//***************************************************************************
+// Info
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+namespace Tiff_Tag
+{
+    const int16u SubFileType                = 254;
+    const int16u ImageWidth                 = 256;
+    const int16u ImageLength                = 257;
+    const int16u BitsPerSample              = 258;
+    const int16u Compression                = 259;
+    const int16u PhotometricInterpretation  = 262;
+    const int16u Make                       = 271;
+    const int16u Model                      = 272;
+    const int16u StripOffsets               = 273;
+    const int16u SamplesPerPixel            = 277;
+    const int16u RowsPerStrip               = 278;
+    const int16u StripByteCounts            = 279;
+    const int16u XResolution                = 282;
+    const int16u YResolution                = 283;
+    const int16u PlanarConfiguration        = 284;
+    const int16u ResolutionUnit             = 296;
+    const int16u Software                   = 305;
+    const int16u ExtraSamples               = 338;
+    const int16u JPEGTables                 = 347;
+    const int16u JPEGProc                   = 512;
+    const int16u JPEGInterchangeFormat      = 513;
+    const int16u JPEGInterchangeFormatLngth = 514;
+    const int16u JPEGRestartInterval        = 515;
+    const int16u JPEGLosslessPredictors     = 517;
+    const int16u JPEGPointTransforms        = 518;
+    const int16u JPEGQTables                = 519;
+    const int16u JPEGDCTables               = 520;
+    const int16u JPEGACTables               = 521;
 }
 
 //---------------------------------------------------------------------------

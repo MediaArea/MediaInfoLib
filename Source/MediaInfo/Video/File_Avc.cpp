@@ -28,7 +28,7 @@ using namespace std;
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-#if defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_MPEG7_YES)
+#if defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_MPEG7_YES) || defined(MEDIAINFO_APV_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AV2_YES) || defined(MEDIAINFO_HEVC_YES)
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -275,6 +275,85 @@ size_t Avc_profile_level_Indexes(const string& ProfileLevelS) // Note: 1-based, 
 }
 
 //---------------------------------------------------------------------------
+struct par
+{
+    int8u w;
+    int8u h;
+};
+extern const par Avc_PixelAspectRatio[] =
+{
+    {   1,   1 },
+    {  12,  11 },
+    {  10,  11 },
+    {  16,  11 },
+    {  40,  33 },
+    {  24,  11 },
+    {  20,  11 },
+    {  32,  11 },
+    {  80,  33 },
+    {  18,  11 },
+    {  15,  11 },
+    {  64,  33 },
+    { 160,  99 },
+    {   4,   3 },
+    {   3,   2 },
+    {   2,   1 },
+};
+extern const auto Avc_PixelAspectRatio_Size = sizeof(Avc_PixelAspectRatio) / sizeof(*Avc_PixelAspectRatio);
+
+//---------------------------------------------------------------------------
+const char* Avc_video_format[]=
+{
+    "Component",
+    "PAL",
+    "NTSC",
+    "SECAM",
+    "MAC",
+    "",
+    "Reserved",
+    "Reserved",
+};
+
+//---------------------------------------------------------------------------
+const char* Avc_video_full_range[]=
+{
+    "Limited",
+    "Full",
+};
+
+//---------------------------------------------------------------------------
+} //NameSpace
+
+//---------------------------------------------------------------------------
+#endif //...
+//---------------------------------------------------------------------------
+
+//***************************************************************************
+//
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+#if defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES)
+//---------------------------------------------------------------------------
+
+//---------------------------------------------------------------------------
+#include "MediaInfo/Video/File_Avc.h"
+//---------------------------------------------------------------------------
+
+namespace MediaInfoLib
+{
+
+//---------------------------------------------------------------------------
+void File_Avc::Fill_BitRate_Mode(File__Analyze* Instance, bool cbr_flag, bool cbr_flag_IsSet, bool cbr_flag_IsValid, int64u bit_rate_value, bool bit_rate_value_IsValid)
+{
+    if (cbr_flag_IsSet && cbr_flag_IsValid)
+    {
+        Instance->Fill(Stream_Video, 0, Video_BitRate_Mode, cbr_flag?"CBR":"VBR");
+        if (bit_rate_value!=(int64u)-1 && bit_rate_value_IsValid)
+            Instance->Fill(Stream_Video, 0, cbr_flag?Video_BitRate_Nominal:Video_BitRate_Maximum, bit_rate_value);
+    }
+}
+
 } //NameSpace
 
 //---------------------------------------------------------------------------
@@ -321,53 +400,6 @@ namespace MediaInfoLib
 
 //---------------------------------------------------------------------------
 const size_t Avc_Errors_MaxCount=32;
-
-//---------------------------------------------------------------------------
-struct par
-{
-    int8u w;
-    int8u h;
-};
-extern const par Avc_PixelAspectRatio[] =
-{
-    {   1,   1 },
-    {  12,  11 },
-    {  10,  11 },
-    {  16,  11 },
-    {  40,  33 },
-    {  24,  11 },
-    {  20,  11 },
-    {  32,  11 },
-    {  80,  33 },
-    {  18,  11 },
-    {  15,  11 },
-    {  64,  33 },
-    { 160,  99 },
-    {   4,   3 },
-    {   3,   2 },
-    {   2,   1 },
-};
-extern const auto Avc_PixelAspectRatio_Size = sizeof(Avc_PixelAspectRatio) / sizeof(*Avc_PixelAspectRatio);
-
-//---------------------------------------------------------------------------
-const char* Avc_video_format[]=
-{
-    "Component",
-    "PAL",
-    "NTSC",
-    "SECAM",
-    "MAC",
-    "",
-    "Reserved",
-    "Reserved",
-};
-
-//---------------------------------------------------------------------------
-const char* Avc_video_full_range[]=
-{
-    "Limited",
-    "Full",
-};
 
 //---------------------------------------------------------------------------
 static const char* Avc_primary_pic_type[]=
@@ -877,17 +909,6 @@ int32u File_Avc::AVC_Intra_CodecID_FromMeta(int32u Width, int32u Height, int32u 
 //***************************************************************************
 // Streams management
 //***************************************************************************
-
-//---------------------------------------------------------------------------
-void File_Avc::Fill_BitRate_Mode(File__Analyze* Instance, bool cbr_flag, bool cbr_flag_IsSet, bool cbr_flag_IsValid, int64u bit_rate_value, bool bit_rate_value_IsValid)
-{
-    if (cbr_flag_IsSet && cbr_flag_IsValid)
-    {
-        Instance->Fill(Stream_Video, 0, Video_BitRate_Mode, cbr_flag?"CBR":"VBR");
-        if (bit_rate_value!=(int64u)-1 && bit_rate_value_IsValid)
-            Instance->Fill(Stream_Video, 0, cbr_flag?Video_BitRate_Nominal:Video_BitRate_Maximum, bit_rate_value);
-    }
-}
 
 //---------------------------------------------------------------------------
 void File_Avc::Streams_Fill()

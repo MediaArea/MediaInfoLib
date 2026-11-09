@@ -483,8 +483,10 @@ void MediaInfo_Config::Init(bool Force)
     DecimalPoint=__T(".");
     ThousandsPoint=Ztring();
     CarriageReturnReplace=__T(" / ");
-    #if MEDIAINFO_ADVANCED
+    #if MEDIAINFO_CONFORMANCE
         Conformance_Limit=32;
+    #endif //MEDIAINFO_CONFORMANCE
+    #if MEDIAINFO_ADVANCED
         Collection_Trigger=-2;
         Collection_Display=display_if::Needed;
     #endif

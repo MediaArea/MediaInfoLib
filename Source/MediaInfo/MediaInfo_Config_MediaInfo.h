@@ -191,6 +191,8 @@ public :
         bool          File_ChannelLayout_Get();
         void          File_FrameIsAlwaysComplete_Set(bool NewValue) { File_FrameIsAlwaysComplete = NewValue; }
         bool          File_FrameIsAlwaysComplete_Get() { return File_FrameIsAlwaysComplete; }
+    #else //MEDIAINFO_ADVANCED
+        bool          File_FrameIsAlwaysComplete_Get() { return false; }
 #endif //MEDIAINFO_ADVANCED
 
     #if MEDIAINFO_DEMUX

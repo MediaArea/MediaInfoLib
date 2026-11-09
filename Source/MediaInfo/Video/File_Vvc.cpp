@@ -56,7 +56,7 @@ extern const char* Vvc_profile_idc(int32u profile_idc)
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
-#if defined(MEDIAINFO_VVC_YES)
+#if defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_VVC_YES)
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
@@ -143,4 +143,4 @@ string Vvc_profile_level_tier_string(int8u profile_idc, int8u level_idc, bool ti
 
 } //NameSpace
 
-#endif //MEDIAINFO_VVC_YES
+#endif //...

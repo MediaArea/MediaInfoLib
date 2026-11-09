@@ -25,9 +25,8 @@
 #if defined(MEDIAINFO_ADM_YES)
     #include "MediaInfo/Audio/File_Adm.h"
 #endif
-#if defined(MEDIAINFO_ADM_YES)
-    #include <zlib.h>
-#endif
+#include "MediaInfo/File_Unknown.h"
+#include <zlib.h>
 #include <string>
 using namespace std;
 //---------------------------------------------------------------------------
@@ -296,6 +295,7 @@ void File_Mga::SerialAudioDefinitionModelMetadataPayload(int64u Length)
             Open_Buffer_Init(Parser);
         }
     }
+    }
     #else
     {
         //Filling
@@ -310,7 +310,6 @@ void File_Mga::SerialAudioDefinitionModelMetadataPayload(int64u Length)
         }
     }
     #endif
-    }
 
     if (Parser)
     {

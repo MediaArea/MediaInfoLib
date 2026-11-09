@@ -190,11 +190,16 @@ private :
         bool                        GA94_03_IsPresent;
         File__Analyze*              CC___Parser;
         bool                        CC___IsPresent;
+    #else //defined(MEDIAINFO_DTVCCTRANSPORT_YES)
+        static constexpr bool       GA94_03_IsPresent=false;
+        static constexpr bool       CC___IsPresent=false;
     #endif //defined(MEDIAINFO_DTVCCTRANSPORT_YES)
     #if defined(MEDIAINFO_SCTE20_YES)
         File__Analyze*              Scte_Parser;
         size_t                      Scte_TemporalReference_Offset;
         bool                        Scte_IsPresent;
+    #else //defined(MEDIAINFO_SCTE20_YES)
+        static constexpr bool       Scte_IsPresent=false;
     #endif //defined(MEDIAINFO_SCTE20_YES)
     #if defined(MEDIAINFO_AFDBARDATA_YES)
         File__Analyze*              DTG1_Parser;
@@ -203,6 +208,8 @@ private :
     #if defined(MEDIAINFO_CDP_YES)
         File__Analyze*              Cdp_Parser;
         bool                        Cdp_IsPresent;
+    #else //defined(MEDIAINFO_CDP_YES)
+        static constexpr bool       Cdp_IsPresent=false;
     #endif //defined(MEDIAINFO_GXF_YES) && defined(MEDIAINFO_CDP_YES)
     #if defined(MEDIAINFO_AFDBARDATA_YES)
         File__Analyze*              AfdBarData_Parser;

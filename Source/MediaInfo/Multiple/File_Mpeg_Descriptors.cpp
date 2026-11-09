@@ -3866,8 +3866,12 @@ void File_Mpeg_Descriptors::Descriptor_86()
         {
             //delete Complete_Stream->Streams[elementary_PID]->ServiceDescriptors;
             //Complete_Stream->Streams[elementary_PID]->ServiceDescriptors=new File__Analyze::servicedescriptors;
+            #if defined(MEDIAINFO_EIA608_YES)
             Complete_Stream->Streams[elementary_PID]->ServiceDescriptors.ServiceDescriptors608.clear();
+            #endif
+            #if defined(MEDIAINFO_EIA708_YES)
             Complete_Stream->Streams[elementary_PID]->ServiceDescriptors.ServiceDescriptors708.clear();
+            #endif
             Complete_Stream->Streams[elementary_PID]->ServiceDescriptors_IsPresent=true;
         }
         else if (program_number_IsValid)

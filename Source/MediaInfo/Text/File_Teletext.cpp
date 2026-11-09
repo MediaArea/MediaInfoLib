@@ -70,7 +70,9 @@ File_Teletext::File_Teletext()
 //---------------------------------------------------------------------------
 File_Teletext::~File_Teletext()
 {
-    delete Parser; //Parser=NULL;
+    #if defined(MEDIAINFO_MPEGPS_YES)
+        delete Parser; //Parser=NULL;
+    #endif
 }
 
 //***************************************************************************
@@ -87,18 +89,20 @@ void File_Teletext::Streams_Finish()
 {
     //Filling when it is from MpegPs
     //TODO: filter subtitles and non subtitles, some files have normal teletext in subtitles block.
-    if (Parser)
-    {
-        Parser->Finish();
-        for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
-            for (size_t StreamPos=0; StreamPos<Parser->Count_Get((stream_t)StreamKind); StreamPos++)
-            {
-                Stream_Prepare((stream_t)StreamKind);
-                Merge(*Parser, (stream_t)StreamKind, StreamPos_Last, StreamPos);
-            }
+    #if defined(MEDIAINFO_MPEGPS_YES)
+        if (Parser)
+        {
+            Parser->Finish();
+            for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
+                for (size_t StreamPos=0; StreamPos<Parser->Count_Get((stream_t)StreamKind); StreamPos++)
+                {
+                    Stream_Prepare((stream_t)StreamKind);
+                    Merge(*Parser, (stream_t)StreamKind, StreamPos_Last, StreamPos);
+                }
 
-        return;
-    }
+            return;
+        }
+    #endif
 
     if (Teletexts && !Teletexts->empty())
         for (std::map<int16u, teletext>::iterator Teletext=Teletexts->begin(); Teletext!=Teletexts->end(); ++Teletext)
@@ -216,8 +220,10 @@ void File_Teletext::Read_Buffer_Unsynched()
         }
 
     //Unsynching when it is from MpegPs
-    if (Parser)
-        Parser->Open_Buffer_Unsynch();
+    #if defined(MEDIAINFO_MPEGPS_YES)
+        if (Parser)
+            Parser->Open_Buffer_Unsynch();
+    #endif
 }
 
 //---------------------------------------------------------------------------

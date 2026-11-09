@@ -17,6 +17,48 @@
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
+#if defined(MEDIAINFO_MPEGH3DA_YES) || defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES)
+//---------------------------------------------------------------------------
+
+//---------------------------------------------------------------------------
+#include "ZenLib/Ztring.h"
+#include <string>
+using namespace ZenLib;
+using namespace std;
+//---------------------------------------------------------------------------
+
+namespace MediaInfoLib
+{
+
+//---------------------------------------------------------------------------
+static const char* const Mpegh3da_Profile[]=
+{
+    "Main",
+    "High",
+    "LC",
+    "BL",
+};
+static size_t Mpegh3da_Profile_Size=sizeof(Mpegh3da_Profile)/sizeof(const char* const);
+extern string Mpegh3da_Profile_Get(int8u mpegh3daProfileLevelIndication)
+{
+    if (!mpegh3daProfileLevelIndication)
+        return string();
+    if (mpegh3daProfileLevelIndication>=5*Mpegh3da_Profile_Size)
+        return Ztring::ToZtring(mpegh3daProfileLevelIndication).To_UTF8(); // Raw value
+    return string(Mpegh3da_Profile[(mpegh3daProfileLevelIndication-1)/5])+"@L"+char('1'+((mpegh3daProfileLevelIndication-1)%5));
+}
+
+} //NameSpace
+
+//---------------------------------------------------------------------------
+#endif //...
+//---------------------------------------------------------------------------
+
+//***************************************************************************
+//
+//***************************************************************************
+
+//---------------------------------------------------------------------------
 #if defined(MEDIAINFO_MPEGH3DA_YES)
 //---------------------------------------------------------------------------
 
@@ -55,24 +97,6 @@ extern string Aac_ChannelLayout_GetString(const vector<Aac_OutputChannel>& Outpu
 extern string Aac_ChannelMode_GetString(int8u ChannelLayout, bool IsMpegh3da=false);
 extern string Aac_ChannelMode_GetString(const vector<Aac_OutputChannel>& OutputChannels);
 extern string Aac_OutputChannelPosition_GetString(int8u OutputChannelPosition);
-
-//---------------------------------------------------------------------------
-static const char* const Mpegh3da_Profile[]=
-{
-    "Main",
-    "High",
-    "LC",
-    "BL",
-};
-static size_t Mpegh3da_Profile_Size=sizeof(Mpegh3da_Profile)/sizeof(const char* const);
-extern string Mpegh3da_Profile_Get(int8u mpegh3daProfileLevelIndication)
-{
-    if (!mpegh3daProfileLevelIndication)
-        return string();
-    if (mpegh3daProfileLevelIndication>=5*Mpegh3da_Profile_Size)
-        return Ztring::ToZtring(mpegh3daProfileLevelIndication).To_UTF8(); // Raw value
-    return string(Mpegh3da_Profile[(mpegh3daProfileLevelIndication-1)/5])+"@L"+char('1'+((mpegh3daProfileLevelIndication-1)%5));
-}
 
 //---------------------------------------------------------------------------
 static const char* const Mpegh3da_MHASPacketType[]=

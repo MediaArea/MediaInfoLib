@@ -16,9 +16,7 @@
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
-#ifdef MEDIAINFO_MPEG4_YES
-    #include "MediaInfo/Multiple/File_Mpeg4_Descriptors.h"
-#endif
+#include "MediaInfo/Multiple/File_Mpeg4_Descriptors.h"
 #include "MediaInfo/Audio/File_Aac_GeneralAudio_Sbr.h"
 #include "MediaInfo/File__Analyze.h"
 #include "MediaInfo/TimeCode.h"

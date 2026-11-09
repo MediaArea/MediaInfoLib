@@ -17,6 +17,82 @@
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
+#if defined(MEDIAINFO_DVDIF_YES) || defined(MEDIAINFO_AVC_YES)
+//---------------------------------------------------------------------------
+
+namespace MediaInfoLib
+{
+
+using namespace ZenLib;
+
+//---------------------------------------------------------------------------
+const char*  Dv_consumer_camera_1_ae_mode[]=
+{
+    "full automatic",
+    "gain priority mode",
+    "shutter priority mode",
+    "iris priority mode",
+    "manual",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "", //no info
+};
+
+//---------------------------------------------------------------------------
+const char*  Dv_consumer_camera_1_wb_mode[]=
+{
+    "automatic",
+    "hold",
+    "one push",
+    "pre-set",
+    "",
+    "",
+    "",
+    "", //no info
+};
+
+//---------------------------------------------------------------------------
+const char* Dv_consumer_camera_1_white_balance(int8u white_balance)
+{
+    switch (white_balance)
+    {
+        case 0x00 : return "candle";
+        case 0x01 : return "incandescent lamp";
+        case 0x02 : return "low color temperature; florescent lamp";
+        case 0x03 : return "high color temperature; florescent lamp";
+        case 0x04 : return "sunlight";
+        case 0x05 : return "cloudy weather";
+        case 0x1F : return ""; //No info
+        default   : return "";
+    }
+}
+
+//---------------------------------------------------------------------------
+const char*  Dv_consumer_camera_1_fcm[]=
+{
+    "auto focus",
+    "manual focus",
+};
+
+} //NameSpace
+
+//---------------------------------------------------------------------------
+#endif //...
+//---------------------------------------------------------------------------
+
+//***************************************************************************
+//
+//***************************************************************************
+
+//---------------------------------------------------------------------------
 #if defined(MEDIAINFO_DVDIF_YES)
 //---------------------------------------------------------------------------
 
@@ -147,40 +223,6 @@ static const char*  Dv_Emphasis[]=
 };
 
 //---------------------------------------------------------------------------
-const char*  Dv_consumer_camera_1_ae_mode[]=
-{
-    "full automatic",
-    "gain priority mode",
-    "shutter priority mode",
-    "iris priority mode",
-    "manual",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "", //no info
-};
-
-//---------------------------------------------------------------------------
-const char*  Dv_consumer_camera_1_wb_mode[]=
-{
-    "automatic",
-    "hold",
-    "one push",
-    "pre-set",
-    "",
-    "",
-    "",
-    "", //no info
-};
-
-//---------------------------------------------------------------------------
 static const char*  Dv_APT[] =
 {
     "IEC",
@@ -191,29 +233,6 @@ static const char*  Dv_APT[] =
     "",
     "",
     "", //no info
-};
-
-//---------------------------------------------------------------------------
-const char* Dv_consumer_camera_1_white_balance(int8u white_balance)
-{
-    switch (white_balance)
-    {
-        case 0x00 : return "candle";
-        case 0x01 : return "incandescent lamp";
-        case 0x02 : return "low color temperature; florescent lamp";
-        case 0x03 : return "high color temperature; florescent lamp";
-        case 0x04 : return "sunlight";
-        case 0x05 : return "cloudy weather";
-        case 0x1F : return ""; //No info
-        default   : return "";
-    }
-}
-
-//---------------------------------------------------------------------------
-const char*  Dv_consumer_camera_1_fcm[]=
-{
-    "auto focus",
-    "manual focus",
 };
 
 //---------------------------------------------------------------------------

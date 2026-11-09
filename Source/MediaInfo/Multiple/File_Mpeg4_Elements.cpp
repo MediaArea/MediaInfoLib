@@ -28,239 +28,17 @@ using namespace std;
 
 
 //---------------------------------------------------------------------------
-#ifdef MEDIAINFO_MPEG4_YES
+#if defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_CAF_YES) || defined(MEDIAINFO_MK_YES)
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
-#include "MediaInfo/Multiple/File_Mpeg4.h"
-#include "MediaInfo/File__MultipleParsing.h"
-#include "MediaInfo/Video/File_DolbyVisionMetadata.h"
-#include "MediaInfo/Image/File_GainMap.h"
-#if defined(MEDIAINFO_DVDIF_YES)
-    #include "MediaInfo/Multiple/File_DvDif.h"
-#endif
-#if defined(MEDIAINFO_MXF_YES)
-    #include "MediaInfo/Multiple/File_Mxf.h"
-#endif
-#if defined(MEDIAINFO_AIC_YES)
-    #include "MediaInfo/Video/File_Aic.h"
-#endif
-#if defined(MEDIAINFO_APV_YES)
-    #include "MediaInfo/Video/File_Apv.h"
-#endif
-#if defined(MEDIAINFO_AV1_YES)
-    #include "MediaInfo/Video/File_Av1.h"
-#endif
-#if defined(MEDIAINFO_AV2_YES)
-    #include "MediaInfo/Video/File_Av2.h"
-#endif
-#if defined(MEDIAINFO_AVC_YES)
-    #include "MediaInfo/Video/File_Avc.h"
-#endif
-#if defined(MEDIAINFO_AVS3V_YES)
-    #include "MediaInfo/Video/File_Avs3V.h"
-#endif
-#if defined(MEDIAINFO_CINEFORM_YES)
-    #include "MediaInfo/Video/File_CineForm.h"
-#endif
-#if defined(MEDIAINFO_FFV1_YES)
-    #include "MediaInfo/Video/File_Ffv1.h"
-#endif
-#if defined(MEDIAINFO_H263_YES)
-    #include "MediaInfo/Video/File_H263.h"
-#endif
-#if defined(MEDIAINFO_HEVC_YES)
-    #include "MediaInfo/Video/File_Hevc.h"
-#endif
-#if defined(MEDIAINFO_MPEGV_YES)
-    #include "MediaInfo/Video/File_Mpegv.h"
-#endif
-#if defined(MEDIAINFO_PNG_YES)
-    #include "MediaInfo/Image/File_Png.h"
-#endif
-#if defined(MEDIAINFO_PRORES_YES)
-    #include "MediaInfo/Video/File_ProRes.h"
-#endif
-#if defined(MEDIAINFO_VC1_YES)
-    #include "MediaInfo/Video/File_Vc1.h"
-#endif
-#if defined(MEDIAINFO_VC3_YES)
-    #include "MediaInfo/Video/File_Vc3.h"
-#endif
-#if defined(MEDIAINFO_VP9_YES)
-    #include "MediaInfo/Video/File_Vp9.h"
-#endif
-#if defined(MEDIAINFO_AAC_YES)
-    #include "MediaInfo/Audio/File_Aac.h"
-#endif
-#if defined(MEDIAINFO_AC3_YES)
-    #include "MediaInfo/Audio/File_Ac3.h"
-#endif
-#if defined(MEDIAINFO_AC4_YES)
-    #include "MediaInfo/Audio/File_Ac4.h"
-#endif
-#if defined(MEDIAINFO_SMPTEST0337_YES)
-    #include "MediaInfo/Audio/File_ChannelGrouping.h"
-#endif
-#if defined(MEDIAINFO_SMPTEST0337_YES)
-    #include "MediaInfo/Audio/File_ChannelSplitting.h"
-#endif
-#if defined(MEDIAINFO_AMR_YES)
-    #include "MediaInfo/Audio/File_Amr.h"
-#endif
-#if defined(MEDIAINFO_ADPCM_YES)
-    #include "MediaInfo/Audio/File_Adpcm.h"
-#endif
-#if defined(MEDIAINFO_FLAC_YES)
-    #include "MediaInfo/Audio/File_Flac.h"
-#endif
-#if defined(MEDIAINFO_IAMF_YES)
-    #include "MediaInfo/Audio/File_Iamf.h"
-#endif
-#if defined(MEDIAINFO_MPEGA_YES)
-    #include "MediaInfo/Audio/File_Mpega.h"
-#endif
-#if defined(MEDIAINFO_MPEGH3DA_YES)
-    #include "MediaInfo/Audio/File_Mpegh3da.h"
-#endif
-#if defined(MEDIAINFO_OPUS_YES)
-    #include "MediaInfo/Audio/File_Opus.h"
-#endif
-#if defined(MEDIAINFO_PCM_YES)
-    #include "MediaInfo/Audio/File_Pcm.h"
-#endif
-#if defined(MEDIAINFO_SMPTEST0337_YES)
-    #include "MediaInfo/Audio/File_SmpteSt0337.h"
-#endif
-#if defined(MEDIAINFO_CDP_YES)
-    #include "MediaInfo/Text/File_Cdp.h"
-#endif
-#if defined(MEDIAINFO_EXIF_YES)
-    #include "MediaInfo/Tag/File_Exif.h"
-#endif
-#if defined(MEDIAINFO_ICC_YES)
-    #include "MediaInfo/Tag/File_Icc.h"
-#endif
-#if defined(MEDIAINFO_SPHERICALVIDEO_YES)
-    #include "MediaInfo/Tag/File_SphericalVideo.h"
-#endif
-#if defined(MEDIAINFO_PROPERTYLIST_YES)
-    #include "MediaInfo/Tag/File_PropertyList.h"
-#endif
-#if defined(MEDIAINFO_TIMEDTEXT_YES)
-    #include "MediaInfo/Text/File_TimedText.h"
-#endif
-#if defined(MEDIAINFO_TTML_YES)
-    #include "MediaInfo/Text/File_Ttml.h"
-#endif
-#if defined(MEDIAINFO_XMP_YES)
-    #include "MediaInfo/Tag/File_Xmp.h"
-#endif
-#if defined(MEDIAINFO_JPEG_YES)
-    #include "MediaInfo/Image/File_Jpeg.h"
-#endif
-#if defined(MEDIAINFO_DTSUHD_YES)
-    #include "MediaInfo/Audio/File_DtsUhd.h"
-#endif
-#if defined(MEDIAINFO_C2PA_YES)
-    #include "MediaInfo/Tag/File_C2pa.h"
-#endif
-#include "MediaInfo/Multiple/File_Mpeg4_TimeCode.h"
-#include "ZenLib/FileName.h"
-#include "ThirdParty/base64/base64.h"
-#define FMT_UNICODE 0
-#include "ThirdParty/fmt/format.h"
-#include <zlib.h>
-#include <algorithm>
-#include <cmath>
-#include <cfloat>
-
+#include <string>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
 {
 
-//***************************************************************************
-// Infos
-//***************************************************************************
-
-//---------------------------------------------------------------------------
-static const char* Mpeg4_Meta_Kind(int32u Kind)
-{
-    //QuickTime 2014-02-11, Table 3-5, Well-known data types
-    switch (Kind)
-    {
-        case 0x00 : return "Binary";
-        case 0x01 : return "UTF8";
-        case 0x02 : return "UTF16";
-        case 0x03 : return "Mac String";
-        case 0x0E : return "Jpeg";
-        case 0x15 : return "Signed Integer"; //the size of the integer is derived from the container size
-        case 0x16 : return "Unsigned Integer"; //the size of the integer is derived from the container size
-        case 0x17 : return "Float 32";
-        case 0x18 : return "Float 64";
-        default   : return "";
-    }
-}
-
-//---------------------------------------------------------------------------
-static const char* Mpeg4_TypeModifierName(int32u TypeModifierName)
-{
-    switch (TypeModifierName)
-    {
-        case 0x01 : return "Matrix";
-        case 0x02 : return "Clip";
-        case 0x03 : return "Volume";
-        case 0x04 : return "Audio balance";
-        case 0x05 : return "Graphic mode";
-        case 0x06 : return "Matrix object";
-        case 0x07 : return "Graphics mode object";
-        case 0x76696465 : return "Image type";
-        default   : return "";
-    }
-}
-
-//---------------------------------------------------------------------------
-static const char* Mpeg4_sample_depends_on[]=
-{
-    "",
-    "this sample does depend on others (not an I picture)",
-    "this sample does not depend on others (I picture)",
-    "reserved",
-};
-
-//---------------------------------------------------------------------------
-static const char* Mpeg4_sample_is_depended_on[]=
-{
-    "",
-    "other samples depend on this one (not disposable)",
-    "no other sample depends on this one (disposable)",
-    "reserved",
-};
-
-//---------------------------------------------------------------------------
-static const char* Mpeg4_sample_has_redundancy[]=
-{
-    "",
-    "there is redundant coding in this sample",
-    "there is no redundant coding in this sample",
-    "reserved",
-};
-
-//---------------------------------------------------------------------------
-static Ztring Mpeg4_Vendor(int32u Vendor)
-{
-    switch (Vendor)
-    {
-        case 0x46464D50 : return __T("FFMpeg");
-        case 0x4D4F544F : return __T("Motorola");
-        case 0x50484C50 : return __T("Philips");
-        case 0x6170706C : return __T("Apple");
-        case 0x6E6F6B69 : return __T("Nokia");
-        case 0x6D6F746F : return __T("Motorola");
-        default         : return Ztring().From_CC4(Vendor);
-    }
-}
+using namespace ZenLib;
 
 //---------------------------------------------------------------------------
 const char* Mpeg4_chan(int16u Ordering)
@@ -398,6 +176,271 @@ const char* Mpeg4_chan_Layout(int16u Ordering)
         case 146 : return "L R C Vhc Lsd Rsd Ls Rs Vhl Vhr Lw Rw Csd Cs LFE1 LFE2 Lc Rc HI VI Haptic";
         case 147 : return "";
         default  : return "";
+    }
+}
+
+//---------------------------------------------------------------------------
+const char* File_Mpeg4_sv3d_ProjectionType_Values[] =
+{
+    "Rectangular",
+    "Equirectangular",
+    "Cubemap",
+    "Mesh",
+};
+const auto File_Mpeg4_sv3d_ProjectionType_Values_Size = sizeof(File_Mpeg4_sv3d_ProjectionType_Values) / sizeof(*File_Mpeg4_sv3d_ProjectionType_Values);
+std::string File_Mpeg4_sv3d_ProjectionType(int8u Value)
+{
+    if (Value >= File_Mpeg4_sv3d_ProjectionType_Values_Size) {
+        return std::to_string(Value);
+    }
+    return File_Mpeg4_sv3d_ProjectionType_Values[Value];
+}
+
+} //NameSpace
+
+//---------------------------------------------------------------------------
+#endif //...
+//---------------------------------------------------------------------------
+
+//***************************************************************************
+//
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+#ifdef MEDIAINFO_MPEG4_YES
+//---------------------------------------------------------------------------
+
+//---------------------------------------------------------------------------
+#include "MediaInfo/Multiple/File_Mpeg4.h"
+#include "MediaInfo/File__MultipleParsing.h"
+#include "MediaInfo/Video/File_DolbyVisionMetadata.h"
+#include "MediaInfo/Image/File_GainMap.h"
+#if defined(MEDIAINFO_DVDIF_YES)
+    #include "MediaInfo/Multiple/File_DvDif.h"
+#endif
+#if defined(MEDIAINFO_MXF_YES)
+    #include "MediaInfo/Multiple/File_Mxf.h"
+#endif
+#if defined(MEDIAINFO_AIC_YES)
+    #include "MediaInfo/Video/File_Aic.h"
+#endif
+#if defined(MEDIAINFO_APV_YES)
+    #include "MediaInfo/Video/File_Apv.h"
+#endif
+#if defined(MEDIAINFO_AV1_YES)
+    #include "MediaInfo/Video/File_Av1.h"
+#endif
+#if defined(MEDIAINFO_AV2_YES)
+    #include "MediaInfo/Video/File_Av2.h"
+#endif
+#if defined(MEDIAINFO_AVC_YES)
+    #include "MediaInfo/Video/File_Avc.h"
+#endif
+#if defined(MEDIAINFO_AVS3V_YES)
+    #include "MediaInfo/Video/File_Avs3V.h"
+#endif
+#if defined(MEDIAINFO_CINEFORM_YES)
+    #include "MediaInfo/Video/File_CineForm.h"
+#endif
+#if defined(MEDIAINFO_FFV1_YES)
+    #include "MediaInfo/Video/File_Ffv1.h"
+#endif
+#if defined(MEDIAINFO_H263_YES)
+    #include "MediaInfo/Video/File_H263.h"
+#endif
+#if defined(MEDIAINFO_HEVC_YES)
+    #include "MediaInfo/Video/File_Hevc.h"
+#endif
+#if defined(MEDIAINFO_MPEGV_YES)
+    #include "MediaInfo/Video/File_Mpegv.h"
+#endif
+#if defined(MEDIAINFO_PNG_YES)
+    #include "MediaInfo/Image/File_Png.h"
+#endif
+#if defined(MEDIAINFO_PRORES_YES)
+    #include "MediaInfo/Video/File_ProRes.h"
+#endif
+#if defined(MEDIAINFO_VC1_YES)
+    #include "MediaInfo/Video/File_Vc1.h"
+#endif
+#if defined(MEDIAINFO_VC3_YES)
+    #include "MediaInfo/Video/File_Vc3.h"
+#endif
+#if defined(MEDIAINFO_VP9_YES)
+    #include "MediaInfo/Video/File_Vp9.h"
+#endif
+#if defined(MEDIAINFO_AAC_YES)
+    #include "MediaInfo/Audio/File_Aac.h"
+#endif
+#if defined(MEDIAINFO_AC3_YES)
+    #include "MediaInfo/Audio/File_Ac3.h"
+#endif
+#if defined(MEDIAINFO_AC4_YES)
+    #include "MediaInfo/Audio/File_Ac4.h"
+#endif
+#if defined(MEDIAINFO_SMPTEST0337_YES)
+    #include "MediaInfo/Audio/File_ChannelGrouping.h"
+#endif
+#if defined(MEDIAINFO_SMPTEST0337_YES)
+    #include "MediaInfo/Audio/File_ChannelSplitting.h"
+#endif
+#if defined(MEDIAINFO_AMR_YES)
+    #include "MediaInfo/Audio/File_Amr.h"
+#endif
+#if defined(MEDIAINFO_ADPCM_YES)
+    #include "MediaInfo/Audio/File_Adpcm.h"
+#endif
+#if defined(MEDIAINFO_FLAC_YES)
+    #include "MediaInfo/Audio/File_Flac.h"
+#endif
+#if defined(MEDIAINFO_IAMF_YES)
+    #include "MediaInfo/Audio/File_Iamf.h"
+#endif
+#if defined(MEDIAINFO_MPEGA_YES)
+    #include "MediaInfo/Audio/File_Mpega.h"
+#endif
+#if defined(MEDIAINFO_MPEGH3DA_YES)
+    #include "MediaInfo/Audio/File_Mpegh3da.h"
+#endif
+#if defined(MEDIAINFO_OPUS_YES)
+    #include "MediaInfo/Audio/File_Opus.h"
+#endif
+#if defined(MEDIAINFO_PCM_YES)
+    #include "MediaInfo/Audio/File_Pcm.h"
+#endif
+#if defined(MEDIAINFO_SMPTEST0337_YES)
+    #include "MediaInfo/Audio/File_SmpteSt0337.h"
+#endif
+#if defined(MEDIAINFO_CDP_YES)
+    #include "MediaInfo/Text/File_Cdp.h"
+#endif
+#if defined(MEDIAINFO_EIA608_YES)
+    #include "MediaInfo/Text/File_Eia608.h"
+#endif
+#if defined(MEDIAINFO_EXIF_YES)
+    #include "MediaInfo/Tag/File_Exif.h"
+#endif
+#if defined(MEDIAINFO_ICC_YES)
+    #include "MediaInfo/Tag/File_Icc.h"
+#endif
+#if defined(MEDIAINFO_SPHERICALVIDEO_YES)
+    #include "MediaInfo/Tag/File_SphericalVideo.h"
+#endif
+#if defined(MEDIAINFO_PROPERTYLIST_YES)
+    #include "MediaInfo/Tag/File_PropertyList.h"
+#endif
+#if defined(MEDIAINFO_TIMEDTEXT_YES)
+    #include "MediaInfo/Text/File_TimedText.h"
+#endif
+#if defined(MEDIAINFO_TTML_YES)
+    #include "MediaInfo/Text/File_Ttml.h"
+#endif
+#if defined(MEDIAINFO_XMP_YES)
+    #include "MediaInfo/Tag/File_Xmp.h"
+#endif
+#if defined(MEDIAINFO_JPEG_YES)
+    #include "MediaInfo/Image/File_Jpeg.h"
+#endif
+#if defined(MEDIAINFO_DTSUHD_YES)
+    #include "MediaInfo/Audio/File_DtsUhd.h"
+#endif
+#if defined(MEDIAINFO_C2PA_YES)
+    #include "MediaInfo/Tag/File_C2pa.h"
+#endif
+#include "MediaInfo/Multiple/File_Mpeg4_TimeCode.h"
+#include "ZenLib/FileName.h"
+#include "ThirdParty/base64/base64.h"
+#define FMT_UNICODE 0
+#include "ThirdParty/fmt/format.h"
+#include <zlib.h>
+#include <algorithm>
+#include <cmath>
+#include <cfloat>
+
+//---------------------------------------------------------------------------
+
+namespace MediaInfoLib
+{
+
+//***************************************************************************
+// Infos
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+static const char* Mpeg4_Meta_Kind(int32u Kind)
+{
+    //QuickTime 2014-02-11, Table 3-5, Well-known data types
+    switch (Kind)
+    {
+        case 0x00 : return "Binary";
+        case 0x01 : return "UTF8";
+        case 0x02 : return "UTF16";
+        case 0x03 : return "Mac String";
+        case 0x0E : return "Jpeg";
+        case 0x15 : return "Signed Integer"; //the size of the integer is derived from the container size
+        case 0x16 : return "Unsigned Integer"; //the size of the integer is derived from the container size
+        case 0x17 : return "Float 32";
+        case 0x18 : return "Float 64";
+        default   : return "";
+    }
+}
+
+//---------------------------------------------------------------------------
+static const char* Mpeg4_TypeModifierName(int32u TypeModifierName)
+{
+    switch (TypeModifierName)
+    {
+        case 0x01 : return "Matrix";
+        case 0x02 : return "Clip";
+        case 0x03 : return "Volume";
+        case 0x04 : return "Audio balance";
+        case 0x05 : return "Graphic mode";
+        case 0x06 : return "Matrix object";
+        case 0x07 : return "Graphics mode object";
+        case 0x76696465 : return "Image type";
+        default   : return "";
+    }
+}
+
+//---------------------------------------------------------------------------
+static const char* Mpeg4_sample_depends_on[]=
+{
+    "",
+    "this sample does depend on others (not an I picture)",
+    "this sample does not depend on others (I picture)",
+    "reserved",
+};
+
+//---------------------------------------------------------------------------
+static const char* Mpeg4_sample_is_depended_on[]=
+{
+    "",
+    "other samples depend on this one (not disposable)",
+    "no other sample depends on this one (disposable)",
+    "reserved",
+};
+
+//---------------------------------------------------------------------------
+static const char* Mpeg4_sample_has_redundancy[]=
+{
+    "",
+    "there is redundant coding in this sample",
+    "there is no redundant coding in this sample",
+    "reserved",
+};
+
+//---------------------------------------------------------------------------
+static Ztring Mpeg4_Vendor(int32u Vendor)
+{
+    switch (Vendor)
+    {
+        case 0x46464D50 : return __T("FFMpeg");
+        case 0x4D4F544F : return __T("Motorola");
+        case 0x50484C50 : return __T("Philips");
+        case 0x6170706C : return __T("Apple");
+        case 0x6E6F6B69 : return __T("Nokia");
+        case 0x6D6F746F : return __T("Motorola");
+        default         : return Ztring().From_CC4(Vendor);
     }
 }
 
@@ -786,23 +829,6 @@ std::string File_Mpeg4_st3d_Layout(int8u Value)
         return std::to_string(Value);
     }
     return File_Mpeg4_st3d_Layout_Values[Value - 1];
-}
-
-//---------------------------------------------------------------------------
-const char* File_Mpeg4_sv3d_ProjectionType_Values[] =
-{
-    "Rectangular",
-    "Equirectangular",
-    "Cubemap",
-    "Mesh",
-};
-const auto File_Mpeg4_sv3d_ProjectionType_Values_Size = sizeof(File_Mpeg4_sv3d_ProjectionType_Values) / sizeof(*File_Mpeg4_sv3d_ProjectionType_Values);
-std::string File_Mpeg4_sv3d_ProjectionType(int8u Value)
-{
-    if (Value >= File_Mpeg4_sv3d_ProjectionType_Values_Size) {
-        return std::to_string(Value);
-    }
-    return File_Mpeg4_sv3d_ProjectionType_Values[Value];
 }
 
 //---------------------------------------------------------------------------
@@ -2320,6 +2346,7 @@ void File_Mpeg4::mdat_xxxx()
             }
 
             bool ShouldDemux=true;
+            #if defined(MEDIAINFO_AVC_YES)
             if (Stream_Temp.Demux_Level&(1<<7) && Element_Size-Stream_Temp.Demux_Offset)
             {
                 if (Stream_Temp.Parsers[0]->Status[IsAccepted])
@@ -2379,6 +2406,7 @@ void File_Mpeg4::mdat_xxxx()
                     ShouldDemux = false;
                 }
             }
+            #endif //defined(MEDIAINFO_AVC_YES)
             if (ShouldDemux)
             {
                 Demux_Level=Stream_Temp.Demux_Level;
@@ -2849,6 +2877,7 @@ void File_Mpeg4::meta_iinf_infe()
         {
             case 0x45786966:    // Exif
                                 {
+                                #if defined(MEDIAINFO_EXIF_YES)
                                 auto Parser = new File_Exif();
                                 Parser->FromHeif = true;
                                 Open_Buffer_Init(Parser);
@@ -2857,11 +2886,13 @@ void File_Mpeg4::meta_iinf_infe()
                                 Stream.StreamKind = Stream_General;
                                 Stream.StreamPos = 0;
                                 mdat_MustParse = true;
+                                #endif
                                 Skip = true;
                                 break;
                                 }
             //case 0x68767431:    // hvt1 --> image tile TODO
             case 0x6D696D65:    // mime
+                                #if defined(MEDIAINFO_XMP_YES)
                                 if (content_type == "application/rdf+xml") {
                                     auto Parser = new File_Xmp();
                                     Open_Buffer_Init(Parser);
@@ -2873,6 +2904,7 @@ void File_Mpeg4::meta_iinf_infe()
                                     Skip = true;
                                     break;
                                 }
+                                #endif
                                 [[fallthrough]];
             case 0x75726900:    // uri
                                 Skip=true; // Currently not supported
@@ -3925,9 +3957,17 @@ void File_Mpeg4::mini()
                 continue;
             File__Analyze* Parser;
             if (item_ID==6)
+                #if defined(MEDIAINFO_EXIF_YES)
                 Parser=new File_Exif();
+                #else
+                continue;
+                #endif
             else
+                #if defined(MEDIAINFO_XMP_YES)
                 Parser=new File_Xmp();
+                #else
+                continue;
+                #endif
             Open_Buffer_Init(Parser);
             auto& Stream=Streams[item_ID];
             Stream.Parsers.push_back(Parser);
@@ -10348,8 +10388,8 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_udts()
         Skip_XX(Element_Size-Element_Size,                      "Unknown");
 
     int16u FrameDuration = 512 << FrameDurationCode;
-    int32u MaxPayload = 2048 << MaxPayloadCode;
     #if defined(MEDIAINFO_DTSUHD_YES)
+    int32u MaxPayload = 2048 << MaxPayloadCode;
     DTSUHD_ChannelMaskInfo ChannelMaskInfo = DTSUHD_DecodeChannelMask(ChannelMask);
     int32u SampleRate = FrequencyCodeTable[BaseSamplingFrequencyCode] << SampleRateMod;
     float32 BitRate_Max = (float32)MaxPayload * 8 * SampleRate / FrameDuration;
@@ -10359,14 +10399,18 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_udts()
         Fill(Stream_Audio, StreamPos_Last, Audio_Format, "DTS-UHD", Unlimited, true, true);
         Fill(Stream_Audio, StreamPos_Last, Audio_BitRate_Mode, "VBR", Unlimited, true, true);
         Fill(Stream_Audio, StreamPos_Last, Audio_Format_Profile, DecoderProfileCode + 2, 10, true);
+        #if defined(MEDIAINFO_DTSUHD_YES)
         Fill(Stream_Audio, StreamPos_Last, Audio_Format_Settings, RepresentationTypeTable[RepresentationType]);
+        #endif
         if (!DecoderProfileCode)
             Fill(Stream_Audio, StreamPos_Last, Audio_Format_Commercial_IfAny, "DTS:X P2");
         Fill(Stream_Audio, StreamPos_Last, Audio_FrameRate, "Not Indicated");
-        Fill(Stream_Audio, StreamPos_Last, Audio_SamplingRate, SampleRate, 10, true); //This is the maximum sampling frequency
-        Fill(Stream_Audio, StreamPos_Last, Audio_SamplesPerFrame, FrameDuration);
-        Fill(Stream_Audio, StreamPos_Last, Audio_BitRate_Maximum, BitRate_Max, 0, true);
         #if defined(MEDIAINFO_DTSUHD_YES)
+        Fill(Stream_Audio, StreamPos_Last, Audio_SamplingRate, SampleRate, 10, true); //This is the maximum sampling frequency
+        #endif
+        Fill(Stream_Audio, StreamPos_Last, Audio_SamplesPerFrame, FrameDuration);
+        #if defined(MEDIAINFO_DTSUHD_YES)
+        Fill(Stream_Audio, StreamPos_Last, Audio_BitRate_Maximum, BitRate_Max, 0, true);
         if (ChannelMask)
         {
             Fill(Stream_Audio, StreamPos_Last, Audio_Channel_s_, ChannelMaskInfo.ChannelCount);

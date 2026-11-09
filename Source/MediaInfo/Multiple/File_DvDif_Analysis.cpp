@@ -796,6 +796,7 @@ void File_DvDif::Errors_Stats_Update()
             }
         }
 
+        #if MEDIAINFO_EVENTS
         EVENT_BEGIN(DvDif, Change, 0)
             Event.StreamOffset=Speed_FrameCount_StartOffset;
             Event.FrameNumber=Speed_FrameCount;
@@ -944,7 +945,6 @@ void File_DvDif::Errors_Stats_Update()
             Event.Captions_Flags=Captions_Flags[0]?1:0;
             Captions_Flags.reset(0);
         EVENT_END()
-        #if MEDIAINFO_EVENTS
             //Demux
             struct MediaInfo_Event_DvDif_Analysis_Frame_0 Event;
             Event.EventCode=MediaInfo_EventCode_Create(MediaInfo_Parser_DvDif, MediaInfo_Event_DvDif_Analysis_Frame, 0);
@@ -1892,9 +1892,9 @@ void File_DvDif::Errors_Stats_Update()
             Config->Event_Send(NULL, (const int8u*)&Event1, sizeof(MediaInfo_Event_DvDif_Analysis_Frame_1));
             Config->Event_Send(NULL, (const int8u*)&Event, sizeof(MediaInfo_Event_DvDif_Analysis_Frame_0));
             memset(BlockStatus, 0, Event1.BlockStatus_Count);
+            if (MoreData)
+                delete[] (MoreData-sizeof(size_t));
         #endif //MEDIAINFO_EVENTS
-        if (MoreData)
-            delete[] (MoreData-sizeof(size_t));
     }
 
     //Speed_TimeCode_Current

@@ -963,11 +963,11 @@ public :
     //***************************************************************************
 
     void Attachment(const char* MuxingMode, const Ztring& Description = {}, const Ztring& Type = {}, const Ztring& MimeType = {}, bool IsCover = {});
-    #if defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_PNG_YES)
+    #if defined(MEDIAINFO_APV_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AV2_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_PNG_YES)
     void Get_MasteringDisplayColorVolume(Ztring& MasteringDisplay_ColorPrimaries, Ztring& MasteringDisplay_Luminance, bool FromAV1=false);
     void Get_LightLevel(Ztring &MaxCLL, Ztring &MaxFALL, int32u Divisor=1);
     #endif
-    #if defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MK_YES) || defined(MEDIAINFO_MXF_YES) || defined(MEDIAINFO_MPEGTS_YES)
+    #if defined(MEDIAINFO_APV_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AV2_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MK_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_MXF_YES) || defined(MEDIAINFO_PNG_YES)
     struct mastering_metadata_2086
     {
         int16u Primaries[8];
@@ -1786,8 +1786,8 @@ public :
         string              BuildConformanceName(const string& ParserName, const char* Prefix, const char* Suffix) { return {}; }
         void                IsTruncated(int64u ExpectedSize = (int64u)-1, bool MoreThan = false, const char* = nullptr) {}
         void                DurationIssue(int64u ActualDuration, int64u ExpectedDuration = (int64u)-1, bool MoreThan = false, const char* Prefix = nullptr) {}
-        void                RanOutOfData(const char* = nullptr) { Trusted_IsNot(); }
-        void                SynchLost(const char* = nullptr, int64u CountOfBytes = 0, bool AreZero = false) { Trusted_IsNot(); }
+        void                RanOutOfData(const char* = nullptr) { Trusted_IsNot("out of data"); }
+        void                SynchLost(const char* = nullptr, int64u CountOfBytes = 0, bool AreZero = false) { Trusted_IsNot("Synchronization lost"); }
     #endif //MEDIAINFO_CONFORMANCE
 
     #if MEDIAINFO_SEEK

@@ -138,12 +138,16 @@ void File_DtvccTransport::Streams_Finish()
 
     if (ServiceDescriptors)
     {
+        #if defined(MEDIAINFO_EIA608_YES)
         if (ServiceDescriptors->ServiceDescriptors608.find(0)!=ServiceDescriptors->ServiceDescriptors608.end())
             CreateStream(0);
         if (ServiceDescriptors->ServiceDescriptors608.find(1)!=ServiceDescriptors->ServiceDescriptors608.end())
             CreateStream(1);
+        #endif
+        #if defined(MEDIAINFO_EIA708_YES)
         if (!ServiceDescriptors->ServiceDescriptors708.empty())
             CreateStream(2);
+        #endif
     }
 
     //Per stream
@@ -281,13 +285,13 @@ void File_DtvccTransport::Read_Buffer_Continue()
                                 ((File_Eia708*)Streams[2]->Parser)->cc_type=cc_type;
                                 if (AspectRatio)
                                     ((File_Eia708*)Streams[2]->Parser)->AspectRatio=AspectRatio;
-                            #endif
                             if (cc_type==3)
                             {
                                 ((File_Eia708*)Streams[2]->Parser)->cc_type=4; //Magic value saying that the buffer must be kept (this is only a point of synchro from the undelying layer)
                                 Open_Buffer_Continue(Streams[Parser_Pos]->Parser, Buffer+(size_t)(Buffer_Offset+Element_Offset), 0);
                                 ((File_Eia708*)Streams[2]->Parser)->cc_type=3;
                             }
+                            #endif
                         }
                         else
                         {

@@ -69,7 +69,9 @@ File_WebP::File_WebP()
 //---------------------------------------------------------------------------
 File_WebP::~File_WebP()
 {
+    #if defined(MEDIAINFO_ICC_YES)
     delete ICC_Parser;
+    #endif
 }
 
 //***************************************************************************
@@ -91,9 +93,11 @@ void File_WebP::Streams_Finish()
             Fill(StreamKind_Last, 0, Fill_Parameter(StreamKind_Last, Generic_ColorSpace), ColorSpace, true);
         }
     }
+    #if defined(MEDIAINFO_ICC_YES)
     if (StreamKind_Last == Stream_Image && ICC_Parser) {
         Merge(*ICC_Parser, Stream_Image, 0, 0); // Merged here because we don't know the stream kind in advance
     }
+    #endif
 }
 
 //***************************************************************************
@@ -250,6 +254,7 @@ void File_WebP::WEBP_EXIF()
 //---------------------------------------------------------------------------
 void File_WebP::WEBP_ICCP()
 {
+    #if defined(MEDIAINFO_ICC_YES)
     if (ICC_Parser)
         delete ICC_Parser;
     ICC_Parser = new File_Icc;
@@ -258,6 +263,9 @@ void File_WebP::WEBP_ICCP()
     Open_Buffer_Init(ICC_Parser);
     Open_Buffer_Continue(ICC_Parser);
     Open_Buffer_Finalize(ICC_Parser);
+    #else
+    Skip_XX(Element_Size-Element_Offset,                        "ICC profile");
+    #endif
 }
 
 //---------------------------------------------------------------------------
