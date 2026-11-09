@@ -463,13 +463,13 @@ static string Mpeg4_chan_ChannelDescription_Layout (int32u ChannelLabel)
         case   9 : return "Cs";
         case  10 : return "Lsd";
         case  11 : return "Rsd";
-        case  12 : return "Tcs";
-        case  13 : return "Vhl";
-        case  14 : return "Vhc";
-        case  15 : return "Vhr";
-        case  16 : return "Trs";
-        case  17 : return "Trs";
-        case  18 : return "Trs";
+        case  12 : return "Tc";  // TopCenterSurround
+        case  13 : return "Tfl"; // VerticalHeightLeft
+        case  14 : return "Tfc"; // VerticalHeightCenter
+        case  15 : return "Tfr"; // VerticalHeightRight
+        case  16 : return "Tbl"; // TopBackLeft
+        case  17 : return "Tbc"; // TopBackCenter
+        case  18 : return "Tbr"; // TopBackRight
         case  33 : return "Lrs";
         case  34 : return "Rrs";
         case  35 : return "Lw";
