@@ -573,6 +573,7 @@ void File_Id3v2::Data_Parse()
     const int8u* Save_Buffer=Buffer;
     int64u Save_File_Offset=File_Offset;
     size_t Save_Buffer_Offset=Buffer_Offset;
+    size_t Save_Buffer_Size=Buffer_Size;
     int64u Save_Element_Size=Element_Size;
     if (DataLength!=(int32u)-1)
     {
@@ -591,6 +592,7 @@ void File_Id3v2::Data_Parse()
             //We must change the buffer for keeping out
             File_Offset=Save_File_Offset+Buffer_Offset;
             Buffer_Offset=0;
+            Buffer_Size=(size_t)Element_Size; //The bytes after the end of the copy are not readable
             Buffer_Unsynch=new int8u[(size_t)Element_Size];
             for (size_t Pos=0; Pos<=Unsynch_List.size(); Pos++)
             {
@@ -784,6 +786,7 @@ void File_Id3v2::Data_Parse()
         //We must change the buffer for keeping out
         File_Offset=Save_File_Offset;
         Buffer_Offset=Save_Buffer_Offset;
+        Buffer_Size=Save_Buffer_Size;
         delete[] Buffer; Buffer=Save_Buffer;
         Buffer_Unsynch=NULL; //Same as Buffer...
         Element_Offset+=Unsynch_List.size();

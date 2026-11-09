@@ -718,6 +718,7 @@ File_Avc::File_Avc()
 
     //Temp
     preferred_transfer_characteristics=2;
+    Buffer_Size_Original=0;
 
     //ITU-T T.35
     #if defined(MEDIAINFO_T35_YES)
@@ -2111,7 +2112,9 @@ void File_Avc::Data_Parse()
     const int8u* Save_Buffer=Buffer;
     int64u Save_File_Offset=File_Offset;
     size_t Save_Buffer_Offset=Buffer_Offset;
+    size_t Save_Buffer_Size=Buffer_Size;
     int64u Save_Element_Size=Element_Size;
+    Buffer_Size_Original=Buffer_Size;
     size_t Element_Offset_3Bytes=(size_t)Element_Offset;
     std::vector<size_t> ThreeByte_List;
     while (Element_Offset_3Bytes+3<=Element_Size)
@@ -2131,6 +2134,7 @@ void File_Avc::Data_Parse()
         Element_Size=Save_Element_Size-ThreeByte_List.size();
         File_Offset+=Buffer_Offset;
         Buffer_Offset=0;
+        Buffer_Size=(size_t)Element_Size; //The bytes after the end of the copy are not readable
         Buffer_3Bytes=new int8u[(size_t)Element_Size];
         for (size_t Pos=0; Pos<=ThreeByte_List.size(); Pos++)
         {
@@ -2179,6 +2183,7 @@ void File_Avc::Data_Parse()
         Element_Size=Save_Element_Size;
         File_Offset=Save_File_Offset;
         Buffer_Offset=Save_Buffer_Offset;
+        Buffer_Size=Save_Buffer_Size;
         delete[] Buffer; Buffer=Save_Buffer;
         Buffer_3Bytes=NULL; //Same as Buffer...
         Element_Offset+=ThreeByte_List.size();
@@ -2953,7 +2958,7 @@ void File_Avc::slice_header()
                     Finish("AVC");
             }
             if (FrameIsAlwaysComplete && !first_mb_in_slice && FrameSizes.size()<=1)
-                FrameSizes[Buffer_Size]++;
+                FrameSizes[Buffer_Size_Original]++;
         }
     FILLING_END();
 }

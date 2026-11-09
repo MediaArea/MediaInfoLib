@@ -1479,6 +1479,7 @@ void File_Hevc::Data_Parse()
     const int8u* Save_Buffer=Buffer;
     int64u Save_File_Offset=File_Offset;
     size_t Save_Buffer_Offset=Buffer_Offset;
+    size_t Save_Buffer_Size=Buffer_Size;
     int64u Save_Element_Size=Element_Size;
     size_t Element_Offset_3Bytes=(size_t)Element_Offset;
     std::vector<size_t> ThreeByte_List;
@@ -1499,6 +1500,7 @@ void File_Hevc::Data_Parse()
         Element_Size=Save_Element_Size-ThreeByte_List.size();
         File_Offset+=Buffer_Offset;
         Buffer_Offset=0;
+        Buffer_Size=(size_t)Element_Size; //The bytes after the end of the copy are not readable
         Buffer_3Bytes=new int8u[(size_t)Element_Size];
         for (size_t Pos=0; Pos<=ThreeByte_List.size(); Pos++)
         {
@@ -1556,6 +1558,7 @@ void File_Hevc::Data_Parse()
         Element_Size=Save_Element_Size;
         File_Offset=Save_File_Offset;
         Buffer_Offset=Save_Buffer_Offset;
+        Buffer_Size=Save_Buffer_Size;
         delete[] Buffer; Buffer=Save_Buffer;
         Buffer_3Bytes=NULL; //Same as Buffer...
         Element_Offset+=ThreeByte_List.size();
@@ -2761,6 +2764,7 @@ void File_Hevc::sei_message(int32u &seq_parameter_set_id)
     //Manage buggy files not having final bit stop
     const int8u* Buffer_Buggy;
     int64u Buffer_Offset_Buggy, Element_Size_Buggy;
+    size_t Buffer_Size_Buggy=Buffer_Size;
     if (Element_Offset+payloadSize>Element_Size)
     {
         Buffer_Buggy=Buffer;
@@ -2769,6 +2773,7 @@ void File_Hevc::sei_message(int32u &seq_parameter_set_id)
         Element_Size=Element_Offset+payloadSize;
         Buffer=new int8u[(size_t)Element_Size];
         Buffer_Offset=0;
+        Buffer_Size=(size_t)Element_Size; //The bytes after the end of the copy are not readable
         memcpy((void*)Buffer, Buffer_Buggy+Buffer_Offset, (size_t)Element_Size_Buggy);
         memset((void*)(Buffer+(size_t)Element_Size_Buggy), 0x00, (size_t)(Element_Size-Element_Size_Buggy)); //Last 0x00 bytes are discarded, we recreate them
     }
@@ -2813,6 +2818,7 @@ void File_Hevc::sei_message(int32u &seq_parameter_set_id)
         delete[] Buffer;
         Buffer=Buffer_Buggy;
         Buffer_Offset=Buffer_Offset_Buggy;
+        Buffer_Size=Buffer_Size_Buggy;
         Element_Size=Element_Size_Buggy;
     }
 }
