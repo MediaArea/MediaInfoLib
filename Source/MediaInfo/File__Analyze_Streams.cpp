@@ -1177,10 +1177,6 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
 {
     using std::to_string;
 
-    #define UNSUPPORTED() \
-        Trusted_IsNot("Unsupported"); \
-        return;
-
     auto Remaining_Bits{ [&]() {
         auto Remain{ Data_BS_Remain() };
         return Remain > BitsAfter ? Remain - BitsAfter : 0;
@@ -1188,14 +1184,6 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
 
     // Values are added to a copy, the copy is kept only if the RPU is fully parsed
     DV_RPU New(data);
-
-    // Elements still open when the parsing stops on a problem are ended when leaving this function
-    struct element_level_restore
-    {
-        File__Analyze& Parser;
-        size_t Level;
-        ~element_level_restore() { while (Parser.Element_Level > Level) Parser.Element_End(); }
-    } Element_Level_Restore{ *this, Element_Level };
 
     //Parsing
     Element_Begin1("rpu_data");
@@ -1209,7 +1197,10 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
     Get_S1 ( 6, rpu_type,                                       "rpu_type");
     Get_S2 (11, rpu_format,                                     "rpu_format");
     if (rpu_type != 2) {
-        UNSUPPORTED();
+        Trusted_IsNot("Unsupported");
+        Element_End0(); // rpu_data_header
+        Element_End0(); // rpu_data
+        return;
     }
     // if (rpu_type == 2) {
     // EDR RPU frame header
@@ -1227,6 +1218,9 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
             Get_UE(coefficient_log2_denom,                      "coefficient_log2_denom");
             if (coefficient_log2_denom > 32) {
                 Trusted_IsNot("coefficient_log2_denom is too large");
+                Element_End0(); // vdr_seq_info_present_flag
+                Element_End0(); // rpu_data_header
+                Element_End0(); // rpu_data
                 return;
             }
             break;
@@ -1244,6 +1238,9 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
             Get_UE (vdr_bit_depth_minus8,                       "vdr_bit_depth_minus8");
             if (bl_bit_depth_minus8 > 8 || el_bit_depth_minus8 > 8 || vdr_bit_depth_minus8 > 8) {
                 Trusted_IsNot("bit depth is too large");
+                Element_End0(); // vdr_seq_info_present_flag
+                Element_End0(); // rpu_data_header
+                Element_End0(); // rpu_data
                 return;
             }
             Get_SB (spatial_resampling_filter_flag,             "spatial_resampling_filter_flag");
@@ -1252,10 +1249,17 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
             Get_SB (disable_residual_flag,                      "disable_residual_flag");
         }
         else {
-            UNSUPPORTED();
+            Trusted_IsNot("Unsupported");
+            Element_End0(); // vdr_seq_info_present_flag
+            Element_End0(); // rpu_data_header
+            Element_End0(); // rpu_data
+            return;
         }
     TESTELSE_SB_ELSE(                                           "vdr_seq_info_present");
-        UNSUPPORTED();
+        Trusted_IsNot("Unsupported");
+        Element_End0(); // rpu_data_header
+        Element_End0(); // rpu_data
+        return;
     TESTELSE_SB_END();
     bool use_prev_vdr_rpu_flag, vdr_dm_metadata_present_flag;
     int8u isMEL{ 0xFF };
@@ -1274,6 +1278,8 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
             Get_UE(num_pivots_minus_2[cmp],                     ("num_pivots_minus_2[" + to_string(cmp) + "]").c_str());
             if (num_pivots_minus_2[cmp] > 7) {
                 Trusted_IsNot("num_pivots_minus_2 is too large");
+                Element_End0(); // rpu_data_header
+                Element_End0(); // rpu_data
                 return;
             }
             for (int32u pivot_idx = 0; pivot_idx < num_pivots_minus_2[cmp] + 2; ++pivot_idx) {
@@ -1319,6 +1325,10 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
                     Get_UE(poly_order_minus1,                   ("poly_order_minus1[" + to_string(cmp) + "][" + to_string(pivot_idx) + "]").c_str());
                     if (poly_order_minus1 > 1) {
                         Trusted_IsNot("poly_order_minus1 is too large");
+                        Element_End0(); // rpu_data_mapping_param
+                        Element_End0(); // rpu_data_mapping
+                        Element_End0(); // vdr_rpu_data_payload
+                        Element_End0(); // rpu_data
                         return;
                     }
                     if (poly_order_minus1 == 0)
@@ -1443,7 +1453,10 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
         Skip_UE(                                                "current_dm_metadata_id");
         Get_UE (scene_refresh_flag,                             "scene_refresh_flag");
         if (dm_compression > 1) {
-            UNSUPPORTED();
+            Trusted_IsNot("Unsupported");
+            Element_End0(); // vdr_dm_data_payload
+            Element_End0(); // rpu_data
+            return;
         }
         if (!dm_compression) {
             int32u signal_eotf_param2;
@@ -1493,6 +1506,8 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
         Get_UE(num_ext_blocks,                                  "num_ext_blocks");
         if (num_ext_blocks > 16) { // An arbitrary value as there is currently not so many extension blocks defined
             Trusted_IsNot("num_ext_blocks is larger than expected");
+            Element_End0(); // vdr_dm_data_payload
+            Element_End0(); // rpu_data
             return;
         }
         if (num_ext_blocks) {
@@ -1507,6 +1522,9 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
                 Get_S1(8, ext_block_level,                      "ext_block_level");
                 if (ext_block_length > Remaining_Bits() / 8) {
                     Trusted_IsNot("ext_block_length is too large");
+                    Element_End0(); // ext_metadata_block
+                    Element_End0(); // vdr_dm_data_payload
+                    Element_End0(); // rpu_data
                     return;
                 }
                 Element_Begin1("ext_block_payload");
@@ -1614,6 +1632,8 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
             Get_UE(num_ext_blocks2,                             "num_ext_blocks");
             if (num_ext_blocks2 > 16) { // An arbitrary value as there is currently not so many extension blocks defined
                 Trusted_IsNot("num_ext_blocks is larger than expected");
+                Element_End0(); // vdr_dm_data_payload
+                Element_End0(); // rpu_data
                 return;
             }
             if (num_ext_blocks2) {
@@ -1630,6 +1650,9 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
                     Get_S1(8, ext_block_level,                  "ext_block_level");
                     if (ext_block_length > Remaining_Bits() / 8) {
                         Trusted_IsNot("ext_block_length is too large");
+                        Element_End0(); // ext_metadata_block
+                        Element_End0(); // vdr_dm_data_payload
+                        Element_End0(); // rpu_data
                         return;
                     }
                     Element_Begin1("ext_block_payload");
@@ -1847,8 +1870,6 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
     Mark_1();                                                   // rbsp_stop_one_bit
     for (int8u i = 0; i < 7; ++i) Mark_0();                     // rbsp_alignment_zero_bit
     Element_End0(); // rbsp_trailing_bits
-
-    #undef UNSUPPORTED
 
     FILLING_BEGIN();
     if (CRC32_Check) {
