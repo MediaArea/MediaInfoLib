@@ -972,9 +972,12 @@ void File__Analyze::Trace_Details_Handling(File__Analyze* Sub)
                 while (Sub->Element_Level)
                     Sub->Element_End0();
 
-            //Add Sub to this node
-            Element[Element_Level].TraceNode.Add_Child(&Sub->Element[Sub->Element_Level].TraceNode);
-            Sub->Element[Sub->Element_Level].TraceNode.Init();
+            //Add Sub to this node, only the elements already ended, the elements not ended yet are added after a next buffer or at finalization
+            if (!Sub->Element[0].TraceNode.Name_Is_Empty() || Sub->Element[0].TraceNode.Children.size())
+            {
+                Element[Element_Level].TraceNode.Add_Child(&Sub->Element[0].TraceNode);
+                Sub->Element[0].TraceNode.Init();
+            }
         }
         else
             Element[Element_Level].TraceNode.NoShow = true; //We don't want to show this item because there is no info in it
@@ -1636,6 +1639,12 @@ bool File__Analyze::Open_Buffer_Continue_Loop ()
         if (Config->Demux_EventWasSent)
             return false;
     #endif //MEDIAINFO_DEMUX
+
+    //Elements ending with this buffer are ended now instead of at the next buffer or at finalization,
+    //so the trace of a sub-parser taken by its parent parser after this buffer has them complete
+    if (IsSub)
+        while (Element_Level>0 && File_Offset+Buffer_Offset>=Element[Element_Level].Next)
+            Element_End0();
 
     //Parsing specific
     Read_Buffer_AfterParsing();
