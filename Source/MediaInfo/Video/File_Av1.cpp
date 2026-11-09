@@ -1078,6 +1078,7 @@ void File_Av1::metadata_itu_t_t35_B5_5890_01()
     Get_SB(afgs1_enable_flag,                                   "afgs1_enable_flag");
     if (!afgs1_enable_flag) {
         BS_End();
+        Element_End0();
         return;
     }
     Skip_S1(4,                                                  "reserved_4bits");

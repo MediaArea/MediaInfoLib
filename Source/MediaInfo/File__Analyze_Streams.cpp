@@ -1189,6 +1189,14 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
     // Values are added to a copy, the copy is kept only if the RPU is fully parsed
     DV_RPU New(data);
 
+    // Elements still open when the parsing stops on a problem are ended when leaving this function
+    struct element_level_restore
+    {
+        File__Analyze& Parser;
+        size_t Level;
+        ~element_level_restore() { while (Parser.Element_Level > Level) Parser.Element_End(); }
+    } Element_Level_Restore{ *this, Element_Level };
+
     //Parsing
     Element_Begin1("rpu_data");
     auto OffsetBegin{ Element_Offset + BS->Offset_Get() };

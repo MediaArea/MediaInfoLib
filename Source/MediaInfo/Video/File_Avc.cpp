@@ -3631,7 +3631,6 @@ void File_Avc::sei_message_user_data_registered_itu_t_t35_GA94_06()
     Mark_1_NoTrustError();
     Mark_1_NoTrustError();
     Mark_1_NoTrustError();
-    BS_End();
     if (top_bar_flag)
     {
         Mark_1();
@@ -3656,14 +3655,6 @@ void File_Avc::sei_message_user_data_registered_itu_t_t35_GA94_06()
         Mark_1();
         Skip_S2(14,                                             "pixel_number_start_of_right_bar");
     }
-    Mark_1();
-    Mark_1();
-    Mark_1();
-    Mark_1();
-    Mark_1();
-    Mark_1();
-    Mark_1();
-    Mark_1();
     BS_End();
 
     if (Element_Size-Element_Offset)
