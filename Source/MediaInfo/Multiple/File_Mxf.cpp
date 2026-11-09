@@ -6424,34 +6424,68 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St20675 (conformance_errors
     if (IndexSegments && !IsCbe && Descriptor && (Descriptor->EssenceContainer.lo&0xFFFFFFFFFFFF0000LL)==Labels::MXFGCAESBWFAudio)
         Errors.Add("Index Table of constant bitrate audio is not a calculated one");
 
-    //Edit Unit at the start of each essence partition
+    //Edit Unit at the start of each essence partition, from the first Index Table indexing its Body Offset
     vector<int64u> EssencePartitions_Starts;
     if (EssencePartitions.size()==1)
         EssencePartitions_Starts.push_back(0);
     #if MEDIAINFO_SEEK
-        else
+        else if (!EssencePartitions.empty())
+        {
+            //Edit Unit of each Body Offset, Index Tables tested in order with the Body Offsets not yet found
+            vector<int64u> BodyOffsets; //Sorted, unique
+            for (const auto Partition : EssencePartitions)
+                BodyOffsets.push_back(Partition->BodyOffset);
+            sort(BodyOffsets.begin(), BodyOffsets.end());
+            BodyOffsets.erase(unique(BodyOffsets.begin(), BodyOffsets.end()), BodyOffsets.end());
+            vector<int64u> BodyOffsets_Start(BodyOffsets.size(), (int64u)-1);
+            auto BodyOffsets_Unknown=BodyOffsets.size();
+            const auto Start_Set=[&](size_t i, int64u Start) {
+                if (BodyOffsets_Start[i]==(int64u)-1 && Start!=(int64u)-1)
+                {
+                    BodyOffsets_Start[i]=Start;
+                    BodyOffsets_Unknown--;
+                }
+            };
+            set<int32u> EditUnitByteCounts; //Of the Index Tables of constant bitrate already tested
+            for (const auto& IndexTable : IndexTables)
+            {
+                if (!BodyOffsets_Unknown)
+                    break;
+                if (IndexTable.EditUnitByteCount)
+                {
+                    if (EditUnitByteCounts.insert(IndexTable.EditUnitByteCount).second) //Else same result as a previous Index Table
+                        for (size_t i=0; i<BodyOffsets.size(); i++)
+                            if (!(BodyOffsets[i]%IndexTable.EditUnitByteCount))
+                                Start_Set(i, BodyOffsets[i]/IndexTable.EditUnitByteCount);
+                    continue;
+                }
+
+                //Search of a Body Offset in the entries (they may be not sorted), for each Body Offset or only for the ones present in the entries if they are fewer
+                const auto& Entries=IndexTable.Entries;
+                const auto Entry_Find=[&](size_t i) {
+                    if (BodyOffsets_Start[i]!=(int64u)-1)
+                        return;
+                    const auto Entry=lower_bound(Entries.begin(), Entries.end(), BodyOffsets[i], [](const indextable::entry& Entry, int64u Offset) {
+                        return Entry.StreamOffset<Offset;
+                    });
+                    if (Entry!=Entries.end() && Entry->StreamOffset==BodyOffsets[i])
+                        Start_Set(i, IndexTable.IndexStartPosition+(Entry-Entries.begin()));
+                };
+                if (BodyOffsets.size()<=Entries.size())
+                    for (size_t i=0; i<BodyOffsets.size(); i++)
+                        Entry_Find(i);
+                else
+                    for (const auto& Entry : Entries)
+                    {
+                        const auto BodyOffset=lower_bound(BodyOffsets.begin(), BodyOffsets.end(), Entry.StreamOffset);
+                        if (BodyOffset!=BodyOffsets.end() && *BodyOffset==Entry.StreamOffset)
+                            Entry_Find(BodyOffset-BodyOffsets.begin());
+                    }
+            }
+
             for (size_t i=0; i<EssencePartitions.size(); i++)
             {
-                const auto Partition=EssencePartitions[i];
-                auto Start=(int64u)-1;
-                for (const auto& IndexTable : IndexTables)
-                {
-                    if (IndexTable.EditUnitByteCount)
-                    {
-                        if (!(Partition->BodyOffset%IndexTable.EditUnitByteCount))
-                            Start=Partition->BodyOffset/IndexTable.EditUnitByteCount;
-                    }
-                    else
-                    {
-                        const auto Entry=lower_bound(IndexTable.Entries.begin(), IndexTable.Entries.end(), Partition->BodyOffset, [](const indextable::entry& Entry, int64u Offset) {
-                            return Entry.StreamOffset<Offset;
-                        });
-                        if (Entry!=IndexTable.Entries.end() && Entry->StreamOffset==Partition->BodyOffset)
-                            Start=IndexTable.IndexStartPosition+(Entry-IndexTable.Entries.begin());
-                    }
-                    if (Start!=(int64u)-1)
-                        break;
-                }
+                const auto Start=BodyOffsets_Start[lower_bound(BodyOffsets.begin(), BodyOffsets.end(), EssencePartitions[i]->BodyOffset)-BodyOffsets.begin()];
                 if (Start==(int64u)-1)
                 {
                     if (i && i+1==EssencePartitions.size())
@@ -6462,6 +6496,7 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St20675 (conformance_errors
                 }
                 EssencePartitions_Starts.push_back(Start);
             }
+        }
     #endif //MEDIAINFO_SEEK
 
     //Regular partitioning of frame-wrapped essence (5.1.5), every 60 s with a tolerance of 6 s except the last Body Partition (SMPTE ST 2067-2 5.1.3)
@@ -6483,20 +6518,24 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St20675 (conformance_errors
 
     //Index Table Segments after the essence they index (SMPTE ST 2067-2 5.1.4)
     if (IsTrackFile && !EssencePartitions.empty())
+    {
+        //Essence partition of an Edit Unit, as a scan from the first one finds it (starts may be not sorted): the one before the first of the next ones starting after the Edit Unit, found in the running maximum of the starts of the next ones
+        vector<int64u> NextStarts_Max;
+        for (size_t i=1; i<EssencePartitions_Starts.size(); i++)
+            NextStarts_Max.push_back(max(EssencePartitions_Starts[i], NextStarts_Max.empty()?0:NextStarts_Max.back()));
         for (const auto& Segment : IndexTableSegments)
         {
             int64u Segment_IndexSID, IndexStartPosition;
             if (!Raw_UInt_Get(Property_Get(Segment.Properties, 0x3F06), 4, Segment_IndexSID) || Segment_IndexSID!=IndexSID || !Raw_UInt_Get(Property_Get(Segment.Properties, 0x3F0C), 8, IndexStartPosition))
                 continue;
-            size_t i=0; //First essence partition if the start of each one is unknown
-            while (i+1<EssencePartitions_Starts.size() && EssencePartitions_Starts[i+1]<=IndexStartPosition)
-                i++;
+            const size_t i=upper_bound(NextStarts_Max.begin(), NextStarts_Max.end(), IndexStartPosition)-NextStarts_Max.begin(); //First essence partition if the start of each one is unknown
             if (EssencePartitions[i]->StreamOffset>Segment.StreamOffset)
             {
                 Errors.Add("Index Table Segment is before the essence it indexes (actual Index Table Segment at offset "+to_string(Segment.StreamOffset)+", essence at offset "+to_string(EssencePartitions[i]->StreamOffset)+')');
                 break;
             }
         }
+    }
 
     Warnings.StreamID=StreamID_Save;
     return Errors;
