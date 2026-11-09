@@ -1641,15 +1641,18 @@ void File_DolbyE::Data_Parse()
     //In case of scrambling
     const int8u*    Save_Buffer=NULL;
     size_t          Save_Buffer_Offset=0;
+    size_t          Save_Buffer_Size=0;
     int64u          Save_File_Offset=0;
     if (key_present)
     {
         //We must change the buffer,
         Save_Buffer=Buffer;
         Save_Buffer_Offset=Buffer_Offset;
+        Save_Buffer_Size=Buffer_Size;
         Save_File_Offset=File_Offset;
         File_Offset+=Buffer_Offset;
         Buffer_Offset=0;
+        Buffer_Size=(size_t)Element_Size;
         Descrambled_Buffer=new int8u[(size_t)Element_Size];
         std::memcpy(Descrambled_Buffer, Save_Buffer+Save_Buffer_Offset, (size_t)Element_Size);
         Buffer=Descrambled_Buffer;
@@ -1682,6 +1685,7 @@ void File_DolbyE::Data_Parse()
     {
         delete[] Buffer; Buffer=Save_Buffer;
         Buffer_Offset=Save_Buffer_Offset;
+        Buffer_Size=Save_Buffer_Size;
         File_Offset=Save_File_Offset;
     }
 
@@ -1814,6 +1818,7 @@ void File_DolbyE::metadata_segment()
                         break;
             default :   ;
         }
+        Descramble_Reload();
     }
     size_t  metadata_segment_BitCountAfter=Data_BS_Remain();
     int16u  metadata_segment_size;
@@ -3226,6 +3231,7 @@ void File_DolbyE::audio_segment()
                             break;
                 default :   ;
             }
+            Descramble_Reload();
         }
 
         #if MEDIAINFO_TRACE
@@ -3299,6 +3305,7 @@ void File_DolbyE::metadata_extension_segment()
                         break;
             default :   ;
         }
+        Descramble_Reload();
     }
 
     #if MEDIAINFO_TRACE
@@ -3403,6 +3410,7 @@ void File_DolbyE::audio_extension_segment()
                             break;
                 default :   ;
             }
+            Descramble_Reload();
         }
 
         #if MEDIAINFO_TRACE
@@ -3476,6 +3484,7 @@ void File_DolbyE::meter_segment()
                         break;
             default :   ;
         }
+        Descramble_Reload();
     }
     size_t  meter_segment_BitCountAfter=Data_BS_Remain();
     meter_segment_BitCountAfter-=meter_segment_size*bit_depth;
@@ -3793,6 +3802,15 @@ void File_DolbyE::Descramble_20bit (int32u key, int16u size)
         int40u2BigEndian(Temp+(Half?3:0)+Pos*5/2, BigEndian2int40u(Temp+(Half?3:0)+Pos*5/2)^keys);
     if ((size-((size && Half)?1:0))%2==0)
         int24u2BigEndian(Temp+(Half?3:0)+(size-((size && Half)?1:0))*5/2, BigEndian2int24u(Temp+(Half?3:0)+(size-((size && Half)?1:0))*5/2)^(key<<4));
+}
+
+//---------------------------------------------------------------------------
+void File_DolbyE::Descramble_Reload()
+{
+    //Words are descrambled in place after the bitstream reader has loaded some of them
+    size_t BS_Remain=Data_BS_Remain();
+    BS_Begin();
+    BS->Skip(Data_BS_Remain()-BS_Remain);
 }
 
 //***************************************************************************

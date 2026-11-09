@@ -142,6 +142,7 @@ private :
 
     //Helpers
     void Descramble_20bit(int32u key, int16u size);
+    void Descramble_Reload();
 
     //Temp
     int64u  SMPTE_time_code_StartTimecode;
