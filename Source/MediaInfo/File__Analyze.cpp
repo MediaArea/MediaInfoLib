@@ -1908,7 +1908,8 @@ void File__Analyze::Open_Buffer_Finalize (File__Analyze* Sub)
         return;
 
     //Finalize
-    Open_Buffer_Init(Sub);
+    if (!Sub->Config)
+        Open_Buffer_Init(Sub); //Only if not done before, else the sizes and offsets given at initialization would be overwritten
     Sub->Open_Buffer_Finalize();
 
     #if MEDIAINFO_TRACE
