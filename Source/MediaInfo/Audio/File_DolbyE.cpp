@@ -1641,15 +1641,18 @@ void File_DolbyE::Data_Parse()
     //In case of scrambling
     const int8u*    Save_Buffer=NULL;
     size_t          Save_Buffer_Offset=0;
+    size_t          Save_Buffer_Size=0;
     int64u          Save_File_Offset=0;
     if (key_present)
     {
         //We must change the buffer,
         Save_Buffer=Buffer;
         Save_Buffer_Offset=Buffer_Offset;
+        Save_Buffer_Size=Buffer_Size;
         Save_File_Offset=File_Offset;
         File_Offset+=Buffer_Offset;
         Buffer_Offset=0;
+        Buffer_Size=(size_t)Element_Size;
         Descrambled_Buffer=new int8u[(size_t)Element_Size];
         std::memcpy(Descrambled_Buffer, Save_Buffer+Save_Buffer_Offset, (size_t)Element_Size);
         Buffer=Descrambled_Buffer;
@@ -1682,6 +1685,7 @@ void File_DolbyE::Data_Parse()
     {
         delete[] Buffer; Buffer=Save_Buffer;
         Buffer_Offset=Save_Buffer_Offset;
+        Buffer_Size=Save_Buffer_Size;
         File_Offset=Save_File_Offset;
     }
 
@@ -1802,18 +1806,17 @@ void File_DolbyE::metadata_segment()
                         {
                         int32u metadata_key;
                         Get_S3 (24, metadata_key, "metadata_key");
-                        int32u metadata_segment_size=((BigEndian2int16u(Buffer+Buffer_Offset+(size_t)Element_Size-Data_BS_Remain()/8)^metadata_key)>>2)&0x3FF;
+                        int16u metadata_segment_size=((BigEndian2int16u(Buffer+Buffer_Offset+(size_t)Element_Size-Data_BS_Remain()/8)^(metadata_key>>8))>>2)&0x3FF;
 
-                        if (Data_BS_Remain()<((size_t)metadata_segment_size+1)*bit_depth) //+1 for CRC
+                        if (Data_BS_Remain()<((size_t)metadata_segment_size+1)*(size_t)bit_depth) //+1 for CRC
                             return; //There is a problem
 
-                        int8u* Temp=Descrambled_Buffer+(size_t)Element_Size-Data_BS_Remain()/8;
-                        for (int16u Pos=0; Pos<metadata_segment_size+1; Pos++)
-                            int24u2BigEndian(Temp+Pos*2, BigEndian2int24u(Temp+Pos*2)^metadata_key);
+                        Descramble_24bit(metadata_key, metadata_segment_size);
                         }
                         break;
             default :   ;
         }
+        Descramble_Reload();
     }
     size_t  metadata_segment_BitCountAfter=Data_BS_Remain();
     int16u  metadata_segment_size;
@@ -1883,10 +1886,7 @@ void File_DolbyE::metadata_segment()
         Get_S2 (10, channel_subsegment_size[Channel],           "channel_subsegment_size");
         channel_subsegment_sizes[Channel][channel_subsegment_size[Channel]]++;
     }
-    if (!Mpegv_frame_rate_type[frame_rate_code])
-        Get_S1 ( 8, metadata_extension_segment_size,            "metadata_extension_segment_size");
-    else
-        metadata_extension_segment_size=0;
+    Get_S1 ( 8, metadata_extension_segment_size,                "metadata_extension_segment_size");
     Get_S1 ( 8, meter_segment_size,                             "meter_segment_size");
     for (int8u Program=0; Program<DolbyE_Programs[program_config]; Program++)
     {
@@ -3200,7 +3200,7 @@ void File_DolbyE::audio_segment()
             for (int8u ChannelForSize=0; ChannelForSize<DolbyE_Channels[program_config]/2; ChannelForSize++)
                 audio_subsegment_size+=channel_subsegment_size[((Channel<DolbyE_Channels[program_config]/2)?0:(DolbyE_Channels[program_config]/2))+ChannelForSize];
 
-            if (Data_BS_Remain()<(audio_subsegment_size+1)*(size_t)bit_depth)
+            if (Data_BS_Remain()<((size_t)audio_subsegment_size+2)*(size_t)bit_depth) //+1 for key, +1 for CRC
                 return; //There is a problem
 
             //We must change the buffer
@@ -3209,7 +3209,7 @@ void File_DolbyE::audio_segment()
                 case 16 :
                             {
                             int16u audio_subsegment_key;
-                            Get_S2 (16, audio_subsegment_key, (Channel+1==DolbyE_Channels[program_config])?"audio_subsegment1_key":"audio_subsegment0_key");
+                            Get_S2 (16, audio_subsegment_key, Channel?"audio_subsegment1_key":"audio_subsegment0_key");
 
                             int8u* Temp=Descrambled_Buffer+(size_t)Element_Size-Data_BS_Remain()/8;
                             for (int16u Pos=0; Pos<audio_subsegment_size+1; Pos++)
@@ -3219,13 +3219,22 @@ void File_DolbyE::audio_segment()
                 case 20 :
                             {
                             int32u audio_subsegment_key;
-                            Get_S3 (20, audio_subsegment_key, (Channel+1==DolbyE_Channels[program_config])?"audio_subsegment1_key":"audio_subsegment0_key");
+                            Get_S3 (20, audio_subsegment_key, Channel?"audio_subsegment1_key":"audio_subsegment0_key");
 
                             Descramble_20bit(audio_subsegment_key, audio_subsegment_size);
                             }
                             break;
+                case 24 :
+                            {
+                            int32u audio_subsegment_key;
+                            Get_S3 (24, audio_subsegment_key, Channel?"audio_subsegment1_key":"audio_subsegment0_key");
+
+                            Descramble_24bit(audio_subsegment_key, audio_subsegment_size);
+                            }
+                            break;
                 default :   ;
             }
+            Descramble_Reload();
         }
 
         #if MEDIAINFO_TRACE
@@ -3269,11 +3278,14 @@ void File_DolbyE::audio_segment()
 //---------------------------------------------------------------------------
 void File_DolbyE::metadata_extension_segment()
 {
+    if (!metadata_extension_segment_size)
+        return; //The segment does not exist
+
     //Parsing
     Element_Begin1("metadata_extension_segment");
     if (key_present)
     {
-        if (Data_BS_Remain()<((size_t)metadata_extension_segment_size+1)*(size_t)bit_depth) //+1 for CRC
+        if (Data_BS_Remain()<((size_t)metadata_extension_segment_size+2)*(size_t)bit_depth) //+1 for key, +1 for CRC
             return; //There is a problem
 
         //We must change the buffer
@@ -3297,8 +3309,17 @@ void File_DolbyE::metadata_extension_segment()
                         Descramble_20bit(metadata_extension_segment_key, metadata_extension_segment_size);
                         }
                         break;
+            case 24 :
+                        {
+                        int32u metadata_extension_segment_key;
+                        Get_S3 (24, metadata_extension_segment_key, "metadata_extension_segment_key");
+
+                        Descramble_24bit(metadata_extension_segment_key, metadata_extension_segment_size);
+                        }
+                        break;
             default :   ;
         }
+        Descramble_Reload();
     }
 
     #if MEDIAINFO_TRACE
@@ -3377,7 +3398,7 @@ void File_DolbyE::audio_extension_segment()
             for (int8u ChannelForSize=0; ChannelForSize<DolbyE_Channels[program_config]/2; ChannelForSize++)
                 audio_extension_subsegment_size+=channel_subsegment_size[((Channel<DolbyE_Channels[program_config]/2)?0:(DolbyE_Channels[program_config]/2))+ChannelForSize];
 
-            if (Data_BS_Remain()<((size_t)audio_extension_subsegment_size+1)*(size_t)bit_depth)
+            if (Data_BS_Remain()<((size_t)audio_extension_subsegment_size+2)*(size_t)bit_depth) //+1 for key, +1 for CRC
                 return; //There is a problem
 
             //We must change the buffer
@@ -3386,7 +3407,7 @@ void File_DolbyE::audio_extension_segment()
                 case 16 :
                             {
                             int16u audio_extension_subsegment_key;
-                            Get_S2 (16, audio_extension_subsegment_key, (Channel+1==DolbyE_Channels[program_config])?"audio_extension_subsegment1_key":"audio_extension_subsegment0_key");
+                            Get_S2 (16, audio_extension_subsegment_key, Channel?"audio_extension_subsegment1_key":"audio_extension_subsegment0_key");
 
                             int8u* Temp=Descrambled_Buffer+(size_t)Element_Size-Data_BS_Remain()/8;
                             for (int16u Pos=0; Pos<audio_extension_subsegment_size+1; Pos++)
@@ -3396,13 +3417,22 @@ void File_DolbyE::audio_extension_segment()
                 case 20 :
                             {
                             int32u audio_extension_subsegment_key;
-                            Get_S3 (20, audio_extension_subsegment_key, (Channel+1==DolbyE_Channels[program_config])?"audio_extension_subsegment1_key":"audio_extension_subsegment0_key");
+                            Get_S3 (20, audio_extension_subsegment_key, Channel?"audio_extension_subsegment1_key":"audio_extension_subsegment0_key");
 
                             Descramble_20bit(audio_extension_subsegment_key, audio_extension_subsegment_size);
                             }
                             break;
+                case 24 :
+                            {
+                            int32u audio_extension_subsegment_key;
+                            Get_S3 (24, audio_extension_subsegment_key, Channel?"audio_extension_subsegment1_key":"audio_extension_subsegment0_key");
+
+                            Descramble_24bit(audio_extension_subsegment_key, audio_extension_subsegment_size);
+                            }
+                            break;
                 default :   ;
             }
+            Descramble_Reload();
         }
 
         #if MEDIAINFO_TRACE
@@ -3446,11 +3476,14 @@ void File_DolbyE::audio_extension_segment()
 //---------------------------------------------------------------------------
 void File_DolbyE::meter_segment()
 {
+    if (!meter_segment_size)
+        return; //The segment does not exist
+
     //Parsing
     Element_Begin1("meter_segment");
     if (key_present)
     {
-        if (Data_BS_Remain()<((size_t)meter_segment_size+1)*(size_t)bit_depth) //+1 for CRC
+        if (Data_BS_Remain()<((size_t)meter_segment_size+2)*(size_t)bit_depth) //+1 for key, +1 for CRC
             return; //There is a problem
 
         //We must change the buffer
@@ -3474,8 +3507,17 @@ void File_DolbyE::meter_segment()
                         Descramble_20bit(meter_segment_key, meter_segment_size);
                         }
                         break;
+            case 24 :
+                        {
+                        int32u meter_segment_key;
+                        Get_S3 (24, meter_segment_key, "meter_segment_key");
+
+                        Descramble_24bit(meter_segment_key, meter_segment_size);
+                        }
+                        break;
             default :   ;
         }
+        Descramble_Reload();
     }
     size_t  meter_segment_BitCountAfter=Data_BS_Remain();
     meter_segment_BitCountAfter-=meter_segment_size*bit_depth;
@@ -3484,7 +3526,7 @@ void File_DolbyE::meter_segment()
     for (int8u Channel=0; Channel<DolbyE_Channels[program_config]; Channel++)
         Skip_S2(10,                                             "rms_meter");
     if (Data_BS_Remain()>meter_segment_BitCountAfter)
-        Skip_BS(Data_BS_Remain()>meter_segment_BitCountAfter,   "reserved_meter_bits");
+        Skip_BS(Data_BS_Remain()-meter_segment_BitCountAfter,   "reserved_meter_bits");
     Skip_S3(bit_depth,                                          "meter_crc");
 
     #if MEDIAINFO_TRACE
@@ -3793,6 +3835,23 @@ void File_DolbyE::Descramble_20bit (int32u key, int16u size)
         int40u2BigEndian(Temp+(Half?3:0)+Pos*5/2, BigEndian2int40u(Temp+(Half?3:0)+Pos*5/2)^keys);
     if ((size-((size && Half)?1:0))%2==0)
         int24u2BigEndian(Temp+(Half?3:0)+(size-((size && Half)?1:0))*5/2, BigEndian2int24u(Temp+(Half?3:0)+(size-((size && Half)?1:0))*5/2)^(key<<4));
+}
+
+//---------------------------------------------------------------------------
+void File_DolbyE::Descramble_24bit (int32u key, int16u size)
+{
+    int8u* Temp=Descrambled_Buffer+(size_t)Element_Size-Data_BS_Remain()/8;
+    for (int16u Pos=0; Pos<size+1; Pos++) //+1 for CRC
+        int24u2BigEndian(Temp+Pos*3, BigEndian2int24u(Temp+Pos*3)^key);
+}
+
+//---------------------------------------------------------------------------
+void File_DolbyE::Descramble_Reload()
+{
+    //Words are descrambled in place after the bitstream reader has loaded some of them
+    size_t BS_Remain=Data_BS_Remain();
+    BS_Begin();
+    BS->Skip(Data_BS_Remain()-BS_Remain);
 }
 
 //***************************************************************************
