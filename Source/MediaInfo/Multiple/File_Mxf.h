@@ -1463,6 +1463,7 @@ protected :
         inline void Locators_Test() {}
     #endif //defined(MEDIAINFO_REFERENCES_YES)
     void NextRandomIndexPack();
+    void NextRandomIndexPack_GoTo(bool IsInHeader=false);
     bool BookMark_Needed();
     bool ProbeCaption_IsPossible();
 

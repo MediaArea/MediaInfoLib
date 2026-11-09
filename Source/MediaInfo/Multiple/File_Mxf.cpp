@@ -12160,6 +12160,14 @@ void File_Mxf::Header_Parse()
             Partitions_IsCalculatingHeaderByteCount=false;
             if (Partitions_Pos<Partitions.size())
                 Partitions[Partitions_Pos].PartitionPackByteCount=File_Offset+Buffer_Offset-Partitions[Partitions_Pos].StreamOffset;
+
+            //The search of the partitions waited for the size of the partition pack with its fill, this element is not needed (e.g. essence of a partition without header metadata or index table)
+            if (File_Offset+Buffer_Offset>=RandomIndexPacks_MaxOffset)
+            {
+                NextRandomIndexPack_GoTo(true);
+                Element_WaitForMoreData();
+                return;
+            }
         }
     }
     if (Partitions_IsCalculatingSdtiByteCount)
@@ -13348,7 +13356,7 @@ void File_Mxf::Data_Parse()
         Open_Buffer_Unsynch();
     }
 
-    if (File_Offset+Buffer_Offset+Element_Size>=RandomIndexPacks_MaxOffset)
+    if (File_Offset+Buffer_Offset+Element_Size>=RandomIndexPacks_MaxOffset && !Partitions_IsCalculatingHeaderByteCount) //Else the size of the partition pack with its fill is known only from the next element, the jump is done when its header is parsed
         NextRandomIndexPack();
 }
 
@@ -23377,6 +23385,24 @@ void File_Mxf::NextRandomIndexPack()
 {
     //We have the necessary for indexes, jumping to next index
     Skip_XX(Element_Size-Element_Offset,                        "Data");
+    NextRandomIndexPack_GoTo();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::NextRandomIndexPack_GoTo(bool IsInHeader)
+{
+    //From the header of an element, finishing is left to File__Analyze after this element, GoTo() would finish now with the header being parsed in the trace
+    const auto GoToEnd=[&]() {
+        if (IsInHeader && File_Size!=(int64u)-1 && !Config->File_IsGrowing
+            #if MEDIAINFO_DEMUX
+             && !Config->Demux_EventWasSent
+            #endif //MEDIAINFO_DEMUX
+            )
+            File_GoTo=File_Size;
+        else
+            GoToFromEnd(0);
+    };
+
     if (RandomIndexPacks.empty())
     {
         if (!RandomIndexPacks_AlreadyParsed && !ProbeCaption_IsParsingPartitions)
@@ -23390,10 +23416,10 @@ void File_Mxf::NextRandomIndexPack()
                 Open_Buffer_Unsynch();
             }
             else
-                GoToFromEnd(0);
+                GoToEnd();
         }
         else
-            GoToFromEnd(0);
+            GoToEnd();
     }
     else
     {
