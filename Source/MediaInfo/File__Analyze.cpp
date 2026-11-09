@@ -718,6 +718,9 @@ File__Analyze::File__Analyze ()
     Element_Level_Base=0;
     Element_Level=0;
     Element_Level_Overflow=0;
+    #if MEDIAINFO_TRACE
+        Data_Parse_IsRunning=false;
+    #endif //MEDIAINFO_TRACE
 
     //BitStream
     BS=new BitStream_Fast;
@@ -2969,7 +2972,14 @@ bool File__Analyze::Data_Manage()
     {
         Element_Code=Elem.Code;
         //size_t Element_Level_Save=Element_Level;
+        #if MEDIAINFO_TRACE
+            bool Data_Parse_IsRunning_Save=Data_Parse_IsRunning;
+            Data_Parse_IsRunning=true;
+        #endif //MEDIAINFO_TRACE
         Data_Parse();
+        #if MEDIAINFO_TRACE
+            Data_Parse_IsRunning=Data_Parse_IsRunning_Save;
+        #endif //MEDIAINFO_TRACE
         BS->Attach(NULL, 0); //Clear it
         BT->Attach(NULL, 0); //Clear it
         //Element_Level=Element_Level_Save;
@@ -3013,6 +3023,11 @@ bool File__Analyze::Data_Manage()
     {
         if (!Element_WantNextLevel)
             Element_End0(); //Element
+        #if MEDIAINFO_TRACE
+            if (Status[IsFinished] && !ShouldContinueParsing)
+                while (Element_Level>0)
+                    Element_End0(); //Levels not ended by ForceFinish() during Data_Parse()
+        #endif //MEDIAINFO_TRACE
         if (!Element_WantNextLevel && Element_Offset<Element_Size)
             Buffer_Offset+=(size_t)Element_Size;
         else
@@ -3937,20 +3952,12 @@ void File__Analyze::ForceFinish ()
 
     #if MEDIAINFO_TRACE
         Element_Show(); //If Element_Level is >0, we must show what is in the details buffer
-        while (Element_Level>0)
-            Element_End0(); //This is Finish, must flush
+        if (!Data_Parse_IsRunning) //Else the parser continues the element and Data_Manage() ends the levels after it
+            while (Element_Level>0)
+                Element_End0(); //This is Finish, must flush
 
         if (ParserName.empty() && ParserName_Char)
             ParserName = ParserName_Char;
-
-        if (!ParserName.empty())
-        {
-            bool MustElementBegin=Element_Level?true:false;
-            if (Element_Level>0)
-                Element_End0(); //Element
-            if (MustElementBegin)
-                Element_Level++;
-        }
     #endif //MEDIAINFO_TRACE
 
     if (Status[IsAccepted])
