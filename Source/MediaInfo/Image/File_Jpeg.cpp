@@ -446,7 +446,7 @@ void File_Jpeg::Streams_Finish_PerImage()
     for (const auto& Item : JpegXtExt_List)
     {
         if (Item.second.Parser) {
-            Item.second.Parser->Finish();
+            Open_Buffer_Finalize(Item.second.Parser.get());
             if (CurrentMainStream == 0) {
                 Merge(*Item.second.Parser, Stream_General, 0, 0);
                 Merge(*Item.second.Parser, false);

@@ -589,6 +589,8 @@ File__Analyze::File__Analyze ()
         Config_Trace_Format=MediaInfoLib::Config.Trace_Format_Get();
         Trace_DoNotSave=false;
         Trace_Strings=NULL;
+        Trace_Parent_Level=(size_t)-1;
+        Trace_Parent_Pos=0;
         Trace_Layers.set();
         Trace_Layers_Update();
     #endif //MEDIAINFO_TRACE
@@ -967,6 +969,10 @@ void File__Analyze::Trace_Details_Handling(File__Analyze* Sub)
 {
     if (Trace_Activated)
     {
+        //Element in which the sub-parser is fed, for its elements ended at finalization
+        Sub->Trace_Parent_Level=Element_Level;
+        Sub->Trace_Parent_Pos=Element[Element_Level].TraceNode.Pos;
+
         //Details handling
         if ((!Sub->Element[0].TraceNode.Name_Is_Empty() || Sub->Element[Sub->Element_Level].TraceNode.Children.size()) && !Trace_DoNotSave)
         {
@@ -985,6 +991,32 @@ void File__Analyze::Trace_Details_Handling(File__Analyze* Sub)
         else
             Element[Element_Level].TraceNode.NoShow = true; //We don't want to show this item because there is no info in it
     }
+}
+
+//---------------------------------------------------------------------------
+element_details::Element_Node* File__Analyze::Trace_Node_Find(size_t Level, int64u Pos)
+{
+    //Element still open
+    if (!Level || (Level<=Element_Level && Element[Level].TraceNode.Pos==Pos))
+        return &Element[Level].TraceNode;
+
+    //Element ended, searched from the deepest open element begun before it
+    size_t Open=Level<=Element_Level?Level:(Element_Level+1);
+    do
+        Open--;
+    while (Open && Element[Open].TraceNode.Pos>Pos);
+    element_details::Element_Node* Node=&Element[Open].TraceNode;
+    for (; Open<Level; Open++)
+    {
+        //Last child begun before the position, nodes without name (e.g. from a sub-parser) are skipped as their position is not the one of an element
+        size_t i=Node->Children.size();
+        while (i && (Node->Children[i-1]->Pos>Pos || Node->Children[i-1]->Name_Is_Empty()))
+            i--;
+        if (!i)
+            return NULL;
+        Node=Node->Children[i-1];
+    }
+    return Node->Pos==Pos?Node:NULL;
 }
 #endif // MEDIAINFO_TRACE
 //---------------------------------------------------------------------------
@@ -1795,7 +1827,12 @@ void File__Analyze::Open_Buffer_Finalize (bool NoBufferModification)
 
     //Element must be Finish
     while (Element_Level>0)
+    {
+        #if MEDIAINFO_TRACE
+            Element[Element_Level].WaitForMoreData=false; //No more data, the elements not ended are shown with what is parsed in them
+        #endif //MEDIAINFO_TRACE
         Element_End0();
+    }
 
     //Buffer - Global
     Fill();
@@ -1845,10 +1882,15 @@ void File__Analyze::Open_Buffer_Finalize (File__Analyze* Sub)
     Sub->Open_Buffer_Finalize();
 
     #if MEDIAINFO_TRACE
-        //Elements ended by the sub-parser during its finalization
+        //Elements ended by the sub-parser during its finalization, in the element in which the sub-parser was last fed if it is still in the trace
         if (Trace_Activated && !Trace_DoNotSave && !Sub->Element[0].TraceNode.Children.empty())
         {
-            Element[Element_Level].TraceNode.Add_Child(&Sub->Element[0].TraceNode);
+            element_details::Element_Node* Node=NULL;
+            if (Sub->Trace_Parent_Level!=(size_t)-1)
+                Node=Trace_Node_Find(Sub->Trace_Parent_Level, Sub->Trace_Parent_Pos);
+            if (!Node)
+                Node=&Element[Element_Level].TraceNode;
+            Node->Add_Child(&Sub->Element[0].TraceNode);
             Sub->Element[0].TraceNode.Init();
         }
     #endif //MEDIAINFO_TRACE
