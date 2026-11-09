@@ -2162,6 +2162,7 @@ File_Mxf::File_Mxf()
     #endif //MEDIAINFO_DEMUX
 
     Partitions_Pos=0;
+    Partitions_ByteCounts_Valid=0;
     Partitions_IsCalculatingHeaderByteCount=false;
     Partitions_IsCalculatingSdtiByteCount=false;
     Partitions_IsFooter=false;
@@ -10985,7 +10986,10 @@ void File_Mxf::Read_Buffer_AfterParsing()
         {
             Partitions_IsCalculatingHeaderByteCount=false;
             if (Partitions_Pos<Partitions.size())
+            {
                 Partitions[Partitions_Pos].PartitionPackByteCount=File_Offset+Buffer_Offset-Partitions[Partitions_Pos].StreamOffset;
+                Partitions_Changed(Partitions_Pos);
+            }
         }
 
         if (IsParsingEnd)
@@ -11070,22 +11074,29 @@ void File_Mxf::Position_Update(int64u FutureFileOffset, bool UnsynchParsers)
         const bool IsClipJump=ProbeCaption_IsInContentPackage && Buffer_End && File_GoTo!=(int64u)-1; //Jump of the caption probe in clip wrapped essence, parsers need a start of frame
         int64u StreamOffset_Offset=IsCaptionProbe?FirstPass_ContentPackage_First:0;
         int32u BodySID=0;
-        Partitions_Pos=0;
-        while (Partitions_Pos<Partitions.size() && Partitions[Partitions_Pos].StreamOffset<=FutureFileOffset)
+        if (!IsCaptionProbe)
         {
-            const auto& Partition=Partitions[Partitions_Pos];
-            const auto ByteCount=Partition.PartitionPackByteCount+Partition.HeaderByteCount+Partition.IndexByteCount;
-            Partitions_Pos++;
-            if (!IsCaptionProbe)
-                StreamOffset_Offset+=ByteCount;
-            else if (Partition.StreamOffset<=FirstPass_ContentPackage_First)
-                BodySID=Partition.BodySID;
-            else if (Partition.BodySID==BodySID && Partition.BodyOffset && Partition.BodyOffset<=Partition.StreamOffset-FirstPass_ContentPackage_First)
-                StreamOffset_Offset=Partition.StreamOffset+ByteCount-Partition.BodyOffset; //Exact, whatever is in the partitions before this one
-            else if (Partition.BodySID!=BodySID && Partitions_Pos<Partitions.size() && Partitions[Partitions_Pos].StreamOffset<=FutureFileOffset)
-                StreamOffset_Offset+=Partitions[Partitions_Pos].StreamOffset-Partition.StreamOffset; //No essence of this stream up to the next partition
-            else
-                StreamOffset_Offset+=ByteCount;
+            //Partitions are sorted by offset, the sums of their byte counts are kept between position updates
+            Partitions_Pos=upper_bound(Partitions.begin(), Partitions.end(), FutureFileOffset, [](int64u Offset, const partition& Item) {return Offset<Item.StreamOffset;})-Partitions.begin();
+            StreamOffset_Offset=Partitions_ByteCount(Partitions_Pos);
+        }
+        else
+        {
+            Partitions_Pos=0;
+            while (Partitions_Pos<Partitions.size() && Partitions[Partitions_Pos].StreamOffset<=FutureFileOffset)
+            {
+                const auto& Partition=Partitions[Partitions_Pos];
+                const auto ByteCount=Partition.PartitionPackByteCount+Partition.HeaderByteCount+Partition.IndexByteCount;
+                Partitions_Pos++;
+                if (Partition.StreamOffset<=FirstPass_ContentPackage_First)
+                    BodySID=Partition.BodySID;
+                else if (Partition.BodySID==BodySID && Partition.BodyOffset && Partition.BodyOffset<=Partition.StreamOffset-FirstPass_ContentPackage_First)
+                    StreamOffset_Offset=Partition.StreamOffset+ByteCount-Partition.BodyOffset; //Exact, whatever is in the partitions before this one
+                else if (Partition.BodySID!=BodySID && Partitions_Pos<Partitions.size() && Partitions[Partitions_Pos].StreamOffset<=FutureFileOffset)
+                    StreamOffset_Offset+=Partitions[Partitions_Pos].StreamOffset-Partition.StreamOffset; //No essence of this stream up to the next partition
+                else
+                    StreamOffset_Offset+=ByteCount;
+            }
         }
         if (IsCaptionProbe)
         {
@@ -11337,6 +11348,7 @@ void File_Mxf::Position_Update(int64u FutureFileOffset, bool UnsynchParsers)
         const auto Partition=find_if(Partitions.begin(), Partitions.end(), [](const partition& Item) {return Item.PartitionPackByteCount==(int64u)-1;});
         if (Partition!=Partitions.end())
         {
+            Partitions_Changed(Partition-Partitions.begin());
             if (File_Offset+Buffer_Offset<File_Size)
                 Partitions.erase(Partition);
             else
@@ -11349,6 +11361,33 @@ void File_Mxf::Position_Update(int64u FutureFileOffset, bool UnsynchParsers)
     #if MEDIAINFO_SEEK
         IndexTables_Pos=0;
     #endif //MEDIAINFO_SEEK
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::Partitions_Changed(size_t Pos)
+{
+    //Sums of the byte counts of the partitions before this one stay valid
+    if (Partitions_ByteCounts_Valid>Pos+1)
+        Partitions_ByteCounts_Valid=Pos+1;
+}
+
+//---------------------------------------------------------------------------
+int64u File_Mxf::Partitions_ByteCount(size_t Count)
+{
+    //Sums are computed from the first changed partition, partitions are usually added in offset order
+    if (Partitions_ByteCounts.size()<=Count)
+        Partitions_ByteCounts.resize(Count+1);
+    if (!Partitions_ByteCounts_Valid)
+    {
+        Partitions_ByteCounts[0]=0;
+        Partitions_ByteCounts_Valid=1;
+    }
+    for (; Partitions_ByteCounts_Valid<=Count; Partitions_ByteCounts_Valid++)
+    {
+        const auto& Partition=Partitions[Partitions_ByteCounts_Valid-1];
+        Partitions_ByteCounts[Partitions_ByteCounts_Valid]=Partitions_ByteCounts[Partitions_ByteCounts_Valid-1]+Partition.PartitionPackByteCount+Partition.HeaderByteCount+Partition.IndexByteCount;
+    }
+    return Partitions_ByteCounts[Count];
 }
 
 //---------------------------------------------------------------------------
@@ -11373,6 +11412,7 @@ bool File_Mxf::DetectDuration ()
         return false;
     Partitions=((File_Mxf*)MI.Info)->Partitions;
     std::sort(Partitions.begin(), Partitions.end());
+    Partitions_Changed(0);
     IndexTables=((File_Mxf*)MI.Info)->IndexTables;
     std::sort(IndexTables.begin(), IndexTables.end());
     IndexTables_Lookup_Rebuild();
@@ -12159,7 +12199,10 @@ void File_Mxf::Header_Parse()
         {
             Partitions_IsCalculatingHeaderByteCount=false;
             if (Partitions_Pos<Partitions.size())
+            {
                 Partitions[Partitions_Pos].PartitionPackByteCount=File_Offset+Buffer_Offset-Partitions[Partitions_Pos].StreamOffset;
+                Partitions_Changed(Partitions_Pos);
+            }
 
             //The search of the partitions waited for the size of the partition pack with its fill, this element is not needed (e.g. essence of a partition without header metadata or index table)
             if (File_Offset+Buffer_Offset>=RandomIndexPacks_MaxOffset)
@@ -18924,6 +18967,7 @@ void File_Mxf::PartitionMetadata()
         Partition.Status=(int8u)(Code.lo>>8);
         Partitions_Pos=Partition_Next-Partitions.begin();
         Partitions.insert(Partition_Next, Partition);
+        Partitions_Changed(Partitions_Pos);
         Partitions_IsCalculatingHeaderByteCount=true;
     }
 
