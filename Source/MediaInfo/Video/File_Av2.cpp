@@ -335,6 +335,10 @@ void File_Av2::Streams_Finish()
         Fill(Stream_Video, 0, Video_MaxCLL, maximum_content_light_level);
     if (!maximum_frame_average_light_level.empty())
         Fill(Stream_Video, 0, Video_MaxFALL, maximum_frame_average_light_level);
+
+    #if defined(MEDIAINFO_T35_YES)
+        DolbyVision_Streams_Fill(DV_RPU_data, DV_Source_AV2);
+    #endif //defined(MEDIAINFO_T35_YES)
 }
 
 //***************************************************************************
@@ -1310,7 +1314,7 @@ void File_Av2::metadata_itu_t_t35()
         //Parsing
         if (!T35_Parser)
         {
-            T35_Parser=new File_T35(this, &HDR);
+            T35_Parser=new File_T35(this, &HDR, nullptr, &DV_RPU_data);
             Open_Buffer_Init(T35_Parser);
         }
         Open_Buffer_Continue(T35_Parser);

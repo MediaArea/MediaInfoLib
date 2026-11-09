@@ -1111,6 +1111,7 @@ public :
     enum dv_source {
         DV_Source_HEVC,
         DV_Source_AV1,
+        DV_Source_AV2,
         DV_Source_XML,
     };
     void DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source);

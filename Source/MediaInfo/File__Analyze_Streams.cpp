@@ -816,7 +816,7 @@ size_t DolbyVision_Compatibility_Pos(const Ztring& Value)
             return Pos;
     return (size_t)-1;
 }
-#if defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MK_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_MXF_YES)
+#if defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MK_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_MXF_YES) || defined(MEDIAINFO_T35_YES)
 enum class dolbyvision_profile : uint8_t
 {
     dav1,
@@ -1924,7 +1924,7 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
 
 #endif // defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_T35_YES)
 
-#if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MXF_YES)
+#if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MXF_YES) || defined(MEDIAINFO_T35_YES)
 
 //---------------------------------------------------------------------------
 static const float64 DV_PQ_m1=2610.0/16384;
@@ -2099,7 +2099,7 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
     };
 
     // Profile and layers
-    auto Profile=Source==DV_Source_AV1?(int8u)10:Data.Profile_First;
+    auto Profile=Source==DV_Source_AV1?(int8u)10:(Source==DV_Source_AV2?(int8u)0:Data.Profile_First); //No profile is defined for AV2
     auto HasEL=Source==DV_Source_HEVC && (Data.rpu_format&0x700)==0 && !Data.disable_residual_flag;
     const char* EL_Type=Data.Count_FEL?"FEL":(Data.Count_MEL?"MEL":nullptr);
     float64 Source_Max=Data.Sources.empty()?0:DV_PQ12_ToNits((int16u)Data.Sources.front());
@@ -2212,7 +2212,7 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
     Profiles.Separator_Set(0, __T(" / "));
     if (Source==DV_Source_AV1)
         Profiles.push_back(Ztring::ToZtring(Profile));
-    else
+    else if (Source!=DV_Source_AV2)
         for (int8u i=1; i<16; i++)
             if (Data.Profiles&(1<<i))
                 Profiles.push_back(Ztring::ToZtring(i));
@@ -2519,7 +2519,7 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
         Fill_Hidden("DMMode", Ztring::ToZtring(Data.dm_mode));
 }
 
-#endif // defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MXF_YES)
+#endif // defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MXF_YES) || defined(MEDIAINFO_T35_YES)
 
 //---------------------------------------------------------------------------
 #if defined(MEDIAINFO_APV_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AV2_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_PNG_YES)

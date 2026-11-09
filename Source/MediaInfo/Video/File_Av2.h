@@ -124,6 +124,7 @@ private :
     Ztring  maximum_frame_average_light_level;
     hdr     HDR;
     #if defined(MEDIAINFO_T35_YES)
+        DV_RPU DV_RPU_data;
         File_T35* T35_Parser{};
     #endif //defined(MEDIAINFO_T35_YES)
 
