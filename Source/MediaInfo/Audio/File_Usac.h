@@ -119,6 +119,7 @@ public :
     //Bookmark
     struct bs_bookmark
     {
+        BitStream_Fast              BS_Save;
         int64u                      Element_Offset;
         int64u                      Element_Size;
         size_t                      Trusted;
