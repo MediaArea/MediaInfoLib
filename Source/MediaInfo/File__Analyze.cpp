@@ -1421,14 +1421,17 @@ void File__Analyze::Open_Buffer_Continue (File__Analyze* Sub, const int8u* ToAdd
         return;
 
     //Sub
-    Sub->File_GoTo=(int64u)-1;
     if (Sub->MustAdaptSubOffsets) {
         auto NewOffset = File_Offset + Buffer_Offset + Element_Offset;
         auto OldOffset = Sub->File_Offset + Sub->Buffer_Size;
         auto DiffOffset = NewOffset - OldOffset;
         for (size_t i = 0; i <= Sub->Element_Level; i++)
             Sub->Element[i].Next += DiffOffset;
+        if (Sub->File_GoTo != (int64u)-1)
+            Sub->File_GoTo += DiffOffset; //Data skipped after the end of the previous chunk (e.g. an element bigger than the chunk) continues to be skipped in this chunk
     }
+    else
+        Sub->File_GoTo=(int64u)-1;
     Sub->File_Offset=File_Offset+Buffer_Offset+Element_Offset;
     if (Sub->File_Size!=File_Size)
     {
