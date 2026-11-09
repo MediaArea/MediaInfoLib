@@ -2923,6 +2923,15 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
 
             Value_NotBOM_Pos=Value.find_first_not_of(__T('\xFEFF')); // Avoid deep recursivity
         #else
+            //Check inverted bytes from UTF BOM (U+FFFE), swapped as with Unicode
+            if (Value.size()>=3 && (unsigned char)Value[0]==0xEF && (unsigned char)Value[1]==0xBF && (unsigned char)Value[2]==0xBE)
+            {
+                std::wstring Value2=Value.To_Unicode();
+                for (size_t i=0; i<Value2.size(); i++)
+                    Value2[i]=(wchar_t)((Value2[i]<<8 & 0xFFFF) | ((Value2[i]>>8) & 0xFF)); // Swap
+                return Fill(StreamKind, StreamPos, Parameter, Ztring().From_Unicode(Value2), Replace); // Then the BOMs are removed
+            }
+
             Value_NotBOM_Pos=0;
             while (Value.size()-Value_NotBOM_Pos>=3 // Avoid deep recursivity
              && (unsigned char)Value[Value_NotBOM_Pos  ]==0xEF
@@ -2947,22 +2956,38 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
             #if defined(UNICODE) || defined (_UNICODE)
             || (c >= 0x7F && c < 0xA0);             // DEL + C1
             #else
-            || c == 0x7F;                           // DEL, C1 values are bytes of multibyte characters
+            || c == 0x7F;                           // DEL, C1 is 2 bytes in UTF-8 text (see IsC1)
             #endif
     };
     auto it = std::find_if(Value.begin(), Value.end(), IsBadChar);
+    #if !defined(UNICODE) && !defined (_UNICODE)
+        const auto IsC1 = [&Value](Ztring::const_iterator i) {
+            return (unsigned char)i[0] == 0xC2 && i + 1 != Value.end() && (unsigned char)i[1] >= 0x80 && (unsigned char)i[1] < 0xA0;
+        };
+        for (auto i = Value.begin(); i != it; ++i) {
+            if (IsC1(i)) {
+                it = i;
+                break;
+            }
+        }
+    #endif
     if (it != Value.end()) {
         Ztring Cleaned;
         Cleaned.reserve(Value.size());
         Cleaned.append(Value.begin(), it);
         for (auto i = it; i != Value.end(); ++i) {
-            Cleaned += IsBadChar(*i) ?
             #if defined(UNICODE) || defined (_UNICODE)
-                L'\uFFFD'
+                Cleaned += IsBadChar(*i) ? L'\uFFFD' : *i;
             #else
-                '?'
+                if (IsC1(i)) {
+                    Cleaned += "\xEF\xBF\xBD"; // U+FFFD, as with Unicode
+                    ++i;
+                }
+                else if (IsBadChar(*i))
+                    Cleaned += "\xEF\xBF\xBD";
+                else
+                    Cleaned += *i;
             #endif
-                : *i;
         }
         return Fill(StreamKind, StreamPos, Parameter, Cleaned, Replace);
     }

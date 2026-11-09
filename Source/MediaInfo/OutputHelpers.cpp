@@ -52,8 +52,26 @@ Ztring XML_Encode (const Ztring& Data)
 }
 
 //---------------------------------------------------------------------------
+#if !defined(UNICODE) && !defined(_UNICODE)
+//UTF-16 surrogate, 3 bytes as in WTF-8 without Unicode (e.g. a byte which is not valid in the encoding of the locale, kept, see
+//ZenLib::Ztring::From_Unicode()): not valid UTF-8, the value is converted as with Unicode by Ztring::To_UTF8() (U+FFFD, a pair as one
+//character)
+static bool HasSurrogate(const string& Data)
+{
+    for (string::size_type Pos=0; Pos+2<Data.size(); Pos++)
+        if ((unsigned char)Data[Pos]==0xED && (unsigned char)Data[Pos+1]>=0xA0)
+            return true;
+    return false;
+}
+#endif //!defined(UNICODE) && !defined(_UNICODE)
+
+//---------------------------------------------------------------------------
 string XML_Encode (const string& Data)
 {
+    #if !defined(UNICODE) && !defined(_UNICODE)
+        if (HasSurrogate(Data))
+            return XML_Encode(Ztring(Data).To_UTF8());
+    #endif //!defined(UNICODE) && !defined(_UNICODE)
     string Result;
     for (string::size_type Pos=0; Pos<Data.size(); Pos++)
     {
@@ -213,6 +231,10 @@ string To_XML (Node& Cur_Node, const int& Level, bool Print_Header, bool Indent)
 //---------------------------------------------------------------------------
 string JSON_Encode (const string& Data)
 {
+    #if !defined(UNICODE) && !defined(_UNICODE)
+        if (HasSurrogate(Data))
+            return JSON_Encode(Ztring(Data).To_UTF8());
+    #endif //!defined(UNICODE) && !defined(_UNICODE)
     string Result;
     for (string::size_type Pos=0; Pos<Data.size(); Pos++)
     {

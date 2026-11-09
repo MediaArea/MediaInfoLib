@@ -4,7 +4,8 @@
  *  be found in the License.html file in the root of the source tree.
  */
 
-// File names with non-ASCII characters with the C API (narrow and wide functions, C++ classes without Unicode) and the locale of the environment, for filename.sh
+// File names with non-ASCII characters with the C API (narrow and wide functions; without Unicode, the C++ classes with the conversions of the
+// narrow functions) and the locale of the environment, for filename.sh
 // Usage: mil_filename setlocale(0|1) charset_utf8(0|1) directory
 // Prints "NOK: check, message" lines or "OK: count checks", exit code 0 (OK) or 1 (NOK)
 
@@ -54,20 +55,30 @@ extern "C"
 
 #else //defined(UNICODE)
 
-// The C API is only in the Unicode build: same names for the C++ classes, strings are the bytes of the names
+// The C API is only in the Unicode build: same functions with the C++ classes, whose strings are UTF-8 text without Unicode, and the
+// conversions of the narrow functions of the C API (encoding of the locale, or UTF-8 with the CharSet option)
 #include "MediaInfo/MediaInfo.h"
 #include "MediaInfo/MediaInfoList.h"
-#if defined(__APPLE__)
-    #include "ZenLib/OS_Utils.h" // Names listed in the locale encoding, from the UTF-8 names of the file system
-#endif
+#include "ZenLib/OS_Utils.h"
 typedef MediaInfoLib::MediaInfo     MediaInfo_Class;
 typedef MediaInfoLib::MediaInfoList MediaInfoList_Class;
 
+static bool CharSet_IsUTF8=false;
 static std::string Result; // Valid until the next call, as the strings of the C API
 
-static const char* Result_Set(const std::string& Value)
+static ZenLib::Ztring Text_In(const char* Value)
 {
-    Result=Value;
+    return CharSet_IsUTF8?ZenLib::Ztring().From_UTF8(Value):ZenLib::Ztring().From_Local(Value);
+}
+
+static ZenLib::Ztring File_In(const char* Value)
+{
+    return CharSet_IsUTF8?ZenLib::Ztring().From_UTF8(Value):ZenLib::FileName_From_Native(Value);
+}
+
+static const char* Result_Set(const ZenLib::Ztring& Value)
+{
+    Result=CharSet_IsUTF8?Value.To_UTF8():Value.To_Local();
     return Result.c_str();
 }
 
@@ -79,7 +90,7 @@ static void* MediaInfoA_New()
 static void* MediaInfoA_New_Quick(const char* File, const char*)
 {
     MediaInfo_Class* MI=new MediaInfo_Class;
-    if (MI->Open(File))
+    if (MI->Open(File_In(File)))
         return MI;
     delete MI;
     return NULL;
@@ -92,7 +103,7 @@ static void MediaInfoA_Delete(void* Handle)
 
 static size_t MediaInfoA_Open(void* Handle, const char* File)
 {
-    return ((MediaInfo_Class*)Handle)->Open(File);
+    return ((MediaInfo_Class*)Handle)->Open(File_In(File));
 }
 
 static const char* MediaInfoA_Inform(void* Handle, size_t)
@@ -102,12 +113,17 @@ static const char* MediaInfoA_Inform(void* Handle, size_t)
 
 static const char* MediaInfoA_Get(void* Handle, int StreamKind, size_t StreamNumber, const char* Parameter, int KindOfInfo, int KindOfSearch)
 {
-    return Result_Set(((MediaInfo_Class*)Handle)->Get((MediaInfoLib::stream_t)StreamKind, StreamNumber, Parameter, (MediaInfoLib::info_t)KindOfInfo, (MediaInfoLib::info_t)KindOfSearch));
+    return Result_Set(((MediaInfo_Class*)Handle)->Get((MediaInfoLib::stream_t)StreamKind, StreamNumber, Text_In(Parameter), (MediaInfoLib::info_t)KindOfInfo, (MediaInfoLib::info_t)KindOfSearch));
 }
 
 static const char* MediaInfoA_Option(void* Handle, const char* Option, const char* Value)
 {
-    return Result_Set(Handle?((MediaInfo_Class*)Handle)->Option(Option, Value):MediaInfo_Class::Option_Static(Option, Value));
+    if (!strcmp(Option, "CharSet")) // Option of the C API
+    {
+        CharSet_IsUTF8=!strcmp(Value, "UTF-8");
+        return "";
+    }
+    return Result_Set(Handle?((MediaInfo_Class*)Handle)->Option(Text_In(Option), Text_In(Value)):MediaInfo_Class::Option_Static(Text_In(Option), Text_In(Value)));
 }
 
 static void* MediaInfoListA_New()
@@ -118,7 +134,7 @@ static void* MediaInfoListA_New()
 static void* MediaInfoListA_New_Quick(const char* File, const char*)
 {
     MediaInfoList_Class* List=new MediaInfoList_Class;
-    List->Open(File);
+    List->Open(File_In(File));
     return List;
 }
 
@@ -129,12 +145,12 @@ static void MediaInfoListA_Delete(void* Handle)
 
 static size_t MediaInfoListA_Open(void* Handle, const char* File, int)
 {
-    return ((MediaInfoList_Class*)Handle)->Open(File);
+    return ((MediaInfoList_Class*)Handle)->Open(File_In(File));
 }
 
 static const char* MediaInfoListA_Get(void* Handle, size_t FilePos, int StreamKind, size_t StreamNumber, const char* Parameter, int KindOfInfo, int KindOfSearch)
 {
-    return Result_Set(((MediaInfoList_Class*)Handle)->Get(FilePos, (MediaInfoLib::stream_t)StreamKind, StreamNumber, Parameter, (MediaInfoLib::info_t)KindOfInfo, (MediaInfoLib::info_t)KindOfSearch));
+    return Result_Set(((MediaInfoList_Class*)Handle)->Get(FilePos, (MediaInfoLib::stream_t)StreamKind, StreamNumber, Text_In(Parameter), (MediaInfoLib::info_t)KindOfInfo, (MediaInfoLib::info_t)KindOfSearch));
 }
 
 static size_t MediaInfoListA_Count_Get_Files(void* Handle)
@@ -251,6 +267,15 @@ static bool Is_UTF8(const char* Value)
     return Value && UTF8_To_Wide(Value, Wide);
 }
 
+// Bytes from 0x80 to 0x9F, C1 control characters with some encodings (e.g. Latin-1, EUC-JP)
+static bool Has_C1(const std::string& Value)
+{
+    for (size_t Pos=0; Pos<Value.size(); Pos++)
+        if ((unsigned char)Value[Pos]>=0x80 && (unsigned char)Value[Pos]<0xA0)
+            return true;
+    return false;
+}
+
 // Latin-1 bytes of a UTF-8 text, false if it can't be encoded (where the C library can't be the reference)
 #if !defined(_WIN32) && !defined(__STDC_ISO_10646__)
 static bool UTF8_To_Latin1(const std::string& Value, std::string& ToReturn)
@@ -342,8 +367,6 @@ static std::string Listed_Path(const char* Value)
             if (ToReturn[Pos]=='\\')
                 ToReturn[Pos]='/';
         }
-    #elif defined(__APPLE__) && !defined(UNICODE)
-        ToReturn=ZenLib::FileName_To_Native(ToReturn);
     #endif
     return ToReturn;
 }
@@ -458,13 +481,6 @@ int main(int argc, char* argv[])
         #else
             bool FileNames_IsUnicode=IsUnicode;
         #endif
-    #endif
-    #if !defined(UNICODE)
-        // Without Unicode, strings are the bytes of the names, no conversion whatever the locale: same results as with the bytes kept with an ASCII locale
-        IsASCII=true;
-        IsUnicode=true;
-        IsLatin1=false;
-        FileNames_IsUnicode=true;
     #endif
     Locale_IsLatin1=IsLatin1;
     Narrow_IsUTF8=IsUnicode || CharSet_UTF8; // The option has the priority over the locale
@@ -610,9 +626,10 @@ int main(int argc, char* argv[])
         MediaInfoA_Delete(MI);
     }
 
-    // Narrow API, name which is not valid UTF-8 with an ASCII locale, next to the UTF-8 name of the same characters: the file with this name is opened,
-    // with the same bytes as name (not with the UTF-8 option, which needs valid UTF-8, these names can't be created on macOS)
-    if (IsASCII && !CharSet_UTF8)
+    // Narrow API, name which is not valid UTF-8, next to the UTF-8 name of the same characters, with all the locales: the file with this name is
+    // opened, with the same bytes as name (not with the UTF-8 option, which needs valid UTF-8, these names can't be created on macOS)
+    #if !defined(_WIN32)
+    if (!CharSet_UTF8)
     {
         std::string Path=Directory+"/"+Names_NotUTF8[0];
         if (Create_FLAC(Path, "Plain title") && Create_FLAC(Directory+"/"+Names[0]+".flac", Title))
@@ -630,8 +647,9 @@ int main(int argc, char* argv[])
             MediaInfoA_Delete(MI);
         }
     }
+    #endif
 
-    // Narrow API, directory listing: it must end, with all names with an ASCII locale, else with the UTF-8 names only if file names are UTF-8
+    // Narrow API, directory listing: it must end, with all the names with their bytes with all the locales (Windows: names of the code page)
     std::string List_Path_Narrow;
     if (!To_Narrow(List_Path, List_Path_Narrow))
         List_Path_Narrow=List_Path; // e.g. EUC-JP, ASCII name
@@ -647,18 +665,37 @@ int main(int argc, char* argv[])
         Listed_Shown+=" "+Printable(Value);
     }
     MediaInfoListA_Delete(List);
-    if (IsASCII && CharSet_UTF8)
-        Check(Count==Expected_All.size(), "MediaInfoListA_Open(list)", "listed:"+Listed_Shown); // The option is for valid UTF-8, so not the bytes of all names
-    else if (IsASCII)
-        Check(Listed==Expected_All, "MediaInfoListA_Open(list)", "listed:"+Listed_Shown);
-    else if (FileNames_IsUnicode && Narrow_IsUTF8)
-        Check(Listed==Expected, "MediaInfoListA_Open(list)", "listed:"+Listed_Shown);
-    else if (FileNames_IsUnicode)
-        Check(Count==Expected.size(), "MediaInfoListA_Open(list)", "listed:"+Listed_Shown); // Names not all encodable
-    else if (IsLatin1)
-        Check(Count==Expected.size()+NotUTF8_Count, "MediaInfoListA_Open(list)", "listed:"+Listed_Shown); // Each byte is a character
-    else
-        Check(Count>=1, "MediaInfoListA_Open(list)", "listed:"+Listed_Shown); // e.g. EUC-JP, names which can be decoded
+    #if !defined(_WIN32)
+        (void)NotUTF8_Count;
+        if (CharSet_UTF8)
+            Check(Count==Expected_All.size(), "MediaInfoListA_Open(list)", "listed:"+Listed_Shown); // The option is for valid UTF-8, so not the bytes of all names
+        else if (FileNames_IsUnicode && !Narrow_IsUTF8)
+            Check(Count==Expected.size(), "MediaInfoListA_Open(list)", "listed:"+Listed_Shown); // e.g. macOS with a locale which is neither ASCII nor UTF-8, names not all encodable
+        else if (!IsUnicode)
+        {
+            // With a locale which is neither ASCII nor UTF-8, bytes from 0x80 to 0x9F may be C1 control characters, replaced in the values
+            bool IsOK=Count==Expected_All.size();
+            for (std::set<std::string>::const_iterator Name=Expected_All.begin(); Name!=Expected_All.end(); ++Name)
+                if (!Has_C1(*Name) && !Listed.count(*Name))
+                    IsOK=false;
+            Check(IsOK, "MediaInfoListA_Open(list)", "listed:"+Listed_Shown);
+        }
+        else
+            Check(Listed==Expected_All, "MediaInfoListA_Open(list)", "listed:"+Listed_Shown);
+    #else
+        if (IsASCII && CharSet_UTF8)
+            Check(Count==Expected_All.size(), "MediaInfoListA_Open(list)", "listed:"+Listed_Shown); // The option is for valid UTF-8, so not the bytes of all names
+        else if (IsASCII)
+            Check(Listed==Expected_All, "MediaInfoListA_Open(list)", "listed:"+Listed_Shown);
+        else if (FileNames_IsUnicode && Narrow_IsUTF8)
+            Check(Listed==Expected, "MediaInfoListA_Open(list)", "listed:"+Listed_Shown);
+        else if (FileNames_IsUnicode)
+            Check(Count==Expected.size(), "MediaInfoListA_Open(list)", "listed:"+Listed_Shown); // Names not all encodable
+        else if (IsLatin1)
+            Check(Count==Expected.size()+NotUTF8_Count, "MediaInfoListA_Open(list)", "listed:"+Listed_Shown); // Each byte is a character
+        else
+            Check(Count>=1, "MediaInfoListA_Open(list)", "listed:"+Listed_Shown); // e.g. cp932, names which can be decoded
+    #endif
 
     if (!Status)
         printf("OK: %u checks\n", (unsigned)Checks);

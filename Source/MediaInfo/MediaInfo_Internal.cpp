@@ -28,6 +28,7 @@
 #include "ZenLib/Dir.h"
 #endif //defined(MEDIAINFO_DIRECTORY_YES)
 #include "ZenLib/FileName.h"
+#include "ZenLib/OS_Utils.h"
 #if defined(MEDIAINFO_DIRECTORY_YES)
     #include "MediaInfo/Reader/Reader_Directory.h"
 #endif
@@ -84,12 +85,46 @@
     #endif
     #include <ctime>
 #endif
+#if defined(WINDOWS) && !defined(UNICODE)
+    #include <sys/types.h>
+    #include <sys/stat.h>
+#endif
 using namespace ZenLib;
 using namespace std;
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
 {
+
+//---------------------------------------------------------------------------
+//Without Unicode, the name of the file as UTF-8 text, as the other strings, also from bytes in the encoding of the locale (the code page on
+//Windows) given as they are, and when these bytes are also valid UTF-8 but only the name in this encoding exists (see ZenLib): the names made
+//from it (e.g. the other files of a package) and the outputs are UTF-8 text
+#if !defined(UNICODE)
+#if defined(WINDOWS)
+static bool FileName_Exists_Wide(const std::wstring& Name)
+{
+    struct _stat64 Stat;
+    return !_wstat64(Name.c_str(), &Stat);
+}
+#endif //defined(WINDOWS)
+
+static Ztring FileName_UTF8(const Ztring& File_Name)
+{
+    #if defined(WINDOWS)
+        Ztring ToReturn=Ztring().From_Unicode(File_Name.To_Unicode().c_str()); //The bytes of the code page are decoded (see Ztring::To_Unicode())
+        if (ToReturn==File_Name) //UTF-8 text, also bytes of the code page which are valid UTF-8
+        {
+            Ztring File_Name_CodePage=Ztring().From_Local(File_Name.c_str());
+            if (File_Name_CodePage!=ToReturn && !FileName_Exists_Wide(ToReturn.To_Unicode()) && FileName_Exists_Wide(File_Name_CodePage.To_Unicode()))
+                ToReturn=File_Name_CodePage;
+        }
+        return ToReturn;
+    #else //defined(WINDOWS)
+        return FileName_From_Native(FileName_To_Native(File_Name).c_str()); //The existing name, decoded with the locale (see ZenLib)
+    #endif //defined(WINDOWS)
+}
+#endif //!defined(UNICODE)
 
 //---------------------------------------------------------------------------
 //To clarify the code
@@ -1116,8 +1151,13 @@ MediaInfo_Internal::~MediaInfo_Internal()
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-size_t MediaInfo_Internal::Open(const String &File_Name_)
+size_t MediaInfo_Internal::Open(const String &File_Name_Given)
 {
+    #if !defined(UNICODE)
+        const String File_Name_=FileName_UTF8(File_Name_Given);
+    #else //!defined(UNICODE)
+        const String &File_Name_=File_Name_Given;
+    #endif //!defined(UNICODE)
     Close();
 
     //External IBI

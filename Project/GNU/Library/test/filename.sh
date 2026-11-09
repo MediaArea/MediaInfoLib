@@ -72,6 +72,23 @@ if [ -n "${python}" ] && [ -n "${library}" ] ; then
             fi
         done
     done
+
+    # names which are not valid in the encoding of the locale, given by Python with the bytes kept (os.fsdecode() with "surrogateescape"),
+    # with all the locales (the name in the documents of the library is valid UTF-8, so not checked, the title is in the code, as the
+    # codecs of Python do not give all the bytes back, e.g. a byte 0x8B decoded as U+008B with EUC-JP)
+    code='import sys; from pymediainfo import MediaInfo; Track=MediaInfo.parse(sys.argv[2], library_file=sys.argv[1]).general_tracks[0]; sys.exit(0 if Track.title=="caf\u00e9 \u6d4b\u8bd5 \U0001f3b5" else "wrong title: %a" % (Track.title,))'
+    for config in ${locale_configs} ; do
+        for path in "${temp_path}/${config}_1_0/list"/*.flac ; do
+            printf -v shown '%q' "${path##*/}"
+            run_command "${config}" "${python}" -c "${code}" "${library}" "${path}"
+            if [ "${cmd_status}" == "0" ] ; then
+                echo "OK: ${test}/${config}/pymediainfo, list/${shown}" >&${fd}
+            else
+                echo "NOK: ${test}/${config}/pymediainfo, list/${shown}, exit code ${cmd_status}, ${cmd_stderr}" >&${fd}
+                status=1
+            fi
+        done
+    done
 fi
 
 exit ${status}

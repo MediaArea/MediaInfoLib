@@ -333,12 +333,7 @@ void File_Ibi_Creation::Set(const ibi &Ibi)
         bool   FileSize_IsValid=false;
 
         #if defined WINDOWS
-            HANDLE File_Handle;
-            #ifdef UNICODE
-                File_Handle=CreateFileW(Ibi.FileName.c_str(), 0, FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
-            #else
-                File_Handle=CreateFile(Ibi.FileName.To_Local().c_str(), 0, FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
-            #endif //UNICODE
+            HANDLE File_Handle=CreateFileW(Ibi.FileName.To_Unicode().c_str(), 0, FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL); //Also without Unicode, for the characters which are not in the code page
             if (File_Handle!=INVALID_HANDLE_VALUE)
             {
                 FILETIME TimeFT;
