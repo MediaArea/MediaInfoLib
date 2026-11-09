@@ -499,6 +499,8 @@ void FallbackAndArguments(const Ztring& Cs)
     Load(__T("  Language_ISO639;cs\n channel1; LOCAL\nFileCount.one;{count} LOCAL"));
     Equal("missing Czech unit falls back to English plural", Unit(__T("22")), __T("22 channels"));
     Equal("missing Czech message falls back to English plural", Message("FileCount", __T("22")), __T("22 files"));
+    Load(__T("  Language_ISO639;cs\n  Config_Text_FloatSeparator;,\n channel1; LOCAL"));
+    Equal("English fallback with Czech separators", Unit(__T("22.5")), __T("22,5 channels"));
     Load(__T("  Language_ISO639;cs\n channel3; LOCAL"));
     Equal("partial catalog inherits default grouping", Unit(__T("1000")), __T("1 000 LOCAL"));
     Load(__T("  Language_ISO639;cs\n  Config_Text_ThousandsSeparator;\n channel3; LOCAL"));

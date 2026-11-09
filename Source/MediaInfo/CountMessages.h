@@ -182,19 +182,21 @@ inline int LegacyForm(const std::string& Locale, CountPlural::Category Category)
     return Category==CountPlural::One?1:2;
 }
 
+// Numbers: catalog of the number separators, if not the one of the text (fallback to the English text)
 inline bool Pattern(const Translation& Catalog, const Ztring& Key, CountPlural::Category Category,
-                    const Ztring& Count, const Ztring& Formats, bool WithFormats, Ztring& Result)
+                    const Ztring& Count, const Ztring& Formats, bool WithFormats, Ztring& Result, const Translation* Numbers=NULL)
 {
     Ztring Other=Lookup(Catalog, Key+__T(".other"));
     if (Other.empty()) return false;
     Ztring Text=Lookup(Catalog, Key+__T('.')+Ztring().From_UTF8(CountPlural::Name(Category)));
     if (Text.empty()) Text=Other;
-    return Expand(Text, Number(Count, Catalog), Formats, WithFormats, Result);
+    return Expand(Text, Number(Count, Numbers?*Numbers:Catalog), Formats, WithFormats, Result);
 }
 
 inline bool Unit(const Translation& Catalog, const CatalogRules& Rules, const std::string& Locale, const Ztring& Count,
-                 const Ztring& Name, bool AlwaysSame, Ztring& Result)
+                 const Ztring& Name, bool AlwaysSame, Ztring& Result, const Translation* Numbers=NULL)
 {
+    const Translation& NumberCatalog=Numbers?*Numbers:Catalog;
     CountPlural::Result Plural=Rules.Select(Locale, Count.To_UTF8());
     Ztring Same=Invariant(Catalog, Name);
     if (!Plural.Valid)
@@ -210,7 +212,7 @@ inline bool Unit(const Translation& Catalog, const CatalogRules& Rules, const st
         Ztring Text=Lookup(Catalog, Name);
         if (Text.empty()) Text=Same;
         if (Text.empty()) return false;
-        Result=Number(Count, Catalog)+Text;
+        Result=Number(Count, NumberCatalog)+Text;
         return true;
     }
     Ztring Zero=Lookup(Catalog, Name+__T('0'));
@@ -219,10 +221,10 @@ inline bool Unit(const Translation& Catalog, const CatalogRules& Rules, const st
         Result=Zero;
         return true;
     }
-    if (Plural.KnownLocale && Pattern(Catalog, Name, Plural.Value, Count, Ztring(), false, Result)) return true;
+    if (Plural.KnownLocale && Pattern(Catalog, Name, Plural.Value, Count, Ztring(), false, Result, Numbers)) return true;
     if (!Same.empty())
     {
-        Result=Number(Count, Catalog)+Same;
+        Result=Number(Count, NumberCatalog)+Same;
         return true;
     }
     if (!Plural.KnownLocale) return false;
@@ -237,7 +239,7 @@ inline bool Unit(const Translation& Catalog, const CatalogRules& Rules, const st
         if (Form) Text=Lookup(Catalog, Name+ZenLib::Char(__T('0')+Form));
     }
     if (Text.empty()) return false;
-    Result=Number(Count, Catalog)+Text;
+    Result=Number(Count, NumberCatalog)+Text;
     return true;
 }
 
@@ -246,7 +248,7 @@ inline Ztring FormatUnit(const Translation& Selected, const Translation& English
 {
     Ztring Result;
     if (Unit(Selected, SelectedRules, Locale(Selected), Count, Name, AlwaysSame, Result) ||
-        Unit(English, EnglishRules, "en", Count, Name, AlwaysSame, Result))
+        Unit(English, EnglishRules, "en", Count, Name, AlwaysSame, Result, &Selected)) //English text, numbers as in the rest of the output
         return Result;
     // Measures may be literal symbols absent from catalogs (e.g. TiB or cd/m2).
     if (AlwaysSame || (Lookup(Selected, Name+__T('1')).empty() && Lookup(English, Name+__T('1')).empty()))

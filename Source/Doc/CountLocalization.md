@@ -88,7 +88,8 @@ one=1, few=2, remaining integer categories=3; decimal numbers use form 4 in
 cs/sk/pl/be/uk/lt and form 2 in ru, and follow these categories in hr/ro;
 other existing catalogs use one=1, remaining categories=2. Existing invariant units and exact `0` whole
 messages retain their meanings. Missing local forms are resolved from the
-English family using English rules. Historical identifiers gr and pt mean el
+English family using English rules; the number keeps the separators of the
+selected catalog. Historical identifiers gr and pt mean el
 and pt-PT; pt-BR retains Brazilian rules. Unknown locales fall back to English
 unless the unit is invariant. New catalog languages can supply rule metadata
 and named messages. Existing Arabic and other incomplete catalog triplets
