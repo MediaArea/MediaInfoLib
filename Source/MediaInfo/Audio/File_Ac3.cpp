@@ -4525,6 +4525,9 @@ void File_Ac3::HD()
                 HD_Best.Rank=Rank;
                 HD_Best.HasAtmos=HD_HasAtmos;
             }
+
+            //The 16-channel presentation may start later in the stream, more content is needed while it is not found
+            MustExtendParsingDuration=!HD_Best.HasAtmos;
         }
 
         if (HD_SubStreams_Count==1 && HD_StreamType==0xBB) //MLP with only 1 stream

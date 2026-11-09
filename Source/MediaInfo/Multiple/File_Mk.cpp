@@ -1655,6 +1655,54 @@ void File_Mk::Header_Parse()
         return;
     }
 
+    //Probe of the middle of the file, a cluster is searched from the position of the jump (in the middle of a cluster if not from Cues)
+    if (Probe_MustSynchronize && Element_Level==3)
+    {
+        //Cluster ID, size, then Timestamp or CRC-32 (first element of a cluster)
+        size_t Pos=Buffer_Offset;
+        bool IsFound=false;
+        while (Pos+13<=Buffer_Size)
+        {
+            const int8u* Candidate=(const int8u*)memchr(Buffer+Pos, 0x1F, Buffer_Size-12-Pos);
+            if (!Candidate)
+            {
+                Pos=Buffer_Size-12;
+                break;
+            }
+            Pos=Candidate-Buffer;
+            if (Candidate[1]==0x43 && Candidate[2]==0xB6 && Candidate[3]==0x75 && Candidate[4])
+            {
+                size_t Size_Size=1;
+                while (!(Candidate[4]&(0x80>>(Size_Size-1))))
+                    Size_Size++;
+                if (Candidate[4+Size_Size]==0xE7 || Candidate[4+Size_Size]==0xBF)
+                {
+                    IsFound=true;
+                    break;
+                }
+            }
+            Pos++;
+        }
+        if (IsFound && Pos==Buffer_Offset)
+            Probe_MustSynchronize=false;
+        else if (File_Offset+Buffer_Offset>=Probe_WindowEnd)
+        {
+            Probe_End(); //No cluster in the window of the probe
+            return;
+        }
+        else if (Pos>Buffer_Offset)
+        {
+            Header_Fill_Code(Elements::Zero, "Junk");
+            Header_Fill_Size(Pos-Buffer_Offset);
+            return;
+        }
+        else
+        {
+            Element_WaitForMoreData();
+            return;
+        }
+    }
+
     //Test of zero padding
     int8u Null;
     Peek_B1(Null);
@@ -1750,6 +1798,13 @@ void File_Mk::Header_Parse()
     //Filling
     Header_Fill_Code(Name, Ztring().From_Number(Name, 16));
     Header_Fill_Size(Element_Offset+Size);
+    }
+
+    //End of the probe of the middle of the file, at the end of its window or at the first element which is not a cluster (e.g. Cues)
+    if (Probe_IsRunning && Element_Level==3 && ((NameIsValid && Name!=Elements::Segment_Cluster && Name!=Elements::Void) || File_Offset+Buffer_Offset>=Probe_WindowEnd))
+    {
+        Probe_End();
+        return;
     }
 
     if ((Name==Elements::Segment_Cluster_BlockGroup_Block || Name==Elements::Segment_Cluster_SimpleBlock) && Buffer_Offset+Element_Offset+Size>Buffer_Size && File_Buffer_Size_Hint_Pointer)
@@ -2292,6 +2347,15 @@ void File_Mk::Data_Parse()
             Element_End0();
         GoTo(IsParsingSegmentTrack_SeekBackTo);
         IsParsingSegmentTrack_SeekBackTo=0;
+    }
+
+    //End of the Cues parsed for the probe of the middle of the file, the probe starts at the first cluster they list in its window
+    if (Probe_IsWaitingForCues && Segment_Cues_End && File_Offset+Buffer_Offset+Element_Offset==Segment_Cues_End)
+    {
+        Probe_IsWaitingForCues=false;
+        while (Element_Level>(size_t)(Element_Offset==Element_Size?2:1))
+            Element_End0();
+        Probe_Start(Probe_CueClusterPos<Probe_WindowEnd?Probe_CueClusterPos:Probe_WindowBegin, Segment_Cues_End);
     }
 }
 
@@ -2864,6 +2928,9 @@ void File_Mk::Segment_Cluster()
     }
     Segment_Cluster_Count++;
     Segment_Cluster_TimeCode_Value=0; //Default
+    if (Segment_Cluster_First==(int64u)-1)
+        Segment_Cluster_First=File_Offset+Buffer_Offset;
+    Segment_Cluster_End=File_Offset+Buffer_Offset+Element_TotalSize_Get();
 }
 
 //---------------------------------------------------------------------------
@@ -2909,7 +2976,7 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
         #endif //MEDIAINFO_DEMUX
 
         FILLING_BEGIN();
-            if (Segment_Cluster_TimeCode_Value+TimeCode<streamItem.TimeCode_Start) //Does not work well: streamItem.Searching_TimeStamp_Start)
+            if (Segment_Cluster_TimeCode_Value+TimeCode<streamItem.TimeCode_Start && !Probe_IsRunning) //Does not work well: streamItem.Searching_TimeStamp_Start)
             {
                 FILLING_BEGIN();
                       streamItem.TimeCode_Start=Segment_Cluster_TimeCode_Value+TimeCode;
@@ -2925,7 +2992,8 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
 
             if (Segment_Cluster_BlockGroup_BlockDuration_Value!=(int64u)-1)
             {
-                streamItem.Segment_Cluster_BlockGroup_BlockDuration_Counts[Segment_Cluster_BlockGroup_BlockDuration_Value]++;
+                if (!Probe_IsRunning) //Statistics from the start of the file only
+                    streamItem.Segment_Cluster_BlockGroup_BlockDuration_Counts[Segment_Cluster_BlockGroup_BlockDuration_Value]++;
                 Segment_Cluster_BlockGroup_BlockDuration_Value=(int64u)-1;
             }
         FILLING_END();
@@ -3084,7 +3152,7 @@ void File_Mk::Segment_Cluster_BlockGroup_Block_Lace()
             FrameInfo.PTS=streamItem.Parser->FrameInfo.PTS;
         else
             streamItem.Parser->FrameInfo.PTS=FrameInfo.PTS;
-        Frame_Count_NotParsedIncluded=(streamItem.PacketCount==1 && !Laces_Pos)?0:streamItem.Parser->Frame_Count_NotParsedIncluded;
+        Frame_Count_NotParsedIncluded=(streamItem.PacketCount==1 && !Laces_Pos && !Probe_IsRunning)?0:streamItem.Parser->Frame_Count_NotParsedIncluded;
         #if MEDIAINFO_DEMUX
             int8u Demux_Level_old=Demux_Level;
             if (streamItem.Parser && streamItem.Parser->Demux_Level==2)
@@ -3095,12 +3163,18 @@ void File_Mk::Segment_Cluster_BlockGroup_Block_Lace()
         #endif //MEDIAINFO_DEMUX
             Open_Buffer_Continue(streamItem.Parser, (size_t)(Element_Size-Element_Offset));
         if (streamItem.Parser->Status[IsFinished]
-            || (streamItem.PacketCount>=300 && Config->ParseSpeed<1.0)
+            || (streamItem.PacketCount>=300 && Config->ParseSpeed<1.0 && (Probe_IsRunning || !streamItem.Parser->MustExtendParsingDuration)) //Up to the end of the first pass for some substreams difficult to detect (e.g. captions)
             || (streamItem.PacketCount>=3 && Config->ParseSpeed==0)
+            || (Probe_IsRunning && !streamItem.Parser->MustExtendParsingDuration) //Nothing more is needed from the probe of the middle of the file
             )
         {
             streamItem.Searching_Payload=false;
-            if (!streamItem.Searching_TimeStamps && !streamItem.Searching_TimeStamp_Start)
+            if (Probe_IsRunning)
+            {
+                if (Probe_Stream_Count)
+                    Probe_Stream_Count--;
+            }
+            else if (!streamItem.Searching_TimeStamps && !streamItem.Searching_TimeStamp_Start)
                 Stream_Count--;
         }
         FrameInfo.PTS=(int64u)-1;
@@ -3126,22 +3200,28 @@ void File_Mk::Segment_Cluster_BlockGroup_Block_Lace()
 
     //Filling
     Frame_Count++;
+    if (Probe_IsRunning && !Probe_Stream_Count)
+        Probe_End(); //Enough content from the probe of the middle of the file
     if (!Status[IsFilled] && (Stream_Count==0 || Frame_Count>(Config->ParseSpeed?512:3)*Stream.size()))
     {
         Fill();
         if (Config->ParseSpeed<1.0)
         {
             //Jumping
+            int64u GoToAfter=(int64u)-1;
             std::sort(Segment_Seeks.begin(), Segment_Seeks.end());
             for (size_t Pos=0; Pos<Segment_Seeks.size(); Pos++)
                 if (Segment_Seeks[Pos].SeekPosition>File_Offset+Buffer_Offset+Element_Size)
                 {
-                    JumpTo(Segment_Seeks[Pos].SeekPosition);
+                    GoToAfter=Segment_Seeks[Pos].SeekPosition;
                     break;
                 }
-            if (File_GoTo==(int64u)-1)
+            if (!Probe_Decide(GoToAfter))
             {
-                JumpTo(Segment_Offset_End);
+                if (GoToAfter!=(int64u)-1)
+                    JumpTo(GoToAfter);
+                if (File_GoTo==(int64u)-1)
+                    JumpTo(Segment_Offset_End);
             }
         }
 
@@ -3241,8 +3321,11 @@ void File_Mk::Segment_Cluster_Timecode()
 //---------------------------------------------------------------------------
 void File_Mk::Segment_Cues()
 {
-    //Skipping Cues, we don't need of them
-    TestMultipleInstances();
+    //Skipping Cues, we don't need of them except for the position of the probe of the middle of the file
+    if (Probe_IsWaitingForCues)
+        Segment_Cues_End=File_Offset+Buffer_Offset+Element_TotalSize_Get();
+    else
+        TestMultipleInstances();
 
     #if MEDIAINFO_TRACE
         Trace_Segment_Cues_CuePoint_Count=0;
@@ -3261,6 +3344,21 @@ void File_Mk::Segment_Cues_CuePoint()
                 Element_Set_Remove_Children_IfNoErrors();
         }
     #endif // MEDIAINFO_TRACE
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Cues_CuePoint_CueTrackPositions_CueClusterPosition()
+{
+    //Parsing
+    int64u ClusterPosition=UInteger_Get();
+
+    //First cluster in the window of the probe of the middle of the file
+    if (Probe_IsWaitingForCues)
+    {
+        ClusterPosition+=Segment_Offset_Begin;
+        if (ClusterPosition>=Probe_WindowBegin && ClusterPosition<Probe_CueClusterPos)
+            Probe_CueClusterPos=ClusterPosition;
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -5486,6 +5584,135 @@ void File_Mk::JumpTo (int64u GoToValue)
         return;
     }
     GoTo(GoToValue);
+}
+
+//---------------------------------------------------------------------------
+bool File_Mk::Probe_Decide(int64u GoToAfter)
+{
+    //Only one probe decision per file, after the first pass
+    if (Probe_IsChecked)
+        return false;
+    Probe_IsChecked=true;
+    if (IsSub || ShouldContinueParsing || File_Size==(int64u)-1 || !Config->File_IsSeekable_Get() || Segment_Cluster_First==(int64u)-1 || Segment_Cluster_End==(int64u)-1)
+        return false;
+
+    //Streams with some substreams difficult to detect (e.g. captions, TrueHD presentation starting later)
+    bool HasProbedStreams=false;
+    for (const auto& Item : Stream)
+        if (Item.second.Parser && Item.second.Parser->MustExtendParsingDuration)
+            HasProbedStreams=true;
+    if (!HasProbedStreams)
+        return false;
+
+    //Window of the probe in the content, from the start of the first cluster to the end of the segment
+    const auto Probe=Config->File_ProbeCaption_Get("Matroska");
+    const auto ContentBegin=Segment_Cluster_First;
+    const auto ContentEnd=Segment_Offset_End<File_Size?Segment_Offset_End:File_Size;
+    if (ContentBegin>=ContentEnd)
+        return false;
+    const auto ContentSize=ContentEnd-ContentBegin;
+    const auto ContentDuration=(Duration>0 && TimecodeScale)?(Duration*int64u_float64(TimecodeScale)/1000000000):3000; //Else 50 minutes as for MXF, time values are still proportional
+    int64u BytePos=(int64u)-1;
+    int64u ByteDur=(int64u)-1;
+    switch (Probe.Start_Type)
+    {
+        case config_probe_size:
+            BytePos=Probe.Start;
+            break;
+        case config_probe_dur:
+            {
+                const auto Ratio=Probe.Start/ContentDuration;
+                BytePos=ContentBegin+(Ratio<1?(int64u)(Ratio*ContentSize):ContentSize); //TODO: real timestamp
+            }
+            break;
+        case config_probe_percent:
+            BytePos=ContentBegin+ContentSize/100*Probe.Start;
+            break;
+        default:; //No probe for this parser
+    }
+    switch (Probe.Duration_Type)
+    {
+        case config_probe_size:
+            ByteDur=Probe.Duration;
+            break;
+        case config_probe_dur:
+            {
+                const auto Ratio=Probe.Duration/ContentDuration;
+                ByteDur=Ratio<1?(int64u)(Ratio*ContentSize):ContentSize; //TODO: real timestamp
+            }
+            break;
+        case config_probe_percent:
+            ByteDur=ContentSize/100*Probe.Duration;
+            break;
+        default:; //No probe for this parser
+    }
+    if (BytePos==(int64u)-1 || ByteDur==(int64u)-1)
+        return false;
+    const auto ByteEnd=(BytePos<ContentEnd && ByteDur<ContentEnd-BytePos)?(BytePos+ByteDur):ContentEnd;
+    if (BytePos<Segment_Cluster_End)
+        BytePos=Segment_Cluster_End; //Content already parsed is not parsed twice, the probe continues with the next cluster
+    if (BytePos>=ByteEnd)
+        return false;
+    Probe_WindowBegin=BytePos;
+    Probe_WindowEnd=ByteEnd;
+
+    //Cues after the first pass, parsed before the probe for having the position of a cluster in its window
+    for (const auto& Seek : Segment_Seeks)
+        if (Seek.SeekID==Elements::Segment_Cues && Seek.SeekPosition>File_Offset+Buffer_Offset+Element_Size && Seek.SeekPosition<ContentEnd)
+        {
+            Probe_IsWaitingForCues=true;
+            return false;
+        }
+
+    Probe_Start(BytePos, GoToAfter);
+    return true;
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Probe_Start(int64u ByteStart, int64u GoToAfter)
+{
+    //Only the streams with some substreams difficult to detect are parsed, without the timing information (from the start of the file only)
+    Probe_Stream_Count=0;
+    for (auto& Item : Stream)
+    {
+        auto& Stream_Item=Item.second;
+        Stream_Item.Searching_Payload_BeforeProbe=Stream_Item.Searching_Payload;
+        Stream_Item.Searching_TimeStamps_BeforeProbe=Stream_Item.Searching_TimeStamps;
+        Stream_Item.Searching_TimeStamp_Start_BeforeProbe=Stream_Item.Searching_TimeStamp_Start;
+        Stream_Item.Searching_Payload=Stream_Item.Parser && Stream_Item.Parser->MustExtendParsingDuration;
+        Stream_Item.Searching_TimeStamps=false;
+        Stream_Item.Searching_TimeStamp_Start=false;
+        if (Stream_Item.Searching_Payload)
+        {
+            Stream_Item.PacketCount=0;
+            Probe_Stream_Count++;
+        }
+    }
+    Probe_IsRunning=true;
+    Probe_GoToAfter=GoToAfter;
+    Probe_MustSynchronize=ByteStart!=Segment_Cluster_End; //Also a check of the position from Cues
+    JumpTo(ByteStart);
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Probe_End()
+{
+    //Back to the states of the end of the first pass
+    for (auto& Item : Stream)
+    {
+        auto& Stream_Item=Item.second;
+        Stream_Item.Searching_Payload=Stream_Item.Searching_Payload_BeforeProbe;
+        Stream_Item.Searching_TimeStamps=Stream_Item.Searching_TimeStamps_BeforeProbe;
+        Stream_Item.Searching_TimeStamp_Start=Stream_Item.Searching_TimeStamp_Start_BeforeProbe;
+    }
+    Probe_IsRunning=false;
+    Probe_MustSynchronize=false;
+
+    //Jumping as after the first pass
+    if (Probe_GoToAfter!=(int64u)-1)
+        JumpTo(Probe_GoToAfter);
+    if (File_GoTo==(int64u)-1)
+        JumpTo(Segment_Offset_End);
 }
 
 //---------------------------------------------------------------------------

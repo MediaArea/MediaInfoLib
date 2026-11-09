@@ -3755,7 +3755,10 @@ Ztring MediaInfo_Config_MediaInfo::File_ProbeCaption_Set (const Ztring& NewValue
                 if (Value2 == "MP4") {
                     Value2 = "MPEG-4";
                 }
-                if (Value2 != "MPEG-4" && Value2 != "MXF" && !Value2.empty()) { //TODO: full list
+                if (Value2 == "MKV" || Value2 == "MATROSKA") {
+                    Value2 = "Matroska";
+                }
+                if (Value2 != "MPEG-4" && Value2 != "MXF" && Value2 != "Matroska" && !Value2.empty()) { //TODO: full list
                     return Malformed;
                 }
                 Item.Parser = Value2;
