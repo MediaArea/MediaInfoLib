@@ -16,6 +16,10 @@
 namespace MediaInfoLib
 {
 
+#if defined(MEDIAINFO_T35_YES)
+    class File_T35;
+#endif //defined(MEDIAINFO_T35_YES)
+
 //***************************************************************************
 // Class File_Av2
 //***************************************************************************
@@ -118,14 +122,10 @@ private :
     int32u  max_frame_height_minus_1{};
     Ztring  maximum_content_light_level;
     Ztring  maximum_frame_average_light_level;
-    enum hdr_format
-    {
-        HdrFormat_SmpteSt209440,
-        HdrFormat_SmpteSt2086,
-        HdrFormat_Max,
-    };
-    typedef std::map<video, Ztring[HdrFormat_Max]> hdr;
     hdr     HDR;
+    #if defined(MEDIAINFO_T35_YES)
+        File_T35* T35_Parser{};
+    #endif //defined(MEDIAINFO_T35_YES)
 
     //Helpers
     void Get_leb128(int64u& Info, const char* Name);

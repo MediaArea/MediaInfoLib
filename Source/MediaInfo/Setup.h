@@ -705,7 +705,7 @@
 
 //---------------------------------------------------------------------------
 // Multiple, carried by the formats above
-#if !defined(MEDIAINFO_T35_NO) && !defined(MEDIAINFO_T35_YES) && (defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MK_YES))
+#if !defined(MEDIAINFO_T35_NO) && !defined(MEDIAINFO_T35_YES) && (defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AV2_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MK_YES))
     #define MEDIAINFO_T35_YES
 #endif
 
