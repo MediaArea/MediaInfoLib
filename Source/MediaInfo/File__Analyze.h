@@ -1636,6 +1636,9 @@ protected :
     element_details::Element_Node_String* Trace_Strings; //Last string of each content hash slot, created on first use
     std::bitset<32> Trace_Layers;
     void Trace_Layers_Update (size_t Layer=(size_t)-1);
+#if MEDIAINFO_TRACE
+    void Trace_Levels_Restart(int64u Offset); //Open levels were begun for a parsing restarting at Offset
+#endif // MEDIAINFO_TRACE
 private :
 #if MEDIAINFO_TRACE
     void Trace_Details_Handling(File__Analyze* Sub);

@@ -4487,7 +4487,27 @@ void File__Analyze::BookMark_Get ()
     {
         File_GoTo=BookMark_GoTo;
     }
+
+    #if MEDIAINFO_TRACE
+        Trace_Levels_Restart(File_GoTo);
+    #endif //MEDIAINFO_TRACE
 }
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_TRACE
+void File__Analyze::Trace_Levels_Restart(int64u Offset)
+{
+    //Levels begun for a parsing restarting at Offset start there, not at the current offset
+    if (!Trace_Activated || Offset>=File_Size)
+        return;
+    for (size_t Pos=1; Pos<=Element_Level; Pos++)
+    {
+        auto& Elem=Element[Pos];
+        Elem.TraceNode.Pos=Offset;
+        Elem.TraceNode.Size=Elem.Next>Offset?(Elem.Next-Offset):0;
+    }
+}
+#endif //MEDIAINFO_TRACE
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_TRACE

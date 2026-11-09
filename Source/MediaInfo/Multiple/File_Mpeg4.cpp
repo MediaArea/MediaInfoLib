@@ -3205,6 +3205,9 @@ bool File_Mpeg4::BookMark_Needed()
             mdat_Pos_Max=&mdat_Pos[0]+mdat_Pos.size();
             ToJump=mdat_Pos_Temp->Offset;
             GoTo(ToJump);
+            #if MEDIAINFO_TRACE
+                Trace_Levels_Restart(File_GoTo);
+            #endif //MEDIAINFO_TRACE
         }
         IsParsing_mdat_Set();
         mdat_Pos_NormalParsing=true;
