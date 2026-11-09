@@ -2320,7 +2320,7 @@ void File_Mpeg4::mdat_xxxx()
                                 }
                                 break;
                         case 2 :
-                                if (Stream_Temp.edts[0].Delay==(int32u)-1 && Stream_Temp.edts[0].Duration+Stream_Temp.edts[1].Duration==Stream_Temp.tkhd_Duration && Stream_Temp.edts[0].Rate==0x00010000 && Stream_Temp.edts[1].Rate==0x00010000 && moov_mvhd_TimeScale)
+                                if (Stream_Temp.edts[0].Delay==-1 && Stream_Temp.edts[0].Duration+Stream_Temp.edts[1].Duration==Stream_Temp.tkhd_Duration && Stream_Temp.edts[0].Rate==0x00010000 && Stream_Temp.edts[1].Rate==0x00010000 && moov_mvhd_TimeScale)
                                 {
                                     Delay=((int64s)Stream_Temp.edts[0].Duration)*Stream_Temp.mdhd_TimeScale/moov_mvhd_TimeScale-Stream_Temp.edts[1].Delay;
                                     MediaTime=Stream_Temp.edts[1].Delay;
@@ -7126,7 +7126,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_tmcd()
             for (size_t i = 0; i < Streams[moov_trak_tkhd_TrackID].edts.size(); ++i)
             {
                 const stream::edts_struct& Edit = Streams[moov_trak_tkhd_TrackID].edts[i];
-                if (Edit.Delay != (int32u)-1)
+                if (Edit.Delay != -1)
                 {
                     //Inform parser of offset (in TC frames) due to edit list
                     Parser->FirstEditOffset = Edit.Delay * tc->TimeScale / FrameDurationInMediaUnits;

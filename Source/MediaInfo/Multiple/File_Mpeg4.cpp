@@ -934,7 +934,7 @@ void File_Mpeg4::Streams_Finish()
                     }
                     break;
             case 2 :
-                    if (Temp->second.edts[0].Delay==(int32u)-1 && Temp->second.edts[0].Duration+Temp->second.edts[1].Duration==Temp->second.tkhd_Duration && Temp->second.edts[0].Rate==0x00010000 && Temp->second.edts[1].Rate==0x00010000 && moov_mvhd_TimeScale)
+                    if (Temp->second.edts[0].Delay==-1 && Temp->second.edts[0].Duration+Temp->second.edts[1].Duration==Temp->second.tkhd_Duration && Temp->second.edts[0].Rate==0x00010000 && Temp->second.edts[1].Rate==0x00010000 && moov_mvhd_TimeScale)
                     {
                         Delay=Temp->second.edts[0].Duration;
                         Temp->second.tkhd_Duration-=float64_int64s(Delay);
@@ -2868,11 +2868,11 @@ bool File_Mpeg4::BookMark_Needed()
                                 mdat_Pos_Temp2.StreamID = Temp->first;
                                 mdat_Pos_Temp2.Size = Size;
                                 bool UseIt=true;
-                                if (Temp->second.TimeCode && Temp->second.edts.size()==1 && Temp->second.edts[0].Delay && Temp->second.stts.size()==1 && Temp->second.stts[0].SampleCount!=1 && Temp->second.stts[0].SampleDuration)
+                                if (Temp->second.TimeCode && Temp->second.edts.size()==1 && Temp->second.edts[0].Delay>0 && Temp->second.stts.size()==1 && Temp->second.stts[0].SampleCount!=1 && Temp->second.stts[0].SampleDuration)
                                 {
                                     LocalPTS+=Temp->second.stts[0].SampleDuration;
-                                    if (LocalPTS<Temp->second.edts[0].Delay
-                                     || LocalPTS*moov_mvhd_TimeScale>=Temp->second.edts[0].Delay*moov_mvhd_TimeScale+Temp->second.edts[0].Duration*Temp->second.mdhd_TimeScale)
+                                    if (LocalPTS<(int64u)Temp->second.edts[0].Delay
+                                     || LocalPTS*moov_mvhd_TimeScale>=(int64u)Temp->second.edts[0].Delay*moov_mvhd_TimeScale+Temp->second.edts[0].Duration*Temp->second.mdhd_TimeScale)
                                         UseIt=false;
                                 }
                                 if (UseIt)
@@ -3009,7 +3009,7 @@ bool File_Mpeg4::BookMark_Needed()
                                                 }
                                                 break;
                                         case 2 :
-                                                if (Streams[*Temp].edts[0].Delay==(int32u)-1 && Streams[*Temp].edts[0].Duration+Streams[*Temp].edts[1].Duration==Streams[*Temp].tkhd_Duration && Streams[*Temp].edts[0].Rate==0x00010000 && Streams[*Temp].edts[1].Rate==0x00010000 && moov_mvhd_TimeScale)
+                                                if (Streams[*Temp].edts[0].Delay==-1 && Streams[*Temp].edts[0].Duration+Streams[*Temp].edts[1].Duration==Streams[*Temp].tkhd_Duration && Streams[*Temp].edts[0].Rate==0x00010000 && Streams[*Temp].edts[1].Rate==0x00010000 && moov_mvhd_TimeScale)
                                                 {
                                                     Delay=((int64s)Streams[*Temp].edts[0].Duration)*Streams[*Temp].mdhd_TimeScale/moov_mvhd_TimeScale-Streams[*Temp].edts[1].Delay;
                                                 }
