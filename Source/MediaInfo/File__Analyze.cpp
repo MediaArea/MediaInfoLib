@@ -3793,13 +3793,11 @@ void File__Analyze::Accept ()
         if (ParserName.empty() && ParserName_Char)
             ParserName = ParserName_Char;
 
-        if (!ParserName.empty())
+        //The trace of the current element is split at acceptance, except if nothing is parsed in it yet (e.g. a file header not read before the acceptance), else it would be shown empty
+        if (!ParserName.empty() && Element_Level>0 && (Element_Offset || !Element[Element_Level].TraceNode.Children.empty() || !Element[Element_Level].TraceNode.Infos.empty()))
         {
-            bool MustElementBegin=Element_Level?true:false;
-            if (Element_Level>0)
-                Element_End0(); //Element
-            if (MustElementBegin)
-                Element_Level++;
+            Element_End0(); //Element
+            Element_Level++;
         }
     #endif //MEDIAINFO_TRACE
 
