@@ -3089,7 +3089,10 @@ bool File__Analyze::Data_Manage()
 
     #if MEDIAINFO_TRACE
     if (Element_Level>0)
-        Element[Element_Level-1].TraceNode.NoShow=Elem.TraceNode.NoShow; //If data must not be shown, we hide the header too
+    {
+        if (!Elem.TraceNode.NoShow)
+            Element[Element_Level-1].TraceNode.NoShow=false; //A shown element needs its upper level shown, a hidden one does not hide it
+    }
     else
         Element[0].TraceNode.NoShow=false; //This should never happen, but in case of
     #endif //MEDIAINFO_TRACE
