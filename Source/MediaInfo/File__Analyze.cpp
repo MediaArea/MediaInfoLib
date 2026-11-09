@@ -1826,6 +1826,16 @@ void File__Analyze::Open_Buffer_Finalize (bool NoBufferModification)
     }
 
     //Element must be Finish
+    #if MEDIAINFO_TRACE
+        //No more data, the data waiting for more data is shown as incomplete, in the elements not ended
+        bool Trace_Incomplete=Trace_Activated && !NoBufferModification && !Status[IsFinished] && Element[Element_Level].WaitForMoreData && Buffer_Offset<Buffer_Size;
+        if (Trace_Incomplete)
+        {
+            Element_Offset=0;
+            Element_Size=Buffer_Size-Buffer_Offset;
+            Skip_XX(Element_Size,                               "(Incomplete)");
+        }
+    #endif //MEDIAINFO_TRACE
     while (Element_Level>0)
     {
         #if MEDIAINFO_TRACE
@@ -1833,6 +1843,13 @@ void File__Analyze::Open_Buffer_Finalize (bool NoBufferModification)
         #endif //MEDIAINFO_TRACE
         Element_End0();
     }
+    #if MEDIAINFO_TRACE
+        if (Trace_Incomplete)
+        {
+            Element_Offset=0;
+            Element_Size=0;
+        }
+    #endif //MEDIAINFO_TRACE
 
     //Buffer - Global
     Fill();
