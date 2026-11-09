@@ -259,6 +259,8 @@ private :
         p_max
     };
     std::vector<Presentation> presentations{ std::vector<Presentation>(p_max) };
+    std::vector<Presentation> HD_Best_presentations; //Of the most complete presentation found, used for the description
+    int8u HD_Best_SubStreams_Count{}; //Of the most complete presentation found, used for the description (HD_SubStreams_Count is needed for the parsing)
 };
 
 } //NameSpace

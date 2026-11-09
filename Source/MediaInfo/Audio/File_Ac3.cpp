@@ -1301,7 +1301,7 @@ void File_Ac3::Streams_Fill()
             }
             Fill(Stream_Audio, 0, Audio_BitDepth, AC3_MLP_Resolution[HD_Resolution2]);
             Fill(Stream_Audio, 0, "NumberOfPresentations", HD_HasAtmos ? 4 : 3);
-            Fill(Stream_Audio, 0, "NumberOfSubstreams", HD_SubStreams_Count);
+            Fill(Stream_Audio, 0, "NumberOfSubstreams", HD_Best_SubStreams_Count?HD_Best_SubStreams_Count:HD_SubStreams_Count);
         }
 
         if (HD_StreamType==0xBB) //MLP
@@ -5400,6 +5400,7 @@ void File_Ac3::HD()
                 num_dynamic_objects=HD_Best.num_dynamic_objects;
                 dsurexmod=HD_Best.dsurexmod;
                 HD_HasAtmos=HD_Best.HasAtmos;
+                presentations=HD_Best_presentations;
             }
             else
             {
@@ -5419,6 +5420,8 @@ void File_Ac3::HD()
                 HD_Best.dsurexmod=dsurexmod;
                 HD_Best.Rank=Rank;
                 HD_Best.HasAtmos=HD_HasAtmos;
+                HD_Best_presentations=presentations;
+                HD_Best_SubStreams_Count=HD_SubStreams_Count;
             }
 
             //The 16-channel presentation may start later in the stream, more content is needed while it is not found
