@@ -2274,6 +2274,28 @@ bool File__Analyze::FileHeader_Begin_0x000001()
 }
 
 //---------------------------------------------------------------------------
+//Beginning of an XML document: "<" after an optional byte order mark and spaces. The parsers of XML documents test it before waiting
+//for the whole file, else each of them keeps the data of a file in another format up to Buffer_MaximumSize, when all the parsers test
+//the same buffers (data given by buffers, see File__MultipleParsing)
+//Returns the offset of "<" (Buffer_Size if there are only spaces up to now), or (size_t)-1 after Reject() if there is something else
+size_t File__Analyze::FileHeader_Begin_XML_Start()
+{
+    size_t Offset=0;
+    if (Buffer_Size>=3 && CC3(Buffer)==0xEFBBBF)
+        Offset=3;
+    else if (Buffer_Size>=2 && (CC2(Buffer)==0xFFFE || CC2(Buffer)==0xFEFF))
+        Offset=2;
+    while (Offset<Buffer_Size && (Buffer[Offset]=='\r' || Buffer[Offset]=='\n' || Buffer[Offset]=='\t' || Buffer[Offset]==' '))
+        Offset++;
+    if (Offset<Buffer_Size && Buffer[Offset]!='<')
+    {
+        Reject();
+        return (size_t)-1;
+    }
+    return Offset;
+}
+
+//---------------------------------------------------------------------------
 bool File__Analyze::FileHeader_Begin_XML(XMLDocument &Document, bool Reject_IfMalformed)
 {
     //Element_Size
@@ -2284,51 +2306,28 @@ bool File__Analyze::FileHeader_Begin_XML(XMLDocument &Document, bool Reject_IfMa
         return false; //XML files are not expected to be so big
     }
 
+    //XML header
+    auto Start=FileHeader_Begin_XML_Start();
+    if (Start==(size_t)-1)
+        return false;
+
     //Element_Size
     if (!IsSub && Buffer_Size<File_Size)
     {
         Element_WaitForMoreData();
         return false; //Must wait for more data
     }
-
-    //XML header
-    auto BOM2 = CC2(Buffer);
-    auto BOM = CC3(Buffer);
-    switch (BOM)
-    {
-    case 0xEFBBBF:
-        Buffer_Offset = 3;
-        break;
-    }
-    switch (BOM2)
-    {
-    case 0xFFFE:
-    case 0xFEFF:
-        Buffer_Offset = 2;
-        BOM = BOM2;
-        break;
-    }
-    while (Buffer_Offset < Buffer_Size) {
-        switch (Buffer[Buffer_Offset]) {
-        case '\r':
-        case '\n':
-        case '\t':
-        case ' ':
-            Buffer_Offset++;
-            continue;
-        }
-        break;
-    }
-    if (Buffer_Offset >= Buffer_Size || Buffer[Buffer_Offset] != '<')
+    if (Start>=Buffer_Size)
     {
         Reject();
-        return false; 
+        return false; //Only spaces
     }
+    Buffer_Offset=Start;
 
     string DataUTF8;
     auto Buffer_XML = (const char*)Buffer + Buffer_Offset;
     auto Size_XML = Buffer_Size - Buffer_Offset;
-    switch (BOM) {
+    switch (CC2(Buffer)) { //Byte order mark of UTF-16
     case 0xFFFE:
         DataUTF8 = Ztring().From_UTF16LE(Buffer_XML, Size_XML).To_UTF8();
         break;
