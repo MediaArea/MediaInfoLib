@@ -688,21 +688,20 @@ void File_Av1::frame_header_uncompressed_header()
         show_existing_frame = false;
     }
     else {
-        int8u frame_type;
-        TEST_SB_GET (show_existing_frame,                       "show_existing_frame");
+        TESTELSE_SB_GET (show_existing_frame,                   "show_existing_frame");
             Skip_BS(Data_BS_Remain(),                           "(Not parsed)");
-            BS_End();
-            return;
-        TEST_SB_END();
-        Get_S1 (2, frame_type,                                  "frame_type"); Param_Info1(Av1_frame_type[frame_type]);
+        TESTELSE_SB_ELSE(                                       "show_existing_frame");
+            int8u frame_type;
+            Get_S1 (2, frame_type,                              "frame_type"); Param_Info1(Av1_frame_type[frame_type]);
 
-        FILLING_BEGIN();
-            GOP.push_back((frame_type&1)?'P':'I');
-        FILLING_ELSE();
-            GOP.push_back(' ');
-        FILLING_END();
-        if (GOP.size()>=512)
-            GOP.erase(0, 128);
+            FILLING_BEGIN();
+                GOP.push_back((frame_type&1)?'P':'I');
+            FILLING_ELSE();
+                GOP.push_back(' ');
+            FILLING_END();
+            if (GOP.size()>=512)
+                GOP.erase(0, 128);
+        TESTELSE_SB_END();
     }
     Element_End0();
     BS_End();
