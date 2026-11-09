@@ -67,6 +67,7 @@ protected :
 
     //Temp
     int64u Alignment_ExtraByte = 0; //Padding from the container
+    int32u Resource_Size = 0; //Size of the data of the current image resource, without its padding
 };
 
 } //NameSpace

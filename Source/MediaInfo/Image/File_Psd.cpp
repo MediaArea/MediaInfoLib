@@ -378,6 +378,7 @@ void File_Psd::Header_Parse()
                 Skip_B1(                                    "Padding");
             }
             Get_B4 (Size,                                   "Size");
+            Resource_Size = Size;
             if (Size % 2) {
                 Size++;
             }
@@ -496,7 +497,7 @@ void File_Psd::IPTCNAA()
     #if defined(MEDIAINFO_IIM_YES)
     File_Iim MI;
     Open_Buffer_Init(&MI);
-    Open_Buffer_Continue(&MI);
+    Open_Buffer_Continue(&MI, (size_t)(Element_Size < Resource_Size ? Element_Size : Resource_Size)); //Without the padding byte
     Open_Buffer_Finalize(&MI);
     Merge(MI, Stream_General, 0, 0, false);
     Merge(MI, Stream_Image, 0, 0, false);
