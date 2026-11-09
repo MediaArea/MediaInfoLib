@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>MediaInfoLib.Wrapper</id>
+    <version>18.8.1</version>
+    <title>MediaInfoLib DLL wrapper for .NET projects</title>
+    <authors>MediaArea.net</authors>
+    <owners>MediaArea.net</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <licenseUrl>https://github.com/MediaArea/MediaInfoLib/blob/master/LICENSE</licenseUrl>
+    <projectUrl>https://mediaarea.net/MediaInfo</projectUrl>
+    <iconUrl>https://mediaarea.net/_/img/MediaInfo_90x90.png</iconUrl>
+    <description>MediaInfo is a convenient unified display of the most relevant technical and tag data for video and audio files.</description>
+    <copyright>Copyright (c) MediaArea.net SARL.</copyright>
+    <language>en-US</language>
+    <tags>mediainfo mediainfolib libmediainfo</tags>
+    <dependencies>
+      <group targetFramework=".NETStandard2.0" />
+    </dependencies>
+  </metadata>
+</package>
