@@ -17,7 +17,7 @@
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
-#if defined(MEDIAINFO_TIMECODE_YES)
+#if defined(MEDIAINFO_TIMECODE_YES) || defined(MEDIAINFO_GXF_YES)
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
@@ -419,4 +419,4 @@ void File_Gxf_TimeCode::Read_Buffer_Continue()
 
 } //NameSpace
 
-#endif //MEDIAINFO_TIMECODE_YES
+#endif //defined(MEDIAINFO_TIMECODE_YES) || defined(MEDIAINFO_GXF_YES)

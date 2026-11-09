@@ -23,7 +23,7 @@
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
-#ifdef MEDIAINFO_MPEG4_YES
+#if defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_AAC_YES) || MEDIAINFO_CONFORMANCE
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
@@ -75,6 +75,7 @@ using namespace std;
 namespace MediaInfoLib
 {
 
+#ifdef MEDIAINFO_MPEG4_YES
 //---------------------------------------------------------------------------
 #ifdef MEDIAINFO_MPEG4V_YES
     const char* Mpeg4v_Profile_Level(int32u Profile_Level);
@@ -198,6 +199,7 @@ static const char* Mpeg4_Descriptors_SceneProfileLevelIndication(int8u ID)
         default   : return "";
     }
 }
+#endif //MEDIAINFO_MPEG4_YES
 
 //---------------------------------------------------------------------------
 static const char* Mpeg4_Descriptors_AudioProfileLevelIndication_Profile[]=
@@ -376,6 +378,7 @@ string Mpeg4_Descriptors_AudioProfileLevelIndicationString(const profilelevel_st
 }
 #endif
 
+#ifdef MEDIAINFO_MPEG4_YES
 //---------------------------------------------------------------------------
 extern const char* Mpeg4v_Profile_Level(int32u Profile_Level);
 
@@ -1236,6 +1239,7 @@ void File_Mpeg4_Descriptors::Descriptor_11()
 {
     Descriptor_01();
 }
+#endif //MEDIAINFO_MPEG4_YES
 
 //***************************************************************************
 // C++
@@ -1243,4 +1247,4 @@ void File_Mpeg4_Descriptors::Descriptor_11()
 
 } //NameSpace
 
-#endif //MEDIAINFO_MPEG4_YES
+#endif //defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_AAC_YES) || MEDIAINFO_CONFORMANCE

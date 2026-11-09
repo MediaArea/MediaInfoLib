@@ -21,7 +21,7 @@
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-#if defined(MEDIAINFO_MPEGV_YES) || defined(MEDIAINFO_MPEG4V_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_PRORES_YES) || defined(MEDIAINFO_PNG_YES)
+#if defined(MEDIAINFO_MPEGV_YES) || defined(MEDIAINFO_MPEG4V_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_PRORES_YES) || defined(MEDIAINFO_PNG_YES) || defined(MEDIAINFO_APV_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AV2_YES) || defined(MEDIAINFO_AVS3V_YES) || defined(MEDIAINFO_ICC_YES) || defined(MEDIAINFO_MK_YES) || defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_MXF_YES) || defined(MEDIAINFO_VP9_YES)
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -2714,7 +2714,7 @@ void File_Mpegv::slice_start()
         #endif //MEDIAINFO_TRACE
 
         //CDP
-        #if defined(MEDIAINFO_CDP_YES)
+        #if defined(MEDIAINFO_ANCILLARY_YES) && defined(MEDIAINFO_CDP_YES)
             if (Ancillary)
              {
                 Cdp_IsPresent=true;
@@ -2732,7 +2732,7 @@ void File_Mpegv::slice_start()
                     Open_Buffer_Continue((*Ancillary), Buffer+Buffer_Offset, 0);
                 Element_Trace_End0();
             }
-        #endif //defined(MEDIAINFO_CDP_YES)
+        #endif //defined(MEDIAINFO_ANCILLARY_YES) && defined(MEDIAINFO_CDP_YES)
 
         //Active Format Description & Bar Data
         #if defined(MEDIAINFO_AFDBARDATA_YES) && defined(MEDIAINFO_ANCILLARY_YES)

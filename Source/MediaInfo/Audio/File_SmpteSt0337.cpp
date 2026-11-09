@@ -46,9 +46,7 @@
 #if MEDIAINFO_SEEK
     #include "MediaInfo/MediaInfo_Internal.h"
 #endif // MEDIAINFO_SEEK
-#if defined(MEDIAINFO_ADM_YES)
-    #include <zlib.h>
-#endif
+#include <zlib.h>
 #include "MediaInfo/File_Unknown.h"
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 //---------------------------------------------------------------------------
@@ -136,7 +134,6 @@ static stream_t Smpte_St0337_data_type_StreamKind[sizeof(Smpte_St0337_data_type)
     Stream_Audio,
 };
 
-#if defined(MEDIAINFO_ADM_YES)
 static const char* Smpte_St0337_Adm_multiple_chunk_flag[4]=
 {
     "Full",
@@ -149,7 +146,6 @@ static const char* Smpte_St0337_Adm_format_type[2]=
     "UTF-8",
     "UTF-8 gzip",
 };
-#endif
 
 #if MEDIAINFO_CONFORMANCE
 //---------------------------------------------------------------------------
@@ -1526,6 +1522,7 @@ void File_SmpteSt0337::Data_Parse()
                             Parser->Fill(Stream_Audio, 0, "Metadata_MuxingMode", MuxingMode);
                             Parser->Finish();
                         }
+                        }
                         #else
                         {
                             //Filling
@@ -1537,7 +1534,6 @@ void File_SmpteSt0337::Data_Parse()
                             Parser->Finish();
                         }
                         #endif
-                        }
                         break;
             default : ;
         }

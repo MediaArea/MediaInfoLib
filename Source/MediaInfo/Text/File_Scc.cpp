@@ -34,6 +34,7 @@ namespace MediaInfoLib
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+#if defined(MEDIAINFO_EIA608_YES)
 static unsigned char Char2Hex (unsigned char Char)
 {
          if (Char<='9' && Char>='0')
@@ -46,6 +47,7 @@ static unsigned char Char2Hex (unsigned char Char)
         Char =0;
     return Char;
 }
+#endif //defined(MEDIAINFO_EIA608_YES)
 
 //***************************************************************************
 // Constructor/Destructor
@@ -194,8 +196,10 @@ void File_Scc::FileHeader_Parse()
     Fill(Stream_General, 0, General_Format, "SCC");
 
     //Init
+    #if defined(MEDIAINFO_EIA608_YES)
     Parser=new File_Eia608();
     Open_Buffer_Init(Parser);
+    #endif //defined(MEDIAINFO_EIA608_YES)
 
     // Trying to detect frame rate
     vector<TimeCode> TimeCodes;
@@ -352,6 +356,7 @@ void File_Scc::Data_Parse()
     Get_String(11, TimeStamp,                                   "TimeStamp");
     TimeCode Temp(TimeStamp, FrameRate-1, TimeCode::FPS1001(FrameRate_Is1001));
     Frame_Count_NotParsedIncluded=Temp.ToFrames()-TimeCode_FirstFrame.ToFrames();
+    #if defined(MEDIAINFO_EIA608_YES)
     Parser->FrameInfo.DTS=Temp.ToMilliseconds()*1000000;
     Parser->FrameInfo.DUR=FrameDurationNanoSeconds;
     while (Element_Offset+5<=Element_Size)
@@ -365,6 +370,9 @@ void File_Scc::Data_Parse()
         Element_Offset+=5;
         Frame_Count_NotParsedIncluded=Parser->Frame_Count_NotParsedIncluded;
     }
+    #else //defined(MEDIAINFO_EIA608_YES)
+    Skip_XX(Element_Size-Element_Offset,                        "Data");
+    #endif //defined(MEDIAINFO_EIA608_YES)
 }
 
 //***************************************************************************

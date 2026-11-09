@@ -227,6 +227,7 @@ void File_Sdp::Data_Parse()
                 return;
             }
             Element_Code=(int64u)-1;
+            #if defined(MEDIAINFO_TELETEXT_YES)
             stream &Stream=Streams[0];
             if (Stream.Parser==NULL)
             {
@@ -235,8 +236,11 @@ void File_Sdp::Data_Parse()
             }
             if (Stream.Parser->PTS_DTS_Needed)
                 Stream.Parser->FrameInfo=FrameInfo;
+            #endif //defined(MEDIAINFO_TELETEXT_YES)
             Demux(Buffer+Buffer_Offset+Element_Offset, 45, ContentType_MainStream);
+            #if defined(MEDIAINFO_TELETEXT_YES)
             Open_Buffer_Continue(Stream.Parser, Buffer+Buffer_Offset+Element_Offset, 45);
+            #endif //defined(MEDIAINFO_TELETEXT_YES)
             Element_Offset+=45;
         }
     }

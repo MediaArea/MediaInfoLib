@@ -333,6 +333,7 @@ void File_Vbi::Line21()
     }
 
     // Parse the characters
+    #if defined(MEDIAINFO_EIA608_YES)
     int8u CC_Buffer[2];
     CC_Buffer[0] = ReverseBits(Pair >> 8);
     CC_Buffer[1] = ReverseBits(Pair & 0xFF);
@@ -344,6 +345,7 @@ void File_Vbi::Line21()
         Open_Buffer_Init(Stream.Parser);
     }
     Open_Buffer_Continue(Stream.Parser, CC_Buffer, 2);
+    #endif //defined(MEDIAINFO_EIA608_YES)
     Element_Offset = Element_Size;
 }
 
@@ -452,6 +454,7 @@ void File_Vbi::Vitc()
     }
 
     // Parse the characters
+    #if defined(MEDIAINFO_TIMECODE_YES)
     int8u TimeCode_UserBits_Buffer[8];
     for (int i = 0; i < 8; i++) {
         TimeCode_UserBits_Buffer[i] = ReverseBits((TimeCode_UserBits >> (8 * i)) & 0xFF);
@@ -466,6 +469,7 @@ void File_Vbi::Vitc()
         Open_Buffer_Init(Stream.Parser);
     }
     Open_Buffer_Continue(Stream.Parser, TimeCode_UserBits_Buffer, 8);
+    #endif //defined(MEDIAINFO_TIMECODE_YES)
     Element_Offset = Element_Size;
 }
 
@@ -600,6 +604,7 @@ void File_Vbi::Teletext()
     }
 
     // Parse the characters
+    #if defined(MEDIAINFO_TELETEXT_YES)
     if (!Stream.Parser)
     {
         Stream.Parser = new File_Teletext;
@@ -607,6 +612,7 @@ void File_Vbi::Teletext()
         Open_Buffer_Init(Stream.Parser);
     }
     Open_Buffer_Continue(Stream.Parser, Teletext_Buffer, 45);
+    #endif //defined(MEDIAINFO_TELETEXT_YES)
     Element_Offset = Element_Size;
 }
 

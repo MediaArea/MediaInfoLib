@@ -923,6 +923,7 @@ void File_Ancillary::Data_Parse()
                                         #endif //MEDIAINFO_CDP_YES
                                         break;
                             case 0x02 : //CEA-608 (from SMPTE 334-1)
+                                        #if defined(MEDIAINFO_EIA608_YES)
                                         if (TestAndPrepare())
                                         {
                                             if (Eia608_Parser==NULL)
@@ -944,6 +945,7 @@ void File_Ancillary::Data_Parse()
                                             {
                                             }
                                         }
+                                        #endif //defined(MEDIAINFO_EIA608_YES)
                                         break;
                             default   :
                                         SetDefaultFormat();

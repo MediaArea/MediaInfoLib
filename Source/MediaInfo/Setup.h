@@ -633,7 +633,10 @@
 #if !defined(MEDIAINFO_VIDEO_NO) && !defined(MEDIAINFO_AVSV_NO) && !defined(MEDIAINFO_AVSV_YES)
     #define MEDIAINFO_AVSV_YES
 #endif
-#if !defined(MEDIAINFO_VIDEO_NO) && !defined(MEDIAINFO_AVSV3_NO) && !defined(MEDIAINFO_AVS3V_YES)
+#if defined(MEDIAINFO_AVSV3_NO) && !defined(MEDIAINFO_AVS3V_NO)
+    #define MEDIAINFO_AVS3V_NO //Name used by the CMake option
+#endif
+#if !defined(MEDIAINFO_VIDEO_NO) && !defined(MEDIAINFO_AVS3V_NO) && !defined(MEDIAINFO_AVS3V_YES)
     #define MEDIAINFO_AVS3V_YES
 #endif
 #if !defined(MEDIAINFO_VIDEO_NO) && !defined(MEDIAINFO_CANOPUS_NO) && !defined(MEDIAINFO_CANOPUS_YES)

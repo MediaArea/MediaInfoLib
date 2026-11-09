@@ -17,6 +17,60 @@
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
+#if defined(MEDIAINFO_MK_YES) || defined(MEDIAINFO_ICC_YES) || defined(MEDIAINFO_PNG_YES) || defined(MEDIAINFO_PRORES_YES) || defined(MEDIAINFO_SPHERICALVIDEO_YES)
+//---------------------------------------------------------------------------
+
+namespace MediaInfoLib
+{
+
+using namespace ZenLib;
+
+//---------------------------------------------------------------------------
+const char* Mk_StereoMode(int64u StereoMode)
+{
+    switch (StereoMode)
+    {
+        case 0x00 : return ""; //Mono (default)
+        case 0x01 : return "Side by Side (left eye first)";
+        case 0x02 : return "Top-Bottom (right eye first)";
+        case 0x03 : return "Top-Bottom (left eye first)";
+        case 0x04 : return "Checkboard (right eye first)";
+        case 0x05 : return "Checkboard (left eye first)";
+        case 0x06 : return "Row Interleaved (right eye first)";
+        case 0x07 : return "Row Interleaved (left eye first)";
+        case 0x08 : return "Column Interleaved (right eye first)";
+        case 0x09 : return "Column Interleaved (left eye first)";
+        case 0x0A : return "Anaglyph (cyan/red)";
+        case 0x0B : return "Side by Side (right eye first)";
+        case 0x0C : return "Anaglyph (green/magenta)";
+        case 0x0D : return "Both Eyes laced in one block (left eye first)";
+        case 0x0E : return "Both Eyes laced in one block (right eye first)";
+        default   : return "";
+    }
+}
+
+//---------------------------------------------------------------------------
+const char* Mk_Video_Colour_Range(int8u range)
+{
+    switch (range)
+    {
+        case 1: return "Limited";
+        case 2: return "Full";
+        default: return "";
+    }
+}
+
+} //NameSpace
+
+//---------------------------------------------------------------------------
+#endif //...
+//---------------------------------------------------------------------------
+
+//***************************************************************************
+//
+//***************************************************************************
+
+//---------------------------------------------------------------------------
 #if defined(MEDIAINFO_MK_YES)
 //---------------------------------------------------------------------------
 
@@ -107,6 +161,8 @@
     #include "MediaInfo/MediaInfo_Events.h"
 #endif //MEDIAINFO_EVENTS
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
+#include "MediaInfo/MediaInfo_Internal.h"
+#include "ZenLib/File.h"
 #include <cstring>
 #include <cmath>
 #include <algorithm>
@@ -600,30 +656,6 @@ static const char* Mk_ContentCompAlgo(int64u Algo)
 }
 
 //---------------------------------------------------------------------------
-const char* Mk_StereoMode(int64u StereoMode)
-{
-    switch (StereoMode)
-    {
-        case 0x00 : return ""; //Mono (default)
-        case 0x01 : return "Side by Side (left eye first)";
-        case 0x02 : return "Top-Bottom (right eye first)";
-        case 0x03 : return "Top-Bottom (left eye first)";
-        case 0x04 : return "Checkboard (right eye first)";
-        case 0x05 : return "Checkboard (left eye first)";
-        case 0x06 : return "Row Interleaved (right eye first)";
-        case 0x07 : return "Row Interleaved (left eye first)";
-        case 0x08 : return "Column Interleaved (right eye first)";
-        case 0x09 : return "Column Interleaved (left eye first)";
-        case 0x0A : return "Anaglyph (cyan/red)";
-        case 0x0B : return "Side by Side (right eye first)";
-        case 0x0C : return "Anaglyph (green/magenta)";
-        case 0x0D : return "Both Eyes laced in one block (left eye first)";
-        case 0x0E : return "Both Eyes laced in one block (right eye first)";
-        default   : return "";
-    }
-}
-
-//---------------------------------------------------------------------------
 static const char* Mk_OriginalSourceMedium_From_Source_ID (const Ztring &Value)
 {
     if (Value.size()==6 && Value[0] == __T('0') && Value[1] == __T('0'))
@@ -748,16 +780,6 @@ const char* Mpegv_colour_primaries(int8u colour_primaries);
 const char* Mpegv_transfer_characteristics(int8u transfer_characteristics);
 const char* Mpegv_matrix_coefficients(int8u matrix_coefficients);
 const char* Mpegv_matrix_coefficients_ColorSpace(int8u matrix_coefficients);
-
-const char* Mk_Video_Colour_Range(int8u range)
-{
-    switch (range)
-    {
-        case 1: return "Limited";
-        case 2: return "Full";
-        default: return "";
-    }
-}
 
 //---------------------------------------------------------------------------
 std::string File_Mpeg4_sv3d_ProjectionType(int8u Value);
@@ -3861,7 +3883,7 @@ void File_Mk::Segment_Tracks_TrackEntry_BlockAdditionMapping_BlockAddIDExtraData
                 break;
         case 0x68766345:
                 Element_Name("Dolby Vision EL HEVC");
-                #if MEDIAINFO_TRACE
+                #if MEDIAINFO_TRACE && defined(MEDIAINFO_HEVC_YES)
                     if (Trace_Activated)
                     {
                         File_Hevc* Parser=new File_Hevc();
@@ -3879,7 +3901,7 @@ void File_Mk::Segment_Tracks_TrackEntry_BlockAdditionMapping_BlockAddIDExtraData
                 break;
         case 0x6D766343:
                 Element_Name("MVC configuration");
-                #if MEDIAINFO_TRACE
+                #if MEDIAINFO_TRACE && defined(MEDIAINFO_AVC_YES)
                     if (Trace_Activated)
                     {
                         File_Avc* Parser=new File_Avc();
@@ -5140,7 +5162,7 @@ void File_Mk::CodecID_Manage()
         streamItem.Parser=new File_Avs3V;
     }
     #endif
-    #if defined(MEDIAINFO_HUFFYUV_YES)
+    #if defined(MEDIAINFO_DVDIF_YES)
     else if (Format==__T("DV"))
     {
         streamItem.Parser=new File_DvDif;

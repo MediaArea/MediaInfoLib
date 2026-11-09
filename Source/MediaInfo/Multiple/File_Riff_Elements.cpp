@@ -36,7 +36,7 @@ using namespace ZenLib;
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-#if defined(MEDIAINFO_RIFF_YES) || defined(MEDIAINFO_MK_YES)
+#if defined(MEDIAINFO_RIFF_YES) || defined(MEDIAINFO_MK_YES) || defined(MEDIAINFO_FLAC_YES) || defined(MEDIAINFO_VORBISCOM_YES) || defined(MEDIAINFO_WVPK_YES)
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -3318,11 +3318,13 @@ void File_Riff::rcrd()
         Fill(Stream_General, 0, General_Format, "Ancillary media packets"); //GXF, RDD14-2007
 
     //Clearing old data
+    #if defined(MEDIAINFO_ANCILLARY_YES)
     if (Ancillary)
     {
         (*Ancillary)->FrameInfo.DTS=FrameInfo.DTS;
         Open_Buffer_Continue(*Ancillary, Buffer, 0);
     }
+    #endif //defined(MEDIAINFO_ANCILLARY_YES)
 }
 
 //---------------------------------------------------------------------------
@@ -3374,12 +3376,14 @@ void File_Riff::rcrd_fld__anc__pyld()
 {
     Element_Name("Ancillary data sample payload");
 
+    #if defined(MEDIAINFO_ANCILLARY_YES)
     if (Ancillary)
     {
         (*Ancillary)->FrameInfo.DTS=FrameInfo.DTS;
         (*Ancillary)->LineNumber=rcrd_fld__anc__pos__LineNumber;
         Open_Buffer_Continue(*Ancillary);
     }
+    #endif //defined(MEDIAINFO_ANCILLARY_YES)
 }
 
 //---------------------------------------------------------------------------
@@ -3664,6 +3668,7 @@ struct profile_info
 };
 
 //---------------------------------------------------------------------------
+#if defined(MEDIAINFO_ADM_YES)
 static int8u* Riff_Gunzip(const int8u* Data, size_t Data_Size, size_t& UncompressedData_Size)
 {
     //Uncompress init
@@ -3706,9 +3711,11 @@ static int8u* Riff_Gunzip(const int8u* Data, size_t Data_Size, size_t& Uncompres
     inflateEnd(&strm);
     return UncompressedData;
 }
+#endif //defined(MEDIAINFO_ADM_YES)
 
 void File_Riff::WAVE_axml()
 {
+    #if defined(MEDIAINFO_ADM_YES)
     //Preparing
     delete Adm;
     Adm=new File_Adm;
@@ -3772,10 +3779,14 @@ void File_Riff::WAVE_axml()
         Adm->TotalSize=Buffer_DataToParse_End?((Buffer_DataToParse_End>File_Size?File_Size:Buffer_DataToParse_End)-Buffer_DataToParse_Begin):(Element_TotalSize_Get()-Alignement_ExtraByte);
         WAVE_axml_Continue();
     }
+    #else //defined(MEDIAINFO_ADM_YES)
+    Skip_XX(Element_Size,                                       "Data");
+    #endif //defined(MEDIAINFO_ADM_YES)
 }
 
 void File_Riff::WAVE_axml_Continue()
 {
+    #if defined(MEDIAINFO_ADM_YES)
     //Parsing
     Open_Buffer_Continue(Adm, Buffer+Buffer_Offset, (size_t)Element_Size);
     Element_Show(); //No trace from the ADM parser, the chunk must stay visible
@@ -3790,6 +3801,7 @@ void File_Riff::WAVE_axml_Continue()
         else
             Adm->NeedToJumpToEnd=false;
     }
+    #endif //defined(MEDIAINFO_ADM_YES)
     Skip_XX(Element_Size-Element_Offset,                        "XML data");
 }
 
@@ -4094,6 +4106,7 @@ void File_Riff::WAVE_chna()
 {
     Element_Name("Channels mapping");
 
+    #if defined(MEDIAINFO_ADM_YES)
     //Parsing
     int16u numUIDs;
     auto Adm_Current = new File_Adm;
@@ -4125,6 +4138,9 @@ void File_Riff::WAVE_chna()
         else
             Adm_chna=Adm_Current;
     FILLING_END();
+    #else //defined(MEDIAINFO_ADM_YES)
+    Skip_XX(Element_Size,                                       "Data");
+    #endif //defined(MEDIAINFO_ADM_YES)
 }
 
 //---------------------------------------------------------------------------
@@ -4417,6 +4433,7 @@ void File_Riff::WAVE_sxml()
         Skip_L4(                                                "nSamplesSubDataChunk");
         if (Element_Offset+subXMLChunkSize<=Element_Size)
         {
+            #if defined(MEDIAINFO_ADM_YES)
             if (!Adm && (fmtType==0 || fmtType==1)) //If both ADM and S-ADM are present, ADM has priority
             {
                 Adm=new File_Adm;
@@ -4439,6 +4456,7 @@ void File_Riff::WAVE_sxml()
                     Open_Buffer_Continue(Adm, Buffer+Buffer_Offset+(size_t)Element_Offset, (size_t)subXMLChunkSize);
                 Element_Show(); //No trace from the ADM parser, the chunk must stay visible
             }
+            #endif //defined(MEDIAINFO_ADM_YES)
             if (fmtType==0)
                 Skip_UTF8(subXMLChunkSize,                      "xmlData");
             else

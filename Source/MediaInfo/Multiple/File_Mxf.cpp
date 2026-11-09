@@ -2152,6 +2152,8 @@ File_Mxf::File_Mxf()
     DolbyAudioMetadata=NULL;
     #if defined(MEDIAINFO_ADM_YES)
         Adm=NULL;
+    #endif
+    #if defined(MEDIAINFO_IAB_YES)
         Adm_ForLaterMerge=NULL;
     #endif
 
@@ -3023,20 +3025,24 @@ void File_Mxf::Streams_Finish()
 
     if (DolbyAudioMetadata) //Before ADM for having content before all ADM stuff
         Merge(*DolbyAudioMetadata, Stream_Audio, 0, 0);
+    #if defined(MEDIAINFO_ADM_YES)
     if (Adm)
     {
         Fill(Adm);
-        #if defined(MEDIAINFO_ADM_YES)
         CompareAdmProfiles();
-        #endif
         Finish(Adm);
         Merge(*Adm, Stream_Audio, 0, 0);
     }
+    #endif //defined(MEDIAINFO_ADM_YES)
+    #if defined(MEDIAINFO_IAB_YES)
     if (Adm_ForLaterMerge)
     {
+        #if defined(MEDIAINFO_ADM_YES)
         auto& S=*Adm_ForLaterMerge->Stream_More;
         size_t Start=(Stream_Audio<S.size() && !S[Stream_Audio].empty())?S[Stream_Audio][0].size():0;
+        #endif //defined(MEDIAINFO_ADM_YES)
         ((File_Iab*)Adm_ForLaterMerge)->Streams_Fill_ForAdm();
+        #if defined(MEDIAINFO_ADM_YES)
         if (Adm)
         {
             //Check if compatible
@@ -3060,19 +3066,23 @@ void File_Mxf::Streams_Finish()
             }
         }
         else
+        #endif //defined(MEDIAINFO_ADM_YES)
         {
             //Merge
             Merge(*Adm_ForLaterMerge, Stream_Audio, 0, 0);
         }
     }
+    #endif //defined(MEDIAINFO_IAB_YES)
     if (DolbyAudioMetadata) //After ADM for having content inside ADM stuff
         ((File_DolbyAudioMetadata*)DolbyAudioMetadata)->Merge(*this, 0);
+    #if defined(MEDIAINFO_ADM_YES)
     if (Adm && (!DolbyAudioMetadata || !((File_DolbyAudioMetadata*)DolbyAudioMetadata)->HasSegment9) && Retrieve_Const(Stream_Audio, 0, "AdmProfile_Format")==__T("Dolby Atmos Master"))
     {
         Clear(Stream_Audio, 0, "AdmProfile");
         Clear(Stream_Audio, 0, "AdmProfile_Format");
         Clear(Stream_Audio, 0, "AdmProfile_Version");
     }
+    #endif //defined(MEDIAINFO_ADM_YES)
 
     //Commercial names
     Streams_Finish_CommercialNames();
@@ -7262,8 +7272,10 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
                     Fill(Stream_Audio, StreamPos_Last, Audio_Channel_s_, Descriptor->second.ChannelCount);
                     break;
                 }
+        #if defined(MEDIAINFO_IAB_YES)
         if (!Adm_ForLaterMerge && (*Parser)->Retrieve(Stream_Audio, StreamPos_Last, Audio_Format)==__T("IAB"))
             Adm_ForLaterMerge=(File_Iab*)*Parser; // Will be used later for ADM
+        #endif //defined(MEDIAINFO_IAB_YES)
 
         Merge(*(*Parser), StreamKind_Last, 0, StreamPos_Last);
 
@@ -12609,10 +12621,10 @@ void File_Mxf::Data_Parse()
                         for (const auto Parser : Essence->second.Parsers)
                             Parser->FrameIsAlwaysComplete=true;
 
-                    #ifdef MEDIAINFO_DEMUX
+                    #if MEDIAINFO_DEMUX && defined(MEDIAINFO_AVC_YES)
                         if (Ztring().From_UTF8(Mxf_EssenceContainer(Descriptor->second.EssenceContainer))==__T("AVC"))
                             Essence->second.ShouldCheckAvcHeaders=File_Avc::AVC_Intra_CodecID_FromMeta(Descriptor->second.Width, Descriptor->second.Height, Descriptor->second.Is_Interlaced()?2:1, 1, (int32u)(float64_int64s(Descriptor->second.SampleRate)), 0);
-                    #endif //MEDIAINFO_DEMUX
+                    #endif //MEDIAINFO_DEMUX && defined(MEDIAINFO_AVC_YES)
                     break;
                 }
             if (!DescriptorFound)
@@ -12766,6 +12778,7 @@ void File_Mxf::Data_Parse()
             Demux_random_access=true;
 
             bool ShouldDemux=true;
+            #if defined(MEDIAINFO_AVC_YES)
             if (!Essence->second.Parsers.empty() && Essence->second.ShouldCheckAvcHeaders)
             {
                 if (Essence->second.Parsers[0]->Status[IsAccepted])
@@ -12809,6 +12822,7 @@ void File_Mxf::Data_Parse()
 
                 Essence->second.ShouldCheckAvcHeaders=0;
             }
+            #endif //defined(MEDIAINFO_AVC_YES)
             if (ShouldDemux)
             {
                 Demux(Buffer+Buffer_Offset, (size_t)Element_Size, ContentType_MainStream);
@@ -18299,7 +18313,9 @@ void File_Mxf::ADMProfileLevelULBatch()
         List.insert(UUID);
     }
 
+    #if defined(MEDIAINFO_ADM_YES)
     ADMProfileLevelULBatch_List[InstanceUID] = std::move(List);
+    #endif //defined(MEDIAINFO_ADM_YES)
 }
 
 //---------------------------------------------------------------------------
@@ -22278,7 +22294,9 @@ void File_Mxf::ChooseParser_Mpegv(const essences::iterator &Essence, const descr
     //Filling
     #if defined(MEDIAINFO_MPEGV_YES)
         File_Mpegv* Parser=new File_Mpegv();
-        Parser->Ancillary=&Ancillary;
+        #if defined(MEDIAINFO_ANCILLARY_YES)
+            Parser->Ancillary=&Ancillary;
+        #endif //defined(MEDIAINFO_ANCILLARY_YES)
         MayHaveCaptionsInStream=true;
         #if MEDIAINFO_ADVANCED
             Parser->InitDataNotRepeated_Optional=true;

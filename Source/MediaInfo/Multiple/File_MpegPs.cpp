@@ -3484,12 +3484,13 @@ void File_MpegPs::video_stream()
                             Streams[stream_id].Parsers.push_back(Parser);
                         }
                         #endif
-                        #if defined(MEDIAINFO_AVSV_YES)
+                        #if defined(MEDIAINFO_AVS3V_YES)
                         {
                             File_Avs3V* Parser = new File_Avs3V;
                             Streams[stream_id].Parsers.push_back(Parser);
                         }
                         #endif
+                        break;
         }
         for (size_t Pos=0; Pos<Streams[stream_id].Parsers.size(); Pos++)
         {
@@ -4550,7 +4551,7 @@ File__Analyze* File_MpegPs::ChooseParser_VC1()
 File__Analyze* File_MpegPs::ChooseParser_Avs3V()
 {
     //Filling
-    #if defined(MEDIAINFO_AVSV_YES)
+    #if defined(MEDIAINFO_AVS3V_YES)
         File_Avs3V* Parser = new File_Avs3V;
     #if MEDIAINFO_DEMUX
         if (Config->Demux_Unpacketize_Get())

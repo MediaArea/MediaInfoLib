@@ -17,7 +17,7 @@
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
-#if defined(MEDIAINFO_EXIF_YES)
+#if defined(MEDIAINFO_EXIF_YES) || defined(MEDIAINFO_TIFF_YES)
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
@@ -2439,7 +2439,9 @@ void File_Exif::Thumbnail()
             switch (Compression) {
             case 6:
             case 7:
+                #if defined(MEDIAINFO_JPEG_YES)
                 Parser.reset(new File_Jpeg());
+                #endif
                 break;
             }
         }
@@ -3010,4 +3012,4 @@ void File_Exif::GoToOffset(int64u GoTo_)
 
 } //NameSpace
 
-#endif //MEDIAINFO_EXIF_YES
+#endif //defined(MEDIAINFO_EXIF_YES) || defined(MEDIAINFO_TIFF_YES)

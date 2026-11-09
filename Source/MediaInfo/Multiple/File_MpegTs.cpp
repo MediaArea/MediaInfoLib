@@ -24,6 +24,7 @@
 #include "MediaInfo/Multiple/File_MpegTs.h"
 #include "MediaInfo/Multiple/File_MpegPs.h"
 #include "MediaInfo/Multiple/File_Mpeg_Descriptors.h"
+#include "MediaInfo/File_Unknown.h"
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #include "MediaInfo/MediaInfo.h"
 #include "MediaInfo/MediaInfo_Internal.h"
@@ -3135,7 +3136,7 @@ void File_MpegTs::PES()
             Complete_Stream->Streams[pid]->Searching_Payload_Continue_Set(true);
         #else
             //Filling
-            Streams[pid]->Parser=new File_Unknown();
+            Complete_Stream->Streams[pid]->Parser=new File_Unknown();
         #endif
         Complete_Stream->Streams[pid]->Parser->CA_system_ID_MustSkipSlices=Complete_Stream->Streams[pid]->CA_system_ID_MustSkipSlices;
         #if MEDIAINFO_IBIUSAGE

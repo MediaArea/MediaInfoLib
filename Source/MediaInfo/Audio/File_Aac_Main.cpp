@@ -17,7 +17,7 @@
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
-#if defined(MEDIAINFO_AAC_YES)
+#if defined(MEDIAINFO_AAC_YES) || defined(MEDIAINFO_MPEGH3DA_YES)
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
@@ -164,6 +164,28 @@ const char* Aac_audioObjectType(int8u audioObjectType)
         default   : return "";
     }
 }
+
+} //NameSpace
+
+//---------------------------------------------------------------------------
+#endif //defined(MEDIAINFO_AAC_YES) || defined(MEDIAINFO_MPEGH3DA_YES)
+//---------------------------------------------------------------------------
+
+//***************************************************************************
+// Channels, also used by MPEG-H 3D Audio, MPEG-4 and the MPEG-PS/MPEG-TS descriptors
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+#if defined(MEDIAINFO_AAC_YES) || defined(MEDIAINFO_MPEGH3DA_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES)
+//---------------------------------------------------------------------------
+
+//---------------------------------------------------------------------------
+#include "MediaInfo/Audio/File_Aac.h"
+using namespace std;
+//---------------------------------------------------------------------------
+
+namespace MediaInfoLib
+{
 
 //---------------------------------------------------------------------------
 extern const int8u Aac_Channels[Aac_Channels_Size]=
@@ -546,6 +568,23 @@ extern string Aac_ChannelMode_GetString(const vector<Aac_OutputChannel>& OutputC
     return Aac_ChannelMode_GetString(&*OutputChannels.begin(), OutputChannels.size());
 }
 
+} //NameSpace
+
+//---------------------------------------------------------------------------
+#endif //...
+//---------------------------------------------------------------------------
+
+//***************************************************************************
+//
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+#if defined(MEDIAINFO_AAC_YES) || defined(MEDIAINFO_MPEGH3DA_YES)
+//---------------------------------------------------------------------------
+
+namespace MediaInfoLib
+{
+
 //---------------------------------------------------------------------------
 int8u Aac_AudioSpecificConfig_sampling_frequency_index(const int64s sampling_frequency, bool usac=false)
 {
@@ -564,6 +603,23 @@ int8u Aac_AudioSpecificConfig_sampling_frequency_index(const int64s sampling_fre
     if (sampling_frequency>=9391) return 10;
     return 11;
 }
+
+} //NameSpace
+
+//---------------------------------------------------------------------------
+#endif //defined(MEDIAINFO_AAC_YES) || defined(MEDIAINFO_MPEGH3DA_YES)
+//---------------------------------------------------------------------------
+
+//***************************************************************************
+//
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+#if defined(MEDIAINFO_AAC_YES)
+//---------------------------------------------------------------------------
+
+namespace MediaInfoLib
+{
 
 //---------------------------------------------------------------------------
 void File_Aac::AudioSpecificConfig (size_t End)

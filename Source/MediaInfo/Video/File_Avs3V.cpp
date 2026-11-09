@@ -26,6 +26,38 @@
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
+#if defined(MEDIAINFO_AVS3V_YES) || defined(MEDIAINFO_MPEG4_YES)
+//---------------------------------------------------------------------------
+
+namespace MediaInfoLib
+{
+
+using namespace ZenLib;
+
+//---------------------------------------------------------------------------
+const char* Mpegv_matrix_coefficients(int8u matrix_coefficients);
+const char* Avs3V_matrix_coefficients(int8u matrix_coefficients)
+{
+    switch (matrix_coefficients)
+    {
+        case  8:
+        case  9: return Mpegv_matrix_coefficients(matrix_coefficients + 1);
+        case 10: return ""; // No idea about what they plan to do there
+    }
+    return Mpegv_matrix_coefficients(matrix_coefficients);
+}
+
+} //NameSpace
+
+//---------------------------------------------------------------------------
+#endif //...
+//---------------------------------------------------------------------------
+
+//***************************************************************************
+//
+//***************************************************************************
+
+//---------------------------------------------------------------------------
 #if defined(MEDIAINFO_AVS3V_YES)
 //---------------------------------------------------------------------------
 
@@ -220,16 +252,6 @@ static const char* Avs3V_picture_coding_type[]=
 const char* Mpegv_colour_primaries(int8u colour_primaries);
 const char* Mpegv_transfer_characteristics(int8u transfer_characteristics);
 const char* Mpegv_matrix_coefficients(int8u matrix_coefficients);
-const char* Avs3V_matrix_coefficients(int8u matrix_coefficients)
-{
-    switch (matrix_coefficients)
-    {
-        case  8:
-        case  9: return Mpegv_matrix_coefficients(matrix_coefficients + 1);
-        case 10: return ""; // No idea about what they plan to do there
-    }
-    return Mpegv_matrix_coefficients(matrix_coefficients);
-}
 
 //***************************************************************************
 // Constructor/Destructor
