@@ -1677,6 +1677,7 @@ File_Usac::bs_bookmark File_Usac::BS_Bookmark(size_t NewSize)
     auto AlreadyParsed=BS_Size-RemainingSize;
     if (NewSize>RemainingSize)
         NewSize=RemainingSize;
+    B.BS_Save=*BS;
     B.Element_Offset=Element_Offset;
     B.Element_Size=Element_Size;
     B.Trusted=Trusted;
@@ -1744,7 +1745,8 @@ bool File_Usac::BS_Bookmark(File_Usac::bs_bookmark& B)
             Fill_Conformance((ConformanceFieldName + " GeneralCompliance").c_str(), "Bitstream parsing ran out of data to read before the end of the syntax was reached, most probably the bitstream is malformed");
         }
     #endif
-    BS->Resize(B.End);
+    *BS=B.BS_Save; //Position at the end of the bookmarked part, wherever its parsing stopped
+    BS->Skip(BS->Remain()-B.End);
     Element_Offset=B.Element_Offset;
     Element_Size=B.Element_Size;
     #if MEDIAINFO_TRACE
