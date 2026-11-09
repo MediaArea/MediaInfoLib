@@ -1617,6 +1617,9 @@ private :
 
     //Data
     size_t Data_Level;              //Current level for Data ("Top level")
+    #if MEDIAINFO_TRACE
+    bool   Data_Parse_IsRunning;    //Levels of the element being parsed must not be ended by ForceFinish()
+    #endif //MEDIAINFO_TRACE
 
     //Element
 public: //TO CHANGE
