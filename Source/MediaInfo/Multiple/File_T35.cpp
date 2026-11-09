@@ -159,7 +159,8 @@ void File_T35::itu_t_t35_B5_0031_DTG1()
         Open_Buffer_Init(&DTG1_Parser);
         DTG1_Parser.Format=File_AfdBarData::Format_A53_4_DTG1;
         Open_Buffer_Continue(&DTG1_Parser, Buffer+Buffer_Offset+(size_t)Element_Offset, Element_Size-Element_Offset);
-        Container->Merge(DTG1_Parser, Stream_Video, 0, 0);
+        if (Container)
+            Container->Merge(DTG1_Parser, Stream_Video, 0, 0);
         Element_Offset=Element_Size;
     }
     #endif //defined(MEDIAINFO_AFDBARDATA_YES)
@@ -348,7 +349,7 @@ void File_T35::itu_t_t35_B5_0031_GA94_09()
             HDR[Video_HDR_Format_Version][HdrFormat_SmpteSt209410].From_Number(app_version);
         FILLING_END();
     }
-    if (!Trusted_Get())
+    if (!Trusted_Get() && Container)
     {
         Container->Fill(Stream_Video, 0, "ConformanceErrors", 1, 10, true);
         Container->Fill(Stream_Video, 0, "ConformanceErrors SMPTE_ST_2049_CVT", 1, 10, true);

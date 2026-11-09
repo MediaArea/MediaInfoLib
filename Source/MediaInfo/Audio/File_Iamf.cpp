@@ -32,6 +32,9 @@
 #ifdef MEDIAINFO_OPUS_YES
     #include "MediaInfo/Audio/File_Opus.h"
 #endif
+#ifdef MEDIAINFO_T35_YES
+    #include "MediaInfo/Multiple/File_T35.h"
+#endif
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -1432,8 +1435,15 @@ void File_Iamf::ia_metadata()
 //---------------------------------------------------------------------------
 void File_Iamf::metadata_itu_t_t35()
 {
-    // TODO: Use ITUT T35 parser
-    Skip_XX(Element_Size - Element_Offset,                      "Data");
+    #ifdef MEDIAINFO_T35_YES
+        if (!Parser_T35) {
+            Parser_T35.reset(new File_T35(nullptr)); // No video stream for the AFD
+            Open_Buffer_Init(Parser_T35.get());
+        }
+        Open_Buffer_Continue(Parser_T35.get());
+    #else
+        Skip_XX(Element_Size - Element_Offset,                  "Data");
+    #endif
 }
 
 //---------------------------------------------------------------------------

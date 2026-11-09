@@ -66,7 +66,7 @@ private :
     void itu_t_t35_26_0004_0005();
 
     //Data of the container, own data if the container does not use it
-    File__Analyze*              Container;
+    File__Analyze*              Container; //Its video stream gets the AFD and the SMPTE ST 2094-10 issues, nullptr if it has no video stream
     hdr                         HDR_Own;
     Ztring                      EtsiTS103433_Own;
     DV_RPU                      DV_RPU_data_Own;
