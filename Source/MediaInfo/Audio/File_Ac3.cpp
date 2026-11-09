@@ -571,23 +571,6 @@ extern const int16u CRC_16_Table[256] =
     0x8213, 0x0216, 0x021c, 0x8219, 0x0208, 0x820d, 0x8207, 0x0202
 };
 
-int CRC16_Init(int16u *Table, int16u Polynomial)
-{
-    for (size_t Pos=0; Pos<256; Pos++)
-    {
-        Table[Pos]=(int16u)Pos<<8;
-
-        for(int8u bit=0; bit<8; bit++)
-        {
-            if (Table[Pos]&0x8000)
-                Table[Pos]=(Table[Pos]<<1)^Polynomial;
-            else
-                Table[Pos]=Table[Pos]<<1;
-        }
-    }
-    return 0;
-}
-
 //---------------------------------------------------------------------------
 extern const float64 AC3_dynrng[]=
 {
@@ -4343,6 +4326,7 @@ void File_Ac3::HD()
     //Parsing
     int32u Synch;
     Peek_B3(Synch);
+    bool major_sync_info_CRC_IsOK=false;
     if (Synch==0xF8726F)
     {
         if (Buffer_Offset+28>Buffer_Size)
@@ -4350,21 +4334,6 @@ void File_Ac3::HD()
             Trusted_IsNot("Not enough data");
             return; //Need more data
         }
-
-        //Testing
-        /* Not working
-        int16u CRC_16_Table_HD[256];
-        CRC16_Init(CRC_16_Table_HD, 0x002D);
-
-        int16u CRC_16=0x0000;
-        const int8u* CRC_16_Buffer=Buffer+Buffer_Offset;
-        while(CRC_16_Buffer<Buffer+Buffer_Offset+24)
-        {
-            CRC_16=(CRC_16<<8) ^ CRC_16_Table_HD[(CRC_16>>8)^(*CRC_16_Buffer)];
-            CRC_16_Buffer++;
-        }
-        CRC_16^=LittleEndian2int16u(Buffer+Buffer_Offset+24);
-        */
 
         Element_Info1("major_sync");
         Element_Begin1("major_sync_info");
@@ -4445,7 +4414,25 @@ void File_Ac3::HD()
             else
                 Skip_B1(                                        "Unknown");
         Element_End0();
-        Skip_B2(                                                "major_sync_info_CRC");
+        int16u major_sync_info_CRC;
+        Get_B2 (major_sync_info_CRC,                            "major_sync_info_CRC");
+        if (Element_Offset>=4 && Element_Offset<=Element_Size)
+        {
+            //CRC-16 (polynomial 0x002D) of the major sync except its last 4 bytes, XORed with the 2 bytes before the CRC
+            int16u CRC_16=0x0000;
+            const int8u* CRC_16_Buffer=Buffer+Buffer_Offset;
+            const int8u* CRC_16_Buffer_End=Buffer+Buffer_Offset+(size_t)Element_Offset-4;
+            while (CRC_16_Buffer<CRC_16_Buffer_End)
+            {
+                CRC_16^=(int16u)((*CRC_16_Buffer)<<8);
+                for (int8u i=0; i<8; i++)
+                    CRC_16=(int16u)((CRC_16&0x8000)?((CRC_16<<1)^0x002D):(CRC_16<<1));
+                CRC_16_Buffer++;
+            }
+            CRC_16^=BigEndian2int16u(CRC_16_Buffer);
+            major_sync_info_CRC_IsOK=(CRC_16==major_sync_info_CRC);
+            Param_Info1(major_sync_info_CRC_IsOK?"OK":"NOK");
+        }
         Element_End0();
     }
     else if (!HD_MajorSync_Parsed)
@@ -4503,6 +4490,45 @@ void File_Ac3::HD()
             return;
         }
         HD_MajorSync_Parsed=true;
+
+        //Description from the most complete presentation found (e.g. Dolby Atmos content after a 5.1 introduction), a major sync with a wrong CRC is the least complete one
+        if (Synch==0xF8726F && HD_StreamType==0xBA)
+        {
+            int8u Rank=major_sync_info_CRC_IsOK?((HD_HasAtmos?0x10:0x00)|HD_SubStreams_Count):0x00;
+            if (Rank<HD_Best.Rank)
+            {
+                //Less complete presentation (e.g. 5.1 end credits after Dolby Atmos content), values of the most complete one are kept
+                nonstd_bed_channel_assignment_mask=HD_Best.nonstd_bed_channel_assignment_mask;
+                HD_BitRate_Max=HD_Best.BitRate_Max;
+                HD_Channels2=HD_Best.Channels2;
+                HD_flags=HD_Best.flags;
+                num_dynamic_objects=HD_Best.num_dynamic_objects;
+                dsurexmod=HD_Best.dsurexmod;
+                HD_HasAtmos=HD_Best.HasAtmos;
+            }
+            else
+            {
+                if (Rank>HD_Best.Rank && Status[IsFilled])
+                {
+                    //Description already filled with a less complete presentation, cleared for being filled again
+                    Stream_Erase(Stream_Audio, 0);
+                    Clear(Stream_General, 0, General_Format_Profile);
+                    Clear(Stream_General, 0, General_Format_Commercial_IfAny);
+                    Status[IsFilled]=false;
+                }
+                HD_Best.nonstd_bed_channel_assignment_mask=nonstd_bed_channel_assignment_mask;
+                HD_Best.BitRate_Max=HD_BitRate_Max;
+                HD_Best.Channels2=HD_Channels2;
+                HD_Best.flags=HD_flags;
+                HD_Best.num_dynamic_objects=num_dynamic_objects;
+                HD_Best.dsurexmod=dsurexmod;
+                HD_Best.Rank=Rank;
+                HD_Best.HasAtmos=HD_HasAtmos;
+            }
+
+            //The 16-channel presentation may start later in the stream, more content is needed while it is not found
+            MustExtendParsingDuration=!HD_Best.HasAtmos;
+        }
 
         if (HD_SubStreams_Count==1 && HD_StreamType==0xBB) //MLP with only 1 stream
         {

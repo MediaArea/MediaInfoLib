@@ -290,7 +290,7 @@ private :
     void Segment_Cues_CuePoint_CueTime(){UInteger_Info();};
     void Segment_Cues_CuePoint_CueTrackPositions(){};
     void Segment_Cues_CuePoint_CueTrackPositions_CueTrack(){UInteger_Info();};
-    void Segment_Cues_CuePoint_CueTrackPositions_CueClusterPosition(){UInteger_Info();};
+    void Segment_Cues_CuePoint_CueTrackPositions_CueClusterPosition();
     void Segment_Cues_CuePoint_CueTrackPositions_CueRelativePosition(){UInteger_Info();};
     void Segment_Cues_CuePoint_CueTrackPositions_CueDuration(){UInteger_Info();};
     void Segment_Cues_CuePoint_CueTrackPositions_CueBlockNumber(){UInteger_Info();};
@@ -394,6 +394,9 @@ private :
         bool                    Searching_Payload;
         bool                    Searching_TimeStamps;
         bool                    Searching_TimeStamp_Start;
+        bool                    Searching_Payload_BeforeProbe{};
+        bool                    Searching_TimeStamps_BeforeProbe{};
+        bool                    Searching_TimeStamp_Start_BeforeProbe{};
         std::bitset<8>          ServiceKind;
         int64u                  ContentCompAlgo;
         size_t                  ContentCompSettings_Buffer_Size;
@@ -588,6 +591,20 @@ private :
     };
     std::vector<seek>   Segment_Seeks;
     size_t              Segment_Seeks_Pos{};
+    int64u              Segment_Cluster_First{(int64u)-1};
+    int64u              Segment_Cluster_End{(int64u)-1};
+    int64u              Segment_Cues_End{};
+
+    //Probe of the middle of the file, for the streams with some substreams difficult to detect (e.g. captions, TrueHD presentation starting later)
+    int64u              Probe_WindowBegin{(int64u)-1};
+    int64u              Probe_WindowEnd{(int64u)-1};
+    int64u              Probe_CueClusterPos{(int64u)-1}; //First cluster of the window listed in Cues
+    int64u              Probe_GoToAfter{(int64u)-1}; //Where the parsing continues after the probe, as after the first pass
+    size_t              Probe_Stream_Count{};
+    bool                Probe_IsChecked{};
+    bool                Probe_IsWaitingForCues{};
+    bool                Probe_IsRunning{};
+    bool                Probe_MustSynchronize{}; //A cluster is searched from the position of the jump, which is in the middle of a cluster if not from Cues
     std::vector<Ztring> Segment_Tag_SimpleTag_TagNames;
     int64u Segment_Cluster_BlockGroup_BlockDuration_Value{};
     int64u Segment_Cluster_BlockGroup_BlockDuration_TrackNumber{};
@@ -629,6 +646,9 @@ private :
     void Segment_Tracks_TrackEntry_Video_Colour_MasteringMetadata_Primary(int8u i);
     void Segment_Tracks_TrackEntry_Video_Colour_MasteringMetadata_Luminance(int8u i);
     void JumpTo(int64u GoTo);
+    bool Probe_Decide(int64u GoToAfter);
+    void Probe_Start(int64u ByteStart, int64u GoToAfter);
+    void Probe_End();
     void TestMultipleInstances(size_t* Instances=NULL);
     void CRC32_Check();
     #if MEDIAINFO_TRACE
