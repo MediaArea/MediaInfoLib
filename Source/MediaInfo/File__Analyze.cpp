@@ -4725,9 +4725,10 @@ void File__Analyze::Fill_Conformance(const char* Field, const char* Value, uint8
 //---------------------------------------------------------------------------
 bool File__Analyze::conformance_errors::Add(const string& Value)
 {
-    const auto Key=Value.substr(0, Value.find(" (actual ")); //Errors differing only by their actual and expected values are listed once per stream, with the first values
+    //Errors differing only by their actual and expected values are listed once per stream, with the first values
+    const auto Key_Size=min(Value.find(" (actual "), Value.size());
     for (const auto& Item : *this)
-        if (Item.StreamID==StreamID && !Item.Value.compare(0, Item.Value.find(" (actual "), Key))
+        if (Item.StreamID==StreamID && !Item.Value.compare(0, Key_Size, Value, 0, Key_Size) && min(Item.Value.find(" (actual "), Item.Value.size())==Key_Size) //Start compared first, " (actual " is searched in the stored error only if it is the same
             return StopAtFirst;
     push_back({Value, StreamID});
     return StopAtFirst;

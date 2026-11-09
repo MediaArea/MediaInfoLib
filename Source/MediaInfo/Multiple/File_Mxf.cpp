@@ -4896,6 +4896,7 @@ void File_Mxf::Streams_Finish_Conformance_FileFormat ()
         Fill_Conformance_AtOffset(Partitions.back().StreamOffset, "MXF PartitionPack", "Partition is after the Footer Partition");
 
     //Random Index Pack
+    const auto RandomIndexPack_Order=RandomIndexPack_Sorted(); //For finding the entries of each partition
     auto RandomIndexPack_IsAscending=true;
     if (RandomIndexPack_Offset!=(int64u)-1)
     {
@@ -4908,7 +4909,7 @@ void File_Mxf::Streams_Finish_Conformance_FileFormat ()
             Fill_Conformance_AtOffset(RandomIndexPack_Offset, "MXF RandomIndexPack ByteOffset", "Byte Offsets are not in ascending order");
         for (const auto& Partition : Partitions)
         {
-            const auto Entry=RandomIndexPack_Find(Partition.StreamOffset-RunIn);
+            const auto Entry=RandomIndexPack_Find(RandomIndexPack_Order, Partition.StreamOffset-RunIn);
             if (!Entry)
                 Fill_Conformance_AtOffset(Partition.StreamOffset, "MXF RandomIndexPack ByteOffset", "Partition is not listed in the Random Index Pack");
             else if (Entry->BodySID!=Partition.BodySID)
@@ -4936,9 +4937,12 @@ void File_Mxf::Streams_Finish_Conformance_FileFormat ()
         else if (Partition.PreviousPartition>=ByteOffset)
             Fill_Conformance_AtOffset(Offset, "MXF PartitionPack PreviousPartition", "PreviousPartition is not the offset of a previous partition (actual "+Hex(Partition.PreviousPartition)+')');
         else if (RandomIndexPack_IsAscending)
-            for (size_t i=1; i<RandomIndexPack_Entries.size(); i++)
-                if (RandomIndexPack_Entries[i].ByteOffset==ByteOffset && Partition.PreviousPartition!=RandomIndexPack_Entries[i-1].ByteOffset)
+            for (auto Item=lower_bound(RandomIndexPack_Order.begin(), RandomIndexPack_Order.end(), make_pair(ByteOffset, (size_t)0)); Item!=RandomIndexPack_Order.end() && Item->first==ByteOffset; ++Item) //Entries with this byte offset, in file order
+            {
+                const auto i=Item->second;
+                if (i && Partition.PreviousPartition!=RandomIndexPack_Entries[i-1].ByteOffset)
                     Fill_Conformance_AtOffset(Offset, "MXF PartitionPack PreviousPartition", "PreviousPartition is not the offset of the previous partition listed in the Random Index Pack (actual "+Hex(Partition.PreviousPartition)+", expected "+Hex(RandomIndexPack_Entries[i-1].ByteOffset)+')');
+            }
 
         //Footer Partition offset
         if (Partition.Kind==0x04)
@@ -5003,11 +5007,11 @@ void File_Mxf::Streams_Finish_Conformance_FileFormat ()
             continue;
         const auto IndexSID=BigEndian2int32u(IndexSID_Value->data());
 
-        //Partition containing the segment, if the segment is in its index table area
-        const partition* Partition=nullptr;
-        for (const auto& Partition_Item : Partitions)
-            if (Partition_Item.StreamOffset<Segment.StreamOffset)
-                Partition=&Partition_Item;
+        //Partition containing the segment, if the segment is in its index table area (partitions are sorted by offset, it is the last one before the segment)
+        const auto Partition_Next=lower_bound(Partitions.begin(), Partitions.end(), Segment.StreamOffset, [](const partition& Item, int64u StreamOffset) {
+            return Item.StreamOffset<StreamOffset;
+        });
+        const partition* Partition=Partition_Next==Partitions.begin()?nullptr:&*(Partition_Next-1);
         if (!Partition || Partition->PartitionPackByteCount==(int64u)-1 || Segment.StreamOffset>=Partition->StreamOffset+Partition->PartitionPackByteCount+Partition->HeaderByteCount+Partition->IndexByteCount)
             continue;
         if (!Partition->IndexSID)
@@ -8738,12 +8742,23 @@ string File_Mxf::Tracks_Kinds_Description(const string& Kinds)
 }
 
 //---------------------------------------------------------------------------
-const File_Mxf::randomindexpack* File_Mxf::RandomIndexPack_Find(int64u ByteOffset) const
+File_Mxf::randomindexpack_sorted File_Mxf::RandomIndexPack_Sorted() const
 {
-    for (const auto& Entry : RandomIndexPack_Entries)
-        if (Entry.ByteOffset==ByteOffset)
-            return &Entry;
-    return nullptr;
+    randomindexpack_sorted Sorted;
+    Sorted.reserve(RandomIndexPack_Entries.size());
+    for (size_t i=0; i<RandomIndexPack_Entries.size(); i++)
+        Sorted.emplace_back(RandomIndexPack_Entries[i].ByteOffset, i);
+    sort(Sorted.begin(), Sorted.end()); //Entries with the same byte offset stay in file order
+    return Sorted;
+}
+
+//---------------------------------------------------------------------------
+const File_Mxf::randomindexpack* File_Mxf::RandomIndexPack_Find(const randomindexpack_sorted& Sorted, int64u ByteOffset) const
+{
+    const auto Item=lower_bound(Sorted.begin(), Sorted.end(), make_pair(ByteOffset, (size_t)0));
+    if (Item==Sorted.end() || Item->first!=ByteOffset)
+        return nullptr;
+    return &RandomIndexPack_Entries[Item->second];
 }
 
 //---------------------------------------------------------------------------
@@ -9177,8 +9192,9 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_ArdZdf (size_t Profile_Pos,
         for (const auto& Entry : RandomIndexPack_Entries)
             if (PartitionPack_AlreadyParsed.find(Entry.ByteOffset)==PartitionPack_AlreadyParsed.end())
                 Error("Partition is not parsed");
+        const auto RandomIndexPack_Order=RandomIndexPack_Sorted();
         for (const auto& Partition : Partitions)
-            if (!RandomIndexPack_Find(Partition.StreamOffset))
+            if (!RandomIndexPack_Find(RandomIndexPack_Order, Partition.StreamOffset))
                 Error("Random Index Pack does not list all partitions");
     }
     if (!IsCandidateTest && !IsXdf && !IsSD && HeaderPartition && HeaderPartition->Status==0x04)
@@ -11025,6 +11041,7 @@ void File_Mxf::Position_Update(int64u FutureFileOffset, bool UnsynchParsers)
             //Index table segments are in the parsing order, the partitions around the jump are parsed after the footer which may have a copy of them, the most complete one is kept
             std::sort(IndexTables.begin(), IndexTables.end(), [](const indextable& A, const indextable& B) {return A.IndexStartPosition!=B.IndexStartPosition?(A.IndexStartPosition<B.IndexStartPosition):(A.Entries.size()>B.Entries.size());});
             IndexTables.erase(std::unique(IndexTables.begin(), IndexTables.end(), [](const indextable& A, const indextable& B) {return A.IndexStartPosition==B.IndexStartPosition;}), IndexTables.end());
+            IndexTables_Lookup_Rebuild();
         }
 
         if (FutureFileOffset==FirstPass_ContentPackage_First || (Partitions_Pos==2 && Partitions[1].StreamOffset==FutureFileOffset && Descriptors.size()==1 && Descriptors.begin()->second.StreamKind==Stream_Text))
@@ -11307,6 +11324,7 @@ bool File_Mxf::DetectDuration ()
     std::sort(Partitions.begin(), Partitions.end());
     IndexTables=((File_Mxf*)MI.Info)->IndexTables;
     std::sort(IndexTables.begin(), IndexTables.end());
+    IndexTables_Lookup_Rebuild();
     SDTI_SizePerFrame=((File_Mxf*)MI.Info)->SDTI_SizePerFrame;
     Clip_Begin=((File_Mxf*)MI.Info)->Clip_Begin;
     Clip_End=((File_Mxf*)MI.Info)->Clip_End;
@@ -13658,6 +13676,31 @@ void File_Mxf::Identification()
 }
 
 //---------------------------------------------------------------------------
+#if MEDIAINFO_DEMUX || MEDIAINFO_SEEK
+void File_Mxf::IndexTables_Lookup_Rebuild()
+{
+    IndexTables_StreamOffsets.clear();
+    for (const auto& IndexTable : IndexTables)
+        IndexTables_StreamOffsets.insert(IndexTable.StreamOffset);
+    #if MEDIAINFO_SEEK
+        IndexTables_StartPositions.clear();
+        for (size_t Pos=0; Pos+1<IndexTables.size(); Pos++)
+            IndexTables_StartPositions_Add(IndexTables[Pos]);
+    #endif //MEDIAINFO_SEEK
+}
+#endif //MEDIAINFO_DEMUX || MEDIAINFO_SEEK
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_SEEK
+void File_Mxf::IndexTables_StartPositions_Add(const indextable& IndexTable)
+{
+    auto& StartPosition=IndexTables_StartPositions[IndexTable.IndexStartPosition];
+    if (!StartPosition.Count++)
+        StartPosition.IndexDuration=IndexTable.IndexDuration; //First one with this IndexStartPosition
+}
+#endif //MEDIAINFO_SEEK
+
+//---------------------------------------------------------------------------
 void File_Mxf::IndexTableSegment()
 {
     if (Element_Offset==4)
@@ -13665,16 +13708,21 @@ void File_Mxf::IndexTableSegment()
         IndexTable_IsAlreadyParsed=false;
         #if MEDIAINFO_DEMUX || MEDIAINFO_SEEK
             //Testing if already parsed
-            for (size_t Pos=0; Pos<IndexTables.size(); Pos++)
-                if (File_Offset+Buffer_Offset-Header_Size==IndexTables[Pos].StreamOffset)
-                {
-                    IndexTable_IsAlreadyParsed=true; //For all the items of this segment, else they would be added to the last segment
-                    Element_Offset=Element_Size;
-                    return;
-                }
+            const auto StreamOffset=File_Offset+Buffer_Offset-Header_Size;
+            if (IndexTables_StreamOffsets.find(StreamOffset)!=IndexTables_StreamOffsets.end())
+            {
+                IndexTable_IsAlreadyParsed=true; //For all the items of this segment, else they would be added to the last segment
+                Element_Offset=Element_Size;
+                return;
+            }
 
+            #if MEDIAINFO_SEEK
+                if (!IndexTables.empty())
+                    IndexTables_StartPositions_Add(IndexTables.back()); //Previous segment is complete
+            #endif //MEDIAINFO_SEEK
             IndexTables.push_back(indextable());
-            IndexTables[IndexTables.size()-1].StreamOffset=File_Offset+Buffer_Offset-Header_Size;
+            IndexTables.back().StreamOffset=StreamOffset;
+            IndexTables_StreamOffsets.insert(StreamOffset);
         #endif //MEDIAINFO_DEMUX || MEDIAINFO_SEEK
         IndexTable_SegmentCount++;
     }
@@ -17891,20 +17939,48 @@ void File_Mxf::IndexTableSegment_IndexStartPosition()
 
             //Integrity test (in one file, I have 2 indexes with IndexStartPosition=0, the first  one is weird (only one frame), or the same index is repeated
             //Integrity test (in one file, I have 2 indexes with IndexStartPosition=0, the second one is weird (only one frame), or the same index is repeated
-            for (size_t Pos=0; Pos<IndexTables.size()-1; Pos++)
-                if (IndexTables[Pos].IndexStartPosition==Data)
+            const auto First=IndexTables_StartPositions.find(Data); //Other index tables with this IndexStartPosition
+            if (First!=IndexTables_StartPositions.end())
+            {
+                if (First->second.IndexDuration==1)
                 {
-                    if (IndexTables[Pos].IndexDuration==1 && Pos!=IndexTables.size()-1)
-                        IndexTables.erase(IndexTables.begin()+Pos);
-                    else
+                    //Position of the first one, searched from both ends if it is the only one (e.g. same segment in the body and in the footer)
+                    const auto End=IndexTables.size()-1; //Last one is the one being parsed
+                    auto Pos=End;
+                    if (First->second.Count==1)
                     {
-                        //Removed in order to get all indexes, even the duplicated ones (in order to check duplicated index in the footer)
-                        //IndexTables.erase(IndexTables.begin()+IndexTables.size()-1);
-                        //Element_Offset=Element_Size;
+                        for (size_t Begin=0, Last=End; Begin<Last && Pos==End; Begin++, Last--)
+                            if (IndexTables[Begin].IndexStartPosition==Data)
+                                Pos=Begin;
+                            else if (IndexTables[Last-1].IndexStartPosition==Data)
+                                Pos=Last-1;
                     }
-
-                    return;
+                    else
+                        for (size_t i=0; i<End && Pos==End; i++)
+                            if (IndexTables[i].IndexStartPosition==Data)
+                                Pos=i;
+                    if (Pos<End)
+                    {
+                        IndexTables_StreamOffsets.erase(IndexTables_StreamOffsets.find(IndexTables[Pos].StreamOffset));
+                        IndexTables.erase(IndexTables.begin()+Pos);
+                        if (!--First->second.Count)
+                            IndexTables_StartPositions.erase(First);
+                        else
+                        {
+                            //Next one with this IndexStartPosition becomes the first one
+                            while (Pos+1<IndexTables.size() && IndexTables[Pos].IndexStartPosition!=Data)
+                                Pos++;
+                            First->second.IndexDuration=IndexTables[Pos].IndexDuration;
+                        }
+                    }
                 }
+                else
+                {
+                    //Removed in order to get all indexes, even the duplicated ones (in order to check duplicated index in the footer)
+                    //IndexTables.erase(IndexTables.begin()+IndexTables.size()-1);
+                    //Element_Offset=Element_Size;
+                }
+            }
         #endif //MEDIAINFO_SEEK
     FILLING_END();
 }
@@ -23661,9 +23737,8 @@ void File_Mxf::Properties_Store(properties& Properties)
         auto Flags=std::move(IndexTableSegment_Flags);
         IndexTableSegment_Flags.clear();
         const auto StreamOffset=File_Offset+Buffer_Offset-Header_Size;
-        for (const auto& IndexTableSegment : IndexTableSegments)
-            if (IndexTableSegment.StreamOffset==StreamOffset)
-                return; //Already parsed
+        if (!IndexTableSegments_StreamOffsets.insert(StreamOffset).second)
+            return; //Already parsed
         IndexTableSegments.push_back({StreamOffset, std::move(Properties), std::move(Flags)});
         return;
     }

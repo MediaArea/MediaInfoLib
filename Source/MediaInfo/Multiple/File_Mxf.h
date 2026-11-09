@@ -1624,7 +1624,9 @@ protected :
     static bool                 IsOP1a(int64u Hi, int64u Lo); //OP1a with internal essence
     bool                        Package_Tracks(const package& Package, std::vector<track_info>& List, std::string& Kinds, conformance_errors& Errors); //Kinds has a character per track except Descriptive Metadata, returns true if the test must stop
     static std::string          Tracks_Kinds_Description(const std::string& Kinds); //e.g. "1 Timecode, 1 Video, 16 Audio"
-    const randomindexpack*      RandomIndexPack_Find(int64u ByteOffset) const; //Entry of the Random Index Pack with this byte offset, nullptr if not listed
+    typedef std::vector<std::pair<int64u, size_t> > randomindexpack_sorted; //Byte offset and position of each entry of the Random Index Pack, sorted
+    randomindexpack_sorted      RandomIndexPack_Sorted() const;
+    const randomindexpack*      RandomIndexPack_Find(const randomindexpack_sorted& Sorted, int64u ByteOffset) const; //First entry of the Random Index Pack with this byte offset, nullptr if not listed
     std::vector<std::string>    HeaderMetadata_FooterDifferences(bool WithPresence=false) const; //Properties of the Header Metadata having another value in the Footer Partition (or present in only one of them if WithPresence), e.g. "Duration of Sequence"
     struct indextablesegment
     {
@@ -1633,6 +1635,7 @@ protected :
         std::string Flags; //Flags of each index entry
     };
     std::vector<indextablesegment>  IndexTableSegments;
+    std::set<int64u>                IndexTableSegments_StreamOffsets; //Stream offset of each Index Table Segment, for not storing a segment parsed again
     std::string                     IndexTableSegment_Flags; //Flags of each index entry of the index table segment being parsed
     std::vector<int32u>             ContentPackage_Elements; //Track Number of essence elements, in order of first appearance
     bool                            ContentPackage_SystemItemIsFirst;
@@ -1847,9 +1850,20 @@ protected :
                 return IndexStartPosition<lhs.IndexStartPosition;
             }
         };
-        typedef std::vector<indextable> indextables;
+        typedef std::deque<indextable>  indextables; //Not a vector, an index table may be removed at the beginning for each segment
         indextables                     IndexTables;
         size_t                          IndexTables_Pos;
+        std::multiset<int64u>           IndexTables_StreamOffsets; //StreamOffset of each index table, for finding the segments already parsed
+        #if MEDIAINFO_SEEK
+            struct indextables_startposition
+            {
+                int64u                  IndexDuration; //Of the first index table with this IndexStartPosition
+                size_t                  Count;
+            };
+            std::map<int64u, indextables_startposition> IndexTables_StartPositions; //Index tables with each IndexStartPosition, the index table being parsed (the last one) excluded
+            void                        IndexTables_StartPositions_Add(const indextable& IndexTable); //Index table no longer the one being parsed
+        #endif //MEDIAINFO_SEEK
+        void                            IndexTables_Lookup_Rebuild(); //After a change of IndexTables other than the parsing of a segment
 
         //Other
         int64u  Clip_Header_Size;
