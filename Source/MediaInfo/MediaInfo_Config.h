@@ -81,6 +81,14 @@ enum class display_if
     Always,
 };
 
+//---------------------------------------------------------------------------
+//ASCII letter in lower case, for the names and the values of the options compared to ASCII texts: the same result with and without
+//Unicode (other values are not changed, neither the bytes of the UTF-8 text without Unicode nor the values of wchar_t with Unicode)
+inline Char ToLower_ASCII(Char c)
+{
+    return (c>=__T('A') && c<=__T('Z'))?(Char)(c-__T('A')+__T('a')):c;
+}
+
 //***************************************************************************
 // Class MediaInfo_Config
 //***************************************************************************

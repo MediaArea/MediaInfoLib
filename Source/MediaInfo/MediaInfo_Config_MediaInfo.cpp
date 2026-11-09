@@ -392,7 +392,7 @@ Ztring MediaInfo_Config_MediaInfo::Option (const String &Option, const String &V
     size_t Egal_Pos=Option_Lower.find(__T('='));
     if (Egal_Pos==string::npos)
         Egal_Pos=Option_Lower.size();
-    transform(Option_Lower.begin(), Option_Lower.begin()+Egal_Pos, Option_Lower.begin(), [](unsigned char c) { return tolower(c); });
+    transform(Option_Lower.begin(), Option_Lower.begin()+Egal_Pos, Option_Lower.begin(), ToLower_ASCII);
 
     if (Option_Lower==__T("file_requestterminate"))
     {

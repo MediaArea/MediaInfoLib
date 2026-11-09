@@ -24,6 +24,7 @@
 
 //---------------------------------------------------------------------------
 #include "ZenLib/Utils.h"
+#include <algorithm>
 #include <cstring>
 #if defined(MEDIAINFO_EBUCORE_YES)
     #include "MediaInfo/Export/Export_EbuCore.h"
@@ -55,10 +56,6 @@
 
 //---------------------------------------------------------------------------
 #include <ctime>
-#if !defined(UNICODE) && !defined(_UNICODE)
-#include <codecvt>
-#include <locale>
-#endif
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -1035,15 +1032,7 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
                      if (!lang.compare(__T("ja")) || !lang.compare(__T("ko")) || !lang.compare(__T("zh-CN")) || !lang.compare(__T("zh-HK")) || !lang.compare(__T("zh-TW")))
                      {
                         #if !defined(UNICODE) && !defined(_UNICODE)
-                        #if defined(_MSC_VER)
-                            #pragma warning(push)
-                            #pragma warning(disable:4996)
-                        #endif //defined(_MSC_VER)
-                        std::wstring_convert<std::codecvt_utf8<wchar_t>> Converter;
-                        std::wstring Nom_Wide=Converter.from_bytes(Nom);
-                        #if defined(_MSC_VER)
-                            #pragma warning(pop)
-                        #endif //defined(_MSC_VER)
+                        std::wstring Nom_Wide=Nom.To_Unicode();
                         Nom_Wide.resize(Nom_Size, ' ');
                         Nom=Ztring().From_Unicode(ToFullWidth(Nom_Wide)); //Align Japanese, Korean and Chinese characters with ASCII characters
                         #else
@@ -1051,6 +1040,14 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
                         Nom=ToFullWidth(Nom); //Align Japanese, Korean and Chinese characters with ASCII characters
                         #endif
                      }
+                     #if !defined(UNICODE) && !defined(_UNICODE)
+                     else if (std::find_if(Nom.begin(), Nom.end(), [](char c) { return (unsigned char)c>=0x80; })!=Nom.end())
+                     {
+                        std::wstring Nom_Wide=Nom.To_Unicode(); //Size in characters as with Unicode, not in bytes
+                        Nom_Wide.resize(Nom_Size, ' ');
+                        Nom.From_Unicode(Nom_Wide);
+                     }
+                     #endif
                      else
                         Nom.resize(Nom_Size, ' ');
                 }
