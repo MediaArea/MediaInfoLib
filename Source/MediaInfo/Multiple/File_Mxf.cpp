@@ -11041,6 +11041,7 @@ void File_Mxf::Position_Update(int64u FutureFileOffset, bool UnsynchParsers)
             //Index table segments are in the parsing order, the partitions around the jump are parsed after the footer which may have a copy of them, the most complete one is kept
             std::sort(IndexTables.begin(), IndexTables.end(), [](const indextable& A, const indextable& B) {return A.IndexStartPosition!=B.IndexStartPosition?(A.IndexStartPosition<B.IndexStartPosition):(A.Entries.size()>B.Entries.size());});
             IndexTables.erase(std::unique(IndexTables.begin(), IndexTables.end(), [](const indextable& A, const indextable& B) {return A.IndexStartPosition==B.IndexStartPosition;}), IndexTables.end());
+            IndexTables_Lookup_Rebuild();
         }
 
         if (FutureFileOffset==FirstPass_ContentPackage_First || (Partitions_Pos==2 && Partitions[1].StreamOffset==FutureFileOffset && Descriptors.size()==1 && Descriptors.begin()->second.StreamKind==Stream_Text))
@@ -11323,6 +11324,7 @@ bool File_Mxf::DetectDuration ()
     std::sort(Partitions.begin(), Partitions.end());
     IndexTables=((File_Mxf*)MI.Info)->IndexTables;
     std::sort(IndexTables.begin(), IndexTables.end());
+    IndexTables_Lookup_Rebuild();
     SDTI_SizePerFrame=((File_Mxf*)MI.Info)->SDTI_SizePerFrame;
     Clip_Begin=((File_Mxf*)MI.Info)->Clip_Begin;
     Clip_End=((File_Mxf*)MI.Info)->Clip_End;
@@ -13674,6 +13676,31 @@ void File_Mxf::Identification()
 }
 
 //---------------------------------------------------------------------------
+#if MEDIAINFO_DEMUX || MEDIAINFO_SEEK
+void File_Mxf::IndexTables_Lookup_Rebuild()
+{
+    IndexTables_StreamOffsets.clear();
+    for (const auto& IndexTable : IndexTables)
+        IndexTables_StreamOffsets.insert(IndexTable.StreamOffset);
+    #if MEDIAINFO_SEEK
+        IndexTables_StartPositions.clear();
+        for (size_t Pos=0; Pos+1<IndexTables.size(); Pos++)
+            IndexTables_StartPositions_Add(IndexTables[Pos]);
+    #endif //MEDIAINFO_SEEK
+}
+#endif //MEDIAINFO_DEMUX || MEDIAINFO_SEEK
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_SEEK
+void File_Mxf::IndexTables_StartPositions_Add(const indextable& IndexTable)
+{
+    auto& StartPosition=IndexTables_StartPositions[IndexTable.IndexStartPosition];
+    if (!StartPosition.Count++)
+        StartPosition.IndexDuration=IndexTable.IndexDuration; //First one with this IndexStartPosition
+}
+#endif //MEDIAINFO_SEEK
+
+//---------------------------------------------------------------------------
 void File_Mxf::IndexTableSegment()
 {
     if (Element_Offset==4)
@@ -13681,16 +13708,21 @@ void File_Mxf::IndexTableSegment()
         IndexTable_IsAlreadyParsed=false;
         #if MEDIAINFO_DEMUX || MEDIAINFO_SEEK
             //Testing if already parsed
-            for (size_t Pos=0; Pos<IndexTables.size(); Pos++)
-                if (File_Offset+Buffer_Offset-Header_Size==IndexTables[Pos].StreamOffset)
-                {
-                    IndexTable_IsAlreadyParsed=true; //For all the items of this segment, else they would be added to the last segment
-                    Element_Offset=Element_Size;
-                    return;
-                }
+            const auto StreamOffset=File_Offset+Buffer_Offset-Header_Size;
+            if (IndexTables_StreamOffsets.find(StreamOffset)!=IndexTables_StreamOffsets.end())
+            {
+                IndexTable_IsAlreadyParsed=true; //For all the items of this segment, else they would be added to the last segment
+                Element_Offset=Element_Size;
+                return;
+            }
 
+            #if MEDIAINFO_SEEK
+                if (!IndexTables.empty())
+                    IndexTables_StartPositions_Add(IndexTables.back()); //Previous segment is complete
+            #endif //MEDIAINFO_SEEK
             IndexTables.push_back(indextable());
-            IndexTables[IndexTables.size()-1].StreamOffset=File_Offset+Buffer_Offset-Header_Size;
+            IndexTables.back().StreamOffset=StreamOffset;
+            IndexTables_StreamOffsets.insert(StreamOffset);
         #endif //MEDIAINFO_DEMUX || MEDIAINFO_SEEK
         IndexTable_SegmentCount++;
     }
@@ -17907,20 +17939,48 @@ void File_Mxf::IndexTableSegment_IndexStartPosition()
 
             //Integrity test (in one file, I have 2 indexes with IndexStartPosition=0, the first  one is weird (only one frame), or the same index is repeated
             //Integrity test (in one file, I have 2 indexes with IndexStartPosition=0, the second one is weird (only one frame), or the same index is repeated
-            for (size_t Pos=0; Pos<IndexTables.size()-1; Pos++)
-                if (IndexTables[Pos].IndexStartPosition==Data)
+            const auto First=IndexTables_StartPositions.find(Data); //Other index tables with this IndexStartPosition
+            if (First!=IndexTables_StartPositions.end())
+            {
+                if (First->second.IndexDuration==1)
                 {
-                    if (IndexTables[Pos].IndexDuration==1 && Pos!=IndexTables.size()-1)
-                        IndexTables.erase(IndexTables.begin()+Pos);
-                    else
+                    //Position of the first one, searched from both ends if it is the only one (e.g. same segment in the body and in the footer)
+                    const auto End=IndexTables.size()-1; //Last one is the one being parsed
+                    auto Pos=End;
+                    if (First->second.Count==1)
                     {
-                        //Removed in order to get all indexes, even the duplicated ones (in order to check duplicated index in the footer)
-                        //IndexTables.erase(IndexTables.begin()+IndexTables.size()-1);
-                        //Element_Offset=Element_Size;
+                        for (size_t Begin=0, Last=End; Begin<Last && Pos==End; Begin++, Last--)
+                            if (IndexTables[Begin].IndexStartPosition==Data)
+                                Pos=Begin;
+                            else if (IndexTables[Last-1].IndexStartPosition==Data)
+                                Pos=Last-1;
                     }
-
-                    return;
+                    else
+                        for (size_t i=0; i<End && Pos==End; i++)
+                            if (IndexTables[i].IndexStartPosition==Data)
+                                Pos=i;
+                    if (Pos<End)
+                    {
+                        IndexTables_StreamOffsets.erase(IndexTables_StreamOffsets.find(IndexTables[Pos].StreamOffset));
+                        IndexTables.erase(IndexTables.begin()+Pos);
+                        if (!--First->second.Count)
+                            IndexTables_StartPositions.erase(First);
+                        else
+                        {
+                            //Next one with this IndexStartPosition becomes the first one
+                            while (Pos+1<IndexTables.size() && IndexTables[Pos].IndexStartPosition!=Data)
+                                Pos++;
+                            First->second.IndexDuration=IndexTables[Pos].IndexDuration;
+                        }
+                    }
                 }
+                else
+                {
+                    //Removed in order to get all indexes, even the duplicated ones (in order to check duplicated index in the footer)
+                    //IndexTables.erase(IndexTables.begin()+IndexTables.size()-1);
+                    //Element_Offset=Element_Size;
+                }
+            }
         #endif //MEDIAINFO_SEEK
     FILLING_END();
 }
@@ -23677,9 +23737,8 @@ void File_Mxf::Properties_Store(properties& Properties)
         auto Flags=std::move(IndexTableSegment_Flags);
         IndexTableSegment_Flags.clear();
         const auto StreamOffset=File_Offset+Buffer_Offset-Header_Size;
-        for (const auto& IndexTableSegment : IndexTableSegments)
-            if (IndexTableSegment.StreamOffset==StreamOffset)
-                return; //Already parsed
+        if (!IndexTableSegments_StreamOffsets.insert(StreamOffset).second)
+            return; //Already parsed
         IndexTableSegments.push_back({StreamOffset, std::move(Properties), std::move(Flags)});
         return;
     }
