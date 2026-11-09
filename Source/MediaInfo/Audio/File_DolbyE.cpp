@@ -1886,10 +1886,7 @@ void File_DolbyE::metadata_segment()
         Get_S2 (10, channel_subsegment_size[Channel],           "channel_subsegment_size");
         channel_subsegment_sizes[Channel][channel_subsegment_size[Channel]]++;
     }
-    if (!Mpegv_frame_rate_type[frame_rate_code])
-        Get_S1 ( 8, metadata_extension_segment_size,            "metadata_extension_segment_size");
-    else
-        metadata_extension_segment_size=0;
+    Get_S1 ( 8, metadata_extension_segment_size,                "metadata_extension_segment_size");
     Get_S1 ( 8, meter_segment_size,                             "meter_segment_size");
     for (int8u Program=0; Program<DolbyE_Programs[program_config]; Program++)
     {
@@ -3281,6 +3278,9 @@ void File_DolbyE::audio_segment()
 //---------------------------------------------------------------------------
 void File_DolbyE::metadata_extension_segment()
 {
+    if (!metadata_extension_segment_size)
+        return; //The segment does not exist
+
     //Parsing
     Element_Begin1("metadata_extension_segment");
     if (key_present)
@@ -3476,6 +3476,9 @@ void File_DolbyE::audio_extension_segment()
 //---------------------------------------------------------------------------
 void File_DolbyE::meter_segment()
 {
+    if (!meter_segment_size)
+        return; //The segment does not exist
+
     //Parsing
     Element_Begin1("meter_segment");
     if (key_present)
