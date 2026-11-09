@@ -2774,7 +2774,7 @@ void File_Hevc::sei_message(int32u &seq_parameter_set_id)
         Buffer=new int8u[(size_t)Element_Size];
         Buffer_Offset=0;
         Buffer_Size=(size_t)Element_Size; //The bytes after the end of the copy are not readable
-        memcpy((void*)Buffer, Buffer_Buggy+Buffer_Offset, (size_t)Element_Size_Buggy);
+        memcpy((void*)Buffer, Buffer_Buggy+(size_t)Buffer_Offset_Buggy, (size_t)Element_Size_Buggy);
         memset((void*)(Buffer+(size_t)Element_Size_Buggy), 0x00, (size_t)(Element_Size-Element_Size_Buggy)); //Last 0x00 bytes are discarded, we recreate them
     }
     else
