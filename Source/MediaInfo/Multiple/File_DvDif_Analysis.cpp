@@ -679,7 +679,7 @@ void File_DvDif::Read_Buffer_Continue()
                                         }
                                         break;
                                         //TODO: check 0 and -1 for 12-bit
-                                    defaut:
+                                    default:
                                         FrameIsNotFake=true;
                                         break;
                                     }
