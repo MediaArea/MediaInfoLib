@@ -4993,9 +4993,9 @@ void File__Analyze::Merge_HDR(size_t StreamPos_To, const Ztring* Container, cons
     Stream_Formats.Write(ToAdd[0]);
     auto Container_DolbyVision=Container_Formats.Find(__T("Dolby Vision"));
     auto Stream_DolbyVision=Stream_Formats.Find(__T("Dolby Vision"));
-    if (!Container[0].empty() && !ToAdd[0].empty() && (Container[0]!=ToAdd[0] || (Container_DolbyVision!=Error && Stream_DolbyVision!=Error)))
+    if (!Container[0].empty() && !ToAdd[0].empty())
     {
-        //The container has priority, the stream adds the HDR formats which are not in the container
+        //The container has priority, the stream adds the values and the HDR formats which are not in the container
         ZtringList Container_Values[Video_HDR_Format_Compatibility-Video_HDR_Format+1], Stream_Values[Video_HDR_Format_Compatibility-Video_HDR_Format+1];
         for (size_t i=Video_HDR_Format; i<=Video_HDR_Format_Compatibility; i++)
         {
@@ -5009,17 +5009,9 @@ void File__Analyze::Merge_HDR(size_t StreamPos_To, const Ztring* Container, cons
             Stream_Value.resize(Stream_Formats.size());
         }
 
-        //If all HDR formats of the container are in the stream, the stream values are kept
-        auto Container_InStream=true;
-        for (const auto& Container_Format : Container_Formats)
-            if (Stream_Formats.Find(Container_Format)==Error)
-                Container_InStream=false;
-
         if (Container_DolbyVision!=Error && Stream_DolbyVision!=Error)
         {
             //Dolby Vision in both container configuration and stream RPU, the configuration has priority and the RPU adds what is not in the configuration
-            Container_InStream=false;
-
             #if MEDIAINFO_CONFORMANCE
                 const auto Profile_Number=[](const Ztring& Profile) {
                     auto Dot=Profile.find(__T('.'));
@@ -5058,9 +5050,7 @@ void File__Analyze::Merge_HDR(size_t StreamPos_To, const Ztring* Container, cons
                     continue;
                 auto& Container_DolbyVision_Value=Container_Values[i-Video_HDR_Format][Container_DolbyVision];
                 const auto& Stream_DolbyVision_Value=Stream_Values[i-Video_HDR_Format][Stream_DolbyVision];
-                if (Container_DolbyVision_Value.empty())
-                    Container_DolbyVision_Value=Stream_DolbyVision_Value;
-                else if (i==Video_HDR_Format_Settings && !Stream_DolbyVision_Value.empty())
+                if (i==Video_HDR_Format_Settings && !Container_DolbyVision_Value.empty() && !Stream_DolbyVision_Value.empty())
                 {
                     //Enhancement layer type is known only from the RPU
                     ZtringList Container_Layers, Stream_Layers;
@@ -5078,21 +5068,24 @@ void File__Analyze::Merge_HDR(size_t StreamPos_To, const Ztring* Container, cons
             }
         }
 
-        if (!Container_InStream)
+        for (size_t i=Video_HDR_Format; i<=Video_HDR_Format_Compatibility; i++)
         {
-            for (size_t i=Video_HDR_Format; i<=Video_HDR_Format_Compatibility; i++)
+            if (i==Video_HDR_Format_String || i==Video_HDR_Format_Commercial)
+                continue;
+            auto& Container_Value=Container_Values[i-Video_HDR_Format];
+            const auto& Stream_Value=Stream_Values[i-Video_HDR_Format];
+            for (size_t j=0; j<Container_Formats.size(); j++)
             {
-                if (i==Video_HDR_Format_String || i==Video_HDR_Format_Commercial)
-                    continue;
-                auto& Container_Value=Container_Values[i-Video_HDR_Format];
-                const auto& Stream_Value=Stream_Values[i-Video_HDR_Format];
-                for (size_t j=0; j<Stream_Formats.size(); j++)
-                    if (Container_Formats.Find(Stream_Formats[j])==Error)
-                        Container_Value.push_back(Stream_Value[j]);
-                auto Value=Container_Value.Read();
-                if (Value.size()>(Container_Value.size()-1)*3)
-                    Fill(Stream_Video, StreamPos_To, i, Value, true);
+                auto Stream_Pos=Stream_Formats.Find(Container_Formats[j]);
+                if (Stream_Pos!=Error && Container_Value[j].empty())
+                    Container_Value[j]=Stream_Value[Stream_Pos]; //Value not in the container
             }
+            for (size_t j=0; j<Stream_Formats.size(); j++)
+                if (Container_Formats.Find(Stream_Formats[j])==Error)
+                    Container_Value.push_back(Stream_Value[j]); //HDR format not in the container
+            auto Value=Container_Value.Read();
+            if (Value.size()>(Container_Value.size()-1)*3)
+                Fill(Stream_Video, StreamPos_To, i, Value, true);
         }
     }
     #if MEDIAINFO_CONFORMANCE
