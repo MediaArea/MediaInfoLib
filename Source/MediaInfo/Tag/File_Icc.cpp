@@ -22,6 +22,9 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Tag/File_Icc.h"
+#if defined(MEDIAINFO_SMPTEST209450_YES)
+    #include "MediaInfo/Video/File_SmpteSt209450.h"
+#endif //defined(MEDIAINFO_SMPTEST209450_YES)
 #include <queue>
 using namespace std;
 //---------------------------------------------------------------------------
@@ -43,6 +46,7 @@ const char* Mk_Video_Colour_Range(int8u range);
 //---------------------------------------------------------------------------
 namespace Elements
 {
+    const int32u HAGC=0x48414743;
     const int32u XYZ =0x58595A20;
     const int32u bTRC=0x62545243;
     const int32u bXYZ=0x6258595A;
@@ -55,6 +59,7 @@ namespace Elements
     const int32u dmnd=0x646D6E64;
     const int32u gTRC=0x67545243;
     const int32u gXYZ=0x6758595A;
+    const int32u hagc=0x68616763;
     const int32u kTRC=0x6B545243;
     const int32u kXYZ=0x6B58595A;
     const int32u mluc=0x6D6C7563;
@@ -71,6 +76,7 @@ string Icc_Tag(int32u Signature)
 {
     switch (Signature)
     {
+        case Elements::HAGC: return "headroomAdaptiveGainCurve (SMPTE ST 2094-50 metadata)";
         case Elements::bTRC: return "blueTRC (Blue channel tone reproduction curve)";
         case Elements::bXYZ: return "blueMatrixColumn (Blue colorant stimulus)";
         case Elements::bkpt: return "mediaBlackPoint (Media black-point stimulus)";
@@ -355,6 +361,7 @@ void File_Icc::Read_Buffer_Continue()
             Skip_B4(                                            "Reserved");
             switch (Signature)
             {
+                case Elements::HAGC: HAGC(Format, Size); break;
                 case Elements::bTRC: xTRC(Format, Size); break;
                 case Elements::bXYZ: xXYZ(Format, Size); break;
                 case Elements::bkpt: xxpt(Format, Size); break;
@@ -388,6 +395,35 @@ void File_Icc::Read_Buffer_Continue()
 //***************************************************************************
 // Elements
 //***************************************************************************
+
+//---------------------------------------------------------------------------
+void File_Icc::HAGC(int32u Format, int32u Size)
+{
+    if (Format!=Elements::hagc || Size<4)
+        return;
+
+    //Parsing
+    int32u Metadata_Size;
+    Get_B4 (Metadata_Size,                                      "Size of the SMPTE ST 2094-50 metadata");
+    if (Metadata_Size>Size-4)
+    {
+        Trusted_IsNot("Size of the SMPTE ST 2094-50 metadata is more than the tag size");
+        return;
+    }
+    #if defined(MEDIAINFO_SMPTEST209450_YES)
+        File_SmpteSt209450 MI;
+        Open_Buffer_Init(&MI);
+        Open_Buffer_Continue(&MI, Metadata_Size);
+
+        FILLING_BEGIN();
+            if (Fill_HDR_Format(StreamKind_Last, StreamPos_Last, MI.HDR))
+                for (const auto& Info : MI.Infos)
+                    Fill(StreamKind_Last, StreamPos_Last, Info.first.c_str(), Info.second);
+        FILLING_END();
+    #else //defined(MEDIAINFO_SMPTEST209450_YES)
+        Skip_XX(Metadata_Size,                                  "SMPTE ST 2094-50 metadata");
+    #endif //defined(MEDIAINFO_SMPTEST209450_YES)
+}
 
 //---------------------------------------------------------------------------
 void File_Icc::xTRC(int32u Format, int32u Size)

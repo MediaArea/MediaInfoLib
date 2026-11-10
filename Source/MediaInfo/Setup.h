@@ -974,12 +974,6 @@
 #endif
 
 //---------------------------------------------------------------------------
-// Image or video metadata, carried by the formats above
-#if !defined(MEDIAINFO_SMPTEST209450_NO) && !defined(MEDIAINFO_SMPTEST209450_YES) && (defined(MEDIAINFO_PNG_YES) || defined(MEDIAINFO_T35_YES))
-    #define MEDIAINFO_SMPTEST209450_YES
-#endif
-
-//---------------------------------------------------------------------------
 // Archive
 #if !defined(MEDIAINFO_ARCHIVE_NO) && !defined(MEDIAINFO_7Z_NO) && !defined(MEDIAINFO_7Z_YES)
     #define MEDIAINFO_7Z_YES
@@ -1058,6 +1052,12 @@
 #endif
 #if !defined(MEDIAINFO_TAG_NO) && !defined(MEDIAINFO_XMP_NO) && !defined(MEDIAINFO_XMP_YES)
     #define MEDIAINFO_XMP_YES
+#endif
+
+//---------------------------------------------------------------------------
+// Image or video metadata, carried by the formats above
+#if !defined(MEDIAINFO_SMPTEST209450_NO) && !defined(MEDIAINFO_SMPTEST209450_YES) && (defined(MEDIAINFO_ICC_YES) || defined(MEDIAINFO_PNG_YES) || defined(MEDIAINFO_T35_YES))
+    #define MEDIAINFO_SMPTEST209450_YES
 #endif
 
 //---------------------------------------------------------------------------

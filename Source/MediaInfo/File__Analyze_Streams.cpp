@@ -1983,13 +1983,35 @@ void File__Analyze::Fill_HDR(const hdr& HDR, size_t StreamPos)
 #endif
 
 //---------------------------------------------------------------------------
-void File__Analyze::Fill_HDR_Format(stream_t StreamKind, size_t StreamPos, const std::map<std::string, Ztring>& Values, bool Before)
+bool File__Analyze::Fill_HDR_Format(stream_t StreamKind, size_t StreamPos, const std::map<std::string, Ztring>& Values, bool Before)
 {
     static const char* Names[]={"HDR_Format", "HDR_Format_Version", "HDR_Format_Profile", "HDR_Format_Level", "HDR_Format_Settings", "HDR_Format_Compression", "HDR_Format_Compatibility"};
     ZtringList Formats;
     Formats.Separator_Set(0, __T(" / "));
     Formats.Write(Retrieve_Const(StreamKind, StreamPos, Names[0]));
     auto Formats_Count=Formats.size();
+
+    //The same HDR format with the same values is not added again, e.g. same metadata in several places of the file
+    for (size_t i=0; i<Formats_Count; i++)
+    {
+        auto IsSame=true;
+        for (const auto Name : Names)
+        {
+            ZtringList List;
+            List.Separator_Set(0, __T(" / "));
+            List.Write(Retrieve_Const(StreamKind, StreamPos, Name));
+            List.resize(Formats_Count);
+            auto Value_New=Values.find(Name);
+            if (List[i]!=(Value_New==Values.end()?Ztring():Value_New->second))
+            {
+                IsSame=false;
+                break;
+            }
+        }
+        if (IsSame)
+            return false;
+    }
+
     for (const auto Name : Names)
     {
         ZtringList List;
@@ -2002,6 +2024,7 @@ void File__Analyze::Fill_HDR_Format(stream_t StreamKind, size_t StreamPos, const
         if (Value.size()>(List.size()-1)*3) //Not only separators
             Fill(StreamKind, StreamPos, Name, Value, true);
     }
+    return true;
 }
 
 #if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MXF_YES) || defined(MEDIAINFO_T35_YES)
@@ -4675,6 +4698,11 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
         for (size_t i=Video_HDR_Format; i<=Video_HDR_Format_Compatibility; i++)
             HDR_Temp[i-Video_HDR_Format]=Retrieve(Stream_Video, StreamPos_To, i);
     }
+    if (StreamKind==Stream_Image)
+    {
+        for (size_t i=Image_HDR_Format; i<=Image_HDR_Format_Compatibility; i++)
+            HDR_Temp[i-Image_HDR_Format]=Retrieve(Stream_Image, StreamPos_To, i);
+    }
     if (StreamKind==Stream_Audio)
     {
         Channels_Temp[0]=Retrieve(Stream_Audio, StreamPos_To, Audio_Channel_s_);
@@ -4846,6 +4874,22 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
         for (size_t i=Video_HDR_Format; i<=Video_HDR_Format_Compatibility; i++)
             HDR_ToAdd[i-Video_HDR_Format]=ToAdd.Retrieve_Const(Stream_Video, StreamPos_From, i);
         Merge_HDR(StreamPos_To, HDR_Temp, HDR_ToAdd, ToAdd.Retrieve_Const(Stream_Video, StreamPos_From, Video_colour_range), ToAdd.Retrieve_Const(Stream_Video, StreamPos_From, Video_matrix_coefficients));
+    }
+    if (StreamKind==Stream_Image && !HDR_Temp[0].empty() && !ToAdd.Retrieve_Const(Stream_Image, StreamPos_From, Image_HDR_Format).empty())
+    {
+        //The HDR formats of the image are kept, the ones of the added stream (e.g. from an ICC profile) are added before them, as the dynamic metadata of a PNG haTM chunk is before the static metadata of a PNG mDCV chunk whatever the order of the chunks
+        std::map<std::string, Ztring> HDR_ToAdd;
+        for (size_t i=Image_HDR_Format; i<=Image_HDR_Format_Compatibility; i++)
+        {
+            if (i!=Image_HDR_Format_String && i!=Image_HDR_Format_Commercial)
+            {
+                const auto& Value=ToAdd.Retrieve_Const(Stream_Image, StreamPos_From, i);
+                if (!Value.empty())
+                    HDR_ToAdd[MediaInfoLib::Config.Info_Get(Stream_Image, i, Info_Name).To_UTF8()]=Value;
+            }
+            Fill(Stream_Image, StreamPos_To, i, HDR_Temp[i-Image_HDR_Format], true);
+        }
+        Fill_HDR_Format(Stream_Image, StreamPos_To, HDR_ToAdd);
     }
     if (StreamKind==Stream_Audio)
     {

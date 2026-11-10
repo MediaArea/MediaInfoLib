@@ -758,9 +758,9 @@ void File_Png::haTM()
         Open_Buffer_Continue(&MI);
 
         FILLING_BEGIN();
-            Fill_HDR_Format(StreamKind_Last, StreamPos_Last, MI.HDR); //Before the static metadata
-            for (const auto& Info : MI.Infos)
-                Fill(StreamKind_Last, StreamPos_Last, Info.first.c_str(), Info.second);
+            if (Fill_HDR_Format(StreamKind_Last, StreamPos_Last, MI.HDR)) //Before the static metadata, not again if the same metadata is in the ICC profile
+                for (const auto& Info : MI.Infos)
+                    Fill(StreamKind_Last, StreamPos_Last, Info.first.c_str(), Info.second);
         FILLING_END();
     #endif //defined(MEDIAINFO_SMPTEST209450_YES)
 
