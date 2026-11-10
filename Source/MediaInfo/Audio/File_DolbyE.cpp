@@ -3833,8 +3833,8 @@ void File_DolbyE::Descramble_20bit (int32u key, int16u size)
         Half=false;
     for (int16u Pos=0; Pos<size-(Half?1:0); Pos+=2)
         int40u2BigEndian(Temp+(Half?3:0)+Pos*5/2, BigEndian2int40u(Temp+(Half?3:0)+Pos*5/2)^keys);
-    if ((size-((size && Half)?1:0))%2==0)
-        int24u2BigEndian(Temp+(Half?3:0)+(size-((size && Half)?1:0))*5/2, BigEndian2int24u(Temp+(Half?3:0)+(size-((size && Half)?1:0))*5/2)^(key<<4));
+    if ((size+(Half?0:1))%2) //One word left after the pairs: size words and the CRC word, minus the first one if not byte aligned
+        int24u2BigEndian(Temp+(Half?3:0)+(size-(Half?1:0))*5/2, BigEndian2int24u(Temp+(Half?3:0)+(size-(Half?1:0))*5/2)^(key<<4));
 }
 
 //---------------------------------------------------------------------------
