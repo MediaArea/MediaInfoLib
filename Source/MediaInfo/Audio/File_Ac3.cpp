@@ -2732,7 +2732,7 @@ void File_Ac3::Core_Frame()
             if ((acmod&1) && acmod!=1) { //central present
                 Get_S1 (2, cmixlev,                                 "cmixlev - Center Mix Level"); Param_Info2(-3 - cmixlev * 1.5, " dB"); }
             if (acmod&4) { //back present
-                Get_S1 (2, surmixlev,                               "surmixlev - Surround Mix Level"); Param_Info2(cmixlev == 2 ? "-inf" : to_string(-3 - cmixlev * 3), " dB"); }
+                Get_S1 (2, surmixlev,                               "surmixlev - Surround Mix Level"); Param_Info2(surmixlev == 2 ? "-inf" : to_string(-3 - surmixlev * 3), " dB"); }
             if (acmod==2) {
                 Get_S1 (2, dsurmod,                                 "dsurmod - Dolby Surround Mode"); Param_Info1(AC3_Surround[dsurmod]); }
             Get_SB (   lfeon,                                       "lfeon - Low Frequency Effects");
