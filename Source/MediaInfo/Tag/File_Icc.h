@@ -47,6 +47,7 @@ private :
     void Read_Buffer_Continue ();
 
     //Elements
+    void HAGC(int32u Format, int32u Size);
     void xTRC(int32u Format, int32u Size);
     void xXYZ(int32u Format, int32u Size);
     void cicp(int32u Format, int32u Size);
