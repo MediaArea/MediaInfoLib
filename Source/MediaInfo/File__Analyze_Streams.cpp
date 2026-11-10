@@ -3143,7 +3143,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
     //MergedStreams
     if (FillAllMergedStreams)
     {
-        for (size_t i=0; sizeof(generic); i++)
+        for (size_t i=0; i<=Generic_ServiceProvider; i++) //Last item of generic
             if (Fill_Parameter(StreamKind, (generic)i)==Parameter)
             {
                 generic Parameter2=(generic)i;
@@ -3167,8 +3167,13 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
                         }
                     }
                 FillAllMergedStreams=true;
-                break;
+                return;
             }
+
+        //Parameter without generic equivalent, only this stream is filled
+        FillAllMergedStreams=false;
+        Fill(StreamKind, StreamPos, Parameter, Value, Replace);
+        FillAllMergedStreams=true;
         return;
     }
 
@@ -6604,6 +6609,7 @@ size_t File__Analyze::Fill_Parameter(stream_t StreamKind, generic StreamPos)
                                     case Generic_FrameRate_Num: return Other_FrameRate_Num;
                                     case Generic_FrameRate_Den: return Other_FrameRate_Den;
                                     case Generic_FrameCount : return Other_FrameCount;
+                                    case Generic_Source_FrameCount : return Other_Source_FrameCount;
                                     case Generic_Delay : return Other_Delay;
                                     case Generic_Delay_String : return Other_Delay_String;
                                     case Generic_Delay_String1 : return Other_Delay_String1;

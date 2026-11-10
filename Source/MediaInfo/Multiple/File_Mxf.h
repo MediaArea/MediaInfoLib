@@ -108,7 +108,7 @@ protected :
     void Streams_Finish_Descriptor (const int128u DescriptorUID, const int128u PackageUID);
     void Streams_Finish_Locator (const int128u DescriptorUID, const int128u LocatorUID);
     void Fill_PreChargeRollOut(stream_t StreamKind, size_t StreamPos, int64u PreCharge, int64u RollOut);
-    void Streams_Finish_Component (const int128u ComponentUID, float64 EditRate, int32u TrackID, int64s Origin);
+    void Streams_Finish_Component (const int128u ComponentUID, float64 EditRate, int32u TrackID, int64s Origin, const size_t* StreamCount_BeforeEssence);
     void Streams_Finish_Component_ForTimeCode (const int128u ComponentUID, float64 EditRate, int32u TrackID, int64s Origin, bool IsSourcePackage, const Ztring& TrackName);
     void Streams_Finish_Component_ForAS11 (const int128u ComponentUID, float64 EditRate, int32u TrackID, int64s Origin);
     void Streams_Finish_Identification (const int128u IdentificationUID);

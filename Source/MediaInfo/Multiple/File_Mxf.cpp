@@ -7055,10 +7055,13 @@ void File_Mxf::Streams_Finish_Track(const int128u TrackUID)
     StreamKind_Last=Stream_Max;
     StreamPos_Last=(size_t)-1;
 
+    size_t StreamCount_BeforeEssence[Stream_Max]; //The streams after them are from the essence (e.g. captions in the video)
+    for (size_t StreamKind=0; StreamKind<Stream_Max; StreamKind++)
+        StreamCount_BeforeEssence[StreamKind]=Count_Get((stream_t)StreamKind);
     Streams_Finish_Essence(Track->second.TrackNumber, TrackUID);
 
     //Sequence
-    Streams_Finish_Component(Track->second.Sequence, Track->second.EditRate_Real?Track->second.EditRate_Real:Track->second.EditRate, Track->second.TrackID, Track->second.Origin);
+    Streams_Finish_Component(Track->second.Sequence, Track->second.EditRate_Real?Track->second.EditRate_Real:Track->second.EditRate, Track->second.TrackID, Track->second.Origin, StreamCount_BeforeEssence);
 
     //Stream size from the size of frame wrapped video elements, if constant
     const auto Essence=Essences.find(Track->second.TrackNumber);
@@ -10264,7 +10267,7 @@ void File_Mxf::Fill_PreChargeRollOut(stream_t StreamKind, size_t StreamPos, int6
 }
 
 //---------------------------------------------------------------------------
-void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 EditRate, int32u TrackID, int64s Origin)
+void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 EditRate, int32u TrackID, int64s Origin, const size_t* StreamCount_BeforeEssence)
 {
     components::iterator Component=Components.find(ComponentUID);
     if (Component==Components.end())
@@ -10325,13 +10328,22 @@ void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 Edit
                     break;
                 }
 
+        auto Fill_Source=[&](stream_t StreamKind, size_t StreamPos)
+        {
+            //Stored essence, with the precharge and the rollout
+            Fill(StreamKind, StreamPos, "Source_Duration", Duration_Source, 0, true);
+            Fill(StreamKind, StreamPos, "Source_FrameCount", FrameCount_Source, 10, true);
+            Fill_PreChargeRollOut(StreamKind, StreamPos, PreCharge, RollOut);
+        };
         auto Fill_Duration=[&](size_t StreamPos)
         {
             Fill(StreamKind_Last, StreamPos, Fill_Parameter(StreamKind_Last, Generic_Duration), Duration_Content, 0, true);
             if (!PreCharge && !RollOut)
                 return;
-            Fill(StreamKind_Last, StreamPos, "Source_Duration", Duration_Source, 0, true);
-            Fill_PreChargeRollOut(StreamKind_Last, StreamPos, PreCharge, RollOut);
+            const auto FrameCount_Parameter=Fill_Parameter(StreamKind_Last, Generic_FrameCount);
+            if (Retrieve_Const(StreamKind_Last, StreamPos, FrameCount_Parameter).To_int64u()==FrameCount_Source) //Frames of the stored essence counted by the parser of the stream (e.g. video)
+                Fill(StreamKind_Last, StreamPos, FrameCount_Parameter, FrameCount, 10, true);
+            Fill_Source(StreamKind_Last, StreamPos);
         };
         Fill_Duration(StreamPos_Last);
         size_t ID_SubStreamInfo_Pos=Retrieve(StreamKind_Last, StreamPos_Last, General_ID).find(__T('-'));
@@ -10349,6 +10361,16 @@ void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 Edit
             }
         }
 
+        //Duration of the content and stored essence also in the streams of other kinds from the essence of the track (e.g. captions in the video)
+        for (size_t StreamKind2=Stream_General+1; StreamKind2<Stream_Max; StreamKind2++)
+            if (StreamKind2!=StreamKind_Last)
+                for (size_t StreamPos2=StreamCount_BeforeEssence[StreamKind2]; StreamPos2<Count_Get((stream_t)StreamKind2); StreamPos2++)
+                {
+                    Fill((stream_t)StreamKind2, StreamPos2, Fill_Parameter((stream_t)StreamKind2, Generic_Duration), Duration_Content, 0, true);
+                    if (PreCharge || RollOut)
+                        Fill_Source((stream_t)StreamKind2, StreamPos2);
+                }
+
         #if MEDIAINFO_ADVANCED
             if (Component->second.IsTruncated && StreamKind_Last==Stream_Video)
                 Fill(Stream_Video, StreamPos_Last, Video_FrameCount, FrameCount, 10, true); //Elements are complete, the parser may also count the partial frame at the end
@@ -10357,11 +10379,7 @@ void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 Edit
         FillAllMergedStreams=true;
 
         if (Retrieve(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameCount)).empty())
-        {
             Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameCount), FrameCount);
-            if (PreCharge || RollOut)
-                Fill(StreamKind_Last, StreamPos_Last, "Source_FrameCount", FrameCount_Source);
-        }
 
         if (Retrieve(StreamKind_Last, StreamPos_Last, "FrameRate").empty())
             Fill(StreamKind_Last, StreamPos_Last, "FrameRate", EditRate);
