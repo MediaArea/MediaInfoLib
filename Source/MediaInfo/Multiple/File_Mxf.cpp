@@ -2179,6 +2179,11 @@ File_Mxf::File_Mxf()
         Klv_BerTooLong_Size=0;
     #endif //MEDIAINFO_CONFORMANCE
 
+    //Precharge and rollout
+    IndexStartPositionIndexDuration_Max=0;
+    IndexEditRate=0;
+    MxfTimeCodeForDelay_PreCharge=0;
+
     #if MEDIAINFO_DEMUX || MEDIAINFO_SEEK
         IndexTables_Pos=0;
         Clip_Header_Size=0;
@@ -3116,7 +3121,11 @@ void File_Mxf::Streams_Finish()
             continue;
         TimeCode TC0((int64_t)(TimecodeCache.second.Values[0].Value + Config->File_IgnoreEditsBefore), TimeCodeInfo->second.MxfTimeCode.RoundedTimecodeBase - 1, TimeCode::DropFrame(TimeCodeInfo->second.MxfTimeCode.DropFrame).FPS1001(TimeCodeInfo->second.MxfTimeCode.DropFrame));
         TimeCode TC1((int64_t)(TimecodeCache.second.Values[1].Value + Config->File_IgnoreEditsBefore), TimeCodeInfo->second.MxfTimeCode.RoundedTimecodeBase - 1, TimeCode::DropFrame(TimeCodeInfo->second.MxfTimeCode.DropFrame).FPS1001(TimeCodeInfo->second.MxfTimeCode.DropFrame));
-        Fill(Stream_Other, TimecodeCache.second.StreamPos, Other_TimeCode_FirstFrame, TC1.ToString(), true, true);
+        TimeCode TC1_Content=TC1;
+        TC1_Content+=(int64_t)TimecodeCache.second.PreCharge;
+        Fill(Stream_Other, TimecodeCache.second.StreamPos, Other_TimeCode_FirstFrame, TC1_Content.ToString(), true, true);
+        if (TimecodeCache.second.PreCharge)
+            Fill(Stream_Other, TimecodeCache.second.StreamPos, "Source_TimeCode_FirstFrame", TC1.ToString(), true, true);
         Frame_Count = 0;
         Frame_Count_NotParsedIncluded = 0;
         File_Offset = TimecodeCache.second.Values[0].Offset;
@@ -7176,7 +7185,7 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
             }
         }
 
-        const float64 TimeCode_StartTimecode_Temp = MxfTimeCodeForDelay.Get_TimeCode_StartTimecode_Temp(Config->File_IgnoreEditsBefore, MxfTimeCodeForDelay_Is1001);
+        const float64 TimeCode_StartTimecode_Temp = MxfTimeCodeForDelay.Get_TimeCode_StartTimecode_Temp(Config->File_IgnoreEditsBefore+MxfTimeCodeForDelay_PreCharge, MxfTimeCodeForDelay_Is1001);
         Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay), TimeCode_StartTimecode_Temp*1000, 0, true);
         Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay_Source), "Container");
         Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay_DropFrame), MxfTimeCodeForDelay.DropFrame?"Yes":"No");
@@ -7396,7 +7405,7 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
                         }
                     }
 
-                    const float64 TimeCode_StartTimecode_Temp = MxfTimeCodeForDelay.Get_TimeCode_StartTimecode_Temp(Config->File_IgnoreEditsBefore, MxfTimeCodeForDelay_Is1001);
+                    const float64 TimeCode_StartTimecode_Temp = MxfTimeCodeForDelay.Get_TimeCode_StartTimecode_Temp(Config->File_IgnoreEditsBefore+MxfTimeCodeForDelay_PreCharge, MxfTimeCodeForDelay_Is1001);
                     Fill(Stream_Audio, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay), TimeCode_StartTimecode_Temp*1000, 0, true);
                     Fill(Stream_Audio, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay_Source), "Container");
                 }
@@ -7451,7 +7460,7 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
                     }
                 }
 
-                const float64 TimeCode_StartTimecode_Temp = MxfTimeCodeForDelay.Get_TimeCode_StartTimecode_Temp(Config->File_IgnoreEditsBefore, MxfTimeCodeForDelay_Is1001);
+                const float64 TimeCode_StartTimecode_Temp = MxfTimeCodeForDelay.Get_TimeCode_StartTimecode_Temp(Config->File_IgnoreEditsBefore+MxfTimeCodeForDelay_PreCharge, MxfTimeCodeForDelay_Is1001);
                 Fill(Stream_Text, Parser_Text_Pos, Fill_Parameter(StreamKind_Last, Generic_Delay), TimeCode_StartTimecode_Temp*1000, 0, true);
                 Fill(Stream_Text, Parser_Text_Pos, Fill_Parameter(StreamKind_Last, Generic_Delay_Source), "Container");
             }
@@ -10222,6 +10231,19 @@ size_t File_Mxf::CompliantWith_ArdZdf_FromContent (string& Content)
 }
 
 //---------------------------------------------------------------------------
+void File_Mxf::Fill_PreChargeRollOut(stream_t StreamKind, size_t StreamPos, int64u PreCharge, int64u RollOut)
+{
+    for (const auto& Item : {make_pair("PreCharge", PreCharge), make_pair("RollOut", RollOut)})
+    {
+        if (!Item.second)
+            continue;
+        Fill(StreamKind, StreamPos, Item.first, Item.second, 10, true);
+        Fill_SetOptions(StreamKind, StreamPos, Item.first, "N NT");
+        Fill(StreamKind, StreamPos, (string(Item.first)+"/String").c_str(), Ztring::ToZtring(Item.second)+(Item.second==1?__T(" frame"):__T(" frames")), true);
+    }
+}
+
+//---------------------------------------------------------------------------
 void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 EditRate, int32u TrackID, int64s Origin)
 {
     components::iterator Component=Components.find(ComponentUID);
@@ -10236,6 +10258,18 @@ void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 Edit
             if (Truncated_Duration && FrameCount>Truncated_Duration*EditRate)
                 FrameCount=float64_int64s(Truncated_Duration*EditRate);
         #endif //MEDIAINFO_ADVANCED
+
+        //Precharge (essence before the origin of the track) and rollout (essence after its duration, seen in the index tables) are not content
+        int64u PreCharge=(Origin>0 && (int64u)Origin<FrameCount)?((int64u)Origin):0;
+        int64u RollOut=0;
+        if (IndexEditRate && IndexEditRate!=DBL_MAX)
+        {
+            const auto FrameCount_Index=(int64u)float64_int64s(IndexStartPositionIndexDuration_Max/IndexEditRate*EditRate);
+            if (FrameCount_Index>Component->second.Duration)
+                RollOut=FrameCount_Index-Component->second.Duration;
+        }
+        int64u FrameCount_Source=FrameCount+RollOut;
+        FrameCount-=PreCharge;
         if (StreamKind_Last==Stream_Video || Config->File_EditRate)
         {
             int64u File_IgnoreEditsBefore=Config->File_IgnoreEditsBefore;
@@ -10252,7 +10286,34 @@ void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 Edit
         }
         if (StreamPos_Last==(size_t)-1 && Count_Get(StreamKind_Last)==1)
             StreamPos_Last=0; // TODO: remove this hack
-        Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), FrameCount*1000/EditRate, 0, true);
+        const float64 Duration_Content=FrameCount*1000/EditRate; //Before the frame count in frames instead of fields, exact
+        const float64 Duration_Source=FrameCount_Source*1000/EditRate;
+
+        // Hack, TODO: find a correct method for detecting fiel/frame differene
+        if (StreamKind_Last==Stream_Video)
+            for (essences::iterator Essence=Essences.begin(); Essence!=Essences.end(); ++Essence)
+                if (Essence->second.StreamKind==Stream_Video && Essence->second.StreamPos-(StreamPos_StartAtZero[Essence->second.StreamKind]?0:1)==StreamPos_Last)
+                {
+                    if (Essence->second.Field_Count_InThisBlock_1 && !Essence->second.Field_Count_InThisBlock_2)
+                    {
+                        FrameCount/=2;
+                        FrameCount_Source/=2;
+                        PreCharge/=2;
+                        RollOut/=2;
+                        EditRate/=2;
+                    }
+                    break;
+                }
+
+        auto Fill_Duration=[&](size_t StreamPos)
+        {
+            Fill(StreamKind_Last, StreamPos, Fill_Parameter(StreamKind_Last, Generic_Duration), Duration_Content, 0, true);
+            if (!PreCharge && !RollOut)
+                return;
+            Fill(StreamKind_Last, StreamPos, "Source_Duration", Duration_Source, 0, true);
+            Fill_PreChargeRollOut(StreamKind_Last, StreamPos, PreCharge, RollOut);
+        };
+        Fill_Duration(StreamPos_Last);
         size_t ID_SubStreamInfo_Pos=Retrieve(StreamKind_Last, StreamPos_Last, General_ID).find(__T('-'));
         if (ID_SubStreamInfo_Pos!=string::npos)
         {
@@ -10264,22 +10325,9 @@ void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 Edit
                 StreamPos_Last_Temp--;
                 if (Retrieve(StreamKind_Last, StreamPos_Last_Temp, General_ID).find(ID)!=0)
                     break;
-                Fill(StreamKind_Last, StreamPos_Last_Temp, Fill_Parameter(StreamKind_Last, Generic_Duration), FrameCount*1000/EditRate, 0, true);
+                Fill_Duration(StreamPos_Last_Temp);
             }
         }
-
-        // Hack, TODO: find a correct method for detecting fiel/frame differene
-        if (StreamKind_Last==Stream_Video)
-            for (essences::iterator Essence=Essences.begin(); Essence!=Essences.end(); ++Essence)
-                if (Essence->second.StreamKind==Stream_Video && Essence->second.StreamPos-(StreamPos_StartAtZero[Essence->second.StreamKind]?0:1)==StreamPos_Last)
-                {
-                    if (Essence->second.Field_Count_InThisBlock_1 && !Essence->second.Field_Count_InThisBlock_2)
-                    {
-                        FrameCount/=2;
-                        EditRate/=2;
-                    }
-                    break;
-                }
 
         #if MEDIAINFO_ADVANCED
             if (Component->second.IsTruncated && StreamKind_Last==Stream_Video)
@@ -10289,7 +10337,11 @@ void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 Edit
         FillAllMergedStreams=true;
 
         if (Retrieve(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameCount)).empty())
+        {
             Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameCount), FrameCount);
+            if (PreCharge || RollOut)
+                Fill(StreamKind_Last, StreamPos_Last, "Source_FrameCount", FrameCount_Source);
+        }
 
         if (Retrieve(StreamKind_Last, StreamPos_Last, "FrameRate").empty())
             Fill(StreamKind_Last, StreamPos_Last, "FrameRate", EditRate);
@@ -10342,14 +10394,15 @@ void File_Mxf::Streams_Finish_Component_ForTimeCode(const int128u ComponentUID, 
         if (Component2!=Components.end() && Component2->second.MxfTimeCode.StartTimecode!=(int64u)-1 && !Config->File_IsReferenced_Get())
         {
             //Note: Origin is not part of the StartTimecode for the first frame in the source package. From specs: "For a Timecode Track with a single Timecode Component and with origin N, where N greater than 0, the timecode value at the Zero Point of the Track equals the start timecode of the Timecode Component incremented by N units."
-            TimeCode TC=Component2->second.MxfTimeCode.RoundedTimecodeBase<0x8000?TimeCode((int64_t)(Component2->second.MxfTimeCode.StartTimecode+Config->File_IgnoreEditsBefore), Component2->second.MxfTimeCode.RoundedTimecodeBase-1, TimeCode::DropFrame(Component2->second.MxfTimeCode.DropFrame).FPS1001(Component2->second.MxfTimeCode.DropFrame)):TimeCode();
+            const int64u PreCharge=(Origin>0 && (int64u)Origin<Component2->second.Duration)?((int64u)Origin):0;
+            TimeCode TC=Component2->second.MxfTimeCode.RoundedTimecodeBase<0x8000?TimeCode((int64_t)(Component2->second.MxfTimeCode.StartTimecode+PreCharge+Config->File_IgnoreEditsBefore), Component2->second.MxfTimeCode.RoundedTimecodeBase-1, TimeCode::DropFrame(Component2->second.MxfTimeCode.DropFrame).FPS1001(Component2->second.MxfTimeCode.DropFrame)):TimeCode();
             bool IsHybridTimeCode=false;
             if (Component->second.StructuralComponents.size()==2 && !Pos)
             {
                 components::iterator Component_TC2=Components.find(Component->second.StructuralComponents[1]);
                 if (Component_TC2!=Components.end() && Component_TC2->second.MxfTimeCode.StartTimecode!=(int64u)-1)
                 {
-                    TimeCode TC2=Component_TC2->second.MxfTimeCode.RoundedTimecodeBase<0x8000?TimeCode((int64_t)(Component_TC2->second.MxfTimeCode.StartTimecode+Config->File_IgnoreEditsBefore), Component_TC2->second.MxfTimeCode.RoundedTimecodeBase-1, TimeCode::DropFrame(Component2->second.MxfTimeCode.DropFrame).FPS1001(Component2->second.MxfTimeCode.DropFrame)):TimeCode();
+                    TimeCode TC2=Component_TC2->second.MxfTimeCode.RoundedTimecodeBase<0x8000?TimeCode((int64_t)(Component_TC2->second.MxfTimeCode.StartTimecode+PreCharge+Config->File_IgnoreEditsBefore), Component_TC2->second.MxfTimeCode.RoundedTimecodeBase-1, TimeCode::DropFrame(Component2->second.MxfTimeCode.DropFrame).FPS1001(Component2->second.MxfTimeCode.DropFrame)):TimeCode();
                     if (TC2.ToFrames()-TC.ToFrames()==2)
                     {
                         ++TC;
@@ -10383,23 +10436,35 @@ void File_Mxf::Streams_Finish_Component_ForTimeCode(const int128u ComponentUID, 
                 Fill(Stream_Other, StreamPos_Last, Other_FrameRate, Component2->second.MxfTimeCode.RoundedTimecodeBase/(Is1001?1.001:1.000));
             TC.Set1001fps(Is1001);
             Fill(Stream_Other, StreamPos_Last, Other_TimeCode_FirstFrame, TC.ToString().c_str());
-            TimecodeCaches[Component2->first].StreamPos = StreamPos_Last;
+            auto& TimecodeCache=TimecodeCaches[Component2->first];
+            TimecodeCache.StreamPos=StreamPos_Last;
+            TimecodeCache.PreCharge=PreCharge;
             if (Component2->second.Duration && Component2->second.Duration!=(int64u)-1)
             {
-                Fill(Stream_Other, StreamPos_Last, Other_FrameCount, Component2->second.Duration);
+                Fill(Stream_Other, StreamPos_Last, Other_FrameCount, Component2->second.Duration-PreCharge);
+                if (PreCharge)
+                    Fill(Stream_Other, StreamPos_Last, "Source_FrameCount", Component2->second.Duration);
                 if (TC.GetFramesMax())
                 {
-                    TC+=Component2->second.Duration-1;
+                    TC+=(int64_t)(Component2->second.Duration-PreCharge-1); //Last frame of the component
                     Fill(Stream_Other, StreamPos_Last, Other_TimeCode_LastFrame, TC.ToString().c_str());
                 }
             }
             Fill(Stream_Other, StreamPos_Last, Other_TimeCode_Settings, IsSourcePackage?__T("Source Package"):__T("Material Package"));
             Fill(Stream_Other, StreamPos_Last, Other_TimeCode_Stripped, "Yes");
             Fill(Stream_Other, StreamPos_Last, Other_Title, TrackName);
+            if (PreCharge)
+            {
+                TimeCode TC_Source=Component2->second.MxfTimeCode.RoundedTimecodeBase<0x8000?TimeCode((int64_t)(Component2->second.MxfTimeCode.StartTimecode+Config->File_IgnoreEditsBefore), Component2->second.MxfTimeCode.RoundedTimecodeBase-1, TimeCode::DropFrame(Component2->second.MxfTimeCode.DropFrame).FPS1001(Component2->second.MxfTimeCode.DropFrame)):TimeCode();
+                TC_Source.Set1001fps(Is1001);
+                Fill(Stream_Other, StreamPos_Last, "Source_TimeCode_FirstFrame", TC_Source.ToString().c_str());
+                Fill_PreChargeRollOut(Stream_Other, StreamPos_Last, PreCharge, 0);
+            }
 
             if ((!TimeCodeFromMaterialPackage && IsSourcePackage) || (TimeCodeFromMaterialPackage && !IsSourcePackage))
             {
                 MxfTimeCodeForDelay=Component2->second.MxfTimeCode;
+                MxfTimeCodeForDelay_PreCharge=PreCharge;
 
                 DTS_Delay=((float64)MxfTimeCodeForDelay.StartTimecode)/MxfTimeCodeForDelay.RoundedTimecodeBase;
                 if (MxfTimeCodeForDelay.DropFrame)
@@ -13810,6 +13875,8 @@ void File_Mxf::IndexTableSegment()
     if (Element_Offset==4)
     {
         IndexTable_IsAlreadyParsed=false;
+        IndexStartPosition_Current=0;
+        IndexDuration_Current=0;
         #if MEDIAINFO_DEMUX || MEDIAINFO_SEEK
             //Testing if already parsed
             const auto StreamOffset=File_Offset+Buffer_Offset-Header_Size;
@@ -15546,6 +15613,7 @@ void File_Mxf::TimecodeGroup()
     if (Element_Offset==4)
     {
         MxfTimeCodeForDelay=mxftimecode();
+        MxfTimeCodeForDelay_PreCharge=0;
         DTS_Delay=0;
         FrameInfo.DTS=0;
     }
@@ -18024,6 +18092,10 @@ void File_Mxf::IndexTableSegment_IndexEditRate()
     Get_Rational(Data);
 
     FILLING_BEGIN();
+        if (!IndexEditRate)
+            IndexEditRate=Data;
+        else if (IndexEditRate!=Data) //Check if IndexEditRate is not same everywhere (not supported)
+            IndexEditRate=DBL_MAX;
         #if MEDIAINFO_SEEK
             IndexTables[IndexTables.size()-1].IndexEditRate=Data;
         #endif //MEDIAINFO_SEEK
@@ -18038,6 +18110,9 @@ void File_Mxf::IndexTableSegment_IndexStartPosition()
     Get_B8 (Data,                                                "Data"); Element_Info1(Data);
 
     FILLING_BEGIN();
+        IndexStartPosition_Current=Data;
+        if (IndexStartPositionIndexDuration_Max<=IndexStartPosition_Current+IndexDuration_Current)
+            IndexStartPositionIndexDuration_Max=IndexStartPosition_Current+IndexDuration_Current;
         #if MEDIAINFO_SEEK
             IndexTables[IndexTables.size()-1].IndexStartPosition=Data;
 
@@ -18097,6 +18172,9 @@ void File_Mxf::IndexTableSegment_IndexDuration()
     Get_B8 (Data,                                                "Data"); Element_Info1(Data);
 
     FILLING_BEGIN();
+        IndexDuration_Current=Data;
+        if (IndexStartPositionIndexDuration_Max<=IndexStartPosition_Current+IndexDuration_Current)
+            IndexStartPositionIndexDuration_Max=IndexStartPosition_Current+IndexDuration_Current;
         #if MEDIAINFO_SEEK
             IndexTables[IndexTables.size()-1].IndexDuration=Data;
         #endif //MEDIAINFO_SEEK
