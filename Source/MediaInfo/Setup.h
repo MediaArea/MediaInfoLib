@@ -977,6 +977,12 @@
 #endif
 
 //---------------------------------------------------------------------------
+// Image or video metadata, carried by the formats above
+#if !defined(MEDIAINFO_SMPTEST209450_NO) && !defined(MEDIAINFO_SMPTEST209450_YES) && defined(MEDIAINFO_PNG_YES)
+    #define MEDIAINFO_SMPTEST209450_YES
+#endif
+
+//---------------------------------------------------------------------------
 // Archive
 #if !defined(MEDIAINFO_ARCHIVE_NO) && !defined(MEDIAINFO_7Z_NO) && !defined(MEDIAINFO_7Z_YES)
     #define MEDIAINFO_7Z_YES
