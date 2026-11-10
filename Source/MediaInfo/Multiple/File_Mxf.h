@@ -114,7 +114,7 @@ protected :
     void Streams_Finish_Identification (const int128u IdentificationUID);
     void Streams_Finish_CommercialNames ();
     void Streams_Finish_CompliantWith ();
-    conformance_errors CompliantWith_ArdZdf (size_t Profile_Pos, bool IsCandidateTest=false); //Profile_Pos is the position in the list of ARD/ZDF profiles, candidate test is done before parsing all partitions, without tests needing all partitions or the essence
+    conformance_errors CompliantWith_ArdZdf (size_t Profile_Pos, bool IsCandidateTest=false, bool StopAtFirst=false); //Profile_Pos is the position in the list of ARD/ZDF profiles, candidate test is done before parsing all partitions, without tests needing all partitions or the essence, only the first error is returned if StopAtFirst or IsCandidateTest
     bool CompliantWith_ArdZdf_IsCandidate (); //Candidate for an ARD/ZDF profile with Body Partitions
     size_t CompliantWith_ArdZdf_FromContent (std::string& Content); //Position of the ARD/ZDF profile matching the kind of content, (size_t)-1 if none, Content is filled with a description of the content
     #if MEDIAINFO_CONFORMANCE
