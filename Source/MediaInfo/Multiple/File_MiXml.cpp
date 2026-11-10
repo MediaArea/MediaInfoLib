@@ -25,7 +25,7 @@
 #include "MediaInfo/MediaInfo_Config.h"
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #include "ZenLib/FileName.h"
-#include "tinyxml2.h"
+#include "ThirdParty/tfsxml/tfsxml_tinyxml2.h"
 using namespace tinyxml2;
 //---------------------------------------------------------------------------
 

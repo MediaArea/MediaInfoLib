@@ -22,7 +22,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Setup.h"
-#include "tinyxml2.h"
+#include "ThirdParty/tfsxml/tfsxml_tinyxml2.h"
 #include <ZenLib/Ztring.h>
 #include <string>
 #include <algorithm>

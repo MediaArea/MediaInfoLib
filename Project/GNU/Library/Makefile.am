@@ -258,6 +258,7 @@ lib@MediaInfoLib_LibName@_la_SOURCES = \
                        ../../../Source/MediaInfo/OutputHelpers.cpp \
                        ../../../Source/MediaInfo/ExternalCommandHelpers.cpp \
                        ../../../Source/ThirdParty/tfsxml/tfsxml.c \
+                       ../../../Source/ThirdParty/tfsxml/tfsxml_tinyxml2.cpp \
                        ../../../Source/ThirdParty/fmt/format.cc
 
 @MediaInfoLib_LibName@includedir = $(includedir)/MediaInfo
@@ -305,11 +306,6 @@ endif
 if COMPILE_HMAC
 lib@MediaInfoLib_LibName@_la_SOURCES += \
                        ../../../Source/ThirdParty/hmac-gladman/hmac.c
-endif
-
-if COMPILE_TINYXML2
-lib@MediaInfoLib_LibName@_la_SOURCES += \
-                       ../../../Source/ThirdParty/tinyxml2/tinyxml2.cpp
 endif
 
 lib@MediaInfoLib_LibName@_la_LDFLAGS     = -no-undefined -version-info 0:0:0

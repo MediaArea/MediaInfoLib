@@ -12,11 +12,6 @@ Files: Project/MSCS2008/Example/HowToUse_Dll.cs
 Copyright: MediaArea.net SARL <Info@MediaArea.net>
 License: Zlib
 
-Files: Source/ThirdParty/tinyxml2/tinyxml2.cpp
-       Source/ThirdParty/tinyxml2/tinyxml2.h
-Copyright: Copyright: 2011-2012 Lee Thomason <leethomason@gmail.com>
-License: Zlib
-
 Files: Source/ThirdParty/aes-gladman/*
 Copyright: 1998-2013, Brian Gladman
 License: aes-gladman

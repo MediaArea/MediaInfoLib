@@ -26,7 +26,7 @@
 #include "MediaInfo/OutputHelpers.h"
 #include <ctime>
 #include <cmath>
-#include "tinyxml2.h"
+#include "ThirdParty/tfsxml/tfsxml_tinyxml2.h"
 
 using namespace std;
 //---------------------------------------------------------------------------

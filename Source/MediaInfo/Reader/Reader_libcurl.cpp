@@ -56,7 +56,7 @@
 #include "ZenLib/File.h"
 #include "ZenLib/OS_Utils.h"
 #include "ZenLib/Format/Http/Http_Utils.h"
-#include "tinyxml2.h"
+#include "ThirdParty/tfsxml/tfsxml_tinyxml2.h"
 using namespace tinyxml2;
 using namespace ZenLib;
 using namespace std;

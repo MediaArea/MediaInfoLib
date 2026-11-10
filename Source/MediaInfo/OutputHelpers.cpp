@@ -13,7 +13,7 @@
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
-#include "tinyxml2.h"
+#include "ThirdParty/tfsxml/tfsxml_tinyxml2.h"
 #include "MediaInfo/OutputHelpers.h"
 #include "MediaInfo/File__Analyse_Automatic.h"
 #include <ctime>

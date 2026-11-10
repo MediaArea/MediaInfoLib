@@ -75,9 +75,7 @@ cp -r ../Source/ThirdParty/sha2-gladman/*.c MediaInfo_Lib_GNU_FromSource/Source/
 mkdir -p MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/tfsxml
 cp -r ../Source/ThirdParty/tfsxml/*.h MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/tfsxml/
 cp -r ../Source/ThirdParty/tfsxml/*.c MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/tfsxml/
-mkdir -p MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/tinyxml2
-cp -r ../Source/ThirdParty/tinyxml2/*.h MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/tinyxml2/
-cp -r ../Source/ThirdParty/tinyxml2/*.cpp MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/tinyxml2/
+cp -r ../Source/ThirdParty/tfsxml/*.cpp MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/tfsxml/
 mkdir -p MediaInfo_Lib_GNU_FromSource/Source/MediaInfo
 cp -r ../Source/MediaInfo/*.h MediaInfo_Lib_GNU_FromSource/Source/MediaInfo/
 cp -r ../Source/MediaInfo/*.cpp MediaInfo_Lib_GNU_FromSource/Source/MediaInfo/

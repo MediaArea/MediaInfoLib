@@ -23,7 +23,7 @@
 //---------------------------------------------------------------------------
 #include "MediaInfo/Audio/File_DolbyAudioMetadata.h"
 #include "MediaInfo/TimeCode.h"
-#include "tinyxml2.h"
+#include "ThirdParty/tfsxml/tfsxml_tinyxml2.h"
 #include "ThirdParty/base64/base64.h"
 using namespace tinyxml2;
 using namespace std;

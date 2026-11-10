@@ -22,7 +22,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Video/File_DolbyVisionMetadata.h"
-#include "tinyxml2.h"
+#include "ThirdParty/tfsxml/tfsxml_tinyxml2.h"
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>

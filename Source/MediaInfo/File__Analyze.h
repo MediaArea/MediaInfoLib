@@ -18,7 +18,7 @@
 #if MEDIAINFO_IBIUSAGE
     #include "MediaInfo/Multiple/File_Ibi_Creation.h"
 #endif //MEDIAINFO_IBIUSAGE
-#include "tinyxml2.h"
+#include "ThirdParty/tfsxml/tfsxml_tinyxml2.h"
 #if MEDIAINFO_AES
     #include <aescpp.h>
 #endif //MEDIAINFO_AES
