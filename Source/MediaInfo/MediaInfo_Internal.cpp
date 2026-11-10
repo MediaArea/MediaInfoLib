@@ -85,10 +85,6 @@
     #endif
     #include <ctime>
 #endif
-#if defined(WINDOWS) && !defined(UNICODE)
-    #include <sys/types.h>
-    #include <sys/stat.h>
-#endif
 using namespace ZenLib;
 using namespace std;
 //---------------------------------------------------------------------------
@@ -101,25 +97,12 @@ namespace MediaInfoLib
 //Windows) given as they are, and when these bytes are also valid UTF-8 but only the name in this encoding exists (see ZenLib): the names made
 //from it (e.g. the other files of a package) and the outputs are UTF-8 text
 #if !defined(UNICODE)
-#if defined(WINDOWS)
-static bool FileName_Exists_Wide(const std::wstring& Name)
-{
-    struct _stat64 Stat;
-    return !_wstat64(Name.c_str(), &Stat);
-}
-#endif //defined(WINDOWS)
-
 static Ztring FileName_UTF8(const Ztring& File_Name)
 {
-    #if defined(WINDOWS)
-        Ztring ToReturn=Ztring().From_Unicode(File_Name.To_Unicode().c_str()); //The bytes of the code page are decoded (see Ztring::To_Unicode())
-        if (ToReturn==File_Name) //UTF-8 text, also bytes of the code page which are valid UTF-8
-        {
-            Ztring File_Name_CodePage=Ztring().From_Local(File_Name.c_str());
-            if (File_Name_CodePage!=ToReturn && !FileName_Exists_Wide(ToReturn.To_Unicode()) && FileName_Exists_Wide(File_Name_CodePage.To_Unicode()))
-                ToReturn=File_Name_CodePage;
-        }
-        return ToReturn;
+    #if defined(WINDOWS) && !defined(WINDOWS_UWP)
+        return Ztring().From_Unicode(FileName_To_Wide_Existing(File_Name)); //The name for the wide functions, as File and Dir of ZenLib open it
+    #elif defined(WINDOWS)
+        return Ztring().From_Unicode(File_Name.To_Unicode()); //The bytes of the code page are decoded (see Ztring::To_Unicode())
     #else //defined(WINDOWS)
         return FileName_From_Native(FileName_To_Native(File_Name).c_str()); //The existing name, decoded with the locale (see ZenLib)
     #endif //defined(WINDOWS)

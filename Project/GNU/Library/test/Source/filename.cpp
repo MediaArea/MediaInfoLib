@@ -586,6 +586,19 @@ int main(int argc, char* argv[])
             Check(Value && Path_Narrow==Value, "MediaInfoListA_New_Quick("+Shown+")", "file not opened or name is "+Printable(Value));
             if (List)
                 MediaInfoListA_Delete(List);
+
+            // Without Unicode, the C++ API with the bytes of the name given as they are (e.g. the arguments of main() put in a String without
+            // conversion): the name of the file is UTF-8 text, as the other strings (FileName_Existing() of ZenLib)
+            #if !defined(UNICODE)
+            if (!CharSet_UTF8)
+            {
+                MediaInfo_Class MI_Bytes;
+                const ZenLib::Ztring Expected=ZenLib::FileName_From_Native(Path_Narrow.c_str());
+                const bool Opened_Bytes=MI_Bytes.Open(ZenLib::Ztring(Path_Narrow))!=0;
+                const std::string Name_Bytes=Opened_Bytes?MI_Bytes.Get(MediaInfoLib::Stream_General, 0, __T("CompleteName")):std::string();
+                Check(Opened_Bytes && Name_Bytes==Expected, "MediaInfo::Open("+Shown+"), bytes of the name as they are", "file not opened or name is "+Printable(Name_Bytes));
+            }
+            #endif
         }
 
         // Wide API, e.g. pymediainfo
