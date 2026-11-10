@@ -362,9 +362,9 @@ void File_Vp9::Read_Buffer_Continue()
                         Fill(Stream_Video, 0, Video_colour_range, Vp9_ColorRange[yuv_range_flag], Unlimited, true, true);
                     }
                 }
+                Fill(Stream_Video, 0, Video_Width, (int32u)width_minus_one+1);
+                Fill(Stream_Video, 0, Video_Height, (int32u)height_minus_one+1);
             }
-            Fill(Stream_Video, 0, Video_Width, (int32u)width_minus_one+1);
-            Fill(Stream_Video, 0, Video_Height, (int32u)height_minus_one+1);
         }
     FILLING_END()
     Frame_Count++;
