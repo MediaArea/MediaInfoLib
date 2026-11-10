@@ -1773,6 +1773,9 @@ void File_DolbyE::metadata_segment()
     Element_Begin1("metadata_segment");
     if (key_present)
     {
+        if (Data_BS_Remain()<2*(size_t)bit_depth) //Key and at least the CRC, before the size is read after the key
+            return; //There is a problem
+
         //We must change the buffer
         switch (bit_depth)
         {
