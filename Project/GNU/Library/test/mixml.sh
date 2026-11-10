@@ -10,12 +10,12 @@ fi
 
 unset args
 while IFS= read -r i; do
-    FILE_NAME=$(basename "$i")
-    OUTPUT_XML_NAME="/tmp/$FILE_NAME.xml.gz"
+    mkdir -p "$TEMP_PATH/$(dirname "$i")"
+    OUTPUT_XML_NAME="$TEMP_PATH/$i.xml.gz"
     analyze -e Inform_Compress:zlib+base64 -f MIXML "$PATH_FILES/$i" "$OUTPUT_XML_NAME"
-    [ "$(stat -c%s $OUTPUT_XML_NAME 2>/dev/null || stat -f%z $OUTPUT_XML_NAME 2>/dev/null)" -gt 400 ] || fail "$OUTPUT_XML_NAME has 400 bytes or less"
+    [ "$(stat -c%s "$OUTPUT_XML_NAME" 2>/dev/null || stat -f%z "$OUTPUT_XML_NAME" 2>/dev/null)" -gt 400 ] || fail "$OUTPUT_XML_NAME has 400 bytes or less"
 
     analyze -e Inform_Compress:zlib+base64,File_ForceParser:MiXml,Input_Compressed:zlib+base64 -f MIXML "$OUTPUT_XML_NAME" "$OUTPUT_XML_NAME.2"
-    [ "$(stat -c%s $OUTPUT_XML_NAME.2 2>/dev/null || stat -f%z $OUTPUT_XML_NAME.2 2>/dev/null)" -gt 400 ] || fail "$OUTPUT_XML_NAME.2 has 400 bytes or less"
+    [ "$(stat -c%s "$OUTPUT_XML_NAME.2" 2>/dev/null || stat -f%z "$OUTPUT_XML_NAME.2" 2>/dev/null)" -gt 400 ] || fail "$OUTPUT_XML_NAME.2 has 400 bytes or less"
     
 done < "$PATH_FILES/files.txt"

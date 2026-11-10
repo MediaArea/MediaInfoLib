@@ -10,10 +10,10 @@ fi
 
 unset args
 while IFS= read -r i; do
+    mkdir -p "$TEMP_PATH/$(dirname "$i")"
     for VERSION in EBUCore_1.5 EBUCore_1.6 EBUCore_1.8_ps EBUCore_1.8_sp; do
-        FILE_NAME=$(basename "$i")
-        OUTPUT_XML_NAME="/tmp/$FILE_NAME.ebucore.$VERSION.xml"
-        OUTPUT_JSON_NAME="/tmp/$FILE_NAME.ebucore.$VERSION.json"
+        OUTPUT_XML_NAME="$TEMP_PATH/$i.ebucore.$VERSION.xml"
+        OUTPUT_JSON_NAME="$TEMP_PATH/$i.ebucore.$VERSION.json"
         analyze -f $VERSION "$PATH_FILES/$i" "$OUTPUT_XML_NAME"
         xml_is_correct "$OUTPUT_XML_NAME"
         analyze -f ${VERSION}_JSON "$PATH_FILES/$i" "$OUTPUT_JSON_NAME"

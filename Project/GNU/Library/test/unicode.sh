@@ -10,7 +10,7 @@ fi
 
 FILE="$PATH_SCRIPT/../../../../Release/Example.ogg"
 FILE_NAME="$(basename $FILE)"
-OUTPUT_XML_NAME="/tmp/$FILE_NAME.xml"
+OUTPUT_XML_NAME="$TEMP_PATH/$FILE_NAME.xml"
 analyze -f XML "$FILE" "$OUTPUT_XML_NAME"
 xml_is_correct "$OUTPUT_XML_NAME"
 file_contains "$OUTPUT_XML_NAME" "ĀāĂăĄąĆćĈĉĊċČčĎďĐđĒēĔĕĖėĘęĚěĜĝĞğĠġĢģĤĥĦħĨĩĪīĬĭĮįİıĲĳĴĵĶķĸĹĺĻļĽľĿŀŁłŃńŅņ"

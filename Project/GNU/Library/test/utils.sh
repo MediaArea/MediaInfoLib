@@ -7,6 +7,10 @@ if (command exec >&9) ; then
     FD=9
 fi >/dev/null 2>&1
 
+# directory for the outputs of the test, removed at its end except if the test failed
+TEMP_PATH=$(mktemp -d -t 'mediainfolib_testsuite.XXXXXX') || exit 99
+trap 'rm -rf "$TEMP_PATH"' EXIT
+
 enabled()
 {
     if test -z "${RUN_TESTS+x}" ; then
@@ -34,6 +38,8 @@ fail()
     then
         printf '%s\n' "$2" | head -n 20 >&$FD
     fi
+    trap - EXIT
+    printf '%s\n' "outputs of the test kept in $TEMP_PATH" >&$FD
     exit 1
 }
 
