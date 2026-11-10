@@ -1519,7 +1519,7 @@ bool File_DolbyE::Synchronize()
     //Synchronizing
     while (Buffer_Offset+3<=Buffer_Size)
     {
-        if ((CC2(Buffer+Buffer_Offset_Temp)&0xFFFE)==0x078E) //16-bit
+        if ((CC2(Buffer+Buffer_Offset)&0xFFFE)==0x078E) //16-bit
         {
             bit_depth=16;
             key_present=(CC2(Buffer+Buffer_Offset)&0x0001)?true:false;
