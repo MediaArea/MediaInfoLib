@@ -101,6 +101,13 @@
                     // Send the buffer to MediaInfo
                     var state = MI.Open_Buffer_Continue(e.target.result);
 
+                    // Bit 3 set means finalized, a request to go elsewhere is not for this parsing
+                    if (state&0x08 || e.target.result.byteLength < 1) {
+                      MI.Open_Buffer_Finalize();
+                      callback();
+                      return;
+                    }
+
                     //Test if there is a MediaInfo request to go elsewhere
                     var seekTo = MI.Open_Buffer_Continue_Goto_Get();
                     if(seekTo === -1) {
@@ -112,13 +119,6 @@
                   } else {
                     finish();
                     alert('An error happened reading your file!');
-                    return;
-                  }
-
-                  // Bit 3 set means finalized
-                  if (state&0x08 || e.target.result.byteLength < 1) {
-                    MI.Open_Buffer_Finalize();
-                    callback();
                     return;
                   }
 

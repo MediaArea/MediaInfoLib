@@ -1005,9 +1005,19 @@ if test "$GXX" = yes ; then
     case "${build}" in
       *mingw* | *cygwin* ) ;;
       *)
-        CFLAGS="$CFLAGS -fPIC"
-        CXXFLAGS="$CXXFLAGS -fPIC"
-        LDFLAGS="$LDFLAGS -fPIC"
+        dnl Not with Emscripten, which links statically: with Emscripten 1.x, asm.js reads the data of PIC code at a wrong address (memory base added twice)
+        AC_MSG_CHECKING([for Emscripten])
+        AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+            #ifndef __EMSCRIPTEN__
+            #error not Emscripten
+            #endif
+            int main () {return 0;}]])], [is_emscripten="yes"], [is_emscripten="no"])
+        AC_MSG_RESULT([$is_emscripten])
+        if test "$is_emscripten" = "no"; then
+            CFLAGS="$CFLAGS -fPIC"
+            CXXFLAGS="$CXXFLAGS -fPIC"
+            LDFLAGS="$LDFLAGS -fPIC"
+        fi
       ;;
     esac
 	if test "$enable_debug" = "yes"; then

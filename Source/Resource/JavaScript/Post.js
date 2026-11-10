@@ -19,6 +19,13 @@ helpers = function() {
       if (e.target.error === null) {
         var state = _this.Open_Buffer_Continue(e.target.result);
 
+        // Bit 3 set means finalized, a request to go elsewhere is not for this parsing
+        if (state&0x08 || e.target.result.byteLength < 1) {
+          _this.Open_Buffer_Finalize();
+          typeof callback==="function"&&callback();
+          return;
+        }
+
         //Test if there is a MediaInfo request to go elsewhere
         var seekTo = _this.Open_Buffer_Continue_Goto_Get();
         if(seekTo === -1) {
@@ -29,13 +36,6 @@ helpers = function() {
         }
       } else {
         typeof callback==="function"&&callback(); // Error
-        return;
-      }
-
-      // Bit 3 set means finalized
-      if (state&0x08 || e.target.result.byteLength < 1) {
-        _this.Open_Buffer_Finalize();
-        typeof callback==="function"&&callback();
         return;
       }
       loop(CHUNK_SIZE);

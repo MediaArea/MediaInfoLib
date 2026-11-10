@@ -51,7 +51,8 @@ if [ "$1" = "--emscripten-lib" ]; then
     OS="emscripten"
     Make="emmake make"
     CFLAGS="$CFLAGS -Oz -s EMBIND_STD_STRING_IS_UTF8=1 -s DYNAMIC_EXECUTION=0"
-    CXXFLAGS="$CXXFLAGS -Oz -s EMBIND_STD_STRING_IS_UTF8=1 -s DYNAMIC_EXECUTION=0 -fno-exceptions"
+    CXXFLAGS_JavaScript="$CXXFLAGS -s EMBIND_STD_STRING_IS_UTF8=1 -s DYNAMIC_EXECUTION=0 -fno-exceptions"
+    CXXFLAGS="$CXXFLAGS_JavaScript -Oz"
     MediaInfoLib_CXXFLAGS="-I ../../../Source -I ../../../../ZenLib/Source -s USE_ZLIB=1 \
                            -DMEDIAINFO_ADVANCED_NO \
                            -DMEDIAINFO_MINIMAL_YES \
@@ -131,7 +132,9 @@ if [ "$OS" = "emscripten" ]; then
     cd MediaInfoLib/Project/GNU/Library/
     em++ $CXXFLAGS $MediaInfoLib_CXXFLAGS --bind -c ../../../Source/MediaInfoDLL/MediaInfoJS.cpp -o MediaInfoJS.o
 
-    em++ -s WASM=0 $CXXFLAGS $MediaInfoLib_CXXFLAGS -s TOTAL_MEMORY=134217728 -s NO_FILESYSTEM=1 -s MODULARIZE=1 --closure 0 \
+    # asm.js: -O2, as with -Os or -Oz Emscripten 1.x removes the imports which are not used by the WebAssembly code before converting it to
+    # asm.js, which then needs getTempRet0()
+    em++ -s WASM=0 $CXXFLAGS_JavaScript -O2 $MediaInfoLib_CXXFLAGS -s TOTAL_MEMORY=134217728 -s NO_FILESYSTEM=1 -s MODULARIZE=1 --closure 0 \
          --bind MediaInfoJS.o .libs/libmediainfo.a ../../../../ZenLib/Project/GNU/Library/.libs/libzen.a \
          --post-js ../../../Source/Resource/JavaScript/Post.js \
          -s EXPORT_NAME="'MediaInfoLib'" \
