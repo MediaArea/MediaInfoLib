@@ -1463,6 +1463,7 @@ protected :
         inline void Locators_Test() {}
     #endif //defined(MEDIAINFO_REFERENCES_YES)
     void NextRandomIndexPack();
+    void NextRandomIndexPack_GoTo(bool IsInHeader=false);
     bool BookMark_Needed();
     bool ProbeCaption_IsPossible();
 
@@ -1684,6 +1685,10 @@ protected :
     void Properties_Store(properties& Properties);
     void PrivateMetadata_Test(const int128u& UL);
     size_t                          Partitions_Pos;
+    std::vector<int64u>             Partitions_ByteCounts; //Sum of the byte counts not in the essence (partition pack with its fill, header metadata, index table segments) of the partitions before each partition, up to date for the first Partitions_ByteCounts_Valid items
+    size_t                          Partitions_ByteCounts_Valid;
+    void                            Partitions_Changed(size_t Pos); //Partition inserted, erased or with a new byte count at this position
+    int64u                          Partitions_ByteCount(size_t Count); //Sum of the byte counts of the first partitions
     bool                            Partitions_IsCalculatingHeaderByteCount;
     bool                            Partitions_IsCalculatingSdtiByteCount;
     bool                            Partitions_IsFooter;
