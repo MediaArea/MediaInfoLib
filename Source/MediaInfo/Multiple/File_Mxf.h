@@ -119,8 +119,8 @@ protected :
     size_t CompliantWith_ArdZdf_FromContent (std::string& Content); //Position of the ARD/ZDF profile matching the kind of content, (size_t)-1 if none, Content is filled with a description of the content
     #if MEDIAINFO_CONFORMANCE
     conformance_errors CompliantWith_St2067204 (conformance_errors& Warnings); //ADM Audio Track File, to be done before filling the ADM content, Warnings are filled with the recommendations not followed
-    conformance_errors CompliantWith_St20675 (conformance_errors& Warnings, bool IsTrackFile); //IMF Essence Component, with the overall constraints of IMF Track Files if IsTrackFile, Warnings are filled with the recommendations not followed
-    conformance_errors CompliantWith_St20672 (conformance_errors& Warnings); //IMF Track File, Warnings are filled with the recommendations not followed
+    conformance_errors CompliantWith_St20675 (conformance_errors& Warnings, conformance_errors* EssenceComponent_Errors=nullptr, conformance_errors* EssenceComponent_Warnings=nullptr); //IMF Essence Component with the overall constraints of IMF Track Files, Warnings are filled with the recommendations not followed, IMF Essence Component alone is checked in the same pass if EssenceComponent_Errors and EssenceComponent_Warnings are not null
+    conformance_errors CompliantWith_St20672 (conformance_errors& Warnings, conformance_errors* EssenceComponent_Errors=nullptr, conformance_errors* EssenceComponent_Warnings=nullptr); //IMF Track File, Warnings are filled with the recommendations not followed, IMF Essence Component alone is checked in the same pass if EssenceComponent_Errors and EssenceComponent_Warnings are not null
     bool CompliantWith_St20672_IsDeclared (); //SMPTE ST 2067-2 declared by the file (Channel Assignment label)
     bool CompliantWith_St20672_IsCandidate (); //Candidate for an IMF Track File (Audio or Timed Text)
     #endif //MEDIAINFO_CONFORMANCE

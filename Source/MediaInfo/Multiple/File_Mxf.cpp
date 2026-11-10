@@ -5872,7 +5872,7 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St2067204 (conformance_erro
         Errors.StreamID=Warnings.StreamID=Retrieve_Const(Stream_Audio, 0, Audio_ID).To_UTF8();
 
     //Overall Track File constraints (SMPTE ST 2067-2:2020 5.1)
-    const auto TrackFile_Errors=CompliantWith_St20675(Warnings, true);
+    const auto TrackFile_Errors=CompliantWith_St20675(Warnings);
     Errors.insert(Errors.end(), TrackFile_Errors.begin(), TrackFile_Errors.end());
 
     //Audio essence, wrapping and Wave Audio Essence Descriptor (SMPTE ST 2067-2:2020 5.3.2 to 5.3.5)
@@ -6120,10 +6120,10 @@ void File_Mxf::ContentStorage_Packages_Get (vector<int128u>& MaterialPackages, v
 }
 
 //---------------------------------------------------------------------------
-// IMF Essence Component (SMPTE ST 2067-5:2020), with the overall Track File constraints of SMPTE ST 2067-2:2020 (5.1) if IsTrackFile
+// IMF Essence Component (SMPTE ST 2067-5:2020) with the overall Track File constraints of SMPTE ST 2067-2:2020 (5.1), and in the same pass IMF Essence Component alone if EssenceComponent_Errors and EssenceComponent_Warnings are not null
 // Shim parameters are the ones of SMPTE ST 2067-2 for a Track File, else only the general provisions are checked
 // Not checked: KLV Fill of 8 KB after the Header Partition (on creation only), Generation UID in all sets (SMPTE ST 377-1 7.5.2 allows to omit it in sets not modified since the creation of the file), Descriptive Metadata schemes listed in the Preface, items of the MPEG Descriptor
-File_Mxf::conformance_errors File_Mxf::CompliantWith_St20675 (conformance_errors& Warnings, bool IsTrackFile)
+File_Mxf::conformance_errors File_Mxf::CompliantWith_St20675 (conformance_errors& Warnings, conformance_errors* EssenceComponent_Errors, conformance_errors* EssenceComponent_Warnings)
 {
     conformance_errors Errors;
     if (IsSub)
@@ -6131,45 +6131,58 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St20675 (conformance_errors
     const auto StreamID_Save=Warnings.StreamID;
     Warnings.StreamID.clear();
 
+    //Helpers for the items of both a Track File and an Essence Component, the other items are added to one list only
+    const auto IsEssenceComponent=EssenceComponent_Errors && EssenceComponent_Warnings;
+    const auto Error=[&](const string& Value) {
+        Errors.Add(Value);
+        if (IsEssenceComponent)
+            EssenceComponent_Errors->Add(Value);
+    };
+    const auto Warning=[&](const string& Value) {
+        Warnings.Add(Value);
+        if (IsEssenceComponent)
+            EssenceComponent_Warnings->Add(Value);
+    };
+
     //Instance UIDs unique in a Header Metadata (SMPTE ST 377-1), the other checks use the first set with a reused Instance UID
     if (!InstanceUID_Duplicates.empty())
-        Errors.Add("Instance UID of a set is the one of another set of the same Header Metadata (actual "+to_string(InstanceUID_Duplicates.size())+(InstanceUID_Duplicates.size()==1?" set)":" sets)"));
+        Error("Instance UID of a set is the one of another set of the same Header Metadata (actual "+to_string(InstanceUID_Duplicates.size())+(InstanceUID_Duplicates.size()==1?" set)":" sets)"));
 
     //Content Storage (Table 9)
     vector<int128u> MaterialPackages, TopLevelPackages, EssenceContainerDatas;
     ContentStorage_Packages_Get(MaterialPackages, TopLevelPackages, EssenceContainerDatas);
     if (MaterialPackages.size()!=1)
-        Errors.Add("Content Storage does not have one Material Package (actual "+to_string(MaterialPackages.size())+')');
+        Error("Content Storage does not have one Material Package (actual "+to_string(MaterialPackages.size())+')');
     if (TopLevelPackages.size()!=1)
-        Errors.Add("Content Storage does not have one Top-Level File Package (actual "+to_string(TopLevelPackages.size())+')');
+        Error("Content Storage does not have one Top-Level File Package (actual "+to_string(TopLevelPackages.size())+')');
     int64u BodySID=0, IndexSID=0;
     if (EssenceContainerDatas.size()!=1)
-        Errors.Add("Content Storage does not have one Essence Container Data (actual "+to_string(EssenceContainerDatas.size())+')');
+        Error("Content Storage does not have one Essence Container Data (actual "+to_string(EssenceContainerDatas.size())+')');
     else
     {
         const auto& EssenceContainerData=SetProperties_Get(EssenceContainerDatas[0]);
         if (!Raw_UInt_Get(Property_Get(EssenceContainerData, 0x3F07), 4, BodySID) || !BodySID)
-            Errors.Add("BodySID of the Essence Container Data is not present");
+            Error("BodySID of the Essence Container Data is not present");
         if (!Raw_UInt_Get(Property_Get(EssenceContainerData, 0x3F06), 4, IndexSID) || !IndexSID)
-            Errors.Add("IndexSID of the Essence Container Data is not present");
+            Error("IndexSID of the Essence Container Data is not present");
         else if (IndexSID==BodySID)
-            Errors.Add("IndexSID of the Essence Container Data is the BodySID (actual "+to_string(IndexSID)+')');
+            Error("IndexSID of the Essence Container Data is the BodySID (actual "+to_string(IndexSID)+')');
     }
 
     //Preface (5.1.1, 5.2.1, 5.2.2)
     const auto& Preface=SetProperties_Get(Preface_Current);
     const auto OperationalPattern=Property_Get(Preface, 0x3B09);
     if (!OperationalPattern || OperationalPattern->size()!=16 || !IsOP1a(BigEndian2int64u(OperationalPattern->data()), BigEndian2int64u(OperationalPattern->data()+8)))
-        Errors.Add("Operational Pattern is not OP1a with internal essence (actual "+(OperationalPattern?Raw_Text(*OperationalPattern):string("none"))+')');
+        Error("Operational Pattern is not OP1a with internal essence (actual "+(OperationalPattern?Raw_Text(*OperationalPattern):string("none"))+')');
     else if ((*OperationalPattern)[14]&0x0C)
-        Errors.Add("Operational Pattern qualifiers are not stream file and uni-track (actual "+Raw_Text(*OperationalPattern)+')');
+        Error("Operational Pattern qualifiers are not stream file and uni-track (actual "+Raw_Text(*OperationalPattern)+')');
     if (TopLevelPackages.size()==1)
     {
         const auto PrimaryPackage=Property_Get(Preface, 0x3B08);
         if (!PrimaryPackage)
-            Errors.Add("Primary Package of the Preface is not present");
+            Error("Primary Package of the Preface is not present");
         else if (PrimaryPackage->size()!=16 || BigEndian2int64u(PrimaryPackage->data())!=TopLevelPackages[0].hi || BigEndian2int64u(PrimaryPackage->data()+8)!=TopLevelPackages[0].lo)
-            Errors.Add("Primary Package of the Preface is not the Top-Level File Package");
+            Error("Primary Package of the Preface is not the Top-Level File Package");
     }
 
     //Tracks of the Packages (5.1.3, Table 9), Package UID (SMPTE ST 2067-2 5.1.5), Origin (SMPTE ST 2067-2 5.1.7), Filler (SMPTE ST 2067-2 5.1.8)
@@ -6190,15 +6203,15 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St20675 (conformance_errors
         {
             const auto TrackKey=SetKeys.find(Track.Track->first);
             if (TrackKey!=SetKeys.end() && TrackKey->second==Groups::StaticTrack)
-                Warnings.Add("Static Track is present");
+                Warning("Static Track is present");
             else if (TrackKey!=SetKeys.end() && TrackKey->second==Groups::EventTrack && Track.Kind!='M')
-                Errors.Add("Event Track is not a Descriptive Metadata Track");
+                Error("Event Track is not a Descriptive Metadata Track");
             if (Track.Kind=='V' || Track.Kind=='A' || Track.Kind=='D')
             {
                 EssenceTracks++;
                 EssenceTracks_Properties.push_back(Track.Properties);
             }
-            if (IsMaterialPackage || !IsTrackFile)
+            if (IsMaterialPackage) //Next tests only for a Track File
                 continue;
             int64u Origin;
             if (Raw_UInt_Get(Property_Get(*Track.Properties, 0x4B02), 8, Origin) && Origin)
@@ -6213,7 +6226,7 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St20675 (conformance_errors
                 }
         }
         if (EssenceTracks!=1)
-            Errors.Add(string(Package_Name)+" does not have one Essence Track (actual "+to_string(EssenceTracks)+')');
+            Error(string(Package_Name)+" does not have one Essence Track (actual "+to_string(EssenceTracks)+')');
         if (!IsMaterialPackage)
         {
             EssenceTrack=nullptr;
@@ -6221,13 +6234,11 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St20675 (conformance_errors
             for (const auto& Track : TopLevelPackage_Tracks)
                 if (Track.Kind=='V' || Track.Kind=='A' || Track.Kind=='D')
                     EssenceTrack=&Track;
-            if (IsTrackFile)
-            {
-                const auto PackageUID=Property_Get(SetProperties_Get(Package_UID), 0x4401);
-                const string UMID_Expected("\x06\x0A\x2B\x34\x01\x01\x01\x05\x01\x01\x0F\x20\x13\x00\x00\x00", 16);
-                if (!PackageUID || PackageUID->size()!=32 || PackageUID->compare(0, 16, UMID_Expected))
-                    Errors.Add("Package UID of the Top-Level File Package is not a basic UMID with a UUID material number (actual "+(PackageUID?Raw_Hex(PackageUID->substr(0, 16)):string("none"))+", expected "+Raw_Hex(UMID_Expected)+')');
-            }
+            //Package UID, only for a Track File
+            const auto PackageUID=Property_Get(SetProperties_Get(Package_UID), 0x4401);
+            const string UMID_Expected("\x06\x0A\x2B\x34\x01\x01\x01\x05\x01\x01\x0F\x20\x13\x00\x00\x00", 16);
+            if (!PackageUID || PackageUID->size()!=32 || PackageUID->compare(0, 16, UMID_Expected))
+                Errors.Add("Package UID of the Top-Level File Package is not a basic UMID with a UUID material number (actual "+(PackageUID?Raw_Hex(PackageUID->substr(0, 16)):string("none"))+", expected "+Raw_Hex(UMID_Expected)+')');
         }
     }
 
@@ -6247,7 +6258,7 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St20675 (conformance_errors
             Descriptor_Key=DescriptorKey;
         }
         else
-            Errors.Add("Top-Level File Package does not reference a File Descriptor");
+            Error("Top-Level File Package does not reference a File Descriptor");
     }
     const char* Wrapping="";
     auto SampleRate_IsFieldRate=false; //SMPTE ST 422 I1
@@ -6264,17 +6275,17 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St20675 (conformance_errors
                 Others++;
         }
         if (Others || VbiAnc<2)
-            Errors.Add("File Descriptor is a Multiple Descriptor without only VBI and ANC data");
+            Error("File Descriptor is a Multiple Descriptor without only VBI and ANC data");
     }
     else if (Descriptor && Descriptor->EssenceContainer.hi!=(int64u)-1)
     {
         const auto EssenceContainer=Raw_UL(Descriptor->EssenceContainer.hi, Descriptor->EssenceContainer.lo);
         if ((Descriptor->EssenceContainer.lo>>32)!=0x0D010301)
-            Errors.Add("Essence Container is not an MXF Generic Container (actual "+Raw_Hex(EssenceContainer)+')');
+            Error("Essence Container is not an MXF Generic Container (actual "+Raw_Hex(EssenceContainer)+')');
         const auto EssenceContainers=Property_Get(Preface, 0x3B0A);
         const auto EssenceContainers_Count=(EssenceContainers && EssenceContainers->size()>=8)?BigEndian2int32u(EssenceContainers->data()):0;
         if (EssenceContainers_Count!=1)
-            Errors.Add("Essence Containers of the Preface do not have one entry (actual "+to_string(EssenceContainers_Count)+')');
+            Error("Essence Containers of the Preface do not have one entry (actual "+to_string(EssenceContainers_Count)+')');
         else
         {
             //Encrypted Essence Container labels of SMPTE ST 429-6 are permitted (SMPTE ST 2067-2 5.2.4)
@@ -6283,7 +6294,7 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St20675 (conformance_errors
              && !Raw_IsSame(Preface_EssenceContainer, Raw_UL(0x060E2B3404010107LL, 0x0D010301020B0100LL))
              && !Raw_IsSame(Preface_EssenceContainer, Raw_UL(0x060E2B340401010DLL, 0x0D010301020B0200LL))
              && !Raw_IsSame(Preface_EssenceContainer, Raw_UL(0x060E2B340401010DLL, 0x0D010301020B0300LL)))
-                Errors.Add("Essence Container of the Preface is not the one of the File Descriptor (actual "+Raw_Hex(Preface_EssenceContainer)+", expected "+Raw_Hex(EssenceContainer)+')');
+                Error("Essence Container of the Preface is not the one of the File Descriptor (actual "+Raw_Hex(Preface_EssenceContainer)+", expected "+Raw_Hex(EssenceContainer)+')');
         }
         Wrapping=Mxf_EssenceContainer_Mapping(Descriptor->EssenceContainer.lo);
         if ((Descriptor->EssenceContainer.lo&0xFFFFFFFFFFFF0000LL)==Labels::MXFGCJPEG2000PictureMappings)
@@ -6302,38 +6313,38 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St20675 (conformance_errors
         {
             case Labels::MXFGCAESBWFAudio :
                 if (Descriptor_Key!=Groups::WAVEPCMDescriptor && Descriptor_Key!=Groups::AES3PCMDescriptor)
-                    Errors.Add("File Descriptor of PCM audio is not a Wave Audio Essence Descriptor");
+                    Error("File Descriptor of PCM audio is not a Wave Audio Essence Descriptor");
                 break;
             case Labels::MXFGCGenericVBIDataMappingUndefinedPayload :
                 if (Descriptor_Key!=Groups::VBIDataDescriptor)
-                    Errors.Add("File Descriptor of VBI data is not a VBI Data Descriptor");
+                    Error("File Descriptor of VBI data is not a VBI Data Descriptor");
                 break;
             case Labels::MXFGCGenericANCDataMappingUndefinedPayload :
                 if (Descriptor_Key!=Groups::ANCDataDescriptor)
-                    Errors.Add("File Descriptor of ANC data is not an ANC Data Descriptor");
+                    Error("File Descriptor of ANC data is not an ANC Data Descriptor");
                 break;
             default : ;
         }
     }
     else if (Descriptor)
-        Errors.Add("Essence Container of the File Descriptor is not present");
+        Error("Essence Container of the File Descriptor is not present");
     const auto IsFrameWrapped=!strncmp(Wrapping, "Frame", 5);
     const auto IsClipWrapped=!strncmp(Wrapping, "Clip", 4);
     const auto EssenceKind=EssenceTrack?EssenceTrack->Kind:'\0';
     if (EssenceKind=='V' && *Wrapping && !IsFrameWrapped)
-        Errors.Add(string("Picture essence is not frame-wrapped (actual ")+Wrapping+')');
+        Error(string("Picture essence is not frame-wrapped (actual ")+Wrapping+')');
     if (EssenceKind=='A' && *Wrapping && !IsClipWrapped)
-        Errors.Add(string("Audio essence is not clip-wrapped (actual ")+Wrapping+')');
+        Error(string("Audio essence is not clip-wrapped (actual ")+Wrapping+')');
     if (ContentPackage_Elements.size()>1)
-        Errors.Add("Essence Container does not contain one kind of essence element (actual "+to_string(ContentPackage_Elements.size())+')');
+        Error("Essence Container does not contain one kind of essence element (actual "+to_string(ContentPackage_Elements.size())+')');
     if (SDTI_IsPresent || SDTI_PackageMetadataSet_IsPresent)
-        Warnings.Add("System Item is present");
+        Warning("System Item is present");
     for (const auto& Set : SetKeys)
     {
         if (Set.second==Groups::NetworkLocator)
-            Warnings.Add("Network Locator is present");
+            Warning("Network Locator is present");
         if (Set.second==Groups::TextLocator)
-            Warnings.Add("Text Locator is present");
+            Warning("Text Locator is present");
     }
 
     //Edit Rate of the Essence Tracks (Table 9), the edit rate of clip-wrapped audio which is not PCM may be defined by its application (e.g. SMPTE ST 2067-201)
@@ -6367,7 +6378,7 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St20675 (conformance_errors
         {
             const auto EditRate=Property_Get(*Track_Properties, 0x4B01);
             if (EditRate && Mxf_Rational_Normalized(*EditRate)!=Mxf_Rational_Normalized(*EssenceRate) && (!EssenceRate_Other || Mxf_Rational_Normalized(*EditRate)!=Mxf_Rational_Normalized(*EssenceRate_Other)))
-                Errors.Add("Edit Rate of an Essence Track is not the "+string(EssenceRate_Name)+" (actual "+Raw_Text(*EditRate, true)+", expected "+Raw_Text(*EssenceRate, true)+(EssenceRate_Other?(" or "+Raw_Text(*EssenceRate_Other, true)):string())+')');
+                Error("Edit Rate of an Essence Track is not the "+string(EssenceRate_Name)+" (actual "+Raw_Text(*EditRate, true)+", expected "+Raw_Text(*EssenceRate, true)+(EssenceRate_Other?(" or "+Raw_Text(*EssenceRate_Other, true)):string())+')');
         }
 
     //Partitions (5.1.1, 5.1.5, 5.2.5, 5.3)
@@ -6376,9 +6387,9 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St20675 (conformance_errors
     vector<const partition*> EssencePartitions;
     set<int32u> KAGSizes;
     if (!HeaderPartition)
-        Errors.Add("Header Partition is missing");
+        Error("Header Partition is missing");
     else if (HeaderPartition->StreamOffset)
-        Errors.Add("Header Partition does not start at the first byte of the file (actual offset "+to_string(HeaderPartition->StreamOffset)+')');
+        Error("Header Partition does not start at the first byte of the file (actual offset "+to_string(HeaderPartition->StreamOffset)+')');
     for (const auto& Partition : Partitions)
     {
         if (Partition.KAGSize!=1)
@@ -6398,22 +6409,22 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St20675 (conformance_errors
         if (Partition.BodySID)
             Content_Add(Partition.Status==0x11?"Generic Stream":"Essence");
         if (Content_Count>1)
-            Errors.Add("Partition does not contain one kind of data (actual "+Content+" in the Partition at offset "+to_string(Partition.StreamOffset)+')');
+            Error("Partition does not contain one kind of data (actual "+Content+" in the Partition at offset "+to_string(Partition.StreamOffset)+')');
         if (BodySID && Partition.BodySID==BodySID && Partition.Status!=0x11)
             EssencePartitions.push_back(&Partition);
     }
     if (!KAGSizes.empty())
-        Errors.Add("KAG size is not 1 (actual "+to_string(*KAGSizes.begin())+')');
+        Error("KAG size is not 1 (actual "+to_string(*KAGSizes.begin())+')');
     if ((!HeaderPartition || HeaderPartition->Status!=0x04) && (!FooterPartition || FooterPartition->Status!=0x04))
-        Errors.Add("Header Partition and Footer Partition are not Closed Complete");
+        Error("Header Partition and Footer Partition are not Closed Complete");
     if (!FooterPartition)
-        Errors.Add("Footer Partition is missing");
+        Error("Footer Partition is missing");
     else if (FooterPartition->HeaderByteCount && FooterPartition->Status!=0x04)
-        Errors.Add("Footer Partition with Header Metadata is not Closed Complete");
+        Error("Footer Partition with Header Metadata is not Closed Complete");
     if (!RandomIndexPacks_AlreadyParsed)
-        Errors.Add("Random Index Pack is missing");
+        Error("Random Index Pack is missing");
     if (IsClipWrapped && EssencePartitions.size()!=1)
-        Errors.Add("Clip-wrapped essence is not in one Partition (actual "+to_string(EssencePartitions.size())+')');
+        Error("Clip-wrapped essence is not in one Partition (actual "+to_string(EssencePartitions.size())+')');
 
     //Index Tables (5.1.1, 5.1.6 to 5.1.8)
     int64u Duration=(int64u)-1;
@@ -6438,11 +6449,11 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St20675 (conformance_errors
             IndexDuration+=Segment_IndexDuration;
     }
     if (IndexSID && !IndexSegments)
-        Errors.Add("Index Table is missing");
+        Error("Index Table is missing");
     else if (IndexSegments && !IsCbe && IsFrameWrapped && Duration!=(int64u)-1 && IndexDuration!=Duration) //Clip-wrapped essence may have one entry (e.g. SMPTE ST 429-5)
-        Errors.Add("Index Table does not index all edit units (actual "+to_string(IndexDuration)+", expected "+to_string(Duration)+')');
+        Error("Index Table does not index all edit units (actual "+to_string(IndexDuration)+", expected "+to_string(Duration)+')');
     if (IndexSegments && !IsCbe && Descriptor && (Descriptor->EssenceContainer.lo&0xFFFFFFFFFFFF0000LL)==Labels::MXFGCAESBWFAudio)
-        Errors.Add("Index Table of constant bitrate audio is not a calculated one");
+        Error("Index Table of constant bitrate audio is not a calculated one");
 
     //Edit Unit at the start of each essence partition, from the first Index Table indexing its Body Offset
     vector<int64u> EssencePartitions_Starts;
@@ -6519,25 +6530,30 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St20675 (conformance_errors
         }
     #endif //MEDIAINFO_SEEK
 
-    //Regular partitioning of frame-wrapped essence (5.1.5), every 60 s with a tolerance of 6 s except the last Body Partition (SMPTE ST 2067-2 5.1.3)
+    //Regular partitioning of frame-wrapped essence (5.1.5), every 60 s with a tolerance of 6 s except the last Body Partition for a Track File (SMPTE ST 2067-2 5.1.3)
     const auto EditRate=EssenceTrack?EssenceTrack->Track->second.EditRate:0;
     if (IsFrameWrapped && EditRate>0 && Duration!=(int64u)-1 && !EssencePartitions_Starts.empty() && is_sorted(EssencePartitions_Starts.begin(), EssencePartitions_Starts.end()) && EssencePartitions_Starts.back()<=Duration)
     {
         vector<float64> Spacings; //Duration of each essence partition, in seconds
         for (size_t i=0; i<EssencePartitions_Starts.size(); i++)
             Spacings.push_back(((i+1<EssencePartitions_Starts.size()?EssencePartitions_Starts[i+1]:Duration)-EssencePartitions_Starts[i])/EditRate);
-        const auto Period=IsTrackFile?60.0:Spacings[0];
-        const auto Tolerance=IsTrackFile?6.0:min(1.0, Period/10);
-        for (size_t i=0; i<Spacings.size(); i++)
-            if ((i+1<Spacings.size() && Spacings[i]<Period-Tolerance) || Spacings[i]>Period+Tolerance)
-            {
-                Errors.Add(string(IsTrackFile?"Body Partitions do not occur every 54 to 66 s":"Body Partitions are not regularly spaced")+" (actual "+Ztring::ToZtring(Spacings[i], 3).To_UTF8()+" s for the Partition at offset "+to_string(EssencePartitions[i]->StreamOffset)+')');
-                break;
-            }
+        const auto Spacings_Test=[&](conformance_errors& List, bool IsTrackFile) {
+            const auto Period=IsTrackFile?60.0:Spacings[0];
+            const auto Tolerance=IsTrackFile?6.0:min(1.0, Period/10);
+            for (size_t i=0; i<Spacings.size(); i++)
+                if ((i+1<Spacings.size() && Spacings[i]<Period-Tolerance) || Spacings[i]>Period+Tolerance)
+                {
+                    List.Add(string(IsTrackFile?"Body Partitions do not occur every 54 to 66 s":"Body Partitions are not regularly spaced")+" (actual "+Ztring::ToZtring(Spacings[i], 3).To_UTF8()+" s for the Partition at offset "+to_string(EssencePartitions[i]->StreamOffset)+')');
+                    break;
+                }
+        };
+        Spacings_Test(Errors, true);
+        if (IsEssenceComponent)
+            Spacings_Test(*EssenceComponent_Errors, false);
     }
 
-    //Index Table Segments after the essence they index (SMPTE ST 2067-2 5.1.4)
-    if (IsTrackFile && !EssencePartitions.empty())
+    //Index Table Segments after the essence they index (SMPTE ST 2067-2 5.1.4), only for a Track File
+    if (!EssencePartitions.empty())
     {
         //Essence partition of an Edit Unit, as a scan from the first one finds it (starts may be not sorted): the one before the first of the next ones starting after the Edit Unit, found in the running maximum of the starts of the next ones
         vector<int64u> NextStarts_Max;
@@ -6564,9 +6580,9 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St20675 (conformance_errors
 //---------------------------------------------------------------------------
 // IMF Track File (SMPTE ST 2067-2:2020 clause 5): overall constraints, then constraints of Image, Audio, Timed Text and Ancillary Data Track Files
 // Not checked: Document Instance of Timed Text (profile, TimedTextResourceID, languages, image and font resources and their Ancillary Resource ID), payload of CDP Track Files
-File_Mxf::conformance_errors File_Mxf::CompliantWith_St20672 (conformance_errors& Warnings)
+File_Mxf::conformance_errors File_Mxf::CompliantWith_St20672 (conformance_errors& Warnings, conformance_errors* EssenceComponent_Errors, conformance_errors* EssenceComponent_Warnings)
 {
-    auto Errors=CompliantWith_St20675(Warnings, true);
+    auto Errors=CompliantWith_St20675(Warnings, EssenceComponent_Errors, EssenceComponent_Warnings);
     if (IsSub)
         return Errors;
 
@@ -8901,9 +8917,8 @@ void File_Mxf::Streams_Finish_CompliantWith ()
     #if MEDIAINFO_CONFORMANCE
         if (CompliantWith_St20672_IsTested())
         {
-            conformance_errors TrackFile_Warnings, EssenceComponent_Warnings;
-            const auto TrackFile_Errors=CompliantWith_St20672(TrackFile_Warnings);
-            const auto EssenceComponent_Errors=CompliantWith_St20675(EssenceComponent_Warnings, false);
+            conformance_errors TrackFile_Warnings, EssenceComponent_Errors, EssenceComponent_Warnings;
+            const auto TrackFile_Errors=CompliantWith_St20672(TrackFile_Warnings, &EssenceComponent_Errors, &EssenceComponent_Warnings); //IMF Essence Component alone checked in the same pass
             const auto IsDeclared=CompliantWith_St20672_IsDeclared();
             if (TrackFile_Errors.empty() && (St20672_IsRequested || !IsDeclared))
                 Fill(Stream_General, 0, General_CompliantWith, "SMPTE_ST_2067-2");
