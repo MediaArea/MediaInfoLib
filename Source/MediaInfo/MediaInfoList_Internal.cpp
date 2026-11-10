@@ -146,7 +146,7 @@ size_t MediaInfoList_Internal::Open(const String &File_Name, const fileoptions_t
     else
     {
         Entry(); //Normal parsing
-        return Count_Get();
+        return CountValid;
     }
 }
 
@@ -231,6 +231,8 @@ void MediaInfoList_Internal::Entry()
             }
             CS.Enter();
             ToParse_AlreadyDone++;
+            if (MI->Count_Get(Stream_General))
+                CountValid++;
 
             #if defined(MEDIAINFO_FILE_YES)
                 //Removing sequences of files from the list
