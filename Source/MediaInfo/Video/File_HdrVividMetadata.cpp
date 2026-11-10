@@ -69,6 +69,7 @@ namespace MediaInfoLib
 bool File_HdrVividMetadata::FileHeader_Begin()
 {
     if (!IsSub && File_Size != (int64u)-1 && Buffer_Size < File_Size) {
+        FileHeader_Begin_XML_Start(); //Rejected as soon as it is not XML
         return false;
     }
 

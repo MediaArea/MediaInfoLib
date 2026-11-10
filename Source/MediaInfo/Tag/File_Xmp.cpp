@@ -167,7 +167,8 @@ namespace MediaInfoLib
 bool File_Xmp::FileHeader_Begin()
 {
     if (Wait || (!IsSub && Buffer_Size < File_Size)) {
-        Element_WaitForMoreData();
+        if (FileHeader_Begin_XML_Start() != (size_t)-1) //Rejected as soon as it is not XML
+            Element_WaitForMoreData();
         return false;
     }
 
