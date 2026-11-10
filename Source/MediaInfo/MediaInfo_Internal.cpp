@@ -1524,6 +1524,10 @@ void MediaInfo_Internal::Entry()
             Open_Buffer_Finalize();
         }
     #endif //MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES) && !defined(WINDOWS_UWP) && !defined(__BORLANDC__)
+    #if defined(MEDIAINFO_FILE_YES)
+        else
+            MediaInfoLib::Config.Log_Send(0xC0, 0xFF, 0, __T("File not found: ")+Config.File_Names[0]);
+    #endif //MEDIAINFO_FILE_YES
 
     Config.State_Set(1);
 }
