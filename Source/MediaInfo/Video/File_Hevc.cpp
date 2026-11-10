@@ -338,56 +338,7 @@ void File_Hevc::Streams_Fill()
     Fill(Stream_Video, 0, Video_Encoded_Library_Settings, Encoded_Library_Settings);
 
     //Merge info about different HDR formats
-    auto HDR_Format=HDR.find(Video_HDR_Format);
-    if (HDR_Format!=HDR.end())
-    {
-        bitset<HdrFormat_Max> HDR_Present;
-        size_t HDR_FirstFormatPos=(size_t)-1;
-        for (size_t i=0; i<HdrFormat_Max; i++)
-            if (!HDR_Format->second[i].empty())
-            {
-                if (HDR_FirstFormatPos==(size_t)-1)
-                    HDR_FirstFormatPos=i;
-                HDR_Present[i]=true;
-            }
-        bool LegacyStreamDisplay=MediaInfoLib::Config.LegacyStreamDisplay_Get();
-        for (const auto& HDR_Item: HDR)
-        {
-            size_t i=HDR_FirstFormatPos;
-            size_t HDR_FirstFieldNonEmpty=(size_t)-1;
-            if (HDR_Item.first>Video_HDR_Format_Compatibility)
-            {
-                for (; i<HdrFormat_Max; i++)
-                {
-                    if (!HDR_Present[i])
-                        continue;
-                    if (HDR_FirstFieldNonEmpty==(size_t)-1 && !HDR_Item.second[i].empty())
-                        HDR_FirstFieldNonEmpty=i;
-                    if (!HDR_Item.second[i].empty() && HDR_Item.second[i]!=HDR_Item.second[HDR_FirstFieldNonEmpty])
-                        break;
-                }
-            }
-            if (i==HdrFormat_Max && HDR_FirstFieldNonEmpty!=(size_t)-1)
-                Fill(Stream_Video, 0, HDR_Item.first, HDR_Item.second[HDR_FirstFieldNonEmpty]);
-            else
-            {
-                ZtringList Value;
-                Value.Separator_Set(0, __T(" / "));
-                if (i!=HdrFormat_Max)
-                    for (i=HDR_FirstFormatPos; i<HdrFormat_Max; i++)
-                    {
-                        if (!LegacyStreamDisplay && HDR_FirstFormatPos!=HdrFormat_SmpteSt2086 && i>=HdrFormat_SmpteSt2086)
-                            break;
-                        if (!HDR_Present[i])
-                            continue;
-                        Value.push_back(HDR_Item.second[i]);
-                    }
-                auto Value_Flat = Value.Read();
-                if (!Value.empty() && Value_Flat.size() > (Value.size() - 1) * 3)
-                    Fill(Stream_Video, 0, HDR_Item.first, Value.Read());
-            }
-        }
-    }
+    Fill_HDR(HDR);
     if (!EtsiTS103433.empty())
     {
         Fill(Stream_Video, 0, "EtsiTS103433", EtsiTS103433);

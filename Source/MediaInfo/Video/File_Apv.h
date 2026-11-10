@@ -84,13 +84,6 @@ private :
     int32u  au_size{};
     FrameInfo frame_info_Current;
     int32u PosTiles{};
-    enum hdr_format
-    {
-        HdrFormat_SmpteSt209440,
-        HdrFormat_SmpteSt2086,
-        HdrFormat_Max,
-    };
-    typedef std::map<video, Ztring[HdrFormat_Max]> hdr;
     hdr     HDR;
     Ztring  maximum_content_light_level;
     Ztring  maximum_frame_average_light_level;

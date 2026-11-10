@@ -805,7 +805,7 @@ public :
     };
     void Get_MasteringDisplayColorVolume(Ztring &MasteringDisplay_ColorPrimaries, Ztring &MasteringDisplay_Luminance, mastering_metadata_2086 &Meta, bool FromAV1=false);
     #endif
-    #if defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AV2_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MK_YES) || defined(MEDIAINFO_T35_YES)
+    #if defined(MEDIAINFO_APV_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AV2_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MK_YES) || defined(MEDIAINFO_T35_YES)
     // HDR formats of a video stream, in display order, from the stream and from the ITU-T T.35 messages it carries
     enum hdr_format
     {
@@ -817,6 +817,7 @@ public :
         HdrFormat_Max,
     };
     typedef std::map<video, Ztring[HdrFormat_Max]> hdr;
+    void Fill_HDR(const hdr& HDR, size_t StreamPos=0); //Fills the HDR fields of a video stream from its HDR formats, a value common to all formats is shown once, else the values are aligned with " / "
     #endif
     #if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES)
     void Get_AmbientViewingEnvironment(float64& AmbientViewingEnvironment_Illuminance, Ztring& AmbientViewingEnvironment_Illuminance_string, Ztring& AmbientViewingEnvironment_Chromaticity);
