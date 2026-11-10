@@ -435,6 +435,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Archive\File_Rar.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Archive\File_Tar.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Archive\File_Zip.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Audio\Auro.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Aac.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Ac3.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Ac4.cpp" />
@@ -891,6 +892,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Archive\File_Rar.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Archive\File_Tar.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Archive\File_Zip.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Audio\Auro.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Aac.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Ac3.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Ac4.h" />

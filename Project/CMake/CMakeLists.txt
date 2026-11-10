@@ -169,6 +169,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Archive/File_Rar.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Archive/File_Tar.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Archive/File_Zip.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/Auro.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Aac.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Aac_GeneralAudio.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Audio/File_Aac_GeneralAudio_Sbr.cpp

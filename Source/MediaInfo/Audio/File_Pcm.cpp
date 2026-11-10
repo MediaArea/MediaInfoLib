@@ -23,6 +23,8 @@
 //---------------------------------------------------------------------------
 #include "MediaInfo/Audio/File_Pcm.h"
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
+#include "MediaInfo/Audio/Auro.h"
+#include <cstring>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -87,6 +89,7 @@ File_Pcm::File_Pcm()
     Sign='\0';
 
     //Temp
+    Auro_Detected=false;
     #if MEDIAINFO_CONFORMANCE
     IsNotSilence=false;
     #endif
@@ -257,6 +260,9 @@ void File_Pcm::Streams_Finish()
     Frame_Count=(int64u)-1;
     Frame_Count_NotParsedIncluded=(int64u)-1;
 
+    if (!Auro_Detected)
+        Auro_Detect(); //Less than the wanted duration was parsed
+
     #if MEDIAINFO_CONFORMANCE
     if (Config->ParseSpeed>=1 && !IsNotSilence)
     {
@@ -264,6 +270,23 @@ void File_Pcm::Streams_Finish()
         Fill(Stream_Audio, 0, "ConformanceInfos Content", "Content is silence");
     }
     #endif
+}
+
+//***************************************************************************
+// Auro-3D
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+void File_Pcm::Auro_Detect()
+{
+    Auro_Detected=true;
+    if (Channels && Auro_Buffer.size()>=1000*3*(size_t)Channels)
+    {
+        std::string layout=Auro_DetectInPcm24Le((const unsigned char*)Auro_Buffer.data(), Auro_Buffer.size(), Channels);
+        if (!layout.empty())
+            Fill(Stream_Audio, 0, Audio_Format_Commercial_IfAny, Ztring(__T("Auro-3D ("))+Ztring().From_UTF8(layout)+__T(")"));
+    }
+    std::vector<int8u>().swap(Auro_Buffer); //Memory is freed
 }
 
 //***************************************************************************
@@ -443,6 +466,26 @@ void File_Pcm::Data_Parse()
         Frame_Count++;
         if (Frame_Count_NotParsedIncluded!=(int64u)-1)
             Frame_Count_NotParsedIncluded++;
+    }
+    if (BitDepth==24 && Channels && (Endianness=='L' || !Endianness) && !Auro_Detected && Element_Size)
+    {
+        const size_t frame_bytes=3*(size_t)Channels;
+        if ((size_t)Element_Size%frame_bytes==0)
+        {
+            //About 2 seconds of audio are enough (Auro-3D data repeats about 50 times per second), detection done once on them
+            size_t target_size=frame_bytes*(SamplingRate?SamplingRate*2:96000);
+            const size_t max_auro_buffer=4*1024*1024;
+            if (target_size>max_auro_buffer)
+                target_size=max_auro_buffer/frame_bytes*frame_bytes;
+            size_t old_size=Auro_Buffer.size();
+            size_t to_add=(size_t)Element_Size;
+            if (to_add>target_size-old_size)
+                to_add=target_size-old_size;
+            Auro_Buffer.resize(old_size+to_add);
+            std::memcpy(Auro_Buffer.data()+old_size, Buffer+Buffer_Offset, to_add);
+            if (Auro_Buffer.size()>=target_size)
+                Auro_Detect();
+        }
     }
     if ((!Status[IsAccepted] && Frame_Count>=Frame_Count_Valid) || File_Offset+Buffer_Size>=File_Size)
     {
