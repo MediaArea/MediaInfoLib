@@ -1685,6 +1685,30 @@ void File_Exif::Streams_Finish()
                 }
                 break;
             }
+            case IFD0::Rating: {
+                Parameter = (size_t)-1;
+                const auto Rating = Item.second.Read();
+                const auto Stars = Rating.To_int16u();
+                if (Stars >= 1 && Stars <= 5)
+                    Fill_Rating(Stream_General, 0, Stars, Rating, 5);
+                break;
+            }
+            case IFD0::RatingPercent: {
+                Parameter = (size_t)-1;
+                if (Infos_Image.find(IFD0::Rating) != Infos_Image.end())
+                    break; //Windows writes both, the stars are in Rating
+                const auto Rating = Item.second.Read();
+                const auto Percent = Rating.To_int16u();
+                if (Percent && Percent <= 100) {
+                    //Stars as Windows shows them (1, 25, 50, 75, 99)
+                    const int8u Limits[] = { 12, 37, 62, 87 };
+                    int8u Stars = 1;
+                    while (Stars < 5 && Percent > Limits[Stars - 1])
+                        Stars++;
+                    Fill_Rating(Stream_General, 0, Stars, Rating, 100);
+                }
+                break;
+            }
             case IFD0::WinExpTitle: Parameter = General_Title; break;
             case IFD0::WinExpComment: Parameter = General_Comment; break;
             case IFD0::WinExpAuthor: Parameter = General_Performer; break;

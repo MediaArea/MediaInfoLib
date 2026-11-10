@@ -509,6 +509,13 @@ void File_Xmp::xmp(const string& name, const string& value)
         Fill(Stream_General, 0, General_Keywords, value, true, true);
     if (name == "xmp:Producer")
         Fill(Stream_General, 0, General_Encoded_Library, value, true, true);
+    if (name == "xmp:Rating") {
+        //-1 (rejected) and 0 (not rated) are not shown
+        const auto Rating = Ztring().From_UTF8(value);
+        const auto Stars = Rating.To_float64();
+        if (Stars > 0 && Stars <= 5)
+            Fill_Rating(Stream_General, 0, Stars, Rating, 5);
+    }
 }
 
 //---------------------------------------------------------------------------
