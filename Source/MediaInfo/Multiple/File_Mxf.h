@@ -107,6 +107,7 @@ protected :
     void Streams_Finish_Essence_FillID (int32u EssenceUID, int128u TrackUID);
     void Streams_Finish_Descriptor (const int128u DescriptorUID, const int128u PackageUID);
     void Streams_Finish_Locator (const int128u DescriptorUID, const int128u LocatorUID);
+    void Fill_PreChargeRollOut(stream_t StreamKind, size_t StreamPos, int64u PreCharge, int64u RollOut);
     void Streams_Finish_Component (const int128u ComponentUID, float64 EditRate, int32u TrackID, int64s Origin);
     void Streams_Finish_Component_ForTimeCode (const int128u ComponentUID, float64 EditRate, int32u TrackID, int64s Origin, bool IsSourcePackage, const Ztring& TrackName);
     void Streams_Finish_Component_ForAS11 (const int128u ComponentUID, float64 EditRate, int32u TrackID, int64s Origin);
@@ -1213,6 +1214,7 @@ protected :
         };
         std::vector<value> Values;
         size_t StreamPos = (size_t)-1;
+        int64u PreCharge = 0; //Origin of the track, the first time code of the content is after it
     };
     typedef std::map<int128u, timecodecache> timecodecaches; //Key is InstanceUID of the timecode
     timecodecaches TimecodeCaches;
@@ -1474,6 +1476,7 @@ protected :
     int32u PartitionMetadata_BodySID;
     int64u RandomIndexPacks_MaxOffset;
     mxftimecode MxfTimeCodeForDelay;
+    int64u MxfTimeCodeForDelay_PreCharge; //The delay is the one of the content, after the precharge
     mxftimecode MxfTimeCodeMaterial;
     float64 DTS_Delay; //In seconds
     TimeCode            SDTI_TimeCode_StartTimecode;
@@ -1816,6 +1819,12 @@ protected :
     #endif
     bool IsArriExperimental = false;
         
+    //Rollout, end of the essence according to the index tables
+    int64u IndexStartPositionIndexDuration_Max;
+    int64u IndexStartPosition_Current;
+    int64u IndexDuration_Current;
+    float64 IndexEditRate;
+
     //Demux
     #if MEDIAINFO_DEMUX
         bool Demux_HeaderParsed;
