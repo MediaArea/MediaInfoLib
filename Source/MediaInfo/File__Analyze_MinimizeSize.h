@@ -289,6 +289,23 @@ protected :
     size_t Data_Remain ()                                                       {return (size_t)(Element_Size-(Element_Offset+BS->Offset_Get()));};
     size_t Data_BS_Remain ()                                                    {return (size_t)BS->Remain();};
 
+    //Data - Bitstream bookmark: parsing limited to a part of known size, then position after this part whatever its parsing did, errors in it make only this part not valid
+    struct bs_bookmark
+    {
+        BitStream_Fast              BS_Save;
+        int64u                      Element_Offset;
+        int64u                      Element_Size;
+        size_t                      Trusted;
+        size_t                      NewSize;
+        size_t                      End;
+        int8u                       BitsNotIncluded;
+        bool                        UnTrusted;
+        bool                        Synched;
+    };
+    bs_bookmark BS_Bookmark(size_t NewSize);
+    bool        BS_Bookmark(bs_bookmark& B); //Returns true if the part is not valid
+    bool        BS_Bookmark_Restore(bs_bookmark& B); //Same without the check of the end of the part, for parsers checking it themselves
+
     //Data - Loops
     void Loop_CheckValue(int64u& Value, int64u RemainingSize, int64u MinBlockSize, const char* Name);
     template<typename T> void Loop_CheckValue(T& Value, int64u RemainingSize, int64u MinBlockSize, const char* Name) {int64u Value2=Value; Loop_CheckValue(Value2, RemainingSize, MinBlockSize, Name); Value=(T)Value2;}
