@@ -620,6 +620,7 @@ private :
     rawcookedtrack RawcookedTrack_Data;
     const int8u* Rawcooked_Compressed_Save_Buffer{};
     size_t Rawcooked_Compressed_Save_Buffer_Offset{};
+    size_t Rawcooked_Compressed_Save_Buffer_Size{};
     int64u Rawcooked_Compressed_Save_Element_Offset{};
     int64u Rawcooked_Compressed_Save_Element_Size{};
     bool   Trace_Activated_Save;

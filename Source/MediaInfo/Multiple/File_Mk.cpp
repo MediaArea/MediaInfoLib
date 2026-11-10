@@ -2569,7 +2569,9 @@ bool File_Mk::Rawcooked_Compressed_Start(rawcookedtrack::mask* Mask, bool UseMas
         Rawcooked_Compressed_Save_Buffer_Offset=Buffer_Offset;
         Buffer_Offset=0;
         Rawcooked_Compressed_Save_Buffer=Buffer;
+        Rawcooked_Compressed_Save_Buffer_Size=Buffer_Size;
         Buffer=Dest;
+        Buffer_Size=(size_t)Dest_Size; //The bytes after the end of the copy are not readable
         Rawcooked_Compressed_Save_Element_Size=Element_Size;
         Element_Size=Dest_Size;
         Rawcooked_Compressed_Save_Element_Offset=Element_Offset;
@@ -2593,6 +2595,7 @@ void File_Mk::Rawcooked_Compressed_End(rawcookedtrack::mask* Mask, bool UseMask)
         delete[] Buffer; //Buffer=NULL;
     Buffer=Rawcooked_Compressed_Save_Buffer;
     Buffer_Offset=Rawcooked_Compressed_Save_Buffer_Offset;
+    Buffer_Size=Rawcooked_Compressed_Save_Buffer_Size;
     Element_Size=Rawcooked_Compressed_Save_Element_Size;
     Element_Offset=Element_Size;
     File_Offset-=Buffer_Offset+Rawcooked_Compressed_Save_Element_Offset;
@@ -3161,6 +3164,7 @@ void File_Mk::Segment_Cluster_BlockGroup_Block_Lace()
         const int8u* Save_Buffer=Buffer;
         int64u Save_File_Offset=File_Offset;
         size_t Save_Buffer_Offset=Buffer_Offset;
+        size_t Save_Buffer_Size=Buffer_Size;
         int64u Save_Element_Size=Element_Size;
         size_t Save_Element_Offset=(size_t)Element_Offset;
         if (streamItem.ContentCompAlgo==3) //Header Stripping
@@ -3173,6 +3177,7 @@ void File_Mk::Segment_Cluster_BlockGroup_Block_Lace()
             std::memcpy(Buffer_Stripping, streamItem.ContentCompSettings_Buffer, streamItem.ContentCompSettings_Buffer_Size);
             std::memcpy(Buffer_Stripping+streamItem.ContentCompSettings_Buffer_Size, Save_Buffer+Save_Buffer_Offset+Save_Element_Offset, Save_Element_Size-Save_Element_Offset);
             Buffer=Buffer_Stripping;
+            Buffer_Size=(size_t)Element_Size; //The bytes after the end of the copy are not readable
         }
 
         //Parsing
@@ -3220,6 +3225,7 @@ void File_Mk::Segment_Cluster_BlockGroup_Block_Lace()
             Element_Size=Save_Element_Size;
             File_Offset=Save_File_Offset;
             Buffer_Offset=Save_Buffer_Offset;
+            Buffer_Size=Save_Buffer_Size;
             delete[] Buffer; Buffer=Save_Buffer;
         }
     }

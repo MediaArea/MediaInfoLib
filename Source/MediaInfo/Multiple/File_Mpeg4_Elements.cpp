@@ -3061,9 +3061,11 @@ void File_Mpeg4::meta_iloc()
         {
             const int8u* Buffer_Save=Buffer;
             size_t Buffer_Offset_Save=Buffer_Offset;
+            size_t Buffer_Size_Save=Buffer_Size;
             int64u Element_Size_Save=Element_Size;
             Buffer=meta_idat_Buffer.data();
             Buffer_Offset=0;
+            Buffer_Size=meta_idat_Buffer.size(); //The bytes after the end of the copy are not readable
             Element_Offset=0;
             Element_Size=meta_idat_Buffer.size();
             Element_Begin0();
@@ -3071,6 +3073,7 @@ void File_Mpeg4::meta_iloc()
             Element_End0();
             Buffer=Buffer_Save;
             Buffer_Offset=Buffer_Offset_Save;
+            Buffer_Size=Buffer_Size_Save;
             Element_Offset=Element_Size_Save;
             Element_Size=Element_Size_Save;
         }

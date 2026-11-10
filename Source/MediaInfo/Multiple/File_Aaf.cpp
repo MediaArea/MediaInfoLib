@@ -472,6 +472,7 @@ void File_Aaf::StreamElement_Parse()
     const int8u* Save_Buffer=Buffer;
     int64u Save_File_Offset=File_Offset;
     size_t Save_Buffer_Offset=Buffer_Offset;
+    size_t Save_Buffer_Size=Buffer_Size;
     int64u Save_Element_Size=Element_Size;
 
     if (Streams[Streams_Pos]->Buffer)
@@ -481,6 +482,7 @@ void File_Aaf::StreamElement_Parse()
         File_Offset=Streams[Streams_Pos]->StreamOffsets[0];
         Buffer_Offset=0;
         Buffer=Streams[Streams_Pos]->Buffer;
+        Buffer_Size=(size_t)Element_Size; //The bytes after the end of the copy are not readable
     }
 
     //Parsing
@@ -538,6 +540,7 @@ void File_Aaf::StreamElement_Parse()
         Element_Size=Save_Element_Size;
         File_Offset=Save_File_Offset;
         Buffer_Offset=Save_Buffer_Offset;
+        Buffer_Size=Save_Buffer_Size;
         delete[] Buffer; Buffer=Save_Buffer;
         Element_Offset=Element_Size;
     }
