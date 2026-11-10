@@ -75,9 +75,6 @@
     <Filter Include="ThirdParty\base64">
       <UniqueIdentifier>{d307708b-372c-475a-98e6-a76965d555ac}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ThirdParty\tinyxml2">
-      <UniqueIdentifier>{5b70a9dd-eddc-44ba-bce4-35d86e77acdb}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ThirdParty\md5">
       <UniqueIdentifier>{c54702a2-93da-4abd-8766-43f9f80731c2}</UniqueIdentifier>
     </Filter>
@@ -629,8 +626,8 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Hls.cpp">
       <Filter>Source Files\Multiple</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\Source\ThirdParty\tinyxml2\tinyxml2.cpp">
-      <Filter>ThirdParty\tinyxml2</Filter>
+    <ClCompile Include="..\..\..\Source\ThirdParty\tfsxml\tfsxml_tinyxml2.cpp">
+      <Filter>ThirdParty\tfsxml</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\MediaInfo\Audio\File_Opus.cpp">
       <Filter>Source Files\Audio</Filter>
@@ -1411,8 +1408,8 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Hls.h">
       <Filter>Header Files\Multiple</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Source\ThirdParty\tinyxml2\tinyxml2.h">
-      <Filter>ThirdParty\tinyxml2</Filter>
+    <ClInclude Include="..\..\..\Source\ThirdParty\tfsxml\tfsxml_tinyxml2.h">
+      <Filter>ThirdParty\tfsxml</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Opus.h">
       <Filter>Header Files\Audio</Filter>

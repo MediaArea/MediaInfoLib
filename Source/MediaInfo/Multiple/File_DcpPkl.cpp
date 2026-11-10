@@ -32,7 +32,7 @@
 #include "ZenLib/File.h"
 #endif //defined(MEDIAINFO_REFERENCES_YES)
 #include "ZenLib/FileName.h"
-#include "tinyxml2.h"
+#include "ThirdParty/tfsxml/tfsxml_tinyxml2.h"
 using namespace tinyxml2;
 //---------------------------------------------------------------------------
 

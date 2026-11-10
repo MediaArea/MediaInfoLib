@@ -245,7 +245,6 @@ AC_ARG_WITH(libmd5,               AS_HELP_STRING([--with-libmd5],               
 AC_ARG_WITH(libsha1,              AS_HELP_STRING([--with-libsha1],              [Use libsha1 (system)]),                      , with_libsha1=depend)
 AC_ARG_WITH(libsha2,              AS_HELP_STRING([--with-libsha2],              [Use libsha2 (system)]),                      , with_libsha2=depend)
 AC_ARG_WITH(libhmac,              AS_HELP_STRING([--with-libhmac],              [Use libhmac (system)]),                      , with_libhmac=depend)
-AC_ARG_WITH(libtinyxml2,          AS_HELP_STRING([--with-libtinyxml2],          [Use libtinyxml2 (system)]),                  , with_libtinyxml2=depend)
 AC_ARG_WITH(libmediainfo-name,    AS_HELP_STRING([--with-libmediainfo-name],    [Force libmediainfo filename]),               , with_libmediainfo_name=mediainfo)
 
 dnl -------------------------------------------------------------------------
@@ -874,23 +873,6 @@ else
 fi
 
 dnl -------------------------------------------------------------------------
-dnl libtinyxml2
-dnl
-if test "$with_libtinyxml2" = "yes"; then
-	PKG_CHECK_MODULES([TINYXML2], [tinyxml2])
-	CXXFLAGS="$CXXFLAGS $TINYXML2_CXXFLAGS"
-	MediaInfoLib_CXXFLAGS="$MediaInfoLib_CXXFLAGS $TINYXML2_CXXFLAGS"
-	LIBS="$LIBS $TINYXML2_LIBS"
-	MediaInfoLib_LIBS="$MediaInfoLib_LIBS $TINYXML2_LIBS"
-	AM_CONDITIONAL(COMPILE_TINYXML2, false)
-	using_libtinyxml2="system"
-else
-	CXXFLAGS="$CXXFLAGS -I../../../Source/ThirdParty/tinyxml2"
-	using_libtinyxml2="internal"
-	AM_CONDITIONAL(COMPILE_TINYXML2, true)
-fi
-
-dnl -------------------------------------------------------------------------
 dnl libmediainfo-name
 dnl
 MediaInfoLib_LibName="$with_libmediainfo_name"
@@ -1108,7 +1090,6 @@ echo "  Using md5?                                              $using_libmd5"
 echo "  Using sha1?                                             $using_libsha1"
 echo "  Using sha2?                                             $using_libsha2"
 echo "  Using hmac?                                             $using_libhmac"
-echo "  Using tinyxml2?                                         $using_libtinyxml2"
 echo ""
 echo "  Create static lib?                                      $enable_static"
 echo "  Create shared lib?                                      $enable_shared"

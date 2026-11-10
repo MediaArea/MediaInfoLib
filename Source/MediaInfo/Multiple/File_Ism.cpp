@@ -27,7 +27,7 @@
 #include "MediaInfo/Multiple/File__ReferenceFilesHelper.h"
 #include "ZenLib/FileName.h"
 #include "ZenLib/Format/Http/Http_Utils.h"
-#include "tinyxml2.h"
+#include "ThirdParty/tfsxml/tfsxml_tinyxml2.h"
 using namespace tinyxml2;
 //---------------------------------------------------------------------------
 

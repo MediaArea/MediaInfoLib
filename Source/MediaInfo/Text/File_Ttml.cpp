@@ -26,7 +26,7 @@
 #if MEDIAINFO_EVENTS
     #include "MediaInfo/MediaInfo_Events_Internal.h"
 #endif //MEDIAINFO_EVENTS
-#include "tinyxml2.h"
+#include "ThirdParty/tfsxml/tfsxml_tinyxml2.h"
 #include <cstring>
 #include <limits>
 #include <map>

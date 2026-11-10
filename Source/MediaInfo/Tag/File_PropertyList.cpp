@@ -23,7 +23,7 @@
 //---------------------------------------------------------------------------
 #include "MediaInfo/Tag/File_PropertyList.h"
 #include <cstring>
-#include "tinyxml2.h"
+#include "ThirdParty/tfsxml/tfsxml_tinyxml2.h"
 using namespace tinyxml2;
 using namespace std;
 //---------------------------------------------------------------------------

@@ -96,9 +96,6 @@ endif()
 
 set(MediaInfoLib_SOURCES_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../Source)
 
-# use bundled tinyxml only if no system
-find_package(TinyXML)
-
 # use system curl if is present
 find_package(CURL)
 
@@ -132,6 +129,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/ThirdParty/sha2-gladman/sha2.c
   ${MediaInfoLib_SOURCES_PATH}/ThirdParty/hmac-gladman/hmac.c
   ${MediaInfoLib_SOURCES_PATH}/ThirdParty/tfsxml/tfsxml.c
+  ${MediaInfoLib_SOURCES_PATH}/ThirdParty/tfsxml/tfsxml_tinyxml2.cpp
   ${MediaInfoLib_SOURCES_PATH}/ThirdParty/fmt/format.cc
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File__Analyze.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/File__Analyze_Buffer.cpp
@@ -394,11 +392,6 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfoDLL/MediaInfoDLL.rc
 )
 
-if(NOT TinyXML_FOUND)
-  include_directories(${MediaInfoLib_SOURCES_PATH}/ThirdParty/tinyxml2/)
-  list(APPEND MediaInfoLib_SRCS ${MediaInfoLib_SOURCES_PATH}/ThirdParty/tinyxml2/tinyxml2.cpp)
-endif()
-
 add_library(mediainfo ${MediaInfoLib_SRCS})
 target_include_directories(mediainfo INTERFACE ${INCLUDE_INSTALL_DIR})
 
@@ -448,12 +441,6 @@ target_include_directories(mediainfo PRIVATE
   ${MediaInfoLib_SOURCES_PATH}/ThirdParty/sha1-gladman/
   ${MediaInfoLib_SOURCES_PATH}/ThirdParty/sha2-gladman/
   ${MediaInfoLib_SOURCES_PATH}/ThirdParty/hmac-gladman/)
-
-if(NOT TinyXML_FOUND)
-  target_include_directories(mediainfo PRIVATE ${MediaInfoLib_SOURCES_PATH}/ThirdParty/tinyxml2/)
-else()
-  target_link_libraries(mediainfo "${TinyXML_LIBRARIES}")
-endif()
 
 if(BUILD_ZENLIB)
   target_include_directories(mediainfo PRIVATE ${ZLIB_INCLUDE_DIRS})

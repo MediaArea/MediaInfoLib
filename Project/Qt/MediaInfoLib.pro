@@ -7,7 +7,6 @@ TARGET = mediainfo
 
 INCLUDEPATH += \
         ../../Source \
-        ../../Source/ThirdParty/tinyxml2 \
         ../../Source/ThirdParty/aes-gladman \
         ../../Source/ThirdParty/base64 \
         ../../Source/ThirdParty/md5 \
@@ -547,7 +546,8 @@ SOURCES += \
         ../../Source/ThirdParty/md5/md5.c \
         ../../Source/ThirdParty/sha1-gladman/sha1.c \
         ../../Source/ThirdParty/sha2-gladman/sha2.c \
-        ../../Source/ThirdParty/tinyxml2/tinyxml2.cpp
+        ../../Source/ThirdParty/tfsxml/tfsxml.c \
+        ../../Source/ThirdParty/tfsxml/tfsxml_tinyxml2.cpp
 
 HEADERS += \
         ../../Source/ThirdParty/aes-gladman/aes.h \
@@ -563,5 +563,6 @@ HEADERS += \
         ../../Source/ThirdParty/md5/md5.h \
         ../../Source/ThirdParty/sha1-gladman/sha1.h \
         ../../Source/ThirdParty/sha2-gladman/sha2.h \
-        ../../Source/ThirdParty/tinyxml2/tinyxml2.h
+        ../../Source/ThirdParty/tfsxml/tfsxml.h \
+        ../../Source/ThirdParty/tfsxml/tfsxml_tinyxml2.h
 

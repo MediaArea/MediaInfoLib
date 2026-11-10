@@ -28,7 +28,7 @@
 #include "MediaInfo/Multiple/File_DcpCpl.h"
 #include "MediaInfo/XmlUtils.h"
 #include "ZenLib/FileName.h"
-#include "tinyxml2.h"
+#include "ThirdParty/tfsxml/tfsxml_tinyxml2.h"
 using namespace tinyxml2;
 //---------------------------------------------------------------------------
 
