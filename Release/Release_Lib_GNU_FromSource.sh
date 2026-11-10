@@ -27,6 +27,7 @@ cd ../../../Release
 mkdir -p MediaInfo_Lib_GNU_FromSource/Project/GNU/Library
 cp ../Project/GNU/Library/aclocal.m4 MediaInfo_Lib_GNU_FromSource/Project/GNU/Library/
 cp ../Project/GNU/Library/autogen.sh MediaInfo_Lib_GNU_FromSource/Project/GNU/Library/
+cp ../Project/GNU/Library/compile MediaInfo_Lib_GNU_FromSource/Project/GNU/Library/
 cp ../Project/GNU/Library/config.guess MediaInfo_Lib_GNU_FromSource/Project/GNU/Library/
 cp ../Project/GNU/Library/config.sub MediaInfo_Lib_GNU_FromSource/Project/GNU/Library/
 cp ../Project/GNU/Library/configure MediaInfo_Lib_GNU_FromSource/Project/GNU/Library/
@@ -54,9 +55,14 @@ cp -r ../Source/ThirdParty/aes-gladman/*.h MediaInfo_Lib_GNU_FromSource/Source/T
 cp -r ../Source/ThirdParty/aes-gladman/*.c MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/aes-gladman/
 mkdir -p MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/base64
 cp -r ../Source/ThirdParty/base64/*.h MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/base64/
+mkdir -p MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/fmt
+cp -r ../Source/ThirdParty/fmt/*.h MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/fmt/
+cp -r ../Source/ThirdParty/fmt/*.cc MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/fmt/
 mkdir -p MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/hmac-gladman
 cp -r ../Source/ThirdParty/hmac-gladman/*.h MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/hmac-gladman/
 cp -r ../Source/ThirdParty/hmac-gladman/*.c MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/hmac-gladman/
+mkdir -p MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/jni
+cp -r ../Source/ThirdParty/jni/*.h MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/jni/
 mkdir -p MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/md5
 cp -r ../Source/ThirdParty/md5/*.h MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/md5/
 cp -r ../Source/ThirdParty/md5/*.c MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/md5/
@@ -66,6 +72,9 @@ cp -r ../Source/ThirdParty/sha1-gladman/*.c MediaInfo_Lib_GNU_FromSource/Source/
 mkdir -p MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/sha2-gladman
 cp -r ../Source/ThirdParty/sha2-gladman/*.h MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/sha2-gladman/
 cp -r ../Source/ThirdParty/sha2-gladman/*.c MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/sha2-gladman/
+mkdir -p MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/tfsxml
+cp -r ../Source/ThirdParty/tfsxml/*.h MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/tfsxml/
+cp -r ../Source/ThirdParty/tfsxml/*.c MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/tfsxml/
 mkdir -p MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/tinyxml2
 cp -r ../Source/ThirdParty/tinyxml2/*.h MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/tinyxml2/
 cp -r ../Source/ThirdParty/tinyxml2/*.cpp MediaInfo_Lib_GNU_FromSource/Source/ThirdParty/tinyxml2/
