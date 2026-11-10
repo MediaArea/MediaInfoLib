@@ -2939,6 +2939,20 @@ void File_Mpeg4::meta_iinf_infe()
                                     mdat_MustParse = true;
                                 break;
                                 }
+            case 0x69743335:    // it35
+                                {
+                                #if defined(MEDIAINFO_T35_YES)
+                                auto Parser=new File_T35(nullptr);
+                                Parser->IsMetadataTrackOrItem=true;
+                                Open_Buffer_Init(Parser);
+                                Streams[item_ID].Parsers.push_back(Parser); //Data is in idat or in mdat
+                                if (idat_items.find(item_ID)==idat_items.end())
+                                    mdat_MustParse=true;
+                                #endif //defined(MEDIAINFO_T35_YES)
+                                Streams[item_ID].infe_item_type=item_type; //For the item references
+                                Skip=true;
+                                break;
+                                }
         }
         if (!Skip)
         {
@@ -3528,6 +3542,12 @@ void File_Mpeg4::meta_iref_xxxx()
     {
         int32u to_item_ID;
         Get_B4_DEPENDOFVERSION(1, to_item_ID,                   "to_item_ID");
+        if (Element_Code==0x63647363 && Streams[from_item_ID].infe_item_type==0x69743335) //cdsc of an ITU-T T.35 metadata item, merged in the item it describes as for the metadata tracks
+        {
+            Streams[to_item_ID].Meta.push_back(from_item_ID);
+            Streams[from_item_ID].MetaFor.push_back(to_item_ID);
+            continue;
+        }
         Streams[from_item_ID].Infos_List[To].push_back(to_item_ID);
         Streams[to_item_ID].Infos_List[From].push_back(from_item_ID);
         if (Element_Code==0x64696D67) //dimg
