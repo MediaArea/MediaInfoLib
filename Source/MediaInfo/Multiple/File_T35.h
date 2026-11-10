@@ -31,6 +31,8 @@ class File_T35 : public File__Analyze
 public :
     //In
     int8u                       aspect_ratio_FromContainer{(int8u)-1};
+    std::string                 Identifier; //Start of each message (country code, terminal provider code...) when the container carries it apart from the messages
+    bool                        IsMetadataTrackOrItem{}; //Messages are the samples of a timed metadata track or the data of a metadata item, the first one is shown as the streams of the parser
 
     //Out
     int64u                      GA94_03_Offset{}; //Offset of the DTVCC transport data, parsed by the container as it depends on the picture order, 0 if none
@@ -43,12 +45,21 @@ public :
     File_T35(File__Analyze* Container_, hdr* HDR_=nullptr, Ztring* EtsiTS103433_=nullptr, DV_RPU* DV_RPU_data_=nullptr);
 
 private :
+    //Streams management
+    void Streams_Fill();
+
     //Buffer - Global
     void Read_Buffer_Init();
     void Read_Buffer_Continue();
 
     //Elements
     void itu_t_t35();
+    void Get_Code(int32u& Code, int8u Size, const char* Name);
+    void Get_Code1(int8u& Code, const char* Name);
+    void Get_Code2(int16u& Code, const char* Name);
+    void Get_Code4(int32u& Code, const char* Name);
+    void Peek_Code(int32u& Code, int8u Size);
+    int64u Code_Remain();
     void itu_t_t35_B5();
     void itu_t_t35_B5_0031();
     void itu_t_t35_B5_0031_DTG1();
@@ -79,6 +90,10 @@ private :
     hdr&                        HDR;
     Ztring&                     EtsiTS103433;
     DV_RPU&                     DV_RPU_data;
+
+    //Temp
+    size_t                      Identifier_Offset{};
+    const char*                 Message_Format{}; //Format of the first message, for the streams of the parser
 };
 
 } //NameSpace

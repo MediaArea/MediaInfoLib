@@ -3174,6 +3174,7 @@ void MediaInfo_Config_CodecID_Other_Mpeg4 (InfoMap &Info)
     "mebx;Timed Metadata Sample\n"
     "rtp ;RTP\n"
     "Ovbi;Omneon VBI\n"
+    "it35;ITU-T T.35\n"
     ));
     Info.Separator_Set(0, ZenLib::EOL);
 }
