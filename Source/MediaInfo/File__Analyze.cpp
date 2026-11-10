@@ -3690,8 +3690,9 @@ void File__Analyze::Element_End_Common_Flush()
     if (Trace_Activated)
     {
         //Size if not filled
-        if (File_Offset+Buffer_Offset+Element_Offset+(BS_Size-BS->Remain())/8<=Elem1.Next)
-            Elem1.TraceNode.Size=File_Offset+Buffer_Offset+Element_Offset+(BS_Size-BS->Remain())/8-Elem1.TraceNode.Pos;
+        int64u Current=File_Offset+Buffer_Offset+Element_Offset+(BS_Size-BS->Remain())/8;
+        if (Current<=Elem1.Next && Current>=Elem1.TraceNode.Pos) //Not if the parser read data stored before the element
+            Elem1.TraceNode.Size=Current-Elem1.TraceNode.Pos;
     }
     #endif //MEDIAINFO_TRACE
 
