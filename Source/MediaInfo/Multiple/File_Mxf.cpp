@@ -5872,8 +5872,9 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St2067204 (conformance_erro
         Errors.StreamID=Warnings.StreamID=Retrieve_Const(Stream_Audio, 0, Audio_ID).To_UTF8();
 
     //Overall Track File constraints (SMPTE ST 2067-2:2020 5.1)
-    const auto TrackFile_Errors=CompliantWith_St20675(Warnings);
-    Errors.insert(Errors.end(), TrackFile_Errors.begin(), TrackFile_Errors.end());
+    const auto& St20675=CompliantWith_St20675();
+    Errors.insert(Errors.end(), St20675.TrackFile_Errors.begin(), St20675.TrackFile_Errors.end());
+    Warnings.insert(Warnings.end(), St20675.TrackFile_Warnings.begin(), St20675.TrackFile_Warnings.end());
 
     //Audio essence, wrapping and Wave Audio Essence Descriptor (SMPTE ST 2067-2:2020 5.3.2 to 5.3.5)
     CompliantWith_St20672_Audio(Sound->second, Sound_Properties, Errors, Warnings);
@@ -6120,28 +6121,27 @@ void File_Mxf::ContentStorage_Packages_Get (vector<int128u>& MaterialPackages, v
 }
 
 //---------------------------------------------------------------------------
-// IMF Essence Component (SMPTE ST 2067-5:2020) with the overall Track File constraints of SMPTE ST 2067-2:2020 (5.1), and in the same pass IMF Essence Component alone if EssenceComponent_Errors and EssenceComponent_Warnings are not null
+// IMF Essence Component (SMPTE ST 2067-5:2020) with the overall Track File constraints of SMPTE ST 2067-2:2020 (5.1), and in the same pass IMF Essence Component alone
+// Computed once, as it is used for SMPTE ST 2067-204, SMPTE ST 2067-2 and SMPTE ST 2067-5
 // Shim parameters are the ones of SMPTE ST 2067-2 for a Track File, else only the general provisions are checked
 // Not checked: KLV Fill of 8 KB after the Header Partition (on creation only), Generation UID in all sets (SMPTE ST 377-1 7.5.2 allows to omit it in sets not modified since the creation of the file), Descriptive Metadata schemes listed in the Preface, items of the MPEG Descriptor
-File_Mxf::conformance_errors File_Mxf::CompliantWith_St20675 (conformance_errors& Warnings, conformance_errors* EssenceComponent_Errors, conformance_errors* EssenceComponent_Warnings)
+const File_Mxf::st20675_results& File_Mxf::CompliantWith_St20675 ()
 {
-    conformance_errors Errors;
-    if (IsSub)
-        return Errors;
-    const auto StreamID_Save=Warnings.StreamID;
-    Warnings.StreamID.clear();
+    auto& Results=St20675_Results;
+    if (Results.IsComputed || IsSub)
+        return Results;
+    Results.IsComputed=true;
+    auto& Errors=Results.TrackFile_Errors;
+    auto& Warnings=Results.TrackFile_Warnings;
 
     //Helpers for the items of both a Track File and an Essence Component, the other items are added to one list only
-    const auto IsEssenceComponent=EssenceComponent_Errors && EssenceComponent_Warnings;
     const auto Error=[&](const string& Value) {
         Errors.Add(Value);
-        if (IsEssenceComponent)
-            EssenceComponent_Errors->Add(Value);
+        Results.EssenceComponent_Errors.Add(Value);
     };
     const auto Warning=[&](const string& Value) {
         Warnings.Add(Value);
-        if (IsEssenceComponent)
-            EssenceComponent_Warnings->Add(Value);
+        Results.EssenceComponent_Warnings.Add(Value);
     };
 
     //Instance UIDs unique in a Header Metadata (SMPTE ST 377-1), the other checks use the first set with a reused Instance UID
@@ -6548,8 +6548,7 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St20675 (conformance_errors
                 }
         };
         Spacings_Test(Errors, true);
-        if (IsEssenceComponent)
-            Spacings_Test(*EssenceComponent_Errors, false);
+        Spacings_Test(Results.EssenceComponent_Errors, false);
     }
 
     //Index Table Segments after the essence they index (SMPTE ST 2067-2 5.1.4), only for a Track File
@@ -6573,16 +6572,17 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St20675 (conformance_errors
         }
     }
 
-    Warnings.StreamID=StreamID_Save;
-    return Errors;
+    return Results;
 }
 
 //---------------------------------------------------------------------------
 // IMF Track File (SMPTE ST 2067-2:2020 clause 5): overall constraints, then constraints of Image, Audio, Timed Text and Ancillary Data Track Files
 // Not checked: Document Instance of Timed Text (profile, TimedTextResourceID, languages, image and font resources and their Ancillary Resource ID), payload of CDP Track Files
-File_Mxf::conformance_errors File_Mxf::CompliantWith_St20672 (conformance_errors& Warnings, conformance_errors* EssenceComponent_Errors, conformance_errors* EssenceComponent_Warnings)
+File_Mxf::conformance_errors File_Mxf::CompliantWith_St20672 (conformance_errors& Warnings)
 {
-    auto Errors=CompliantWith_St20675(Warnings, EssenceComponent_Errors, EssenceComponent_Warnings);
+    const auto& St20675=CompliantWith_St20675();
+    auto Errors=St20675.TrackFile_Errors;
+    Warnings.insert(Warnings.end(), St20675.TrackFile_Warnings.begin(), St20675.TrackFile_Warnings.end());
     if (IsSub)
         return Errors;
 
@@ -8917,12 +8917,13 @@ void File_Mxf::Streams_Finish_CompliantWith ()
     #if MEDIAINFO_CONFORMANCE
         if (CompliantWith_St20672_IsTested())
         {
-            conformance_errors TrackFile_Warnings, EssenceComponent_Errors, EssenceComponent_Warnings;
-            const auto TrackFile_Errors=CompliantWith_St20672(TrackFile_Warnings, &EssenceComponent_Errors, &EssenceComponent_Warnings); //IMF Essence Component alone checked in the same pass
+            conformance_errors TrackFile_Warnings;
+            const auto TrackFile_Errors=CompliantWith_St20672(TrackFile_Warnings);
+            const auto& St20675=CompliantWith_St20675(); //IMF Essence Component alone, computed in the same pass
             const auto IsDeclared=CompliantWith_St20672_IsDeclared();
             if (TrackFile_Errors.empty() && (St20672_IsRequested || !IsDeclared))
                 Fill(Stream_General, 0, General_CompliantWith, "SMPTE_ST_2067-2");
-            else if (EssenceComponent_Errors.empty() && (St20675_IsRequested || (!St20672_IsRequested && !IsDeclared))) //Not if only SMPTE ST 2067-2 is requested
+            else if (St20675.EssenceComponent_Errors.empty() && (St20675_IsRequested || (!St20672_IsRequested && !IsDeclared))) //Not if only SMPTE ST 2067-2 is requested
                 Fill(Stream_General, 0, General_CompliantWith, "SMPTE_ST_2067-5");
             if (IsDeclared && !St20672_IsRequested)
             {
@@ -8947,8 +8948,8 @@ void File_Mxf::Streams_Finish_CompliantWith ()
             }
             if (St20675_IsRequested)
             {
-                Fill_Conformance_Specification("MXF MxfProfile", "SMPTE_ST_2067-5", EssenceComponent_Errors);
-                Fill_Conformance_Specification("MXF MxfProfile", "SMPTE_ST_2067-5", EssenceComponent_Warnings, Conformance_Warning);
+                Fill_Conformance_Specification("MXF MxfProfile", "SMPTE_ST_2067-5", St20675.EssenceComponent_Errors);
+                Fill_Conformance_Specification("MXF MxfProfile", "SMPTE_ST_2067-5", St20675.EssenceComponent_Warnings, Conformance_Warning);
             }
         }
     #endif //MEDIAINFO_CONFORMANCE
