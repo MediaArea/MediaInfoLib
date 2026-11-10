@@ -220,6 +220,100 @@ void File_Av1::Streams_Finish()
 }
 
 //***************************************************************************
+// Buffer - File header
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+//Size (leb128) read before the parsing of the elements: 1 if read, 0 if the data ends before its end, -1 if it is longer than 8 bytes
+static int Av1_leb128(const int8u* Buffer, size_t Buffer_Size, size_t& Offset, int64u& Value)
+{
+    Value=0;
+    for (int8u i=0; i<8; i++)
+    {
+        if (Offset>=Buffer_Size)
+            return 0;
+        int8u leb128_byte=Buffer[Offset++];
+        Value|=(static_cast<int64u>(leb128_byte&0x7f)<<(i*7));
+        if (!(leb128_byte&0x80))
+            return 1;
+    }
+    return -1;
+}
+
+//---------------------------------------------------------------------------
+bool File_Av1::FileHeader_Begin()
+{
+    if (IsSub)
+        return true; //Elements given by the container
+
+    //A stream starts with a temporal delimiter (or a sequence header if the temporal delimiters were removed): tested before parsing the
+    //elements, else the parser waits for an element of a size read in the data of a file in another format and keeps this data up to
+    //Buffer_MaximumSize, when all the parsers test the same buffers (data given by buffers, see File__MultipleParsing)
+    size_t Offset=0;
+    int64u Size=(int64u)-1;
+    if (IsAnnexB)
+    {
+        for (int8u i=0; i<3; i++) //temporal_unit_size, frame_unit_size, obu_length
+        {
+            int64u Container_Size=Size;
+            size_t Begin=Offset;
+            int Result=Av1_leb128(Buffer, Buffer_Size, Offset, Size);
+            if (!Result)
+                return false; //Must wait for more data
+            if (Result<0 || !Size || (i && Offset-Begin+Size>Container_Size))
+            {
+                Reject();
+                return false;
+            }
+        }
+    }
+    size_t obu_Begin=Offset;
+    if (Offset>=Buffer_Size)
+        return false; //Must wait for more data
+    int8u obu_header=Buffer[Offset++];
+    int8u obu_type=(obu_header>>3)&0xF;
+    bool obu_extension_flag=(obu_header>>2)&1;
+    bool obu_has_size_field=(obu_header>>1)&1;
+    if ((obu_header&0x81) //forbidden_bit, obu_reserved_1bit
+     || (obu_type!=1 && obu_type!=2) //sequence_header, temporal_delimiter
+     || (!IsAnnexB && !obu_has_size_field)) //obu_size of each OBU in the low overhead format
+    {
+        Reject();
+        return false;
+    }
+    if (obu_extension_flag)
+        Offset++;
+    int64u obu_size;
+    if (obu_has_size_field)
+    {
+        int Result=Av1_leb128(Buffer, Buffer_Size, Offset, obu_size);
+        if (!Result)
+            return false; //Must wait for more data
+        if (Result<0)
+        {
+            Reject();
+            return false;
+        }
+    }
+    else
+    {
+        if (Size<Offset-obu_Begin) //obu_length (Annex B) shorter than the header
+        {
+            Reject();
+            return false;
+        }
+        obu_size=Size-(Offset-obu_Begin);
+    }
+    if ((obu_type==1)!=(obu_size!=0)) //sequence_header has a payload, temporal_delimiter has none
+    {
+        Reject();
+        return false;
+    }
+
+    return true;
+}
+
+//***************************************************************************
 // Buffer - Global
 //***************************************************************************
 
