@@ -263,18 +263,15 @@ void File_Vp9::Read_Buffer_Continue()
         Has_SyncCode_Color_Refresh=3;
     else
     {
-        if (show_frame)
-        {
-            bool intra_only;
+        bool intra_only;
+        if (!show_frame)
             Get_SB (   intra_only,                              "intra_only");
-            if (intra_only)
-                Has_SyncCode_Color_Refresh=profile>0?7:5;
-            else
-                Has_SyncCode_Color_Refresh=0;
-            if (!error_resilient_mode)
-                Skip_SB(                                        "reset_frame_context");
-
-        }
+        else
+            intra_only=false;
+        if (!error_resilient_mode)
+            Skip_S1( 2,                                         "reset_frame_context");
+        if (intra_only)
+            Has_SyncCode_Color_Refresh=profile>0?7:5;
         else
             Has_SyncCode_Color_Refresh=0;
     }
@@ -323,7 +320,13 @@ void File_Vp9::Read_Buffer_Continue()
             Element_End0();
         }
         else
-            Skip_SB(                                            "reserved");
+        {
+            //Intra-only frame in profile 0: no bitdepth_colorspace_sampling, default values
+            bit_depth=8;
+            colorspace=Vp9_ColorSpace[1]; //BT.601
+            subsampling=3; //4:2:0
+            yuv_range_flag=false; //Limited
+        }
     }
     if (Has_SyncCode_Color_Refresh&4)
         Skip_S1( 8,                                             "refresh_frame_flags");
@@ -350,21 +353,18 @@ void File_Vp9::Read_Buffer_Continue()
         {
             if (Has_SyncCode_Color_Refresh)
             {
-                if (Has_SyncCode_Color_Refresh>>1)
+                Fill(Stream_Video, 0, Video_Format_Profile, profile, 10, true);
+                Fill(Stream_Video, 0, Video_BitDepth, bit_depth, 10, true);
+                Fill(Stream_Video, 0, Video_ColorSpace, Mpegv_matrix_coefficients_ColorSpace(colorspace));
+                Fill(Stream_Video, 0, Video_matrix_coefficients, Mpegv_matrix_coefficients(colorspace), Unlimited, true, true);
+                if (colorspace)
                 {
-                    Fill(Stream_Video, 0, Video_Format_Profile, profile, 10, true);
-                    Fill(Stream_Video, 0, Video_BitDepth, bit_depth, 10, true);
-                    Fill(Stream_Video, 0, Video_ColorSpace, Mpegv_matrix_coefficients_ColorSpace(colorspace));
-                    Fill(Stream_Video, 0, Video_matrix_coefficients, Mpegv_matrix_coefficients(colorspace), Unlimited, true, true);
-                    if (colorspace)
-                    {
-                        Fill(Stream_Video, 0, Video_ChromaSubsampling, Vp9_ChromaSubsampling[subsampling], Unlimited, true, true);
-                        Fill(Stream_Video, 0, Video_colour_range, Vp9_ColorRange[yuv_range_flag], Unlimited, true, true);
-                    }
+                    Fill(Stream_Video, 0, Video_ChromaSubsampling, Vp9_ChromaSubsampling[subsampling], Unlimited, true, true);
+                    Fill(Stream_Video, 0, Video_colour_range, Vp9_ColorRange[yuv_range_flag], Unlimited, true, true);
                 }
+                Fill(Stream_Video, 0, Video_Width, (int32u)width_minus_one+1);
+                Fill(Stream_Video, 0, Video_Height, (int32u)height_minus_one+1);
             }
-            Fill(Stream_Video, 0, Video_Width, (int32u)width_minus_one+1);
-            Fill(Stream_Video, 0, Video_Height, (int32u)height_minus_one+1);
         }
     FILLING_END()
     Frame_Count++;
