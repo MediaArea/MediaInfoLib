@@ -989,6 +989,7 @@ public :
     typedef std::map<video, Ztring[HdrFormat_Max]> hdr;
     void Fill_HDR(const hdr& HDR, size_t StreamPos=0); //Fills the HDR fields of a video stream from its HDR formats, a value common to all formats is shown once, else the values are aligned with " / "
     #endif
+    void Fill_HDR_Format(stream_t StreamKind, size_t StreamPos, const std::map<std::string, Ztring>& Values, bool Before=true); //Adds an HDR format (values of HDR_Format and HDR_Format_xxx fields) before or after the HDR formats already in a video or image stream, the values are aligned with " / "
     #if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES)
     void Get_AmbientViewingEnvironment(float64& AmbientViewingEnvironment_Illuminance, Ztring& AmbientViewingEnvironment_Illuminance_string, Ztring& AmbientViewingEnvironment_Chromaticity);
     #endif
