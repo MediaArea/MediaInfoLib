@@ -5338,6 +5338,9 @@ int file_adm_private::parse(const void* const Buffer, size_t Buffer_Size)
             XML_SUB(format());
             if (!version_Present) {
                 auto& Root = Items[item_root].Items;
+                if (Root.empty()) {
+                    Items[item_root].New(); // e.g. frame without content, the error needs a root
+                }
                 Root[0].AddError(Error, 0x80 | root_version, E::Present0, 0, Source_DolbyE_1_2);
             }
         }
