@@ -67,6 +67,7 @@ private:
     int64u Frame_Count_Valid{};
     std::unique_ptr<File__Analyze> Parser_Opus;
     std::unique_ptr<File__Analyze> Parser_Flac;
+    std::unique_ptr<File__Analyze> Parser_T35;
     struct ParamDefinitionData{
         int64u param_definition_type{};
         int8u  param_definition_mode{};

@@ -21,7 +21,7 @@
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-#if defined(MEDIAINFO_MPEGV_YES) || defined(MEDIAINFO_MPEG4V_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_PRORES_YES) || defined(MEDIAINFO_PNG_YES) || defined(MEDIAINFO_APV_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AV2_YES) || defined(MEDIAINFO_AVS3V_YES) || defined(MEDIAINFO_ICC_YES) || defined(MEDIAINFO_MK_YES) || defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_MXF_YES) || defined(MEDIAINFO_VP9_YES)
+#if defined(MEDIAINFO_MPEGV_YES) || defined(MEDIAINFO_MPEG4V_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_PRORES_YES) || defined(MEDIAINFO_PNG_YES) || defined(MEDIAINFO_APV_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AV2_YES) || defined(MEDIAINFO_AVS3V_YES) || defined(MEDIAINFO_ICC_YES) || defined(MEDIAINFO_MK_YES) || defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_MXF_YES) || defined(MEDIAINFO_T35_YES) || defined(MEDIAINFO_VP9_YES)
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib

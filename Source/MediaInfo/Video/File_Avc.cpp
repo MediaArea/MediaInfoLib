@@ -370,9 +370,9 @@ void File_Avc::Fill_BitRate_Mode(File__Analyze* Instance, bool cbr_flag, bool cb
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Video/File_Avc.h"
-#if defined(MEDIAINFO_AFDBARDATA_YES)
-    #include "MediaInfo/Video/File_AfdBarData.h"
-#endif //defined(MEDIAINFO_AFDBARDATA_YES)
+#if defined(MEDIAINFO_T35_YES)
+    #include "MediaInfo/Multiple/File_T35.h"
+#endif //defined(MEDIAINFO_T35_YES)
 #if defined(MEDIAINFO_DTVCCTRANSPORT_YES)
     #include "MediaInfo/Text/File_DtvccTransport.h"
 #endif //defined(MEDIAINFO_DTVCCTRANSPORT_YES)
@@ -719,6 +719,11 @@ File_Avc::File_Avc()
     //Temp
     preferred_transfer_characteristics=2;
 
+    //ITU-T T.35
+    #if defined(MEDIAINFO_T35_YES)
+        T35_Parser=NULL;
+    #endif //defined(MEDIAINFO_T35_YES)
+
     //Text
     #if defined(MEDIAINFO_DTVCCTRANSPORT_YES)
         GA94_03_Parser=NULL;
@@ -729,6 +734,9 @@ File_Avc::File_Avc()
 File_Avc::~File_Avc()
 {
     Clean_Temp_References();
+    #if defined(MEDIAINFO_T35_YES)
+        delete T35_Parser; //T35_Parser=NULL;
+    #endif //defined(MEDIAINFO_T35_YES)
     #if defined(MEDIAINFO_DTVCCTRANSPORT_YES)
         delete GA94_03_Parser; //GA94_03_Parser=NULL;
     #endif //defined(MEDIAINFO_DTVCCTRANSPORT_YES)
@@ -1233,51 +1241,55 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
     if (MaxSlicesCount>1)
         Fill(Stream_Video, 0, Video_Format_Settings_SliceCount, MaxSlicesCount);
 
-    hdr::iterator EtsiTs103433 = HDR.find(HdrFormat_EtsiTs103433);
-    if (EtsiTs103433 != HDR.end())
+    //Merge info about different HDR formats
+    auto HDR_Format=HDR.find(Video_HDR_Format);
+    if (HDR_Format!=HDR.end())
     {
-        for (std::map<video, Ztring>::iterator Item = EtsiTs103433->second.begin(); Item != EtsiTs103433->second.end(); ++Item)
-        {
-            Fill(Stream_Video, 0, Item->first, Item->second);
-        }
-    }
-    hdr::iterator SmpteSt209440 = HDR.find(HdrFormat_SmpteSt209440);
-    if (SmpteSt209440 != HDR.end())
-    {
-        for (std::map<video, Ztring>::iterator Item = SmpteSt209440->second.begin(); Item != SmpteSt209440->second.end(); ++Item)
-        {
-            switch (Item->first)
+        bitset<HdrFormat_Max> HDR_Present;
+        size_t HDR_FirstFormatPos=(size_t)-1;
+        for (size_t i=0; i<HdrFormat_Max; i++)
+            if (!HDR_Format->second[i].empty())
             {
-            case Video_MasteringDisplay_ColorPrimaries:
-            case Video_MasteringDisplay_Luminance:
-                if (Retrieve_Const(Stream_Video, 0, Item->first) == Item->second)
-                    break;
-                [[fallthrough]];
-            default:
-                Fill(Stream_Video, 0, Item->first, Item->second);
+                if (HDR_FirstFormatPos==(size_t)-1)
+                    HDR_FirstFormatPos=i;
+                HDR_Present[i]=true;
             }
-        }
-    }
-    hdr::iterator SmpteSt2086 = HDR.find(HdrFormat_SmpteSt2086);
-    if (SmpteSt2086 != HDR.end())
-    {
-        for (std::map<video, Ztring>::iterator Item = SmpteSt2086->second.begin(); Item != SmpteSt2086->second.end(); ++Item)
+        bool LegacyStreamDisplay=MediaInfoLib::Config.LegacyStreamDisplay_Get();
+        for (const auto& HDR_Item: HDR)
         {
-            bool Ignore;
-            switch (Item->first)
+            size_t i=HDR_FirstFormatPos;
+            size_t HDR_FirstFieldNonEmpty=(size_t)-1;
+            if (HDR_Item.first>Video_HDR_Format_Compatibility)
             {
-            case Video_HDR_Format:
-                Ignore = !Retrieve_Const(Stream_Video, 0, Item->first).empty();
-                break;
-            case Video_MasteringDisplay_ColorPrimaries:
-            case Video_MasteringDisplay_Luminance:
-                Ignore = Retrieve_Const(Stream_Video, 0, Item->first) == Item->second;
-                break;
-            default:
-                Ignore = false;
+                for (; i<HdrFormat_Max; i++)
+                {
+                    if (!HDR_Present[i])
+                        continue;
+                    if (HDR_FirstFieldNonEmpty==(size_t)-1 && !HDR_Item.second[i].empty())
+                        HDR_FirstFieldNonEmpty=i;
+                    if (!HDR_Item.second[i].empty() && HDR_Item.second[i]!=HDR_Item.second[HDR_FirstFieldNonEmpty])
+                        break;
+                }
             }
-            if (!Ignore)
-                Fill(Stream_Video, 0, Item->first, Item->second);
+            if (i==HdrFormat_Max && HDR_FirstFieldNonEmpty!=(size_t)-1)
+                Fill(Stream_Video, 0, HDR_Item.first, HDR_Item.second[HDR_FirstFieldNonEmpty]);
+            else
+            {
+                ZtringList Value;
+                Value.Separator_Set(0, __T(" / "));
+                if (i!=HdrFormat_Max)
+                    for (i=HDR_FirstFormatPos; i<HdrFormat_Max; i++)
+                    {
+                        if (!LegacyStreamDisplay && HDR_FirstFormatPos!=HdrFormat_SmpteSt2086 && i>=HdrFormat_SmpteSt2086)
+                            break;
+                        if (!HDR_Present[i])
+                            continue;
+                        Value.push_back(HDR_Item.second[i]);
+                    }
+                auto Value_Flat = Value.Read();
+                if (!Value.empty() && Value_Flat.size() > (Value.size() - 1) * 3)
+                    Fill(Stream_Video, 0, HDR_Item.first, Value.Read());
+            }
         }
     }
 
@@ -3434,50 +3446,9 @@ void File_Avc::sei_message_user_data_registered_itu_t_t35()
 {
     Element_Info1("user_data_registered_itu_t_t35");
 
-    //Parsing
-    int8u itu_t_t35_country_code;
-    Get_B1 (itu_t_t35_country_code,                             "itu_t_t35_country_code");
-    if (itu_t_t35_country_code==0xFF)
-        Skip_B1(                                                "itu_t_t35_country_code_extension_byte");
-    if (itu_t_t35_country_code!=0xB5 || Element_Offset+2>=Element_Size)
-    {
-        if (Element_Size-Element_Offset)
-            Skip_XX(Element_Size-Element_Offset,                "Unknown");
-        return;
-    }
-
-    //United-States
-    int16u id;
-    Get_B2 (id,                                                 "id?");
-    if (id!=0x0031 || Element_Offset+4>=Element_Size)
-    {
-        if (Element_Size-Element_Offset)
-            Skip_XX(Element_Size-Element_Offset,                "Unknown");
-        return;
-    }
-
-    int32u Identifier;
-    Peek_B4(Identifier);
-    switch (Identifier)
-    {
-        case 0x44544731 :   sei_message_user_data_registered_itu_t_t35_DTG1(); return;
-        case 0x47413934 :   sei_message_user_data_registered_itu_t_t35_GA94(); return;
-        default         :   if (Element_Size-Element_Offset)
-                                Skip_XX(Element_Size-Element_Offset, "Unknown");
-    }
-}
-
-//---------------------------------------------------------------------------
-// SEI - 5 - DTG1
-void File_Avc::sei_message_user_data_registered_itu_t_t35_DTG1()
-{
-    Element_Info1("Active Format Description");
-
-    //Parsing
-    Skip_C4(                                                    "afd_identifier");
-    if (Element_Offset<Element_Size)
-    {
-        File_AfdBarData DTG1_Parser;
+    #if defined(MEDIAINFO_T35_YES)
+        //Aspect ratio, for the Active Format Description
+        int8u aspect_ratio_FromContainer=(int8u)-1;
         for (auto seq_parameter_set_Item : seq_parameter_sets)
         {
             if (seq_parameter_set_Item && seq_parameter_set_Item->vui_parameters && seq_parameter_set_Item->vui_parameters->sar_width && seq_parameter_set_Item->vui_parameters->sar_height)
@@ -3496,33 +3467,28 @@ void File_Avc::sei_message_user_data_registered_itu_t_t35_DTG1()
                 {
                     auto PixelAspectRatio=((float32)seq_parameter_set_Item->vui_parameters->sar_width) / seq_parameter_set_Item->vui_parameters->sar_height;
                     auto DAR=Width*PixelAspectRatio/Height;
-                    if (DAR>=4.0/3.0*0.95 && DAR<4.0/3.0*1.05) DTG1_Parser.aspect_ratio_FromContainer=0; //4/3
-                    if (DAR>=16.0/9.0*0.95 && DAR<16.0/9.0*1.05) DTG1_Parser.aspect_ratio_FromContainer=1; //16/9
+                    if (DAR>=4.0/3.0*0.95 && DAR<4.0/3.0*1.05) aspect_ratio_FromContainer=0; //4/3
+                    if (DAR>=16.0/9.0*0.95 && DAR<16.0/9.0*1.05) aspect_ratio_FromContainer=1; //16/9
                 }
             }
         }
-        Open_Buffer_Init(&DTG1_Parser);
-        DTG1_Parser.Format=File_AfdBarData::Format_A53_4_DTG1;
-        Open_Buffer_Continue(&DTG1_Parser, Buffer+Buffer_Offset+(size_t)Element_Offset, Element_Size-Element_Offset);
-        Merge(DTG1_Parser, Stream_Video, 0, 0);
-        Element_Offset=Element_Size;
-    }
-}
 
-//---------------------------------------------------------------------------
-// SEI - 5 - GA94
-void File_Avc::sei_message_user_data_registered_itu_t_t35_GA94()
-{
-    //Parsing
-    int8u user_data_type_code;
-    Skip_B4(                                                    "GA94_identifier");
-    Get_B1 (user_data_type_code,                                "user_data_type_code");
-    switch (user_data_type_code)
-    {
-        case 0x03 : sei_message_user_data_registered_itu_t_t35_GA94_03(); break;
-        case 0x06 : sei_message_user_data_registered_itu_t_t35_GA94_06(); break;
-        default   : Skip_XX(Element_Size-Element_Offset,        "GA94_reserved_user_data");
-    }
+        //Parsing
+        if (!T35_Parser)
+        {
+            T35_Parser=new File_T35(this, &HDR);
+            Open_Buffer_Init(T35_Parser);
+        }
+        T35_Parser->aspect_ratio_FromContainer=aspect_ratio_FromContainer;
+        auto Element_Offset_Begin=Element_Offset;
+        Open_Buffer_Continue(T35_Parser);
+        Merge_Conformance(*T35_Parser);
+        if (T35_Parser->GA94_03_Offset)
+        {
+            Element_Offset=Element_Offset_Begin+T35_Parser->GA94_03_Offset;
+            sei_message_user_data_registered_itu_t_t35_GA94_03();
+        }
+    #endif //defined(MEDIAINFO_T35_YES)
 }
 
 //---------------------------------------------------------------------------
@@ -3633,53 +3599,6 @@ void File_Avc::sei_message_user_data_registered_itu_t_t35_GA94_03_Delayed(int32u
 
         TemporalReferences_Min+=((seq_parameter_sets[seq_parameter_set_id]->frame_mbs_only_flag | !TemporalReferences[TemporalReferences_Min]->IsField)?2:1);
     }
-}
-
-//---------------------------------------------------------------------------
-// SEI - 5 - GA94 - 0x03
-void File_Avc::sei_message_user_data_registered_itu_t_t35_GA94_06()
-{
-    Element_Info1("Bar data");
-
-    //Parsing
-    bool   top_bar_flag, bottom_bar_flag, left_bar_flag, right_bar_flag;
-    BS_Begin();
-    Get_SB (top_bar_flag,                                       "top_bar_flag");
-    Get_SB (bottom_bar_flag,                                    "bottom_bar_flag");
-    Get_SB (left_bar_flag,                                      "left_bar_flag");
-    Get_SB (right_bar_flag,                                     "right_bar_flag");
-    Mark_1_NoTrustError();
-    Mark_1_NoTrustError();
-    Mark_1_NoTrustError();
-    Mark_1_NoTrustError();
-    if (top_bar_flag)
-    {
-        Mark_1();
-        Mark_1();
-        Skip_S2(14,                                             "line_number_end_of_top_bar");
-    }
-    if (bottom_bar_flag)
-    {
-        Mark_1();
-        Mark_1();
-        Skip_S2(14,                                             "line_number_start_of_bottom_bar");
-    }
-    if (left_bar_flag)
-    {
-        Mark_1();
-        Mark_1();
-        Skip_S2(14,                                             "pixel_number_end_of_left_bar");
-    }
-    if (right_bar_flag)
-    {
-        Mark_1();
-        Mark_1();
-        Skip_S2(14,                                             "pixel_number_start_of_right_bar");
-    }
-    BS_End();
-
-    if (Element_Size-Element_Offset)
-        Skip_XX(Element_Size-Element_Offset,                    "additional_bar_data");
 }
 
 //---------------------------------------------------------------------------
@@ -4035,14 +3954,13 @@ void File_Avc::sei_message_mastering_display_colour_volume()
 {
     Element_Info1("mastering_display_colour_volume");
 
-    std::map<video, Ztring>& SmpteSt2086 = HDR[HdrFormat_SmpteSt2086];
-    Ztring& HDR_Format = SmpteSt2086[Video_HDR_Format];
+    Ztring& HDR_Format = HDR[Video_HDR_Format][HdrFormat_SmpteSt2086];
     if (HDR_Format.empty())
     {
         HDR_Format = __T("SMPTE ST 2086");
-        SmpteSt2086[Video_HDR_Format_Compatibility] = "HDR10";
+        HDR[Video_HDR_Format_Compatibility][HdrFormat_SmpteSt2086] = "HDR10";
     }
-    Get_MasteringDisplayColorVolume(SmpteSt2086[Video_MasteringDisplay_ColorPrimaries], SmpteSt2086[Video_MasteringDisplay_Luminance]);
+    Get_MasteringDisplayColorVolume(HDR[Video_MasteringDisplay_ColorPrimaries][HdrFormat_SmpteSt2086], HDR[Video_MasteringDisplay_Luminance][HdrFormat_SmpteSt2086]);
 }
 //---------------------------------------------------------------------------
 void File_Avc::sei_message_light_level()

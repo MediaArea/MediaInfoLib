@@ -17,6 +17,10 @@
 namespace MediaInfoLib
 {
 
+#if defined(MEDIAINFO_T35_YES)
+    class File_T35;
+#endif //defined(MEDIAINFO_T35_YES)
+
 //***************************************************************************
 // Class File_Hevc
 //***************************************************************************
@@ -416,22 +420,8 @@ private :
     void sei_message_buffering_period_xxl(seq_parameter_set_struct::vui_parameters_struct::xxl_common* xxL_Common, bool irap_cpb_params_present_flag, seq_parameter_set_struct::vui_parameters_struct::xxl* xxl);
     void sei_message_pic_timing(int32u &seq_parameter_set_id, int32u payloadSize);
     void sei_message_user_data_registered_itu_t_t35();
-    void sei_message_user_data_registered_itu_t_t35_B5();
-    void sei_message_user_data_registered_itu_t_t35_B5_0031();
-    void sei_message_user_data_registered_itu_t_t35_B5_0031_DTG1();
-    void sei_message_user_data_registered_itu_t_t35_B5_0031_GA94();
     void sei_message_user_data_registered_itu_t_t35_B5_0031_GA94_03();
     void sei_message_user_data_registered_itu_t_t35_B5_0031_GA94_03_Delayed(int32u seq_parameter_set_id);
-    void sei_message_user_data_registered_itu_t_t35_B5_0031_GA94_09();
-    void sei_message_user_data_registered_itu_t_t35_B5_003A();
-    void sei_message_user_data_registered_itu_t_t35_B5_003A_00();
-    void sei_message_user_data_registered_itu_t_t35_B5_003A_02();
-    void sei_message_user_data_registered_itu_t_t35_B5_003C();
-    void sei_message_user_data_registered_itu_t_t35_B5_003C_0001();
-    void sei_message_user_data_registered_itu_t_t35_B5_003C_0001_04();
-    void sei_message_user_data_registered_itu_t_t35_26();
-    void sei_message_user_data_registered_itu_t_t35_26_0004();
-    void sei_message_user_data_registered_itu_t_t35_26_0004_0005();
     void sei_message_user_data_unregistered(int32u payloadSize);
     void sei_message_user_data_unregistered_Ateme(int32u payloadSize);
     void sei_message_user_data_unregistered_x265(int32u payloadSize);
@@ -514,6 +504,11 @@ private :
     int64u                              Pictures_Output_PTS;
     int64u                              Pictures_Duration;
 
+    //ITU-T T.35
+    #if defined(MEDIAINFO_T35_YES)
+        File_T35*                       T35_Parser;
+    #endif //defined(MEDIAINFO_T35_YES)
+
     //Text
     #if defined(MEDIAINFO_DTVCCTRANSPORT_YES)
         File__Analyze*                  GA94_03_Parser;
@@ -547,16 +542,6 @@ private :
     Ztring                              Encoded_Library_Version;
     Ztring                              Encoded_Library_Date;
     Ztring                              Encoded_Library_Settings;
-    enum hdr_format
-    {
-        HdrFormat_SmpteSt209410,
-        HdrFormat_SmpteSt209440,
-        HdrFormat_EtsiTs103433,
-        HdrFormat_HdrVivid,
-        HdrFormat_SmpteSt2086,
-        HdrFormat_Max,
-    };
-    typedef std::map<video, Ztring[HdrFormat_Max]> hdr;
     hdr                                 HDR;
     DV_RPU                              DV_RPU_data;
     Ztring                              EtsiTS103433;

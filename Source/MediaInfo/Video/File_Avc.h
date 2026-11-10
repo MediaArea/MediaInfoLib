@@ -21,6 +21,10 @@
 namespace MediaInfoLib
 {
 
+#if defined(MEDIAINFO_T35_YES)
+    class File_T35;
+#endif //defined(MEDIAINFO_T35_YES)
+
 //***************************************************************************
 // Class File_Avc
 //***************************************************************************
@@ -437,26 +441,14 @@ private :
     void sei_message_buffering_period_xxl(seq_parameter_set_struct::vui_parameters_struct::xxl* xxl);
     void sei_message_pic_timing(int32u payloadSize, int32u seq_parameter_set_id);
     void sei_message_user_data_registered_itu_t_t35();
-    void sei_message_user_data_registered_itu_t_t35_DTG1();
-    void sei_message_user_data_registered_itu_t_t35_GA94();
     void sei_message_user_data_registered_itu_t_t35_GA94_03();
     void sei_message_user_data_registered_itu_t_t35_GA94_03_Delayed(int32u seq_parameter_set_id);
-    void sei_message_user_data_registered_itu_t_t35_GA94_06();
     void sei_message_user_data_unregistered(int32u payloadSize);
     void sei_message_user_data_unregistered_x264(int32u payloadSize);
     void sei_message_user_data_unregistered_bluray(int32u payloadSize);
     void sei_message_user_data_unregistered_bluray_MDPM(int32u payloadSize);
     void sei_message_mastering_display_colour_volume();
     void sei_message_light_level();
-
-    enum hdr_format
-    {
-        HdrFormat_EtsiTs103433,
-        HdrFormat_SmpteSt209440,
-        HdrFormat_SmpteSt2086,
-    };
-
-    typedef std::map<hdr_format, std::map<video, Ztring> > hdr;
 
     hdr                                 HDR;
 
@@ -544,6 +536,11 @@ private :
     size_t                              TemporalReferences_Offset;
     size_t                              TemporalReferences_Offset_pic_order_cnt_lsb_Last;
     int64s                              TemporalReferences_pic_order_cnt_Min;
+
+    //ITU-T T.35
+    #if defined(MEDIAINFO_T35_YES)
+        File_T35*                       T35_Parser;
+    #endif //defined(MEDIAINFO_T35_YES)
 
     //Text
     #if defined(MEDIAINFO_DTVCCTRANSPORT_YES)

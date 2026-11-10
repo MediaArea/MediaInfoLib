@@ -22,6 +22,9 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Video/File_Av2.h"
+#if defined(MEDIAINFO_T35_YES)
+    #include "MediaInfo/Multiple/File_T35.h"
+#endif //defined(MEDIAINFO_T35_YES)
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #if defined(MEDIAINFO_ICC_YES)
     #include "MediaInfo/Tag/File_Icc.h"
@@ -236,6 +239,9 @@ File_Av2::File_Av2()
 //---------------------------------------------------------------------------
 File_Av2::~File_Av2()
 {
+    #if defined(MEDIAINFO_T35_YES)
+        delete T35_Parser;
+    #endif //defined(MEDIAINFO_T35_YES)
 }
 
 //***************************************************************************
@@ -247,7 +253,8 @@ void File_Av2::Streams_Accept()
 {
     Fill(Stream_General, 0, General_Format, "AV2");
 
-    Stream_Prepare(Stream_Video);
+    if (!Count_Get(Stream_Video))
+        Stream_Prepare(Stream_Video); //Already there if ITU-T T.35 metadata (e.g. AFD) was parsed before
     Fill(Stream_Video, 0, Video_Format, "AV2");
 }
 
@@ -328,6 +335,10 @@ void File_Av2::Streams_Finish()
         Fill(Stream_Video, 0, Video_MaxCLL, maximum_content_light_level);
     if (!maximum_frame_average_light_level.empty())
         Fill(Stream_Video, 0, Video_MaxFALL, maximum_frame_average_light_level);
+
+    #if defined(MEDIAINFO_T35_YES)
+        DolbyVision_Streams_Fill(DV_RPU_data, DV_Source_AV2);
+    #endif //defined(MEDIAINFO_T35_YES)
 }
 
 //***************************************************************************
@@ -1299,9 +1310,19 @@ void File_Av2::metadata_itu_t_t35()
 {
     Element_Begin1("metadata_itu_t_t35");
 
-    // TODO: Use ITUT T35 parser
-    Skip_XX(Element_Size,                                       "Data");
-    
+    #if defined(MEDIAINFO_T35_YES)
+        //Parsing
+        if (!T35_Parser)
+        {
+            T35_Parser=new File_T35(this, &HDR, nullptr, &DV_RPU_data);
+            Open_Buffer_Init(T35_Parser);
+        }
+        Open_Buffer_Continue(T35_Parser);
+        Merge_Conformance(*T35_Parser);
+    #else //defined(MEDIAINFO_T35_YES)
+        Skip_XX(Element_Size-Element_Offset,                    "Data");
+    #endif //defined(MEDIAINFO_T35_YES)
+
     Element_End0();
 }
 

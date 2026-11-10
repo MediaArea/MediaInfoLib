@@ -854,6 +854,12 @@
 #endif
 
 //---------------------------------------------------------------------------
+// Multiple, carried by the formats above
+#if !defined(MEDIAINFO_T35_NO) && !defined(MEDIAINFO_T35_YES) && (defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AV2_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_IAMF_YES) || defined(MEDIAINFO_MK_YES))
+    #define MEDIAINFO_T35_YES
+#endif
+
+//---------------------------------------------------------------------------
 // Text
 #if !defined(MEDIAINFO_TEXT_NO) && !defined(MEDIAINFO_ARIBSTDB24B37_NO) && !defined(MEDIAINFO_ARIBSTDB24B37_YES)
     #define MEDIAINFO_ARIBSTDB24B37_YES

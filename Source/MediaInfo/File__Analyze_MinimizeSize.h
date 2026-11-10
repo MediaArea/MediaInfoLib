@@ -797,7 +797,7 @@ public :
     void Get_MasteringDisplayColorVolume(Ztring& MasteringDisplay_ColorPrimaries, Ztring& MasteringDisplay_Luminance, bool FromAV1=false);
     void Get_LightLevel(Ztring &MaxCLL, Ztring &MaxFALL, int32u Divisor=1);
     #endif
-    #if defined(MEDIAINFO_APV_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AV2_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MK_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_MXF_YES) || defined(MEDIAINFO_PNG_YES)
+    #if defined(MEDIAINFO_APV_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AV2_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MK_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_MXF_YES) || defined(MEDIAINFO_PNG_YES) || defined(MEDIAINFO_T35_YES)
     struct mastering_metadata_2086
     {
         int16u Primaries[8];
@@ -805,16 +805,29 @@ public :
     };
     void Get_MasteringDisplayColorVolume(Ztring &MasteringDisplay_ColorPrimaries, Ztring &MasteringDisplay_Luminance, mastering_metadata_2086 &Meta, bool FromAV1=false);
     #endif
+    #if defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AV2_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MK_YES) || defined(MEDIAINFO_T35_YES)
+    // HDR formats of a video stream, in display order, from the stream and from the ITU-T T.35 messages it carries
+    enum hdr_format
+    {
+        HdrFormat_SmpteSt209410,
+        HdrFormat_SmpteSt209440,
+        HdrFormat_EtsiTs103433,
+        HdrFormat_HdrVivid,
+        HdrFormat_SmpteSt2086,
+        HdrFormat_Max,
+    };
+    typedef std::map<video, Ztring[HdrFormat_Max]> hdr;
+    #endif
     #if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES)
     void Get_AmbientViewingEnvironment(float64& AmbientViewingEnvironment_Illuminance, Ztring& AmbientViewingEnvironment_Illuminance_string, Ztring& AmbientViewingEnvironment_Chromaticity);
     #endif
-    #if defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MK_YES)
+    #if defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MK_YES) || defined(MEDIAINFO_T35_YES)
     void Get_SMPTE_ST_2094_40(int8u& application_version, bool& IsHDRplus, bool& tone_mapping_flag);
     #endif
     #if defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MK_YES)
     void dvcC(bool has_dependency_pid=false, std::map<std::string, Ztring>* Infos=NULL);
     #endif
-    #if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MXF_YES)
+    #if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MXF_YES) || defined(MEDIAINFO_T35_YES)
     // Dolby Vision metadata, from the RPU or from Dolby Vision XML metadata
     struct DV_RPU {
         // Header, from the first RPU
@@ -928,12 +941,13 @@ public :
     enum dv_source {
         DV_Source_HEVC,
         DV_Source_AV1,
+        DV_Source_AV2,
         DV_Source_XML,
     };
     void DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source);
     static int16u DolbyVision_Nits_ToPQ12(float64 Nits);
     #endif
-    #if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES)
+    #if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_T35_YES)
     // Must be in bitstream before calling this function.
     void Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t BitsAfter = 0);
     #endif
@@ -1624,6 +1638,7 @@ public :
         void                Fill_Conformance_Specification(const char* Field, const string& Specification, const conformance_errors& Errors, conformance_type Level = Conformance_Error); //Errors are about the whole stream, without offset
         void                Clear_Conformance();
         void                Merge_Conformance(bool FromConfig = false);
+        void                Merge_Conformance(File__Analyze& Sub); //Items found by a sub-parser parsing a part of the current element
         void                Streams_Finish_Conformance(stream_t StreamKind = Stream_Max, size_t StreamPos = (size_t)-1);
         virtual string      CreateElementName();
         string              BuildConformanceName(const string& ParserName, const char* Prefix, const char* Suffix);
@@ -1637,6 +1652,7 @@ public :
         void                Fill_Conformance_Specification(const char* Field, const string& Specification, const conformance_errors& Errors, conformance_type Level = Conformance_Error) {}
         void                Clear_Conformance() {}
         void                Merge_Conformance(bool FromConfig = false) {}
+        void                Merge_Conformance(File__Analyze&) {}
         void                Streams_Finish_Conformance(stream_t = Stream_Max, size_t = (size_t)-1) {}
         string              CreateElementName() { return {}; }
         string              BuildConformanceName(const string& ParserName, const char* Prefix, const char* Suffix) { return {}; }
