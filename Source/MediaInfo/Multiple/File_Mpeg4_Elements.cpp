@@ -260,6 +260,9 @@ std::string File_Mpeg4_sv3d_ProjectionType(int8u Value)
 #if defined(MEDIAINFO_PRORES_YES)
     #include "MediaInfo/Video/File_ProRes.h"
 #endif
+#if defined(MEDIAINFO_T35_YES)
+    #include "MediaInfo/Multiple/File_T35.h"
+#endif
 #if defined(MEDIAINFO_VC1_YES)
     #include "MediaInfo/Video/File_Vc1.h"
 #endif
@@ -1022,6 +1025,7 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_mebx_keys_PHDR_keyd=0x6B657964;
     const int64u moov_trak_mdia_minf_stbl_stsd_mebx_keys_xxxx_keyd=0x6B657964;
     const int64u moov_trak_mdia_minf_stbl_stsd_mebx_keys_xxxx_dtyp=0x64747970;
+    const int64u moov_trak_mdia_minf_stbl_stsd_it35=0x69743335;
     const int64u moov_trak_mdia_minf_stbl_stsd_mett=0x6D657474;
     const int64u moov_trak_mdia_minf_stbl_stsd_mp4a=0x6D703461;
     const int64u moov_trak_mdia_minf_stbl_stsd_mp4s=0x6D703473;
@@ -1171,6 +1175,7 @@ namespace Elements
     const int64u moov_trak_tref_hint=0x68696E74;
     const int64u moov_trak_tref_ipir=0x69706972;
     const int64u moov_trak_tref_mpod=0x6D706F64;
+    const int64u moov_trak_tref_rndr=0x726E6472;
     const int64u moov_trak_tref_scpt=0x73637074;
     const int64u moov_trak_tref_ssrc=0x73737263;
     const int64u moov_trak_tref_sync=0x73796E63;
@@ -1653,6 +1658,7 @@ void File_Mpeg4::Data_Parse()
                 ATOM(moov_trak_tref_ipir)
                 ATOM(moov_trak_tref_hint)
                 ATOM(moov_trak_tref_mpod)
+                ATOM(moov_trak_tref_rndr)
                 ATOM(moov_trak_tref_scpt)
                 ATOM(moov_trak_tref_ssrc)
                 ATOM(moov_trak_tref_sync)
@@ -2933,6 +2939,20 @@ void File_Mpeg4::meta_iinf_infe()
                                     mdat_MustParse = true;
                                 break;
                                 }
+            case 0x69743335:    // it35
+                                {
+                                #if defined(MEDIAINFO_T35_YES)
+                                auto Parser=new File_T35(nullptr);
+                                Parser->IsMetadataTrackOrItem=true;
+                                Open_Buffer_Init(Parser);
+                                Streams[item_ID].Parsers.push_back(Parser); //Data is in idat or in mdat
+                                if (idat_items.find(item_ID)==idat_items.end())
+                                    mdat_MustParse=true;
+                                #endif //defined(MEDIAINFO_T35_YES)
+                                Streams[item_ID].infe_item_type=item_type; //For the item references
+                                Skip=true;
+                                break;
+                                }
         }
         if (!Skip)
         {
@@ -3522,6 +3542,12 @@ void File_Mpeg4::meta_iref_xxxx()
     {
         int32u to_item_ID;
         Get_B4_DEPENDOFVERSION(1, to_item_ID,                   "to_item_ID");
+        if (Element_Code==0x63647363 && Streams[from_item_ID].infe_item_type==0x69743335) //cdsc of an ITU-T T.35 metadata item, merged in the item it describes as for the metadata tracks
+        {
+            Streams[to_item_ID].Meta.push_back(from_item_ID);
+            Streams[from_item_ID].MetaFor.push_back(to_item_ID);
+            continue;
+        }
         Streams[from_item_ID].Infos_List[To].push_back(to_item_ID);
         Streams[to_item_ID].Infos_List[From].push_back(from_item_ID);
         if (Element_Code==0x64696D67) //dimg
@@ -8226,6 +8252,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxOthers(const string& CodecIDA
 {
     switch (Element_Code)
     {
+        case Elements::moov_trak_mdia_minf_stbl_stsd_it35: Element_Name("ITU-T T.35 metadata"); break;
         case Elements::moov_trak_mdia_minf_stbl_stsd_mp4s: Element_Name("Stream"); break; //Defined in ISO-IEC 14496-14
     }
 
@@ -8240,6 +8267,13 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxOthers(const string& CodecIDA
             auto CodecID=Retrieve(Stream_Other, StreamPos_Last, Other_CodecID).To_UTF8();
             Fill(Stream_Other, StreamPos_Last, Other_CodecID, CodecID+'-'+CodecIDAddition, true, true);
         }
+    }
+
+    //ITU-T T.35 timed metadata
+    if (Element_Code==Elements::moov_trak_mdia_minf_stbl_stsd_it35)
+    {
+        moov_trak_mdia_minf_stbl_stsd_xxxx_it35();
+        return;
     }
 
     FILLING_BEGIN();
@@ -8278,6 +8312,44 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxOthers(const string& CodecIDA
                 Element_ThisIsAList();
         else if (Element_Offset<Element_Size)
             Descriptors();
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_it35()
+{
+    //Parsing
+    int8u it35_identifier_length;
+    Get_B1 (it35_identifier_length,                             "it35_identifier_length");
+    if (it35_identifier_length>Element_Size-Element_Offset)
+    {
+        Trusted_IsNot("it35_identifier_length not valid");
+        return;
+    }
+    #if defined(MEDIAINFO_T35_YES)
+        std::string it35_identifier((const char*)Buffer+Buffer_Offset+(size_t)Element_Offset, it35_identifier_length);
+    #endif //defined(MEDIAINFO_T35_YES)
+    Skip_XX(it35_identifier_length,                             "it35_identifier");
+    if (Element_Offset<Element_Size)
+        Skip_XX(Element_Size-Element_Offset,                    "(Unknown)");
+
+    FILLING_BEGIN();
+        #if defined(MEDIAINFO_T35_YES)
+            auto& Stream=Streams[moov_trak_tkhd_TrackID];
+            if (Stream.Parsers.empty())
+            {
+                //The ITU-T T.35 parser provides the format of the track and the content of the first sample as a video stream, merged in the video track that the metadata track refers to
+                File_T35* Parser=new File_T35(nullptr);
+                Parser->Identifier=it35_identifier;
+                Parser->IsMetadataTrackOrItem=true;
+                int64u Elemen_Code_Save=Element_Code;
+                Element_Code=moov_trak_tkhd_TrackID; //Element_Code is use for stream identifier
+                Open_Buffer_Init(Parser);
+                Element_Code=Elemen_Code_Save;
+                Stream.Parsers.push_back(Parser);
+                mdat_MustParse=true; //Data is in MDAT
+            }
+        #endif //defined(MEDIAINFO_T35_YES)
     FILLING_END();
 }
 
@@ -11359,6 +11431,24 @@ void File_Mpeg4::moov_trak_tref_mpod()
     //Parsing
     while (Element_Offset<Element_Size)
         Skip_B4(                                                "track-ID");
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_tref_rndr()
+{
+    Element_Name("Rendering Metadata");
+
+    //Parsing
+    while (Element_Offset<Element_Size)
+    {
+        int32u TrackID;
+        Get_B4(TrackID,                                         "track-ID");
+
+        FILLING_BEGIN();
+            Streams[TrackID].Meta.push_back(moov_trak_tkhd_TrackID);
+            Streams[moov_trak_tkhd_TrackID].MetaFor.push_back(TrackID);
+        FILLING_END();
+    }
 }
 
 //---------------------------------------------------------------------------

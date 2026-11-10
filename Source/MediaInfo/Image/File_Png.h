@@ -85,6 +85,7 @@ private :
     void gAMA();
     void gdAT();
     void gmAP();
+    void haTM();
     void hIST() { Data_Common(); }
     void iCCP();
     void iTXt() { Textual(bitset8().set(IsCompressed).set(IsUTF8)); }

@@ -635,6 +635,9 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_ProRes.cpp">
       <Filter>Source Files\Video</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_SmpteSt209450.cpp">
+      <Filter>Source Files\Video</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Psd.cpp">
       <Filter>Source Files\Image</Filter>
     </ClCompile>
@@ -1409,6 +1412,9 @@
       <Filter>Header Files\Audio</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_ProRes.h">
+      <Filter>Header Files\Video</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_SmpteSt209450.h">
       <Filter>Header Files\Video</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Source\MediaInfo\Image\File_Psd.h">

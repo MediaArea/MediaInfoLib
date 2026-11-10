@@ -38,6 +38,9 @@
 #if defined(MEDIAINFO_PSD_YES)
     #include "MediaInfo/Image/File_Psd.h"
 #endif
+#if defined(MEDIAINFO_SMPTEST209450_YES)
+    #include "MediaInfo/Video/File_SmpteSt209450.h"
+#endif
 #if defined(MEDIAINFO_C2PA_YES)
     #include "MediaInfo/Tag/File_C2pa.h"
 #endif
@@ -137,6 +140,7 @@ namespace Elements
     const int32u gAMA=0x67414D41;
     const int32u gdAT=0x67644154;
     const int32u gmAP=0x676D4150;
+    const int32u haTM=0x6861544D;
     const int32u hIST=0x68495354;
     const int32u iCCP=0x69434350;
     const int32u iTXt=0x69545874;
@@ -360,6 +364,7 @@ void File_Png::Data_Parse()
         CASE_INFO(gAMA,                                         "Gamma");
         CASE_INFO(gdAT,                                         "Gain map image data");
         CASE_INFO(gmAP,                                         "Gain map metadata");
+        CASE_INFO(haTM,                                         "Headroom-adaptive tone mapping");
         CASE_INFO(hIST,                                         "Image histogram"); 
         CASE_INFO(iCCP,                                         "Embedded ICC profile");
         CASE_INFO(iTXt,                                         "International textual data");
@@ -742,6 +747,27 @@ void File_Png::gmAP()
 }
 
 //---------------------------------------------------------------------------
+void File_Png::haTM()
+{
+    #if defined(MEDIAINFO_SMPTEST209450_YES)
+        Element_Info1("SMPTE ST 2094-50");
+
+        //Parsing
+        File_SmpteSt209450 MI;
+        Open_Buffer_Init(&MI);
+        Open_Buffer_Continue(&MI);
+
+        FILLING_BEGIN();
+            Fill_HDR_Format(StreamKind_Last, StreamPos_Last, MI.HDR); //Before the static metadata
+            for (const auto& Info : MI.Infos)
+                Fill(StreamKind_Last, StreamPos_Last, Info.first.c_str(), Info.second);
+        FILLING_END();
+    #endif //defined(MEDIAINFO_SMPTEST209450_YES)
+
+    Data_Common();
+}
+
+//---------------------------------------------------------------------------
 void File_Png::iCCP()
 {
     //Parsing
@@ -827,8 +853,7 @@ void File_Png::mDCV()
     Get_MasteringDisplayColorVolume(MasteringDisplay_ColorPrimaries, MasteringDisplay_Luminance);
 
     FILLING_BEGIN();
-        Fill(StreamKind_Last, StreamPos_Last, "HDR_Format", "SMPTE ST 2086");
-        Fill(StreamKind_Last, StreamPos_Last, "HDR_Format_Compatibility", "HDR10");
+        Fill_HDR_Format(StreamKind_Last, StreamPos_Last, {{"HDR_Format", __T("SMPTE ST 2086")}, {"HDR_Format_Compatibility", __T("HDR10")}}, false); //After the dynamic metadata
         Fill(StreamKind_Last, StreamPos_Last, "MasteringDisplay_ColorPrimaries", MasteringDisplay_ColorPrimaries);
         Fill(StreamKind_Last, StreamPos_Last, "MasteringDisplay_Luminance", MasteringDisplay_Luminance);
     FILLING_END();

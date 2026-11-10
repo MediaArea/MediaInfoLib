@@ -266,6 +266,7 @@ HEADERS += \
         ../../Source/MediaInfo/Video/File_Mpeg4v.h \
         ../../Source/MediaInfo/Video/File_Mpegv.h \
         ../../Source/MediaInfo/Video/File_ProRes.h \
+        ../../Source/MediaInfo/Video/File_SmpteSt209450.h \
         ../../Source/MediaInfo/Video/File_Theora.h \
         ../../Source/MediaInfo/Video/File_Vc1.h \
         ../../Source/MediaInfo/Video/File_Vc3.h \
@@ -521,6 +522,7 @@ SOURCES += \
         ../../Source/MediaInfo/Video/File_Mpeg4v.cpp \
         ../../Source/MediaInfo/Video/File_Mpegv.cpp \
         ../../Source/MediaInfo/Video/File_ProRes.cpp \
+        ../../Source/MediaInfo/Video/File_SmpteSt209450.cpp \
         ../../Source/MediaInfo/Video/File_Theora.cpp \
         ../../Source/MediaInfo/Video/File_Vc1.cpp \
         ../../Source/MediaInfo/Video/File_Vc3.cpp \

@@ -22,6 +22,9 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Multiple/File_T35.h"
+#if defined(MEDIAINFO_SMPTEST209450_YES)
+    #include "MediaInfo/Video/File_SmpteSt209450.h"
+#endif
 #if defined(MEDIAINFO_AFDBARDATA_YES)
     #include "MediaInfo/Video/File_AfdBarData.h"
 #endif //defined(MEDIAINFO_AFDBARDATA_YES)
@@ -53,6 +56,30 @@ File_T35::File_T35(File__Analyze* Container_, hdr* HDR_, Ztring* EtsiTS103433_, 
 }
 
 //***************************************************************************
+// Streams management
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+void File_T35::Streams_Fill()
+{
+    if (!IsMetadataTrackOrItem)
+        return;
+
+    //The track has the format of the messages, the video stream or image it describes has their content
+    if (Message_Format)
+    {
+        Stream_Prepare(Stream_Other);
+        Fill(Stream_Other, 0, Other_Format, Message_Format);
+    }
+    if (!HDR.empty())
+    {
+        Stream_Prepare(Stream_Video);
+        Fill_HDR(HDR);
+        SmpteSt209450_Fill(this, Stream_Video, 0);
+    }
+}
+
+//***************************************************************************
 // Buffer - Global
 //***************************************************************************
 
@@ -67,10 +94,92 @@ void File_T35::Read_Buffer_Continue()
 {
     //Parsing
     GA94_03_Offset=0;
+    Identifier_Offset=0;
     itu_t_t35();
     while (Element_Level)
         Element_End0(); //Elements not ended after a parsing problem, the next message starts from the top level
     Element_Offset=Element_Size; //Remaining data is not parsed
+
+    if (IsMetadataTrackOrItem)
+        Finish();
+}
+
+//---------------------------------------------------------------------------
+void File_T35::Get_Code(int32u& Code, int8u Size, const char* Name)
+{
+    if (Identifier_Offset>=Identifier.size())
+    {
+        switch (Size)
+        {
+            case 1 : {int8u  Temp; Get_B1(Temp, Name); Code=Temp; break;}
+            case 2 : {int16u Temp; Get_B2(Temp, Name); Code=Temp; break;}
+            default: Get_B4(Code, Name);
+        }
+        return;
+    }
+
+    //The code is read from the identifier provided by the container, then from the message
+    Peek_Code(Code, Size);
+    auto FromIdentifier=Identifier.size()-Identifier_Offset;
+    if (FromIdentifier>Size)
+        FromIdentifier=Size;
+    Identifier_Offset+=FromIdentifier;
+    Element_Offset+=Size-FromIdentifier;
+    if (Element_Offset>Element_Size)
+        Element_Offset=Element_Size;
+    #if MEDIAINFO_TRACE
+        switch (Size)
+        {
+            case 1 : Param(Name, (int8u)Code); break;
+            case 2 : Param(Name, (int16u)Code); break;
+            default: Param(Name, Code);
+        }
+    #else //MEDIAINFO_TRACE
+        (void)Name;
+    #endif //MEDIAINFO_TRACE
+}
+
+//---------------------------------------------------------------------------
+void File_T35::Get_Code1(int8u& Code, const char* Name)
+{
+    int32u Temp;
+    Get_Code(Temp, 1, Name);
+    Code=(int8u)Temp;
+}
+
+//---------------------------------------------------------------------------
+void File_T35::Get_Code2(int16u& Code, const char* Name)
+{
+    int32u Temp;
+    Get_Code(Temp, 2, Name);
+    Code=(int16u)Temp;
+}
+
+//---------------------------------------------------------------------------
+void File_T35::Get_Code4(int32u& Code, const char* Name)
+{
+    Get_Code(Code, 4, Name);
+}
+
+//---------------------------------------------------------------------------
+void File_T35::Peek_Code(int32u& Code, int8u Size)
+{
+    Code=0;
+    auto Offset=Element_Offset;
+    for (size_t i=0; i<Size; i++)
+    {
+        Code<<=8;
+        if (Identifier_Offset+i<Identifier.size())
+            Code|=(int8u)Identifier[Identifier_Offset+i];
+        else if (Offset<Element_Size)
+            Code|=Buffer[Buffer_Offset+(size_t)Offset++];
+    }
+}
+
+//---------------------------------------------------------------------------
+int64u File_T35::Code_Remain()
+{
+    return Identifier.size()-Identifier_Offset+Element_Size-Element_Offset;
 }
 
 //***************************************************************************
@@ -82,9 +191,12 @@ void File_T35::itu_t_t35()
 {
     //Parsing
     int8u itu_t_t35_country_code;
-    Get_B1 (itu_t_t35_country_code,                             "itu_t_t35_country_code");
+    Get_Code1(itu_t_t35_country_code,                           "itu_t_t35_country_code");
     if (itu_t_t35_country_code==0xFF)
-        Skip_B1(                                                "itu_t_t35_country_code_extension_byte");
+    {
+        int8u itu_t_t35_country_code_extension_byte;
+        Get_Code1(itu_t_t35_country_code_extension_byte,        "itu_t_t35_country_code_extension_byte");
+    }
 
     switch (itu_t_t35_country_code)
     {
@@ -99,7 +211,7 @@ void File_T35::itu_t_t35()
 // USA
 void File_T35::itu_t_t35_B5()
 {
-    if (Element_Offset+2>=Element_Size)
+    if (Code_Remain()<=2)
     {
         if (Element_Size-Element_Offset)
             Skip_XX(Element_Size-Element_Offset,                "Unknown");
@@ -107,7 +219,7 @@ void File_T35::itu_t_t35_B5()
     }
 
     int16u itu_t_t35_terminal_provider_code;
-    Get_B2 (itu_t_t35_terminal_provider_code,                   "itu_t_t35_terminal_provider_code");
+    Get_Code2(itu_t_t35_terminal_provider_code,                 "itu_t_t35_terminal_provider_code");
 
     switch (itu_t_t35_terminal_provider_code)
     {
@@ -115,6 +227,7 @@ void File_T35::itu_t_t35_B5()
         case 0x003A: itu_t_t35_B5_003A(); break;
         case 0x003B: Param_Info1("Dolby Laboratories, Inc."); itu_t_t35_B5_003B(); break;
         case 0x003C: Param_Info1("Samsung Electronics America"); itu_t_t35_B5_003C(); break;
+        case 0x0090: Param_Info1("SMPTE"); itu_t_t35_B5_0090(); break;
         case 0x5890: Param_Info1("AOMedia"); itu_t_t35_B5_5890(); break;
         default    : if (Element_Size-Element_Offset)
                          Skip_XX(Element_Size-Element_Offset,   "Unknown");
@@ -125,16 +238,16 @@ void File_T35::itu_t_t35_B5()
 // USA - 0031
 void File_T35::itu_t_t35_B5_0031()
 {
-    if (Element_Offset+4>=Element_Size)
+    if (Code_Remain()<=4)
     {
         if (Element_Size-Element_Offset)
             Skip_XX(Element_Size-Element_Offset,                "Unknown");
         return;
     }
 
-    int32u Identifier;
-    Peek_B4(Identifier);
-    switch (Identifier)
+    int32u user_identifier;
+    Peek_Code(user_identifier, 4);
+    switch (user_identifier)
     {
         case 0x44544731 :   itu_t_t35_B5_0031_DTG1(); return;
         case 0x47413934 :   itu_t_t35_B5_0031_GA94(); return;
@@ -150,7 +263,13 @@ void File_T35::itu_t_t35_B5_0031_DTG1()
     Element_Info1("Active Format Description");
 
     //Parsing
-    Skip_C4(                                                    "afd_identifier");
+    if (Identifier_Offset<Identifier.size())
+    {
+        int32u afd_identifier;
+        Get_Code4(afd_identifier,                               "afd_identifier");
+    }
+    else
+        Skip_C4(                                                "afd_identifier");
     #if defined(MEDIAINFO_AFDBARDATA_YES)
     if (Element_Offset<Element_Size)
     {
@@ -172,7 +291,8 @@ void File_T35::itu_t_t35_B5_0031_GA94()
 {
     //Parsing
     int8u user_data_type_code;
-    Skip_B4(                                                    "GA94_identifier");
+    int32u GA94_identifier;
+    Get_Code4(GA94_identifier,                                  "GA94_identifier");
     Get_B1 (user_data_type_code,                                "user_data_type_code");
     switch (user_data_type_code)
     {
@@ -362,7 +482,7 @@ void File_T35::itu_t_t35_B5_0031_GA94_09()
 void File_T35::itu_t_t35_B5_003A()
 {
     int8u itu_t_t35_terminal_provider_oriented_code;
-    Get_B1 (itu_t_t35_terminal_provider_oriented_code,          "itu_t_t35_terminal_provider_oriented_code");
+    Get_Code1(itu_t_t35_terminal_provider_oriented_code,        "itu_t_t35_terminal_provider_oriented_code");
 
     switch (itu_t_t35_terminal_provider_oriented_code)
     {
@@ -483,7 +603,7 @@ void File_T35::itu_t_t35_B5_003A_02()
 void File_T35::itu_t_t35_B5_003B()
 {
     int32u itu_t_t35_terminal_provider_oriented_code;
-    Get_B4(itu_t_t35_terminal_provider_oriented_code,           "itu_t_t35_terminal_provider_oriented_code");
+    Get_Code4(itu_t_t35_terminal_provider_oriented_code,        "itu_t_t35_terminal_provider_oriented_code");
 
     switch (itu_t_t35_terminal_provider_oriented_code)
     {
@@ -704,7 +824,7 @@ void File_T35::itu_t_t35_B5_003B_00000800()
 void File_T35::itu_t_t35_B5_003C()
 {
     int16u itu_t_t35_terminal_provider_oriented_code;
-    Get_B2 (itu_t_t35_terminal_provider_oriented_code,          "itu_t_t35_terminal_provider_oriented_code");
+    Get_Code2(itu_t_t35_terminal_provider_oriented_code,        "itu_t_t35_terminal_provider_oriented_code");
 
     switch (itu_t_t35_terminal_provider_oriented_code)
     {
@@ -748,11 +868,64 @@ void File_T35::itu_t_t35_B5_003C_0001_04()
 }
 
 //---------------------------------------------------------------------------
+// USA - SMPTE
+void File_T35::itu_t_t35_B5_0090()
+{
+    int16u itu_t_t35_terminal_provider_oriented_code;
+    Get_Code2(itu_t_t35_terminal_provider_oriented_code,        "itu_t_t35_terminal_provider_oriented_code");
+
+    switch (itu_t_t35_terminal_provider_oriented_code)
+    {
+        case 0x0001: itu_t_t35_B5_0090_0001(); break;
+    }
+}
+
+//---------------------------------------------------------------------------
+// USA - SMPTE - SMPTE ST 2094-50
+void File_T35::itu_t_t35_B5_0090_0001()
+{
+    Element_Info1("SMPTE ST 2094 App 5");
+    if (!Message_Format)
+        Message_Format="SMPTE ST 2094-50";
+
+    #if defined(MEDIAINFO_SMPTEST209450_YES)
+        //Parsing
+        File_SmpteSt209450 MI;
+        Open_Buffer_Init(&MI);
+        Open_Buffer_Continue(&MI);
+
+        FILLING_BEGIN();
+            auto& HDR_Format=HDR[Video_HDR_Format][HdrFormat_SmpteSt209450];
+            if (HDR_Format.empty())
+            {
+                for (const auto& Item : MI.HDR)
+                {
+                    if (Item.first=="HDR_Format")
+                        HDR_Format=Item.second;
+                    else if (Item.first=="HDR_Format_Version")
+                        HDR[Video_HDR_Format_Version][HdrFormat_SmpteSt209450]=Item.second;
+                    else if (Item.first=="HDR_Format_Settings")
+                        HDR[Video_HDR_Format_Settings][HdrFormat_SmpteSt209450]=Item.second;
+                }
+                SmpteSt209450_Infos=MI.Infos;
+            }
+        FILLING_END();
+    #endif //defined(MEDIAINFO_SMPTEST209450_YES)
+}
+
+//---------------------------------------------------------------------------
+void File_T35::SmpteSt209450_Fill(File__Analyze* Parent, stream_t StreamKind, size_t StreamPos)
+{
+    for (const auto& Info : SmpteSt209450_Infos)
+        Parent->Fill(StreamKind, StreamPos, Info.first.c_str(), Info.second, true);
+}
+
+//---------------------------------------------------------------------------
 // USA - 5890
 void File_T35::itu_t_t35_B5_5890()
 {
     int8u itu_t_t35_terminal_provider_oriented_code;
-    Get_B1(itu_t_t35_terminal_provider_oriented_code,           "itu_t_t35_terminal_provider_oriented_code");
+    Get_Code1(itu_t_t35_terminal_provider_oriented_code,        "itu_t_t35_terminal_provider_oriented_code");
 
     switch (itu_t_t35_terminal_provider_oriented_code)
     {
@@ -787,7 +960,7 @@ void File_T35::itu_t_t35_B5_5890_01()
 void File_T35::itu_t_t35_26()
 {
     int16u itu_t_t35_terminal_provider_code;
-    Get_B2 (itu_t_t35_terminal_provider_code,                   "itu_t_t35_terminal_provider_code");
+    Get_Code2(itu_t_t35_terminal_provider_code,                 "itu_t_t35_terminal_provider_code");
 
     //HDR Vivid terminal provide code 0x0004, terminal provide oriented code 0x0005 , 0x0005 indicates HDR Vivid version 1
     switch (itu_t_t35_terminal_provider_code)
@@ -801,7 +974,7 @@ void File_T35::itu_t_t35_26()
 void File_T35::itu_t_t35_26_0004()
 {
     int16u itu_t_t35_terminal_provider_oriented_code;
-    Get_B2 (itu_t_t35_terminal_provider_oriented_code,                   "itu_t_t35_terminal_provider_oriented_code");
+    Get_Code2(itu_t_t35_terminal_provider_oriented_code,        "itu_t_t35_terminal_provider_oriented_code");
     //HDR Vivid terminal provide code 0x0004, terminal provide oriented code 0x0005
     switch (itu_t_t35_terminal_provider_oriented_code)
     {

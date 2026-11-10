@@ -339,6 +339,10 @@ void File_Hevc::Streams_Fill()
 
     //Merge info about different HDR formats
     Fill_HDR(HDR);
+    #if defined(MEDIAINFO_T35_YES)
+        if (T35_Parser)
+            T35_Parser->SmpteSt209450_Fill(this, Stream_Video, 0);
+    #endif //defined(MEDIAINFO_T35_YES)
     if (!EtsiTS103433.empty())
     {
         Fill(Stream_Video, 0, "EtsiTS103433", EtsiTS103433);

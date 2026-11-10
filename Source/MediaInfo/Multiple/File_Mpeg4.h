@@ -245,6 +245,7 @@ private :
     void moov_trak_mdia_minf_stbl_stsd_xxxxOthers(const string& CodecIDAddition);
     void moov_trak_mdia_minf_stbl_stsd_xxxx_alac();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_amve();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_it35();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_AALP();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_ACLR();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_APRG();
@@ -362,6 +363,7 @@ private :
     void moov_trak_tref_ipir();
     void moov_trak_tref_hint();
     void moov_trak_tref_mpod();
+    void moov_trak_tref_rndr();
     void moov_trak_tref_scpt();
     void moov_trak_tref_ssrc();
     void moov_trak_tref_sync();

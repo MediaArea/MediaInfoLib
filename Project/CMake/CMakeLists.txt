@@ -376,6 +376,7 @@ set(MediaInfoLib_SRCS
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_Mpeg4v.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_Mpegv.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_ProRes.cpp
+  ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_SmpteSt209450.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_Theora.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_Vc1.cpp
   ${MediaInfoLib_SOURCES_PATH}/MediaInfo/Video/File_Vc3.cpp

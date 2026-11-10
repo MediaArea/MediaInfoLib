@@ -852,7 +852,7 @@
 
 //---------------------------------------------------------------------------
 // Multiple, carried by the formats above
-#if !defined(MEDIAINFO_T35_NO) && !defined(MEDIAINFO_T35_YES) && (defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AV2_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_IAMF_YES) || defined(MEDIAINFO_MK_YES))
+#if !defined(MEDIAINFO_T35_NO) && !defined(MEDIAINFO_T35_YES) && (defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AV2_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_IAMF_YES) || defined(MEDIAINFO_MK_YES) || defined(MEDIAINFO_MPEG4_YES))
     #define MEDIAINFO_T35_YES
 #endif
 
@@ -971,6 +971,12 @@
 #endif
 #if !defined(MEDIAINFO_IMAGE_NO) && !defined(MEDIAINFO_WEBP_NO) && !defined(MEDIAINFO_WEBP_YES)
     #define MEDIAINFO_WEBP_YES
+#endif
+
+//---------------------------------------------------------------------------
+// Image or video metadata, carried by the formats above
+#if !defined(MEDIAINFO_SMPTEST209450_NO) && !defined(MEDIAINFO_SMPTEST209450_YES) && (defined(MEDIAINFO_PNG_YES) || defined(MEDIAINFO_T35_YES))
+    #define MEDIAINFO_SMPTEST209450_YES
 #endif
 
 //---------------------------------------------------------------------------
