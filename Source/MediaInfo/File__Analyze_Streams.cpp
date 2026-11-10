@@ -4281,6 +4281,37 @@ void File__Analyze::Fill_SetOptions(stream_t StreamKind, size_t StreamPos, const
 }
 
 //---------------------------------------------------------------------------
+// Personal rating, e.g. "4 stars (196/255, MusicBee)" whatever the format (ID3v2 POPM, Vorbis comment, XMP, Exif)
+void File__Analyze::Fill_Rating(stream_t StreamKind, size_t StreamPos, float64 Stars, const Ztring& Value, int16u Scale, const Ztring& Source)
+{
+    if (Stars<=0 || Value.empty() || !Scale)
+        return;
+
+    //Display
+    Stars=float64_int64s(Stars*2)/2.0; //Half stars at most
+    const auto Stars_String=Ztring::ToZtring(Stars, Stars==(int64s)Stars?0:1);
+    auto Details=Value+__T('/')+Ztring::ToZtring(Scale);
+    if (!Source.empty())
+        Details+=__T(", ")+Source;
+    const auto Display=MediaInfoLib::Config.Language_Get(Stars_String, __T(" star"))+__T(" (")+Details+__T(')');
+    if (Retrieve_Const(StreamKind, StreamPos, "Rating").find(Display)!=string::npos)
+        return; //Same rating in another metadata block of the file
+    Fill(StreamKind, StreamPos, "Rating", Display);
+
+    //Values
+    Fill(StreamKind, StreamPos, "Rating/5Stars", Stars_String);
+    Fill(StreamKind, StreamPos, "Rating/Numerator", Value);
+    Fill(StreamKind, StreamPos, "Rating/Denominator", Scale);
+    if (!Source.empty())
+        Fill(StreamKind, StreamPos, "Rating/Source", Source);
+    Fill_SetOptions(StreamKind, StreamPos, "Rating/5Stars", "N NFY");
+    Fill_SetOptions(StreamKind, StreamPos, "Rating/Numerator", "N NFY");
+    Fill_SetOptions(StreamKind, StreamPos, "Rating/Denominator", "N NIY");
+    if (!Source.empty())
+        Fill_SetOptions(StreamKind, StreamPos, "Rating/Source", "N NTY");
+}
+
+//---------------------------------------------------------------------------
 const Ztring &File__Analyze::Retrieve_Const (stream_t StreamKind, size_t StreamPos, size_t Parameter, info_t KindOfInfo)
 {
     //Integrity

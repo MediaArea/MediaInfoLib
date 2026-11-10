@@ -306,7 +306,17 @@ void File_VorbisCom::Data_Parse()
         else if (Key==__T("PERFORMER"))              Performers.push_back(Value);
         else if (Key==__T("PLAY_COUNT"))             Fill(StreamKind_Multiple, 0, "Played_Count", Value.To_int64u());
         else if (Key==__T("PUBLISHER"))              Fill(StreamKind_Common,   0, "Publisher", Value);
-        else if (Key==__T("RATING"))                 Fill(StreamKind_Multiple, 0, "Rating", Value);
+        else if (Key==__T("RATING"))
+        {
+            //No scale in the specification: 1 to 5 (e.g. foobar2000) or 1 to 100 (e.g. MediaMonkey, MusicBee)
+            const auto Rating=Value.To_float64();
+            if (Value.find_first_not_of(__T("0123456789."))!=string::npos || Rating<=0 || Rating>100)
+                Fill(StreamKind_Multiple, 0, "Rating", Value);
+            else if (Rating<=5)
+                Fill_Rating(StreamKind_Multiple, 0, Rating, Value, 5);
+            else
+                Fill_Rating(StreamKind_Multiple, 0, Rating/20, Value, 100);
+        }
         else if (Key==__T("REPLAYGAIN_ALBUM_GAIN"))  Fill(StreamKind_Common,   0, "Album_ReplayGain_Gain", Value.To_float64(), 2);
         else if (Key==__T("REPLAYGAIN_ALBUM_PEAK"))  Fill(StreamKind_Common,   0, "Album_ReplayGain_Peak", Value.To_float64(), 6);
         else if (Key==__T("REPLAYGAIN_TRACK_GAIN"))  Fill(StreamKind_Specific, 0, "ReplayGain_Gain",       Value.To_float64(), 2);
