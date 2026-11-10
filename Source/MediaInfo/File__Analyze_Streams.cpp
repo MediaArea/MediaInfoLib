@@ -1924,6 +1924,86 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
 
 #endif // defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_T35_YES)
 
+//---------------------------------------------------------------------------
+#if defined(MEDIAINFO_APV_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AV2_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MK_YES) || defined(MEDIAINFO_T35_YES)
+void File__Analyze::Fill_HDR(const hdr& HDR, size_t StreamPos)
+{
+    //Merge info about different HDR formats
+    auto HDR_Format=HDR.find(Video_HDR_Format);
+    if (HDR_Format!=HDR.end())
+    {
+        bitset<HdrFormat_Max> HDR_Present;
+        size_t HDR_FirstFormatPos=(size_t)-1;
+        for (size_t i=0; i<HdrFormat_Max; i++)
+            if (!HDR_Format->second[i].empty())
+            {
+                if (HDR_FirstFormatPos==(size_t)-1)
+                    HDR_FirstFormatPos=i;
+                HDR_Present[i]=true;
+            }
+        bool LegacyStreamDisplay=MediaInfoLib::Config.LegacyStreamDisplay_Get();
+        for (const auto& HDR_Item: HDR)
+        {
+            size_t i=HDR_FirstFormatPos;
+            size_t HDR_FirstFieldNonEmpty=(size_t)-1;
+            if (HDR_Item.first>Video_HDR_Format_Compatibility)
+            {
+                for (; i<HdrFormat_Max; i++)
+                {
+                    if (!HDR_Present[i])
+                        continue;
+                    if (HDR_FirstFieldNonEmpty==(size_t)-1 && !HDR_Item.second[i].empty())
+                        HDR_FirstFieldNonEmpty=i;
+                    if (!HDR_Item.second[i].empty() && HDR_FirstFieldNonEmpty<HdrFormat_Max && HDR_Item.second[i]!=HDR_Item.second[HDR_FirstFieldNonEmpty])
+                        break;
+                }
+            }
+            if (i==HdrFormat_Max && HDR_FirstFieldNonEmpty!=(size_t)-1)
+                Fill(Stream_Video, StreamPos, HDR_Item.first, HDR_Item.second[HDR_FirstFieldNonEmpty]);
+            else
+            {
+                ZtringList Value;
+                Value.Separator_Set(0, __T(" / "));
+                if (i!=HdrFormat_Max)
+                    for (i=HDR_FirstFormatPos; i<HdrFormat_Max; i++)
+                    {
+                        if (!LegacyStreamDisplay && HDR_FirstFormatPos!=HdrFormat_SmpteSt2086 && i>=HdrFormat_SmpteSt2086)
+                            break;
+                        if (!HDR_Present[i])
+                            continue;
+                        Value.push_back(HDR_Item.second[i]);
+                    }
+                auto Value_Flat = Value.Read();
+                if (!Value.empty() && Value_Flat.size() > (Value.size() - 1) * 3)
+                    Fill(Stream_Video, StreamPos, HDR_Item.first, Value.Read());
+            }
+        }
+    }
+}
+#endif
+
+//---------------------------------------------------------------------------
+void File__Analyze::Fill_HDR_Format(stream_t StreamKind, size_t StreamPos, const std::map<std::string, Ztring>& Values, bool Before)
+{
+    static const char* Names[]={"HDR_Format", "HDR_Format_Version", "HDR_Format_Profile", "HDR_Format_Level", "HDR_Format_Settings", "HDR_Format_Compression", "HDR_Format_Compatibility"};
+    ZtringList Formats;
+    Formats.Separator_Set(0, __T(" / "));
+    Formats.Write(Retrieve_Const(StreamKind, StreamPos, Names[0]));
+    auto Formats_Count=Formats.size();
+    for (const auto Name : Names)
+    {
+        ZtringList List;
+        List.Separator_Set(0, __T(" / "));
+        List.Write(Retrieve_Const(StreamKind, StreamPos, Name));
+        List.resize(Formats_Count);
+        auto Value_New=Values.find(Name);
+        List.insert(Before?List.begin():List.end(), Value_New==Values.end()?Ztring():Value_New->second);
+        auto Value=List.Read();
+        if (Value.size()>(List.size()-1)*3) //Not only separators
+            Fill(StreamKind, StreamPos, Name, Value, true);
+    }
+}
+
 #if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MXF_YES) || defined(MEDIAINFO_T35_YES)
 
 //---------------------------------------------------------------------------
@@ -2107,15 +2187,15 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
     if (IsRPU)
     {
         // HDR format, inserted before the other HDR formats of the stream
-        Ztring HDR[Video_HDR_Format_Compatibility-Video_HDR_Format+1];
-        HDR[0]=__T("Dolby Vision");
+        std::map<std::string, Ztring> HDR;
+        HDR["HDR_Format"]=__T("Dolby Vision");
         if (Profile)
         {
             string Profile_String;
             DolbyVision_Profiles_Append(Profile_String, Profile);
             Profile_String+='.';
             add_dec_2chars(Profile_String, Profile);
-            HDR[Video_HDR_Format_Profile-Video_HDR_Format].From_UTF8(Profile_String);
+            HDR["HDR_Format_Profile"].From_UTF8(Profile_String);
         }
         string Layers(HasEL && !Data.Count_EL?"":"BL+"); // No enhancement layer NAL unit with the RPUs: the stream is the enhancement layer, the base layer is in another stream
         if (HasEL)
@@ -2124,26 +2204,10 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
             Layers+='+';
         }
         Layers+="RPU";
-        HDR[Video_HDR_Format_Settings-Video_HDR_Format].From_UTF8(Layers);
+        HDR["HDR_Format_Settings"].From_UTF8(Layers);
         if (Data.dm_compression<sizeof(DolbyVision_Compression)/sizeof(*DolbyVision_Compression) && DolbyVision_Compression[Data.dm_compression])
-            HDR[Video_HDR_Format_Compression-Video_HDR_Format].From_UTF8(DolbyVision_Compression[Data.dm_compression]);
-        ZtringList Formats;
-        Formats.Separator_Set(0, __T(" / "));
-        Formats.Write(Retrieve_Const(Stream_Video, 0, Video_HDR_Format));
-        auto Formats_Count=Formats.size();
-        for (size_t i=Video_HDR_Format; i<=Video_HDR_Format_Compatibility; i++)
-        {
-            if (i==Video_HDR_Format_String || i==Video_HDR_Format_Commercial)
-                continue;
-            ZtringList List;
-            List.Separator_Set(0, __T(" / "));
-            List.Write(Retrieve_Const(Stream_Video, 0, i));
-            List.resize(Formats_Count);
-            List.insert(List.begin(), HDR[i-Video_HDR_Format]);
-            auto Value=List.Read();
-            if (Value.size()>(List.size()-1)*3)
-                Fill(Stream_Video, 0, i, Value, true);
-        }
+            HDR["HDR_Format_Compression"].From_UTF8(DolbyVision_Compression[Data.dm_compression]);
+        Fill_HDR_Format(Stream_Video, 0, HDR);
 
         // Mastering display, per HDR format if the other HDR formats have different values, else only if there is no other value
         Ztring MasteringDisplay_ColorPrimaries, MasteringDisplay_Luminance;
