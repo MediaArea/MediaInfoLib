@@ -129,7 +129,8 @@ int main(int ac, char *av[])
         mi.Option(option, value);
     }
 
-    if (mi.Open(opts.media_filename) == 0)
+    mi.Open(opts.media_filename);
+    if (mi.Count_Get(0, MediaInfoLib::Stream_General) == 0) //A file which could not be opened is in the list too, without any stream
     {
         fprintf(stderr, "Cannot open media file\n");
         return 1;
