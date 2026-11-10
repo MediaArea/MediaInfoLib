@@ -5595,6 +5595,7 @@ void File_Ac3::HD()
                     if (length <= extra_data_size - 2) {
                         auto frame_begin = Element_Offset;
                         BS_Begin();
+                        RemainAfterEMDF=Data_BS_Remain()-length*8; //emdf_sync() is not used for this container
                         emdf_container();
                         BS_End(); 
                         Skip_XX(frame_begin + length - Element_Offset, "(Not parsed)");
