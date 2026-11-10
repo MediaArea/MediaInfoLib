@@ -8869,11 +8869,16 @@ void File_Mxf::Streams_Finish_CompliantWith ()
     for (size_t Profile_Pos=0; Profile_Pos<ArdZdf_Profiles_Size; Profile_Pos++)
     {
         const string ProfileName=ArdZdf_Profiles[Profile_Pos].Name;
-        const auto Errors=CompliantWith_ArdZdf(Profile_Pos);
+        #if MEDIAINFO_CONFORMANCE
+            const auto IsReported=(ArdZdf_IsRequested&(1<<Profile_Pos)) || Profile_Pos==Profile_FromContent; //Conformance errors only if this profile is requested, or matches the kind of content and ARD_ZDF is requested
+        #else //MEDIAINFO_CONFORMANCE
+            const auto IsReported=false;
+        #endif //MEDIAINFO_CONFORMANCE
+        const auto Errors=CompliantWith_ArdZdf(Profile_Pos, false, !IsReported); //Errors not reported are not all needed
         if (Errors.empty())
             Fill(Stream_General, 0, General_CompliantWith, ProfileName.c_str());
         #if MEDIAINFO_CONFORMANCE
-            else if ((ArdZdf_IsRequested&(1<<Profile_Pos)) || Profile_Pos==Profile_FromContent) //Conformance errors only if this profile is requested, or matches the kind of content and ARD_ZDF is requested
+            else if (IsReported)
                 Fill_Conformance_Specification("MXF MxfProfile", ProfileName, Errors);
         #endif //MEDIAINFO_CONFORMANCE
     }
@@ -8941,11 +8946,11 @@ void File_Mxf::Streams_Finish_CompliantWith ()
 // GOP structure is checked for all frames with index table entries (Long GOP)
 // Returns the items which are not compliant, empty if compliant
 // Candidate test is done before parsing all partitions, without tests needing all partitions or the full essence parsing, and stops at the first item which is not compliant
-File_Mxf::conformance_errors File_Mxf::CompliantWith_ArdZdf (size_t Profile_Pos, bool IsCandidateTest)
+File_Mxf::conformance_errors File_Mxf::CompliantWith_ArdZdf (size_t Profile_Pos, bool IsCandidateTest, bool StopAtFirst)
 {
     //Helpers for reporting
     conformance_errors Errors;
-    Errors.StopAtFirst=IsCandidateTest;
+    Errors.StopAtFirst=IsCandidateTest || StopAtFirst;
     const auto Error=[&](const string& Value) { //Returns true if the test must stop
         return Errors.Add(Value);
     };
