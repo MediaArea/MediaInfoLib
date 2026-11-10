@@ -4374,9 +4374,9 @@ void File_Ac3::emdf_container()
 
         int32u emdf_payload_size = 0;
         Get_V4 (8, emdf_payload_size,                           "emdf_payload_size");
-        size_t emdf_payload_End=Data_BS_Remain()-emdf_payload_size*8; //emdf_payload_size coherency was already tested in sync layer
 
         Element_Begin1("emdf_payload_bytes");
+            auto B=BS_Bookmark(emdf_payload_size*8); //emdf_payload_size coherency was already tested in sync layer
             switch (emdf_payload_id)
             {
                 case  1: loudness_data(); break;
@@ -4385,23 +4385,10 @@ void File_Ac3::emdf_container()
                 case 14: joc(); break;
                 default: Skip_BS(emdf_payload_size*8,           "(Unknown)");
             }
-            size_t RemainginBits=Data_BS_Remain();
-            if (RemainginBits>=emdf_payload_End)
-            {
-                if (RemainginBits>emdf_payload_End)
-                    Skip_BS(RemainginBits-emdf_payload_End,     "(Unparsed bits)");
-            }
-            else
-            {
-                //There is a problem, too many bits were consumed by the parser. //TODO: prevent the parser to consume more bits than count of bits in this element
-                if (Data_BS_Remain() >= RemainAfterEMDF)
-                    Skip_BS(Data_BS_Remain() - RemainAfterEMDF, "(Problem during emdf_payload parsing)");
-                else
-                    Skip_BS(Data_BS_Remain(),                   "(Problem during emdf_payload parsing, going to end directly)");
-                Element_End0();
-                Element_End0();
-                break;
-            }
+            if (Data_BS_Remain()>B.BitsNotIncluded)
+                Skip_BS(Data_BS_Remain()-B.BitsNotIncluded,     "(Unparsed bits)");
+            if (BS_Bookmark(B))
+                Element_Info1("Problem during parsing");
         Element_End0();
 
         Element_End0();
