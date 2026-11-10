@@ -49,6 +49,21 @@ namespace MediaInfoLib
 {
 
 //***************************************************************************
+// Streams management
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+void File_Ivf::Streams_Finish()
+{
+    if (!MI)
+        return;
+
+    //Frames parser, also when the file ends before the parser finishes
+    Open_Buffer_Finalize(MI.get());
+    Merge(*MI, Stream_Video, 0, 0, false);
+}
+
+//***************************************************************************
 // Buffer - File header
 //***************************************************************************
 
@@ -185,11 +200,8 @@ void File_Ivf::Header_Parse()
 void File_Ivf::Data_Parse()
 {
     Open_Buffer_Continue(MI.get());
-    if (MI->Status[IsFinished]) {
-        Open_Buffer_Finalize(MI.get());
-        Merge(*MI, Stream_Video, 0, 0, false);
+    if (MI->Status[IsFinished])
         Finish();
-    }
 }
 
 } //NameSpace

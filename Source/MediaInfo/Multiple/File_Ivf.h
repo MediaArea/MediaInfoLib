@@ -35,6 +35,9 @@ public :
     //In
     int64u Frame_Count_Valid;
 private :
+    //Streams management
+    void Streams_Finish() override;
+
     //Buffer
     bool FileHeader_Begin() override;
     void FileHeader_Parse() override;
