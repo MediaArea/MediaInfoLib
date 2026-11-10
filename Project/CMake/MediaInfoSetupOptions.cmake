@@ -30,7 +30,7 @@ set(MEDIAINFO_FEATURE_LIST
     AV2
     AVC
     AVSV
-    AVSV3
+    AVS3V
     BDAV
     BDMV
     BMP
