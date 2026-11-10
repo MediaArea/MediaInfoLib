@@ -4529,7 +4529,7 @@ void File_Ac3::loudness_data()
     TEST_SB_END();
     TEST_SB_SKIP(                                               "prgmbndye");
         bool prgmbndy_bit = 0;
-        while (prgmbndy_bit == 0) {
+        while (prgmbndy_bit == 0 && Data_BS_Remain()) { //Unary code, a bit read after the end of the data is 0
             Get_SB(prgmbndy_bit,                                "prgmbndy_bit");
         }
         Skip_SB(                                                "end_or_start");
