@@ -3026,6 +3026,7 @@ int tfsxml::Resynch(const string& Value) {
         IsInit_ = false;
         MustEnter = false;
         ParsingAttr = false;
+        p.flags = 0; // Parsing restarts between 2 elements, the XML parser state from before the jump is no more valid
         return 0;
     }
     return 1;
