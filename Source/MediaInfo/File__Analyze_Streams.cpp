@@ -3141,7 +3141,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
     }
 
     //MergedStreams
-    if (FillAllMergedStreams)
+    if (FillAllMergedStreams && Parameter!=(size_t)-1)
     {
         for (size_t i=0; i<=Generic_ServiceProvider; i++) //Last item of generic
             if (Fill_Parameter(StreamKind, (generic)i)==Parameter)
@@ -3152,7 +3152,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
                 auto ID_Dash_Pos=ID.find(__T("-"));
                 if (ID_Dash_Pos!=string::npos)
                     ID.resize(ID_Dash_Pos);
-                for (size_t StreamKind2=Stream_Audio; StreamKind2<Stream_Max; StreamKind2++)
+                for (size_t StreamKind2=Stream_Video; StreamKind2<Stream_Max; StreamKind2++)
                     for (size_t StreamPos2=0; StreamPos2<(*Stream)[StreamKind2].size(); StreamPos2++)
                     {
                         Ztring ID2=Retrieve((stream_t)StreamKind2, StreamPos2, General_ID);
@@ -3162,7 +3162,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
                         if (ID2==ID)
                         {
                             size_t Parameter3=Fill_Parameter((stream_t)StreamKind2, Parameter2);
-                            if (Parameter3!=(size_t)-1)
+                            if (Parameter3!=(size_t)-1 && (Replace || (StreamKind2==StreamKind && StreamPos2==StreamPos) || Retrieve_Const((stream_t)StreamKind2, StreamPos2, Parameter3).empty())) //Without replacement, the other streams keep their value (e.g. a stream of another package with the same ID)
                                 Fill((stream_t)StreamKind2, StreamPos2, Parameter3, Value, Replace);
                         }
                     }
