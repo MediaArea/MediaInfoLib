@@ -364,7 +364,7 @@ impl MediaInfoList {
     ///                  FileOption_NoRecursive = Recursive mode for folders <br>
     ///                  FileOption_CloseAll = Close all already opened files before
     ///
-    /// @return Number of files successfuly added
+    /// @return Number of files opened by this call (the files which could not be opened are in the list too, without any stream)
     pub fn open(&self, files: &str, options: MediaInfo_fileoptions_t) -> usize {
         unsafe { MediaInfoListA_Open(self.handle, CString::new(files).unwrap().as_ptr(), options) }
     }

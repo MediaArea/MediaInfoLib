@@ -66,7 +66,7 @@ public :
         ///             or Full name of folder(s) to open \n
         /// @param Options: FileOption_Recursive = Recursive mode for folders \n
         ///                  FileOption_Close = Close all already opened files before
-        /// @return Number of files successfuly added
+        /// @return Number of files opened by this call (the files which could not be opened are in the list too, without any stream)
     size_t Open (const String &File, const fileoptions_t Options=FileOption_Nothing);
         /// Open a stream and collect information about it (technical information and tags)
         /// @brief Open a stream (Init)

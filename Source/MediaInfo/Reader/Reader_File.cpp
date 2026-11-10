@@ -179,6 +179,13 @@ size_t Reader_File::Format_Test(MediaInfo_Internal* MI, String File_Name)
         }
     #endif //MEDIAINFO_EVENTS
 
+    //File which can not be opened (e.g. without read permission), not tried again by each parser
+    if (!File().Open(File_Name))
+    {
+        MediaInfoLib::Config.Log_Send(0xC0, 0xFF, 0, __T("File can not be opened: ")+File_Name);
+        return 0;
+    }
+
     //With Parser MultipleParsing
     /*
     MI->Open_Buffer_Init((int64u)-1, File_Name);
