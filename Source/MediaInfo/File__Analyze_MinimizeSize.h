@@ -811,6 +811,7 @@ public :
     {
         HdrFormat_SmpteSt209410,
         HdrFormat_SmpteSt209440,
+        HdrFormat_SmpteSt209450,
         HdrFormat_EtsiTs103433,
         HdrFormat_HdrVivid,
         HdrFormat_SmpteSt2086,

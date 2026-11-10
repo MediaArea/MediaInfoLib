@@ -978,7 +978,7 @@
 
 //---------------------------------------------------------------------------
 // Image or video metadata, carried by the formats above
-#if !defined(MEDIAINFO_SMPTEST209450_NO) && !defined(MEDIAINFO_SMPTEST209450_YES) && defined(MEDIAINFO_PNG_YES)
+#if !defined(MEDIAINFO_SMPTEST209450_NO) && !defined(MEDIAINFO_SMPTEST209450_YES) && (defined(MEDIAINFO_PNG_YES) || defined(MEDIAINFO_T35_YES))
     #define MEDIAINFO_SMPTEST209450_YES
 #endif
 

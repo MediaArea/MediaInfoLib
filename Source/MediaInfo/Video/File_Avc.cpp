@@ -1244,6 +1244,10 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
 
     //Merge info about different HDR formats
     Fill_HDR(HDR);
+    #if defined(MEDIAINFO_T35_YES)
+        if (T35_Parser)
+            T35_Parser->SmpteSt209450_Fill(this, Stream_Video, 0);
+    #endif //defined(MEDIAINFO_T35_YES)
 
     if (!maximum_content_light_level.empty())
         Fill(Stream_Video, 0, Video_MaxCLL, maximum_content_light_level);

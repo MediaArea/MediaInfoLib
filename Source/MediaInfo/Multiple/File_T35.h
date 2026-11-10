@@ -34,6 +34,10 @@ public :
 
     //Out
     int64u                      GA94_03_Offset{}; //Offset of the DTVCC transport data, parsed by the container as it depends on the picture order, 0 if none
+    std::vector<std::pair<std::string, Ztring> > SmpteSt209450_Infos; //Fields of the first SMPTE ST 2094-50 message other than the HDR format ones
+
+    //Out, filling of the stream of the container
+    void SmpteSt209450_Fill(File__Analyze* Parent, stream_t StreamKind, size_t StreamPos);
 
     //Constructor/Destructor
     File_T35(File__Analyze* Container_, hdr* HDR_=nullptr, Ztring* EtsiTS103433_=nullptr, DV_RPU* DV_RPU_data_=nullptr);
@@ -59,6 +63,8 @@ private :
     void itu_t_t35_B5_003C();
     void itu_t_t35_B5_003C_0001();
     void itu_t_t35_B5_003C_0001_04();
+    void itu_t_t35_B5_0090();
+    void itu_t_t35_B5_0090_0001();
     void itu_t_t35_B5_5890();
     void itu_t_t35_B5_5890_01();
     void itu_t_t35_26();

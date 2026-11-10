@@ -22,6 +22,9 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Multiple/File_T35.h"
+#if defined(MEDIAINFO_SMPTEST209450_YES)
+    #include "MediaInfo/Video/File_SmpteSt209450.h"
+#endif
 #if defined(MEDIAINFO_AFDBARDATA_YES)
     #include "MediaInfo/Video/File_AfdBarData.h"
 #endif //defined(MEDIAINFO_AFDBARDATA_YES)
@@ -115,6 +118,7 @@ void File_T35::itu_t_t35_B5()
         case 0x003A: itu_t_t35_B5_003A(); break;
         case 0x003B: Param_Info1("Dolby Laboratories, Inc."); itu_t_t35_B5_003B(); break;
         case 0x003C: Param_Info1("Samsung Electronics America"); itu_t_t35_B5_003C(); break;
+        case 0x0090: Param_Info1("SMPTE"); itu_t_t35_B5_0090(); break;
         case 0x5890: Param_Info1("AOMedia"); itu_t_t35_B5_5890(); break;
         default    : if (Element_Size-Element_Offset)
                          Skip_XX(Element_Size-Element_Offset,   "Unknown");
@@ -745,6 +749,57 @@ void File_T35::itu_t_t35_B5_003C_0001_04()
                 HDR[Video_HDR_Format_Compatibility][HdrFormat_SmpteSt209440]=tone_mapping_flag?__T("HDR10+ Profile B"):__T("HDR10+ Profile A");
         }
     FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+// USA - SMPTE
+void File_T35::itu_t_t35_B5_0090()
+{
+    int16u itu_t_t35_terminal_provider_oriented_code;
+    Get_B2 (itu_t_t35_terminal_provider_oriented_code,          "itu_t_t35_terminal_provider_oriented_code");
+
+    switch (itu_t_t35_terminal_provider_oriented_code)
+    {
+        case 0x0001: itu_t_t35_B5_0090_0001(); break;
+    }
+}
+
+//---------------------------------------------------------------------------
+// USA - SMPTE - SMPTE ST 2094-50
+void File_T35::itu_t_t35_B5_0090_0001()
+{
+    Element_Info1("SMPTE ST 2094 App 5");
+
+    #if defined(MEDIAINFO_SMPTEST209450_YES)
+        //Parsing
+        File_SmpteSt209450 MI;
+        Open_Buffer_Init(&MI);
+        Open_Buffer_Continue(&MI);
+
+        FILLING_BEGIN();
+            auto& HDR_Format=HDR[Video_HDR_Format][HdrFormat_SmpteSt209450];
+            if (HDR_Format.empty())
+            {
+                for (const auto& Item : MI.HDR)
+                {
+                    if (Item.first=="HDR_Format")
+                        HDR_Format=Item.second;
+                    else if (Item.first=="HDR_Format_Version")
+                        HDR[Video_HDR_Format_Version][HdrFormat_SmpteSt209450]=Item.second;
+                    else if (Item.first=="HDR_Format_Settings")
+                        HDR[Video_HDR_Format_Settings][HdrFormat_SmpteSt209450]=Item.second;
+                }
+                SmpteSt209450_Infos=MI.Infos;
+            }
+        FILLING_END();
+    #endif //defined(MEDIAINFO_SMPTEST209450_YES)
+}
+
+//---------------------------------------------------------------------------
+void File_T35::SmpteSt209450_Fill(File__Analyze* Parent, stream_t StreamKind, size_t StreamPos)
+{
+    for (const auto& Info : SmpteSt209450_Infos)
+        Parent->Fill(StreamKind, StreamPos, Info.first.c_str(), Info.second, true);
 }
 
 //---------------------------------------------------------------------------

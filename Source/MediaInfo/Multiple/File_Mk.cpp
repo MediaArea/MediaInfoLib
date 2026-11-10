@@ -1266,6 +1266,10 @@ void File_Mk::Streams_Finish()
 
             //Merge info about different HDR formats
             Fill_HDR(HDR);
+            #if defined(MEDIAINFO_T35_YES)
+                if (T35_Parser)
+                    T35_Parser->SmpteSt209450_Fill(this, Stream_Video, 0);
+            #endif //defined(MEDIAINFO_T35_YES)
         }
 
         //Delay
