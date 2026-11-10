@@ -14,14 +14,11 @@ while IFS= read -r i; do
         FILE_NAME=$(basename "$i")
         OUTPUT_XML_NAME="/tmp/$FILE_NAME.ebucore.$VERSION.xml"
         OUTPUT_JSON_NAME="/tmp/$FILE_NAME.ebucore.$VERSION.json"
-        `$PATH_SCRIPT/mil_analyze -f $VERSION "$PATH_FILES/$i" "$OUTPUT_XML_NAME"`
-        cmd_is_ok
+        analyze -f $VERSION "$PATH_FILES/$i" "$OUTPUT_XML_NAME"
         xml_is_correct "$OUTPUT_XML_NAME"
-        `$PATH_SCRIPT/mil_analyze -f ${VERSION}_JSON "$PATH_FILES/$i" "$OUTPUT_JSON_NAME"`
-        cmd_is_ok
+        analyze -f ${VERSION}_JSON "$PATH_FILES/$i" "$OUTPUT_JSON_NAME"
         json_is_correct "$OUTPUT_JSON_NAME"
     done
 done < "$PATH_FILES/files.txt"
 
-grep -q 'writingLibraryVersion=\"\([0-9]\+\.\)\{1,3\}[0-9]\+\"' "$OUTPUT_XML_NAME"
-cmd_is_ok
+file_contains "$OUTPUT_XML_NAME" 'writingLibraryVersion=\"\([0-9]\+\.\)\{1,3\}[0-9]\+\"'
