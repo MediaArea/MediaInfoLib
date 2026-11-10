@@ -4512,9 +4512,13 @@ void File_Mk::Segment_Tracks_TrackEntry_TrackNumber()
         Fill(StreamKind_Last, StreamPos_Last, General_ID, TrackNumber);
         stream& streamItem = Stream[TrackNumber];
         auto Previous=Stream.find((int64u)-1);
-        if (Previous!=Stream.end())
+        if (Previous!=Stream.end() && TrackNumber!=(int64u)-1) //(int64u)-1 would be streamItem itself
         {
             streamItem=Previous->second;
+            //The memory allocated by the elements before TrackNumber is now owned by streamItem, it must not be deleted by the erase
+            Previous->second.Parser=nullptr;
+            Previous->second.ContentCompSettings_Buffer=nullptr;
+            Previous->second.BlockAdditions.clear();
             Stream.erase(Previous);
         }
         if (StreamKind_Last!=Stream_Max)
