@@ -334,6 +334,11 @@ void File_Png::Header_Parse()
 //---------------------------------------------------------------------------
 void File_Png::Data_Parse()
 {
+    if (Element_Size<4) //Chunk truncated before its CRC, e.g. at the end of the file
+    {
+        Skip_XX(Element_Size,                                   "(Incomplete)");
+        return;
+    }
     Element_Size-=4; //For CRC
 
     #define CASE_INFO(_NAME, _DETAIL) \
