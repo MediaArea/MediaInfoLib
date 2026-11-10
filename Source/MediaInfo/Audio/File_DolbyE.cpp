@@ -1519,7 +1519,7 @@ bool File_DolbyE::Synchronize()
     //Synchronizing
     while (Buffer_Offset+3<=Buffer_Size)
     {
-        if ((CC2(Buffer+Buffer_Offset_Temp)&0xFFFE)==0x078E) //16-bit
+        if ((CC2(Buffer+Buffer_Offset)&0xFFFE)==0x078E) //16-bit
         {
             bit_depth=16;
             key_present=(CC2(Buffer+Buffer_Offset)&0x0001)?true:false;
@@ -1773,6 +1773,9 @@ void File_DolbyE::metadata_segment()
     Element_Begin1("metadata_segment");
     if (key_present)
     {
+        if (Data_BS_Remain()<2*(size_t)bit_depth) //Key and at least the CRC, before the size is read after the key
+            return; //There is a problem
+
         //We must change the buffer
         switch (bit_depth)
         {
@@ -3833,8 +3836,8 @@ void File_DolbyE::Descramble_20bit (int32u key, int16u size)
         Half=false;
     for (int16u Pos=0; Pos<size-(Half?1:0); Pos+=2)
         int40u2BigEndian(Temp+(Half?3:0)+Pos*5/2, BigEndian2int40u(Temp+(Half?3:0)+Pos*5/2)^keys);
-    if ((size-((size && Half)?1:0))%2==0)
-        int24u2BigEndian(Temp+(Half?3:0)+(size-((size && Half)?1:0))*5/2, BigEndian2int24u(Temp+(Half?3:0)+(size-((size && Half)?1:0))*5/2)^(key<<4));
+    if ((size+(Half?0:1))%2) //One word left after the pairs: size words and the CRC word, minus the first one if not byte aligned
+        int24u2BigEndian(Temp+(Half?3:0)+(size-(Half?1:0))*5/2, BigEndian2int24u(Temp+(Half?3:0)+(size-(Half?1:0))*5/2)^(key<<4));
 }
 
 //---------------------------------------------------------------------------
@@ -3849,9 +3852,7 @@ void File_DolbyE::Descramble_24bit (int32u key, int16u size)
 void File_DolbyE::Descramble_Reload()
 {
     //Words are descrambled in place after the bitstream reader has loaded some of them
-    size_t BS_Remain=Data_BS_Remain();
-    BS_Begin();
-    BS->Skip(Data_BS_Remain()-BS_Remain);
+    BS->Refresh();
 }
 
 //***************************************************************************

@@ -1366,7 +1366,7 @@ void File_Ffv1::SliceContent(states &States)
         Trace_Activated=Trace_Activated_Save; // Trace is too huge, reactivating after during pixel decoding
     #endif //MEDIAINFO_TRACE
 
-    if (BS->BufferUnderRun || RC->Underrun())
+    if (BS->BufferUnderRun() || RC->Underrun())
         Element_Error("FFV1-SLICE-SliceContent:1");
 
     if (coder_type)

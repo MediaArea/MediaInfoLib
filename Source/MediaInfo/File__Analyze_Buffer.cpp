@@ -1303,69 +1303,57 @@ void File__Analyze::Skip_VS(const char* Name)
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+// BitStream_Fast::GetUE()/GetSE() read the whole code at once; on a code with more than
+// 31 leading zero bits or a truncated code they return 0 and set BufferUnderRun().
+// BufferUnderRun() can not be already set here: it implies Remain()==0.
+// Trace size is kept as before: 2*LeadingZeroBits.
+
+//---------------------------------------------------------------------------
 void File__Analyze::Get_SE(int32s &Info, const char* Name)
 {
     INTEGRITY_SIZE_ATLEAST_BUFFER();
-    int8u LeadingZeroBits=0;
-    while(BS->Remain()>0 && !BS->GetB())
-        LeadingZeroBits++;
-    INTEGRITY_INT(LeadingZeroBits<=32, "(Problem)", 0)
-    double InfoD=pow((float)2, (float)LeadingZeroBits)-1+BS->Get4(LeadingZeroBits);
-    INTEGRITY_INT(InfoD<int32u(-1), "(Problem)", 0)
-    Info=(int32s)(pow((double)-1, InfoD+1)*(int32u)ceil(InfoD/2));
+    const size_t Remain_Before=BS->Remain();
+    Info=BS->GetSE();
+    INTEGRITY_INT(!BS->BufferUnderRun(), "(Problem)", 0)
 
     if (Trace_Activated)
-        Param(Name, Info, LeadingZeroBits<<1);
+        Param(Name, Info, (int8u)(Remain_Before-BS->Remain()-1));
 }
 
 //---------------------------------------------------------------------------
 void File__Analyze::Skip_SE(const char* Name)
 {
     INTEGRITY(BS->Remain(), "Size is wrong", 0)
-    int8u LeadingZeroBits=0;
-    while(BS->Remain()>0 && !BS->GetB())
-        LeadingZeroBits++;
+    const size_t Remain_Before=BS->Remain();
+    const int32s Info=BS->GetSE();
+    INTEGRITY(!BS->BufferUnderRun(), "(Problem)", 0)
+
     if (Trace_Activated)
-    {
-        INTEGRITY(LeadingZeroBits<=32, "(Problem)", 0)
-        double InfoD=pow((float)2, (float)LeadingZeroBits)-1+BS->Get4(LeadingZeroBits);
-        INTEGRITY(InfoD<int32u(-1), "(Problem)", 0)
-        Param(Name, (int32s)(pow(-1, InfoD+1)*(int32u)ceil(InfoD/2)), LeadingZeroBits<<1);
-    }
-    else
-        BS->Skip(LeadingZeroBits);
+        Param(Name, Info, (int8u)(Remain_Before-BS->Remain()-1));
 }
 
 //---------------------------------------------------------------------------
 void File__Analyze::Get_UE(int32u &Info, const char* Name)
 {
     INTEGRITY_SIZE_ATLEAST_BUFFER();
-    int8u LeadingZeroBits=0;
-    while(BS->Remain()>0 && !BS->GetB())
-        LeadingZeroBits++;
-    INTEGRITY_INT(LeadingZeroBits<=32, "(Problem)", 0)
-    double InfoD=pow(2, (float)LeadingZeroBits);
-    Info=(int32u)InfoD-1+BS->Get4(LeadingZeroBits);
+    const size_t Remain_Before=BS->Remain();
+    Info=BS->GetUE();
+    INTEGRITY_INT(!BS->BufferUnderRun(), "(Problem)", 0)
 
     if (Trace_Activated)
-        Param(Name, Info, LeadingZeroBits<<1);
+        Param(Name, Info, (int8u)(Remain_Before-BS->Remain()-1));
 }
 
 //---------------------------------------------------------------------------
 void File__Analyze::Skip_UE(const char* Name)
 {
     INTEGRITY(BS->Remain(), "Size is wrong", 0)
-    int8u LeadingZeroBits=0;
-    while(BS->Remain()>0 && !BS->GetB())
-        LeadingZeroBits++;
+    const size_t Remain_Before=BS->Remain();
+    const int32u Info=BS->GetUE();
+    INTEGRITY(!BS->BufferUnderRun(), "(Problem)", 0)
+
     if (Trace_Activated)
-    {
-        INTEGRITY(LeadingZeroBits<=32, "(Problem)", 0)
-        double InfoD=pow(2, (float)LeadingZeroBits);
-        Param(Name, (int32u)InfoD-1+BS->Get4(LeadingZeroBits), LeadingZeroBits<<1);
-    }
-    else
-        BS->Skip(LeadingZeroBits);
+        Param(Name, Info, (int8u)(Remain_Before-BS->Remain()-1));
 }
 
 //***************************************************************************

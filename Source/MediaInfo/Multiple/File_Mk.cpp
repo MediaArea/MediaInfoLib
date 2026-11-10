@@ -2520,7 +2520,9 @@ bool File_Mk::Rawcooked_Compressed_Start(rawcookedtrack::mask* Mask, bool UseMas
         Rawcooked_Compressed_Save_Buffer_Offset=Buffer_Offset;
         Buffer_Offset=0;
         Rawcooked_Compressed_Save_Buffer=Buffer;
+        Rawcooked_Compressed_Save_Buffer_Size=Buffer_Size;
         Buffer=Dest;
+        Buffer_Size=(size_t)Dest_Size; //The bytes after the end of the copy are not readable
         Rawcooked_Compressed_Save_Element_Size=Element_Size;
         Element_Size=Dest_Size;
         Rawcooked_Compressed_Save_Element_Offset=Element_Offset;
@@ -2544,6 +2546,7 @@ void File_Mk::Rawcooked_Compressed_End(rawcookedtrack::mask* Mask, bool UseMask)
         delete[] Buffer; //Buffer=NULL;
     Buffer=Rawcooked_Compressed_Save_Buffer;
     Buffer_Offset=Rawcooked_Compressed_Save_Buffer_Offset;
+    Buffer_Size=Rawcooked_Compressed_Save_Buffer_Size;
     Element_Size=Rawcooked_Compressed_Save_Element_Size;
     Element_Offset=Element_Size;
     File_Offset-=Buffer_Offset+Rawcooked_Compressed_Save_Element_Offset;
@@ -2941,6 +2944,7 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
             //else
             //    Element_Set_Remove_Children_IfNoErrors();
         }
+        const size_t Trace_Block_Count=streamItem.Trace_Segment_Cluster_Block_Count; //Copy, a finish during the parsing of the block deletes the streams
     #endif // MEDIAINFO_TRACE
     streamItem.PacketCount++;
     if (streamItem.Searching_Payload || streamItem.Searching_TimeStamps || streamItem.Searching_TimeStamp_Start)
@@ -3078,7 +3082,7 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
     }
 
     #if MEDIAINFO_TRACE
-        if (Trace_Activated && (Trace_Segment_Cluster_Count>MaxCountSameElementInTrace || streamItem.Trace_Segment_Cluster_Block_Count>MaxCountSameElementInTrace))
+        if (Trace_Activated && (Trace_Segment_Cluster_Count>MaxCountSameElementInTrace || Trace_Block_Count>MaxCountSameElementInTrace))
             Element_Children_IfNoErrors();
     #endif // MEDIAINFO_TRACE
 }
@@ -3087,6 +3091,9 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
 void File_Mk::Segment_Cluster_BlockGroup_Block_Lace()
 {
     stream& streamItem=Stream[TrackNumber];
+    #if MEDIAINFO_TRACE
+        const size_t Trace_Block_Count=streamItem.Trace_Segment_Cluster_Block_Count; //Copy, a finish during the parsing of the lace deletes the streams
+    #endif // MEDIAINFO_TRACE
 
     //Content compression
     if (streamItem.ContentCompAlgo!=(int32u)-1 && streamItem.ContentCompAlgo!=3)
@@ -3112,6 +3119,7 @@ void File_Mk::Segment_Cluster_BlockGroup_Block_Lace()
         const int8u* Save_Buffer=Buffer;
         int64u Save_File_Offset=File_Offset;
         size_t Save_Buffer_Offset=Buffer_Offset;
+        size_t Save_Buffer_Size=Buffer_Size;
         int64u Save_Element_Size=Element_Size;
         size_t Save_Element_Offset=(size_t)Element_Offset;
         if (streamItem.ContentCompAlgo==3) //Header Stripping
@@ -3124,6 +3132,7 @@ void File_Mk::Segment_Cluster_BlockGroup_Block_Lace()
             std::memcpy(Buffer_Stripping, streamItem.ContentCompSettings_Buffer, streamItem.ContentCompSettings_Buffer_Size);
             std::memcpy(Buffer_Stripping+streamItem.ContentCompSettings_Buffer_Size, Save_Buffer+Save_Buffer_Offset+Save_Element_Offset, Save_Element_Size-Save_Element_Offset);
             Buffer=Buffer_Stripping;
+            Buffer_Size=(size_t)Element_Size; //The bytes after the end of the copy are not readable
         }
 
         //Parsing
@@ -3171,6 +3180,7 @@ void File_Mk::Segment_Cluster_BlockGroup_Block_Lace()
             Element_Size=Save_Element_Size;
             File_Offset=Save_File_Offset;
             Buffer_Offset=Save_Buffer_Offset;
+            Buffer_Size=Save_Buffer_Size;
             delete[] Buffer; Buffer=Save_Buffer;
         }
     }
@@ -3217,7 +3227,7 @@ void File_Mk::Segment_Cluster_BlockGroup_Block_Lace()
     Element_Show();
 
     #if MEDIAINFO_TRACE
-        if (Trace_Activated && (Trace_Segment_Cluster_Count>MaxCountSameElementInTrace || streamItem.Trace_Segment_Cluster_Block_Count>MaxCountSameElementInTrace))
+        if (Trace_Activated && (Trace_Segment_Cluster_Count>MaxCountSameElementInTrace || Trace_Block_Count>MaxCountSameElementInTrace))
             Element_Children_IfNoErrors();
     #endif // MEDIAINFO_TRACE
 }
@@ -4453,9 +4463,13 @@ void File_Mk::Segment_Tracks_TrackEntry_TrackNumber()
         Fill(StreamKind_Last, StreamPos_Last, General_ID, TrackNumber);
         stream& streamItem = Stream[TrackNumber];
         auto Previous=Stream.find((int64u)-1);
-        if (Previous!=Stream.end())
+        if (Previous!=Stream.end() && TrackNumber!=(int64u)-1) //(int64u)-1 would be streamItem itself
         {
             streamItem=Previous->second;
+            //The memory allocated by the elements before TrackNumber is now owned by streamItem, it must not be deleted by the erase
+            Previous->second.Parser=nullptr;
+            Previous->second.ContentCompSettings_Buffer=nullptr;
+            Previous->second.BlockAdditions.clear();
             Stream.erase(Previous);
         }
         if (StreamKind_Last!=Stream_Max)

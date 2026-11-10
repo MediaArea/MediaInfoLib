@@ -625,6 +625,7 @@ private :
     bool                                FirstPFrameInGop_IsParsed;
     bool                                Config_IsRepeated;
     std::map<size_t, int>               FrameSizes;
+    size_t                              Buffer_Size_Original; //Buffer_Size is the size of the copy while a NAL unit is parsed without its emulation prevention bytes
     #if MEDIAINFO_ADVANCED2
         std::vector<std::string>        Dump_SPS;
         std::vector<std::string>        Dump_PPS;

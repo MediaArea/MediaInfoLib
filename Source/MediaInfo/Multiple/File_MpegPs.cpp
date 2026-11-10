@@ -825,6 +825,8 @@ bool File_MpegPs::Synchronize()
     {
         if (!Synchronize_0x000001())
             return false;
+        if (Buffer_Offset + 4 > Buffer_Size)
+            return false; //Sync is OK, but stream_id is not available
         if (Buffer[Buffer_Offset + 3] >= 0xB9)
         {
             //Synched is OK

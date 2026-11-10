@@ -892,38 +892,32 @@ void File__Analyze::Skip_VS()
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+// BitStream_Fast::GetUE()/GetSE() read the whole code at once; on a code with more than
+// 31 leading zero bits or a truncated code they return 0 and set BufferUnderRun().
+// BufferUnderRun() can not be already set here: it implies Remain()==0.
+
+//---------------------------------------------------------------------------
 void File__Analyze::Get_SE(int32s &Info)
 {
     INTEGRITY_SIZE_ATLEAST_BUFFER();
-    int8u LeadingZeroBits=0;
-    while(BS->Remain()>0 && !BS->GetB())
-        LeadingZeroBits++;
-    INTEGRITY_INT(LeadingZeroBits<=32)
-    double InfoD=pow((float)2, (float)LeadingZeroBits)-1+BS->Get4(LeadingZeroBits);
-    INTEGRITY_INT(InfoD<int32u(-1))
-    Info=(int32s)(pow((double)-1, InfoD+1)*(int32u)ceil(InfoD/2));
+    Info=BS->GetSE();
+    INTEGRITY_INT(!BS->BufferUnderRun())
 }
 
 //---------------------------------------------------------------------------
 void File__Analyze::Get_UE(int32u &Info)
 {
     INTEGRITY_SIZE_ATLEAST_BUFFER();
-    int8u LeadingZeroBits=0;
-    while(BS->Remain()>0 && !BS->GetB())
-        LeadingZeroBits++;
-    INTEGRITY_INT(LeadingZeroBits<=32)
-    double InfoD=pow((float)2, (float)LeadingZeroBits);
-    Info=(int32u)InfoD-1+BS->Get4(LeadingZeroBits);
+    Info=BS->GetUE();
+    INTEGRITY_INT(!BS->BufferUnderRun())
 }
 
 //---------------------------------------------------------------------------
 void File__Analyze::Skip_UE()
 {
     INTEGRITY(BS->Remain())
-    int8u LeadingZeroBits=0;
-    while(BS->Remain()>0 && !BS->GetB())
-        LeadingZeroBits++;
-    BS->Skip(LeadingZeroBits);
+    BS->GetUE();
+    INTEGRITY(!BS->BufferUnderRun())
 }
 
 //***************************************************************************
