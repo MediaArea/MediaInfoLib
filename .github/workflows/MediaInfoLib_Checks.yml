@@ -350,7 +350,7 @@ jobs:
         run: |
           echo "Checking tracked files for mixed line endings..."
           # git ls-files --eol outputs lines like: i/lf w/crlf attr/text=auto path/to/file
-          MIXED_FILES=$(git ls-files --eol | grep -E '^i/mixed')
+          MIXED_FILES=$(git ls-files --eol | grep -E '^i/mixed' || true) # grep exits with 1 when nothing is found
           if [ -n "$MIXED_FILES" ]; then
             # Escape newlines to %0A so GitHub renders the full file list in the annotation
             ESCAPED_FILES="${MIXED_FILES//'%'/'%25'}"
