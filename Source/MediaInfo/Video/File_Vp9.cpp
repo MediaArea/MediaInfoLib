@@ -42,13 +42,15 @@ namespace MediaInfoLib
 // Info
 //***************************************************************************
 
-static const char* Vp9_Feature[] = 
+#if MEDIAINFO_TRACE
+static const char* Vp9_Feature[] =
 {
     "Profile",
     "Level",
     "Bit Depth",
     "Chroma Subsampling",
 };
+#endif //MEDIAINFO_TRACE
 
 //---------------------------------------------------------------------------
 const char* Mpegv_colour_primaries(int8u colour_primaries);
