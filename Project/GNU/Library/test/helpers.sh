@@ -17,9 +17,8 @@ status=0
 
 timeout=30
 
-# directory for the temporary files
-temp_path="$(mktemp -d -t 'mediainfolib_testsuite.XXXXXX')"
-trap 'rm -fr "${temp_path}"' EXIT
+# directory for the temporary files, the one of utils.sh
+temp_path="${TEMP_PATH}"
 if test -n "${WINDOWS}" ; then
     temp_path="$(cygpath -m "${temp_path}")" # same path for Git Bash and the tested programs, without path conversion
 fi

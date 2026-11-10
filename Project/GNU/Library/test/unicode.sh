@@ -10,14 +10,13 @@ fi
 
 FILE="$PATH_SCRIPT/../../../../Release/Example.ogg"
 FILE_NAME="$(basename $FILE)"
-OUTPUT_XML_NAME="/tmp/$FILE_NAME.xml"
-`$PATH_SCRIPT/mil_analyze -f XML "$FILE" "$OUTPUT_XML_NAME"`
-cmd_is_ok
+OUTPUT_XML_NAME="$TEMP_PATH/$FILE_NAME.xml"
+analyze -f XML "$FILE" "$OUTPUT_XML_NAME"
 xml_is_correct "$OUTPUT_XML_NAME"
-grep -q "ĀāĂăĄąĆćĈĉĊċČčĎďĐđĒēĔĕĖėĘęĚěĜĝĞğĠġĢģĤĥĦħĨĩĪīĬĭĮįİıĲĳĴĵĶķĸĹĺĻļĽľĿŀŁłŃńŅņ" "$OUTPUT_XML_NAME" || exit 1
-grep -q "aàäâåáãæÅÆ cçÇ eéèëê uùüû" "$OUTPUT_XML_NAME" || exit 1
-grep -q "αβγδεζηθικλμνξοπρςστυφχψω" "$OUTPUT_XML_NAME" || exit 1
-grep -q "ئابةتثجحخدذرزسشصضطظعغـف" "$OUTPUT_XML_NAME" || exit 1
-grep -q "אבגדהוזחטיךכלםמןנסעףפץצְֱ" "$OUTPUT_XML_NAME" || exit 1
-grep -q "ЁЂЃЄЅІЇЈЉЊЋЌЎЏ" "$OUTPUT_XML_NAME" || exit 1
-grep -q "ˆˇˉ˘˙˚˛˜̣̀́̃̉" "$OUTPUT_XML_NAME" || exit 1
+file_contains "$OUTPUT_XML_NAME" "ĀāĂăĄąĆćĈĉĊċČčĎďĐđĒēĔĕĖėĘęĚěĜĝĞğĠġĢģĤĥĦħĨĩĪīĬĭĮįİıĲĳĴĵĶķĸĹĺĻļĽľĿŀŁłŃńŅņ"
+file_contains "$OUTPUT_XML_NAME" "aàäâåáãæÅÆ cçÇ eéèëê uùüû"
+file_contains "$OUTPUT_XML_NAME" "αβγδεζηθικλμνξοπρςστυφχψω"
+file_contains "$OUTPUT_XML_NAME" "ئابةتثجحخدذرزسشصضطظعغـف"
+file_contains "$OUTPUT_XML_NAME" "אבגדהוזחטיךכלםמןנסעףפץצְֱ"
+file_contains "$OUTPUT_XML_NAME" "ЁЂЃЄЅІЇЈЉЊЋЌЎЏ"
+file_contains "$OUTPUT_XML_NAME" "ˆˇˉ˘˙˚˛˜̣̀́̃̉"

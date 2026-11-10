@@ -10,18 +10,15 @@ fi
 
 unset args
 while IFS= read -r i; do
+    mkdir -p "$TEMP_PATH/$(dirname "$i")"
     for VERSION in EBUCore_1.5 EBUCore_1.6 EBUCore_1.8_ps EBUCore_1.8_sp; do
-        FILE_NAME=$(basename "$i")
-        OUTPUT_XML_NAME="/tmp/$FILE_NAME.ebucore.$VERSION.xml"
-        OUTPUT_JSON_NAME="/tmp/$FILE_NAME.ebucore.$VERSION.json"
-        `$PATH_SCRIPT/mil_analyze -f $VERSION "$PATH_FILES/$i" "$OUTPUT_XML_NAME"`
-        cmd_is_ok
+        OUTPUT_XML_NAME="$TEMP_PATH/$i.ebucore.$VERSION.xml"
+        OUTPUT_JSON_NAME="$TEMP_PATH/$i.ebucore.$VERSION.json"
+        analyze -f $VERSION "$PATH_FILES/$i" "$OUTPUT_XML_NAME"
         xml_is_correct "$OUTPUT_XML_NAME"
-        `$PATH_SCRIPT/mil_analyze -f ${VERSION}_JSON "$PATH_FILES/$i" "$OUTPUT_JSON_NAME"`
-        cmd_is_ok
+        analyze -f ${VERSION}_JSON "$PATH_FILES/$i" "$OUTPUT_JSON_NAME"
         json_is_correct "$OUTPUT_JSON_NAME"
     done
 done < "$PATH_FILES/files.txt"
 
-grep -q 'writingLibraryVersion=\"\([0-9]\+\.\)\{1,3\}[0-9]\+\"' "$OUTPUT_XML_NAME"
-cmd_is_ok
+file_contains "$OUTPUT_XML_NAME" 'writingLibraryVersion=\"\([0-9]\+\.\)\{1,3\}[0-9]\+\"'
