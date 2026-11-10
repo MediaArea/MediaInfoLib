@@ -641,13 +641,13 @@ static string Mpeg4_chan_ChannelDescription_Layout (int32u ChannelLabel)
         case   9 : return "Cs";
         case  10 : return "Lsd";
         case  11 : return "Rsd";
-        case  12 : return "Tcs";
-        case  13 : return "Vhl";
-        case  14 : return "Vhc";
-        case  15 : return "Vhr";
-        case  16 : return "Trs";
-        case  17 : return "Trs";
-        case  18 : return "Trs";
+        case  12 : return "Tc";  // TopCenterSurround
+        case  13 : return "Tfl"; // VerticalHeightLeft
+        case  14 : return "Tfc"; // VerticalHeightCenter
+        case  15 : return "Tfr"; // VerticalHeightRight
+        case  16 : return "Tbl"; // TopBackLeft
+        case  17 : return "Tbc"; // TopBackCenter
+        case  18 : return "Tbr"; // TopBackRight
         case  33 : return "Lrs";
         case  34 : return "Rrs";
         case  35 : return "Lw";
@@ -661,6 +661,27 @@ static string Mpeg4_chan_ChannelDescription_Layout (int32u ChannelLabel)
         case  43 : return "DialogCentricMix";
         case  44 : return "CenterSurroundDirect";
         case  45 : return "Haptic";
+        case  46 : return "Tfl"; // LeftTopFront, now an alias of 13
+        case  47 : return "Tfc"; // CenterTopFront, now an alias of 14
+        case  48 : return "Tfr"; // RightTopFront, now an alias of 15
+        case  49 : return "Tsl"; // LeftTopMiddle
+        case  50 : return "Tc";  // CenterTopMiddle, now an alias of 12
+        case  51 : return "Tsr"; // RightTopMiddle
+        case  52 : return "Tbl"; // LeftTopRear
+        case  53 : return "Tbc"; // CenterTopRear
+        case  54 : return "Tbr"; // RightTopRear
+        case  55 : return "Lss"; // LeftSideSurround
+        case  56 : return "Rss"; // RightSideSurround
+        case  57 : return "Bfl"; // LeftBottom
+        case  58 : return "Bfr"; // RightBottom
+        case  59 : return "Bfc"; // CenterBottom
+        case  60 : return "Lvs"; // LeftTopSurround
+        case  61 : return "Rvs"; // RightTopSurround
+        case  62 : return "LFE3";
+        case  63 : return "Lb";  // LeftBackSurround
+        case  64 : return "Rb";  // RightBackSurround
+        case  65 : return "Lscr"; // LeftEdgeOfScreen
+        case  66 : return "Rscr"; // RightEdgeOfScreen
         case 200 : return "W";
         case 201 : return "X";
         case 202 : return "Y";
