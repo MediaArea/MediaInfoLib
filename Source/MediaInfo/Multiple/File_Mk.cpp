@@ -2993,6 +2993,7 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
             //else
             //    Element_Set_Remove_Children_IfNoErrors();
         }
+        const size_t Trace_Block_Count=streamItem.Trace_Segment_Cluster_Block_Count; //Copy, a finish during the parsing of the block deletes the streams
     #endif // MEDIAINFO_TRACE
     streamItem.PacketCount++;
     if (streamItem.Searching_Payload || streamItem.Searching_TimeStamps || streamItem.Searching_TimeStamp_Start)
@@ -3130,7 +3131,7 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
     }
 
     #if MEDIAINFO_TRACE
-        if (Trace_Activated && (Trace_Segment_Cluster_Count>MaxCountSameElementInTrace || streamItem.Trace_Segment_Cluster_Block_Count>MaxCountSameElementInTrace))
+        if (Trace_Activated && (Trace_Segment_Cluster_Count>MaxCountSameElementInTrace || Trace_Block_Count>MaxCountSameElementInTrace))
             Element_Children_IfNoErrors();
     #endif // MEDIAINFO_TRACE
 }
@@ -3139,6 +3140,9 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
 void File_Mk::Segment_Cluster_BlockGroup_Block_Lace()
 {
     stream& streamItem=Stream[TrackNumber];
+    #if MEDIAINFO_TRACE
+        const size_t Trace_Block_Count=streamItem.Trace_Segment_Cluster_Block_Count; //Copy, a finish during the parsing of the lace deletes the streams
+    #endif // MEDIAINFO_TRACE
 
     //Content compression
     if (streamItem.ContentCompAlgo!=(int32u)-1 && streamItem.ContentCompAlgo!=3)
@@ -3272,7 +3276,7 @@ void File_Mk::Segment_Cluster_BlockGroup_Block_Lace()
     Element_Show();
 
     #if MEDIAINFO_TRACE
-        if (Trace_Activated && (Trace_Segment_Cluster_Count>MaxCountSameElementInTrace || streamItem.Trace_Segment_Cluster_Block_Count>MaxCountSameElementInTrace))
+        if (Trace_Activated && (Trace_Segment_Cluster_Count>MaxCountSameElementInTrace || Trace_Block_Count>MaxCountSameElementInTrace))
             Element_Children_IfNoErrors();
     #endif // MEDIAINFO_TRACE
 }
