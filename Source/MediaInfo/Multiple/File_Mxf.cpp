@@ -10361,12 +10361,15 @@ void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 Edit
             }
         }
 
-        //Stored essence also in the streams of other kinds from the essence of the track (e.g. captions in the video)
-        if (PreCharge || RollOut)
-            for (size_t StreamKind2=Stream_General+1; StreamKind2<Stream_Max; StreamKind2++)
-                if (StreamKind2!=StreamKind_Last)
-                    for (size_t StreamPos2=StreamCount_BeforeEssence[StreamKind2]; StreamPos2<Count_Get((stream_t)StreamKind2); StreamPos2++)
+        //Duration of the content and stored essence also in the streams of other kinds from the essence of the track (e.g. captions in the video)
+        for (size_t StreamKind2=Stream_General+1; StreamKind2<Stream_Max; StreamKind2++)
+            if (StreamKind2!=StreamKind_Last)
+                for (size_t StreamPos2=StreamCount_BeforeEssence[StreamKind2]; StreamPos2<Count_Get((stream_t)StreamKind2); StreamPos2++)
+                {
+                    Fill((stream_t)StreamKind2, StreamPos2, Fill_Parameter((stream_t)StreamKind2, Generic_Duration), Duration_Content, 0, true);
+                    if (PreCharge || RollOut)
                         Fill_Source((stream_t)StreamKind2, StreamPos2);
+                }
 
         #if MEDIAINFO_ADVANCED
             if (Component->second.IsTruncated && StreamKind_Last==Stream_Video)
