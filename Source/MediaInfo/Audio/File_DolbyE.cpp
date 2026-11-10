@@ -3849,9 +3849,7 @@ void File_DolbyE::Descramble_24bit (int32u key, int16u size)
 void File_DolbyE::Descramble_Reload()
 {
     //Words are descrambled in place after the bitstream reader has loaded some of them
-    size_t BS_Remain=Data_BS_Remain();
-    BS_Begin();
-    BS->Skip(Data_BS_Remain()-BS_Remain);
+    BS->Refresh();
 }
 
 //***************************************************************************
