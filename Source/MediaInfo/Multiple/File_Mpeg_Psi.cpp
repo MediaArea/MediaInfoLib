@@ -110,8 +110,8 @@ const char* Mpeg_Psi_stream_type_Format(int8u stream_type, int32u format_identif
         case 0x1E : return "MPEG Video"; //ISO/IEC 23002-3
         case 0x1F : return "AVC";
         case 0x20 : return "AVC";
-        case 0x24 :
         case 0x21 : return "JPEG 2000";
+        case 0x24 :
         case 0x27 : return "HEVC";
         case 0x2D : return "MPEG-H 3D Audio";
         case 0x2E : return "MPEG-H 3D Audio";
