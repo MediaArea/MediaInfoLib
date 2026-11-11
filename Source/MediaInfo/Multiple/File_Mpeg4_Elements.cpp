@@ -9946,10 +9946,10 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_mhaC()
 {
     Element_Name("MHAConfigurationBox");
 
-    if (moov_trak_mdia_minf_stbl_stsd_Pos>1)
+    if (moov_trak_mdia_minf_stbl_stsd_Pos>1 || StreamKind_Last!=Stream_Audio)
     {
         Skip_XX(Element_Size,                                   "Data not analyzed");
-        return; //Handling only the first description
+        return; //Handling only the first description, of an audio track
     }
 
     AddCodecConfigurationBoxInfo();
