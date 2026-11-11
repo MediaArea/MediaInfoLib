@@ -3340,6 +3340,12 @@ void File_Hevc::sei_message_decoded_picture_hash(int32u payloadSize)
     //Parsing
     int8u hash_type;
     Get_B1 (hash_type,                                          "hash_type");
+    if (hash_type>2)
+    {
+        if (payloadSize>1)
+            Skip_XX(payloadSize-1,                              "unknown"); //The size per component is not known
+        return;
+    }
     for (int8u cIdx=0; cIdx<(chroma_format_idc?3:1); cIdx++)
         switch (hash_type)
         {
@@ -3352,9 +3358,7 @@ void File_Hevc::sei_message_decoded_picture_hash(int32u payloadSize)
             case 2 :    // checksum
                         Skip_XX( 4,                             "checksum");
                         break;
-            default :   //
-                        Skip_XX((Element_Size-1)/(chroma_format_idc?1:3), "unknown");
-                        break;
+            default :   ;
         }
 }
 
