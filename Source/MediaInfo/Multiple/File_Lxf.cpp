@@ -669,7 +669,7 @@ void File_Lxf::Header_Parse()
     if (Version>1)
     {
         //Filling
-        Header_Fill_Code(0, "Unknown");
+        Header_Fill_Code((int64u)-1, "Unknown");
         Header_Fill_Size(HeaderSize);
         Synched=false;
         return;
