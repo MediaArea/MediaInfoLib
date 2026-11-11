@@ -438,7 +438,7 @@ bool File_MiXml::FileHeader_Begin()
                                                 if (!strcmp(Extra->Name(), "ServiceKind"))
                                                 {
                                                     const char* ServiceKind=Extra->GetText();
-                                                    for (int8u i=0; i<8; i++)
+                                                    for (int8u i=0; i<9; i++)
                                                         if (!strcmp(ServiceKind, AC3_Mode[i]))
                                                         {
                                                             Fill(Stream_Audio, 0, (LastNested->Name + "ServiceKind/String").c_str(), AC3_Mode_String[i]);

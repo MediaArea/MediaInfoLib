@@ -54,6 +54,7 @@ extern const int8u AC3_Channels[];
 extern const char* AC3_Surround[];
 extern const char* AC3_Mode[];
 extern const char* AC3_Mode_String[];
+extern size_t AC3_Mode_Pos(int8u bsmod, int8u acmod);
 extern const char* AC3_ChannelPositions[];
 extern const char* AC3_ChannelPositions2[];
 extern const char* AC3_ChannelLayout_lfeoff[];
@@ -3671,9 +3672,9 @@ void File_DolbyE::ac3_metadata_subsegment(bool xbsi)
                     Fill(Stream_Audio, program, "AC3_Metadata BitRate/String", Ztring::ToZtring(AC3_BitRate[meta[ac3_datarate]])+__T(" kbps"));
                     Fill_SetOptions(Stream_Audio, program, "AC3_Metadata BitRate/String", "Y NTN");
                 }
-                Fill(Stream_Audio, program, "AC3_Metadata ServiceKind", AC3_Mode[meta[ac3_bsmod]]);
+                Fill(Stream_Audio, program, "AC3_Metadata ServiceKind", AC3_Mode[AC3_Mode_Pos(meta[ac3_bsmod], meta[ac3_acmod])]);
                 Fill_SetOptions(Stream_Audio, program, "AC3_Metadata ServiceKind", "N NTY");
-                Fill(Stream_Audio, program, "AC3_Metadata ServiceKind/String", AC3_Mode_String[meta[ac3_bsmod]]);
+                Fill(Stream_Audio, program, "AC3_Metadata ServiceKind/String", AC3_Mode_String[AC3_Mode_Pos(meta[ac3_bsmod], meta[ac3_acmod])]);
                 Fill_SetOptions(Stream_Audio, program, "AC3_Metadata ServiceKind/String", "Y NTN");
                 int8u Channels = AC3_Channels[meta[ac3_acmod]];
                 Ztring ChannelPositions; ChannelPositions.From_UTF8(AC3_ChannelPositions[meta[ac3_acmod]]);

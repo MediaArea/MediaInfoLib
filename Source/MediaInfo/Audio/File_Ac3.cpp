@@ -49,6 +49,7 @@ const char*  AC3_Mode[] =
     "C",
     "E",
     "VO",
+    "K",
 };
 
 //---------------------------------------------------------------------------
@@ -62,7 +63,14 @@ const char*  AC3_Mode_String[] =
     "Commentary",
     "Emergency",
     "Voice Over",
+    "Karaoke",
 };
+
+//---------------------------------------------------------------------------
+extern size_t AC3_Mode_Pos(int8u bsmod, int8u acmod)
+{
+    return (bsmod==7 && acmod>=2 && acmod<8)?8:bsmod; //The last value is voice over with 1 channel, karaoke with more
+}
 
 //---------------------------------------------------------------------------
 const char*  AC3_Surround[]=
@@ -1234,8 +1242,8 @@ void File_Ac3::Streams_Fill()
             }
         }
 
-        Fill(Stream_Audio, 0, Audio_ServiceKind, AC3_Mode[bsmod_Max[0][0]]);
-        Fill(Stream_Audio, 0, Audio_ServiceKind_String, AC3_Mode_String[bsmod_Max[0][0]]);
+        Fill(Stream_Audio, 0, Audio_ServiceKind, AC3_Mode[AC3_Mode_Pos(bsmod_Max[0][0], acmod_Max[0][0])]);
+        Fill(Stream_Audio, 0, Audio_ServiceKind_String, AC3_Mode_String[AC3_Mode_Pos(bsmod_Max[0][0], acmod_Max[0][0])]);
         if ((MediaInfoLib::Config.LegacyStreamDisplay_Get() || Retrieve(Stream_Audio, 0, Audio_ChannelLayout).empty()) && acmod_Max[0][0]!=(int8u)-1)
         {
             int8u Channels=AC3_Channels[acmod_Max[0][0]];
@@ -1343,8 +1351,8 @@ void File_Ac3::Streams_Fill()
                     Fill(Stream_Audio, 0, Audio_Format_Profile, Retrieve(Stream_Audio, 0, Audio_Format));
                 if (!Retrieve(Stream_Audio, 0, Audio_Codec_Profile).empty())
                     Fill(Stream_Audio, 0, Audio_Codec_Profile, Retrieve(Stream_Audio, 0, Audio_Format));
-                Fill(Stream_Audio, 0, Audio_ServiceKind, AC3_Mode[bsmod_Max[Pos][0]]);
-                Fill(Stream_Audio, 0, Audio_ServiceKind_String, AC3_Mode_String[bsmod_Max[Pos][0]]);
+                Fill(Stream_Audio, 0, Audio_ServiceKind, AC3_Mode[AC3_Mode_Pos(bsmod_Max[Pos][0], acmod_Max[Pos][0])]);
+                Fill(Stream_Audio, 0, Audio_ServiceKind_String, AC3_Mode_String[AC3_Mode_Pos(bsmod_Max[Pos][0], acmod_Max[Pos][0])]);
                 if (MediaInfoLib::Config.LegacyStreamDisplay_Get() || (!HasDependent && !Channels_AlreadyFilled))
                 {
                     int8u Channels=AC3_Channels[acmod_Max[Pos][0]];
