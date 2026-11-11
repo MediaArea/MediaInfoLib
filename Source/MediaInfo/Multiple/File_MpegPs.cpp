@@ -2867,8 +2867,9 @@ bool File_MpegPs::private_stream_1_Choose_DVD_ID()
         return false;
 
     //Testing false-positives
-    if (CC2(Buffer+Buffer_Offset+(size_t)Element_Offset)==0x0B77)
-        return true;
+    if (CC2(Buffer+Buffer_Offset+(size_t)Element_Offset)==0x0B77
+     || CC4(Buffer+Buffer_Offset+(size_t)Element_Offset)==0x7FFE8001)
+        return true; //AC-3 or DTS without DVD-Video header
 
     //Parsing
     int8u  CodecID;
