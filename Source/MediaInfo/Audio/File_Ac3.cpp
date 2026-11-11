@@ -1106,7 +1106,7 @@ void File_Ac3::Streams_Fill()
         if (Count_Get(Stream_Audio)==0)
             Stream_Prepare(Stream_Audio);
         if (HD_BitRate_Max)
-            Fill(Stream_Audio, 0, Audio_BitRate_Maximum, (HD_BitRate_Max*AC3_HD_SamplingRate(HD_SamplingRate2)+8)>>4);
+            Fill(Stream_Audio, 0, Audio_BitRate_Maximum, (HD_BitRate_Max*AC3_HD_SamplingRate(HD_SamplingRate1)+8)>>4);
 
         if (HD_StreamType==0xBA) //TrueHD
         {
@@ -1138,14 +1138,14 @@ void File_Ac3::Streams_Fill()
             }
             Fill(Stream_Audio, 0, Audio_BitRate_Mode, "VBR");
             Fill(Stream_Audio, 0, Audio_Compression_Mode, "Lossless");
-            Fill(Stream_Audio, 0, Audio_SamplingRate, AC3_HD_SamplingRate(HD_SamplingRate2));
+            Fill(Stream_Audio, 0, Audio_SamplingRate, AC3_HD_SamplingRate(HD_SamplingRate1)); //The first group of channels is the main one
             if (MediaInfoLib::Config.LegacyStreamDisplay_Get() && HD_SamplingRate1!=HD_SamplingRate2)
-                Fill(Stream_Audio, 0, Audio_SamplingRate, AC3_HD_SamplingRate(HD_SamplingRate1));
+                Fill(Stream_Audio, 0, Audio_SamplingRate, AC3_HD_SamplingRate(HD_SamplingRate2));
             if (AC3_MLP_Channels[HD_Channels1]) //Not for a reserved channel assignment
                 Fill(Stream_Audio, 0, Audio_Channel_s_, AC3_MLP_Channels[HD_Channels1]);
-            Fill(Stream_Audio, 0, Audio_BitDepth, AC3_MLP_Resolution[HD_Resolution2]);
+            Fill(Stream_Audio, 0, Audio_BitDepth, AC3_MLP_Resolution[HD_Resolution1]);
             if (MediaInfoLib::Config.LegacyStreamDisplay_Get() && HD_Resolution1!=HD_Resolution2)
-                Fill(Stream_Audio, 0, Audio_BitDepth, AC3_MLP_Resolution[HD_Resolution1]);
+                Fill(Stream_Audio, 0, Audio_BitDepth, AC3_MLP_Resolution[HD_Resolution2]);
         }
     }
 
@@ -4375,7 +4375,7 @@ void File_Ac3::HD()
         Skip_B2(                                                "reserved");
         BS_Begin();
         Get_SB (    HD_IsVBR,                                   "variable_rate");
-        Get_S2 (15, HD_BitRate_Max,                             "peak_data_rate"); Param_Info2((HD_BitRate_Max*(AC3_HD_SamplingRate(HD_SamplingRate2)?AC3_HD_SamplingRate(HD_SamplingRate2):AC3_HD_SamplingRate(HD_SamplingRate1))+8)>>4, " bps");
+        Get_S2 (15, HD_BitRate_Max,                             "peak_data_rate"); Param_Info2((HD_BitRate_Max*AC3_HD_SamplingRate(HD_SamplingRate1)+8)>>4, " bps");
         Get_S1 ( 4, HD_SubStreams_Count,                        "substreams");
         Skip_S1( 2,                                             "reserved");
         Skip_S1( 2,                                             "extended_substream_info");
@@ -4831,7 +4831,7 @@ void File_Ac3::dmlp()
     HD_StreamType=0xBA;
     HD_format_info();
     BS_Begin();
-    Get_S2 (15, HD_BitRate_Max,                                 "peak_data_rate"); Param_Info2((HD_BitRate_Max*(AC3_HD_SamplingRate(HD_SamplingRate2)?AC3_HD_SamplingRate(HD_SamplingRate2):AC3_HD_SamplingRate(HD_SamplingRate1))+8)>>4, " bps");
+    Get_S2 (15, HD_BitRate_Max,                                 "peak_data_rate"); Param_Info2((HD_BitRate_Max*AC3_HD_SamplingRate(HD_SamplingRate1)+8)>>4, " bps");
     Skip_S8(33,                                                 "reserved");
     BS_End();
     if (Element_Offset<Element_Size)
