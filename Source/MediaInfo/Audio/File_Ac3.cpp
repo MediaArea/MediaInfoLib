@@ -783,7 +783,7 @@ Ztring AC3_TrueHD_Channels_Positions2(int16u ChannelsMap, bool Bit11=false)
     if (ChannelsMap&0x0040)
         Rear+=2; //rs
     if (ChannelsMap&0x0100)
-        Rear+=2; //s
+        Rear++;  //s
     if (ChannelsMap&0x0200)
         Rear+=2; //sd
     if (ChannelsMap&0x0400)
