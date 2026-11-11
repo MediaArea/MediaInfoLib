@@ -1057,6 +1057,9 @@ void File_Flv::video()
         }
 
         //Parsing video data
+        if (isExVideoHeader && PacketType!=Metadata && FrameType==Command)
+            Skip_XX(Element_Size-Element_Offset,                "Unknown"); //No video data in a command frame
+        else
         switch (Codec)
         {
             case  2 : video_H263(); break;
