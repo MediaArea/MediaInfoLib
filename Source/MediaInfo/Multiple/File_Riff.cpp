@@ -135,6 +135,7 @@ File_Riff::File_Riff()
         Adm=NULL;
         Adm_chna=NULL;
     #endif
+    Xmp=NULL;
     WAVE_data_Size=(int64u)-1;
     WAVE_fact_samplesCount=(int64u)-1;
     Buffer_DataToParse_Begin=(int64u)-1;
@@ -187,6 +188,7 @@ File_Riff::~File_Riff()
         delete Adm;
         delete Adm_chna;
     #endif
+    delete Xmp;
 }
 
 //***************************************************************************
@@ -314,6 +316,8 @@ void File_Riff::Streams_Finish ()
         Clear(Stream_Audio, 0, "AdmProfile_Version");
     }
     #endif //defined(MEDIAINFO_ADM_YES)
+    if (Xmp) //Only the content which is not in the other chunks, whatever is the order of the chunks
+        Merge(*Xmp, Stream_General, 0, 0, false);
 
     //Time codes
     TimeCode_Fill(__T("ISMP"), INFO_ISMP);

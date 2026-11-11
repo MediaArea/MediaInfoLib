@@ -3638,13 +3638,19 @@ void File_Riff::WAVE__pmx()
 
     //Parsing
     #if defined(MEDIAINFO_XMP_YES)
-        File_Xmp MI;
-        MI.NoTrace=true; //The content is in the trace as text
-        Open_Buffer_Init(&MI);
-        Open_Buffer_Continue(&MI, Buffer+Buffer_Offset, (size_t)Element_Size);
-        Open_Buffer_Finalize(&MI);
+        File_Xmp* MI=new File_Xmp;
+        MI->NoTrace=true; //The content is in the trace as text
+        Open_Buffer_Init(MI);
+        Open_Buffer_Continue(MI, Buffer+Buffer_Offset, (size_t)Element_Size);
+        Open_Buffer_Finalize(MI);
         Element_Show(); //Else the element is removed from the trace, the sub-parser having no trace
-        Merge(MI, Stream_General, 0, 0, false);
+        if (Xmp)
+        {
+            Xmp->Merge(*MI, Stream_General, 0, 0, false); //Only the content which is not in the previous XMP chunks
+            delete MI;
+        }
+        else
+            Xmp=MI;
     #endif //defined(MEDIAINFO_XMP_YES)
     Skip_UTF8(Element_Size,                                     "XML data");
 }
