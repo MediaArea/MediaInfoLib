@@ -2883,7 +2883,7 @@ void File_Mpeg4::meta_iinf_infe()
                             if (Element_Offset<Element_Size)
                                 Skip_NulString(                 "content_encoding");
                             break;
-        case 0x75726900:    // uri
+        case 0x75726920:    // uri
                             Skip_NulString(                     "item_uri_type");
                             break;
     }
@@ -2925,7 +2925,7 @@ void File_Mpeg4::meta_iinf_infe()
                                 }
                                 #endif
                                 [[fallthrough]];
-            case 0x75726900:    // uri
+            case 0x75726920:    // uri
                                 Skip=true; // Currently not supported
                                 break;
             case 0x64696D67:    // dimg
