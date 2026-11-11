@@ -1210,42 +1210,54 @@ void File_Mpeg4v::video_object_layer_start()
             Get_S1 (2, estimation_method,                       "estimation_method");
             if (estimation_method==0 || estimation_method==1)
             {
-                TEST_SB_SKIP(                                   "shape_complexity_estimation_disable");
+                //The flags of a set are present when the set is not disabled
+                bool disable;
+                Get_SB (disable,                                "shape_complexity_estimation_disable");
+                if (!disable)
+                {
                     Get_SB (opaque,                             "opaque");
                     Get_SB (transparent,                        "transparent");
                     Get_SB (intra_cae,                          "intra_cae");
                     Get_SB (inter_cae,                          "inter_cae");
                     Get_SB (no_update,                          "no_update");
                     Get_SB (upsampling,                         "upsampling");
-                TEST_SB_END();
-                TEST_SB_SKIP(                                   "texture_complexity_estimation_set_1_disable");
+                }
+                Get_SB (disable,                                "texture_complexity_estimation_set_1_disable");
+                if (!disable)
+                {
                     Get_SB (intra_blocks,                       "intra_blocks");
                     Get_SB (inter_blocks,                       "inter_blocks");
                     Get_SB (inter4v_blocks,                     "inter4v_blocks");
                     Get_SB (not_coded_blocks,                   "not_coded_blocks");
-                TEST_SB_END();
+                }
                 Mark_1 ();
-                TEST_SB_SKIP(                                   "texture_complexity_estimation_set_2_disable");
+                Get_SB (disable,                                "texture_complexity_estimation_set_2_disable");
+                if (!disable)
+                {
                     Get_SB (dct_coefs,                          "dct_coefs");
                     Get_SB (dct_lines,                          "dct_lines");
                     Get_SB (vlc_symbols,                        "vlc_symbols");
                     Get_SB (vlc_bits,                           "vlc_bits");
-                TEST_SB_END();
-                TEST_SB_SKIP(                                   "motion_compensation_complexity_disable");
+                }
+                Get_SB (disable,                                "motion_compensation_complexity_disable");
+                if (!disable)
+                {
                     Get_SB (apm,                                "apm");
                     Get_SB (npm,                                "npm");
                     Get_SB (interpolate_mc_q,                   "interpolate_mc_q");
                     Get_SB (forw_back_mc_q,                     "forw_back_mc_q");
                     Get_SB (halfpel2,                           "halfpel2");
                     Get_SB (halfpel4,                           "halfpel4");
-                TEST_SB_END();
+                }
                 Mark_1 ();
                 if (estimation_method==1)
                 {
-                    TEST_SB_SKIP(                               "version2_complexity_estimation_disable");
+                    Get_SB (disable,                            "version2_complexity_estimation_disable");
+                    if (!disable)
+                    {
                         Get_SB (sadct,                          "sadct");
                         Get_SB (quarterpel,                     "quarterpel");
-                    TEST_SB_END();
+                    }
                 }
             }
         }
