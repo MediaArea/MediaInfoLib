@@ -1211,7 +1211,7 @@ void File_Flv::video_VP6(bool WithAlpha)
 //---------------------------------------------------------------------------
 void File_Flv::video_AVC(int8u PacketType_plus1)
 {
-    size_t Header_Size=(!PacketType_plus1?1:0)+((!PacketType_plus1 || PacketType_plus1==CodedFrames-1)?3:0);
+    size_t Header_Size=(!PacketType_plus1?1:0)+((!PacketType_plus1 || PacketType_plus1==CodedFrames+1)?3:0);
     if (Element_Offset>Element_Size || Header_Size>Element_Size-Element_Offset)
     {
         Trusted_IsNot("Truncated video header");
@@ -1232,7 +1232,7 @@ void File_Flv::video_AVC(int8u PacketType_plus1)
     {
     Get_B1 (AVCPacketType,                                      "AVCPacketType"); Param_Info1(Flv_AVCPacketType(AVCPacketType));
     }
-    if (!PacketType_plus1 || PacketType_plus1==CodedFrames-1)
+    if (!PacketType_plus1 || PacketType_plus1==CodedFrames+1)
     {
     Info_B3(CompositionTime,                                    "CompositionTime"); Param_Info1(Ztring::ToZtring((int32s)(CompositionTime+0xFF000000)));
     }
@@ -1316,7 +1316,7 @@ void File_Flv::video_AVC(int8u PacketType_plus1)
 //---------------------------------------------------------------------------
 void File_Flv::video_HEVC(int8u PacketType_plus1)
 {
-    size_t Header_Size=(!PacketType_plus1?1:0)+((!PacketType_plus1 || PacketType_plus1==CodedFrames-1)?3:0);
+    size_t Header_Size=(!PacketType_plus1?1:0)+((!PacketType_plus1 || PacketType_plus1==CodedFrames+1)?3:0);
     if (Element_Offset>Element_Size || Header_Size>Element_Size-Element_Offset)
     {
         Trusted_IsNot("Truncated video header");
@@ -1337,7 +1337,7 @@ void File_Flv::video_HEVC(int8u PacketType_plus1)
     {
     Get_B1 (AVCPacketType,                                      "AVCPacketType"); Param_Info1(Flv_AVCPacketType(AVCPacketType));
     }
-    if (!PacketType_plus1 || PacketType_plus1==CodedFrames-1)
+    if (!PacketType_plus1 || PacketType_plus1==CodedFrames+1)
     {
     Info_B3(CompositionTime,                                    "CompositionTime"); Param_Info1(Ztring::ToZtring((int32s)(CompositionTime+0xFF000000)));
     }
