@@ -1449,6 +1449,20 @@ void File_Mk::Streams_Finish()
                 Fill(StreamKind_Last, StreamPos_Last, Other_ID, to_string(Temp->first)+"-Add-"+to_string(Add->first));
                 Fill(StreamKind_Last, StreamPos_Last, Other_MuxingMode, "BlockAddition");
 
+                //Duration, frame rate and frame count of the track, the block additions are about its frames
+                const Ztring& Duration_Track=Retrieve_Const(StreamKind_Last_Sav, StreamPos_Last_Sav, Fill_Parameter(StreamKind_Last_Sav, Generic_Duration));
+                const Ztring& Duration=Duration_Track.empty()?Retrieve_Const(Stream_General, 0, General_Duration):Duration_Track; //Without statistics tags, the duration of the track comes later from the general one
+                const Ztring& FrameRate=Retrieve_Const(StreamKind_Last_Sav, StreamPos_Last_Sav, Fill_Parameter(StreamKind_Last_Sav, Generic_FrameRate));
+                const Ztring& FrameCount=Retrieve_Const(StreamKind_Last_Sav, StreamPos_Last_Sav, Fill_Parameter(StreamKind_Last_Sav, Generic_FrameCount));
+                Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), Duration);
+                Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameRate), FrameRate);
+                Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameRate_Num), Retrieve_Const(StreamKind_Last_Sav, StreamPos_Last_Sav, Fill_Parameter(StreamKind_Last_Sav, Generic_FrameRate_Num)));
+                Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameRate_Den), Retrieve_Const(StreamKind_Last_Sav, StreamPos_Last_Sav, Fill_Parameter(StreamKind_Last_Sav, Generic_FrameRate_Den)));
+                if (!FrameCount.empty())
+                    Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameCount), FrameCount);
+                else if (!Duration.empty() && !FrameRate.empty())
+                    Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameCount), Duration.To_int64s()*FrameRate.To_float64()/1000, 0); //As it is computed later for the track
+
                 //Tags (BlockID), the ones for this track have the priority over the ones for all tracks
                 tagspertrack Tags;
                 for (tags::iterator Item = Segment_Tags_Tag_Items.begin(); Item != Segment_Tags_Tag_Items.end(); ++Item)
@@ -4071,6 +4085,7 @@ void File_Mk::Segment_Tracks_TrackEntry_BlockAdditionMapping_Manage()
             auto Temp=new File_Gxf_TimeCode();
             Temp->IsBigEndian=true;
             Temp->IsTimeCodeTrack=true;
+            Temp->IsBlockAddition=true;
             Temp->Format="SMPTE ST 12-1";
             #if MEDIAINFO_ADVANCED
             Temp->id=std::to_string(TrackNumber)+"-Add-"+std::to_string(BlockAddIDValue);

@@ -41,6 +41,7 @@ public :
     bool   IsAtc; // SMPTE ST 12-2
     bool   IsBigEndian;
     bool   IsTimeCodeTrack;
+    bool   IsBlockAddition; // Matroska BlockAdditional, 1 time code of 1 frame of the track per buffer
     string Format;
     #if MEDIAINFO_ADVANCED
     string id;

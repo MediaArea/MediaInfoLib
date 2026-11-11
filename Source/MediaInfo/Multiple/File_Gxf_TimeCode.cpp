@@ -300,6 +300,7 @@ File_Gxf_TimeCode::File_Gxf_TimeCode()
     IsAtc=false;
     IsBigEndian=false;
     IsTimeCodeTrack=false;
+    IsBlockAddition=false;
 
     //Out
     TimeCode_FirstFrame_ms=(int64u)-1;
@@ -318,6 +319,8 @@ File_Gxf_TimeCode::~File_Gxf_TimeCode()
 void File_Gxf_TimeCode::Streams_Fill()
 {
     Stream_Prepare(Stream_Other);
+    if (IsBlockAddition)
+        Fill(Stream_Other, 0, Other_Type, "Time code");
     Fill(Stream_Other, 0, Other_Format, Format);
     Fill(Stream_Other, 0, Other_TimeCode_FirstFrame, TimeCode_FirstFrame);
     if (IsTimeCodeTrack)
