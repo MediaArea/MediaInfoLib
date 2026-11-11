@@ -3429,7 +3429,7 @@ void File_Mpeg4::meta_iprp_ipco_xxxx()
 //---------------------------------------------------------------------------
 void File_Mpeg4::meta_iprp_ipma()
 {
-    NAME_VERSION_FLAG("Item Property Association", 0);
+    NAME_VERSION_FLAG("Item Property Association", 1);
 
     //Parsing
     int32u entry_count;
