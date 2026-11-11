@@ -119,8 +119,14 @@ protected :
     size_t CompliantWith_ArdZdf_FromContent (std::string& Content); //Position of the ARD/ZDF profile matching the kind of content, (size_t)-1 if none, Content is filled with a description of the content
     #if MEDIAINFO_CONFORMANCE
     conformance_errors CompliantWith_St2067204 (conformance_errors& Warnings); //ADM Audio Track File, to be done before filling the ADM content, Warnings are filled with the recommendations not followed
-    conformance_errors CompliantWith_St20675 (conformance_errors& Warnings, conformance_errors* EssenceComponent_Errors=nullptr, conformance_errors* EssenceComponent_Warnings=nullptr); //IMF Essence Component with the overall constraints of IMF Track Files, Warnings are filled with the recommendations not followed, IMF Essence Component alone is checked in the same pass if EssenceComponent_Errors and EssenceComponent_Warnings are not null
-    conformance_errors CompliantWith_St20672 (conformance_errors& Warnings, conformance_errors* EssenceComponent_Errors=nullptr, conformance_errors* EssenceComponent_Warnings=nullptr); //IMF Track File, Warnings are filled with the recommendations not followed, IMF Essence Component alone is checked in the same pass if EssenceComponent_Errors and EssenceComponent_Warnings are not null
+    struct st20675_results
+    {
+        bool IsComputed=false;
+        conformance_errors TrackFile_Errors, TrackFile_Warnings; //IMF Essence Component with the overall constraints of IMF Track Files, warnings are the recommendations not followed
+        conformance_errors EssenceComponent_Errors, EssenceComponent_Warnings; //IMF Essence Component alone
+    };
+    const st20675_results& CompliantWith_St20675 (); //Computed once, for SMPTE ST 2067-204, SMPTE ST 2067-2 and SMPTE ST 2067-5
+    conformance_errors CompliantWith_St20672 (conformance_errors& Warnings); //IMF Track File, Warnings are filled with the recommendations not followed
     bool CompliantWith_St20672_IsDeclared (); //SMPTE ST 2067-2 declared by the file (Channel Assignment label)
     bool CompliantWith_St20672_IsCandidate (); //Candidate for an IMF Track File (Audio or Timed Text)
     #endif //MEDIAINFO_CONFORMANCE
@@ -1673,6 +1679,7 @@ protected :
         bool                        St2067204_IsTested; //Candidate (RIFF Chunks or ADM sets) or requested
         conformance_errors          St2067204_Errors;
         conformance_errors          St2067204_Warnings;
+        st20675_results             St20675_Results;
         bool                        St20672_IsRequested; //SMPTE ST 2067-2 requested by the user, conformance errors are reported
         bool                        St20675_IsRequested; //SMPTE ST 2067-5 requested by the user, conformance errors are reported
         size_t                      RiffChunks_ErrorCount; //Count of SMPTE ST 2131 errors
