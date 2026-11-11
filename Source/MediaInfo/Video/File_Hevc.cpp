@@ -2170,7 +2170,7 @@ void File_Hevc::seq_parameter_set()
     }
     if (MultiLayerExtSpsFlag) {
         TEST_SB_SKIP(                                               "update_rep_format_flag");
-            Skip_S1(1,                                              "sps_rep_format_idx");
+            Skip_S1(8,                                              "sps_rep_format_idx");
         TEST_SB_END();
         chroma_format_idc=-1;
         pic_width_in_luma_samples=-1;
