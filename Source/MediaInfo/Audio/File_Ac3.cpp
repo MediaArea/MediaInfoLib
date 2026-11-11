@@ -332,6 +332,40 @@ Ztring AC3_chanmap_ChannelPositions (int16u chanmap)
 }
 
 //---------------------------------------------------------------------------
+Ztring AC3_chanmap_ChannelPositions2 (int16u chanmap)
+{
+    int8u Front=0, Side=0, Back=0, LFE=0;
+
+    for (int8u Pos=0; Pos<16; Pos++)
+    {
+        if (chanmap&(1<<(15-Pos)))
+        {
+            switch (Pos)
+            {
+                case  0 :
+                case  1 :
+                case  2 :   Front++; break;
+                case  3 :
+                case  4 :   Side++; break;
+                case  5 :   Front+=2; break;
+                case  7 :
+                case  8 :
+                case 12 :   Back++; break;
+                case 14 :
+                case 15 :   LFE++; break;
+                default :   Back+=2; //The other locations are pairs
+            }
+        }
+    }
+
+    Ztring ToReturn=Ztring::ToZtring(Front)+__T('/')+Ztring::ToZtring(Side)+__T('/')+Ztring::ToZtring(Back);
+    if (LFE)
+        ToReturn+=__T('.')+Ztring::ToZtring(LFE);
+
+    return ToReturn;
+}
+
+//---------------------------------------------------------------------------
 int8u AC3_chanmap_Channels (int16u chanmap)
 {
     int8u Channels=0;
@@ -1336,12 +1370,7 @@ void File_Ac3::Streams_Fill()
                     Fill(Stream_Audio, 0, Audio_Codec_Profile, "E-AC-3+Dep");
                     Fill(Stream_Audio, 0, Audio_Channel_s_, AC3_chanmap_Channels(chanmap_Final));
                     Fill(Stream_Audio, 0, Audio_ChannelPositions, AC3_chanmap_ChannelPositions(chanmap_Final));
-                    Ztring ChannelPositions2; ChannelPositions2.From_UTF8(AC3_ChannelPositions2[acmod_Max[Pos][0]]); //TODO: handle the dependancy
-                    if (lfeon_Max[Pos][0])
-                    {
-                        ChannelPositions2+=__T(".1");
-                    }
-                    Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, ChannelPositions2);
+                    Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, AC3_chanmap_ChannelPositions2(chanmap_Final));
                     if (MediaInfoLib::Config.LegacyStreamDisplay_Get() || !ChannelLayout_AlreadyFilled)
                     {
                         Ztring ChannelLayout; ChannelLayout.From_UTF8(lfeon_Max[Pos][0]?AC3_ChannelLayout_lfeon[acmod_Max[Pos][0]]:AC3_ChannelLayout_lfeoff[acmod_Max[Pos][0]]);
