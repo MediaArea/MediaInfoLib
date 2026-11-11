@@ -1441,7 +1441,12 @@ void File_Lxf::Audio_Stream(size_t Pos)
             Audios[Pos].Parsers.push_back(new File_Ac3());
         #endif //MEDIAINFO_AC3_YES
         #ifdef MEDIAINFO_DTS_YES
-            Audios[Pos].Parsers.push_back(new File_Dts());
+        {
+            File_Dts* Parser=new File_Dts;
+            Parser->Frame_Count_Valid=2; //Else the PCM parser accepts the stream first when a packet has few frames
+
+            Audios[Pos].Parsers.push_back(Parser);
+        }
         #endif //MEDIAINFO_DTS_YES
         #ifdef MEDIAINFO_MPEGA_YES
             Audios[Pos].Parsers.push_back(new File_Mpega());
