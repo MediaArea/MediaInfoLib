@@ -2256,7 +2256,7 @@ void File_Dts::Data_Parse()
                 TEST_SB_GET(One2OneMapChannels2Speakers,        "One2OneMapChannels2Speakers");
                     int8u SpeakerActivityMaskBits, SpeakerRemapSetsCount;
                     if (HD_TotalNumberChannels>2)
-                        Skip_SB(                                "TotalNumChs"); //else is 0
+                        Skip_SB(                                "EmbeddedStereoFlag"); //else is 0
                     if (HD_TotalNumberChannels>6)
                         Skip_SB(                                "EmbeddedSixChFlag"); //else is 0
                     TESTELSE_SB_SKIP(                           "SpkrMaskEnabled");
