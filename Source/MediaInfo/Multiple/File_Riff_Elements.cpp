@@ -1640,6 +1640,7 @@ void File_Riff::AVI__hdlr_strl_strf_iavs()
             return;
 
         //Parsing
+        delete (File_DvDif*)DV_FromHeader; //The one of a previous stream
         DV_FromHeader=new File_DvDif();
         Open_Buffer_Init(DV_FromHeader);
 
