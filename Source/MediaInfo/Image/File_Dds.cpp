@@ -82,8 +82,14 @@ void File_Dds::Streams_Accept()
             Fill(StreamKind_Last, 0, "Height", Height);
         if (Flags&0x4) //DDSD_WIDTH
             Fill(StreamKind_Last, 0, "Width", Width);
-        if ((Flags&0x800000) && (Caps2&0x200000) && Depth) //DDSD_DEPTH and DDSCAPS2_VOLUME
-            Fill(StreamKind_Last, 0, "Format_Settings_SliceCount", Depth); //Depth of a volume texture
+        if (Caps2&0x200) //DDSCAPS2_CUBEMAP
+            Fill(StreamKind_Last, 0, "Format_Settings", "Cube map");
+        if (Caps2&0x200000) //DDSCAPS2_VOLUME
+        {
+            Fill(StreamKind_Last, 0, "Format_Settings", "Volume");
+            if ((Flags&0x800000) && Depth) //DDSD_DEPTH
+                Fill(StreamKind_Last, 0, "Format_Settings_SliceCount", Depth); //Depth of the volume texture
+        }
     }
     else
         Stream_Prepare(StreamKind_Last);
