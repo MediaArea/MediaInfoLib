@@ -726,12 +726,12 @@ std::string AC3_TrueHD_Channels_Positions(int16u ChannelsMap, bool Bit11=false)
     if (ChannelsMap&0x80)
         Text+=", Back: C";
 
-    if ((ChannelsMap&0x0810)==0x0810 && Bit11)
+    if ((ChannelsMap&0x0810)==0x0810 && !Bit11)
         Text+=", vh: L C R";
     else
     {
-        if (ChannelsMap&0x0010 && !Bit11)
-            Text+=", vh: L R";
+        if (ChannelsMap&0x0010)
+            Text+=Bit11?", ts: L R":", vh: L R"; //The pair is at the top side with the other channel assignment
         if (ChannelsMap&0x0800)
             Text+=", vh: C";
     }
@@ -771,7 +771,9 @@ Ztring AC3_TrueHD_Channels_Positions2(int16u ChannelsMap, bool Bit11=false)
         Surround++;
 
     if (ChannelsMap & 0x0010)
-        Rear+=2; //vh
+        Rear+=2; //vh, or ts with the other channel assignment
+    if (ChannelsMap&0x0004)
+        LFE++;
     if (!Bit11)
     {
     if (ChannelsMap&0x0800)
@@ -789,8 +791,6 @@ Ztring AC3_TrueHD_Channels_Positions2(int16u ChannelsMap, bool Bit11=false)
     if (ChannelsMap&0x0400)
         Rear+=2; //w
 
-    if (ChannelsMap&0x0004)
-        LFE++;
     if (ChannelsMap&0x1000)
         LFE++;
     }
