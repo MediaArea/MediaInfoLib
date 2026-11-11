@@ -3110,7 +3110,7 @@ void File_Hevc::sei_message_user_data_unregistered_Ateme(int32u payloadSize)
     if (Encoded_Library.find(__T("ATEME "))==0)
     {
         size_t Pos=Encoded_Library.find_first_of(__T("0123456789"));
-        if (Pos && Encoded_Library[Pos-1]==__T(' '))
+        if (Pos!=std::string::npos && Encoded_Library[Pos-1]==__T(' '))
         {
             Encoded_Library_Name=Encoded_Library.substr(0, Pos-1);
             Encoded_Library_Version=Encoded_Library.substr(Pos);

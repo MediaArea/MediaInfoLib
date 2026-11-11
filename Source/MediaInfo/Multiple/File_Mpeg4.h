@@ -604,6 +604,7 @@ private :
         #ifdef MEDIAINFO_DVDIF_ANALYZE_YES
             bool                IsDvDif;
         #endif //MEDIAINFO_DVDIF_ANALYZE_YES
+        bool                    IsHevc; //The first parser is an HEVC one
         bool                    IsPriorityStream;
         bool                    IsFilled;
         bool                    IsChapter;
@@ -710,6 +711,7 @@ private :
             #ifdef MEDIAINFO_DVDIF_ANALYZE_YES
                 IsDvDif=false;
             #endif //MEDIAINFO_DVDIF_ANALYZE_YES
+            IsHevc=false;
             IsPriorityStream=false;
             IsFilled=false;
             IsChapter=false;
@@ -761,9 +763,11 @@ private :
         {
             Parsers.clear();
             IsPcm=false;
+            IsPcmMono=false;
             #ifdef MEDIAINFO_DVDIF_ANALYZE_YES
                 IsDvDif=false;
             #endif //MEDIAINFO_DVDIF_ANALYZE_YES
+            IsHevc=false;
         }
     };
     typedef std::map<int32u, stream> streams;
