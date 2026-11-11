@@ -820,7 +820,7 @@ void File_Riff::AIFF_COMM()
     Ztring Codec=Retrieve(Stream_Audio, StreamPos_Last, Audio_CodecID);
     const Ztring Format=MediaInfoLib::Config.CodecID_Get(Stream_Audio, InfoCodecID_Format_Mpeg4, Codec);
     #if defined(MEDIAINFO_PCM_YES) || defined(MEDIAINFO_DTS_YES) || defined(MEDIAINFO_SMPTEST0337_YES)
-    if (Format.empty() || Format==__T("PCM")) //Not for an AIFF-C compression type known as another format
+    if (Codec.empty() || Format==__T("PCM")) //AIFF, or AIFF-C with a PCM compression type
     {
         stream& StreamItem=Stream[Stream_ID];
         Parser_Pcm(StreamItem, numChannels, sampleSize, sampleSize, sampleRate, (Codec.empty() || Codec==__T("NONE"))?'B':'\0');
