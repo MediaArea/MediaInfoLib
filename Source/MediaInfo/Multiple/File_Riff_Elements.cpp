@@ -432,7 +432,7 @@ namespace Elements
     const int32u SMV0=0x534D5630;
     const int32u SMV0_xxxx=0x534D563A;
     const int32u WAVE=0x57415645;
-    const int32u WAVE__pmx=0x20786D70;
+    const int32u WAVE__pmx=0x5F504D58;
     const int32u WAVE_adtl=0x6164746C;
     const int32u WAVE_adtl_labl=0x6C61626C;
     const int32u WAVE_adtl_ltxt=0x6C747874;
