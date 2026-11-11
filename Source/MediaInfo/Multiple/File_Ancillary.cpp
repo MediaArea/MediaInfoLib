@@ -773,6 +773,7 @@ void File_Ancillary::Data_Parse()
                                                 case 0x19: Unknown[DataID][SecondaryDataID][string()].Infos["Format"]="ISAN"; break;
                                                 case 0x20:
                                                 case 0x40: Unknown[DataID][SecondaryDataID][string()].Infos["Format"]="UMID"; break;
+                                                default  : Unknown[DataID][SecondaryDataID][string()].Infos["Format"]=Ztring().From_CC1(DataID)+__T('-')+Ztring().From_CC1(SecondaryDataID);
                                             }
 
                                             Unknown[DataID][SecondaryDataID][string()].Infos["MuxingMode"]="Ancillary data / SMPTE RP 223";
