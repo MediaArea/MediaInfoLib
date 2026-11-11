@@ -184,6 +184,8 @@ void File_Pcm::Streams_Fill()
     else if (Codec==__T("A107"))             {ITU=__T("G.726");}
 
     //Format
+    if (Sign=='F' || Endianness=='F')
+        Fill(Stream_Audio, 0, Audio_Format_Profile, "Float");
     Fill(Stream_Audio, 0, Audio_Codec_String, "PCM");
     Fill(Stream_Audio, 0, Audio_Codec_Family, "PCM");
     Fill(Stream_Audio, 0, Audio_BitRate_Mode, "CBR");
