@@ -126,11 +126,13 @@ void File_Pcm::Streams_Fill()
     else if (Codec==__T("A_PCM/INT/LIT"))    {Firm=__T("");      Endianness='L';}
     else if (Codec==__T("A_PCM/INT/LITTLE")) {Firm=__T("");      Endianness='L';}
     else if (Codec==__T("A_PCM/INT/FLOAT"))  {Firm=__T("");      Endianness='B';            Sign='F';}
-    else if (Codec==__T("fl32"))             {  if (!Endianness) Endianness='B'; if (!Sign) Sign='F'; BitDepth=32;}
-    else if (Codec==__T("fl64"))             {  if (!Endianness) Endianness='B'; if (!Sign) Sign='F'; BitDepth=64;}
+    else if (Codec==__T("fl32") || Codec==__T("FL32")) {if (!Endianness) Endianness='B';    Sign='F'; BitDepth=32;}
+    else if (Codec==__T("fl64") || Codec==__T("FL64")) {if (!Endianness) Endianness='B';    Sign='F'; BitDepth=64;}
     else if (Codec==__T("fpcm"))             {  if (!Endianness) Endianness='B';            Sign='F';}
-    else if (Codec==__T("in24"))             {  if (!Endianness) Endianness='B'; if (!Sign) Sign='U'; BitDepth=24;}
-    else if (Codec==__T("in32"))             {  if (!Endianness) Endianness='B'; if (!Sign) Sign='U'; BitDepth=32;}
+    else if (Codec==__T("in24"))             {  if (!Endianness) Endianness='B'; if (!Sign) Sign='S'; BitDepth=24;}
+    else if (Codec==__T("in32"))             {  if (!Endianness) Endianness='B'; if (!Sign) Sign='S'; BitDepth=32;}
+    else if (Codec==__T("42n1"))             {                   Endianness='L';            Sign='S'; BitDepth=24;} //AIFF-C of libsndfile
+    else if (Codec==__T("23ni"))             {                   Endianness='L';            Sign='S'; BitDepth=32;} //AIFF-C of libsndfile
     else if (Codec==__T("raw "))             {  if (!Endianness) Endianness='L';            Sign='U';}
     else if (Codec==__T("twos"))             {                   Endianness='B';            Sign='S';}
     else if (Codec==__T("sowt"))             {                   Endianness='L';            Sign='S';}
@@ -184,6 +186,8 @@ void File_Pcm::Streams_Fill()
     else if (Codec==__T("A107"))             {ITU=__T("G.726");}
 
     //Format
+    if (Sign=='F' || Endianness=='F')
+        Fill(Stream_Audio, 0, Audio_Format_Profile, "Float");
     Fill(Stream_Audio, 0, Audio_Codec_String, "PCM");
     Fill(Stream_Audio, 0, Audio_Codec_Family, "PCM");
     Fill(Stream_Audio, 0, Audio_BitRate_Mode, "CBR");

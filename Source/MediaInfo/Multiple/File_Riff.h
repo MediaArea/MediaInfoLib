@@ -164,6 +164,7 @@ private :
     File_Adm* Adm;
     File_Adm* Adm_chna;
     #endif
+    File__Analyze* Xmp;     //Merged at the end, the content of the other chunks has priority
     int64u WAVE_data_Size;  //RF64 WAVE_data real chunk size
     int64u WAVE_fact_samplesCount;  //RF64 WAVE_fact real samplesCount
     int64u Alignement_ExtraByte; //Padding from the container

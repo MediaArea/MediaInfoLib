@@ -1408,11 +1408,8 @@ void File_Dvdv::PGC(bool Title)
                 if (Available)
                     Stream_Control_Audio.push_back(Number);
 
-                if (Available && Retrieve(Stream_Audio, Pos, Text_ID).empty() && Sectors[(size_t)((File_Offset+Buffer_Offset)/2048)]==Sector_VTS_PGCI)
+                if (Available && Pos<Count_Get(Stream_Audio) && Retrieve(Stream_Audio, Pos, Text_ID).empty() && Sectors[(size_t)((File_Offset+Buffer_Offset)/2048)]==Sector_VTS_PGCI) //Only for a stream having attributes
                 {
-                    while (Pos>=Count_Get(Stream_Audio))
-                        Stream_Prepare(Stream_Audio);
-
                     int8u ToAdd=0;
                     if (Retrieve(Stream_Audio, Pos, Audio_Format)==__T("AC-3"))
                         ToAdd=0x80;
@@ -1449,11 +1446,8 @@ void File_Dvdv::PGC(bool Title)
                     Stream_Control_SubPicture_PanScan.push_back(Number_PanScan);
                 }
 
-                if (Available && Retrieve(Stream_Text, Pos, Text_ID).empty() && Sectors[(size_t)((File_Offset+Buffer_Offset)/2048)]==Sector_VTS_PGCI)
+                if (Available && Pos<Count_Get(Stream_Text) && Retrieve(Stream_Text, Pos, Text_ID).empty() && Sectors[(size_t)((File_Offset+Buffer_Offset)/2048)]==Sector_VTS_PGCI) //Only for a stream having attributes
                 {
-                    while (Pos>=Count_Get(Stream_Text))
-                        Stream_Prepare(Stream_Text);
-
                     auto ID=0x20+Number_Wide;
                     Fill(Stream_Text, Pos, Text_ID, __T("189-")+Ztring::ToZtring(ID));
                     Fill(Stream_Text, Pos, Text_ID_String, __T("189 (0xBD)-")+Get_Hex_ID(ID), true);

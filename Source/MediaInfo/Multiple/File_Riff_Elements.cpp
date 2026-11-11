@@ -243,6 +243,9 @@ std::string ExtensibleWave_ChannelMask_ChannelLayout(int32u ChannelMask)
 #if defined(MEDIAINFO_ID3V2_YES)
     #include "MediaInfo/Tag/File_Id3v2.h"
 #endif
+#if defined(MEDIAINFO_XMP_YES)
+    #include "MediaInfo/Tag/File_Xmp.h"
+#endif
 #if defined(MEDIAINFO_GXF_YES)
     #if defined(MEDIAINFO_CDP_YES)
         #include "MediaInfo/Text/File_Cdp.h"
@@ -814,10 +817,25 @@ void File_Riff::AIFF_COMM()
     stream_Count=1;
 
     //Specific cases
+    Ztring Codec=Retrieve(Stream_Audio, StreamPos_Last, Audio_CodecID);
+    const Ztring Format=MediaInfoLib::Config.CodecID_Get(Stream_Audio, InfoCodecID_Format_Mpeg4, Codec);
     #if defined(MEDIAINFO_PCM_YES) || defined(MEDIAINFO_DTS_YES) || defined(MEDIAINFO_SMPTEST0337_YES)
+    if (Codec.empty() || Format==__T("PCM")) //AIFF, or AIFF-C with a PCM compression type
+    {
         stream& StreamItem=Stream[Stream_ID];
-        Ztring Codec=Retrieve(Stream_Audio, StreamPos_Last, Audio_CodecID);
         Parser_Pcm(StreamItem, numChannels, sampleSize, sampleSize, sampleRate, (Codec.empty() || Codec==__T("NONE"))?'B':'\0');
+    }
+    #endif
+    #if defined(MEDIAINFO_ADPCM_YES)
+    if (Format==__T("ADPCM"))
+    {
+        File_Adpcm MI;
+        MI.Codec=Codec;
+        Open_Buffer_Init(&MI);
+        Open_Buffer_Continue(&MI, 0);
+        Finish(&MI);
+        Merge(MI, StreamKind_Last, 0, StreamPos_Last);
+    }
     #endif
 
     #if MEDIAINFO_DEMUX
@@ -3619,8 +3637,22 @@ void File_Riff::WAVE__pmx()
     Element_Name("XMP");
 
     //Parsing
-    Ztring XML_Data;
-    Get_UTF8(Element_Size, XML_Data,                            "XML data");
+    #if defined(MEDIAINFO_XMP_YES)
+        File_Xmp* MI=new File_Xmp;
+        MI->NoTrace=true; //The content is in the trace as text
+        Open_Buffer_Init(MI);
+        Open_Buffer_Continue(MI, Buffer+Buffer_Offset, (size_t)Element_Size);
+        Open_Buffer_Finalize(MI);
+        Element_Show(); //Else the element is removed from the trace, the sub-parser having no trace
+        if (Xmp)
+        {
+            Xmp->Merge(*MI, Stream_General, 0, 0, false); //Only the content which is not in the previous XMP chunks
+            delete MI;
+        }
+        else
+            Xmp=MI;
+    #endif //defined(MEDIAINFO_XMP_YES)
+    Skip_UTF8(Element_Size,                                     "XML data");
 }
 
 //---------------------------------------------------------------------------
@@ -4210,7 +4242,7 @@ void File_Riff::WAVE_data()
         {
             float64 BitRate_New=((float64)StreamSize)*8*1000/Duration;
             if (BitRate_New<BitRate*0.95 || BitRate_New>BitRate*1.05)
-                Fill(Stream_Audio, StreamPos_Last, Audio_BitRate, BitRate_New, 10, true); //Correcting the bitrate, it was false in the header
+                Fill(Stream_Audio, StreamPos_Last, Audio_BitRate, BitRate_New, 0, true); //Correcting the bitrate, it was false in the header
         }
         else if (BitRate)
         {
