@@ -4141,7 +4141,7 @@ void File_Ac3::emdf_protection()
     };
     Skip_BS(len_primary,                                        "protection_bits_primary");
     if (len_second)
-        Skip_BS(len_primary,                                    "protection_bits_secondary");
+        Skip_BS(len_second,                                     "protection_bits_secondary");
 
     Element_End0();
 }
