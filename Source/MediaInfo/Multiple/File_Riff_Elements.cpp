@@ -4619,8 +4619,8 @@ void File_Riff::Parser_Pcm(stream& StreamItem, int16u Channels, int16u BitsPerSa
         Parser->Codec=Retrieve(Stream_Audio, StreamPos_Last, Audio_CodecID);
         if (Endianness)
             Parser->Endianness=Endianness;
-        else if (BitsPerSample>=16 && BitsPerSample<=32)
-            Parser->Endianness='L'; // WAV PCM is little-endian by default
+        else if (Kind!=Kind_Aiff && BitsPerSample>=16 && BitsPerSample<=32)
+            Parser->Endianness='L'; // WAV PCM is little-endian by default, AIFF-C PCM has the endianness of its compression type
         Parser->BitDepth=(int8u)BitsPerSample;
         Parser->Channels=(int8u)Channels;
         Parser->SamplingRate=SamplesPerSec;
