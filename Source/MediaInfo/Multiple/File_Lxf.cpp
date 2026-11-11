@@ -788,7 +788,7 @@ void File_Lxf::Header_Parse()
         Skip_XX(HeaderSize-Element_Offset,                      "Unknown");
 
     //Filling
-    Header_Fill_Code(Type, Ztring::ToZtring(Type));
+    Header_Fill_Code(Type>2?(int64u)-1:Type, Ztring::ToZtring(Type)); //Other codes are for the streams of a packet
     Header_Fill_Size(HeaderSize+BlockSize);
 
     FILLING_BEGIN();
@@ -868,6 +868,7 @@ void File_Lxf::Data_Parse()
         case 0  : Video(); break;
         case 1  : Audio(); break;
         case 2  : Header(); break;
+        case (int64u)-1 : Skip_XX(Element_Size,                 "Unknown"); break;
         default :
                     if (Element_Code&0x000100)
                         Video_Stream(Element_Code&0xFF);
