@@ -3494,6 +3494,9 @@ void File_Mpeg_Descriptors::Descriptor_7B()
                         if (elementary_PID_IsValid)
                         {
                             Complete_Stream->Streams[elementary_PID]->descriptor_tag=0x7B;
+                            Complete_Stream->Streams[elementary_PID]->StreamKind_FromDescriptor=Stream_Audio;
+                            Complete_Stream->Streams[elementary_PID]->Infos["Format"]=__T("DTS");
+                            Complete_Stream->Streams[elementary_PID]->Infos["Codec"]=__T("DTS");
                         }
                         break;
             default   : ;
@@ -3532,6 +3535,9 @@ void File_Mpeg_Descriptors::Descriptor_7C()
                         if (elementary_PID_IsValid)
                         {
                             Complete_Stream->Streams[elementary_PID]->descriptor_tag=0x7C;
+                            Complete_Stream->Streams[elementary_PID]->StreamKind_FromDescriptor=Stream_Audio;
+                            Complete_Stream->Streams[elementary_PID]->Infos["Format"]=__T("AAC");
+                            Complete_Stream->Streams[elementary_PID]->Infos["Codec"]=__T("AAC");
                             Complete_Stream->Streams[elementary_PID]->Infos["Format_Profile"]=Mpeg_Descriptors_MPEG_4_audio_profile_and_level(Profile_and_level);
                         }
                         break;
