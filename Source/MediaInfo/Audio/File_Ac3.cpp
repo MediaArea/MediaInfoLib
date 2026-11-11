@@ -5103,15 +5103,20 @@ size_t File_Ac3::Core_Size_Get()
             if (bsid<=0x09 || bsid>0x10)
                 break; //Not E-AC-3
 
-            int8u substreamid=(Buffer[Buffer_Offset+Size+2+IsLE]>>3)&0x07;
-            if (substreamid!=substreams_Count_Independant)
-                break; //Problem
-            if (substreamid!=substreams_Count_Dependant)
-                break; //Problem
-
             int8u strmtyp = Buffer[Buffer_Offset+Size+2+IsLE]>>6;
-            if (substreamid==0 && strmtyp==0)
-                break; //Next block
+            int8u substreamid=(Buffer[Buffer_Offset+Size+2+IsLE]>>3)&0x07;
+            if (strmtyp==0) //Independent substream (program)
+            {
+                if (substreamid!=substreams_Count_Independant+1)
+                    break; //Next block (substream 0) or problem
+            }
+            else if (strmtyp==1) //Dependent substream of the last independent substream
+            {
+                if (substreamid!=substreams_Count_Dependant)
+                    break; //Problem
+            }
+            else
+                break; //Next block (converted from AC-3) or reserved
 
             int16u frmsiz =((int16u)(Buffer[(size_t)(Buffer_Offset+Size+2+IsLE)]&0x07)<<8)
                           | (         Buffer[(size_t)(Buffer_Offset+Size+3-IsLE)]         );
