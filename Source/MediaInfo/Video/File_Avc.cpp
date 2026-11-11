@@ -172,7 +172,7 @@ string Avc_profile_level_string(int8u profile_idc, int8u level_idc=0, int8u cons
         if (Profile_Pos==(size_t)-1)
         {
             auto Pos=lower_bound(begin(Avc_profile_idc_Mapping), end(Avc_profile_idc_Mapping), profile_idc, Avc_profile_idc_Names_Size_Cmp);
-            if (Pos!=end(Avc_profile_idc_Mapping))
+            if (Pos!=end(Avc_profile_idc_Mapping) && (*Pos)[0]==profile_idc)
                 Profile_Pos=(*Pos)[1];
         }
         if (Profile_Pos==(size_t)-1)
