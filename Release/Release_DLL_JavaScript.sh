@@ -14,7 +14,7 @@ release_directory="$(realpath -- "$(dirname -- "${BASH_SOURCE[0]}")")"
 version="$(<"${release_directory}/../Project/version.txt")"
 
 emsdk_asmjs="${EMSDK_ASMJS-1.38.48}"
-emsdk_wasm="${EMSDK_WASM-2.0.18}"
+emsdk_wasm="${EMSDK_WASM-6.0.13}"
 
 #-----------------------------------------------------------------------
 # Clean
@@ -41,7 +41,7 @@ pushd "${release_directory}/"
     (
         source "${release_directory}/build/emsdk/emsdk_env.sh"
         pushd "${release_directory}/../.."
-            ./SO_Compile.sh --emscripten-lib
+            ./SO_Compile.sh --emscripten-lib --asmjs
         popd
     )
 
@@ -55,7 +55,7 @@ pushd "${release_directory}/"
     (
         source "${release_directory}/build/emsdk/emsdk_env.sh"
         pushd "${release_directory}/../.."
-            ./SO_Compile.sh --emscripten-lib
+            ./SO_Compile.sh --emscripten-lib --wasm
         popd
     )
 
@@ -73,7 +73,7 @@ pushd "${release_directory}/"
         source "${release_directory}/build/emsdk/emsdk_env.sh"
         export CXXFLAGS="-DMEDIAINFO_ALL_NO -DMEDIAINFO_MIXML_YES"
         pushd "${release_directory}/../.."
-            ./SO_Compile.sh --emscripten-lib
+            ./SO_Compile.sh --emscripten-lib --asmjs
         popd
     )
     cp -a "${release_directory}/../Project/GNU/Library/MediaInfoLite.js.mem" "MediaInfo_JavaScript/MediaInfoLite-${version}.js.mem"
@@ -85,7 +85,7 @@ pushd "${release_directory}/"
         source "${release_directory}/build/emsdk/emsdk_env.sh"
         export CXXFLAGS="-DMEDIAINFO_ALL_NO -DMEDIAINFO_MIXML_YES"
         pushd "${release_directory}/../.."
-            ./SO_Compile.sh --emscripten-lib
+            ./SO_Compile.sh --emscripten-lib --wasm
         popd
     )
     cp -a "${release_directory}/../Project/GNU/Library/MediaInfoLiteWasm.wasm" "MediaInfo_JavaScript/MediaInfoLiteWasm-${version}.wasm"
