@@ -1400,7 +1400,7 @@ void File_Dvdv::PGC(bool Title)
 
                 if (Available && Retrieve(Stream_Audio, Pos, Text_ID).empty() && Sectors[(size_t)((File_Offset+Buffer_Offset)/2048)]==Sector_VTS_PGCI)
                 {
-                    while (Pos>Count_Get(Stream_Audio))
+                    while (Pos>=Count_Get(Stream_Audio))
                         Stream_Prepare(Stream_Audio);
 
                     int8u ToAdd=0;
@@ -1441,7 +1441,7 @@ void File_Dvdv::PGC(bool Title)
 
                 if (Available && Retrieve(Stream_Text, Pos, Text_ID).empty() && Sectors[(size_t)((File_Offset+Buffer_Offset)/2048)]==Sector_VTS_PGCI)
                 {
-                    while (Pos>Count_Get(Stream_Text))
+                    while (Pos>=Count_Get(Stream_Text))
                         Stream_Prepare(Stream_Text);
 
                     auto ID=0x20+Number_Wide;
