@@ -542,7 +542,7 @@ void File_Nsv::Header_Parse()
                     if (T<16)
                         S=((float64)1)/(T+1);
                     else
-                        S=T-1;
+                        S=T-15;
                     if (framerate_idx&1)
                         S=S/1.001;
                     FrameRate=S*Nsv_FrameRate_Multiplier[framerate_idx&3];
