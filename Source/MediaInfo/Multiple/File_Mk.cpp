@@ -1470,12 +1470,23 @@ void File_Mk::Streams_Finish()
         }
     }
 
+    //Tags (attachments)
+    for (const auto& AttachedFile : AttachedFiles)
+    {
+        const auto Item = Segment_Tags_Tag_Items_Attachments.find(AttachedFile.FileUID);
+        if (Item != Segment_Tags_Tag_Items_Attachments.end() && AttachedFile.StreamPos < Count_Get(Stream_Image))
+            Segment_Tags_Tag_Fill(Stream_Image, AttachedFile.StreamPos, Item->second);
+    }
+
     //Chapters
     if (TimecodeScale)
     {
         for (EditionEntries_Pos=0; EditionEntries_Pos<EditionEntries.size(); EditionEntries_Pos++)
         {
             Stream_Prepare(Stream_Menu);
+            const auto Item = Segment_Tags_Tag_Items_Editions.find(EditionEntries[EditionEntries_Pos].EditionUID);
+            if (Item != Segment_Tags_Tag_Items_Editions.end())
+                Segment_Tags_Tag_Fill(Stream_Menu, StreamPos_Last, Item->second); // Tags (edition)
             Fill(Stream_Menu, StreamPos_Last, Menu_Chapters_Pos_Begin, Count_Get(Stream_Menu, StreamPos_Last), 10, true);
             for (ChapterAtoms_Pos=0; ChapterAtoms_Pos<EditionEntries[EditionEntries_Pos].ChapterAtoms.size(); ChapterAtoms_Pos++)
             {
@@ -2723,6 +2734,7 @@ void File_Mk::Segment_Attachments_AttachedFile()
     AttachedFile_FileName.clear();
     AttachedFile_FileMimeType.clear();
     AttachedFile_FileDescription.clear();
+    AttachedFiles.emplace_back();
 }
 
 //---------------------------------------------------------------------------
@@ -2788,7 +2800,10 @@ void File_Mk::Segment_Attachments_AttachedFile_FileData()
         #endif //MEDIAINFO_TRACE
 
         //Filling
+        auto Image_Count=Count_Get(Stream_Image);
         Attachment("Attachment", Ztring().From_UTF8(AttachedFile_FileDescription.empty() ? AttachedFile_FileName : AttachedFile_FileDescription), Ztring(),  Ztring().From_UTF8(AttachedFile_FileMimeType));
+        if (Count_Get(Stream_Image)>Image_Count && !AttachedFiles.empty())
+            AttachedFiles.back().StreamPos=Count_Get(Stream_Image)-1;
 
         #if MEDIAINFO_EVENTS
             {
@@ -2806,11 +2821,35 @@ void File_Mk::Segment_Attachments_AttachedFile_FileData()
 }
 
 //---------------------------------------------------------------------------
+void File_Mk::Segment_Attachments_AttachedFile_FileUID()
+{
+    //Parsing
+    int64u Data=UInteger_Get();
+
+    FILLING_BEGIN();
+        if (!AttachedFiles.empty())
+            AttachedFiles.back().FileUID=Data;
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
 void File_Mk::Segment_Chapters_EditionEntry()
 {
     //Filling
     EditionEntries_Pos=EditionEntries.size();
     EditionEntries.resize(EditionEntries_Pos+1);
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Chapters_EditionEntry_EditionUID()
+{
+    //Parsing
+    int64u Data=UInteger_Get();
+
+    FILLING_BEGIN();
+        if (EditionEntries_Pos<EditionEntries.size())
+            EditionEntries[EditionEntries_Pos].EditionUID=Data;
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -3653,12 +3692,15 @@ void File_Mk::Segment_Tags_Tag_Targets()
         return;
     Segment_Tags_Tag_List.back().TagTrackUIDs.clear();
     Segment_Tags_Tag_List.back().TagBlockAddIDValues.clear();
+    Segment_Tags_Tag_List.back().TagEditionUIDs.clear();
+    Segment_Tags_Tag_List.back().TagChapterUIDs.clear();
+    Segment_Tags_Tag_List.back().TagAttachmentUIDs.clear();
 }
 
 //---------------------------------------------------------------------------
 void File_Mk::Segment_Tags_Tag_Targets_Remap()
 {
-    //Tracks and block addition mappings which can be targeted
+    //Tracks, block addition mappings, editions and attachments which can be targeted
     std::multimap<int64u, const stream*> Tracks;
     std::set<int64u> BlockAddIDValues;
     for (const auto& Temp : Stream)
@@ -3667,17 +3709,44 @@ void File_Mk::Segment_Tags_Tag_Targets_Remap()
         for (const auto& Add : Temp.second.BlockAdditions)
             BlockAddIDValues.insert(Add.first);
     }
+    std::set<int64u> EditionUIDs;
+    for (const auto& EditionEntry : EditionEntries)
+        EditionUIDs.insert(EditionEntry.EditionUID);
+    std::set<int64u> FileUIDs;
+    for (const auto& AttachedFile : AttachedFiles)
+        if (AttachedFile.StreamPos!=(size_t)-1)
+            FileUIDs.insert(AttachedFile.FileUID);
 
     for (auto& Tag : Segment_Tags_Tag_List)
     {
         //A Tag element is for all its targets, 0 or no TagTrackUID is for all tracks, 0 or no TagBlockAddIDValue is for the track itself
-        for (auto Values : { &Tag.TagTrackUIDs, &Tag.TagBlockAddIDValues })
+        for (auto Values : { &Tag.TagTrackUIDs, &Tag.TagBlockAddIDValues, &Tag.TagEditionUIDs, &Tag.TagChapterUIDs, &Tag.TagAttachmentUIDs })
         {
             std::sort(Values->begin(), Values->end());
             Values->erase(std::unique(Values->begin(), Values->end()), Values->end());
             if (!Values->empty() && !Values->front())
                 Values->clear(); // As without value
         }
+
+        //Tags of chapters, editions or attachments, not of the segment nor of tracks (different kinds of UIDs are a logical AND): in the stream of the edition or of the attachment
+        if (!Tag.TagChapterUIDs.empty() || !Tag.TagEditionUIDs.empty() || !Tag.TagAttachmentUIDs.empty())
+        {
+            if (!Tag.TagChapterUIDs.empty() || !Tag.TagTrackUIDs.empty() || !Tag.TagBlockAddIDValues.empty())
+                continue; // Chapters have no stream of their own, and the stream of an edition or of an attachment is not per track
+            const auto IsAttachment = !Tag.TagAttachmentUIDs.empty();
+            const auto& UIDs = IsAttachment ? Tag.TagAttachmentUIDs : Tag.TagEditionUIDs;
+            const auto& Existing = IsAttachment ? FileUIDs : EditionUIDs;
+            auto& Items_PerUID = IsAttachment ? Segment_Tags_Tag_Items_Attachments : Segment_Tags_Tag_Items_Editions;
+            for (const auto UID : UIDs)
+                if (Existing.find(UID) != Existing.end())
+                {
+                    tagspertrack& Items = Items_PerUID[UID]; // Creates it if not yet present, else take the previous one
+                    for (const auto& Item : Tag.Items)
+                        Items[Item.first] = Item.second;
+                }
+            continue;
+        }
+
         std::vector<tagid> Targets;
         if (Tag.TagTrackUIDs.empty())
         {
@@ -3721,6 +3790,36 @@ void File_Mk::Segment_Tags_Tag_Targets_TagTrackUID()
 }
 
 //---------------------------------------------------------------------------
+void File_Mk::Segment_Tags_Tag_Targets_TagEditionUID()
+{
+    //Parsing
+    int64u Value=UInteger_Get();
+
+    if (!Segment_Tags_Tag_List.empty())
+        Segment_Tags_Tag_List.back().TagEditionUIDs.push_back(Value);
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Tags_Tag_Targets_TagChapterUID()
+{
+    //Parsing
+    int64u Value=UInteger_Get();
+
+    if (!Segment_Tags_Tag_List.empty())
+        Segment_Tags_Tag_List.back().TagChapterUIDs.push_back(Value);
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Tags_Tag_Targets_TagAttachmentUID()
+{
+    //Parsing
+    int64u Value=UInteger_Get();
+
+    if (!Segment_Tags_Tag_List.empty())
+        Segment_Tags_Tag_List.back().TagAttachmentUIDs.push_back(Value);
+}
+
+//---------------------------------------------------------------------------
 void File_Mk::Segment_Tags_Tag_Targets_TagBlockAddIDValue()
 {
     //Parsing
@@ -3728,6 +3827,14 @@ void File_Mk::Segment_Tags_Tag_Targets_TagBlockAddIDValue()
 
     if (!Segment_Tags_Tag_List.empty())
         Segment_Tags_Tag_List.back().TagBlockAddIDValues.push_back(Value);
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Tags_Tag_Fill(stream_t StreamKind, size_t StreamPos, const tagspertrack& Items)
+{
+    for (const auto& Item : Items)
+        if (Item.first!=__T("Title") || Retrieve(StreamKind, StreamPos, "Title")!=Item.second) // Avoid repetition if the title is the same as the one from the element
+            Fill(StreamKind, StreamPos, Item.first.To_UTF8().c_str(), Item.second);
 }
 
 //---------------------------------------------------------------------------

@@ -310,13 +310,13 @@ private :
     void Segment_Attachments_AttachedFile_FileName();
     void Segment_Attachments_AttachedFile_FileMimeType();
     void Segment_Attachments_AttachedFile_FileData();
-    void Segment_Attachments_AttachedFile_FileUID(){UInteger_Info();};
+    void Segment_Attachments_AttachedFile_FileUID();
     void Segment_Attachments_AttachedFile_FileReferral(){Skip_XX(Element_Size, "Data");};
     void Segment_Attachments_AttachedFile_FileUsedStartTime(){UInteger_Info();};
     void Segment_Attachments_AttachedFile_FileUsedEndTime(){UInteger_Info();};
     void Segment_Chapters(){};
     void Segment_Chapters_EditionEntry();
-    void Segment_Chapters_EditionEntry_EditionUID(){UInteger_Info();};
+    void Segment_Chapters_EditionEntry_EditionUID();
     void Segment_Chapters_EditionEntry_EditionFlagHidden(){UInteger_Info();};
     void Segment_Chapters_EditionEntry_EditionFlagDefault(){UInteger_Info();};
     void Segment_Chapters_EditionEntry_EditionFlagOrdered(){UInteger_Info();};
@@ -350,9 +350,9 @@ private :
     void Segment_Tags_Tag_Targets_TargetTypeValue(){UInteger_Info();};
     void Segment_Tags_Tag_Targets_TargetType(){String_Info();};
     void Segment_Tags_Tag_Targets_TagTrackUID();
-    void Segment_Tags_Tag_Targets_TagEditionUID(){UInteger_Info();};
-    void Segment_Tags_Tag_Targets_TagChapterUID(){UInteger_Info();};
-    void Segment_Tags_Tag_Targets_TagAttachmentUID(){UInteger_Info();};
+    void Segment_Tags_Tag_Targets_TagEditionUID();
+    void Segment_Tags_Tag_Targets_TagChapterUID();
+    void Segment_Tags_Tag_Targets_TagAttachmentUID();
     void Segment_Tags_Tag_Targets_TagBlockAddIDValue();
     void Segment_Tags_Tag_SimpleTag();
     void Segment_Tags_Tag_SimpleTag_TagName();
@@ -362,6 +362,7 @@ private :
     void Segment_Tags_Tag_SimpleTag_TagString();
     void Segment_Tags_Tag_SimpleTag_TagBinary(){Skip_XX(Element_Size, "Data");};
     void Segment_Tags_Tag_SimpleTag_Assign();
+    void Segment_Tags_Tag_Fill(stream_t StreamKind, size_t StreamPos, const std::map<Ztring, Ztring>& Items);
 
     // Extra
     hdr                                 HDR;
@@ -521,14 +522,25 @@ private :
     struct tag {
         std::vector<int64u> TagTrackUIDs;
         std::vector<int64u> TagBlockAddIDValues;
+        std::vector<int64u> TagEditionUIDs;
+        std::vector<int64u> TagChapterUIDs;
+        std::vector<int64u> TagAttachmentUIDs;
         tagspertrack Items;
     };
     std::vector<tag> Segment_Tags_Tag_List; // Per Tag element, the targets are known only when all tracks are parsed
     tags    Segment_Tags_Tag_Items; // Per target
+    std::map<int64u, tagspertrack> Segment_Tags_Tag_Items_Editions; // Per EditionUID
+    std::map<int64u, tagspertrack> Segment_Tags_Tag_Items_Attachments; // Per FileUID
     Ztring  Segment_Tags_Tag_SimpleTag_TagString_Value;
     string  AttachedFile_FileName;
     string  AttachedFile_FileMimeType;
     string  AttachedFile_FileDescription;
+    struct attachedfile
+    {
+        int64u FileUID{};
+        size_t StreamPos{(size_t)-1}; // Image stream of the attachment, if any
+    };
+    std::vector<attachedfile> AttachedFiles;
     struct crc32
     {
         int64u  Pos;
@@ -559,6 +571,7 @@ private :
     };
     struct editionentry
     {
+        int64u EditionUID{};
         std::vector<chapteratom> ChapterAtoms;
     };
     std::vector<editionentry> EditionEntries;
