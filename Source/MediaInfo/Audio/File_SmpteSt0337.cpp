@@ -873,7 +873,7 @@ bool File_SmpteSt0337::Synched_Test()
                                     {
                                         case 16 : if (CC8(Buffer+Buffer_Offset)!=0x0000F87200004E1FLL) {Synched=false; return true;} break;
                                         case 20 : if (CC8(Buffer+Buffer_Offset)!=0x006F87200054E1F0LL) {Synched=false; return true;} break;
-                                        case 24 : if (CC8(Buffer+Buffer_Offset)!=0x0096F87200A5F41FLL) {Synched=false; return true;} break;
+                                        case 24 : if (CC8(Buffer+Buffer_Offset)!=0x0096F87200A54E1FLL) {Synched=false; return true;} break;
                                         default : ;
                                     }
                                     break;
