@@ -16503,11 +16503,12 @@ void File_Mxf::SDTISystemMetadataPack() //SMPTE 385M + 326M
                 }
                 auto FramesMax=FrameRate?(FrameRate/(RepetitionMaxCount+1)-1):99; //Above 30 frames per second, a time address is used for RepetitionMaxCount+1 frames
                 TimeCode CurrentTC(Hours_Tens*10+Hours_Units, Minutes_Tens*10+Minutes_Units, Seconds_Tens*10+Seconds_Units, Frames_Tens*10+Frames_Units, FramesMax, TimeCode::DropFrame(DropFrame).FPS1001(CPR_1_1001).Wrapped24Hours());
+                const auto Is25=FramesMax==24; //Flag bits 27, 43 and 59 are BGF0, BGF2 and field phase with 25 frames per second, field phase, BGF0 and BGF2 else
                 TimeCode_Dump.List+="    <tc v=\""+CurrentTC.ToString()+'\"';
-                if (FieldPhaseBgf0)
+                if (Is25 ? Bgf2FieldPhase : FieldPhaseBgf0)
                     TimeCode_Dump.List+=" fp=\"1\"";
-                if (Bgf0Bgf2 || Bgf1 || Bgf2FieldPhase)
-                    TimeCode_Dump.List+=" bgf=\""+to_string((Bgf2FieldPhase<<2)|(Bgf1<<1)|(Bgf0Bgf2<<0))+"\"";
+                if (Bgf0Bgf2 || Bgf1 || (Is25 ? FieldPhaseBgf0 : Bgf2FieldPhase))
+                    TimeCode_Dump.List+=" bgf=\""+to_string(Is25 ? ((Bgf0Bgf2<<2)|(Bgf1<<1)|(FieldPhaseBgf0<<0)) : ((Bgf2FieldPhase<<2)|(Bgf1<<1)|(Bgf0Bgf2<<0)))+"\"";
                 if (BG)
                     TimeCode_Dump.List+=" bg=\""+to_string(BG)+"\"";
                 if (TimeCode_Dump.LastTC.IsValid() && TimeCode_Dump.LastTC.GetFramesMax())
@@ -19580,11 +19581,12 @@ void File_Mxf::SystemScheme1_TimeCodeArray()
                     TimeCode_Dump.Attributes_Last+=" fp=\"0\" bgf=\"0\" bg=\"0\"";
                 }
                 TimeCode CurrentTC(Hours_Tens*10+Hours_Units, Minutes_Tens*10+Minutes_Units, Seconds_Tens*10+Seconds_Units, Frames_Tens*10+Frames_Units, TimeCode_Dump.FramesMax, TimeCode::DropFrame(DropFrame).FPS1001(Is1001));
+                const auto Is25=TimeCode_Dump.FramesMax && !((TimeCode_Dump.FramesMax+1)%25); //Flag bits 27, 43 and 59 are BGF0, BGF2 and field phase with 25 frames per second, field phase, BGF0 and BGF2 else
                 TimeCode_Dump.List+="    <tc v=\""+CurrentTC.ToString()+'\"';
-                if (FieldPhaseBgf0)
+                if (Is25 ? Bgf2FieldPhase : FieldPhaseBgf0)
                     TimeCode_Dump.List+=" fp=\"1\"";
-                if (Bgf0Bgf2 || Bgf1 || Bgf2FieldPhase)
-                    TimeCode_Dump.List+=" bgf=\""+to_string((Bgf2FieldPhase<<2)|(Bgf1<<1)|(Bgf0Bgf2<<0))+"\"";
+                if (Bgf0Bgf2 || Bgf1 || (Is25 ? FieldPhaseBgf0 : Bgf2FieldPhase))
+                    TimeCode_Dump.List+=" bgf=\""+to_string(Is25 ? ((Bgf0Bgf2<<2)|(Bgf1<<1)|(FieldPhaseBgf0<<0)) : ((Bgf2FieldPhase<<2)|(Bgf1<<1)|(Bgf0Bgf2<<0)))+"\"";
                 if (BG)
                     TimeCode_Dump.List+=" bg=\""+to_string(BG)+"\"";
                 if (TimeCode_Dump.LastTC.IsValid() && TimeCode_Dump.LastTC.GetFramesMax() && CurrentTC!=TimeCode_Dump.LastTC+1)
