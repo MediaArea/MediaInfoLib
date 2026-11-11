@@ -243,7 +243,12 @@ void File_Pcm::Streams_Fill()
 
     //Bit rate
     if (SamplingRate && BitDepth && Channels)
-        Fill(Stream_Audio, 0, Audio_BitRate, SamplingRate*BitDepth*Channels);
+    {
+        bool HasPadding=BitDepth_Significant && BitDepth_Significant<BitDepth;
+        Fill(Stream_Audio, 0, Audio_BitRate, SamplingRate*(HasPadding?BitDepth_Significant:BitDepth)*Channels);
+        if (HasPadding)
+            Fill(Stream_Audio, 0, Audio_BitRate_Encoded, SamplingRate*BitDepth*Channels); //With the padding of the stored size
+    }
 
     //ChannelsPositions
     if (Codec==__T("SMPTE ST 337"))

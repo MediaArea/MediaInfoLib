@@ -4425,6 +4425,20 @@ void File__Analyze::Streams_Finish_StreamOnly_Audio(size_t Pos)
     if (Retrieve(Stream_Audio, Pos, Audio_BitRate_Encoded)==Retrieve(Stream_Audio, Pos, Audio_BitRate))
         Clear(Stream_Audio, Pos, Audio_BitRate_Encoded);
 
+    //PCM with samples stored in more bits than their bit depth: the stream size from the container may be the encoded one
+    if (Retrieve_Const(Stream_Audio, Pos, Audio_Format)==__T("PCM") && Retrieve_Const(Stream_Audio, Pos, Audio_StreamSize_Encoded).empty())
+    {
+        float64 BitRate=Retrieve_Const(Stream_Audio, Pos, Audio_BitRate).To_float64();
+        float64 BitRate_Encoded=Retrieve_Const(Stream_Audio, Pos, Audio_BitRate_Encoded).To_float64();
+        float64 StreamSize=Retrieve_Const(Stream_Audio, Pos, Audio_StreamSize).To_float64();
+        float64 Duration=Retrieve_Const(Stream_Audio, Pos, Audio_Duration).To_float64();
+        if (BitRate && BitRate_Encoded>BitRate && StreamSize && Duration && StreamSize*8*1000/Duration*2>BitRate+BitRate_Encoded) //Stream size closer to the one of the encoded bit rate
+        {
+            Fill(Stream_Audio, Pos, Audio_StreamSize_Encoded, StreamSize, 0);
+            Fill(Stream_Audio, Pos, Audio_StreamSize, StreamSize*BitRate/BitRate_Encoded, 0, true);
+        }
+    }
+
     //Dolby ED2 merge
     if (Retrieve(Stream_Audio, Pos, Audio_Format)==__T("Dolby ED2"))
     {
