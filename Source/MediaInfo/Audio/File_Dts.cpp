@@ -2229,14 +2229,16 @@ void File_Dts::Data_Parse()
             Asset_Sizes.push_back(Size);
         }
         Element_End0();
+        int64u Header_End=EndBS-((int64u)ExtSSHeaderSize-6)*8; //As count of remaining bits
         for (int8u Asset_Pos=0; Asset_Pos<NumAssets; Asset_Pos++)
         {
             Element_Begin1("AssetDescriptor");
+            int64u AssetDescriptor_Begin=Data_BS_Remain();
             int16u AssetSize;
             Get_S2 (9, AssetSize,                               "AssetDescriptFsize");
             AssetSize++;  Param_Info2(AssetSize, " bytes?");
             Skip_S1(3,                                          "AssetIndex");
-            if (StaticFieldsPresent)
+            if (StaticFieldsPresent && !Asset_Pos) //The stream is described by its first asset
             {
                 TEST_SB_SKIP(                                   "AssetTypeDescrPresent");
                     Info_S1( 4, TypeDescriptor,                 "AssetTypeDescriptor"); Param_Info1(DTS_HD_TypeDescriptor[TypeDescriptor]);
@@ -2277,6 +2279,11 @@ void File_Dts::Data_Parse()
                     }
                 TEST_SB_END();
             }
+            int64u AssetDescriptor_End=((int64u)AssetSize)*8<AssetDescriptor_Begin?AssetDescriptor_Begin-((int64u)AssetSize)*8:0; //As count of remaining bits
+            if (AssetDescriptor_End<Header_End)
+                AssetDescriptor_End=Header_End;
+            if (Data_BS_Remain()>AssetDescriptor_End)
+                Skip_BS(Data_BS_Remain()-AssetDescriptor_End,   "(Not parsed)");
             Element_End0();
         }
         auto RemainingBits=(ExtSSHeaderSize-6)*8-(EndBS-Data_BS_Remain());
