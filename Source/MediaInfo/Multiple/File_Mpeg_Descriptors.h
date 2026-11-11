@@ -206,11 +206,16 @@ struct complete_stream
                 Update_Needed_StreamPos(p.Update_Needed_StreamPos),
                 Update_Needed_Info(p.Update_Needed_Info),
                 DVB_EPG_Blocks_IsUpdated(p.DVB_EPG_Blocks_IsUpdated),
-                Scte35(p.Scte35)
+                Scte35(p.Scte35?new scte35(*p.Scte35):NULL)
             {
                 #if defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
                 Clone_Desc(p.ServiceDescriptors);
                 #endif
+            }
+
+            ~program()
+            {
+                delete Scte35; //Scte35=NULL;
             }
 
             program& operator=(const program& p)
@@ -238,7 +243,9 @@ struct complete_stream
                 Update_Needed_StreamPos=p.Update_Needed_StreamPos;
                 Update_Needed_Info=p.Update_Needed_Info;
                 DVB_EPG_Blocks_IsUpdated=p.DVB_EPG_Blocks_IsUpdated;
-                Scte35=p.Scte35;
+                scte35* Scte35_New=p.Scte35?new scte35(*p.Scte35):NULL;
+                delete Scte35;
+                Scte35=Scte35_New;
 
                 return *this;
             }
