@@ -1447,7 +1447,8 @@ void File_Mk::Streams_Finish()
                 for (tagspertrack::iterator Tag = Tags.begin(); Tag != Tags.end(); ++Tag)
                     if ((Tag->first != __T("Encoded_Library") || Retrieve(Stream_General, 0, "Encoded_Library") != Tag->second) // Avoid repetition if Info block is same as tags
                         && (Tag->first != __T("Encoded_Date") || Retrieve(StreamKind_Last, StreamPos_Last, "Encoded_Date") != Tag->second)
-                        && (Tag->first != __T("Title") || Retrieve(StreamKind_Last, StreamPos_Last, "Title") != Tag->second))
+                        && (Tag->first != __T("Title") || Retrieve(StreamKind_Last, StreamPos_Last, "Title") != Tag->second)
+                        && Tag->first != __T("TimeCode_FirstFrame") && Tag->first != __T("TimeCode_Source")) // The time code is the one from the block additions, not the one from a TIMECODE tag
                         Fill(StreamKind_Last, StreamPos_Last, Tag->first == __T("Title") ? "TimeCode_Source" : Tag->first.To_UTF8().c_str(), Tag->second);
 
                 StreamKind_Last=StreamKind_Last_Sav;
