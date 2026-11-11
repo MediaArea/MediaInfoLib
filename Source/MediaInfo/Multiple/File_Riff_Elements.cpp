@@ -1621,17 +1621,22 @@ void File_Riff::AVI__hdlr_strl_strf_auds_ExtensibleWave(int16u BitsPerSample)
 void File_Riff::AVI__hdlr_strl_strf_iavs()
 {
     //Standard video header before Iavs?
-    if (Element_Size==72)
+    const bool HasVideoHeader=Element_Size==72;
+    if (HasVideoHeader)
     {
         Element_Begin0();
+            const int64u Element_Size_Save=Element_Size;
+            Element_Size=40; //The DV information is after the video header
             AVI__hdlr_strl_strf_vids();
+            Element_Size=Element_Size_Save;
         Element_End0();
     }
+    const bool HasVideoStream=HasVideoHeader && StreamKind_Last==Stream_Video; //From the video header
 
     Element_Info1("Interleaved Audio/Video");
 
     #ifdef MEDIAINFO_DVDIF_YES
-        if (Element_Size<8*4)
+        if (Element_Size-Element_Offset<8*4)
             return;
 
         //Parsing
@@ -1664,8 +1669,12 @@ void File_Riff::AVI__hdlr_strl_strf_iavs()
 
         Finish(DV_FromHeader);
 
-        Stream_Prepare(Stream_Video);
+        if (!HasVideoStream)
+            Stream_Prepare(Stream_Video);
         stream& StreamItem = Stream[Stream_ID];
+        for (size_t Pos=0; Pos<StreamItem.Parsers.size(); Pos++)
+            delete StreamItem.Parsers[Pos]; //From the video header, the audio is ignored by its parser
+        StreamItem.Parsers.clear();
         StreamItem.Parsers.push_back(new File_DvDif);
         Open_Buffer_Init(StreamItem.Parsers[0]);
 
@@ -1682,7 +1691,8 @@ void File_Riff::AVI__hdlr_strl_strf_iavs()
 
         //Filling
         Ztring Codec; Codec.From_CC4(Stream[Stream_ID].fccHandler);
-        Stream_Prepare(Stream_Video);
+        if (!HasVideoStream)
+            Stream_Prepare(Stream_Video);
         float32 FrameRate=Retrieve(Stream_Video, StreamPos_Last, Video_FrameRate).To_float32();
         Fill(Stream_Video, StreamPos_Last, Video_Codec, Codec); //May be replaced by codec parser
         Fill(Stream_Video, StreamPos_Last, Video_Codec_CC, Codec);
