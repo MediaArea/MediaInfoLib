@@ -23559,7 +23559,13 @@ void File_Mxf::NextRandomIndexPack_GoTo(bool IsInHeader)
              && !Config->Demux_EventWasSent
             #endif //MEDIAINFO_DEMUX
             )
+        {
+            #if MEDIAINFO_ADVANCED
+                if (Config->TimeCode_Dumps)
+                    Config->TimeCode_Dumps_Jump(File_Offset+Buffer_Offset+Element_Offset, File_Size);
+            #endif //MEDIAINFO_ADVANCED
             File_GoTo=File_Size;
+        }
         else
             GoToFromEnd(0);
     };

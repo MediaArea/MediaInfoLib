@@ -885,7 +885,12 @@ void File__Analyze::Open_Buffer_Init (int64u File_Size_)
     #endif //MEDIAINFO_IBIUSAGE
     #if MEDIAINFO_ADVANCED
         if (!IsSub && !Config->TimeCode_Dumps && MediaInfoLib::Config.Inform_Get().MakeLowerCase()==__T("timecodexml"))
+        {
             Config->TimeCode_Dumps=new map<string, MediaInfo_Config_MediaInfo::timecode_dump>;
+            Config->TimeCode_Dumps_Parsed.clear();
+            Config->TimeCode_Dumps_Parsed_Start=0;
+            Config->TimeCode_Dumps_Parsed_IsPartial=false;
+        }
     #endif //MEDIAINFO_ADVANCED
 }
 
@@ -4039,6 +4044,11 @@ void File__Analyze::ForceFinish ()
     if (Status[IsFinished])
         return;
 
+    #if MEDIAINFO_ADVANCED
+        if (!IsSub && Config->TimeCode_Dumps)
+            Config->TimeCode_Dumps_Jump(File_Offset+Buffer_Offset, (int64u)-1);
+    #endif //MEDIAINFO_ADVANCED
+
     //The end of the data is the file size only for parsing the last data, the real file size is used for finishing (e.g. reading stopped by a read error)
     if (File_Size_Real!=(int64u)-1)
         File_Size=File_Size_Real;
@@ -4225,6 +4235,10 @@ void File__Analyze::GoTo (int64u GoTo, const char* ParserName)
         }
     }
 
+    #if MEDIAINFO_ADVANCED
+        if (Config->TimeCode_Dumps)
+            Config->TimeCode_Dumps_Jump(File_Offset+Buffer_Offset+Element_Offset, GoTo);
+    #endif //MEDIAINFO_ADVANCED
     File_GoTo=GoTo;
 
     #if MEDIAINFO_EVENTS
@@ -4263,6 +4277,10 @@ void File__Analyze::GoTo (int64u GoTo)
         return;
     }
 
+    #if MEDIAINFO_ADVANCED
+        if (Config->TimeCode_Dumps)
+            Config->TimeCode_Dumps_Jump(File_Offset+Buffer_Offset+Element_Offset, GoTo);
+    #endif //MEDIAINFO_ADVANCED
     File_GoTo=GoTo;
 }
 #endif //MEDIAINFO_TRACE

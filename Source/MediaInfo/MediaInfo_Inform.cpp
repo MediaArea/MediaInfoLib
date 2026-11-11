@@ -232,8 +232,7 @@ Ztring MediaInfo_Internal::Inform()
         if (Config.TimeCode_Dumps)
         {
             string Result="<media";
-            if (Config.ParseSpeed<1.0)
-                Result+=" full=\"0\"";
+            Result+=(Config.ParseSpeed<1.0 && Config.TimeCode_Dumps_IsPartial())?" full=\"0\"":" full=\"1\"";
             Ztring Options=Get(Stream_General, 0, General_CompleteName, Info_Options);
             if (InfoOption_ShowInInform<Options.size() && Options[InfoOption_ShowInInform]==__T('Y'))
             {

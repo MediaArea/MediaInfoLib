@@ -478,6 +478,11 @@ public :
             void (*List_Finish)(timecode_dump&)=nullptr; //Fills List from Values
         };
         std::map<std::string, timecode_dump>* TimeCode_Dumps;
+        std::vector<std::pair<int64u, int64u> > TimeCode_Dumps_Parsed; //Ranges of the file parsed by the main parser, for knowing if all the time codes are listed
+        int64u TimeCode_Dumps_Parsed_Start;
+        bool TimeCode_Dumps_Parsed_IsPartial; //A parser did not parse all its time codes
+        void TimeCode_Dumps_Jump(int64u From, int64u To);
+        bool TimeCode_Dumps_IsPartial();
     #endif //MEDIAINFO_ADVANCED
 
 private :
