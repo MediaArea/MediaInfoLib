@@ -2007,10 +2007,13 @@ void File_Mpeg4::idat()
     Skip_XX(Element_Size,                                       "Data");
 
     FILLING_BEGIN();
-        Accept("QTI");
+        if (!Status[IsAccepted]) //Else already done, e.g. by idsc
+        {
+            Accept("QTI");
 
-        Fill(Stream_General, 0, General_Format, "MPEG-4");
-        CodecID_Fill(__T("QTI"), Stream_General, 0, InfoCodecID_Format_Mpeg4);
+            Fill(Stream_General, 0, General_Format, "MPEG-4");
+            CodecID_Fill(__T("QTI"), Stream_General, 0, InfoCodecID_Format_Mpeg4);
+        }
     FILLING_END();
 }
 
@@ -2023,10 +2026,13 @@ void File_Mpeg4::idsc()
     Skip_XX(Element_Size,                                       "Data");
 
     FILLING_BEGIN();
-        Accept("QTI");
+        if (!Status[IsAccepted]) //Else already done, e.g. by idat
+        {
+            Accept("QTI");
 
-        Fill(Stream_General, 0, General_Format, "MPEG-4");
-        CodecID_Fill(__T("QTI"), Stream_General, 0, InfoCodecID_Format_Mpeg4);
+            Fill(Stream_General, 0, General_Format, "MPEG-4");
+            CodecID_Fill(__T("QTI"), Stream_General, 0, InfoCodecID_Format_Mpeg4);
+        }
     FILLING_END();
 }
 
