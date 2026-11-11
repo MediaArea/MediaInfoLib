@@ -1403,7 +1403,7 @@ void File_Gxf::media()
     #endif //MEDIAINFO_SEEK
 
     #if MEDIAINFO_DEMUX
-            if (Streams[TrackNumber].MediaType!=8) //Not a TimeCode stream
+            if (TimeCodes.find(TrackNumber)==TimeCodes.end()) //Not a TimeCode stream
             {
                 Element_Code=TrackNumber;
                 int64u TimeCode_First=0;
@@ -1620,9 +1620,6 @@ File__Analyze* File_Gxf::ChooseParser_ChannelGrouping(int8u TrackID)
     File_ChannelGrouping* Parser;
     if (TrackID && Streams[TrackID-1].IsChannelGrouping && !Streams[TrackID-1].DisplayInfo && !Streams[TrackID-1].Parsers.empty()) //The previous track is the first half of a pair
     {
-        if (!TrackID || !Streams[TrackID-1].IsChannelGrouping)
-            return NULL; //Not a channel grouping
-
         Parser=new File_ChannelGrouping;
         Parser->CanBePcm=true;
         Parser->Channel_Pos=1;
