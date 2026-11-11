@@ -1088,6 +1088,7 @@ void File_Gxf::map()
                                         Parsers_Count++;
                                         Streams[TrackID].Searching_Payload=true;
 
+                                        delete Ancillary; //The last ancillary data track is the one in use
                                         Ancillary=new File_Ancillary;
                                         Ancillary->WithTenBit=true;
                                         Ancillary->WithChecksum=true;
