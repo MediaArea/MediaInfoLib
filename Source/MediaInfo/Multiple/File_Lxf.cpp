@@ -159,6 +159,10 @@ File_Lxf::File_Lxf()
 //---------------------------------------------------------------------------
 File_Lxf::~File_Lxf()
 {
+    #if defined(MEDIAINFO_ANCILLARY_YES)
+        if (Videos.size()<2 || Videos[1].Parsers.empty())
+            delete Ancillary; //Created by the video parser, else it is in the parsers of the VBI/VANC data
+    #endif //defined(MEDIAINFO_ANCILLARY_YES)
     for (size_t Pos=0; Pos<Videos.size(); Pos++)
         for (size_t Pos2=0; Pos2<Videos[Pos].Parsers.size(); Pos2++)
             delete Videos[Pos].Parsers[Pos2];
@@ -1687,7 +1691,8 @@ void File_Lxf::Video_Stream_1()
             Element_Begin1("VANC line");
             if (Videos[1].Parsers.empty())
             {
-                Ancillary=new File_Ancillary;
+                if (!Ancillary) //Else it is already created by the video parser
+                    Ancillary=new File_Ancillary;
                 Ancillary->InDecodingOrder=true;
                 Ancillary->WithChecksum=true;
                 Ancillary->MustSynchronize=true;
