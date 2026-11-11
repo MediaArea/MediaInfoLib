@@ -2790,6 +2790,8 @@ void MediaInfo_Config_CodecID_Audio_Mpeg4 (InfoMap &Info)
     Info.Separator_Set(0, __T("\n"));
     Info.Write(Ztring().From_UTF8(
     ".mp3;MPEG Audio\n"
+    "23ni;PCM\n"
+    "42n1;PCM\n"
     "a3ds;Auro-Cx\n"
     "A104;AMR;;;http://www.apple.com/quicktime/download/standalone.html;Wide band\n"
     "aac ;AAC\n"

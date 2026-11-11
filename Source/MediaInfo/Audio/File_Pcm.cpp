@@ -131,6 +131,8 @@ void File_Pcm::Streams_Fill()
     else if (Codec==__T("fpcm"))             {  if (!Endianness) Endianness='B';            Sign='F';}
     else if (Codec==__T("in24"))             {  if (!Endianness) Endianness='B'; if (!Sign) Sign='S'; BitDepth=24;}
     else if (Codec==__T("in32"))             {  if (!Endianness) Endianness='B'; if (!Sign) Sign='S'; BitDepth=32;}
+    else if (Codec==__T("42n1"))             {                   Endianness='L';            Sign='S'; BitDepth=24;} //AIFF-C of libsndfile
+    else if (Codec==__T("23ni"))             {                   Endianness='L';            Sign='S'; BitDepth=32;} //AIFF-C of libsndfile
     else if (Codec==__T("raw "))             {  if (!Endianness) Endianness='L';            Sign='U';}
     else if (Codec==__T("twos"))             {                   Endianness='B';            Sign='S';}
     else if (Codec==__T("sowt"))             {                   Endianness='L';            Sign='S';}
