@@ -434,8 +434,9 @@ void File_Gxf::Streams_Finish_PerStream(size_t StreamID, stream &Temp)
                         Stream_Prepare(Stream_Text);
                         Merge(*Temp.Parsers[0], Stream_Text, Parser_Text_Pos, StreamPos_Last);
                         Ztring ID=Retrieve(Stream_Text, StreamPos_Last, Text_ID);
-                        Fill(Stream_Text, StreamPos_Last, Text_ID, Ztring::ToZtring(AncillaryData_StreamID)+__T("-")+ID, true);
-                        Fill(Stream_Text, StreamPos_Last, Text_ID_String, Ztring::ToZtring(AncillaryData_StreamID)+__T("-")+ID, true);
+                        Ztring ID_Prefix=Ztring::ToZtring(AncillaryData_StreamID==(int8u)-1?StreamID:AncillaryData_StreamID); //In the video stream itself if there is no ancillary data track
+                        Fill(Stream_Text, StreamPos_Last, Text_ID, ID_Prefix+__T("-")+ID, true);
+                        Fill(Stream_Text, StreamPos_Last, Text_ID_String, ID_Prefix+__T("-")+ID, true);
                         Fill(Stream_Text, StreamPos_Last, Text_Delay, Retrieve(Stream_Video, Count_Get(Stream_Video)-1, Video_Delay), true);
                         Fill(Stream_Text, StreamPos_Last, Text_Delay_Source, Retrieve(Stream_Video, Count_Get(Stream_Video)-1, Video_Delay_Source), true);
                         Fill(Stream_Text, StreamPos_Last, Text_Delay_Original, Retrieve(Stream_Video, Count_Get(Stream_Video)-1, Video_Delay_Original), true);
@@ -507,7 +508,7 @@ void File_Gxf::Streams_Finish_PerStream(size_t StreamID, stream &Temp)
             }
 
             //Text
-            if (Temp.Parsers[0]->Count_Get(Stream_Text))
+            if (!Temp.Parsers[0]->Count_Get(Stream_Video) && Temp.Parsers[0]->Count_Get(Stream_Text))
             {
                 size_t Parser_Text_Count=Temp.Parsers[0]->Count_Get(Stream_Text);
                 for (size_t Parser_Text_Pos=0; Parser_Text_Pos<Parser_Text_Count; Parser_Text_Pos++)
