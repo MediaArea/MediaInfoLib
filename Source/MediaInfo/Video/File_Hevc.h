@@ -96,10 +96,12 @@ private :
         #endif //MEDIAINFO_DEMUX
         vector<profile_tier_level_struct> profile_tier_level_info_layers;
         vector<int16u> view_id_val;
+        int32u  num_units_in_tick;
+        int32u  time_scale;
         int8u   vps_max_sub_layers_minus1;
 
         //Constructor/Destructor
-        video_parameter_set_struct(const vector<profile_tier_level_struct>& profile_tier_level_info_layers_, int8u vps_max_sub_layers_minus1_, vector<int16u> view_id_val_)
+        video_parameter_set_struct(const vector<profile_tier_level_struct>& profile_tier_level_info_layers_, int8u vps_max_sub_layers_minus1_, vector<int16u> view_id_val_, int32u num_units_in_tick_, int32u time_scale_)
         :
             #if MEDIAINFO_DEMUX
             AnnexB_Buffer(NULL),
@@ -107,6 +109,8 @@ private :
             #endif //MEDIAINFO_DEMUX
             profile_tier_level_info_layers(profile_tier_level_info_layers_),
             view_id_val(view_id_val_),
+            num_units_in_tick(num_units_in_tick_),
+            time_scale(time_scale_),
             vps_max_sub_layers_minus1(vps_max_sub_layers_minus1_)
         {
         }
@@ -407,7 +411,7 @@ private :
     //Elements
     void slice_segment_layer();
     void video_parameter_set();
-    void video_parameter_sets_creating_data(int8u vps_video_parameter_set_id, const vector<profile_tier_level_struct>& profile_tier_level_info_layers, int8u vps_max_sub_layers_minus1, const vector<int16u>& view_id_val);
+    void video_parameter_sets_creating_data(int8u vps_video_parameter_set_id, const vector<profile_tier_level_struct>& profile_tier_level_info_layers, int8u vps_max_sub_layers_minus1, const vector<int16u>& view_id_val, int32u vps_num_units_in_tick=0, int32u vps_time_scale=0);
     void seq_parameter_set();
     void pic_parameter_set();
     void access_unit_delimiter();

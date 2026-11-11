@@ -613,15 +613,23 @@ void File_Hevc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator se
     if (preferred_transfer_characteristics!=2)
         Fill(Stream_Video, 0, Video_transfer_characteristics, Mpegv_transfer_characteristics(preferred_transfer_characteristics));
     const auto vui_parameters = seq_parameter_set_Item->vui_parameters;
+    int32u num_units_in_tick=vui_parameters?vui_parameters->num_units_in_tick:0;
+    int32u time_scale=vui_parameters?vui_parameters->time_scale:0;
+    if ((!num_units_in_tick || !time_scale) && seq_parameter_set_Item->video_parameter_set_id<video_parameter_sets.size() && video_parameter_sets[seq_parameter_set_Item->video_parameter_set_id])
+    {
+        //Timing information of the video parameter set
+        num_units_in_tick=video_parameter_sets[seq_parameter_set_Item->video_parameter_set_id]->num_units_in_tick;
+        time_scale=video_parameter_sets[seq_parameter_set_Item->video_parameter_set_id]->time_scale;
+    }
+    if (num_units_in_tick && time_scale)
+    {
+        float64 FrameRate=(float64)time_scale / num_units_in_tick;
+        if (Interlacement.SeparatedFields)
+            FrameRate/=2; //The tick is per coded picture, so for separated fields it is the field rate; report the frame rate (e.g. 25 fps for 50 fields/s), as for AVC
+        Fill(Stream_Video, StreamPos_Last, Video_FrameRate, FrameRate);
+    }
     if (vui_parameters)
     {
-        if (vui_parameters->time_scale && vui_parameters->num_units_in_tick)
-        {
-            float64 FrameRate=(float64)vui_parameters->time_scale / vui_parameters->num_units_in_tick;
-            if (Interlacement.SeparatedFields)
-                FrameRate/=2; //The tick is per coded picture, so for separated fields it is the field rate; report the frame rate (e.g. 25 fps for 50 fields/s), as for AVC
-            Fill(Stream_Video, StreamPos_Last, Video_FrameRate, FrameRate);
-        }
 
         if (vui_parameters->sar_width && vui_parameters->sar_height)
         {
@@ -1669,7 +1677,7 @@ void File_Hevc::slice_segment_layer()
 }
 
 //---------------------------------------------------------------------------
-void File_Hevc::video_parameter_sets_creating_data(int8u vps_video_parameter_set_id, const vector<profile_tier_level_struct>& profile_tier_level_info_layers, int8u vps_max_sub_layers_minus1, const vector<int16u>& view_id_val)
+void File_Hevc::video_parameter_sets_creating_data(int8u vps_video_parameter_set_id, const vector<profile_tier_level_struct>& profile_tier_level_info_layers, int8u vps_max_sub_layers_minus1, const vector<int16u>& view_id_val, int32u vps_num_units_in_tick, int32u vps_time_scale)
 {
     //Creating Data
     if (vps_video_parameter_set_id >= video_parameter_sets.size())
@@ -1678,7 +1686,9 @@ void File_Hevc::video_parameter_sets_creating_data(int8u vps_video_parameter_set
     delete *Data_Item; *Data_Item = new video_parameter_set_struct(
         profile_tier_level_info_layers,
         vps_max_sub_layers_minus1,
-        view_id_val
+        view_id_val,
+        vps_num_units_in_tick,
+        vps_time_scale
     );
 
     //NextCode
@@ -1766,9 +1776,10 @@ void File_Hevc::video_parameter_set()
     for (int32u LayerSetPos=1; LayerSetPos<=vps_num_layer_sets_minus1; LayerSetPos++)
         for (int8u LayerId=0; LayerId<=vps_max_layer_id; LayerId++)
             Skip_SB(                                            "layer_id_included_flag");
+    int32u vps_num_units_in_tick=0, vps_time_scale=0;
     TEST_SB_SKIP(                                               "vps_timing_info_present_flag");
-        int32u vps_time_scale, vps_num_hrd_parameters;
-        Skip_S4(32,                                             "vps_num_units_in_tick");
+        int32u vps_num_hrd_parameters;
+        Get_S4 (32, vps_num_units_in_tick,                      "vps_num_units_in_tick");
         Get_S4 (32, vps_time_scale,                             "vps_time_scale");
         if (vps_time_scale==0)
         {
@@ -2059,7 +2070,7 @@ void File_Hevc::video_parameter_set()
 
     FILLING_BEGIN_PRECISE();
         //Creating Data
-        video_parameter_sets_creating_data(vps_video_parameter_set_id, ps, vps_max_sub_layers_minus1, view_id_val);
+        video_parameter_sets_creating_data(vps_video_parameter_set_id, ps, vps_max_sub_layers_minus1, view_id_val, vps_num_units_in_tick, vps_time_scale);
     FILLING_END();
 }
 
