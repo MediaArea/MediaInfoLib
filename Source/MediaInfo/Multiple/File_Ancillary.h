@@ -48,7 +48,7 @@ public :
 
     //In/Out
     #if defined(MEDIAINFO_EIA608_YES)
-        File__Analyze*  Eia608_Parser;
+        File__Analyze*  Eia608_Parsers[2]; //Per field
     #endif //defined(MEDIAINFO_CDP_YES)
     #if defined(MEDIAINFO_CDP_YES)
         std::vector<buffer_data*> Cdp_Data;
