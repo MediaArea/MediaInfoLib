@@ -31,6 +31,7 @@ class File_SmpteSt0337 : public File_Pcm_Base
 public :
     // In
     int8u   Endianness;
+    int8u   Channels; // Count of channels of the stream carrying the data bursts, 2 (AES3 frames) by default
     bool    Aligned;
 
     // Constructor/Destructor

@@ -4577,11 +4577,12 @@ void File_Riff::Parser_Pcm(stream& StreamItem, int16u Channels, int16u BitsPerSa
     #endif
 
     #if defined(MEDIAINFO_SMPTEST0337_YES)
-    if (Channels==2 && BitsPerSample<=32 && SamplesPerSec==48000) //Some SMPTE ST 337 streams are hidden in PCM stream
+    if (Channels<=2 && BitsPerSample<=32 && SamplesPerSec==48000) //Some SMPTE ST 337 streams are hidden in PCM stream
     {
         File_SmpteSt0337* Parser=new File_SmpteSt0337;
         Parser->BitDepth=(int8u)BitsPerSample;
-        Parser->Aligned=true;
+        Parser->Channels=(int8u)Channels;
+        Parser->Aligned=Channels==2; //With 1 channel, a data burst is in consecutive samples and may start at any of them
         Parser->ShouldContinueParsing=true;
         #if MEDIAINFO_DEMUX
             if (Config->Demux_Unpacketize_Get() && Retrieve(Stream_General, 0, General_Format)==__T("Wave"))

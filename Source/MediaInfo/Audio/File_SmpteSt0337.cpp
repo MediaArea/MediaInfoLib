@@ -222,6 +222,7 @@ File_SmpteSt0337::File_SmpteSt0337()
     PTS_DTS_Needed=true;
 
     // In
+    Channels=2;
     Aligned=false;
 
     // Temp
@@ -1879,7 +1880,7 @@ void File_SmpteSt0337::Conformance_Burst(const burst_preamble& Burst)
 
     // SMPTE ST 337 burst spacing, a data burst preceded by 4 subframes of 0 is needed at least every 4096 AES3 frames
     // Only for AES3 samples from a container, files with only data bursts (e.g. Dolby E data files) have no padding between bursts
-    const int64u Frame_Size=BitDepth/4; // Bytes per AES3 frame
+    const int64u Frame_Size=BitDepth*Channels/8; // Bytes per AES3 frame
     if (Frame_Size && IsSub)
     {
         const auto Gap=Conformance_Burst_End==(int64u)-1?(int64u)GuardBand_Before:(Burst.Begin>Conformance_Burst_End?(Burst.Begin-Conformance_Burst_End):0); // Bytes of 0 before the burst
