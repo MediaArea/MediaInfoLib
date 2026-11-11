@@ -312,6 +312,8 @@ MediaInfo_Config_MediaInfo::MediaInfo_Config_MediaInfo()
     #endif //MEDIAINFO_SEEK
     #if MEDIAINFO_ADVANCED
         TimeCode_Dumps=nullptr;
+        TimeCode_Dumps_Parsed_Start=0;
+        TimeCode_Dumps_Parsed_IsPartial=false;
     #endif //MEDIAINFO_ADVANCED
 }
 
@@ -3917,6 +3919,44 @@ bool MediaInfo_Config_MediaInfo::File_Ac3_IgnoreCrc_Get ()
     return File_Ac3_IgnoreCrc;
 }
 #endif //defined(MEDIAINFO_AC3_YES)
+
+//***************************************************************************
+// Time codes
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_ADVANCED
+// The main parser stops parsing at From and continues at To, (int64u)-1 if it does not continue
+void MediaInfo_Config_MediaInfo::TimeCode_Dumps_Jump(int64u From, int64u To)
+{
+    if (From==To)
+        return;
+    if (From>TimeCode_Dumps_Parsed_Start && TimeCode_Dumps_Parsed_Start!=(int64u)-1)
+        TimeCode_Dumps_Parsed.emplace_back(TimeCode_Dumps_Parsed_Start, From);
+    TimeCode_Dumps_Parsed_Start=To;
+}
+
+//---------------------------------------------------------------------------
+// If some parts of the file were not parsed
+bool MediaInfo_Config_MediaInfo::TimeCode_Dumps_IsPartial()
+{
+    if (TimeCode_Dumps_Parsed_IsPartial || File_Size==(int64u)-1 || File_Names.size()>1)
+        return true;
+    auto Parsed=TimeCode_Dumps_Parsed;
+    if (TimeCode_Dumps_Parsed_Start<File_Size)
+        Parsed.emplace_back(TimeCode_Dumps_Parsed_Start, File_Size); //Still parsing, up to the end
+    sort(Parsed.begin(), Parsed.end());
+    int64u End=0;
+    for (const auto& Range : Parsed)
+    {
+        if (Range.first>End)
+            return true;
+        if (Range.second>End)
+            End=Range.second;
+    }
+    return End<File_Size;
+}
+#endif //MEDIAINFO_ADVANCED
 
 //***************************************************************************
 // Analysis internal

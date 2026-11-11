@@ -3254,6 +3254,10 @@ void File_Mk::Segment_Cluster_BlockGroup_Block_Lace()
         Probe_End(); //Enough content from the probe of the middle of the file
     if (!Status[IsFilled] && (Stream_Count==0 || Frame_Count>(Config->ParseSpeed?512:3)*Stream.size()))
     {
+        #if MEDIAINFO_ADVANCED
+            if (Config->TimeCode_Dumps && Config->ParseSpeed<1.0 && File_Offset+Buffer_Offset+Element_Size<Segment_Offset_End)
+                Config->TimeCode_Dumps_Parsed_IsPartial=true; //Next blocks are not parsed
+        #endif //MEDIAINFO_ADVANCED
         Fill();
         if (Config->ParseSpeed<1.0)
         {
@@ -5746,6 +5750,10 @@ void File_Mk::JumpTo (int64u GoToValue)
         )
     {
         //Finishing is left to File__Analyze after the current element, GoTo() would finish now and close the elements still being parsed
+        #if MEDIAINFO_ADVANCED
+            if (Config->TimeCode_Dumps)
+                Config->TimeCode_Dumps_Jump(File_Offset+Buffer_Offset+Element_Offset, GoToValue);
+        #endif //MEDIAINFO_ADVANCED
         File_GoTo=GoToValue;
         return;
     }
