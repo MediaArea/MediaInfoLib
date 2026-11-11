@@ -16507,9 +16507,9 @@ void File_Mxf::SDTISystemMetadataPack() //SMPTE 385M + 326M
                 if (FieldPhaseBgf0)
                     TimeCode_Dump.List+=" fp=\"1\"";
                 if (Bgf0Bgf2 || Bgf1 || Bgf2FieldPhase)
-                    TimeCode_Dump.List+=" bgf=\""+to_string((Bgf2FieldPhase<<2)|(Bgf1<<1)|(Bgf2FieldPhase<<0))+"\"";
+                    TimeCode_Dump.List+=" bgf=\""+to_string((Bgf2FieldPhase<<2)|(Bgf1<<1)|(Bgf0Bgf2<<0))+"\"";
                 if (BG)
-                    TimeCode_Dump.List+=" bgf=\""+to_string(BG)+"\"";
+                    TimeCode_Dump.List+=" bg=\""+to_string(BG)+"\"";
                 if (TimeCode_Dump.LastTC.IsValid() && TimeCode_Dump.LastTC.GetFramesMax())
                 {
                     bool IsNotContinuous;
@@ -19584,9 +19584,9 @@ void File_Mxf::SystemScheme1_TimeCodeArray()
                 if (FieldPhaseBgf0)
                     TimeCode_Dump.List+=" fp=\"1\"";
                 if (Bgf0Bgf2 || Bgf1 || Bgf2FieldPhase)
-                    TimeCode_Dump.List+=" bgf=\""+to_string((Bgf2FieldPhase<<2)|(Bgf1<<1)|(Bgf2FieldPhase<<0))+"\"";
+                    TimeCode_Dump.List+=" bgf=\""+to_string((Bgf2FieldPhase<<2)|(Bgf1<<1)|(Bgf0Bgf2<<0))+"\"";
                 if (BG)
-                    TimeCode_Dump.List+=" bgf=\""+to_string(BG)+"\"";
+                    TimeCode_Dump.List+=" bg=\""+to_string(BG)+"\"";
                 if (TimeCode_Dump.LastTC.IsValid() && TimeCode_Dump.LastTC.GetFramesMax() && CurrentTC!=TimeCode_Dump.LastTC+1)
                     TimeCode_Dump.List+=" nc=\"1\"";
                 TimeCode_Dump.LastTC=CurrentTC;
