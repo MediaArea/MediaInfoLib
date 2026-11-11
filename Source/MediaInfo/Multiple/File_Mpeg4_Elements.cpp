@@ -7985,7 +7985,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
                     File_DvDif* Parser=new File_DvDif;
                     Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
                     #ifdef MEDIAINFO_DVDIF_ANALYZE_YES
-                        Streams[moov_trak_tkhd_TrackID].IsDvDif=true;
+                        Streams[moov_trak_tkhd_TrackID].IsDvDif=Streams[moov_trak_tkhd_TrackID].Parsers.size()==1;
                     #endif //MEDIAINFO_DVDIF_ANALYZE_YES
                 }
             #endif
@@ -8183,6 +8183,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
                     File_Jpeg* Parser=new File_Jpeg;
                     Parser->StreamKind=Stream_Video;
                     Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
+                    Streams[moov_trak_tkhd_TrackID].IsJpeg=Streams[moov_trak_tkhd_TrackID].Parsers.size()==1;
                 }
             #endif
             #if defined(MEDIAINFO_MPEG4_YES)
@@ -9658,7 +9659,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_fiel()
                         }
 
                         #ifdef MEDIAINFO_JPEG_YES
-                            if (Retrieve(Stream_Video, StreamPos_Last, Video_Format)==__T("JPEG") && Streams[moov_trak_tkhd_TrackID].Parsers.size()==1)
+                            if (Streams[moov_trak_tkhd_TrackID].IsJpeg && Streams[moov_trak_tkhd_TrackID].Parsers.size()==1)
                                 ((File_Jpeg*)Streams[moov_trak_tkhd_TrackID].Parsers[0])->Interlaced=true;
                         #endif //MEDIAINFO_JPEG_YES
                         break;
@@ -9719,10 +9720,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_glbl()
         Open_Buffer_OutOfBand(Sub);
         if (Sub->Status[IsFinished])
         {
-            delete Sub; //Sub = nullptr;
-            Streams[moov_trak_tkhd_TrackID].Parsers.erase(Streams[moov_trak_tkhd_TrackID].Parsers.begin()+Pos);
-            Streams[moov_trak_tkhd_TrackID].IsHevc=false;
-            Streams[moov_trak_tkhd_TrackID].IsPcmMono=false;
+            Streams[moov_trak_tkhd_TrackID].Parsers_Erase(Pos);
             Pos--;
         }
     }
