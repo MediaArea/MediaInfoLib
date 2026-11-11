@@ -244,8 +244,10 @@ Ztring MediaInfo_Internal::Inform()
             Result+=" format=\"";
             Result+=XML_Encode(Get(Stream_General, 0, General_Format)).To_UTF8();
             Result+="\">\n";
-            for (const auto& TimeCode_Dump : *Config.TimeCode_Dumps)
+            for (auto& TimeCode_Dump : *Config.TimeCode_Dumps)
             {
+                if (TimeCode_Dump.second.List_Finish)
+                    TimeCode_Dump.second.List_Finish(TimeCode_Dump.second);
                 Result+="  <timecode_stream";
                 Result+=TimeCode_Dump.second.Attributes_First;
                 if (TimeCode_Dump.second.Attributes_First.find(" frame_rate=\"")==string::npos && Count_Get(Stream_Video)==1)

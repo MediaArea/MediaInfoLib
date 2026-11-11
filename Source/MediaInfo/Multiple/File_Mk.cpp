@@ -1429,6 +1429,19 @@ void File_Mk::Streams_Finish()
         {
             auto StreamKind_Last_Sav=StreamKind_Last;
             auto StreamPos_Last_Sav=StreamPos_Last;
+            #if MEDIAINFO_ADVANCED
+                if (Config->TimeCode_Dumps && StreamKind_Last==Stream_Video)
+                {
+                    //The frame rate of the track provides the expected time code values
+                    auto TimeCode_Dump=Config->TimeCode_Dumps->find(to_string(Temp->first)+"-Add-"+to_string(Add->first));
+                    if (TimeCode_Dump!=Config->TimeCode_Dumps->end())
+                    {
+                        TimeCode_Dump->second.FrameRate=Retrieve_Const(Stream_Video, StreamPos_Last, Video_FrameRate).To_float64();
+                        if (!TimeCode_Dump->second.FrameRate && Temp->second.TrackDefaultDuration)
+                            TimeCode_Dump->second.FrameRate=1000000000.0/Temp->second.TrackDefaultDuration;
+                    }
+                }
+            #endif //MEDIAINFO_ADVANCED
             Finish(Add->second.Parser);
             Merge(*Add->second.Parser);
             if (StreamKind_Last!=StreamKind_Last_Sav || StreamPos_Last!=StreamPos_Last_Sav)
