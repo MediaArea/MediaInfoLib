@@ -485,7 +485,8 @@ void File_Dpx::Header_Parse()
             Element_WaitForMoreData();
             return;
         }
-        int32u Size=LittleEndian?LittleEndian2int32u(Buffer+Buffer_Offset+24):BigEndian2int32u(Buffer+Buffer_Offset+24);
+        const size_t Size_Offset=IsDpx?24:8; //Generic section header length
+        int32u Size=LittleEndian?LittleEndian2int32u(Buffer+Buffer_Offset+Size_Offset):BigEndian2int32u(Buffer+Buffer_Offset+Size_Offset);
         if (Size==(int32u)-1)
             Size=LittleEndian?LittleEndian2int32u(Buffer+Buffer_Offset+4):BigEndian2int32u(Buffer+Buffer_Offset+4);
         Header_Fill_Size(Size);
