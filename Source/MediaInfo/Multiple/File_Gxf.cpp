@@ -405,7 +405,7 @@ void File_Gxf::Streams_Finish_PerStream(size_t StreamID, stream &Temp)
                         if (TimeCode_FirstFrame_ms!=(int64u)-1)
                         {
                             Fill(Stream_Video, StreamPos_Last, Video_Delay, TimeCode_FirstFrame_ms, 0);
-                            if (TimeCode_FirstFrame.size()==11)
+                            if (TimeCode_FirstFrame.size()>=11)
                                 Fill(Stream_Video, StreamPos_Last, Video_Delay_DropFrame, TimeCode_FirstFrame[8]==';'?"Yes":"No");
                             Fill(Stream_Video, StreamPos_Last, Video_Delay_Source, "Container");
 
@@ -478,7 +478,7 @@ void File_Gxf::Streams_Finish_PerStream(size_t StreamID, stream &Temp)
                         if (TimeCode_FirstFrame_ms!=(int64u)-1)
                         {
                             Fill(Stream_Audio, StreamPos_Last, Audio_Delay, TimeCode_FirstFrame_ms, 0);
-                            if (TimeCode_FirstFrame.size()==11)
+                            if (TimeCode_FirstFrame.size()>=11)
                                 Fill(Stream_Audio, StreamPos_Last, Audio_Delay_DropFrame, TimeCode_FirstFrame[8]==';'?"Yes":"No");
                             Fill(Stream_Audio, StreamPos_Last, Audio_Delay_Source, "Container");
 
@@ -1305,7 +1305,9 @@ void File_Gxf::map()
                     TimeCodes[TrackID].Milliseconds=Hours  *60*60*1000
                                                    +Minutes   *60*1000
                                                    +Seconds      *1000;
-                    TimeCodes[TrackID].String=TimeCode(Hours, Minutes, Seconds, Fields/2, 99, TimeCode::DropFrame(DropFrame).Field(Fields%2)).ToString();
+                    const bool IsProgressive=Streams[TrackID].FieldsPerFrame_Code==1; //The count of fields is then a count of frames
+                    const bool IsSecondField=!IsProgressive && Fields%2;
+                    TimeCodes[TrackID].String=TimeCode(Hours, Minutes, Seconds, (IsProgressive || IsSecondField)?Fields:Fields/2, 99, TimeCode::DropFrame(DropFrame).Field(IsSecondField)).ToString();
 
                     if (!FrameRate)
                     {
@@ -1318,7 +1320,7 @@ void File_Gxf::map()
                             }
                     }
                     if (FrameRate)
-                        float64_int64s(Fields*1000/(FrameRate*2));
+                        TimeCodes[TrackID].Milliseconds+=float64_int64s(Fields*1000/(FrameRate*(IsProgressive?1:2)));
                 }
             }
         }
