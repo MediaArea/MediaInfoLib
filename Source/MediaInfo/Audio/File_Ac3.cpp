@@ -1046,6 +1046,7 @@ File_Ac3::File_Ac3()
             surmixlev_Max[Pos][Pos2]=(int8u)-1;
             roomtyp_Max[Pos][Pos2]=(int8u)-1;
             dmixmod_Max[Pos][Pos2]=(int8u)-1;
+            adconvtyp_Max[Pos][Pos2]=false;
             dsurmod_Max[Pos][Pos2]=0;
             chanmape_Max[Pos][Pos2]=false;
             chanmap_Max[Pos][Pos2]=0;
@@ -1555,11 +1556,11 @@ void File_Ac3::Streams_Fill()
             AC3_Level_Fill(this, 0, lorocmixlev_Max[0][0], 3, 1.5, "lorocmixlev");
         if (lorosurmixlev_Max[0][0]!=(int8u)-1)
             AC3_Level_Fill(this, 0, lorosurmixlev_Max[0][0], 3, 1.5, "lorosurmixlev");
-        if (adconvtyp_Max[0][0])
-        {
-            Fill(Stream_Audio, 0, "adconvtyp", "HDCD");
-            Fill_SetOptions(Stream_Audio, 0, "adconvtyp", "Y NTY");
-        }
+    }
+    if (adconvtyp_Max[0][0])
+    {
+        Fill(Stream_Audio, 0, "adconvtyp", "HDCD");
+        Fill_SetOptions(Stream_Audio, 0, "adconvtyp", "Y NTY");
     }
 }
 
@@ -2707,7 +2708,7 @@ void File_Ac3::Core_Frame()
                 TEST_SB_SKIP(                                       "audprodie");
                     Get_S1 (5, mixlevel,                            "mixlevel");
                     Get_S1 (2, roomtyp,                             "roomtyp");
-                    Skip_S1(1,                                      "adconvtyp");
+                    Get_SB (   adconvtyp,                           "adconvtyp");
                 TEST_SB_END();
                 if (acmod==0x0)
                 {
