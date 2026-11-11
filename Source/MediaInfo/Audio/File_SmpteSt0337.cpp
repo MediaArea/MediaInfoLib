@@ -955,7 +955,7 @@ void File_SmpteSt0337::Header_Parse()
                         case 24 :
                                     switch (Stream_Bits)
                                     {
-                                        case 16 : Size=BigEndian2int16u(Buffer+Buffer_Offset+9)   ; break;
+                                        case 16 : Size=BigEndian2int16u(Buffer+Buffer_Offset+0xA) ; break;
                                         case 20 : Size=BigEndian2int24u(Buffer+Buffer_Offset+9)>>4; break;
                                         case 24 : Size=BigEndian2int24u(Buffer+Buffer_Offset+9)   ; break;
                                         default : ;
@@ -1244,6 +1244,125 @@ void File_SmpteSt0337::Data_Parse()
                 *(Info_Temp++)=(Buffer[Buffer_Pos+4]<<4  ) | (Buffer[Buffer_Pos+5]>>4  );
 
                 Element_Offset+=6;
+            }
+            if (Element_Offset+3<=Element_Size) // Only in half of the AES3 stream
+            {
+                size_t Buffer_Pos=Buffer_Offset+(size_t)Element_Offset;
+
+                *(Info_Temp++)= Buffer[Buffer_Pos  ]                                    ;
+                *(Info_Temp++)= Buffer[Buffer_Pos+1]                                    ;
+                *(Info_Temp++)=(Buffer[Buffer_Pos+2]&0xF0)                              ;
+
+                Element_Offset+=3;
+            }
+        }
+
+        if (Endianness=='B' && BitDepth==24 && Stream_Bits==16)
+        {
+            // Source:        XXXX L3L2 L1L0 XXXX R3R2 R1R0
+            // Dest  : 16BE / L3L2 L1L0 R3R2 R1R0
+            while (Element_Offset+6<=Element_Size)
+            {
+                size_t Buffer_Pos=Buffer_Offset+(size_t)Element_Offset;
+
+                *(Info_Temp++)= Buffer[Buffer_Pos+1]                                    ;
+                *(Info_Temp++)= Buffer[Buffer_Pos+2]                                    ;
+                *(Info_Temp++)= Buffer[Buffer_Pos+4]                                    ;
+                *(Info_Temp++)= Buffer[Buffer_Pos+5]                                    ;
+
+                Element_Offset+=6;
+            }
+            if (Element_Offset+3<=Element_Size) // Only in half of the AES3 stream
+            {
+                size_t Buffer_Pos=Buffer_Offset+(size_t)Element_Offset;
+
+                *(Info_Temp++)= Buffer[Buffer_Pos+1]                                    ;
+                *(Info_Temp++)= Buffer[Buffer_Pos+2]                                    ;
+
+                Element_Offset+=3;
+            }
+        }
+
+        if (Endianness=='B' && BitDepth==32 && Stream_Bits==16)
+        {
+            // Source:        XXXX XXXX L3L2 L1L0 XXXX XXXX R3R2 R1R0
+            // Dest  : 16BE / L3L2 L1L0 R3R2 R1R0
+            while (Element_Offset+8<=Element_Size)
+            {
+                size_t Buffer_Pos=Buffer_Offset+(size_t)Element_Offset;
+
+                *(Info_Temp++)= Buffer[Buffer_Pos+2]                                    ;
+                *(Info_Temp++)= Buffer[Buffer_Pos+3]                                    ;
+                *(Info_Temp++)= Buffer[Buffer_Pos+6]                                    ;
+                *(Info_Temp++)= Buffer[Buffer_Pos+7]                                    ;
+
+                Element_Offset+=8;
+            }
+            if (Element_Offset+4<=Element_Size) // Only in half of the AES3 stream
+            {
+                size_t Buffer_Pos=Buffer_Offset+(size_t)Element_Offset;
+
+                *(Info_Temp++)= Buffer[Buffer_Pos+2]                                    ;
+                *(Info_Temp++)= Buffer[Buffer_Pos+3]                                    ;
+
+                Element_Offset+=4;
+            }
+        }
+
+        if (Endianness=='B' && BitDepth==32 && Stream_Bits==20)
+        {
+            // Source:        XXXX L4L3 L2L1 L0XX XXXX R4R3 R2R1 R0XX
+            // Dest  : 20BE / L4L3 L2L1 L0R4 R3R2 R1R0
+            while (Element_Offset+8<=Element_Size)
+            {
+                size_t Buffer_Pos=Buffer_Offset+(size_t)Element_Offset;
+
+                *(Info_Temp++)= Buffer[Buffer_Pos+1]                                    ;
+                *(Info_Temp++)= Buffer[Buffer_Pos+2]                                    ;
+                *(Info_Temp++)=(Buffer[Buffer_Pos+3]&0xF0) | (Buffer[Buffer_Pos+5]>>4  );
+                *(Info_Temp++)=(Buffer[Buffer_Pos+5]<<4  ) | (Buffer[Buffer_Pos+6]>>4  );
+                *(Info_Temp++)=(Buffer[Buffer_Pos+6]<<4  ) | (Buffer[Buffer_Pos+7]>>4  );
+
+                Element_Offset+=8;
+            }
+            if (Element_Offset+4<=Element_Size) // Only in half of the AES3 stream
+            {
+                size_t Buffer_Pos=Buffer_Offset+(size_t)Element_Offset;
+
+                *(Info_Temp++)= Buffer[Buffer_Pos+1]                                    ;
+                *(Info_Temp++)= Buffer[Buffer_Pos+2]                                    ;
+                *(Info_Temp++)=(Buffer[Buffer_Pos+3]&0xF0)                              ;
+
+                Element_Offset+=4;
+            }
+        }
+
+        if (Endianness=='B' && BitDepth==32 && Stream_Bits==24)
+        {
+            // Source:        XXXX L5L4 L3L2 L1L0 XXXX R5R4 R3R2 R1R0
+            // Dest  : 24BE / L5L4 L3L2 L1L0 R5R4 R3R2 R1R0
+            while (Element_Offset+8<=Element_Size)
+            {
+                size_t Buffer_Pos=Buffer_Offset+(size_t)Element_Offset;
+
+                *(Info_Temp++)= Buffer[Buffer_Pos+1]                                    ;
+                *(Info_Temp++)= Buffer[Buffer_Pos+2]                                    ;
+                *(Info_Temp++)= Buffer[Buffer_Pos+3]                                    ;
+                *(Info_Temp++)= Buffer[Buffer_Pos+5]                                    ;
+                *(Info_Temp++)= Buffer[Buffer_Pos+6]                                    ;
+                *(Info_Temp++)= Buffer[Buffer_Pos+7]                                    ;
+
+                Element_Offset+=8;
+            }
+            if (Element_Offset+4<=Element_Size) // Only in half of the AES3 stream
+            {
+                size_t Buffer_Pos=Buffer_Offset+(size_t)Element_Offset;
+
+                *(Info_Temp++)= Buffer[Buffer_Pos+1]                                    ;
+                *(Info_Temp++)= Buffer[Buffer_Pos+2]                                    ;
+                *(Info_Temp++)= Buffer[Buffer_Pos+3]                                    ;
+
+                Element_Offset+=4;
             }
         }
 
