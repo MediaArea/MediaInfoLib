@@ -179,7 +179,7 @@ static const char* Ancillary_DataID(int8u DataID, int8u SecondaryDataID)
                     switch (SecondaryDataID)
                     {
                         case 0x64 : return "LTC";                               //SMPTE RP 196
-                        case 0x6F : return "VITC";                              //SMPTE RP 196
+                        case 0x7F : return "VITC";                              //SMPTE RP 196
                         default   : return "(Internationally registered)";
                     }
                     break;
