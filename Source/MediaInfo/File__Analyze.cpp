@@ -3007,7 +3007,8 @@ void File__Analyze::Header_Fill_Size(int64u Size)
     if (Element_Level==1)
         Elem1.Next=File_Offset+Buffer_Offset+Size;
     else if (File_Offset+Buffer_Offset+Size>Element[Element_Level-2].Next
-          && File_Offset+Buffer_Offset<Element[Element_Level-2].Next) //An end before this element is not a limit (a sub-parser can get more data than the file has up to its end, e.g. merged channels)
+          && File_Offset+Buffer_Offset<Element[Element_Level-2].Next //An end before this element is not a limit (a sub-parser can get more data than the file has up to its end, e.g. merged channels)
+          && (Element_Level>2 || Buffer_Offset+Size>Buffer_Size)) //Nor is the end of the file for an element which is completely in the buffer
     {
         if (Element_IsComplete_Get() && (!IsSub || (File_Offset + Buffer_Size < File_Size && File_Size - (File_Offset + Buffer_Size) >= 0x10000))) { //TODO: good support of end of TS dumps
             auto Name = CreateElementName();
