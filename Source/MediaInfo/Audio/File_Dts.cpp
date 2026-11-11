@@ -2276,8 +2276,8 @@ void File_Dts::Data_Parse()
                         break; //Not finnished!
                     }
                 TEST_SB_END();
-                Element_End0();
             }
+            Element_End0();
         }
         auto RemainingBits=(ExtSSHeaderSize-6)*8-(EndBS-Data_BS_Remain());
         if (RemainingBits)
@@ -2466,6 +2466,8 @@ void File_Dts::Extensions()
         if (Size<4)
         {
             Skip_XX(Size,                                       "?");
+            if (Element_Code)
+                Element_End0();
             continue;
         }
         auto Element_Size_Save=Element_Size;
