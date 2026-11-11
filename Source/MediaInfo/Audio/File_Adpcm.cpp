@@ -43,8 +43,8 @@ void File_Adpcm::Read_Buffer_Continue()
     Fill(Stream_General, 0, Audio_Format, "ADPCM");
     Fill(Stream_General, 0, Audio_Codec, "ADPCM");
     Ztring Profile, Firm;
-         if (Codec==__T("alaw"))             {Profile=__T("A-Law");}
-    else if (Codec==__T("ulaw"))             {Profile=__T("U-Law");}
+         if (Codec==__T("alaw") || Codec==__T("ALAW")) {Profile=__T("A-Law");}
+    else if (Codec==__T("ulaw") || Codec==__T("ULAW")) {Profile=__T("U-Law");}
     else if (Codec==__T("ima4"))             {                     Firm=__T("IMA");}
     else if (Codec==__T("6"))                {Profile=__T("A-Law");}
     else if (Codec==__T("7"))                {Profile=__T("U-Law");}
