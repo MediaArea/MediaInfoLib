@@ -30,6 +30,7 @@
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #include "MediaInfo/MediaInfo_Events_Internal.h"
 #include "MediaInfo/TimeCode.h"
+#include <cstring>
 using namespace ZenLib;
 using namespace std;
 //---------------------------------------------------------------------------
@@ -536,12 +537,14 @@ void File_Dat::Data_Parse()
                 {
                     MoreData[MoreData_Offset++] = 2;
                     MoreData[MoreData_Offset++] = MediaInfo_Event_Change_MoreData_ProgramNumber;
-                    *((uint16_t*)(MoreData + MoreData_Offset)) = Frame.dtsubid_pno;
+                    int16u ProgramNumber = Frame.dtsubid_pno;
+                    memcpy(MoreData + MoreData_Offset, &ProgramNumber, 2); // Not aligned
                     MoreData_Offset += 2;
                 }
                 if (MoreData_Offset > sizeof(size_t))
                 {
-                    *((size_t*)MoreData) = MoreData_Offset - sizeof(size_t);
+                    size_t MoreData_Size = MoreData_Offset - sizeof(size_t);
+                    memcpy(MoreData, &MoreData_Size, sizeof(size_t));
                     Event.MoreData = MoreData;
                 }
             EVENT_END()
@@ -600,9 +603,9 @@ void File_Dat::Data_Parse()
                         }
                         MoreData[MoreData_Offset++] = 9;
                         MoreData[MoreData_Offset++] = MediaInfo_Event_Analysis_Frame_TimeCode;
-                        *((int32u*)(MoreData + MoreData_Offset)) = Value;
+                        memcpy(MoreData + MoreData_Offset, &Value, 4); // Not aligned
                         MoreData_Offset += 4;
-                        *((int32u*)(MoreData + MoreData_Offset)) = 0;
+                        memset(MoreData + MoreData_Offset, 0, 4);
                         MoreData_Offset += 4;
                         MoreData[MoreData_Offset++] = Frame.TC_IDs[i] - 1;
                         break;
@@ -612,7 +615,8 @@ void File_Dat::Data_Parse()
                 }
                 if (MoreData_Offset > sizeof(size_t))
                 {
-                    *((size_t*)MoreData) = MoreData_Offset - sizeof(size_t);
+                    size_t MoreData_Size = MoreData_Offset - sizeof(size_t);
+                    memcpy(MoreData, &MoreData_Size, sizeof(size_t));
                     Event.MoreData = MoreData;
                 }
             EVENT_END()
