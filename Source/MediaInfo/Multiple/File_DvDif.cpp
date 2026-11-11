@@ -1880,9 +1880,10 @@ void File_DvDif::consumer_camera_1()
 
     if (Encoded_Library_Settings.empty())
     {
-        if (ae_mode<0x0F) Encoded_Library_Settings+=__T("ae mode=")+Ztring(Dv_consumer_camera_1_ae_mode[ae_mode])+__T(" / ");
-        if (wb_mode<0x08) Encoded_Library_Settings+=__T("wb mode=")+Ztring(Dv_consumer_camera_1_wb_mode[wb_mode])+__T(" / ");
-        if (wb_mode<0x1F) Encoded_Library_Settings+=__T("white balance=")+Ztring(Dv_consumer_camera_1_white_balance(white_balance))+__T(" / ");
+        //Not for the values without name (reserved or no info)
+        if (Dv_consumer_camera_1_ae_mode[ae_mode][0]) Encoded_Library_Settings+=__T("ae mode=")+Ztring(Dv_consumer_camera_1_ae_mode[ae_mode])+__T(" / ");
+        if (Dv_consumer_camera_1_wb_mode[wb_mode][0]) Encoded_Library_Settings+=__T("wb mode=")+Ztring(Dv_consumer_camera_1_wb_mode[wb_mode])+__T(" / ");
+        if (Dv_consumer_camera_1_white_balance(white_balance)[0]) Encoded_Library_Settings+=__T("white balance=")+Ztring(Dv_consumer_camera_1_white_balance(white_balance))+__T(" / ");
         Encoded_Library_Settings+=__T("fcm=")+Ztring(Dv_consumer_camera_1_fcm[fcm]);
     }
 }
