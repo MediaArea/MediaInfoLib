@@ -1875,6 +1875,17 @@ bool File_Ac3::Synchronize()
         return false;
     }
 
+    //Testing if the frame is in a SMPTE ST 337 data burst, such stream has its own parser
+    if (!IsSub && !Status[IsAccepted]
+     && ((Buffer_Offset>= 8 && (CC4(Buffer+Buffer_Offset- 8)==0xF8724E1F || CC4(Buffer+Buffer_Offset- 8)==0x72F81F4E)) //16-bit words, big or little endian
+      || (Buffer_Offset>=10 &&  CC5(Buffer+Buffer_Offset-10)==0x6F87254E1FLL)                                          //20-bit words, big endian
+      || (Buffer_Offset>=12 &&  CC6(Buffer+Buffer_Offset-12)==0x96F872A54E1FLL)))                                      //24-bit words, big endian
+    {
+        delete[] Save_Buffer; Save_Buffer=NULL; //Byte swapped copy of a little endian frame
+        Reject("AC-3");
+        return false;
+    }
+
     //Testing if we have TimeStamp
     if (Buffer_Offset>=16)
     {
