@@ -126,8 +126,8 @@ void File_Pcm::Streams_Fill()
     else if (Codec==__T("A_PCM/INT/LIT"))    {Firm=__T("");      Endianness='L';}
     else if (Codec==__T("A_PCM/INT/LITTLE")) {Firm=__T("");      Endianness='L';}
     else if (Codec==__T("A_PCM/INT/FLOAT"))  {Firm=__T("");      Endianness='B';            Sign='F';}
-    else if (Codec==__T("fl32"))             {  if (!Endianness) Endianness='B'; if (!Sign) Sign='F'; BitDepth=32;}
-    else if (Codec==__T("fl64"))             {  if (!Endianness) Endianness='B'; if (!Sign) Sign='F'; BitDepth=64;}
+    else if (Codec==__T("fl32"))             {  if (!Endianness) Endianness='B';            Sign='F'; BitDepth=32;}
+    else if (Codec==__T("fl64"))             {  if (!Endianness) Endianness='B';            Sign='F'; BitDepth=64;}
     else if (Codec==__T("fpcm"))             {  if (!Endianness) Endianness='B';            Sign='F';}
     else if (Codec==__T("in24"))             {  if (!Endianness) Endianness='B'; if (!Sign) Sign='U'; BitDepth=24;}
     else if (Codec==__T("in32"))             {  if (!Endianness) Endianness='B'; if (!Sign) Sign='U'; BitDepth=32;}
