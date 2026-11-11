@@ -3453,8 +3453,8 @@ void File_Riff::RMP3_data()
 {
     Element_Name("Raw datas");
 
-    Fill(Stream_Audio, StreamPos_Last, Audio_StreamSize, Buffer_DataToParse_End?((Buffer_DataToParse_End>File_Size?File_Size:Buffer_DataToParse_End)-Buffer_DataToParse_Begin):(Element_TotalSize_Get()-Alignement_ExtraByte));
     Stream_Prepare(Stream_Audio);
+    Fill(Stream_Audio, StreamPos_Last, Audio_StreamSize, Buffer_DataToParse_End?((Buffer_DataToParse_End>File_Size?File_Size:Buffer_DataToParse_End)-Buffer_DataToParse_Begin):(Element_TotalSize_Get()-Alignement_ExtraByte));
 
     //Creating parser
     #if defined(MEDIAINFO_MPEGA_YES)
@@ -3466,6 +3466,9 @@ void File_Riff::RMP3_data()
         StreamItem.StreamKind=Stream_Audio;
         StreamItem.StreamPos=0;
         StreamItem.Parsers.push_back(Parser);
+
+        if (!Buffer_DataToParse_End)
+            RMP3_data_Continue(); //All the data is already there
     #else //MEDIAINFO_MPEG4_YES
         Fill(Stream_Audio, StreamPos_Last, Audio_Format, "MPEG Audio");
         Skip_XX(Buffer_DataToParse_End?((Buffer_DataToParse_End>File_Size?File_Size:Buffer_DataToParse_End)-Buffer_DataToParse_Begin):(Element_TotalSize_Get()-Alignement_ExtraByte), "Data");
