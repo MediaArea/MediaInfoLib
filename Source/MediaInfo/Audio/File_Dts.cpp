@@ -2206,8 +2206,8 @@ void File_Dts::Data_Parse()
                 ActiveExSSMasks.push_back(ActiveExSSMask);
             }
             for (int8u Pos=0; Pos<NumAudioPresent; Pos++)
-                for (int8u Pos2=0; Pos2<SubStreamIndex+1; Pos2+=2)
-                    if (ActiveExSSMasks[Pos]%2)
+                for (int8u Pos2=0; Pos2<SubStreamIndex+1; Pos2++)
+                    if (ActiveExSSMasks[Pos]&(1<<Pos2))
                         Skip_S1(8,                              "ActiveAssetMask");
             TEST_SB_SKIP(                                       "MixMetadataEnbl");
                 int8u Bits4MixOutMask, NumMixOutConfigs;
