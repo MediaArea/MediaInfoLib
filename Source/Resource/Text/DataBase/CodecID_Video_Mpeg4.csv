@@ -89,7 +89,7 @@ dvav;AVC;;Advanced Video Coding with Dolby Vision;;;;;
 dva1;AVC;;Advanced Video Coding with Dolby Vision;;;;;
 dvc ;DV;;;http://www.apple.com/quicktime/download/standalone.html;;;YUV;4:2:2
 dvcp;DV;;;http://www.apple.com/quicktime/download/standalone.html;;;YUV;4:2:2
-dvhe;AVC;;High Efficiency Video Coding with Dolby Vision;;;;;
+dvhe;HEVC;;High Efficiency Video Coding with Dolby Vision;;;;;
 dvh1;DV;;;http://www.apple.com/quicktime/download/standalone.html;;;YUV;4:2:2
 dvh2;DV;;;http://www.apple.com/quicktime/download/standalone.html;;;YUV;4:2:2
 dvh3;DV;;;http://www.apple.com/quicktime/download/standalone.html;;;YUV;4:2:2
@@ -133,6 +133,8 @@ hdve;MPEG Video;;;http://www.apple.com/quicktime/download/standalone.html;;;YUV;
 hdvf;MPEG Video;;;http://www.apple.com/quicktime/download/standalone.html;;;YUV;
 hvc1;HEVC;;High Efficiency Video Coding;http://www.itu.int/;;;;
 hev1;HEVC;;High Efficiency Video Coding;http://www.itu.int/;;;;
+lhv1;HEVC;;High Efficiency Video Coding;http://www.itu.int/;;;;
+lhe1;HEVC;;High Efficiency Video Coding;http://www.itu.int/;;;;
 icod;AIC;;Apple Intermediate Codec;http://www.apple.com/quicktime/download/standalone.html;;;YUV;4:2:0
 j420;YUV;;;;;;YUV;4:2:0
 jpeg;JPEG;;;http://www.apple.com/quicktime/download/standalone.html;;;;
