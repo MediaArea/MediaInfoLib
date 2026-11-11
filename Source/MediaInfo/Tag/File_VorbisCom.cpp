@@ -446,9 +446,8 @@ void File_VorbisCom::Data_Parse()
             chapter& Chapter=Chapters[Key.SubString(__T("CHAPTER"), IsName?__T("NAME"):__T(""))]; //The name is not always right after the time of its chapter
             if (IsName)
             {
-                Value.FindAndReplace(__T("\n"), __T(""), Count_Get(Stream_Text)-1); //Some chapters names have extra characters, not needed
-                Value.FindAndReplace(__T("\r"), __T(""), Count_Get(Stream_Text)-1); //Some chapters names have extra characters, not needed
-                Value.FindAndReplace(__T(" "),  __T(""), Count_Get(Stream_Text)-1); //Some chapters names have extra characters, not needed
+                while (!Value.empty() && (Value.back()==__T('\n') || Value.back()==__T('\r') || Value.back()==__T(' '))) //Some chapters names have extra characters, not needed
+                    Value.pop_back();
                 Chapter.Name=Value;
             }
             else
