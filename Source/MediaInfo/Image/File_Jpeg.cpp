@@ -1592,7 +1592,7 @@ void File_Jpeg::APP0()
     {
         case 0x41564931 : APP0_AVI1(); break; //"AVI1"
         case 0x4A464946 : APP0_JFIF(); break; //"JFIF"
-        case 0x4A464646 : APP0_JFFF(); break; //"JFFF"
+        case 0x4A465858 : APP0_JFFF(); break; //"JFXX"
         default         : Skip_XX(Element_Size-Element_Offset,  "Unknown");
     }
 }
@@ -1671,7 +1671,7 @@ void File_Jpeg::APP0_JFIF()
 //---------------------------------------------------------------------------
 void File_Jpeg::APP0_JFFF()
 {
-    Element_Info1("JFFF");
+    Element_Info1("JFXX");
 
     Skip_B1(                                                    "Zero");
     Skip_B1(                                                    "extension_code"); //0x10 Thumbnail coded using JPEG, 0x11 Thumbnail stored using 1 byte/pixel, 0x13 Thumbnail stored using 3 bytes/pixel
