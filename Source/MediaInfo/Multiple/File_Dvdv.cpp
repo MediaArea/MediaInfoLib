@@ -1291,7 +1291,7 @@ void File_Dvdv::Get_Duration(TimeCode &Duration, const Ztring &Name)
         auto mm=BCD_to_Decimal(MM);
         auto ss=BCD_to_Decimal(SS);
         auto ff=BCD_to_Decimal(FF);
-        if (hh==(int8u)-1 || mm==(int8u)-1 || ss==(int8u)-1 || ff==(int8u)-1 || !IFO_PlaybackTime_FrameRate[FrameRate])
+        if (hh==(unsigned)-1 || mm==(unsigned)-1 || ss==(unsigned)-1 || ff==(unsigned)-1 || !IFO_PlaybackTime_FrameRate[FrameRate])
         {
             Duration=TimeCode();
             Element_End0();
