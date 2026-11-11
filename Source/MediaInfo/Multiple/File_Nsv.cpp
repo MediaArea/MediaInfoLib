@@ -83,7 +83,6 @@ class Private
 public:
     stream          Streams[2];
     int64s          AudioDelay=0;
-    int32u          AuxTotalLen=0;
     bool            IsMajorSynched=false;
 };
 
@@ -565,8 +564,8 @@ void File_Nsv::Header_Parse()
     {
         Skip_B2(                                                "nosync_hdr");
     }
-    int32u aux_plus_video_len;
-    int16u audio_len, AuxTotalLen=0;
+    int32u aux_plus_video_len, AuxTotalLen=0;
+    int16u audio_len;
     Get_L3 (aux_plus_video_len,                                 "aux_plus_video_len");
     Get_L2 (audio_len,                                          "audio_len");
     auto num_aux=aux_plus_video_len&0xF;
@@ -576,7 +575,8 @@ void File_Nsv::Header_Parse()
         int16u aux_chunk_len;
         Get_L2 (aux_chunk_len,                                  "aux_chunk_len");
         Skip_C4(                                                "aux_chunk_type");
-        AuxTotalLen+=aux_chunk_len;
+        Skip_XX(aux_chunk_len,                                  "aux_chunk_data");
+        AuxTotalLen+=6+aux_chunk_len; //The length before the audio length includes the auxiliary chunks with their headers
     }
 
     FILLING_BEGIN();
@@ -600,7 +600,6 @@ void File_Nsv::Header_Parse()
             P->Streams[1].len=(int32u)-1;
             audio_len=0; // Found in some files, content is missing
         }
-        P->AuxTotalLen=AuxTotalLen;
         Header_Fill_Code(0, "Frame");
         Header_Fill_Size(Element_Offset+video_len+audio_len);
     FILLING_END();
