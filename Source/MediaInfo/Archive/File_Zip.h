@@ -40,6 +40,7 @@ protected :
     bool data_descriptor_set;
     int32u signature;
     int8u  local_file_Step;
+    bool    end_of_central_directory_IsFound;
     bool    end_of_central_directory_IsParsed;
 
     bool local_file();

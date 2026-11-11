@@ -112,10 +112,12 @@ bool File_Zip::FileHeader_Begin()
     //Init
     signature=0x00000000;
     local_file_Step=0;
+    end_of_central_directory_IsFound=false;
     end_of_central_directory_IsParsed=false;
 
-    //Jumping to the end of the file minus  end_of_central_directory size (we hope there is no comment)
-    GoTo(File_Size-22);
+    //Jumping to the end of the file minus the biggest size of end_of_central_directory (it ends with a comment of up to 65535 bytes)
+    if (File_Size>22+0xFFFF)
+        GoTo(File_Size-(22+0xFFFF));
 
     return true;
 }
@@ -127,6 +129,30 @@ bool File_Zip::FileHeader_Begin()
 //---------------------------------------------------------------------------
 void File_Zip::Read_Buffer_Continue()
 {
+    //Searching end_of_central_directory, the last element of the file
+    if (!end_of_central_directory_IsFound)
+    {
+        if (File_Offset+Buffer_Size<File_Size)
+            return; //Not enough data
+        if (Element_Size<22)
+        {
+            Finish();
+            return;
+        }
+        int64u Pos=Element_Size-22;
+        while (LittleEndian2int32u(Buffer+(size_t)Pos)!=0x06054b50 || Pos+22+LittleEndian2int16u(Buffer+(size_t)Pos+20)!=Element_Size) //Signature and comment up to the end of the file
+        {
+            if (Pos<=Element_Offset || Element_Size-Pos>=22+0xFFFF)
+            {
+                Finish();
+                return;
+            }
+            Pos--;
+        }
+        Element_Offset=Pos;
+        end_of_central_directory_IsFound=true;
+    }
+
     for (;;)
     {
         //Probing
