@@ -990,7 +990,7 @@ void File_Dpx::Get_ASCII(size_t Size, string &Info, const char* Name)
     auto Element_Offset_Max=Element_Offset+Size;
     Get_String (ActualSize, Info,                               Name);
     auto Buffer_Begin=Buffer+Buffer_Offset;
-    while (Element_Offset<Element_Offset_Max && !Buffer_Begin[Element_Offset])
+    while (Element_Offset<Element_Offset_Max && Element_Offset<Element_Size && !Buffer_Begin[Element_Offset])
         ++Element_Offset;
     if (Element_Offset_Max>Element_Offset)
         Skip_XX(Element_Offset_Max-Element_Offset,              "(Unknown)");
