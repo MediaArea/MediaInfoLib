@@ -1167,10 +1167,13 @@ void File_Ac3::Streams_Fill()
             Fill(Stream_Audio, 0, Audio_Compression_Mode, "Lossless");
             if (AC3_HD_SamplingRate(HD_SamplingRate1)) //Not without sampling rate
                 Fill(Stream_Audio, 0, Audio_SamplingRate, AC3_HD_SamplingRate(HD_SamplingRate1));
-            Fill(Stream_Audio, 0, Audio_Channel_s_, AC3_TrueHD_Channels(HD_Channels2));
-            Fill(Stream_Audio, 0, Audio_ChannelPositions, AC3_TrueHD_Channels_Positions(HD_Channels2, HD_flags&(1<<11)));
-            Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, AC3_TrueHD_Channels_Positions2(HD_Channels2, HD_flags&(1<<11)));
-            Fill(Stream_Audio, 0, Audio_ChannelLayout, AC3_TrueHD_Channels_ChannelLayout(HD_Channels2, HD_flags&(1<<11)));
+            if (HD_Channels2) //Not without channel
+            {
+                Fill(Stream_Audio, 0, Audio_Channel_s_, AC3_TrueHD_Channels(HD_Channels2));
+                Fill(Stream_Audio, 0, Audio_ChannelPositions, AC3_TrueHD_Channels_Positions(HD_Channels2, HD_flags&(1<<11)));
+                Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, AC3_TrueHD_Channels_Positions2(HD_Channels2, HD_flags&(1<<11)));
+                Fill(Stream_Audio, 0, Audio_ChannelLayout, AC3_TrueHD_Channels_ChannelLayout(HD_Channels2, HD_flags&(1<<11)));
+            }
         }
 
         if (HD_StreamType==0xBB) //TrueHD
@@ -4726,6 +4729,8 @@ void File_Ac3::HD_format_info()
         HD_SamplingRate2=HD_SamplingRate1;
         if (dsurexmod && !(HD_Channels2&(1<<3)))
             dsurexmod=0; //Only if Ls/Rs
+        if (!HD_Channels2)
+            HD_Channels2=HD_Channels1; //Without 8-channel presentation, the 6-channel one is the most complete
         Element_End0();
     }
     if (HD_StreamType==0xBB)
