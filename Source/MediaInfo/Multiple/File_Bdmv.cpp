@@ -934,7 +934,7 @@ void File_Bdmv::Indx_ExtensionData()
         if (Base_Offset+ext->first>=Element_Offset)
         {
             if (Base_Offset+ext->first>Element_Offset)
-                Skip_XX(ext->first-Element_Offset,              "Unknown");
+                Skip_XX(Base_Offset+ext->first-Element_Offset,  "Unknown");
 
             Element_Begin0();
             int64u End=Element_Offset+ext->second;
