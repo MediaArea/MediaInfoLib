@@ -518,8 +518,13 @@ private :
     };
     typedef std::map<Ztring, Ztring> tagspertrack;
     typedef std::map<tagid, tagspertrack> tags;
-    tags    Segment_Tags_Tag_Items;
-    tagid   Segment_Tags_Tag_Target_Value{};
+    struct tag {
+        std::vector<int64u> TagTrackUIDs;
+        std::vector<int64u> TagBlockAddIDValues;
+        tagspertrack Items;
+    };
+    std::vector<tag> Segment_Tags_Tag_List; // Per Tag element, the targets are known only when all tracks are parsed
+    tags    Segment_Tags_Tag_Items; // Per target
     Ztring  Segment_Tags_Tag_SimpleTag_TagString_Value;
     string  AttachedFile_FileName;
     string  AttachedFile_FileMimeType;
