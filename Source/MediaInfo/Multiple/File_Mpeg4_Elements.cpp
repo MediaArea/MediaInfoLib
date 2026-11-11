@@ -7641,10 +7641,12 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
             {
                 File_ChannelSplitting* Parser=new File_ChannelSplitting;
                 Parser->BitDepth=(int8u)SampleSize;
-                Parser->Endianness=(Flags&0x02)?'B':'L';
                 Parser->Sign='S'; //Default is "Signed" with QuickTime (to be confirmed), may be changed by flags
                 if (Version==2)
+                {
+                    Parser->Endianness=(Flags&0x02)?'B':'L';
                     Parser->Sign=(Flags&0x01)?'F':((Flags&0x04)?'S':'U');
+                }
                 Parser->Codec=Codec;
                 Parser->Channel_Total=(int8u)Channels;
                 Parser->SamplingRate=(int16u)SampleRate;
