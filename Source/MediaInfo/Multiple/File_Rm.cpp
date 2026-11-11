@@ -696,6 +696,8 @@ void File_Rm::RJMD_property(std::string Name, int8u Depth)
     Get_B4 (num_subproperties,                                  "num_subproperties"); //The number of subproperties for this MetadataProperty  structure.
     Get_B4 (name_length,                                        "name_length"); //The length of the name data, including the null-terminator.
     Get_String(name_length, name,                               "name"); //The name of the property (string data).
+    while (!name.empty() && !name.back())
+        name.pop_back(); //Null terminator
     Get_B4 (value_length,                                       "value_length"); //The length of the value data.
     switch(type)
     {
