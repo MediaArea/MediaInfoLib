@@ -4544,6 +4544,8 @@ void File_Ac3::HD()
             HD_Resolution2=HD_Resolution1;
             HD_SamplingRate2=HD_SamplingRate1;
         }
+        if (HD_StreamType==0xBB && HD_SamplingRate2==0xF)
+            HD_SamplingRate2=HD_SamplingRate1; //No sampling rate for the second group
     FILLING_END();
 
 
