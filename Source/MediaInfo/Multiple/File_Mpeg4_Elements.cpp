@@ -8923,14 +8923,16 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_chnl()
         return; //Handling only the first description
 
     FILLING_BEGIN();
+        if (StreamKind_Last!=Stream_Audio)
+            return;
         if (definedLayout)
-            Fill(Stream_Audio, 0, Audio_ChannelLayout, Aac_ChannelLayout_GetString(definedLayout), true, true);
+            Fill(Stream_Audio, StreamPos_Last, Audio_ChannelLayout, Aac_ChannelLayout_GetString(definedLayout), true, true);
         else if (!speaker_positions.empty())
         {
             if (speaker_positions.find("126 ")==string::npos)
             {
                 speaker_positions.pop_back();
-                Fill(Stream_Audio, 0, Audio_ChannelLayout, speaker_positions, true, true);
+                Fill(Stream_Audio, StreamPos_Last, Audio_ChannelLayout, speaker_positions, true, true);
             }
         }
     FILLING_END();
