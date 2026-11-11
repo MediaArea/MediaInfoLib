@@ -394,6 +394,16 @@ void File_Dvdv::Streams_Finish()
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+bool File_Dvdv::FileHeader_Begin()
+{
+    //The first sector is parsed at once, its content would be filled again if its parsing was restarted with more data
+    if (Buffer_Size<2048)
+        return false; //Must wait for more data
+
+    return true;
+}
+
+//---------------------------------------------------------------------------
 void File_Dvdv::FileHeader_Parse()
 {
     //Parsing
