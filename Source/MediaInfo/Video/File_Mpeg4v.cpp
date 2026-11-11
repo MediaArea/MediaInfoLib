@@ -1037,8 +1037,8 @@ void File_Mpeg4v::video_object_layer_start()
             Mark_1 ();
             Skip_S2(15,                                         "latter_half_vbv_occupancy");
             Mark_1 ();
-            bit_rate=first_half_bit_rate*0x8+latter_half_bit_rate;
-            vbv_buffer_size=first_half_vbv_buffer_size*0x8000+latter_half_vbv_buffer_size;
+            bit_rate=first_half_bit_rate*0x8000+latter_half_bit_rate;
+            vbv_buffer_size=first_half_vbv_buffer_size*0x8+latter_half_vbv_buffer_size;
         TEST_SB_END();
     TEST_SB_END();
     Get_S1 (2, shape,                                           "video_object_layer_shape");
