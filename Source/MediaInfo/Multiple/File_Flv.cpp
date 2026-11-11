@@ -1234,7 +1234,7 @@ void File_Flv::video_AVC(int8u PacketType_plus1)
     }
     if (!PacketType_plus1 || PacketType_plus1==CodedFrames+1)
     {
-    Info_B3(CompositionTime,                                    "CompositionTime"); Param_Info1(Ztring::ToZtring((int32s)(CompositionTime+0xFF000000)));
+    Info_B3(CompositionTime,                                    "CompositionTime"); Param_Info1(Ztring::ToZtring((int32s)(CompositionTime&0x800000?(CompositionTime|0xFF000000):CompositionTime))); //Signed 24-bit value
     }
 
     switch (AVCPacketType)
@@ -1339,7 +1339,7 @@ void File_Flv::video_HEVC(int8u PacketType_plus1)
     }
     if (!PacketType_plus1 || PacketType_plus1==CodedFrames+1)
     {
-    Info_B3(CompositionTime,                                    "CompositionTime"); Param_Info1(Ztring::ToZtring((int32s)(CompositionTime+0xFF000000)));
+    Info_B3(CompositionTime,                                    "CompositionTime"); Param_Info1(Ztring::ToZtring((int32s)(CompositionTime&0x800000?(CompositionTime|0xFF000000):CompositionTime))); //Signed 24-bit value
     }
 
     switch (AVCPacketType)
