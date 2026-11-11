@@ -86,7 +86,7 @@ static constexpr int8u Avc_profile_idc_Mapping[][2]= // profile_idc sorted list
     { 135,  25 },   // 135, MFC Depth High (2016)
     { 138,  22 },   // 138, Multiview Depth High (2013)
     { 139,  24 },   // 139, Enhanced Multiview Depth High (2014)
-    { 144,  16 },   // 144, High 4:4:4 (2005)
+    { 144,   6 },   // 144, High 4:4:4 (2005)
     { 244,  11 },   // 244, High 4:4:4 Predictive (2007)
 };
 static inline constexpr bool Avc_profile_idc_Names_Size_Cmp(const int8u first[2], const int8u second)
