@@ -178,8 +178,8 @@ static const char* Hevc_slice_type(int32u slice_type)
 {
     switch (slice_type)
     {
-        case 0 : return "P";
-        case 1 : return "B";
+        case 0 : return "B";
+        case 1 : return "P";
         case 2 : return "I";
         default: return "";
     }
