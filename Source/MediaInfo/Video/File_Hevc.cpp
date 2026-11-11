@@ -1903,10 +1903,7 @@ void File_Hevc::video_parameter_set()
         {
             view_id_val.resize(64, -1);
             for (int i=0; i<NumViews; i++)
-                if (ViewOrderIdx[i]!=(int8u)-1)
-                    Get_S2 (view_id_len, view_id_val[ViewOrderIdx[i]], "view_id_val");
-                else
-                    Trusted_IsNot("ViewOrderIdx");
+                Get_S2 (view_id_len, view_id_val[i],            "view_id_val"); //Per view, not per layer identifier
         }
         bool direct_dependency_flag[64][64];
         memset(direct_dependency_flag, 0, sizeof(direct_dependency_flag));
