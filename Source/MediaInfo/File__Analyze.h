@@ -1579,6 +1579,7 @@ private :
     //***************************************************************************
 
     void Buffer_Clear(); //Clear the buffer
+    int64u File_Size_Real; //Real file size while Open_Buffer_Finalize() parses the last data with the end of the data as File_Size, (int64u)-1 outside of it or if unknown
 protected :
     //Buffer
     bool Open_Buffer_Continue_Loop();

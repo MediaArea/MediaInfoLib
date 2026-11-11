@@ -666,6 +666,7 @@ File__Analyze::File__Analyze ()
     Buffer=NULL;
     Buffer_Temp=NULL;
     Buffer_Size=0;
+    File_Size_Real=(int64u)-1;
     Buffer_Temp_Size=0;
     Buffer_Temp_Size_Max=0;
     Buffer_Offset=0;
@@ -1825,10 +1826,11 @@ void File__Analyze::Open_Buffer_Finalize (bool NoBufferModification)
     if (!NoBufferModification && !Config->IsFinishing)
     {
         Config->IsFinishing=true;
-        int64u FileSize_Real=File_Size;
+        File_Size_Real=File_Size;
         File_Size=File_Offset+Buffer_Size;
         Open_Buffer_Continue((const int8u*)NULL, 0);
-        File_Size=FileSize_Real;
+        File_Size=File_Size_Real;
+        File_Size_Real=(int64u)-1;
         #if MEDIAINFO_DEMUX
             if (Config->Demux_EventWasSent)
             {
@@ -4023,6 +4025,10 @@ void File__Analyze::ForceFinish ()
 {
     if (Status[IsFinished])
         return;
+
+    //The end of the data is the file size only for parsing the last data, the real file size is used for finishing (e.g. reading stopped by a read error)
+    if (File_Size_Real!=(int64u)-1)
+        File_Size=File_Size_Real;
 
     #if MEDIAINFO_TRACE
         Element_Show(); //If Element_Level is >0, we must show what is in the details buffer
