@@ -7591,7 +7591,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
                 else
                 {
                     Parser->Channel_Pos=0;
-                    Streams[moov_trak_tkhd_TrackID].IsPcmMono=true;
+                    Streams[moov_trak_tkhd_TrackID].IsPcmMono=Streams[moov_trak_tkhd_TrackID].Parsers.empty(); //The next track uses the first parser
                 }
                 Parser->Channel_Total=2;
                 Parser->SamplingRate=(int16u)SampleRate;
@@ -9709,6 +9709,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_glbl()
             delete Sub; //Sub = nullptr;
             Streams[moov_trak_tkhd_TrackID].Parsers.erase(Streams[moov_trak_tkhd_TrackID].Parsers.begin()+Pos);
             Streams[moov_trak_tkhd_TrackID].IsHevc=false;
+            Streams[moov_trak_tkhd_TrackID].IsPcmMono=false;
             Pos--;
         }
     }

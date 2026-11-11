@@ -763,6 +763,7 @@ private :
         {
             Parsers.clear();
             IsPcm=false;
+            IsPcmMono=false;
             #ifdef MEDIAINFO_DVDIF_ANALYZE_YES
                 IsDvDif=false;
             #endif //MEDIAINFO_DVDIF_ANALYZE_YES
