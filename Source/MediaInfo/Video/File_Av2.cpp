@@ -1556,7 +1556,7 @@ void File_Av2::tile_params(int16u frameWidth, int16u frameHeight, int8u uniformS
     auto sbCols = (miCols + sb4x4 - 1) >> sbShift;
     auto sbRows = (miRows + sb4x4 - 1) >> sbShift;
     int maxTileWidthSb{}, maxTileAreaSb{};
-    if (seq_level_idx != 31) {
+    if (seq_level_idx != 31 && Tile_Area_Scaling_Factor[seq_tier][seq_level_idx] != (int8u)-1) { //Level 31 (no level) or reserved level: no constraint
         maxTileWidthSb = (Tile_Width_Scaling_Factor[seq_tier][seq_level_idx] * MAX_TILE_WIDTH) >> (sbShift + 4);
         maxTileAreaSb = (Tile_Area_Scaling_Factor[seq_tier][seq_level_idx] * MAX_TILE_AREA) >> (2 * (sbShift + 2) + 2);
     }
