@@ -213,7 +213,7 @@ void File_ChannelGrouping::Read_Buffer_Continue()
     for (size_t Pos=0; Pos<Common->Channels.size(); Pos++)
         if (Minimum>Common->Channels[Pos]->Buffer_Size-Common->Channels[Pos]->Buffer_Offset)
             Minimum=Common->Channels[Pos]->Buffer_Size-Common->Channels[Pos]->Buffer_Offset;
-    size_t NeedBytes=BitDepth/4;
+    size_t NeedBytes=BitDepth==20?5:BitDepth/8; //Per channel: 1 sample, or 2 samples for 20-bit samples packed by 2 in 5 bytes
     if (Minimum>=NeedBytes)
     {
         for (size_t Pos=0; Pos<Common->Channels.size(); Pos++)
