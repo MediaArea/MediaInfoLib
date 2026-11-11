@@ -3174,6 +3174,7 @@ void File_Mpeg4::meta_iprp_ipco()
 void File_Mpeg4::meta_iprp_ipco_av1C()
 {
     FILLING_BEGIN_IPCO();
+        moov_trak_mdia_minf_stbl_stsd_Pos=0;
         moov_trak_mdia_minf_stbl_stsd_xxxx_av1C();
     FILLING_END_IPCO();
 }
@@ -3182,7 +3183,8 @@ void File_Mpeg4::meta_iprp_ipco_av1C()
 void File_Mpeg4::meta_iprp_ipco_av2C()
 {
     FILLING_BEGIN_IPCO();
-    moov_trak_mdia_minf_stbl_stsd_xxxx_av2C();
+        moov_trak_mdia_minf_stbl_stsd_Pos=0;
+        moov_trak_mdia_minf_stbl_stsd_xxxx_av2C();
     FILLING_END_IPCO();
 }
 
@@ -3229,6 +3231,7 @@ void File_Mpeg4::meta_iprp_ipco_auxC()
 void File_Mpeg4::meta_iprp_ipco_avcC()
 {
     FILLING_BEGIN_IPCO();
+        moov_trak_mdia_minf_stbl_stsd_Pos=0;
         moov_trak_mdia_minf_stbl_stsd_xxxx_avcC();
     FILLING_END_IPCO();
 }
@@ -8468,6 +8471,11 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_apvC()
 {
     NAME_VERSION_FLAG("APVDecoderConfigurationBox", 0);
     AddCodecConfigurationBoxInfo();
+    if (moov_trak_mdia_minf_stbl_stsd_Pos>1)
+    {
+        Skip_XX(Element_Size-Element_Offset,                    "Data not analyzed");
+        return; //Handling only the first description
+    }
 
     //Parsing
         #ifdef MEDIAINFO_APV_YES
@@ -8542,6 +8550,11 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_av1C()
 {
     Element_Name("AV1CodecConfigurationRecord");
     AddCodecConfigurationBoxInfo();
+    if (moov_trak_mdia_minf_stbl_stsd_Pos>1)
+    {
+        Skip_XX(Element_Size-Element_Offset,                    "Data not analyzed");
+        return; //Handling only the first description
+    }
 
     //Parsing
     #ifdef MEDIAINFO_AV1_YES
@@ -8590,6 +8603,11 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_av2C()
 {
     Element_Name("AV2CodecConfigurationRecord");
     AddCodecConfigurationBoxInfo();
+    if (moov_trak_mdia_minf_stbl_stsd_Pos>1)
+    {
+        Skip_XX(Element_Size-Element_Offset,                    "Data not analyzed");
+        return; //Handling only the first description
+    }
 
     //Parsing
     #ifdef MEDIAINFO_AV2_YES
@@ -9731,6 +9749,11 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_hvcC()
 {
     Element_Name("HEVCDecoderConfigurationRecord");
     AddCodecConfigurationBoxInfo();
+    if (moov_trak_mdia_minf_stbl_stsd_Pos>1)
+    {
+        Skip_XX(Element_Size-Element_Offset,                    "Data not analyzed");
+        return; //Handling only the first description
+    }
 
     //Parsing
     #ifdef MEDIAINFO_HEVC_YES
@@ -9816,6 +9839,11 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_lhvC()
 {
     Element_Name("LHEVCDecoderConfigurationRecord");
     AddCodecConfigurationBoxInfo();
+    if (moov_trak_mdia_minf_stbl_stsd_Pos>1)
+    {
+        Skip_XX(Element_Size-Element_Offset,                    "Data not analyzed");
+        return; //Handling only the first description
+    }
 
     //Parsing
     #ifdef MEDIAINFO_HEVC_YES
