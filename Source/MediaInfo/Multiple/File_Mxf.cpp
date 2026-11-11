@@ -19471,10 +19471,9 @@ void File_Mxf::SystemScheme1_TimeCodeArray()
     VECTOR(8);
     auto& SystemScheme=SystemScheme1s[Element_Code&0xFFFF];
     bool IsStart=SystemScheme.TimeCodeArray_StartTimecodes.empty();
-    #if MEDIAINFO_ADVANCED
-        //The array has the time codes of the frames of the content package (frame count), else the time codes of one frame
-        const auto PerFrame=(SystemScheme1_FrameCount_Value && !(Count%SystemScheme1_FrameCount_Value))?(Count/SystemScheme1_FrameCount_Value):Count;
-    #endif //MEDIAINFO_ADVANCED
+    //The array has the time codes of the frames of the content package (frame count), else the time codes of one frame
+    const auto HasFrameCount=SystemScheme1_FrameCount_Value && !(Count%SystemScheme1_FrameCount_Value);
+    const auto PerFrame=HasFrameCount?(Count/SystemScheme1_FrameCount_Value):Count;
     SystemScheme1_FrameCount_Value=0;
     for (int32u i=0; i<Count; i++)
     {
@@ -19523,7 +19522,7 @@ void File_Mxf::SystemScheme1_TimeCodeArray()
         Element_End0();
 
         //TimeCode
-        if (IsStart && !IsParsingEnd && IsParsingMiddle_MaxOffset==(int64u)-1)
+        if (IsStart && !IsParsingEnd && IsParsingMiddle_MaxOffset==(int64u)-1 && i<PerFrame) //Time codes of the first frame
         {
             SystemScheme.TimeCodeArray_StartTimecodes.emplace_back(Hours_Tens*10+Hours_Units, Minutes_Tens*10+Minutes_Units, Seconds_Tens*10+Seconds_Units, Frames_Tens*10+Frames_Units, FramesMax, TimeCode::DropFrame(DropFrame).FPS1001(Is1001));
         }
@@ -19601,8 +19600,9 @@ void File_Mxf::SystemScheme1_TimeCodeArray()
         #endif //MEDIAINFO_ADVANCED
     }
 
-    if (IsStart && SystemScheme.TimeCodeArray_StartTimecodes.size()>1)
+    if (IsStart && !HasFrameCount && SystemScheme.TimeCodeArray_StartTimecodes.size()>1)
     {
+        //Without frame count, the array may be the time codes of the next frames
         bool IsNotContinuous=false;
         auto Current=SystemScheme.TimeCodeArray_StartTimecodes.front();
         for (size_t i=1; i<SystemScheme.TimeCodeArray_StartTimecodes.size(); i++)
