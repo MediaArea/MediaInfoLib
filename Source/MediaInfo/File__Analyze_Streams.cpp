@@ -3141,7 +3141,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
     }
 
     //MergedStreams
-    if (FillAllMergedStreams)
+    if (FillAllMergedStreams && Parameter!=(size_t)-1)
     {
         for (size_t i=0; i<=Generic_ServiceProvider; i++) //Last item of generic
             if (Fill_Parameter(StreamKind, (generic)i)==Parameter)
@@ -3152,7 +3152,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
                 auto ID_Dash_Pos=ID.find(__T("-"));
                 if (ID_Dash_Pos!=string::npos)
                     ID.resize(ID_Dash_Pos);
-                for (size_t StreamKind2=Stream_Audio; StreamKind2<Stream_Max; StreamKind2++)
+                for (size_t StreamKind2=Stream_Video; StreamKind2<Stream_Max; StreamKind2++)
                     for (size_t StreamPos2=0; StreamPos2<(*Stream)[StreamKind2].size(); StreamPos2++)
                     {
                         Ztring ID2=Retrieve((stream_t)StreamKind2, StreamPos2, General_ID);
@@ -3162,7 +3162,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
                         if (ID2==ID)
                         {
                             size_t Parameter3=Fill_Parameter((stream_t)StreamKind2, Parameter2);
-                            if (Parameter3!=(size_t)-1)
+                            if (Parameter3!=(size_t)-1 && (Replace || (StreamKind2==StreamKind && StreamPos2==StreamPos) || Retrieve_Const((stream_t)StreamKind2, StreamPos2, Parameter3).empty())) //Without replacement, the other streams keep their value (e.g. a stream of another package with the same ID)
                                 Fill((stream_t)StreamKind2, StreamPos2, Parameter3, Value, Replace);
                         }
                     }
@@ -6699,18 +6699,6 @@ size_t File__Analyze::Fill_Parameter(stream_t StreamKind, generic StreamPos)
                                     case Generic_Codec_Url : return Image_Codec_Url;
                                     case Generic_Width: return Image_Width;
                                     case Generic_Height: return Image_Height;
-                                    case Generic_Duration : return Menu_Duration;
-                                    case Generic_Duration_String : return Menu_Duration_String;
-                                    case Generic_Duration_String1 : return Menu_Duration_String1;
-                                    case Generic_Duration_String2 : return Menu_Duration_String2;
-                                    case Generic_Duration_String3 : return Menu_Duration_String3;
-                                    case Generic_Duration_String4 : return Menu_Duration_String4;
-                                    case Generic_Duration_String5 : return Menu_Duration_String5;
-                                    case Generic_FrameRate : return Menu_FrameRate;
-                                    case Generic_FrameRate_String: return Menu_FrameRate_String;
-                                    case Generic_FrameRate_Num: return Menu_FrameRate_Num;
-                                    case Generic_FrameRate_Den: return Menu_FrameRate_Den;
-                                    case Generic_FrameCount : return Menu_FrameCount;
                                     case Generic_ColorSpace : return Image_ColorSpace;
                                     case Generic_ChromaSubsampling : return Image_ChromaSubsampling;
                                     case Generic_Resolution : return Image_Resolution;

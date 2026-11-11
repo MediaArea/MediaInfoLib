@@ -160,7 +160,7 @@ FrameRate_Original_Num;;;N NFN;;;Frames per second, numerator;;
 FrameRate_Original_Den;;;N NFN;;;Frames per second, denominator;;
 FrameCount;;;N NIY;;;Numer of frames;;
 ElementCount;;;Y NIY;;;Number of displayed elements;;
-Source_FrameCount;;;N NIY;;;Number of frames according to media header (media/stts atom) data;;
+Source_FrameCount;;;N NI;;;Number of frames according to media header (media/stts atom) data;;
 ColorSpace;;;Y YTY;;;Color profile of the image (e.g. YUV);;
 ChromaSubsampling;;;Y YTY;;;Ratio of chroma to luma in encoded image (e.g. 4:2:2);;
 Resolution;; bit;N NI;;;Deprecated, do not use in new projects;;

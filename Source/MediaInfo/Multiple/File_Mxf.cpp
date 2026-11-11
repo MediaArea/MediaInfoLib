@@ -10382,8 +10382,8 @@ void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 Edit
         if (Retrieve(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameCount)).empty())
             Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameCount), FrameCount);
 
-        if (Retrieve(StreamKind_Last, StreamPos_Last, "FrameRate").empty())
-            Fill(StreamKind_Last, StreamPos_Last, "FrameRate", EditRate);
+        if (Retrieve(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameRate)).empty())
+            Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameRate), EditRate); //With FrameRate_Num and FrameRate_Den
 
         FillAllMergedStreams=false;
 
