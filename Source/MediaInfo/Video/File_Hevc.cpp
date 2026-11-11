@@ -3407,7 +3407,7 @@ void File_Hevc::three_dimensional_reference_displays_info(int32u payloadSize)
     //Parsing
     BS_Begin();
     auto End=Data_BS_Remain()-payloadSize*8;
-    int32u prec_ref_display_width, num_ref_displays_minus1;
+    int32u prec_ref_display_width, prec_ref_viewing_dist=0, num_ref_displays_minus1;
     int32u left_view_id0, right_view_id0;
     bool ref_viewing_distance_flag;
     Get_UE (prec_ref_display_width,                             "prec_ref_display_width");
@@ -3418,7 +3418,13 @@ void File_Hevc::three_dimensional_reference_displays_info(int32u payloadSize)
         return;
     }
     TEST_SB_GET (ref_viewing_distance_flag,                     "ref_viewing_distance_flag");
-        Skip_UE(                                                "prec_ref_viewing_dist");
+        Get_UE (prec_ref_viewing_dist,                          "prec_ref_viewing_dist");
+        if (prec_ref_viewing_dist>=32)
+        {
+            Trusted_IsNot("prec_ref_viewing_dist out of range");
+            BS_End();
+            return;
+        }
     TEST_SB_END();
     Get_UE (num_ref_displays_minus1,                            "num_ref_displays_minus1");
     if (num_ref_displays_minus1>=32)
@@ -3478,14 +3484,14 @@ void File_Hevc::three_dimensional_reference_displays_info(int32u payloadSize)
             int8u refViewDistBits;
             if (exponent_ref_viewing_distance)
             {
-                auto temp=exponent_ref_viewing_distance+prec_ref_display_width;
+                auto temp=exponent_ref_viewing_distance+prec_ref_viewing_dist;
                 if (temp>31)
                     refViewDistBits=(int8u)(temp-31);
                 else
                     refViewDistBits=0;
             }
             else
-                refViewDistBits=(exponent_ref_viewing_distance==31);
+                refViewDistBits=(prec_ref_viewing_dist==31);
             if (refViewDistBits)
                 Skip_BS(refViewDistBits,                        "mantissa_ref_viewing_distance");
         }
