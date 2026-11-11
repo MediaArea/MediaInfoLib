@@ -1589,8 +1589,8 @@ void File_Mpeg4::Data_Parse()
                                         ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_vexu_eyes_hero)
                                         ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_vexu_eyes_stri)
                                         ATOM_END
-                                    ATOM_END
                                     ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_vexu_must)
+                                    ATOM_END
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_vpcC)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_vvcC)
                                 LIST(moov_trak_mdia_minf_stbl_stsd_xxxx_wave)
@@ -2007,10 +2007,13 @@ void File_Mpeg4::idat()
     Skip_XX(Element_Size,                                       "Data");
 
     FILLING_BEGIN();
-        Accept("QTI");
+        if (!Status[IsAccepted]) //Else already done, e.g. by idsc
+        {
+            Accept("QTI");
 
-        Fill(Stream_General, 0, General_Format, "MPEG-4");
-        CodecID_Fill(__T("QTI"), Stream_General, 0, InfoCodecID_Format_Mpeg4);
+            Fill(Stream_General, 0, General_Format, "MPEG-4");
+            CodecID_Fill(__T("QTI"), Stream_General, 0, InfoCodecID_Format_Mpeg4);
+        }
     FILLING_END();
 }
 
@@ -2023,10 +2026,13 @@ void File_Mpeg4::idsc()
     Skip_XX(Element_Size,                                       "Data");
 
     FILLING_BEGIN();
-        Accept("QTI");
+        if (!Status[IsAccepted]) //Else already done, e.g. by idat
+        {
+            Accept("QTI");
 
-        Fill(Stream_General, 0, General_Format, "MPEG-4");
-        CodecID_Fill(__T("QTI"), Stream_General, 0, InfoCodecID_Format_Mpeg4);
+            Fill(Stream_General, 0, General_Format, "MPEG-4");
+            CodecID_Fill(__T("QTI"), Stream_General, 0, InfoCodecID_Format_Mpeg4);
+        }
     FILLING_END();
 }
 
@@ -2883,7 +2889,7 @@ void File_Mpeg4::meta_iinf_infe()
                             if (Element_Offset<Element_Size)
                                 Skip_NulString(                 "content_encoding");
                             break;
-        case 0x75726900:    // uri
+        case 0x75726920:    // uri
                             Skip_NulString(                     "item_uri_type");
                             break;
     }
@@ -2925,7 +2931,7 @@ void File_Mpeg4::meta_iinf_infe()
                                 }
                                 #endif
                                 [[fallthrough]];
-            case 0x75726900:    // uri
+            case 0x75726920:    // uri
                                 Skip=true; // Currently not supported
                                 break;
             case 0x64696D67:    // dimg
@@ -3174,6 +3180,7 @@ void File_Mpeg4::meta_iprp_ipco()
 void File_Mpeg4::meta_iprp_ipco_av1C()
 {
     FILLING_BEGIN_IPCO();
+        moov_trak_mdia_minf_stbl_stsd_Pos=0;
         moov_trak_mdia_minf_stbl_stsd_xxxx_av1C();
     FILLING_END_IPCO();
 }
@@ -3182,7 +3189,8 @@ void File_Mpeg4::meta_iprp_ipco_av1C()
 void File_Mpeg4::meta_iprp_ipco_av2C()
 {
     FILLING_BEGIN_IPCO();
-    moov_trak_mdia_minf_stbl_stsd_xxxx_av2C();
+        moov_trak_mdia_minf_stbl_stsd_Pos=0;
+        moov_trak_mdia_minf_stbl_stsd_xxxx_av2C();
     FILLING_END_IPCO();
 }
 
@@ -3229,6 +3237,7 @@ void File_Mpeg4::meta_iprp_ipco_auxC()
 void File_Mpeg4::meta_iprp_ipco_avcC()
 {
     FILLING_BEGIN_IPCO();
+        moov_trak_mdia_minf_stbl_stsd_Pos=0;
         moov_trak_mdia_minf_stbl_stsd_xxxx_avcC();
     FILLING_END_IPCO();
 }
@@ -3426,7 +3435,7 @@ void File_Mpeg4::meta_iprp_ipco_xxxx()
 //---------------------------------------------------------------------------
 void File_Mpeg4::meta_iprp_ipma()
 {
-    NAME_VERSION_FLAG("Item Property Association", 0);
+    NAME_VERSION_FLAG("Item Property Association", 1);
 
     //Parsing
     int32u entry_count;
@@ -7985,7 +7994,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
                     File_DvDif* Parser=new File_DvDif;
                     Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
                     #ifdef MEDIAINFO_DVDIF_ANALYZE_YES
-                        Streams[moov_trak_tkhd_TrackID].IsDvDif=true;
+                        Streams[moov_trak_tkhd_TrackID].IsDvDif=Streams[moov_trak_tkhd_TrackID].Parsers.size()==1;
                     #endif //MEDIAINFO_DVDIF_ANALYZE_YES
                 }
             #endif
@@ -8183,6 +8192,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
                     File_Jpeg* Parser=new File_Jpeg;
                     Parser->StreamKind=Stream_Video;
                     Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
+                    Streams[moov_trak_tkhd_TrackID].IsJpeg=Streams[moov_trak_tkhd_TrackID].Parsers.size()==1;
                 }
             #endif
             #if defined(MEDIAINFO_MPEG4_YES)
@@ -8467,6 +8477,11 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_apvC()
 {
     NAME_VERSION_FLAG("APVDecoderConfigurationBox", 0);
     AddCodecConfigurationBoxInfo();
+    if (moov_trak_mdia_minf_stbl_stsd_Pos>1)
+    {
+        Skip_XX(Element_Size-Element_Offset,                    "Data not analyzed");
+        return; //Handling only the first description
+    }
 
     //Parsing
         #ifdef MEDIAINFO_APV_YES
@@ -8541,6 +8556,11 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_av1C()
 {
     Element_Name("AV1CodecConfigurationRecord");
     AddCodecConfigurationBoxInfo();
+    if (moov_trak_mdia_minf_stbl_stsd_Pos>1)
+    {
+        Skip_XX(Element_Size-Element_Offset,                    "Data not analyzed");
+        return; //Handling only the first description
+    }
 
     //Parsing
     #ifdef MEDIAINFO_AV1_YES
@@ -8589,6 +8609,11 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_av2C()
 {
     Element_Name("AV2CodecConfigurationRecord");
     AddCodecConfigurationBoxInfo();
+    if (moov_trak_mdia_minf_stbl_stsd_Pos>1)
+    {
+        Skip_XX(Element_Size-Element_Offset,                    "Data not analyzed");
+        return; //Handling only the first description
+    }
 
     //Parsing
     #ifdef MEDIAINFO_AV2_YES
@@ -8904,14 +8929,16 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_chnl()
         return; //Handling only the first description
 
     FILLING_BEGIN();
+        if (StreamKind_Last!=Stream_Audio)
+            return;
         if (definedLayout)
-            Fill(Stream_Audio, 0, Audio_ChannelLayout, Aac_ChannelLayout_GetString(definedLayout), true, true);
+            Fill(Stream_Audio, StreamPos_Last, Audio_ChannelLayout, Aac_ChannelLayout_GetString(definedLayout), true, true);
         else if (!speaker_positions.empty())
         {
             if (speaker_positions.find("126 ")==string::npos)
             {
                 speaker_positions.pop_back();
-                Fill(Stream_Audio, 0, Audio_ChannelLayout, speaker_positions, true, true);
+                Fill(Stream_Audio, StreamPos_Last, Audio_ChannelLayout, speaker_positions, true, true);
             }
         }
     FILLING_END();
@@ -9658,7 +9685,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_fiel()
                         }
 
                         #ifdef MEDIAINFO_JPEG_YES
-                            if (Retrieve(Stream_Video, StreamPos_Last, Video_Format)==__T("JPEG") && Streams[moov_trak_tkhd_TrackID].Parsers.size()==1)
+                            if (Streams[moov_trak_tkhd_TrackID].IsJpeg && Streams[moov_trak_tkhd_TrackID].Parsers.size()==1)
                                 ((File_Jpeg*)Streams[moov_trak_tkhd_TrackID].Parsers[0])->Interlaced=true;
                         #endif //MEDIAINFO_JPEG_YES
                         break;
@@ -9719,10 +9746,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_glbl()
         Open_Buffer_OutOfBand(Sub);
         if (Sub->Status[IsFinished])
         {
-            delete Sub; //Sub = nullptr;
-            Streams[moov_trak_tkhd_TrackID].Parsers.erase(Streams[moov_trak_tkhd_TrackID].Parsers.begin()+Pos);
-            Streams[moov_trak_tkhd_TrackID].IsHevc=false;
-            Streams[moov_trak_tkhd_TrackID].IsPcmMono=false;
+            Streams[moov_trak_tkhd_TrackID].Parsers_Erase(Pos);
             Pos--;
         }
     }
@@ -9733,6 +9757,11 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_hvcC()
 {
     Element_Name("HEVCDecoderConfigurationRecord");
     AddCodecConfigurationBoxInfo();
+    if (moov_trak_mdia_minf_stbl_stsd_Pos>1)
+    {
+        Skip_XX(Element_Size-Element_Offset,                    "Data not analyzed");
+        return; //Handling only the first description
+    }
 
     //Parsing
     #ifdef MEDIAINFO_HEVC_YES
@@ -9818,6 +9847,11 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_lhvC()
 {
     Element_Name("LHEVCDecoderConfigurationRecord");
     AddCodecConfigurationBoxInfo();
+    if (moov_trak_mdia_minf_stbl_stsd_Pos>1)
+    {
+        Skip_XX(Element_Size-Element_Offset,                    "Data not analyzed");
+        return; //Handling only the first description
+    }
 
     //Parsing
     #ifdef MEDIAINFO_HEVC_YES
@@ -9920,10 +9954,10 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_mhaC()
 {
     Element_Name("MHAConfigurationBox");
 
-    if (moov_trak_mdia_minf_stbl_stsd_Pos>1)
+    if (moov_trak_mdia_minf_stbl_stsd_Pos>1 || StreamKind_Last!=Stream_Audio)
     {
         Skip_XX(Element_Size,                                   "Data not analyzed");
-        return; //Handling only the first description
+        return; //Handling only the first description, of an audio track
     }
 
     AddCodecConfigurationBoxInfo();

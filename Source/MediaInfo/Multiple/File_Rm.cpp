@@ -24,6 +24,9 @@
 #include <ZenLib/ZtringListList.h>
 #include <ZenLib/Utils.h>
 #include "MediaInfo/Multiple/File_Rm.h"
+#if defined(MEDIAINFO_ID3_YES)
+    #include "MediaInfo/Tag/File_Id3.h"
+#endif
 using namespace ZenLib;
 //---------------------------------------------------------------------------
 
@@ -128,7 +131,7 @@ void File_Rm::Header_Parse()
     {
         Name=Elements::TAG;
         Element_Offset-=4;
-        Size=0;
+        Size=128; //No chunk header
     }
     else
     {
@@ -696,6 +699,8 @@ void File_Rm::RJMD_property(std::string Name, int8u Depth)
     Get_B4 (num_subproperties,                                  "num_subproperties"); //The number of subproperties for this MetadataProperty  structure.
     Get_B4 (name_length,                                        "name_length"); //The length of the name data, including the null-terminator.
     Get_String(name_length, name,                               "name"); //The name of the property (string data).
+    while (!name.empty() && !name.back())
+        name.pop_back(); //Null terminator
     Get_B4 (value_length,                                       "value_length"); //The length of the value data.
     switch(type)
     {
@@ -803,6 +808,17 @@ void File_Rm::RMMD()
 void File_Rm::TAG()
 {
     Element_Name("Id3v1 Tag");
+
+    //Parsing
+    #if defined(MEDIAINFO_ID3_YES)
+        File_Id3 MI;
+        Open_Buffer_Init(&MI);
+        Open_Buffer_Continue(&MI);
+        Finish(&MI);
+        Merge(MI, Stream_General, 0, 0, false); //The metadata of the file has priority
+    #else
+        Skip_XX(Element_Size,                                   "Data");
+    #endif
 }
 
 } //NameSpace

@@ -2079,12 +2079,21 @@ bool File__Analyze::Buffer_Parse()
 
     //Synchro
     if (MustSynchronize)
+    {
+        size_t Buffer_Offset_NotSynched=(size_t)-1;
         do
         {
             if (!Synchro_Manage())
                 return false; //Wait for more data
+            if (!Synched)
+            {
+                if (Buffer_Offset==Buffer_Offset_NotSynched)
+                    Buffer_Offset++; //The synchronization found here is refused by its test again, searching after it
+                Buffer_Offset_NotSynched=Buffer_Offset;
+            }
         }
         while (!Synched);
+    }
     #if MEDIAINFO_DEMUX
     else if (Demux_TotalBytes<=Buffer_TotalBytes+Buffer_Offset)
     {
@@ -2220,8 +2229,17 @@ bool File__Analyze::FileHeader_Begin_0x000001()
     }
 
     //Element_Size
-    if (Buffer_Size<192*4)
-        return false; //Not enough buffer for a test
+    if (Buffer_Size<192*4+4)
+    {
+        if (File_Offset+Buffer_Size<File_Size)
+            return false; //Not enough buffer for a test
+        if (Buffer_Size<16)
+        {
+            Reject();
+            return false;
+        }
+        //Else this is the whole file, the tests are done on what is available
+    }
 
     //Detecting OldDirac/WAV/SWF/FLV/ELF/DPG/WM files
     int64u Magic8=CC8(Buffer);
@@ -2261,26 +2279,19 @@ bool File__Analyze::FileHeader_Begin_0x000001()
         return false;
     }
 
-    //Detect TS files, and the parser is not enough precise to detect them later
-    size_t Buffer_Offset=0;
-    while (Buffer_Offset<188 && Buffer[Buffer_Offset]!=0x47) //Look for first Sync word
-        Buffer_Offset++;
-    if (Buffer_Offset<188 && Buffer[Buffer_Offset+188]==0x47 && Buffer[Buffer_Offset+188*2]==0x47 && Buffer[Buffer_Offset+188*3]==0x47)
+    //Detect TS files then BDAV files (4 bytes before each TS packet), and the parser is not enough precise to detect them later
+    for (size_t Extra=0; Extra<=4; Extra+=4)
     {
-        Status[IsFinished]=true;
-        return false;
+        const size_t PacketSize=188+Extra;
+        size_t Sync_Offset=Extra;
+        while (Sync_Offset<PacketSize+Extra && Sync_Offset+PacketSize*3<Buffer_Size && Buffer[Sync_Offset]!=0x47) //Look for first Sync word
+            Sync_Offset++;
+        if (Sync_Offset<PacketSize+Extra && Sync_Offset+PacketSize*3<Buffer_Size && Buffer[Sync_Offset+PacketSize]==0x47 && Buffer[Sync_Offset+PacketSize*2]==0x47 && Buffer[Sync_Offset+PacketSize*3]==0x47)
+        {
+            Status[IsFinished]=true;
+            return false;
+        }
     }
-    Buffer_Offset=0;
-
-    //Detect BDAV files, and the parser is not enough precise to detect them later
-    while (Buffer_Offset<192 && CC1(Buffer+Buffer_Offset+4)!=0x47) //Look for first Sync word
-        Buffer_Offset++;
-    if (Buffer_Offset<192 && CC1(Buffer+Buffer_Offset+192+4)==0x47 && CC1(Buffer+Buffer_Offset+192*2+4)==0x47 && CC1(Buffer+Buffer_Offset+192*3+4)==0x47)
-    {
-        Status[IsFinished]=true;
-        return false;
-    }
-    Buffer_Offset=0;
 
     //All should be OK...
     return true;
@@ -3007,7 +3018,8 @@ void File__Analyze::Header_Fill_Size(int64u Size)
     if (Element_Level==1)
         Elem1.Next=File_Offset+Buffer_Offset+Size;
     else if (File_Offset+Buffer_Offset+Size>Element[Element_Level-2].Next
-          && File_Offset+Buffer_Offset<Element[Element_Level-2].Next) //An end before this element is not a limit (a sub-parser can get more data than the file has up to its end, e.g. merged channels)
+          && File_Offset+Buffer_Offset<Element[Element_Level-2].Next //An end before this element is not a limit (a sub-parser can get more data than the file has up to its end, e.g. merged channels)
+          && (Element_Level>2 || Buffer_Offset+Size>Buffer_Size)) //Nor is the end of the file for an element which is completely in the buffer
     {
         if (Element_IsComplete_Get() && (!IsSub || (File_Offset + Buffer_Size < File_Size && File_Size - (File_Offset + Buffer_Size) >= 0x10000))) { //TODO: good support of end of TS dumps
             auto Name = CreateElementName();

@@ -240,7 +240,7 @@ void File_Iso9660::Primary_Volume_Descriptor()
     Element_Name("Primary Volume Descriptor");
 
     //Parsing
-    Ztring VolumeIdentifier, PublisherIdentifier, ApplicationIdentifier, CopyrightIdentifier, CreationDateTime;
+    Ztring VolumeIdentifier, PublisherIdentifier, ApplicationIdentifier, CreationDateTime;
     int32u Volume_Space_Size, Location_Of_Path_Table;
     Skip_Local(32,                                              "System Identifier");
     Get_Local (32, VolumeIdentifier,                            "Volume Identifier");
@@ -260,7 +260,7 @@ void File_Iso9660::Primary_Volume_Descriptor()
     Get_Local (128, PublisherIdentifier,                        "Publisher Identifier");
     Skip_Local(128,                                             "Data Preparer Identifier");
     Get_Local (128, ApplicationIdentifier,                      "Application Identifier");
-    Get_Local (37, CopyrightIdentifier,                         "Copyright File Identifier");
+    Skip_Local(37,                                              "Copyright File Identifier");
     Skip_Local(37,                                              "Abstract File Identifier");
     Skip_Local(37,                                              "Bibliographic File Identifier");
     Get_DateTime (&CreationDateTime,                            "Volume Creation Date and Time");
@@ -273,7 +273,6 @@ void File_Iso9660::Primary_Volume_Descriptor()
     Fill(Stream_General, 0, General_Title, VolumeIdentifier.Trim(__T(' ')));
     Fill(Stream_General, 0, General_Publisher, PublisherIdentifier.Trim(__T(' ')));
     Fill(Stream_General, 0, General_Encoded_Application, ApplicationIdentifier.Trim(__T(' ')));
-    Fill(Stream_General, 0, General_Copyright, CopyrightIdentifier.Trim(__T(' ')));
     Fill(Stream_General, 0, General_Encoded_Date, CreationDateTime);
 
     if (!NotParsed.empty())

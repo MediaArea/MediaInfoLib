@@ -442,18 +442,19 @@ void File_VorbisCom::Data_Parse()
                 Stream_Prepare(Stream_Menu);
                 Fill(Stream_Menu, StreamPos_Last, Menu_Chapters_Pos_Begin, Count_Get(Stream_Menu, StreamPos_Last), 10, true);
             }
-            if (Key.find(__T("NAME"))==Error)
-            {
-                Chapter_Pos=Key.SubString(__T("CHAPTER"), __T(""));
-                Chapter_Time=Value;
-            }
-            else
+            const bool IsName=Key.find(__T("NAME"))!=Error;
+            chapter& Chapter=Chapters[Key.SubString(__T("CHAPTER"), IsName?__T("NAME"):__T(""))]; //The name is not always right after the time of its chapter
+            if (IsName)
             {
                 Value.FindAndReplace(__T("\n"), __T(""), Count_Get(Stream_Text)-1); //Some chapters names have extra characters, not needed
                 Value.FindAndReplace(__T("\r"), __T(""), Count_Get(Stream_Text)-1); //Some chapters names have extra characters, not needed
                 Value.FindAndReplace(__T(" "),  __T(""), Count_Get(Stream_Text)-1); //Some chapters names have extra characters, not needed
-                Fill(Stream_Menu, 0, Chapter_Time.To_UTF8().c_str(), Value);
+                Chapter.Name=Value;
             }
+            else
+                Chapter.Time=Value;
+            if (!Chapter.Time.empty() && !Chapter.Name.empty())
+                Fill(Stream_Menu, 0, Chapter.Time.To_UTF8().c_str(), Chapter.Name);
             Fill(Stream_Menu, StreamPos_Last, Menu_Chapters_Pos_End, Count_Get(Stream_Menu, StreamPos_Last), 10, true);
         }
         else if (VorbisCom_CheckToIgnore(Key.To_UTF8()))

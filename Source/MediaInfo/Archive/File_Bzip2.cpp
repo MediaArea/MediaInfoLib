@@ -58,7 +58,8 @@ void File_Bzip2::Read_Buffer_Continue()
 {
     //Parsing
     Skip_B7(                                                    "Magic");
-    Skip_XX(File_Size-2,                                        "Data");
+    if (File_Size>7)
+        Skip_XX(File_Size-7,                                    "Data");
 
     FILLING_BEGIN();
         Accept("Bzip2");

@@ -270,9 +270,9 @@ void File_Gxf::Streams_Finish()
         if (Gxf_MediaTypes_StreamKind(Streams[StreamID].MediaType)==Stream_Video)
         {
             Ztring Title=Streams[StreamID].MediaName;
-            size_t Title_Extension_Offset=Title.find(__T(".M0"));
+            size_t Title_Extension_Offset=Title.rfind(__T(".M0"));
             if (Title_Extension_Offset==std::string::npos || Title_Extension_Offset!=Title.size()-3)
-                Title_Extension_Offset=Title.find(__T(".H0"));
+                Title_Extension_Offset=Title.rfind(__T(".H0"));
             if (Title_Extension_Offset!=std::string::npos && Title_Extension_Offset==Title.size()-3)
             {
                 Title.resize(Title.size()-3);
@@ -282,7 +282,7 @@ void File_Gxf::Streams_Finish()
         if (Gxf_MediaTypes_StreamKind(Streams[StreamID].MediaType)==Stream_Audio && Config->File_Audio_MergeMonoStreams_Get())
         {
             Ztring Title=Streams[StreamID].MediaName;
-            size_t Title_Extension_Offset=Title.find(__T(".A0"));
+            size_t Title_Extension_Offset=Title.rfind(__T(".A0"));
             if (Title_Extension_Offset!=std::string::npos && Title_Extension_Offset==Title.size()-3)
             {
                 Title.resize(Title.size()-3);
@@ -386,8 +386,11 @@ void File_Gxf::Streams_Finish_PerStream(size_t StreamID, stream &Temp)
 
                 if (TimeCodes.empty())
                 {
-                    Fill(Stream_Video, StreamPos_Last, Video_Delay, ((float64)(Material_Fields_First/Material_Fields_FieldsPerFrame))/Gxf_FrameRate(Streams[0x00].FrameRate_Code)*1000, 0);
-                    Fill(Stream_Video, StreamPos_Last, Video_Delay_Source, "Container");
+                    if (Gxf_FrameRate(Streams[0x00].FrameRate_Code))
+                    {
+                        Fill(Stream_Video, StreamPos_Last, Video_Delay, ((float64)(Material_Fields_First/Material_Fields_FieldsPerFrame))/Gxf_FrameRate(Streams[0x00].FrameRate_Code)*1000, 0);
+                        Fill(Stream_Video, StreamPos_Last, Video_Delay_Source, "Container");
+                    }
                 }
                 else
                     for (std::map<int8u, tc>::iterator TimeCode=TimeCodes.begin(); TimeCode!=TimeCodes.end(); ++TimeCode)
@@ -402,7 +405,7 @@ void File_Gxf::Streams_Finish_PerStream(size_t StreamID, stream &Temp)
                         if (TimeCode_FirstFrame_ms!=(int64u)-1)
                         {
                             Fill(Stream_Video, StreamPos_Last, Video_Delay, TimeCode_FirstFrame_ms, 0);
-                            if (TimeCode_FirstFrame.size()==11)
+                            if (TimeCode_FirstFrame.size()>=11)
                                 Fill(Stream_Video, StreamPos_Last, Video_Delay_DropFrame, TimeCode_FirstFrame[8]==';'?"Yes":"No");
                             Fill(Stream_Video, StreamPos_Last, Video_Delay_Source, "Container");
 
@@ -434,8 +437,9 @@ void File_Gxf::Streams_Finish_PerStream(size_t StreamID, stream &Temp)
                         Stream_Prepare(Stream_Text);
                         Merge(*Temp.Parsers[0], Stream_Text, Parser_Text_Pos, StreamPos_Last);
                         Ztring ID=Retrieve(Stream_Text, StreamPos_Last, Text_ID);
-                        Fill(Stream_Text, StreamPos_Last, Text_ID, Ztring::ToZtring(AncillaryData_StreamID)+__T("-")+ID, true);
-                        Fill(Stream_Text, StreamPos_Last, Text_ID_String, Ztring::ToZtring(AncillaryData_StreamID)+__T("-")+ID, true);
+                        Ztring ID_Prefix=Ztring::ToZtring(AncillaryData_StreamID==(int8u)-1?StreamID:AncillaryData_StreamID); //In the video stream itself if there is no ancillary data track
+                        Fill(Stream_Text, StreamPos_Last, Text_ID, ID_Prefix+__T("-")+ID, true);
+                        Fill(Stream_Text, StreamPos_Last, Text_ID_String, ID_Prefix+__T("-")+ID, true);
                         Fill(Stream_Text, StreamPos_Last, Text_Delay, Retrieve(Stream_Video, Count_Get(Stream_Video)-1, Video_Delay), true);
                         Fill(Stream_Text, StreamPos_Last, Text_Delay_Source, Retrieve(Stream_Video, Count_Get(Stream_Video)-1, Video_Delay_Source), true);
                         Fill(Stream_Text, StreamPos_Last, Text_Delay_Original, Retrieve(Stream_Video, Count_Get(Stream_Video)-1, Video_Delay_Original), true);
@@ -455,8 +459,11 @@ void File_Gxf::Streams_Finish_PerStream(size_t StreamID, stream &Temp)
 
                 if (TimeCodes.empty())
                 {
-                    Fill(Stream_Audio, StreamPos_Last, Audio_Delay, ((float64)(Material_Fields_First/Material_Fields_FieldsPerFrame))/Gxf_FrameRate(Streams[0x00].FrameRate_Code)*1000, 0);
-                    Fill(Stream_Audio, StreamPos_Last, Audio_Delay_Source, "Container");
+                    if (Gxf_FrameRate(Streams[0x00].FrameRate_Code))
+                    {
+                        Fill(Stream_Audio, StreamPos_Last, Audio_Delay, ((float64)(Material_Fields_First/Material_Fields_FieldsPerFrame))/Gxf_FrameRate(Streams[0x00].FrameRate_Code)*1000, 0);
+                        Fill(Stream_Audio, StreamPos_Last, Audio_Delay_Source, "Container");
+                    }
                 }
                 else
                     for (std::map<int8u, tc>::iterator TimeCode=TimeCodes.begin(); TimeCode!=TimeCodes.end(); ++TimeCode)
@@ -471,7 +478,7 @@ void File_Gxf::Streams_Finish_PerStream(size_t StreamID, stream &Temp)
                         if (TimeCode_FirstFrame_ms!=(int64u)-1)
                         {
                             Fill(Stream_Audio, StreamPos_Last, Audio_Delay, TimeCode_FirstFrame_ms, 0);
-                            if (TimeCode_FirstFrame.size()==11)
+                            if (TimeCode_FirstFrame.size()>=11)
                                 Fill(Stream_Audio, StreamPos_Last, Audio_Delay_DropFrame, TimeCode_FirstFrame[8]==';'?"Yes":"No");
                             Fill(Stream_Audio, StreamPos_Last, Audio_Delay_Source, "Container");
 
@@ -507,7 +514,7 @@ void File_Gxf::Streams_Finish_PerStream(size_t StreamID, stream &Temp)
             }
 
             //Text
-            if (Temp.Parsers[0]->Count_Get(Stream_Text))
+            if (!Temp.Parsers[0]->Count_Get(Stream_Video) && Temp.Parsers[0]->Count_Get(Stream_Text))
             {
                 size_t Parser_Text_Count=Temp.Parsers[0]->Count_Get(Stream_Text);
                 for (size_t Parser_Text_Pos=0; Parser_Text_Pos<Parser_Text_Count; Parser_Text_Pos++)
@@ -1081,6 +1088,7 @@ void File_Gxf::map()
                                         Parsers_Count++;
                                         Streams[TrackID].Searching_Payload=true;
 
+                                        delete Ancillary; //The last ancillary data track is the one in use
                                         Ancillary=new File_Ancillary;
                                         Ancillary->WithTenBit=true;
                                         Ancillary->WithChecksum=true;
@@ -1298,7 +1306,9 @@ void File_Gxf::map()
                     TimeCodes[TrackID].Milliseconds=Hours  *60*60*1000
                                                    +Minutes   *60*1000
                                                    +Seconds      *1000;
-                    TimeCodes[TrackID].String=TimeCode(Hours, Minutes, Seconds, Fields/2, 99, TimeCode::DropFrame(DropFrame).Field(Fields%2)).ToString();
+                    const bool IsProgressive=Streams[TrackID].FieldsPerFrame_Code==1; //The count of fields is then a count of frames
+                    const bool IsSecondField=!IsProgressive && Fields%2;
+                    TimeCodes[TrackID].String=TimeCode(Hours, Minutes, Seconds, (IsProgressive || IsSecondField)?Fields:Fields/2, 99, TimeCode::DropFrame(DropFrame).Field(IsSecondField)).ToString();
 
                     if (!FrameRate)
                     {
@@ -1311,7 +1321,7 @@ void File_Gxf::map()
                             }
                     }
                     if (FrameRate)
-                        float64_int64s(Fields*1000/(FrameRate*2));
+                        TimeCodes[TrackID].Milliseconds+=float64_int64s(Fields*1000/(FrameRate*(IsProgressive?1:2)));
                 }
             }
         }
@@ -1394,7 +1404,7 @@ void File_Gxf::media()
     #endif //MEDIAINFO_SEEK
 
     #if MEDIAINFO_DEMUX
-            if (Streams[TrackNumber].MediaType!=8) //Not a TimeCode stream
+            if (TimeCodes.find(TrackNumber)==TimeCodes.end()) //Not a TimeCode stream
             {
                 Element_Code=TrackNumber;
                 int64u TimeCode_First=0;
@@ -1609,11 +1619,8 @@ File__Analyze* File_Gxf::ChooseParser_ChannelGrouping(int8u TrackID)
 {
 #ifdef MEDIAINFO_SMPTEST0337_YES
     File_ChannelGrouping* Parser;
-    if (Audio_Count%2)
+    if (TrackID && Streams[TrackID-1].IsChannelGrouping && !Streams[TrackID-1].DisplayInfo && !Streams[TrackID-1].Parsers.empty()) //The previous track is the first half of a pair
     {
-        if (!TrackID || !Streams[TrackID-1].IsChannelGrouping)
-            return NULL; //Not a channel grouping
-
         Parser=new File_ChannelGrouping;
         Parser->CanBePcm=true;
         Parser->Channel_Pos=1;

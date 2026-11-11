@@ -159,6 +159,10 @@ File_Lxf::File_Lxf()
 //---------------------------------------------------------------------------
 File_Lxf::~File_Lxf()
 {
+    #if defined(MEDIAINFO_ANCILLARY_YES)
+        if (Videos.size()<2 || Videos[1].Parsers.empty())
+            delete Ancillary; //Created by the video parser, else it is in the parsers of the VBI/VANC data
+    #endif //defined(MEDIAINFO_ANCILLARY_YES)
     for (size_t Pos=0; Pos<Videos.size(); Pos++)
         for (size_t Pos2=0; Pos2<Videos[Pos].Parsers.size(); Pos2++)
             delete Videos[Pos].Parsers[Pos2];
@@ -275,15 +279,16 @@ void File_Lxf::Streams_Fill_PerStream(File__Analyze* Parser, stream_t Container_
 //---------------------------------------------------------------------------
 void File_Lxf::Streams_Finish()
 {
-    if (Videos.size()>1 && Videos[1].Parsers.size()==1) //TODO: better handling of fill/finish for Ancillary data
-    {
-        Finish(Videos[1].Parsers[0]);
-        Streams_Fill_PerStream(Videos[1].Parsers[0], Stream_Video, 1);
-    }
     if (Videos.size()>2 && Videos[2].Parsers.size()==1)
     {
         Finish(Videos[2].Parsers[0]);
         Merge(*Videos[2].Parsers[0], Stream_Video, 0, 0);
+        for (size_t Pos=0; Pos<Videos[2].Parsers[0]->Count_Get(Stream_Text); Pos++) //Only this parser provides text streams before the ancillary data is handled
+        {
+            if (Pos>=Count_Get(Stream_Text))
+                Stream_Prepare(Stream_Text); //Found after the filling
+            Merge(*Videos[2].Parsers[0], Stream_Text, Pos, Pos);
+        }
 
         Ztring LawRating=Videos[2].Parsers[0]->Retrieve(Stream_General, 0, General_LawRating);
         if (!LawRating.empty())
@@ -291,6 +296,11 @@ void File_Lxf::Streams_Finish()
         Ztring Title=Videos[2].Parsers[0]->Retrieve(Stream_General, 0, General_Title);
         if (!Title.empty() && Retrieve(Stream_General, 0, General_Title).empty())
             Fill(Stream_General, 0, General_Title, Title);
+    }
+    if (Videos.size()>1 && Videos[1].Parsers.size()==1) //TODO: better handling of fill/finish for Ancillary data
+    {
+        Finish(Videos[1].Parsers[0]);
+        Streams_Fill_PerStream(Videos[1].Parsers[0], Stream_Video, 1);
     }
 
     if (Audios_Header.TimeStamp_End!=(int64u)-1 && Audios_Header.TimeStamp_Begin!=(int64u)-1 && Audios_Header.Duration_First!=(int64u)-1)
@@ -665,7 +675,7 @@ void File_Lxf::Header_Parse()
     if (Version>1)
     {
         //Filling
-        Header_Fill_Code(0, "Unknown");
+        Header_Fill_Code((int64u)-1, "Unknown");
         Header_Fill_Size(HeaderSize);
         Synched=false;
         return;
@@ -1431,7 +1441,12 @@ void File_Lxf::Audio_Stream(size_t Pos)
             Audios[Pos].Parsers.push_back(new File_Ac3());
         #endif //MEDIAINFO_AC3_YES
         #ifdef MEDIAINFO_DTS_YES
-            Audios[Pos].Parsers.push_back(new File_Dts());
+        {
+            File_Dts* Parser=new File_Dts;
+            Parser->Frame_Count_Valid=2; //Else the PCM parser accepts the stream first when a packet has few frames
+
+            Audios[Pos].Parsers.push_back(Parser);
+        }
         #endif //MEDIAINFO_DTS_YES
         #ifdef MEDIAINFO_MPEGA_YES
             Audios[Pos].Parsers.push_back(new File_Mpega());
@@ -1687,7 +1702,8 @@ void File_Lxf::Video_Stream_1()
             Element_Begin1("VANC line");
             if (Videos[1].Parsers.empty())
             {
-                Ancillary=new File_Ancillary;
+                if (!Ancillary) //Else it is already created by the video parser
+                    Ancillary=new File_Ancillary;
                 Ancillary->InDecodingOrder=true;
                 Ancillary->WithChecksum=true;
                 Ancillary->MustSynchronize=true;

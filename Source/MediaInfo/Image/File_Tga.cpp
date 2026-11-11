@@ -221,7 +221,10 @@ void File_Tga::Read_Buffer_Continue()
             }
             static const int64u MinFileSizeCheck=18+255+0x1000;
             if (File_Size!=(int64u)-1 && File_Size>MinFileSizeCheck && Image_Width_*Image_Height_*(Pixel_Depth>>3)<File_Size-MinFileSizeCheck)
+            {
                 Reject();
+                return;
+            }
         }
         Accept();
     FILLING_END();

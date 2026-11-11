@@ -86,7 +86,7 @@ static constexpr int8u Avc_profile_idc_Mapping[][2]= // profile_idc sorted list
     { 135,  25 },   // 135, MFC Depth High (2016)
     { 138,  22 },   // 138, Multiview Depth High (2013)
     { 139,  24 },   // 139, Enhanced Multiview Depth High (2014)
-    { 144,  16 },   // 144, High 4:4:4 (2005)
+    { 144,   6 },   // 144, High 4:4:4 (2005)
     { 244,  11 },   // 244, High 4:4:4 Predictive (2007)
 };
 static inline constexpr bool Avc_profile_idc_Names_Size_Cmp(const int8u first[2], const int8u second)
@@ -172,7 +172,7 @@ string Avc_profile_level_string(int8u profile_idc, int8u level_idc=0, int8u cons
         if (Profile_Pos==(size_t)-1)
         {
             auto Pos=lower_bound(begin(Avc_profile_idc_Mapping), end(Avc_profile_idc_Mapping), profile_idc, Avc_profile_idc_Names_Size_Cmp);
-            if (Pos!=end(Avc_profile_idc_Mapping))
+            if (Pos!=end(Avc_profile_idc_Mapping) && (*Pos)[0]==profile_idc)
                 Profile_Pos=(*Pos)[1];
         }
         if (Profile_Pos==(size_t)-1)
@@ -4150,11 +4150,9 @@ void File_Avc::pic_parameter_set()
                 BS_End();
                 return;
             }
-            #if defined (__mips__)       || defined (__mipsel__)
-                int32u slice_group_id_Size=(int32u)(std::ceil(std::log((double)(num_slice_groups_minus1+1))/std::log((double)10))); //std::log is natural logarithm
-            #else
-                int32u slice_group_id_Size=(int32u)(std::ceil(std::log((float32)(num_slice_groups_minus1+1))/std::log((float32)10))); //std::log is natural logarithm
-            #endif
+            int32u slice_group_id_Size=0;
+            while (((int32u)1<<slice_group_id_Size)<num_slice_groups_minus1+1)
+                slice_group_id_Size++; //Ceil(Log2(num_slice_groups_minus1+1))
             Loop_CheckValue_BS(pic_size_in_map_units_minus1, slice_group_id_Size, "pic_size_in_map_units_minus1");
             for (int32u Pos=0; Pos<=pic_size_in_map_units_minus1; Pos++)
                 Skip_BS(slice_group_id_Size,                    "slice_group_id");

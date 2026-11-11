@@ -645,7 +645,7 @@ void File_Mpeg4v::Streams_Fill()
         if (user_data_start_SNC_Data[Pos][0]==__T("AlmEvent") && user_data_start_SNC_Data[Pos][1].size()==16)
             Fill(Stream_Video, 0, "Alarm event", user_data_start_SNC_Data[Pos][1]);
     }
-    if (!(profile_and_level_indication >= B8(11100001) && profile_and_level_indication <= B8(11101000)) && video_object_layer_start_IsParsed && shape!=2 && !complexity_estimation_disable)
+    if (!(profile_and_level_indication >= B8(11100001) && profile_and_level_indication <= B8(11101000)) && video_object_layer_start_IsParsed && shape!=2)
     {
         Fill(Stream_Video, 0, "data_partitioned", data_partitioned?"Yes":"No");
         Fill_SetOptions(Stream_Video, 0 ,"data_partitioned", "N NT");
@@ -1037,8 +1037,8 @@ void File_Mpeg4v::video_object_layer_start()
             Mark_1 ();
             Skip_S2(15,                                         "latter_half_vbv_occupancy");
             Mark_1 ();
-            bit_rate=first_half_bit_rate*0x8+latter_half_bit_rate;
-            vbv_buffer_size=first_half_vbv_buffer_size*0x8000+latter_half_vbv_buffer_size;
+            bit_rate=first_half_bit_rate*0x8000+latter_half_bit_rate;
+            vbv_buffer_size=first_half_vbv_buffer_size*0x8+latter_half_vbv_buffer_size;
         TEST_SB_END();
     TEST_SB_END();
     Get_S1 (2, shape,                                           "video_object_layer_shape");
@@ -1210,42 +1210,54 @@ void File_Mpeg4v::video_object_layer_start()
             Get_S1 (2, estimation_method,                       "estimation_method");
             if (estimation_method==0 || estimation_method==1)
             {
-                TEST_SB_SKIP(                                   "shape_complexity_estimation_disable");
+                //The flags of a set are present when the set is not disabled
+                bool disable;
+                Get_SB (disable,                                "shape_complexity_estimation_disable");
+                if (!disable)
+                {
                     Get_SB (opaque,                             "opaque");
                     Get_SB (transparent,                        "transparent");
                     Get_SB (intra_cae,                          "intra_cae");
                     Get_SB (inter_cae,                          "inter_cae");
                     Get_SB (no_update,                          "no_update");
                     Get_SB (upsampling,                         "upsampling");
-                TEST_SB_END();
-                TEST_SB_SKIP(                                   "texture_complexity_estimation_set_1_disable");
+                }
+                Get_SB (disable,                                "texture_complexity_estimation_set_1_disable");
+                if (!disable)
+                {
                     Get_SB (intra_blocks,                       "intra_blocks");
                     Get_SB (inter_blocks,                       "inter_blocks");
                     Get_SB (inter4v_blocks,                     "inter4v_blocks");
                     Get_SB (not_coded_blocks,                   "not_coded_blocks");
-                TEST_SB_END();
+                }
                 Mark_1 ();
-                TEST_SB_SKIP(                                   "texture_complexity_estimation_set_2_disable");
+                Get_SB (disable,                                "texture_complexity_estimation_set_2_disable");
+                if (!disable)
+                {
                     Get_SB (dct_coefs,                          "dct_coefs");
                     Get_SB (dct_lines,                          "dct_lines");
                     Get_SB (vlc_symbols,                        "vlc_symbols");
                     Get_SB (vlc_bits,                           "vlc_bits");
-                TEST_SB_END();
-                TEST_SB_SKIP(                                   "motion_compensation_complexity_disable");
+                }
+                Get_SB (disable,                                "motion_compensation_complexity_disable");
+                if (!disable)
+                {
                     Get_SB (apm,                                "apm");
                     Get_SB (npm,                                "npm");
                     Get_SB (interpolate_mc_q,                   "interpolate_mc_q");
                     Get_SB (forw_back_mc_q,                     "forw_back_mc_q");
                     Get_SB (halfpel2,                           "halfpel2");
                     Get_SB (halfpel4,                           "halfpel4");
-                TEST_SB_END();
+                }
                 Mark_1 ();
                 if (estimation_method==1)
                 {
-                    TEST_SB_SKIP(                               "version2_complexity_estimation_disable");
+                    Get_SB (disable,                            "version2_complexity_estimation_disable");
+                    if (!disable)
+                    {
                         Get_SB (sadct,                          "sadct");
                         Get_SB (quarterpel,                     "quarterpel");
-                    TEST_SB_END();
+                    }
                 }
             }
         }
@@ -1317,7 +1329,7 @@ void File_Mpeg4v::video_object_layer_start()
         NextCode_Add(0xB2); //user_data
         NextCode_Add(0xB3); //group_of_vop_start
         NextCode_Add(0xB6); //vop_start
-        for (int8u Pos=0x00; Pos<0x1F; Pos++)
+        for (int8u Pos=0x00; Pos<=0x1F; Pos++)
             NextCode_Add(Pos); //video_object_start
 
         //Autorisation of other streams
@@ -1565,7 +1577,7 @@ void File_Mpeg4v::group_of_vop_start()
         //NextCode
         NextCode_Test();
         NextCode_Clear();
-        for (int8u Pos=0x00; Pos<0x1F; Pos++)
+        for (int8u Pos=0x00; Pos<=0x1F; Pos++)
             NextCode_Add(Pos); //video_object_start
         NextCode_Add(0xB6); //vop_start
     FILLING_END();
@@ -1623,12 +1635,12 @@ void File_Mpeg4v::visual_object_start()
         //NextCode
         NextCode_Clear();
         NextCode_Add(0xB2); //user_data
-        for (int8u Pos=0x00; Pos<0x2F; Pos++)
+        for (int8u Pos=0x00; Pos<=0x2F; Pos++)
             NextCode_Add(Pos); //video_object_start and video_object_layer_start
 
         //Autorisation of other streams
         Streams[0xB2].Searching_Payload=true;
-        for (int8u Pos=0x00; Pos<0x25; Pos++)
+        for (int8u Pos=0x00; Pos<=0x2F; Pos++)
             Streams[Pos].Searching_Payload=true; //video_object_start and video_object_layer_start
     FILLING_END();
 }
@@ -1957,7 +1969,7 @@ void File_Mpeg4v::vop_start()
         //NextCode
         NextCode_Test();
         NextCode_Clear();
-        for (int8u Pos=0x00; Pos<0x2F; Pos++)
+        for (int8u Pos=0x00; Pos<=0x2F; Pos++)
             NextCode_Add(Pos); //video_object_start and video_object_layer_start
         NextCode_Add(0xB1); //visual_object_sequence_end
         NextCode_Add(0xB3); //group_of_vop_start_code

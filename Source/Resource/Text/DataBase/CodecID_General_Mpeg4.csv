@@ -3,6 +3,7 @@ isom;MPEG-4;;;http://www.apple.com/quicktime/download/standalone.html;Base Media
 iso2;MPEG-4;;;http://www.apple.com/quicktime/download/standalone.html;Base Media
 iso4;MPEG-4;;;http://www.apple.com/quicktime/download/standalone.html;Base Media
 iso5;MPEG-4;;;http://www.apple.com/quicktime/download/standalone.html;Base Media
+iso6;MPEG-4;;;http://www.apple.com/quicktime/download/standalone.html;Base Media
 mp41;MPEG-4;;;http://www.apple.com/quicktime/download/standalone.html;Base Media / Version 1
 mp42;MPEG-4;;;http://www.apple.com/quicktime/download/standalone.html;Base Media / Version 2
 avc1;MPEG-4;;;http://www.apple.com/quicktime/download/standalone.html;JVT
@@ -22,6 +23,7 @@ avc1;MPEG-4;;;http://www.apple.com/quicktime/download/standalone.html;JVT
 3gp8;MPEG-4;;;http://www.apple.com/quicktime/download/standalone.html;
 3gp9;MPEG-4;;;http://www.apple.com/quicktime/download/standalone.html;
 CAQV;MPEG-4;;;http://world.casio.com/;Casio
+cmfc;MPEG-4;Common Media Application Format;;;CMAF
 dby1;MPEG-4;Dolby Extensions;;
 FACE;MPEG-4;;;http://www.apple.com/quicktime/download/standalone.html;Facebook
 isml;MPEG-4;IIS Smooth Streaming file format;;http://www.apple.com/quicktime/download/standalone.html;ISML
@@ -69,6 +71,6 @@ M4VP;MPEG-4;;;http://www.apple.com/iphone/;Apple iPhone
 iphE;MPEG-4;;;http://www.apple.com/iphone/;Apple iPhone (Cellular)
 M4VH;MPEG-4;;;http://www.apple.com/appletv/;Apple TV
 QTCA;MPEG-4;;;http://www.apple.com/quicktime/download/standalone.html;Quicktime compressed archive
-CAQV;MPEG-4;;;;Casio Digital Camera
+caqv;MPEG-4;;;;Casio Digital Camera
 QTI ;MPEG-4;;;http://www.apple.com/quicktime/download/standalone.html;QuickTime Image
 f4v ;MPEG-4;;;http://www.apple.com/quicktime/download/standalone.html;Adobe Flash

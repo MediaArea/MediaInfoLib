@@ -394,6 +394,16 @@ void File_Dvdv::Streams_Finish()
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+bool File_Dvdv::FileHeader_Begin()
+{
+    //The first sector is parsed at once, its content would be filled again if its parsing was restarted with more data
+    if (Buffer_Size<2048)
+        return false; //Must wait for more data
+
+    return true;
+}
+
+//---------------------------------------------------------------------------
 void File_Dvdv::FileHeader_Parse()
 {
     //Parsing
@@ -702,7 +712,8 @@ void File_Dvdv::Video()
             Fill(Stream_Video, StreamPos_Last, Video_Width, IFO_Width[Resolution]);
             Fill(Stream_Video, StreamPos_Last, Video_Height, IFO_Height[Standard][Resolution]);
             Fill(Stream_Video, StreamPos_Last, Video_DisplayAspectRatio, IFO_AspectRatio[AspectRatio], 3, true);
-            Fill(Stream_Video, StreamPos_Last, Video_FrameRate, IFO_FrameRate[Standard]);
+            if (Standard<2)
+                Fill(Stream_Video, StreamPos_Last, Video_FrameRate, IFO_FrameRate[Standard]);
             Fill(Stream_Video, StreamPos_Last, Video_BitRate_Mode, IFO_BitRate_Mode[BitRate_Mode]);
             Fill(Stream_Video, StreamPos_Last, General_ID, __T("224"));
             Fill(Stream_Video, StreamPos_Last, General_ID_String, __T("224 (0xE0)"), Unlimited, true);
@@ -1290,7 +1301,7 @@ void File_Dvdv::Get_Duration(TimeCode &Duration, const Ztring &Name)
         auto mm=BCD_to_Decimal(MM);
         auto ss=BCD_to_Decimal(SS);
         auto ff=BCD_to_Decimal(FF);
-        if (hh==(int8u)-1 || mm==(int8u)-1 || ss==(int8u)-1 || ff==(int8u)-1 || !IFO_PlaybackTime_FrameRate[FrameRate])
+        if (hh==(unsigned)-1 || mm==(unsigned)-1 || ss==(unsigned)-1 || ff==(unsigned)-1 || !IFO_PlaybackTime_FrameRate[FrameRate])
         {
             Duration=TimeCode();
             Element_End0();
@@ -1399,7 +1410,7 @@ void File_Dvdv::PGC(bool Title)
 
                 if (Available && Retrieve(Stream_Audio, Pos, Text_ID).empty() && Sectors[(size_t)((File_Offset+Buffer_Offset)/2048)]==Sector_VTS_PGCI)
                 {
-                    while (Pos>Count_Get(Stream_Audio))
+                    while (Pos>=Count_Get(Stream_Audio))
                         Stream_Prepare(Stream_Audio);
 
                     int8u ToAdd=0;
@@ -1440,7 +1451,7 @@ void File_Dvdv::PGC(bool Title)
 
                 if (Available && Retrieve(Stream_Text, Pos, Text_ID).empty() && Sectors[(size_t)((File_Offset+Buffer_Offset)/2048)]==Sector_VTS_PGCI)
                 {
-                    while (Pos>Count_Get(Stream_Text))
+                    while (Pos>=Count_Get(Stream_Text))
                         Stream_Prepare(Stream_Text);
 
                     auto ID=0x20+Number_Wide;

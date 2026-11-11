@@ -444,6 +444,21 @@ static Ztring Bdmv_Decimal_Hexa(int64u Number)
     return Get_Hex_ID(Number);
 }
 
+//---------------------------------------------------------------------------
+// The file (name of 10 characters) is in its folder of a Blu-ray disc, else the files of the other folders can not be found from its name
+static bool Bdmv_IsInFolder(const Ztring& File_Name, const Char* Folder)
+{
+    const size_t Folder_Size=Ztring(Folder).size();
+    if (File_Name.size()<10+1+Folder_Size)
+        return false;
+    const size_t Folder_Pos=File_Name.size()-(10+1+Folder_Size);
+    Ztring Name=File_Name.substr(Folder_Pos, Folder_Size);
+    Name.MakeUpperCase();
+    return Name==Folder
+        && (File_Name[Folder_Pos+Folder_Size]==__T('/') || File_Name[Folder_Pos+Folder_Size]==__T('\\'))
+        && (!Folder_Pos || File_Name[Folder_Pos-1]==__T('/') || File_Name[Folder_Pos-1]==__T('\\'));
+}
+
 //***************************************************************************
 // Streams management
 //***************************************************************************
@@ -703,7 +718,7 @@ void File_Bdmv::Clpi_ProgramInfo()
         MI.Option(__T("File_Bdmv_ParseTargetedFile"), __T("0"));
         MI.Option(__T("File_IsReferenced"), __T("1"));
         MI.Option(__T("File_DisplayCaptions"), Config->Option(__T("File_DisplayCaptions_Get"), Ztring()));
-        if (MI.Open(M2TS_File))
+        if (Bdmv_IsInFolder(File_Name, __T("CLIPINF")) && MI.Open(M2TS_File))
         {
             Merge(MI);
             for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
@@ -934,7 +949,7 @@ void File_Bdmv::Indx_ExtensionData()
         if (Base_Offset+ext->first>=Element_Offset)
         {
             if (Base_Offset+ext->first>Element_Offset)
-                Skip_XX(ext->first-Element_Offset,              "Unknown");
+                Skip_XX(Base_Offset+ext->first-Element_Offset,  "Unknown");
 
             Element_Begin0();
             int64u End=Element_Offset+ext->second;
@@ -1203,7 +1218,7 @@ void File_Bdmv::Mpls_PlayList_PlayItem()
         MI.Option(__T("File_Bdmv_ParseTargetedFile"), Config->File_Bdmv_ParseTargetedFile_Get()?__T("1"):__T("0"));
         MI.Option(__T("File_IsReferenced"), __T("1"));
         MI.Option(__T("File_DisplayCaptions"), Config->Option(__T("File_DisplayCaptions_Get"), Ztring()));
-        if (MI.Open(CLPI_File))
+        if (Bdmv_IsInFolder(File_Name, __T("PLAYLIST")) && MI.Open(CLPI_File))
         {
             for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
                 for (size_t StreamPos=0; StreamPos<MI.Count_Get((stream_t)StreamKind); StreamPos++)
@@ -1391,7 +1406,7 @@ void File_Bdmv::Mpls_PlayList_SubPlayItem(int8u SubPath_type, int16u Pos)
                 MediaInfo_Internal MI;
                 MI.Option(__T("File_Bdmv_ParseTargetedFile"), Config->File_Bdmv_ParseTargetedFile_Get()?__T("1"):__T("0"));
                 MI.Option(__T("File_IsReferenced"), __T("1"));
-                if (MI.Open(CLPI_File))
+                if (Bdmv_IsInFolder(File_Name, __T("PLAYLIST")) && MI.Open(CLPI_File))
                 {
                     if (MI.Count_Get(Stream_Video))
                     {
@@ -1594,7 +1609,7 @@ void File_Bdmv::StreamCodingInfo_Video()
             Fill(Stream_Video, StreamPos_Last, Video_Standard, Clpi_Video_Standard[Format]);
             if (Clpi_Video_FrameRate[FrameRate])
                 Fill(Stream_Video, StreamPos_Last, Video_FrameRate, Clpi_Video_FrameRate[FrameRate]);
-            if (Clpi_Video_Height[AspectRatio])
+            if (Clpi_Video_AspectRatio[AspectRatio])
                 Fill(Stream_Video, StreamPos_Last, Video_DisplayAspectRatio, Clpi_Video_AspectRatio[AspectRatio], 3, true);
         }
     FILLING_END();

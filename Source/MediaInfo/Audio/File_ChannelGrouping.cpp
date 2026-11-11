@@ -213,7 +213,7 @@ void File_ChannelGrouping::Read_Buffer_Continue()
     for (size_t Pos=0; Pos<Common->Channels.size(); Pos++)
         if (Minimum>Common->Channels[Pos]->Buffer_Size-Common->Channels[Pos]->Buffer_Offset)
             Minimum=Common->Channels[Pos]->Buffer_Size-Common->Channels[Pos]->Buffer_Offset;
-    size_t NeedBytes=BitDepth/4;
+    size_t NeedBytes=BitDepth==20?5:BitDepth/8; //Per channel: 1 sample, or 2 samples for 20-bit samples packed by 2 in 5 bytes
     if (Minimum>=NeedBytes)
     {
         for (size_t Pos=0; Pos<Common->Channels.size(); Pos++)
@@ -248,10 +248,10 @@ void File_ChannelGrouping::Read_Buffer_Continue()
                             if (Common->MergedChannel.Buffer_Size+Minimum*2>Common->MergedChannel.Buffer_Size_Max)
                                 Common->MergedChannel.resize(Common->MergedChannel.Buffer_Size+Minimum*2);
                             int8u* Channel1=Common->Channels[Pos]->Buffer+Common->Channels[Pos]->Buffer_Offset;
-                            int8u* Channel2=Common->Channels[Pos]->Buffer+Common->Channels[Pos]->Buffer_Offset;
+                            int8u* Channel2=Common->Channels[Pos+1]->Buffer+Common->Channels[Pos+1]->Buffer_Offset;
                             Common->MergedChannel.Buffer[Common->MergedChannel.Buffer_Size++]= Channel1[0];
                             Common->MergedChannel.Buffer[Common->MergedChannel.Buffer_Size++]= Channel1[1];
-                            Common->MergedChannel.Buffer[Common->MergedChannel.Buffer_Size++]=(Channel1[0]&0xF0) | (Channel2[0]>>4  );
+                            Common->MergedChannel.Buffer[Common->MergedChannel.Buffer_Size++]=(Channel1[2]&0xF0) | (Channel2[0]>>4  );
                             Common->MergedChannel.Buffer[Common->MergedChannel.Buffer_Size++]=(Channel2[0]<<4  ) | (Channel2[1]>>4  );
                             Common->MergedChannel.Buffer[Common->MergedChannel.Buffer_Size++]=(Channel2[1]<<4  ) | (Channel2[2]>>4  );
                             Common->MergedChannel.Buffer[Common->MergedChannel.Buffer_Size++]=(Channel1[2]<<4  ) | (Channel1[3]>>4  );
@@ -270,7 +270,7 @@ void File_ChannelGrouping::Read_Buffer_Continue()
                             if (Common->MergedChannel.Buffer_Size+Minimum*2>Common->MergedChannel.Buffer_Size_Max)
                                 Common->MergedChannel.resize(Common->MergedChannel.Buffer_Size+Minimum*2);
                             int8u* Channel1=Common->Channels[Pos]->Buffer+Common->Channels[Pos]->Buffer_Offset;
-                            int8u* Channel2=Common->Channels[Pos]->Buffer+Common->Channels[Pos]->Buffer_Offset;
+                            int8u* Channel2=Common->Channels[Pos+1]->Buffer+Common->Channels[Pos+1]->Buffer_Offset;
                             Common->MergedChannel.Buffer[Common->MergedChannel.Buffer_Size++]= Channel1[0];
                             Common->MergedChannel.Buffer[Common->MergedChannel.Buffer_Size++]= Channel1[1];
                             Common->MergedChannel.Buffer[Common->MergedChannel.Buffer_Size++]=(Channel2[0]<<4  ) | (Channel1[2]&0x0F);

@@ -1057,6 +1057,9 @@ void File_Flv::video()
         }
 
         //Parsing video data
+        if (isExVideoHeader && PacketType!=Metadata && FrameType==Command)
+            Skip_XX(Element_Size-Element_Offset,                "Unknown"); //No video data in a command frame
+        else
         switch (Codec)
         {
             case  2 : video_H263(); break;
@@ -1208,7 +1211,7 @@ void File_Flv::video_VP6(bool WithAlpha)
 //---------------------------------------------------------------------------
 void File_Flv::video_AVC(int8u PacketType_plus1)
 {
-    size_t Header_Size=(!PacketType_plus1?1:0)+((!PacketType_plus1 || PacketType_plus1==CodedFrames-1)?3:0);
+    size_t Header_Size=(!PacketType_plus1?1:0)+((!PacketType_plus1 || PacketType_plus1==CodedFrames+1)?3:0);
     if (Element_Offset>Element_Size || Header_Size>Element_Size-Element_Offset)
     {
         Trusted_IsNot("Truncated video header");
@@ -1229,9 +1232,9 @@ void File_Flv::video_AVC(int8u PacketType_plus1)
     {
     Get_B1 (AVCPacketType,                                      "AVCPacketType"); Param_Info1(Flv_AVCPacketType(AVCPacketType));
     }
-    if (!PacketType_plus1 || PacketType_plus1==CodedFrames-1)
+    if (!PacketType_plus1 || PacketType_plus1==CodedFrames+1)
     {
-    Info_B3(CompositionTime,                                    "CompositionTime"); Param_Info1(Ztring::ToZtring((int32s)(CompositionTime+0xFF000000)));
+    Info_B3(CompositionTime,                                    "CompositionTime"); Param_Info1(Ztring::ToZtring((int32s)(CompositionTime&0x800000?(CompositionTime|0xFF000000):CompositionTime))); //Signed 24-bit value
     }
 
     switch (AVCPacketType)
@@ -1313,7 +1316,7 @@ void File_Flv::video_AVC(int8u PacketType_plus1)
 //---------------------------------------------------------------------------
 void File_Flv::video_HEVC(int8u PacketType_plus1)
 {
-    size_t Header_Size=(!PacketType_plus1?1:0)+((!PacketType_plus1 || PacketType_plus1==CodedFrames-1)?3:0);
+    size_t Header_Size=(!PacketType_plus1?1:0)+((!PacketType_plus1 || PacketType_plus1==CodedFrames+1)?3:0);
     if (Element_Offset>Element_Size || Header_Size>Element_Size-Element_Offset)
     {
         Trusted_IsNot("Truncated video header");
@@ -1334,9 +1337,9 @@ void File_Flv::video_HEVC(int8u PacketType_plus1)
     {
     Get_B1 (AVCPacketType,                                      "AVCPacketType"); Param_Info1(Flv_AVCPacketType(AVCPacketType));
     }
-    if (!PacketType_plus1 || PacketType_plus1==CodedFrames-1)
+    if (!PacketType_plus1 || PacketType_plus1==CodedFrames+1)
     {
-    Info_B3(CompositionTime,                                    "CompositionTime"); Param_Info1(Ztring::ToZtring((int32s)(CompositionTime+0xFF000000)));
+    Info_B3(CompositionTime,                                    "CompositionTime"); Param_Info1(Ztring::ToZtring((int32s)(CompositionTime&0x800000?(CompositionTime|0xFF000000):CompositionTime))); //Signed 24-bit value
     }
 
     switch (AVCPacketType)
@@ -1927,6 +1930,7 @@ void File_Flv::Rm()
     //Filling
     File__Analyze::Finish(&MI);
     Merge(MI, Stream_General, 0, 0);
+    Fill(Stream_General, 0, General_Format, "Flash Video", Unlimited, true, true); //Not the format of the tags
 }
 
 } //NameSpace

@@ -432,7 +432,7 @@ namespace Elements
     const int32u SMV0=0x534D5630;
     const int32u SMV0_xxxx=0x534D563A;
     const int32u WAVE=0x57415645;
-    const int32u WAVE__pmx=0x20786D70;
+    const int32u WAVE__pmx=0x5F504D58;
     const int32u WAVE_adtl=0x6164746C;
     const int32u WAVE_adtl_labl=0x6C61626C;
     const int32u WAVE_adtl_ltxt=0x6C747874;
@@ -1621,20 +1621,26 @@ void File_Riff::AVI__hdlr_strl_strf_auds_ExtensibleWave(int16u BitsPerSample)
 void File_Riff::AVI__hdlr_strl_strf_iavs()
 {
     //Standard video header before Iavs?
-    if (Element_Size==72)
+    const bool HasVideoHeader=Element_Size==72;
+    if (HasVideoHeader)
     {
         Element_Begin0();
+            const int64u Element_Size_Save=Element_Size;
+            Element_Size=40; //The DV information is after the video header
             AVI__hdlr_strl_strf_vids();
+            Element_Size=Element_Size_Save;
         Element_End0();
     }
+    const bool HasVideoStream=HasVideoHeader && StreamKind_Last==Stream_Video; //From the video header
 
     Element_Info1("Interleaved Audio/Video");
 
     #ifdef MEDIAINFO_DVDIF_YES
-        if (Element_Size<8*4)
+        if (Element_Size-Element_Offset<8*4)
             return;
 
         //Parsing
+        delete (File_DvDif*)DV_FromHeader; //The one of a previous stream
         DV_FromHeader=new File_DvDif();
         Open_Buffer_Init(DV_FromHeader);
 
@@ -1664,8 +1670,12 @@ void File_Riff::AVI__hdlr_strl_strf_iavs()
 
         Finish(DV_FromHeader);
 
-        Stream_Prepare(Stream_Video);
+        if (!HasVideoStream)
+            Stream_Prepare(Stream_Video);
         stream& StreamItem = Stream[Stream_ID];
+        for (size_t Pos=0; Pos<StreamItem.Parsers.size(); Pos++)
+            delete StreamItem.Parsers[Pos]; //From the video header, the audio is ignored by its parser
+        StreamItem.Parsers.clear();
         StreamItem.Parsers.push_back(new File_DvDif);
         Open_Buffer_Init(StreamItem.Parsers[0]);
 
@@ -1682,7 +1692,8 @@ void File_Riff::AVI__hdlr_strl_strf_iavs()
 
         //Filling
         Ztring Codec; Codec.From_CC4(Stream[Stream_ID].fccHandler);
-        Stream_Prepare(Stream_Video);
+        if (!HasVideoStream)
+            Stream_Prepare(Stream_Video);
         float32 FrameRate=Retrieve(Stream_Video, StreamPos_Last, Video_FrameRate).To_float32();
         Fill(Stream_Video, StreamPos_Last, Video_Codec, Codec); //May be replaced by codec parser
         Fill(Stream_Video, StreamPos_Last, Video_Codec_CC, Codec);
@@ -3442,8 +3453,8 @@ void File_Riff::RMP3_data()
 {
     Element_Name("Raw datas");
 
-    Fill(Stream_Audio, StreamPos_Last, Audio_StreamSize, Buffer_DataToParse_End?((Buffer_DataToParse_End>File_Size?File_Size:Buffer_DataToParse_End)-Buffer_DataToParse_Begin):(Element_TotalSize_Get()-Alignement_ExtraByte));
     Stream_Prepare(Stream_Audio);
+    Fill(Stream_Audio, StreamPos_Last, Audio_StreamSize, Buffer_DataToParse_End?((Buffer_DataToParse_End>File_Size?File_Size:Buffer_DataToParse_End)-Buffer_DataToParse_Begin):(Element_TotalSize_Get()-Alignement_ExtraByte));
 
     //Creating parser
     #if defined(MEDIAINFO_MPEGA_YES)
@@ -3455,6 +3466,9 @@ void File_Riff::RMP3_data()
         StreamItem.StreamKind=Stream_Audio;
         StreamItem.StreamPos=0;
         StreamItem.Parsers.push_back(Parser);
+
+        if (!Buffer_DataToParse_End)
+            RMP3_data_Continue(); //All the data is already there
     #else //MEDIAINFO_MPEG4_YES
         Fill(Stream_Audio, StreamPos_Last, Audio_Format, "MPEG Audio");
         Skip_XX(Buffer_DataToParse_End?((Buffer_DataToParse_End>File_Size?File_Size:Buffer_DataToParse_End)-Buffer_DataToParse_Begin):(Element_TotalSize_Get()-Alignement_ExtraByte), "Data");
@@ -4577,11 +4591,12 @@ void File_Riff::Parser_Pcm(stream& StreamItem, int16u Channels, int16u BitsPerSa
     #endif
 
     #if defined(MEDIAINFO_SMPTEST0337_YES)
-    if (Channels==2 && BitsPerSample<=32 && SamplesPerSec==48000) //Some SMPTE ST 337 streams are hidden in PCM stream
+    if (Channels<=2 && BitsPerSample<=32 && SamplesPerSec==48000) //Some SMPTE ST 337 streams are hidden in PCM stream
     {
         File_SmpteSt0337* Parser=new File_SmpteSt0337;
         Parser->BitDepth=(int8u)BitsPerSample;
-        Parser->Aligned=true;
+        Parser->Channels=(int8u)Channels;
+        Parser->Aligned=Channels==2; //With 1 channel, a data burst is in consecutive samples and may start at any of them
         Parser->ShouldContinueParsing=true;
         #if MEDIAINFO_DEMUX
             if (Config->Demux_Unpacketize_Get() && Retrieve(Stream_General, 0, General_Format)==__T("Wave"))

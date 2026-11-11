@@ -51,8 +51,12 @@ private :
 
     //Temp
     int32u user_comment_list_length;
-    Ztring Chapter_Pos;
-    Ztring Chapter_Time;
+    struct chapter
+    {
+        Ztring Time;
+        Ztring Name;
+    };
+    std::map<Ztring, chapter> Chapters; //Key is the chapter number
     ZtringList Performers;
     ZtringList Artists;
     ZtringList Accompaniments;

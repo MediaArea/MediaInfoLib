@@ -663,9 +663,9 @@ std::string AC3_TrueHD_Channels_Positions(int16u ChannelsMap, bool Bit11=false)
     else
     {
         if (ChannelsMap&0x0001)
-            Text+="Front: C";
+            Text+="Front: L R";
         if (ChannelsMap&0x0002)
-            Text+="Front: L, R";
+            Text+="Front: C";
     }
 
     if (ChannelsMap&0x08)
@@ -709,9 +709,9 @@ Ztring AC3_TrueHD_Channels_Positions2(int16u ChannelsMap, bool Bit11=false)
     int8u Front=0, Surround=0, Rear=0, LFE=0;
 
     if (ChannelsMap&0x0001)
-        Front++;
-    if (ChannelsMap&0x0002)
         Front+=2;
+    if (ChannelsMap&0x0002)
+        Front++;
 
     if (ChannelsMap&0x08)
         Surround+=2;
@@ -1046,6 +1046,7 @@ File_Ac3::File_Ac3()
             surmixlev_Max[Pos][Pos2]=(int8u)-1;
             roomtyp_Max[Pos][Pos2]=(int8u)-1;
             dmixmod_Max[Pos][Pos2]=(int8u)-1;
+            adconvtyp_Max[Pos][Pos2]=false;
             dsurmod_Max[Pos][Pos2]=0;
             chanmape_Max[Pos][Pos2]=false;
             chanmap_Max[Pos][Pos2]=0;
@@ -1130,10 +1131,9 @@ void File_Ac3::Streams_Fill()
             Fill(Stream_Audio, 0, Audio_BitRate_Mode, "VBR");
             Fill(Stream_Audio, 0, Audio_Compression_Mode, "Lossless");
             Fill(Stream_Audio, 0, Audio_SamplingRate, AC3_HD_SamplingRate(HD_SamplingRate2));
-            if (HD_SamplingRate1!=HD_SamplingRate2)
-                Fill(Stream_Audio, 0, Audio_SamplingRate, AC3_HD_SamplingRate(HD_SamplingRate2));
-            Fill(Stream_Audio, 0, Audio_Channel_s_, AC3_MLP_Channels[HD_Channels1]);
-            if (MediaInfoLib::Config.LegacyStreamDisplay_Get() && HD_Channels1!=HD_Channels2)
+            if (MediaInfoLib::Config.LegacyStreamDisplay_Get() && HD_SamplingRate1!=HD_SamplingRate2)
+                Fill(Stream_Audio, 0, Audio_SamplingRate, AC3_HD_SamplingRate(HD_SamplingRate1));
+            if (AC3_MLP_Channels[HD_Channels1]) //Not for a reserved channel assignment
                 Fill(Stream_Audio, 0, Audio_Channel_s_, AC3_MLP_Channels[HD_Channels1]);
             Fill(Stream_Audio, 0, Audio_BitDepth, AC3_MLP_Resolution[HD_Resolution2]);
             if (MediaInfoLib::Config.LegacyStreamDisplay_Get() && HD_Resolution1!=HD_Resolution2)
@@ -1431,7 +1431,7 @@ void File_Ac3::Streams_Fill()
     }
 
     //TimeStamp
-    if (TimeStamp_IsPresent)
+    if (TimeStamp_IsPresent && TimeStamp_FirstFrame.IsValid())
     {
         Ztring TimeCode_FrameRate=Ztring::ToZtring(TimeStamp_FirstFrame.GetFrameRate(), 3);
         auto TimeStamp_FirstFrame_String=TimeStamp_FirstFrame.ToString();
@@ -1556,11 +1556,11 @@ void File_Ac3::Streams_Fill()
             AC3_Level_Fill(this, 0, lorocmixlev_Max[0][0], 3, 1.5, "lorocmixlev");
         if (lorosurmixlev_Max[0][0]!=(int8u)-1)
             AC3_Level_Fill(this, 0, lorosurmixlev_Max[0][0], 3, 1.5, "lorosurmixlev");
-        if (adconvtyp_Max[0][0])
-        {
-            Fill(Stream_Audio, 0, "adconvtyp", "HDCD");
-            Fill_SetOptions(Stream_Audio, 0, "adconvtyp", "Y NTY");
-        }
+    }
+    if (adconvtyp_Max[0][0])
+    {
+        Fill(Stream_Audio, 0, "adconvtyp", "HDCD");
+        Fill_SetOptions(Stream_Audio, 0, "adconvtyp", "Y NTY");
     }
 }
 
@@ -1872,6 +1872,17 @@ bool File_Ac3::Synchronize()
             Buffer_Offset++;
         if (Buffer_Offset+1==Buffer_Size && CC1(Buffer+Buffer_Offset)!=0x0B && CC1(Buffer+Buffer_Offset)!=0x77)
             Buffer_Offset++;
+        return false;
+    }
+
+    //Testing if the frame is in a SMPTE ST 337 data burst, such stream has its own parser
+    if (!IsSub && !Status[IsAccepted]
+     && ((Buffer_Offset>= 8 && (CC4(Buffer+Buffer_Offset- 8)==0xF8724E1F || CC4(Buffer+Buffer_Offset- 8)==0x72F81F4E)) //16-bit words, big or little endian
+      || (Buffer_Offset>=10 &&  CC5(Buffer+Buffer_Offset-10)==0x6F87254E1FLL)                                          //20-bit words, big endian
+      || (Buffer_Offset>=12 &&  CC6(Buffer+Buffer_Offset-12)==0x96F872A54E1FLL)))                                      //24-bit words, big endian
+    {
+        delete[] Save_Buffer; Save_Buffer=NULL; //Byte swapped copy of a little endian frame
+        Reject("AC-3");
         return false;
     }
 
@@ -2697,7 +2708,7 @@ void File_Ac3::Core_Frame()
                 TEST_SB_SKIP(                                       "audprodie");
                     Get_S1 (5, mixlevel,                            "mixlevel");
                     Get_S1 (2, roomtyp,                             "roomtyp");
-                    Skip_S1(1,                                      "adconvtyp");
+                    Get_SB (   adconvtyp,                           "adconvtyp");
                 TEST_SB_END();
                 if (acmod==0x0)
                 {
@@ -3889,25 +3900,26 @@ void File_Ac3::Core_Frame()
             bsid_Max=bsid;
 
         //Specific to first frame
-        if (!frmsizplus1_Max[substreamid_Independant_Current][strmtyp+substreamid])
+        const int8u substream_Pos=strmtyp?(1+substreamid):0; //The independent substream then its dependent substreams
+        if (!frmsizplus1_Max[substreamid_Independant_Current][substream_Pos])
         {
-            frmsizplus1_Max[substreamid_Independant_Current][strmtyp+substreamid]=((bsid<=0x09)?(frmsizecod/2<19?AC3_BitRate[frmsizecod/2]*4:0):((frmsiz+1)*2));
-            acmod_Max[substreamid_Independant_Current][strmtyp+substreamid]=acmod;
-            lfeon_Max[substreamid_Independant_Current][strmtyp+substreamid]=lfeon;
-            bsmod_Max[substreamid_Independant_Current][strmtyp+substreamid]=bsmod;
-            cmixlev_Max[substreamid_Independant_Current][strmtyp+substreamid]=cmixlev;
-            surmixlev_Max[substreamid_Independant_Current][strmtyp+substreamid]=surmixlev;
-            mixlevel_Max[substreamid_Independant_Current][strmtyp+substreamid]=mixlevel;
-            roomtyp_Max[substreamid_Independant_Current][strmtyp+substreamid]=roomtyp;
-            dmixmod_Max[substreamid_Independant_Current][strmtyp+substreamid]=dmixmod;
-            ltrtcmixlev_Max[substreamid_Independant_Current][strmtyp+substreamid]=ltrtcmixlev;
-            ltrtsurmixlev_Max[substreamid_Independant_Current][strmtyp+substreamid]=ltrtsurmixlev;
-            lorocmixlev_Max[substreamid_Independant_Current][strmtyp+substreamid]=lorocmixlev;
-            lorosurmixlev_Max[substreamid_Independant_Current][strmtyp+substreamid]=lorosurmixlev;
-            adconvtyp_Max[substreamid_Independant_Current][strmtyp+substreamid]=adconvtyp;
-            dsurmod_Max[substreamid_Independant_Current][strmtyp+substreamid]=dsurmod;
-            chanmape_Max[substreamid_Independant_Current][strmtyp+substreamid]=chanmape;
-            chanmap_Max[substreamid_Independant_Current][strmtyp+substreamid]=chanmap;
+            frmsizplus1_Max[substreamid_Independant_Current][substream_Pos]=((bsid<=0x09)?(frmsizecod/2<19?AC3_BitRate[frmsizecod/2]*4:0):((frmsiz+1)*2));
+            acmod_Max[substreamid_Independant_Current][substream_Pos]=acmod;
+            lfeon_Max[substreamid_Independant_Current][substream_Pos]=lfeon;
+            bsmod_Max[substreamid_Independant_Current][substream_Pos]=bsmod;
+            cmixlev_Max[substreamid_Independant_Current][substream_Pos]=cmixlev;
+            surmixlev_Max[substreamid_Independant_Current][substream_Pos]=surmixlev;
+            mixlevel_Max[substreamid_Independant_Current][substream_Pos]=mixlevel;
+            roomtyp_Max[substreamid_Independant_Current][substream_Pos]=roomtyp;
+            dmixmod_Max[substreamid_Independant_Current][substream_Pos]=dmixmod;
+            ltrtcmixlev_Max[substreamid_Independant_Current][substream_Pos]=ltrtcmixlev;
+            ltrtsurmixlev_Max[substreamid_Independant_Current][substream_Pos]=ltrtsurmixlev;
+            lorocmixlev_Max[substreamid_Independant_Current][substream_Pos]=lorocmixlev;
+            lorosurmixlev_Max[substreamid_Independant_Current][substream_Pos]=lorosurmixlev;
+            adconvtyp_Max[substreamid_Independant_Current][substream_Pos]=adconvtyp;
+            dsurmod_Max[substreamid_Independant_Current][substream_Pos]=dsurmod;
+            chanmape_Max[substreamid_Independant_Current][substream_Pos]=chanmape;
+            chanmap_Max[substreamid_Independant_Current][substream_Pos]=chanmap;
 
             FirstFrame_Dolby.dialnorm=dialnorm;
             if (compre)
@@ -4129,7 +4141,7 @@ void File_Ac3::emdf_protection()
     };
     Skip_BS(len_primary,                                        "protection_bits_primary");
     if (len_second)
-        Skip_BS(len_primary,                                    "protection_bits_secondary");
+        Skip_BS(len_second,                                     "protection_bits_secondary");
 
     Element_End0();
 }
@@ -4535,6 +4547,8 @@ void File_Ac3::HD()
             HD_Resolution2=HD_Resolution1;
             HD_SamplingRate2=HD_SamplingRate1;
         }
+        if (HD_StreamType==0xBB && HD_SamplingRate2==0xF)
+            HD_SamplingRate2=HD_SamplingRate1; //No sampling rate for the second group
     FILLING_END();
 
 
@@ -4711,7 +4725,9 @@ void File_Ac3::TimeStamp()
     Skip_B2(                                                    "User private");
 
     FILLING_BEGIN();
-        TimeCode Temp(H1*10+H2, M1*10+M2, S1*10+S2, F1*10+F2, (int32u)(float64_int64s(Mpegv_frame_rate[FrameRate])-1), TimeCode::DropFrame(DropFrame).FPS1001(float64_int64s(Mpegv_frame_rate[FrameRate])!=Mpegv_frame_rate[FrameRate]));
+        TimeCode Temp;
+        if (Mpegv_frame_rate[FrameRate]) //Else the time code can not be used
+            Temp=TimeCode(H1*10+H2, M1*10+M2, S1*10+S2, F1*10+F2, (int32u)(float64_int64s(Mpegv_frame_rate[FrameRate])-1), TimeCode::DropFrame(DropFrame).FPS1001(float64_int64s(Mpegv_frame_rate[FrameRate])!=Mpegv_frame_rate[FrameRate]));
         #if MEDIAINFO_TRACE
         if (Trace_Activated)
         {

@@ -485,7 +485,8 @@ void File_Dpx::Header_Parse()
             Element_WaitForMoreData();
             return;
         }
-        int32u Size=LittleEndian?LittleEndian2int32u(Buffer+Buffer_Offset+24):BigEndian2int32u(Buffer+Buffer_Offset+24);
+        const size_t Size_Offset=IsDpx?24:8; //Generic section header length
+        int32u Size=LittleEndian?LittleEndian2int32u(Buffer+Buffer_Offset+Size_Offset):BigEndian2int32u(Buffer+Buffer_Offset+Size_Offset);
         if (Size==(int32u)-1)
             Size=LittleEndian?LittleEndian2int32u(Buffer+Buffer_Offset+4):BigEndian2int32u(Buffer+Buffer_Offset+4);
         Header_Fill_Size(Size);
@@ -633,7 +634,7 @@ void File_Dpx::GenericSectionHeader_Cineon()
         {
             Fill(Stream_General, 0, General_Encoded_Date, DPX_DateTime2Iso(CreationDate+':'+CreationTime));
             Fill(StreamKind_Last, StreamPos_Last, "Encoded_Date", DPX_DateTime2Iso(CreationDate+':'+CreationTime));
-            Fill(StreamKind_Last, StreamPos_Last, "Format", "Cineom");
+            Fill(StreamKind_Last, StreamPos_Last, "Format", "Cineon");
             if (Version.size()>2 && Version[0]=='V' && Version[1]>='0' && Version[2]<='9')
                 Version.insert(1, "ersion ");
             Fill(StreamKind_Last, StreamPos_Last, "Format_Version", Version);
@@ -990,7 +991,7 @@ void File_Dpx::Get_ASCII(size_t Size, string &Info, const char* Name)
     auto Element_Offset_Max=Element_Offset+Size;
     Get_String (ActualSize, Info,                               Name);
     auto Buffer_Begin=Buffer+Buffer_Offset;
-    while (Element_Offset<Element_Offset_Max && !Buffer_Begin[Element_Offset])
+    while (Element_Offset<Element_Offset_Max && Element_Offset<Element_Size && !Buffer_Begin[Element_Offset])
         ++Element_Offset;
     if (Element_Offset_Max>Element_Offset)
         Skip_XX(Element_Offset_Max-Element_Offset,              "(Unknown)");

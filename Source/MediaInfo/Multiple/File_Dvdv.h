@@ -39,6 +39,7 @@ public :
 
 private :
     //Buffer
+    bool FileHeader_Begin();
     void FileHeader_Parse ();
     void Header_Parse();
     void Data_Parse();

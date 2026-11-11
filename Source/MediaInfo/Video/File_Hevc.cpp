@@ -178,8 +178,8 @@ static const char* Hevc_slice_type(int32u slice_type)
 {
     switch (slice_type)
     {
-        case 0 : return "P";
-        case 1 : return "B";
+        case 0 : return "B";
+        case 1 : return "P";
         case 2 : return "I";
         default: return "";
     }
@@ -613,15 +613,23 @@ void File_Hevc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator se
     if (preferred_transfer_characteristics!=2)
         Fill(Stream_Video, 0, Video_transfer_characteristics, Mpegv_transfer_characteristics(preferred_transfer_characteristics));
     const auto vui_parameters = seq_parameter_set_Item->vui_parameters;
+    int32u num_units_in_tick=vui_parameters?vui_parameters->num_units_in_tick:0;
+    int32u time_scale=vui_parameters?vui_parameters->time_scale:0;
+    if ((!num_units_in_tick || !time_scale) && seq_parameter_set_Item->video_parameter_set_id<video_parameter_sets.size() && video_parameter_sets[seq_parameter_set_Item->video_parameter_set_id])
+    {
+        //Timing information of the video parameter set
+        num_units_in_tick=video_parameter_sets[seq_parameter_set_Item->video_parameter_set_id]->num_units_in_tick;
+        time_scale=video_parameter_sets[seq_parameter_set_Item->video_parameter_set_id]->time_scale;
+    }
+    if (num_units_in_tick && time_scale)
+    {
+        float64 FrameRate=(float64)time_scale / num_units_in_tick;
+        if (Interlacement.SeparatedFields)
+            FrameRate/=2; //The tick is per coded picture, so for separated fields it is the field rate; report the frame rate (e.g. 25 fps for 50 fields/s), as for AVC
+        Fill(Stream_Video, StreamPos_Last, Video_FrameRate, FrameRate);
+    }
     if (vui_parameters)
     {
-        if (vui_parameters->time_scale && vui_parameters->num_units_in_tick)
-        {
-            float64 FrameRate=(float64)vui_parameters->time_scale / vui_parameters->num_units_in_tick;
-            if (Interlacement.SeparatedFields)
-                FrameRate/=2; //The tick is per coded picture, so for separated fields it is the field rate; report the frame rate (e.g. 25 fps for 50 fields/s), as for AVC
-            Fill(Stream_Video, StreamPos_Last, Video_FrameRate, FrameRate);
-        }
 
         if (vui_parameters->sar_width && vui_parameters->sar_height)
         {
@@ -1669,7 +1677,7 @@ void File_Hevc::slice_segment_layer()
 }
 
 //---------------------------------------------------------------------------
-void File_Hevc::video_parameter_sets_creating_data(int8u vps_video_parameter_set_id, const vector<profile_tier_level_struct>& profile_tier_level_info_layers, int8u vps_max_sub_layers_minus1, const vector<int16u>& view_id_val)
+void File_Hevc::video_parameter_sets_creating_data(int8u vps_video_parameter_set_id, const vector<profile_tier_level_struct>& profile_tier_level_info_layers, int8u vps_max_sub_layers_minus1, const vector<int16u>& view_id_val, int32u vps_num_units_in_tick, int32u vps_time_scale)
 {
     //Creating Data
     if (vps_video_parameter_set_id >= video_parameter_sets.size())
@@ -1678,7 +1686,9 @@ void File_Hevc::video_parameter_sets_creating_data(int8u vps_video_parameter_set
     delete *Data_Item; *Data_Item = new video_parameter_set_struct(
         profile_tier_level_info_layers,
         vps_max_sub_layers_minus1,
-        view_id_val
+        view_id_val,
+        vps_num_units_in_tick,
+        vps_time_scale
     );
 
     //NextCode
@@ -1766,9 +1776,10 @@ void File_Hevc::video_parameter_set()
     for (int32u LayerSetPos=1; LayerSetPos<=vps_num_layer_sets_minus1; LayerSetPos++)
         for (int8u LayerId=0; LayerId<=vps_max_layer_id; LayerId++)
             Skip_SB(                                            "layer_id_included_flag");
+    int32u vps_num_units_in_tick=0, vps_time_scale=0;
     TEST_SB_SKIP(                                               "vps_timing_info_present_flag");
-        int32u vps_time_scale, vps_num_hrd_parameters;
-        Skip_S4(32,                                             "vps_num_units_in_tick");
+        int32u vps_num_hrd_parameters;
+        Get_S4 (32, vps_num_units_in_tick,                      "vps_num_units_in_tick");
         Get_S4 (32, vps_time_scale,                             "vps_time_scale");
         if (vps_time_scale==0)
         {
@@ -1903,10 +1914,7 @@ void File_Hevc::video_parameter_set()
         {
             view_id_val.resize(64, -1);
             for (int i=0; i<NumViews; i++)
-                if (ViewOrderIdx[i]!=(int8u)-1)
-                    Get_S2 (view_id_len, view_id_val[ViewOrderIdx[i]], "view_id_val");
-                else
-                    Trusted_IsNot("ViewOrderIdx");
+                Get_S2 (view_id_len, view_id_val[i],            "view_id_val"); //Per view, not per layer identifier
         }
         bool direct_dependency_flag[64][64];
         memset(direct_dependency_flag, 0, sizeof(direct_dependency_flag));
@@ -2062,7 +2070,7 @@ void File_Hevc::video_parameter_set()
 
     FILLING_BEGIN_PRECISE();
         //Creating Data
-        video_parameter_sets_creating_data(vps_video_parameter_set_id, ps, vps_max_sub_layers_minus1, view_id_val);
+        video_parameter_sets_creating_data(vps_video_parameter_set_id, ps, vps_max_sub_layers_minus1, view_id_val, vps_num_units_in_tick, vps_time_scale);
     FILLING_END();
 }
 
@@ -2162,7 +2170,7 @@ void File_Hevc::seq_parameter_set()
     }
     if (MultiLayerExtSpsFlag) {
         TEST_SB_SKIP(                                               "update_rep_format_flag");
-            Skip_S1(1,                                              "sps_rep_format_idx");
+            Skip_S1(8,                                              "sps_rep_format_idx");
         TEST_SB_END();
         chroma_format_idc=-1;
         pic_width_in_luma_samples=-1;
@@ -2282,8 +2290,8 @@ void File_Hevc::seq_parameter_set()
     TEST_SB_SKIP(                                               "vui_parameters_present_flag");
         vui_parameters(vui_parameters_Item, max_sub_layers_minus1);
     TEST_SB_END();
+    int8u sps_extension_4bits=0;
     TEST_SB_SKIP(                                               "sps_extension_flag");
-        int8u sps_extension_4bits;
         bool sps_range_extension_flag, sps_multilayer_extension_flag, sps_3d_extension_flag, sps_scc_extension_flag;
         Get_SB (sps_range_extension_flag,                       "sps_range_extension_flag");
         Get_SB (sps_multilayer_extension_flag,                  "sps_multilayer_extension_flag");
@@ -2359,7 +2367,8 @@ void File_Hevc::seq_parameter_set()
             RiskCalculationD++;
         }
     TEST_SB_END();
-    rbsp_trailing_bits();
+    if (!sps_extension_4bits) //Else the end of the content is not known, already counted as a risk
+        rbsp_trailing_bits();
     BS_End();
 
     FILLING_BEGIN_PRECISE();
@@ -3331,6 +3340,12 @@ void File_Hevc::sei_message_decoded_picture_hash(int32u payloadSize)
     //Parsing
     int8u hash_type;
     Get_B1 (hash_type,                                          "hash_type");
+    if (hash_type>2)
+    {
+        if (payloadSize>1)
+            Skip_XX(payloadSize-1,                              "unknown"); //The size per component is not known
+        return;
+    }
     for (int8u cIdx=0; cIdx<(chroma_format_idc?3:1); cIdx++)
         switch (hash_type)
         {
@@ -3343,9 +3358,7 @@ void File_Hevc::sei_message_decoded_picture_hash(int32u payloadSize)
             case 2 :    // checksum
                         Skip_XX( 4,                             "checksum");
                         break;
-            default :   //
-                        Skip_XX((Element_Size-1)/(chroma_format_idc?1:3), "unknown");
-                        break;
+            default :   ;
         }
 }
 
@@ -3398,7 +3411,7 @@ void File_Hevc::three_dimensional_reference_displays_info(int32u payloadSize)
     //Parsing
     BS_Begin();
     auto End=Data_BS_Remain()-payloadSize*8;
-    int32u prec_ref_display_width, num_ref_displays_minus1;
+    int32u prec_ref_display_width, prec_ref_viewing_dist=0, num_ref_displays_minus1;
     int32u left_view_id0, right_view_id0;
     bool ref_viewing_distance_flag;
     Get_UE (prec_ref_display_width,                             "prec_ref_display_width");
@@ -3409,7 +3422,13 @@ void File_Hevc::three_dimensional_reference_displays_info(int32u payloadSize)
         return;
     }
     TEST_SB_GET (ref_viewing_distance_flag,                     "ref_viewing_distance_flag");
-        Skip_UE(                                                "prec_ref_viewing_dist");
+        Get_UE (prec_ref_viewing_dist,                          "prec_ref_viewing_dist");
+        if (prec_ref_viewing_dist>=32)
+        {
+            Trusted_IsNot("prec_ref_viewing_dist out of range");
+            BS_End();
+            return;
+        }
     TEST_SB_END();
     Get_UE (num_ref_displays_minus1,                            "num_ref_displays_minus1");
     if (num_ref_displays_minus1>=32)
@@ -3469,14 +3488,14 @@ void File_Hevc::three_dimensional_reference_displays_info(int32u payloadSize)
             int8u refViewDistBits;
             if (exponent_ref_viewing_distance)
             {
-                auto temp=exponent_ref_viewing_distance+prec_ref_display_width;
+                auto temp=exponent_ref_viewing_distance+prec_ref_viewing_dist;
                 if (temp>31)
                     refViewDistBits=(int8u)(temp-31);
                 else
                     refViewDistBits=0;
             }
             else
-                refViewDistBits=(exponent_ref_viewing_distance==31);
+                refViewDistBits=(prec_ref_viewing_dist==31);
             if (refViewDistBits)
                 Skip_BS(refViewDistBits,                        "mantissa_ref_viewing_distance");
         }
@@ -4188,7 +4207,7 @@ void File_Hevc::hrd_parameters(bool commonInfPresentFlag, int8u maxNumSubLayersM
                 return;
             }
         }
-        if (nal_hrd_parameters_present_flag || vcl_hrd_parameters_present_flag)
+        if ((nal_hrd_parameters_present_flag || vcl_hrd_parameters_present_flag) && !xxL_Common) //Same content for all the sub-layers
             xxL_Common=new seq_parameter_set_struct::vui_parameters_struct::xxl_common(
                                                                                         sub_pic_hrd_params_present_flag,
                                                                                         du_cpb_removal_delay_increment_length_minus1,
@@ -4244,6 +4263,7 @@ void File_Hevc::sub_layer_hrd_parameters(seq_parameter_set_struct::vui_parameter
     }
 
     //Filling
+    delete hrd_parameters_Item_; //From the previous sub-layer
     hrd_parameters_Item_=new seq_parameter_set_struct::vui_parameters_struct::xxl(
                                                                                     SchedSel
                                                                                  );

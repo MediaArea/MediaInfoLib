@@ -53,6 +53,10 @@ File_Sdp::File_Sdp()
 //---------------------------------------------------------------------------
 File_Sdp::~File_Sdp()
 {
+    #if defined(MEDIAINFO_TELETEXT_YES)
+    for (streams::iterator Stream=Streams.begin(); Stream!=Streams.end(); ++Stream)
+        delete Stream->second.Parser; //Stream->second.Parser=NULL;
+    #endif //defined(MEDIAINFO_TELETEXT_YES)
 }
 
 //***************************************************************************
