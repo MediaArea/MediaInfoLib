@@ -83,6 +83,9 @@ File_Tga::File_Tga()
 {
     //Configuration
     ParserName="TGA";
+
+    //Temp
+    Version=0;
 }
 
 //***************************************************************************
@@ -224,6 +227,10 @@ void File_Tga::Read_Buffer_Continue()
     FILLING_END();
 
     Image_Color_Map_Data();
+
+    //File footer in the same buffer
+    if (Status[IsAccepted] && Element_Offset<Element_Size && File_Offset+Buffer_Size>=File_Size)
+        Tga_File_Footer();
 }
 
 //***************************************************************************
@@ -270,7 +277,11 @@ void File_Tga::Image_Color_Map_Data()
     }
     int64u ImageDataEnd;
     if (File_Size==(int64u)-1 || File_Size-Element_Offset<26)
+    {
         ImageDataEnd=Element_Size;
+        if (File_Size!=(int64u)-1)
+            Version=1; //No room for the version 2 footer
+    }
     else
         ImageDataEnd=File_Size-26; // 26 in case of version 2 footer
     Skip_XX(ImageDataEnd-Element_Offset,                        "Image Data");

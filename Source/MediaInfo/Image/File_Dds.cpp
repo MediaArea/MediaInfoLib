@@ -48,6 +48,13 @@ File_Dds::File_Dds()
         Trace_Layers_Update(8); //Stream
     #endif //MEDIAINFO_TRACE
     StreamSource=IsStream;
+
+    //Temp
+    Flags=0;
+    Width=0;
+    Height=0;
+    pfFlags=0;
+    FourCC=0;
 }
 
 //***************************************************************************
@@ -73,8 +80,6 @@ void File_Dds::Streams_Accept()
             Fill(StreamKind_Last, 0, "Height", Height);
         if (Flags&0x4) //DDSD_WIDTH
             Fill(StreamKind_Last, 0, "Width", Width);
-        if (Flags&0x800000) //DDSD_DEPTH
-            Fill(StreamKind_Last, 0, "BitDepth", Depth);
     }
     else
         Stream_Prepare(StreamKind_Last);
@@ -133,7 +138,7 @@ void File_Dds::FileHeader_Parse()
             Skip_L4(                                            "BBitMask");
             Skip_L4(                                            "ABitMask");
             if (pf_Size>32)
-                Skip_XX(Size-32,                                "(Data)");
+                Skip_XX(pf_Size-32,                             "(Data)");
         }
         else if (pf_Size>4)
             Skip_XX(pf_Size-4,                                  "");
