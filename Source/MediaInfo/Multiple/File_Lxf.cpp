@@ -279,15 +279,16 @@ void File_Lxf::Streams_Fill_PerStream(File__Analyze* Parser, stream_t Container_
 //---------------------------------------------------------------------------
 void File_Lxf::Streams_Finish()
 {
-    if (Videos.size()>1 && Videos[1].Parsers.size()==1) //TODO: better handling of fill/finish for Ancillary data
-    {
-        Finish(Videos[1].Parsers[0]);
-        Streams_Fill_PerStream(Videos[1].Parsers[0], Stream_Video, 1);
-    }
     if (Videos.size()>2 && Videos[2].Parsers.size()==1)
     {
         Finish(Videos[2].Parsers[0]);
         Merge(*Videos[2].Parsers[0], Stream_Video, 0, 0);
+        for (size_t Pos=0; Pos<Videos[2].Parsers[0]->Count_Get(Stream_Text); Pos++) //Only this parser provides text streams before the ancillary data is handled
+        {
+            if (Pos>=Count_Get(Stream_Text))
+                Stream_Prepare(Stream_Text); //Found after the filling
+            Merge(*Videos[2].Parsers[0], Stream_Text, Pos, Pos);
+        }
 
         Ztring LawRating=Videos[2].Parsers[0]->Retrieve(Stream_General, 0, General_LawRating);
         if (!LawRating.empty())
@@ -295,6 +296,11 @@ void File_Lxf::Streams_Finish()
         Ztring Title=Videos[2].Parsers[0]->Retrieve(Stream_General, 0, General_Title);
         if (!Title.empty() && Retrieve(Stream_General, 0, General_Title).empty())
             Fill(Stream_General, 0, General_Title, Title);
+    }
+    if (Videos.size()>1 && Videos[1].Parsers.size()==1) //TODO: better handling of fill/finish for Ancillary data
+    {
+        Finish(Videos[1].Parsers[0]);
+        Streams_Fill_PerStream(Videos[1].Parsers[0], Stream_Video, 1);
     }
 
     if (Audios_Header.TimeStamp_End!=(int64u)-1 && Audios_Header.TimeStamp_Begin!=(int64u)-1 && Audios_Header.Duration_First!=(int64u)-1)
