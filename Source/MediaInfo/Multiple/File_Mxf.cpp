@@ -18150,7 +18150,7 @@ void File_Mxf::IndexTableSegment_IndexStartPosition()
 
     FILLING_BEGIN();
         IndexStartPosition_Current=Data;
-        if (IndexStartPositionIndexDuration_Max<=IndexStartPosition_Current+IndexDuration_Current)
+        if (IndexStartPosition_Current!=(int64u)-1 && IndexStartPositionIndexDuration_Max<=IndexStartPosition_Current+IndexDuration_Current) //Unknown start position not used
             IndexStartPositionIndexDuration_Max=IndexStartPosition_Current+IndexDuration_Current;
         #if MEDIAINFO_SEEK
             IndexTables[IndexTables.size()-1].IndexStartPosition=Data;
@@ -18212,7 +18212,7 @@ void File_Mxf::IndexTableSegment_IndexDuration()
 
     FILLING_BEGIN();
         IndexDuration_Current=Data;
-        if (IndexStartPositionIndexDuration_Max<=IndexStartPosition_Current+IndexDuration_Current)
+        if (IndexStartPosition_Current!=(int64u)-1 && IndexStartPositionIndexDuration_Max<=IndexStartPosition_Current+IndexDuration_Current) //Unknown start position not used
             IndexStartPositionIndexDuration_Max=IndexStartPosition_Current+IndexDuration_Current;
         #if MEDIAINFO_SEEK
             IndexTables[IndexTables.size()-1].IndexDuration=Data;
