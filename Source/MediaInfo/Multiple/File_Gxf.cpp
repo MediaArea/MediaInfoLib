@@ -1618,7 +1618,7 @@ File__Analyze* File_Gxf::ChooseParser_ChannelGrouping(int8u TrackID)
 {
 #ifdef MEDIAINFO_SMPTEST0337_YES
     File_ChannelGrouping* Parser;
-    if (Audio_Count%2)
+    if (TrackID && Streams[TrackID-1].IsChannelGrouping && !Streams[TrackID-1].DisplayInfo && !Streams[TrackID-1].Parsers.empty()) //The previous track is the first half of a pair
     {
         if (!TrackID || !Streams[TrackID-1].IsChannelGrouping)
             return NULL; //Not a channel grouping
