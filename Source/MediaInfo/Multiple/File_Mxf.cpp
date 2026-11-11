@@ -16501,8 +16501,8 @@ void File_Mxf::SDTISystemMetadataPack() //SMPTE 385M + 326M
                     }
                     TimeCode_Dump.Attributes_Last+=" fp=\"0\" bgf=\"0\" bg=\"0\"";
                 }
-                auto FramesMax=FrameRate?(FrameRate-1):99;
-                TimeCode CurrentTC(Hours_Tens*10+Hours_Units, Minutes_Tens*10+Minutes_Units, Seconds_Tens*10+Seconds_Units, Frames_Tens*10+Frames_Units, FramesMax, TimeCode::DropFrame(DropFrame).FPS1001(CPR_1_1001));
+                auto FramesMax=FrameRate?(FrameRate/(RepetitionMaxCount+1)-1):99; //Above 30 frames per second, a time address is used for RepetitionMaxCount+1 frames
+                TimeCode CurrentTC(Hours_Tens*10+Hours_Units, Minutes_Tens*10+Minutes_Units, Seconds_Tens*10+Seconds_Units, Frames_Tens*10+Frames_Units, FramesMax, TimeCode::DropFrame(DropFrame).FPS1001(CPR_1_1001).Wrapped24Hours());
                 TimeCode_Dump.List+="    <tc v=\""+CurrentTC.ToString()+'\"';
                 if (FieldPhaseBgf0)
                     TimeCode_Dump.List+=" fp=\"1\"";
@@ -16510,8 +16510,24 @@ void File_Mxf::SDTISystemMetadataPack() //SMPTE 385M + 326M
                     TimeCode_Dump.List+=" bgf=\""+to_string((Bgf2FieldPhase<<2)|(Bgf1<<1)|(Bgf2FieldPhase<<0))+"\"";
                 if (BG)
                     TimeCode_Dump.List+=" bgf=\""+to_string(BG)+"\"";
-                if (TimeCode_Dump.LastTC.IsValid() && TimeCode_Dump.LastTC.GetFramesMax() && CurrentTC!=TimeCode_Dump.LastTC+1)
-                    TimeCode_Dump.List+=" nc=\"1\"";
+                if (TimeCode_Dump.LastTC.IsValid() && TimeCode_Dump.LastTC.GetFramesMax())
+                {
+                    bool IsNotContinuous;
+                    if (CurrentTC==TimeCode_Dump.LastTC)
+                        IsNotContinuous=TimeCode_Dump.Repeat_Count>=RepetitionMaxCount; //Too many frames with this time address
+                    else
+                        IsNotContinuous=(TimeCode_Dump.Repeat_Count<RepetitionMaxCount && !TimeCode_Dump.Repeat_IsPartial) //Not enough frames with the previous time address
+                                     || CurrentTC!=TimeCode_Dump.LastTC+1;
+                    if (IsNotContinuous)
+                        TimeCode_Dump.List+=" nc=\"1\"";
+                    if (CurrentTC!=TimeCode_Dump.LastTC || IsNotContinuous)
+                    {
+                        TimeCode_Dump.Repeat_Count=0;
+                        TimeCode_Dump.Repeat_IsPartial=IsNotContinuous;
+                    }
+                    else
+                        TimeCode_Dump.Repeat_Count++;
+                }
                 TimeCode_Dump.LastTC=CurrentTC;
                 TimeCode_Dump.List+="/>\n";
                 TimeCode_Dump.FrameCount++;
