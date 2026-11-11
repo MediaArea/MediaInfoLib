@@ -68,7 +68,6 @@ private :
     // Temp
     float64 FrameRate;
     int8u   Stream_Bits;
-    int8u   Padding;
     int32u  data_type;
     std::map<int64u, int64u> FrameSizes;
     int64s  GuardBand_Before;

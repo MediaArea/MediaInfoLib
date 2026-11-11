@@ -1039,10 +1039,10 @@ void File_SmpteSt0337::Header_Parse()
     }
 
     // Filling
-    Padding=(int8u)(Size%BitDepth);
+    int8u Padding=(int8u)(Size%BitDepth);
     if (Padding)
         Size+=BitDepth-Padding;
-    Header_Fill_Size(BitDepth*4/8+Size/8);
+    Header_Fill_Size(BitDepth*4/8+(Size+7)/8);
     Header_Fill_Code(0, "SMPTE ST 337");
 }
 
@@ -1113,6 +1113,16 @@ void File_SmpteSt0337::Data_Parse()
 
                 Element_Offset+=5;
             }
+            if (Element_Offset+3<=Element_Size) // Only in half of the AES3 stream
+            {
+                size_t Buffer_Pos=Buffer_Offset+(size_t)Element_Offset;
+
+                *(Info_Temp++)=(Buffer[Buffer_Pos+2]<<4  ) | (Buffer[Buffer_Pos+1]>>4  );
+                *(Info_Temp++)=(Buffer[Buffer_Pos+1]<<4  ) | (Buffer[Buffer_Pos+0]>>4  );
+                *(Info_Temp++)=(Buffer[Buffer_Pos+0]<<4  )                              ;
+
+                Element_Offset+=3;
+            }
         }
 
         if (Endianness=='L' && BitDepth==24 && Stream_Bits==16)
@@ -1129,6 +1139,15 @@ void File_SmpteSt0337::Data_Parse()
                 *(Info_Temp++)= Buffer[Buffer_Pos+4]                                    ;
 
                 Element_Offset+=6;
+            }
+            if (Element_Offset+3<=Element_Size) // Only in half of the AES3 stream
+            {
+                size_t Buffer_Pos=Buffer_Offset+(size_t)Element_Offset;
+
+                *(Info_Temp++)= Buffer[Buffer_Pos+2]                                    ;
+                *(Info_Temp++)= Buffer[Buffer_Pos+1]                                    ;
+
+                Element_Offset+=3;
             }
         }
 
@@ -1155,6 +1174,8 @@ void File_SmpteSt0337::Data_Parse()
                 *(Info_Temp++)= Buffer[Buffer_Pos+2]                                    ;
                 *(Info_Temp++)= Buffer[Buffer_Pos+1]                                    ;
                 *(Info_Temp++)=(Buffer[Buffer_Pos  ]&0xF0)                              ;
+
+                Element_Offset+=3;
             }
         }
 
@@ -1175,6 +1196,16 @@ void File_SmpteSt0337::Data_Parse()
 
                 Element_Offset+=6;
             }
+            if (Element_Offset+3<=Element_Size) // Only in half of the AES3 stream
+            {
+                size_t Buffer_Pos=Buffer_Offset+(size_t)Element_Offset;
+
+                *(Info_Temp++)= Buffer[Buffer_Pos+2]                                    ;
+                *(Info_Temp++)= Buffer[Buffer_Pos+1]                                    ;
+                *(Info_Temp++)= Buffer[Buffer_Pos  ]                                    ;
+
+                Element_Offset+=3;
+            }
         }
 
         if (Endianness=='L' && BitDepth==32 && Stream_Bits==16)
@@ -1192,6 +1223,15 @@ void File_SmpteSt0337::Data_Parse()
 
                 Element_Offset+=8;
             }
+            if (Element_Offset+4<=Element_Size) // Only in half of the AES3 stream
+            {
+                size_t Buffer_Pos=Buffer_Offset+(size_t)Element_Offset;
+
+                *(Info_Temp++)= Buffer[Buffer_Pos+3]                                    ;
+                *(Info_Temp++)= Buffer[Buffer_Pos+2]                                    ;
+
+                Element_Offset+=4;
+            }
         }
         if (Endianness=='L' && BitDepth==32 && Stream_Bits==20)
         {
@@ -1208,6 +1248,16 @@ void File_SmpteSt0337::Data_Parse()
                 *(Info_Temp++)=(Buffer[Buffer_Pos+6]<<4  ) | (Buffer[Buffer_Pos+5]>>4  );
 
                 Element_Offset+=8;
+            }
+            if (Element_Offset+4<=Element_Size) // Only in half of the AES3 stream
+            {
+                size_t Buffer_Pos=Buffer_Offset+(size_t)Element_Offset;
+
+                *(Info_Temp++)= Buffer[Buffer_Pos+3]                                    ;
+                *(Info_Temp++)= Buffer[Buffer_Pos+2]                                    ;
+                *(Info_Temp++)=(Buffer[Buffer_Pos+1]&0xF0)                              ;
+
+                Element_Offset+=4;
             }
         }
 
@@ -1227,6 +1277,16 @@ void File_SmpteSt0337::Data_Parse()
                 *(Info_Temp++)= Buffer[Buffer_Pos+5]                                    ;
 
                 Element_Offset+=8;
+            }
+            if (Element_Offset+4<=Element_Size) // Only in half of the AES3 stream
+            {
+                size_t Buffer_Pos=Buffer_Offset+(size_t)Element_Offset;
+
+                *(Info_Temp++)= Buffer[Buffer_Pos+3]                                    ;
+                *(Info_Temp++)= Buffer[Buffer_Pos+2]                                    ;
+                *(Info_Temp++)= Buffer[Buffer_Pos+1]                                    ;
+
+                Element_Offset+=4;
             }
         }
 
@@ -1750,7 +1810,9 @@ void File_SmpteSt0337::Data_Parse()
         }
         else            
         {
-            int64u Element_Size_Temp=Element_Size-Padding/8;
+            int64u Element_Size_Temp=Stream_Bits/2+(length_code+7)/8; //Preamble and payload, without the padding up to the end of the last sample
+            if (Element_Size_Temp>Element_Size)
+                Element_Size_Temp=Element_Size;
             if (Element_Offset<Element_Size_Temp)
                 Open_Buffer_Continue(Parser, Buffer+Buffer_Offset+(size_t)Element_Offset, (size_t)(Element_Size_Temp-Element_Offset));
         }
