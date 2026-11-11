@@ -1132,7 +1132,8 @@ void File_Ac3::Streams_Fill()
             Fill(Stream_Audio, 0, Audio_SamplingRate, AC3_HD_SamplingRate(HD_SamplingRate2));
             if (MediaInfoLib::Config.LegacyStreamDisplay_Get() && HD_SamplingRate1!=HD_SamplingRate2)
                 Fill(Stream_Audio, 0, Audio_SamplingRate, AC3_HD_SamplingRate(HD_SamplingRate1));
-            Fill(Stream_Audio, 0, Audio_Channel_s_, AC3_MLP_Channels[HD_Channels1]);
+            if (AC3_MLP_Channels[HD_Channels1]) //Not for a reserved channel assignment
+                Fill(Stream_Audio, 0, Audio_Channel_s_, AC3_MLP_Channels[HD_Channels1]);
             Fill(Stream_Audio, 0, Audio_BitDepth, AC3_MLP_Resolution[HD_Resolution2]);
             if (MediaInfoLib::Config.LegacyStreamDisplay_Get() && HD_Resolution1!=HD_Resolution2)
                 Fill(Stream_Audio, 0, Audio_BitDepth, AC3_MLP_Resolution[HD_Resolution1]);
