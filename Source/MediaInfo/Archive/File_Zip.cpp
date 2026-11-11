@@ -287,10 +287,6 @@ bool File_Zip::local_file_header()
     }
     Element_End0();
 
-    FILLING_BEGIN();
-        Accept("Zip");
-        Fill(Stream_General, 0, General_Format, "ZIP");
-    FILLING_END();
     return true;
 }
 
