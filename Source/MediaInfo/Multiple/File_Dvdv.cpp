@@ -702,7 +702,8 @@ void File_Dvdv::Video()
             Fill(Stream_Video, StreamPos_Last, Video_Width, IFO_Width[Resolution]);
             Fill(Stream_Video, StreamPos_Last, Video_Height, IFO_Height[Standard][Resolution]);
             Fill(Stream_Video, StreamPos_Last, Video_DisplayAspectRatio, IFO_AspectRatio[AspectRatio], 3, true);
-            Fill(Stream_Video, StreamPos_Last, Video_FrameRate, IFO_FrameRate[Standard]);
+            if (Standard<2)
+                Fill(Stream_Video, StreamPos_Last, Video_FrameRate, IFO_FrameRate[Standard]);
             Fill(Stream_Video, StreamPos_Last, Video_BitRate_Mode, IFO_BitRate_Mode[BitRate_Mode]);
             Fill(Stream_Video, StreamPos_Last, General_ID, __T("224"));
             Fill(Stream_Video, StreamPos_Last, General_ID_String, __T("224 (0xE0)"), Unlimited, true);
