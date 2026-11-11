@@ -8099,6 +8099,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
                         }
                     #endif //MEDIAINFO_DEMUX
                     Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
+                    Streams[moov_trak_tkhd_TrackID].IsHevc=Streams[moov_trak_tkhd_TrackID].Parsers.size()==1;
                     Streams[moov_trak_tkhd_TrackID].MayHaveCaption=true;
                 }
             #endif
@@ -9707,6 +9708,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_glbl()
         {
             delete Sub; //Sub = nullptr;
             Streams[moov_trak_tkhd_TrackID].Parsers.erase(Streams[moov_trak_tkhd_TrackID].Parsers.begin()+Pos);
+            Streams[moov_trak_tkhd_TrackID].IsHevc=false;
             Pos--;
         }
     }
@@ -9739,6 +9741,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_hvcC()
         Parser->MustParse_VPS_SPS_PPS=true;
         Parser->MustSynchronize=false;
         Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
+        Streams[moov_trak_tkhd_TrackID].IsHevc=true;
         mdat_MustParse=true; //Data is in MDAT
 
         //Demux
@@ -9804,7 +9807,18 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_lhvC()
 
     //Parsing
     #ifdef MEDIAINFO_HEVC_YES
-        File_Hevc* Parser=(File_Hevc*)Streams[moov_trak_tkhd_TrackID].Parsers[0];
+        auto& Stream_Temp=Streams[moov_trak_tkhd_TrackID];
+        if (!Stream_Temp.IsHevc)
+        {
+            if (!Stream_Temp.Parsers.empty())
+            {
+                Skip_XX(Element_Size,                           "Data not analyzed");
+                return; //The parser of the track is for another format
+            }
+            Stream_Temp.Parsers.push_back(new File_Hevc); //No HEVC parser from the sample entry or hvcC, e.g. lhv1 or lhe1 sample entry
+            Stream_Temp.IsHevc=true;
+        }
+        File_Hevc* Parser=(File_Hevc*)Stream_Temp.Parsers[0];
         Parser->FrameIsAlwaysComplete=true;
         #if MEDIAINFO_DEMUX
             Element_Code=moov_trak_tkhd_TrackID;
@@ -9904,7 +9918,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_mhaC()
         {
             for (size_t i=0; i<Streams[moov_trak_tkhd_TrackID].Parsers.size(); i++)
                 delete Streams[moov_trak_tkhd_TrackID].Parsers[i];
-            Streams[moov_trak_tkhd_TrackID].Parsers.clear();
+            Streams[moov_trak_tkhd_TrackID].Parsers_Clear();
         }
 
         File_Mpegh3da* Parser=new File_Mpegh3da;
