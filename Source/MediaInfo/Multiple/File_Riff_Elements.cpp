@@ -4637,10 +4637,13 @@ void File_Riff::Parser_Pcm(stream& StreamItem, int16u Channels, int16u BitsPerSa
         else if (Kind!=Kind_Aiff && BitsPerSample>=16 && BitsPerSample<=32)
             Parser->Endianness='L'; // WAV PCM is little-endian by default, AIFF-C PCM has the endianness of its compression type
         int16u StoredBitsPerSample=BitsPerSample;
-        if (Kind==Kind_Aiff)
-            StoredBitsPerSample=(int16u)((BitsPerSample+7)/8*8); //AIFF samples are stored in whole bytes
-        else if (Channels && BlockAlign%Channels==0 && BlockAlign/Channels<=4 && BlockAlign/Channels*8>BitsPerSample)
-            StoredBitsPerSample=(int16u)(BlockAlign/Channels*8); //WAV samples are stored in the block of each sampling instant
+        if (BitsPerSample%8)
+        {
+            //Samples stored in whole bytes, in WAV only if the block alignment is the one of these bytes (else they may be packed)
+            const int16u BitsPerSample_WholeBytes=(int16u)((BitsPerSample+7)/8*8);
+            if (Kind==Kind_Aiff || BlockAlign==Channels*BitsPerSample_WholeBytes/8)
+                StoredBitsPerSample=BitsPerSample_WholeBytes;
+        }
         Parser->BitDepth=(int8u)StoredBitsPerSample;
         Parser->Channels=(int8u)Channels;
         Parser->SamplingRate=SamplesPerSec;
