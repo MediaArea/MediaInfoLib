@@ -2468,6 +2468,11 @@ void File_Dts::Extensions()
     //Parsing
     for (auto Size : Asset_Sizes)
     {
+        if (Size>Element_Size-Element_Offset)
+        {
+            Trusted_IsNot("Size is wrong");
+            break;
+        }
         if (Element_Code)
             Element_Begin1("Asset");
         if (Size<4)
