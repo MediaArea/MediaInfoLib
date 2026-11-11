@@ -2466,8 +2466,9 @@ void File_Dts::Core()
 void File_Dts::Extensions()
 {
     //Parsing
-    for (auto Size : Asset_Sizes)
+    for (size_t Asset_Pos=0; Asset_Pos<Asset_Sizes.size(); Asset_Pos++)
     {
+        const auto Size=Asset_Sizes[Asset_Pos];
         if (Size>Element_Size-Element_Offset)
         {
             Trusted_IsNot("Size is wrong");
@@ -2475,9 +2476,9 @@ void File_Dts::Extensions()
         }
         if (Element_Code)
             Element_Begin1("Asset");
-        if (Size<4)
+        if (Size<4 || Asset_Pos) //The stream is described by its first asset
         {
-            Skip_XX(Size,                                       "?");
+            Skip_XX(Size,                                       Asset_Pos?"(Not parsed)":"?");
             if (Element_Code)
                 Element_End0();
             continue;
