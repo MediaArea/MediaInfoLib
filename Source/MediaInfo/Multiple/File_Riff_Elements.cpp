@@ -4236,7 +4236,7 @@ void File_Riff::WAVE_data()
         {
             float64 BitRate_New=((float64)StreamSize)*8*1000/Duration;
             if (BitRate_New<BitRate*0.95 || BitRate_New>BitRate*1.05)
-                Fill(Stream_Audio, StreamPos_Last, Audio_BitRate, BitRate_New, 10, true); //Correcting the bitrate, it was false in the header
+                Fill(Stream_Audio, StreamPos_Last, Audio_BitRate, BitRate_New, 0, true); //Correcting the bitrate, it was false in the header
         }
         else if (BitRate)
         {
