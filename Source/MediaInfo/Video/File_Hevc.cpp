@@ -4207,7 +4207,7 @@ void File_Hevc::hrd_parameters(bool commonInfPresentFlag, int8u maxNumSubLayersM
                 return;
             }
         }
-        if (nal_hrd_parameters_present_flag || vcl_hrd_parameters_present_flag)
+        if ((nal_hrd_parameters_present_flag || vcl_hrd_parameters_present_flag) && !xxL_Common) //Same content for all the sub-layers
             xxL_Common=new seq_parameter_set_struct::vui_parameters_struct::xxl_common(
                                                                                         sub_pic_hrd_params_present_flag,
                                                                                         du_cpb_removal_delay_increment_length_minus1,
@@ -4263,6 +4263,7 @@ void File_Hevc::sub_layer_hrd_parameters(seq_parameter_set_struct::vui_parameter
     }
 
     //Filling
+    delete hrd_parameters_Item_; //From the previous sub-layer
     hrd_parameters_Item_=new seq_parameter_set_struct::vui_parameters_struct::xxl(
                                                                                     SchedSel
                                                                                  );
