@@ -243,6 +243,9 @@ std::string ExtensibleWave_ChannelMask_ChannelLayout(int32u ChannelMask)
 #if defined(MEDIAINFO_ID3V2_YES)
     #include "MediaInfo/Tag/File_Id3v2.h"
 #endif
+#if defined(MEDIAINFO_XMP_YES)
+    #include "MediaInfo/Tag/File_Xmp.h"
+#endif
 #if defined(MEDIAINFO_GXF_YES)
     #if defined(MEDIAINFO_CDP_YES)
         #include "MediaInfo/Text/File_Cdp.h"
@@ -3619,8 +3622,16 @@ void File_Riff::WAVE__pmx()
     Element_Name("XMP");
 
     //Parsing
-    Ztring XML_Data;
-    Get_UTF8(Element_Size, XML_Data,                            "XML data");
+    #if defined(MEDIAINFO_XMP_YES)
+        File_Xmp MI;
+        MI.NoTrace=true; //The content is in the trace as text
+        Open_Buffer_Init(&MI);
+        Open_Buffer_Continue(&MI, Buffer+Buffer_Offset, (size_t)Element_Size);
+        Open_Buffer_Finalize(&MI);
+        Element_Show(); //Else the element is removed from the trace, the sub-parser having no trace
+        Merge(MI, Stream_General, 0, 0, false);
+    #endif //defined(MEDIAINFO_XMP_YES)
+    Skip_UTF8(Element_Size,                                     "XML data");
 }
 
 //---------------------------------------------------------------------------
