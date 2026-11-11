@@ -633,7 +633,7 @@ void File_Dpx::GenericSectionHeader_Cineon()
         {
             Fill(Stream_General, 0, General_Encoded_Date, DPX_DateTime2Iso(CreationDate+':'+CreationTime));
             Fill(StreamKind_Last, StreamPos_Last, "Encoded_Date", DPX_DateTime2Iso(CreationDate+':'+CreationTime));
-            Fill(StreamKind_Last, StreamPos_Last, "Format", "Cineom");
+            Fill(StreamKind_Last, StreamPos_Last, "Format", "Cineon");
             if (Version.size()>2 && Version[0]=='V' && Version[1]>='0' && Version[2]<='9')
                 Version.insert(1, "ersion ");
             Fill(StreamKind_Last, StreamPos_Last, "Format_Version", Version);
