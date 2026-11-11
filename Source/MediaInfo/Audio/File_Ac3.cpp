@@ -302,12 +302,20 @@ Ztring AC3_chanmap_ChannelPositions (int16u chanmap)
                             else
                                 Back=__T(" L C R");
                             break;
+                case  8 :   More+=__T(", s: T"); break;
+                case  9 :   More+=__T(", sd: L R"); break;
+                case 10 :   More+=__T(", w: L R"); break;
+                case 11 :   More+=__T(", vh: L R"); break;
+                case 12 :   More+=__T(", vh: C"); break;
+                case 13 :   More+=__T(", ts: L R"); break;
                 case 15 :   More+=__T(", LFE");
                             break;
                 default: ;
             }
         }
     }
+    if (chanmap&(1<<1))
+        More+=__T(", LFE2");
 
     Ztring ToReturn;
     if (!Front.empty())
@@ -327,6 +335,8 @@ Ztring AC3_chanmap_ChannelPositions (int16u chanmap)
         ToReturn+=__T("Back:")+Back;
     }
     ToReturn+=More;
+    if (ToReturn.find(__T(", "))==0)
+        ToReturn.erase(0, 2); //No front, side or back channel
 
     return ToReturn;
 }
