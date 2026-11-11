@@ -3899,25 +3899,26 @@ void File_Ac3::Core_Frame()
             bsid_Max=bsid;
 
         //Specific to first frame
-        if (!frmsizplus1_Max[substreamid_Independant_Current][strmtyp+substreamid])
+        const int8u substream_Pos=strmtyp?(1+substreamid):0; //The independent substream then its dependent substreams
+        if (!frmsizplus1_Max[substreamid_Independant_Current][substream_Pos])
         {
-            frmsizplus1_Max[substreamid_Independant_Current][strmtyp+substreamid]=((bsid<=0x09)?(frmsizecod/2<19?AC3_BitRate[frmsizecod/2]*4:0):((frmsiz+1)*2));
-            acmod_Max[substreamid_Independant_Current][strmtyp+substreamid]=acmod;
-            lfeon_Max[substreamid_Independant_Current][strmtyp+substreamid]=lfeon;
-            bsmod_Max[substreamid_Independant_Current][strmtyp+substreamid]=bsmod;
-            cmixlev_Max[substreamid_Independant_Current][strmtyp+substreamid]=cmixlev;
-            surmixlev_Max[substreamid_Independant_Current][strmtyp+substreamid]=surmixlev;
-            mixlevel_Max[substreamid_Independant_Current][strmtyp+substreamid]=mixlevel;
-            roomtyp_Max[substreamid_Independant_Current][strmtyp+substreamid]=roomtyp;
-            dmixmod_Max[substreamid_Independant_Current][strmtyp+substreamid]=dmixmod;
-            ltrtcmixlev_Max[substreamid_Independant_Current][strmtyp+substreamid]=ltrtcmixlev;
-            ltrtsurmixlev_Max[substreamid_Independant_Current][strmtyp+substreamid]=ltrtsurmixlev;
-            lorocmixlev_Max[substreamid_Independant_Current][strmtyp+substreamid]=lorocmixlev;
-            lorosurmixlev_Max[substreamid_Independant_Current][strmtyp+substreamid]=lorosurmixlev;
-            adconvtyp_Max[substreamid_Independant_Current][strmtyp+substreamid]=adconvtyp;
-            dsurmod_Max[substreamid_Independant_Current][strmtyp+substreamid]=dsurmod;
-            chanmape_Max[substreamid_Independant_Current][strmtyp+substreamid]=chanmape;
-            chanmap_Max[substreamid_Independant_Current][strmtyp+substreamid]=chanmap;
+            frmsizplus1_Max[substreamid_Independant_Current][substream_Pos]=((bsid<=0x09)?(frmsizecod/2<19?AC3_BitRate[frmsizecod/2]*4:0):((frmsiz+1)*2));
+            acmod_Max[substreamid_Independant_Current][substream_Pos]=acmod;
+            lfeon_Max[substreamid_Independant_Current][substream_Pos]=lfeon;
+            bsmod_Max[substreamid_Independant_Current][substream_Pos]=bsmod;
+            cmixlev_Max[substreamid_Independant_Current][substream_Pos]=cmixlev;
+            surmixlev_Max[substreamid_Independant_Current][substream_Pos]=surmixlev;
+            mixlevel_Max[substreamid_Independant_Current][substream_Pos]=mixlevel;
+            roomtyp_Max[substreamid_Independant_Current][substream_Pos]=roomtyp;
+            dmixmod_Max[substreamid_Independant_Current][substream_Pos]=dmixmod;
+            ltrtcmixlev_Max[substreamid_Independant_Current][substream_Pos]=ltrtcmixlev;
+            ltrtsurmixlev_Max[substreamid_Independant_Current][substream_Pos]=ltrtsurmixlev;
+            lorocmixlev_Max[substreamid_Independant_Current][substream_Pos]=lorocmixlev;
+            lorosurmixlev_Max[substreamid_Independant_Current][substream_Pos]=lorosurmixlev;
+            adconvtyp_Max[substreamid_Independant_Current][substream_Pos]=adconvtyp;
+            dsurmod_Max[substreamid_Independant_Current][substream_Pos]=dsurmod;
+            chanmape_Max[substreamid_Independant_Current][substream_Pos]=chanmape;
+            chanmap_Max[substreamid_Independant_Current][substream_Pos]=chanmap;
 
             FirstFrame_Dolby.dialnorm=dialnorm;
             if (compre)
