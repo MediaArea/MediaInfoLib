@@ -1930,6 +1930,7 @@ void File_Flv::Rm()
     //Filling
     File__Analyze::Finish(&MI);
     Merge(MI, Stream_General, 0, 0);
+    Fill(Stream_General, 0, General_Format, "Flash Video", Unlimited, true, true); //Not the format of the tags
 }
 
 } //NameSpace
