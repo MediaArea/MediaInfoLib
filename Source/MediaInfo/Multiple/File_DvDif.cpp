@@ -668,7 +668,7 @@ void File_DvDif::Streams_Finish()
         if (Date[0]) {
             string Recorded_Date(Date.data(), sizeof(Date));
             const auto Time = DvDif_Time2String(Recorded_Date_Time, DSF);
-            if (Time[0]) {
+            if (Recorded_Date_Time && Time[0]) {
                 Recorded_Date += ' ';
                 Recorded_Date.append(Time.data(), Time[8] ? sizeof(Time) : 8);
             }
