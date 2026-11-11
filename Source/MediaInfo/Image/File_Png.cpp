@@ -732,10 +732,6 @@ void File_Png::gdAT()
     Open_Buffer_Continue(&MI);
     Open_Buffer_Finalize(&MI);
     Merge(MI, Stream_Image, 0, StreamPos_Last);
-    if (MI.GainMap_metadata_ISO) {
-        GainMap_metadata_ISO.reset(new GainMap_metadata());
-        *static_cast<GainMap_metadata*>(GainMap_metadata_ISO.get()) = *static_cast<GainMap_metadata*>(MI.GainMap_metadata_ISO.get());
-    }
 }
 
 //---------------------------------------------------------------------------
@@ -744,8 +740,6 @@ void File_Png::gmAP()
     //Parsing
     auto MI = new File_GainMap;
     GainMap_Parser.reset(MI);
-    GainMap_metadata_ISO.reset(new GainMap_metadata());
-    MI->output = static_cast<GainMap_metadata*>(GainMap_metadata_ISO.get());
     Open_Buffer_Init(MI);
     Open_Buffer_Continue(MI);
     Open_Buffer_Finalize(MI);

@@ -75,15 +75,17 @@ void File_GainMap::Data_Parse()
         return;
     }
 
-    int16u minimum_version, writer_version;
+    int16u minimum_version;
     Get_B2(minimum_version,                                     "minimum_version");
     if (minimum_version != 0) {
         Reject();
         return;
     }
-    Get_B2(writer_version,                                      "writer_version");
+    Skip_B2(                                                    "writer_version");
 
     Accept();
+    Stream_Prepare(StreamKind);
+    Fill(StreamKind, 0, "GainMap_Format", "ISO 21496-1");
 
     if (Element_Offset + 57 > Buffer_Size) {
         Finish();
@@ -125,7 +127,6 @@ void File_GainMap::Data_Parse()
     }
 
     FILLING_BEGIN();
-        Stream_Prepare(StreamKind);
         Fill(StreamKind, 0, "GainMap_BaseHeadroom", GainMap_Value(base_hdr_headroom_numerator, base_hdr_headroom_denominator));
         Fill(StreamKind, 0, "GainMap_AlternateHeadroom", GainMap_Value(alternate_hdr_headroom_numerator, alternate_hdr_headroom_denominator));
         Fill(StreamKind, 0, "GainMap_Min", GainMap_Values(gain_map_min_numerator, gain_map_min_denominator, channel_count));
@@ -135,22 +136,6 @@ void File_GainMap::Data_Parse()
         Fill(StreamKind, 0, "GainMap_AlternateOffset", GainMap_Values(alternate_offset_n, alternate_offset_denominator, channel_count));
         Fill(StreamKind, 0, "GainMap_UseBaseColorSpace", use_base_colour_space ? "Yes" : "No");
     FILLING_END();
-
-    if (output) {
-        output->minimum_version = minimum_version;
-        output->writer_version = writer_version;
-        output->is_multichannel = is_multichannel;
-        output->use_base_colour_space = use_base_colour_space;
-        if (base_hdr_headroom_denominator) output->base_hdr_headroom = static_cast<float32>(base_hdr_headroom_numerator) / base_hdr_headroom_denominator;
-        if (alternate_hdr_headroom_denominator) output->alternate_hdr_headroom = static_cast<float32>(alternate_hdr_headroom_numerator) / alternate_hdr_headroom_denominator;
-        for (int ch = 0; ch < channel_count; ++ch) {
-            if (gain_map_min_denominator[ch]) output->gain_map_min[ch] = static_cast<float32>(gain_map_min_numerator[ch]) / gain_map_min_denominator[ch];
-            if (gain_map_max_denominator[ch]) output->gain_map_max[ch] = static_cast<float32>(gain_map_max_numerator[ch]) / gain_map_max_denominator[ch];
-            if (gamma_denominator[ch]) output->gamma[ch] = static_cast<float32>(gamma_numerator[ch]) / gamma_denominator[ch];
-            if (base_offset_denominator[ch]) output->base_offset[ch] = static_cast<float32>(base_offset_n[ch]) / base_offset_denominator[ch];
-            if (alternate_offset_denominator[ch]) output->alternate_offset[ch] = static_cast<float32>(alternate_offset_n[ch]) / alternate_offset_denominator[ch];
-        }
-    }
 
     Finish();
 }

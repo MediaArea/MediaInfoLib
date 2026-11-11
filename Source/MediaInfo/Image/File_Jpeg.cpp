@@ -391,6 +391,109 @@ void File_Jpeg::Streams_Accept_PerImage(const seek_item& Item)
 }
 
 //---------------------------------------------------------------------------
+void File_Jpeg::GainMap_Merge(size_t StreamPos)
+{
+    // Sources in order of precedence: ISO 21496-1, Adobe XMP, Apple XMP
+    vector<pair<File__Analyze*, size_t>> Sources;
+    if (GainMap_Parser) {
+        for (size_t i = 0; i < GainMap_Parser->Count_Get(StreamKind); i++)
+            Sources.emplace_back(GainMap_Parser.get(), i);
+    }
+    if (GainMap_Xmp_Parser) {
+        for (size_t i = 0; i < GainMap_Xmp_Parser->Count_Get(StreamKind); i++)
+            Sources.emplace_back(GainMap_Xmp_Parser.get(), i);
+    }
+    if (Sources.empty()) {
+        GainMap_Parser.reset();
+        GainMap_Xmp_Parser.reset();
+        return;
+    }
+
+    // Values from the first source having values, the other ones must have the same values
+    static const char* const Fields[] = {
+        "GainMap_BaseHeadroom",
+        "GainMap_AlternateHeadroom",
+        "GainMap_Min",
+        "GainMap_Max",
+        "GainMap_Gamma",
+        "GainMap_BaseOffset",
+        "GainMap_AlternateOffset",
+        "GainMap_UseBaseColorSpace",
+    };
+    auto HasValues = [&](const pair<File__Analyze*, size_t>& Source) {
+        for (const auto Field : Fields)
+            if (!Source.first->Retrieve_Const(StreamKind, Source.second, Field).empty())
+                return true;
+        return false;
+    };
+    auto ToValues = [](const Ztring& Value) {
+        ZtringList List;
+        List.Separator_Set(0, __T(" / "));
+        List.Write(Value);
+        vector<float64> Values;
+        for (const auto& Item : List)
+            Values.push_back(Item.To_float64());
+        return Values;
+    };
+    auto IsSame = [&](const Ztring& Value1, const Ztring& Value2) {
+        if (Value1 == Value2)
+            return true;
+        auto Values1 = ToValues(Value1);
+        auto Values2 = ToValues(Value2);
+        if (Values1.size() == 1 && Values2.size() > 1)
+            Values1.resize(Values2.size(), Values1[0]);
+        if (Values2.size() == 1 && Values1.size() > 1)
+            Values2.resize(Values1.size(), Values2[0]);
+        if (Values1.size() != Values2.size())
+            return false;
+        for (size_t i = 0; i < Values1.size(); i++) {
+            const auto Difference = fabs(Values1[i] - Values2[i]);
+            const auto Tolerance = max(0.0001, 0.001 * max(fabs(Values1[i]), fabs(Values2[i]))); // Rounding of decimal and rational values
+            if (Difference > Tolerance)
+                return false;
+        }
+        return true;
+    };
+
+    size_t Reference = (size_t)-1;
+    for (size_t i = 0; i < Sources.size(); i++) {
+        if (HasValues(Sources[i])) {
+            Reference = i;
+            break;
+        }
+    }
+    if (Reference != (size_t)-1) {
+        const auto& Source = Sources[Reference];
+        Merge(*Source.first, StreamKind, Source.second, StreamPos);
+        const auto& Reference_Format = Source.first->Retrieve_Const(StreamKind, Source.second, "GainMap_Format");
+        for (size_t i = 0; i < Sources.size(); i++) {
+            if (i == Reference)
+                continue;
+            const auto& Other = Sources[i];
+            const auto& Other_Format = Other.first->Retrieve_Const(StreamKind, Other.second, "GainMap_Format");
+            for (const auto Field : Fields) {
+                const auto& Value = Retrieve_Const(StreamKind, StreamPos, Field);
+                const auto& Other_Value = Other.first->Retrieve_Const(StreamKind, Other.second, Field);
+                if (Value.empty() || Other_Value.empty() || IsSame(Value, Other_Value))
+                    continue;
+                const auto Name = string(Field + 8); // Without "GainMap_"
+                Fill_Conformance(("Crosscheck GainMap " + Name).c_str(), Other_Format.To_UTF8() + " gain map " + Name + ' ' + Other_Value.To_UTF8() + " does not match " + Reference_Format.To_UTF8() + " gain map " + Name + ' ' + Value.To_UTF8(), {}, Conformance_Error, StreamKind, StreamPos);
+            }
+        }
+    }
+
+    // List of formats
+    bool IsFirst = true;
+    for (const auto& Source : Sources) {
+        Fill(StreamKind, StreamPos, "GainMap_Format", Source.first->Retrieve_Const(StreamKind, Source.second, "GainMap_Format"), IsFirst);
+        IsFirst = false;
+    }
+
+    GainMap_Parser.reset();
+    GainMap_Xmp_Parser.reset();
+}
+
+//---------------------------------------------------------------------------
 void File_Jpeg::Streams_Finish()
 {
     for (auto& Item : Seek_Items_WithoutFirstImageOffset) {
@@ -452,11 +555,7 @@ void File_Jpeg::Streams_Finish_PerImage()
         ICC_Parser.reset();
     }
     #endif
-    if (GainMap_Parser) {
-        if (GainMap_Parser->Count_Get(StreamKind)) // Only version in the primary image
-            Merge(*GainMap_Parser, StreamKind, 0, CurrentMainStream);
-        GainMap_Parser.reset();
-    }
+    GainMap_Merge(CurrentMainStream);
     for (const auto& Item : XmpExt_List)
     {
         if (Item.second.Parser) {
@@ -1749,6 +1848,16 @@ void File_Jpeg::APP1_EXIF()
     Open_Buffer_Init(MI);
     Open_Buffer_Continue(MI);
     Open_Buffer_Finalize(MI);
+    if (MI->Apple_HDR_Present && !GainMap_Apple_Exif_Present) {
+        // Headroom in stops from Apple maker notes (https://developer.apple.com/documentation/appkit/applying-apple-hdr-effect-to-your-photos)
+        const auto Headroom = MI->Apple_HDRHeadroom;
+        const auto Gain = MI->Apple_HDRGain;
+        if (Headroom < 1)
+            GainMap_Apple_Exif_Headroom = Gain <= 0.01 ? (-20 * Gain + 1.8) : (-0.101 * Gain + 1.601);
+        else
+            GainMap_Apple_Exif_Headroom = Gain <= 0.01 ? (-70 * Gain + 3) : (-0.303 * Gain + 2.303);
+        GainMap_Apple_Exif_Present = true;
+    }
     Exif_Parser.reset(MI);
     #else
     Skip_UTF8(Element_Size - Element_Offset,                    "EXIF Tags");
@@ -1764,14 +1873,17 @@ void File_Jpeg::APP1_XMP()
 
     //Parsing
     #if defined(MEDIAINFO_XMP_YES)
-    File_Xmp MI;
+    std::unique_ptr<File_Xmp> MI_Pointer(new File_Xmp);
+    auto& MI = *MI_Pointer;
     gc_items GContainerItems;
     MI.GContainerItems = &GContainerItems;
-    GainMap_metadata_Adobe.reset(new gm_data());
-    MI.GainMapData = static_cast<gm_data*>(GainMap_metadata_Adobe.get());
+    MI.GainMap_StreamKind = StreamKind;
+    MI.GainMap_Apple_Exif_Present = GainMap_Apple_Exif_Present;
+    MI.GainMap_Apple_Exif_Headroom = GainMap_Apple_Exif_Headroom;
     Open_Buffer_Init(&MI);
     Open_Buffer_Continue(&MI);
     Open_Buffer_Finalize(&MI);
+    MI.GContainerItems = nullptr;
     if (!GContainerItems.empty()) {
         int64u ImgOffset = 0;
         bool IsNotFirst = false;
@@ -1792,6 +1904,8 @@ void File_Jpeg::APP1_XMP()
         }
     }
     Merge(MI, Stream_General, 0, 0, false);
+    if (MI.Count_Get(StreamKind))
+        GainMap_Xmp_Parser.reset(MI_Pointer.release()); // Gain map metadata, merged in the image when it is finished
     #else
         Skip_UTF8(Element_Size - Element_Offset,                "XMP metadata");
     #endif
@@ -1942,8 +2056,6 @@ void File_Jpeg::APP2_ISO21496_1()
     //Parsing
     auto MI = new File_GainMap;
     GainMap_Parser.reset(MI);
-    GainMap_metadata_ISO.reset(new GainMap_metadata());
-    MI->output = static_cast<GainMap_metadata*>(GainMap_metadata_ISO.get());
     MI->StreamKind = StreamKind;
     Open_Buffer_Init(MI);
     Open_Buffer_Continue(MI);

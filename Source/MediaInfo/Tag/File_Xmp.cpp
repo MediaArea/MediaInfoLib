@@ -24,6 +24,7 @@
 #include "MediaInfo/Tag/File_Xmp.h"
 #include "ThirdParty/tfsxml/tfsxml.h"
 #include "ThirdParty/base64/base64.h"
+#include <cmath>
 using namespace std;
 //---------------------------------------------------------------------------
 
@@ -125,9 +126,22 @@ namespace MediaInfoLib
             XML_ELEMENT_LIST_END \
             XML_ELEMENT_END \
 
-#define XML_ELEMENT_LIST_NAMESPACE_COUNT(NAMESPACE, NAME, LISTTYPE) \
+#define XML_ELEMENT_LIST_OR_VALUE_NAMESPACE_COUNT(NAMESPACE, NAME, LISTTYPE) \
         XML_ELEMENT(NAME) \
-            XML_ELEMENT_START \
+            Result = tfsxml_enter(&p); \
+            if (Result == 0) { \
+                if (!tfsxml_text(&p, &v)) { \
+                    auto Text = tfsxml_decode(v); \
+                    auto Text_Begin = Text.find_first_not_of(" \t\r\n"); \
+                    if (Text_Begin != string::npos) \
+                        NAMESPACE(NAME, Text.substr(Text_Begin, Text.find_last_not_of(" \t\r\n") + 1 - Text_Begin)); \
+                } \
+                for (;;) { \
+                    Result = tfsxml_next(&p, &n); \
+                    if (Result != 0) { \
+                        break; \
+                    } \
+                    if (false) { \
             XML_ELEMENT_LIST(LISTTYPE) \
                 XML_VALUE \
                 NAMESPACE(NAME, tfsxml_decode(v), count); \
@@ -220,6 +234,8 @@ bool File_Xmp::FileHeader_Begin()
             XML_ATTRIBUTE_NAMESPACE(exif)
             XML_ATTRIBUTE_NAMESPACE(GIMP)
             XML_ATTRIBUTE_NAMESPACE(hdrgm)
+            XML_ATTRIBUTE_NAMESPACE(HDRGainMap)
+            XML_ATTRIBUTE_NAMESPACE(HDRToneMap)
             XML_ATTRIBUTE_NAMESPACE(pdf)
             XML_ATTRIBUTE_NAMESPACE(photoshop)
             XML_ATTRIBUTE_NAMESPACE(xmp)
@@ -352,11 +368,19 @@ bool File_Xmp::FileHeader_Begin()
                         XML_ELEMENT_END
                     XML_ELEMENT_END
                 }
-            XML_ELEMENT_LIST_NAMESPACE_COUNT(hdrgm, "hdrgm:GainMapMin", "rdf:Seq")
-            XML_ELEMENT_LIST_NAMESPACE_COUNT(hdrgm, "hdrgm:GainMapMax", "rdf:Seq")
-            XML_ELEMENT_LIST_NAMESPACE_COUNT(hdrgm, "hdrgm:Gamma", "rdf:Seq")
-            XML_ELEMENT_LIST_NAMESPACE_COUNT(hdrgm, "hdrgm:OffsetSDR", "rdf:Seq")
-            XML_ELEMENT_LIST_NAMESPACE_COUNT(hdrgm, "hdrgm:OffsetHDR", "rdf:Seq")
+            XML_ELEMENT_LIST_OR_VALUE_NAMESPACE_COUNT(hdrgm, "hdrgm:GainMapMin", "rdf:Seq")
+            XML_ELEMENT_LIST_OR_VALUE_NAMESPACE_COUNT(hdrgm, "hdrgm:GainMapMax", "rdf:Seq")
+            XML_ELEMENT_LIST_OR_VALUE_NAMESPACE_COUNT(hdrgm, "hdrgm:Gamma", "rdf:Seq")
+            XML_ELEMENT_LIST_OR_VALUE_NAMESPACE_COUNT(hdrgm, "hdrgm:OffsetSDR", "rdf:Seq")
+            XML_ELEMENT_LIST_OR_VALUE_NAMESPACE_COUNT(hdrgm, "hdrgm:OffsetHDR", "rdf:Seq")
+            XML_ELEMENT_LIST_OR_VALUE_NAMESPACE_COUNT(HDRToneMap, "HDRToneMap:GainMapMin", "rdf:Seq")
+            XML_ELEMENT_LIST_OR_VALUE_NAMESPACE_COUNT(HDRToneMap, "HDRToneMap:GainMapMax", "rdf:Seq")
+            XML_ELEMENT_LIST_OR_VALUE_NAMESPACE_COUNT(HDRToneMap, "HDRToneMap:Gamma", "rdf:Seq")
+            XML_ELEMENT_LIST_OR_VALUE_NAMESPACE_COUNT(HDRToneMap, "HDRToneMap:OffsetSDR", "rdf:Seq")
+            XML_ELEMENT_LIST_OR_VALUE_NAMESPACE_COUNT(HDRToneMap, "HDRToneMap:OffsetHDR", "rdf:Seq")
+            XML_ELEMENT_NAMESPACE(hdrgm)
+            XML_ELEMENT_NAMESPACE(HDRGainMap)
+            XML_ELEMENT_NAMESPACE(HDRToneMap)
             XML_ELEMENT("pdfaid:part")
                 XML_VALUE
                 pdfaid_part = tfsxml_decode(v);
@@ -369,6 +393,8 @@ bool File_Xmp::FileHeader_Begin()
             XML_ELEMENT_END
         XML_ELEMENT_END
     XML_XMP_END
+
+    GainMap_Fill();
 
     auto application = Retrieve_Const(Stream_General, 0, General_Encoded_Application).To_UTF8();
     if (application == "GIMP" && !gimp_version.empty()) {
@@ -438,29 +464,147 @@ void File_Xmp::GIMP(const string& name, const string& value)
 //---------------------------------------------------------------------------
 void File_Xmp::hdrgm(const string& name, const string& value, const int count)
 {
-    if (!GainMapData || count >= 3)
+    if (GainMap_StreamKind == Stream_Max || count >= 3)
         return;
 
-    if (count >= 1)
-        GainMapData->Multichannel = true;
-    if (name == "hdrgm:Version")
-        GainMapData->Version = value;
-    if (name == "hdrgm:BaseRenditionIsHDR")
-        GainMapData->BaseRenditionIsHDR = (value == "True" ? true : false);
-    if (name == "hdrgm:HDRCapacityMin")
-        GainMapData->HDRCapacityMin = Ztring(value.c_str()).To_float32();
-    if (name == "hdrgm:HDRCapacityMax")
-        GainMapData->HDRCapacityMax = Ztring(value.c_str()).To_float32();
-    if (name == "hdrgm:GainMapMin")
-        GainMapData->GainMapMin[count] = Ztring(value.c_str()).To_float32();
-    if (name == "hdrgm:GainMapMax")
-        GainMapData->GainMapMax[count] = Ztring(value.c_str()).To_float32();
-    if (name == "hdrgm:Gamma")
-        GainMapData->Gamma[count] = Ztring(value.c_str()).To_float32();
-    if (name == "hdrgm:OffsetSDR")
-        GainMapData->OffsetSDR[count] = Ztring(value.c_str()).To_float32();
-    if (name == "hdrgm:OffsetHDR")
-        GainMapData->OffsetHDR[count] = Ztring(value.c_str()).To_float32();
+    auto& GainMap = GainMap_Adobe;
+    if (name == "hdrgm:Version") {
+        GainMap.Version = value;
+        return;
+    }
+    if (name == "hdrgm:BaseRenditionIsHDR") {
+        GainMap.BaseRenditionIsHDR = value == "True" || value == "true" || value == "1";
+        return;
+    }
+    auto Value = Ztring().From_UTF8(value).To_float32();
+    if (name == "hdrgm:HDRCapacityMin") {
+        GainMap.HDRCapacityMin = Value;
+        GainMap.HasHDRCapacity = true;
+    }
+    else if (name == "hdrgm:HDRCapacityMax") {
+        GainMap.HDRCapacityMax = Value;
+        GainMap.HasHDRCapacity = true;
+    }
+    else if (name == "hdrgm:BaseHeadroom") { // Variant used by Apple
+        GainMap.BaseHeadroom = Value;
+        GainMap.HasBaseAlternateHeadroom = true;
+    }
+    else if (name == "hdrgm:AlternateHeadroom") { // Variant used by Apple
+        GainMap.AlternateHeadroom = Value;
+        GainMap.HasBaseAlternateHeadroom = true;
+    }
+    else {
+        float32* Values;
+        if (name == "hdrgm:GainMapMin")
+            Values = GainMap.GainMapMin;
+        else if (name == "hdrgm:GainMapMax")
+            Values = GainMap.GainMapMax;
+        else if (name == "hdrgm:Gamma")
+            Values = GainMap.Gamma;
+        else if (name == "hdrgm:OffsetSDR")
+            Values = GainMap.OffsetSDR;
+        else if (name == "hdrgm:OffsetHDR")
+            Values = GainMap.OffsetHDR;
+        else
+            return;
+        if (count) {
+            GainMap.ChannelCount = 3;
+            Values[count] = Value;
+        }
+        else {
+            for (int ch = 0; ch < 3; ++ch)
+                Values[ch] = Value; // Single value applies to all channels, overwritten by next ones if multichannel
+        }
+    }
+    GainMap.HasValues = true;
+}
+
+//---------------------------------------------------------------------------
+void File_Xmp::HDRGainMap(const string& name, const string& value)
+{
+    if (GainMap_StreamKind == Stream_Max)
+        return;
+
+    if (name == "HDRGainMap:HDRGainMapVersion")
+        GainMap_Apple_Version = value;
+    if (name == "HDRGainMap:HDRGainMapHeadroom")
+        GainMap_Apple_Headroom = value;
+}
+
+//---------------------------------------------------------------------------
+void File_Xmp::HDRToneMap(const string& name, const string& value, const int count)
+{
+    // Prefix used by Apple for the http://ns.adobe.com/hdr-gain-map/1.0/ namespace
+    hdrgm("hdrgm" + name.substr(sizeof("HDRToneMap") - 1), value, count);
+}
+
+//---------------------------------------------------------------------------
+static Ztring GainMap_Value(float32 Value)
+{
+    Ztring ToReturn = Ztring::ToZtring(Value, 6);
+    if (ToReturn.find(__T('.')) != Ztring::npos) {
+        ToReturn.TrimRight(__T('0'));
+        ToReturn.TrimRight(__T('.'));
+    }
+    if (ToReturn == __T("-0"))
+        ToReturn = __T("0");
+    return ToReturn;
+}
+
+//---------------------------------------------------------------------------
+static Ztring GainMap_Values(const float32* Values, int ChannelCount)
+{
+    Ztring ToReturn;
+    for (int ch = 0; ch < ChannelCount; ++ch) {
+        if (ch)
+            ToReturn += __T(" / ");
+        ToReturn += GainMap_Value(Values[ch]);
+    }
+    return ToReturn;
+}
+
+//---------------------------------------------------------------------------
+void File_Xmp::GainMap_Fill()
+{
+    if (GainMap_StreamKind == Stream_Max)
+        return;
+
+    // Adobe XMP, with the same meaning as ISO 21496-1 metadata, base and alternate depending on which rendition is the base one
+    const auto& GainMap = GainMap_Adobe;
+    if (!GainMap.Version.empty() || GainMap.HasValues) {
+        Stream_Prepare(GainMap_StreamKind);
+        Fill(GainMap_StreamKind, StreamPos_Last, "GainMap_Format", "Adobe XMP");
+        if (GainMap.HasValues) {
+            auto BaseIsHDR = GainMap.BaseRenditionIsHDR;
+            float32 BaseHeadroom, AlternateHeadroom;
+            if (GainMap.HasHDRCapacity || !GainMap.HasBaseAlternateHeadroom) {
+                BaseHeadroom = BaseIsHDR ? GainMap.HDRCapacityMax : GainMap.HDRCapacityMin;
+                AlternateHeadroom = BaseIsHDR ? GainMap.HDRCapacityMin : GainMap.HDRCapacityMax;
+            }
+            else {
+                BaseHeadroom = GainMap.BaseHeadroom;
+                AlternateHeadroom = GainMap.AlternateHeadroom;
+            }
+            Fill(GainMap_StreamKind, StreamPos_Last, "GainMap_BaseHeadroom", GainMap_Value(BaseHeadroom));
+            Fill(GainMap_StreamKind, StreamPos_Last, "GainMap_AlternateHeadroom", GainMap_Value(AlternateHeadroom));
+            Fill(GainMap_StreamKind, StreamPos_Last, "GainMap_Min", GainMap_Values(GainMap.GainMapMin, GainMap.ChannelCount));
+            Fill(GainMap_StreamKind, StreamPos_Last, "GainMap_Max", GainMap_Values(GainMap.GainMapMax, GainMap.ChannelCount));
+            Fill(GainMap_StreamKind, StreamPos_Last, "GainMap_Gamma", GainMap_Values(GainMap.Gamma, GainMap.ChannelCount));
+            Fill(GainMap_StreamKind, StreamPos_Last, "GainMap_BaseOffset", GainMap_Values(BaseIsHDR ? GainMap.OffsetHDR : GainMap.OffsetSDR, GainMap.ChannelCount));
+            Fill(GainMap_StreamKind, StreamPos_Last, "GainMap_AlternateOffset", GainMap_Values(BaseIsHDR ? GainMap.OffsetSDR : GainMap.OffsetHDR, GainMap.ChannelCount));
+        }
+    }
+
+    // Apple XMP, only the headroom is stored (linear in XMP, else from Exif maker notes in stops)
+    if (!GainMap_Apple_Version.empty()) {
+        Stream_Prepare(GainMap_StreamKind);
+        Fill(GainMap_StreamKind, StreamPos_Last, "GainMap_Format", "Apple XMP");
+        auto Headroom = Ztring().From_UTF8(GainMap_Apple_Headroom).To_float64();
+        if (Headroom > 0)
+            Fill(GainMap_StreamKind, StreamPos_Last, "GainMap_AlternateHeadroom", GainMap_Value((float32)log2(Headroom)));
+        else if (GainMap_Apple_Exif_Present && GainMap_Apple_Exif_Headroom > 0)
+            Fill(GainMap_StreamKind, StreamPos_Last, "GainMap_AlternateHeadroom", GainMap_Value((float32)GainMap_Apple_Exif_Headroom));
+    }
 }
 
 //---------------------------------------------------------------------------

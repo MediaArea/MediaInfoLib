@@ -1967,6 +1967,8 @@ void File_Exif::Streams_Finish()
             switch (Item.first) {
             case IFDMakernoteApple::ColorTemperature: ParameterC = "ColorTemperature"; ParameterS = " K"; break;
             case IFDMakernoteApple::CameraType: ParameterC = "CameraType"; Value = Exif_IFDMakernoteApple_CameraType_Name(Item.second.Read().To_int32s()); break;
+            case IFDMakernoteApple::HDRHeadroom: Apple_HDR_Present = true; Apple_HDRHeadroom = Item.second.Read().To_float64(); break;
+            case IFDMakernoteApple::HDRGain: Apple_HDR_Present = true; Apple_HDRGain = Item.second.Read().To_float64(); break;
             }
             FillMetadata(Value, Item, Parameter, ParameterC, ParameterS);
         }
@@ -2501,6 +2503,11 @@ void File_Exif::Makernote()
     size_t Count = MI.Count_Get(Stream_Image);
     for (size_t i = 0; i < Count; ++i) {
         Merge(MI, Stream_Image, i, i, false);
+    }
+    if (MI.Apple_HDR_Present) {
+        Apple_HDR_Present = true;
+        Apple_HDRHeadroom = MI.Apple_HDRHeadroom;
+        Apple_HDRGain = MI.Apple_HDRGain;
     }
 
     Buffer_Offset = Buffer_Offset_Save;

@@ -47,6 +47,11 @@ public:
     bool FromHeif = false;
     mp_entries* MPEntries = nullptr;
 
+    //Out
+    bool Apple_HDR_Present = false; //Apple maker note HDRHeadroom (33) or HDRGain (48) present, a missing one is considered as 0
+    float64 Apple_HDRHeadroom = 0;
+    float64 Apple_HDRGain = 0;
+
 protected :
     //Streams management
     void Streams_Finish() override;
