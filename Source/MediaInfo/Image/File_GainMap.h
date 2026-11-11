@@ -22,21 +22,6 @@
 namespace MediaInfoLib
 {
 
-// ISO 1496-1 Gain map metadata for image conversion
-struct GainMap_metadata {
-    int16u minimum_version;
-    int16u writer_version;
-    bool is_multichannel;
-    bool use_base_colour_space;
-    float32 base_hdr_headroom;
-    float32 alternate_hdr_headroom;
-    float32 gain_map_min[3];
-    float32 gain_map_max[3];
-    float32 gamma[3];
-    float32 base_offset[3];
-    float32 alternate_offset[3];
-};
-
 //***************************************************************************
 // Class File_GainMap
 //***************************************************************************
@@ -45,7 +30,6 @@ class File_GainMap : public File__Analyze
 {
 public:
     //In
-    GainMap_metadata* output{};
     bool fromAvif{ false };
     stream_t StreamKind{ Stream_Image }; //Kind of the stream filled with the metadata, to be merged in the image using the gain map
 
