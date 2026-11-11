@@ -16511,25 +16511,9 @@ void File_Mxf::SDTISystemMetadataPack() //SMPTE 385M + 326M
                     TimeCode_Dump.List+=" bgf=\""+to_string(Is25 ? ((Bgf0Bgf2<<2)|(Bgf1<<1)|(FieldPhaseBgf0<<0)) : ((Bgf2FieldPhase<<2)|(Bgf1<<1)|(Bgf0Bgf2<<0)))+"\"";
                 if (BG)
                     TimeCode_Dump.List+=" bg=\""+to_string(BG)+"\"";
-                if (TimeCode_Dump.LastTC.IsValid() && TimeCode_Dump.LastTC.GetFramesMax())
-                {
-                    bool IsNotContinuous;
-                    if (CurrentTC==TimeCode_Dump.LastTC)
-                        IsNotContinuous=TimeCode_Dump.Repeat_Count>=RepetitionMaxCount; //Too many frames with this time address
-                    else
-                        IsNotContinuous=(TimeCode_Dump.Repeat_Count<RepetitionMaxCount && !TimeCode_Dump.Repeat_IsPartial) //Not enough frames with the previous time address
-                                     || CurrentTC!=TimeCode_Dump.LastTC+1;
-                    if (IsNotContinuous)
-                        TimeCode_Dump.List+=" nc=\"1\"";
-                    if (CurrentTC!=TimeCode_Dump.LastTC || IsNotContinuous)
-                    {
-                        TimeCode_Dump.Repeat_Count=0;
-                        TimeCode_Dump.Repeat_IsPartial=IsNotContinuous;
-                    }
-                    else
-                        TimeCode_Dump.Repeat_Count++;
-                }
-                TimeCode_Dump.LastTC=CurrentTC;
+                TimeCode_Dump.Repeat_Max=RepetitionMaxCount;
+                if (TimeCode_Dump.IsNotContinuous(CurrentTC))
+                    TimeCode_Dump.List+=" nc=\"1\"";
                 TimeCode_Dump.List+="/>\n";
                 TimeCode_Dump.FrameCount++;
             }
@@ -19472,7 +19456,12 @@ void File_Mxf::StructuralComponent_Duration()
 void File_Mxf::SystemScheme1_FrameCount()
 {
     //Parsing
-    Skip_B4(                                                    "Value");
+    int32u Value;
+    Get_B4 (Value,                                              "Value");
+
+    FILLING_BEGIN();
+        SystemScheme1_FrameCount_Value=Value;
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -19482,6 +19471,11 @@ void File_Mxf::SystemScheme1_TimeCodeArray()
     VECTOR(8);
     auto& SystemScheme=SystemScheme1s[Element_Code&0xFFFF];
     bool IsStart=SystemScheme.TimeCodeArray_StartTimecodes.empty();
+    #if MEDIAINFO_ADVANCED
+        //The array has the time codes of the frames of the content package (frame count), else the time codes of one frame
+        const auto PerFrame=(SystemScheme1_FrameCount_Value && !(Count%SystemScheme1_FrameCount_Value))?(Count/SystemScheme1_FrameCount_Value):Count;
+    #endif //MEDIAINFO_ADVANCED
+    SystemScheme1_FrameCount_Value=0;
     for (int32u i=0; i<Count; i++)
     {
         Element_Begin1("TimeCode");
@@ -19537,7 +19531,7 @@ void File_Mxf::SystemScheme1_TimeCodeArray()
         #if MEDIAINFO_ADVANCED
             if (Config->TimeCode_Dumps)
             {
-                auto id="SystemScheme1-"+to_string(Element_Code&0xFF)+'-'+to_string(i);
+                auto id="SystemScheme1-"+to_string(Element_Code&0xFF)+'-'+to_string(i%PerFrame); //1 stream per time code of a frame
                 auto& TimeCode_Dump=(*Config->TimeCode_Dumps)[id];
                 if (TimeCode_Dump.List.empty())
                 {
@@ -19574,13 +19568,23 @@ void File_Mxf::SystemScheme1_TimeCodeArray()
                                 TimeCode_Dump.Attributes_First+=to_string(FrameRate);
                         }
                         TimeCode_Dump.Attributes_First+='\"';
-                        FrameRateInt--;
                         if (FrameRateInt<=numeric_limits<int32u>::max())
-                            (*Config->TimeCode_Dumps)[id].FramesMax=(int32u)(FrameRateInt);
+                        {
+                            //Above 30 frames per second, a time address is used for several frames
+                            int32u FrameRate_Base=(int32u)FrameRateInt;
+                            for (const int32u Base : {30, 25, 24})
+                                if (FrameRateInt>Base && !(FrameRateInt%Base))
+                                {
+                                    FrameRate_Base=Base;
+                                    break;
+                                }
+                            TimeCode_Dump.FramesMax=FrameRate_Base-1;
+                            TimeCode_Dump.Repeat_Max=(int32u)FrameRateInt/FrameRate_Base-1;
+                        }
                     }
                     TimeCode_Dump.Attributes_Last+=" fp=\"0\" bgf=\"0\" bg=\"0\"";
                 }
-                TimeCode CurrentTC(Hours_Tens*10+Hours_Units, Minutes_Tens*10+Minutes_Units, Seconds_Tens*10+Seconds_Units, Frames_Tens*10+Frames_Units, TimeCode_Dump.FramesMax, TimeCode::DropFrame(DropFrame).FPS1001(Is1001));
+                TimeCode CurrentTC(Hours_Tens*10+Hours_Units, Minutes_Tens*10+Minutes_Units, Seconds_Tens*10+Seconds_Units, Frames_Tens*10+Frames_Units, TimeCode_Dump.FramesMax, TimeCode::DropFrame(DropFrame).FPS1001(Is1001).Wrapped24Hours());
                 const auto Is25=TimeCode_Dump.FramesMax && !((TimeCode_Dump.FramesMax+1)%25); //Flag bits 27, 43 and 59 are BGF0, BGF2 and field phase with 25 frames per second, field phase, BGF0 and BGF2 else
                 TimeCode_Dump.List+="    <tc v=\""+CurrentTC.ToString()+'\"';
                 if (Is25 ? Bgf2FieldPhase : FieldPhaseBgf0)
@@ -19589,9 +19593,8 @@ void File_Mxf::SystemScheme1_TimeCodeArray()
                     TimeCode_Dump.List+=" bgf=\""+to_string(Is25 ? ((Bgf0Bgf2<<2)|(Bgf1<<1)|(FieldPhaseBgf0<<0)) : ((Bgf2FieldPhase<<2)|(Bgf1<<1)|(Bgf0Bgf2<<0)))+"\"";
                 if (BG)
                     TimeCode_Dump.List+=" bg=\""+to_string(BG)+"\"";
-                if (TimeCode_Dump.LastTC.IsValid() && TimeCode_Dump.LastTC.GetFramesMax() && CurrentTC!=TimeCode_Dump.LastTC+1)
+                if (TimeCode_Dump.IsNotContinuous(CurrentTC))
                     TimeCode_Dump.List+=" nc=\"1\"";
-                TimeCode_Dump.LastTC=CurrentTC;
                 TimeCode_Dump.List+="/>\n";
                 TimeCode_Dump.FrameCount++;
             }

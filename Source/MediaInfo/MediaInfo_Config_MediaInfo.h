@@ -470,6 +470,7 @@ public :
             std::string List;
             TimeCode LastTC;
             int32u FramesMax=0;
+            int32u Repeat_Max=0; //Count of values per time address minus 1, e.g. 1 with frame pairs
             int32u Repeat_Count=0; //Count of previous values with the time address of LastTC
             bool Repeat_IsPartial=true; //Values with the time address of LastTC may be before the first value or after a discontinuity
             int64u FrameCount=0;
@@ -478,6 +479,7 @@ public :
             std::vector<int32u> Values; //Values not yet in List, the check of their continuity needs all of them
             float64 FrameRate=0; //Count of values per second, 0 if unknown
             void (*List_Finish)(timecode_dump&)=nullptr; //Fills List from Values
+            bool IsNotContinuous(const TimeCode& Current); //Compares with LastTC, then Current becomes LastTC
         };
         std::map<std::string, timecode_dump>* TimeCode_Dumps;
         std::vector<std::pair<int64u, int64u> > TimeCode_Dumps_Parsed; //Ranges of the file parsed by the main parser, for knowing if all the time codes are listed

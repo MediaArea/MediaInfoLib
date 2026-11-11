@@ -1515,6 +1515,7 @@ protected :
     };
     typedef std::map<int16u, systemscheme1> systemscheme1s;
     systemscheme1s SystemScheme1s;
+    int32u SystemScheme1_FrameCount_Value{}; //Frame count of the current System Scheme 1 element, 0 if absent
     #if MEDIAINFO_ADVANCED
         int64u Footer_Position;
         float64 Truncated_Duration;
