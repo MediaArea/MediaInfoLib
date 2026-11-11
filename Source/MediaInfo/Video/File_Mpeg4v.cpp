@@ -1317,7 +1317,7 @@ void File_Mpeg4v::video_object_layer_start()
         NextCode_Add(0xB2); //user_data
         NextCode_Add(0xB3); //group_of_vop_start
         NextCode_Add(0xB6); //vop_start
-        for (int8u Pos=0x00; Pos<0x1F; Pos++)
+        for (int8u Pos=0x00; Pos<=0x1F; Pos++)
             NextCode_Add(Pos); //video_object_start
 
         //Autorisation of other streams
@@ -1565,7 +1565,7 @@ void File_Mpeg4v::group_of_vop_start()
         //NextCode
         NextCode_Test();
         NextCode_Clear();
-        for (int8u Pos=0x00; Pos<0x1F; Pos++)
+        for (int8u Pos=0x00; Pos<=0x1F; Pos++)
             NextCode_Add(Pos); //video_object_start
         NextCode_Add(0xB6); //vop_start
     FILLING_END();
@@ -1623,12 +1623,12 @@ void File_Mpeg4v::visual_object_start()
         //NextCode
         NextCode_Clear();
         NextCode_Add(0xB2); //user_data
-        for (int8u Pos=0x00; Pos<0x2F; Pos++)
+        for (int8u Pos=0x00; Pos<=0x2F; Pos++)
             NextCode_Add(Pos); //video_object_start and video_object_layer_start
 
         //Autorisation of other streams
         Streams[0xB2].Searching_Payload=true;
-        for (int8u Pos=0x00; Pos<0x25; Pos++)
+        for (int8u Pos=0x00; Pos<=0x2F; Pos++)
             Streams[Pos].Searching_Payload=true; //video_object_start and video_object_layer_start
     FILLING_END();
 }
@@ -1957,7 +1957,7 @@ void File_Mpeg4v::vop_start()
         //NextCode
         NextCode_Test();
         NextCode_Clear();
-        for (int8u Pos=0x00; Pos<0x2F; Pos++)
+        for (int8u Pos=0x00; Pos<=0x2F; Pos++)
             NextCode_Add(Pos); //video_object_start and video_object_layer_start
         NextCode_Add(0xB1); //visual_object_sequence_end
         NextCode_Add(0xB3); //group_of_vop_start_code
