@@ -2398,6 +2398,7 @@ void File_Dts::Data_Parse()
         }
 
         Skip_XX(Element_Size-Element_Offset,                    "Data");
+        Asset_Sizes.clear(); //The assets are not parsed
         return;
     }
 
