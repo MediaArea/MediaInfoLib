@@ -1589,8 +1589,8 @@ void File_Mpeg4::Data_Parse()
                                         ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_vexu_eyes_hero)
                                         ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_vexu_eyes_stri)
                                         ATOM_END
-                                    ATOM_END
                                     ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_vexu_must)
+                                    ATOM_END
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_vpcC)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_vvcC)
                                 LIST(moov_trak_mdia_minf_stbl_stsd_xxxx_wave)
