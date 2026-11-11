@@ -470,6 +470,8 @@ public :
             std::string List;
             TimeCode LastTC;
             int32u FramesMax=0;
+            int32u Repeat_Count=0; //Count of previous values with the time address of LastTC
+            bool Repeat_IsPartial=true; //Values with the time address of LastTC may be before the first value or after a discontinuity
             int64u FrameCount=0;
             string Attributes_First;
             string Attributes_Last;
