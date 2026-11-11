@@ -24,6 +24,9 @@
 #include <ZenLib/ZtringListList.h>
 #include <ZenLib/Utils.h>
 #include "MediaInfo/Multiple/File_Rm.h"
+#if defined(MEDIAINFO_ID3_YES)
+    #include "MediaInfo/Tag/File_Id3.h"
+#endif
 using namespace ZenLib;
 //---------------------------------------------------------------------------
 
@@ -128,7 +131,7 @@ void File_Rm::Header_Parse()
     {
         Name=Elements::TAG;
         Element_Offset-=4;
-        Size=0;
+        Size=128; //No chunk header
     }
     else
     {
@@ -805,6 +808,17 @@ void File_Rm::RMMD()
 void File_Rm::TAG()
 {
     Element_Name("Id3v1 Tag");
+
+    //Parsing
+    #if defined(MEDIAINFO_ID3_YES)
+        File_Id3 MI;
+        Open_Buffer_Init(&MI);
+        Open_Buffer_Continue(&MI);
+        Finish(&MI);
+        Merge(MI, Stream_General, 0, 0, false); //The metadata of the file has priority
+    #else
+        Skip_XX(Element_Size,                                   "Data");
+    #endif
 }
 
 } //NameSpace
