@@ -4150,11 +4150,9 @@ void File_Avc::pic_parameter_set()
                 BS_End();
                 return;
             }
-            #if defined (__mips__)       || defined (__mipsel__)
-                int32u slice_group_id_Size=(int32u)(std::ceil(std::log((double)(num_slice_groups_minus1+1))/std::log((double)10))); //std::log is natural logarithm
-            #else
-                int32u slice_group_id_Size=(int32u)(std::ceil(std::log((float32)(num_slice_groups_minus1+1))/std::log((float32)10))); //std::log is natural logarithm
-            #endif
+            int32u slice_group_id_Size=0;
+            while (((int32u)1<<slice_group_id_Size)<num_slice_groups_minus1+1)
+                slice_group_id_Size++; //Ceil(Log2(num_slice_groups_minus1+1))
             Loop_CheckValue_BS(pic_size_in_map_units_minus1, slice_group_id_Size, "pic_size_in_map_units_minus1");
             for (int32u Pos=0; Pos<=pic_size_in_map_units_minus1; Pos++)
                 Skip_BS(slice_group_id_Size,                    "slice_group_id");
