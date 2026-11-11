@@ -386,8 +386,11 @@ void File_Gxf::Streams_Finish_PerStream(size_t StreamID, stream &Temp)
 
                 if (TimeCodes.empty())
                 {
-                    Fill(Stream_Video, StreamPos_Last, Video_Delay, ((float64)(Material_Fields_First/Material_Fields_FieldsPerFrame))/Gxf_FrameRate(Streams[0x00].FrameRate_Code)*1000, 0);
-                    Fill(Stream_Video, StreamPos_Last, Video_Delay_Source, "Container");
+                    if (Gxf_FrameRate(Streams[0x00].FrameRate_Code))
+                    {
+                        Fill(Stream_Video, StreamPos_Last, Video_Delay, ((float64)(Material_Fields_First/Material_Fields_FieldsPerFrame))/Gxf_FrameRate(Streams[0x00].FrameRate_Code)*1000, 0);
+                        Fill(Stream_Video, StreamPos_Last, Video_Delay_Source, "Container");
+                    }
                 }
                 else
                     for (std::map<int8u, tc>::iterator TimeCode=TimeCodes.begin(); TimeCode!=TimeCodes.end(); ++TimeCode)
@@ -456,8 +459,11 @@ void File_Gxf::Streams_Finish_PerStream(size_t StreamID, stream &Temp)
 
                 if (TimeCodes.empty())
                 {
-                    Fill(Stream_Audio, StreamPos_Last, Audio_Delay, ((float64)(Material_Fields_First/Material_Fields_FieldsPerFrame))/Gxf_FrameRate(Streams[0x00].FrameRate_Code)*1000, 0);
-                    Fill(Stream_Audio, StreamPos_Last, Audio_Delay_Source, "Container");
+                    if (Gxf_FrameRate(Streams[0x00].FrameRate_Code))
+                    {
+                        Fill(Stream_Audio, StreamPos_Last, Audio_Delay, ((float64)(Material_Fields_First/Material_Fields_FieldsPerFrame))/Gxf_FrameRate(Streams[0x00].FrameRate_Code)*1000, 0);
+                        Fill(Stream_Audio, StreamPos_Last, Audio_Delay_Source, "Container");
+                    }
                 }
                 else
                     for (std::map<int8u, tc>::iterator TimeCode=TimeCodes.begin(); TimeCode!=TimeCodes.end(); ++TimeCode)
