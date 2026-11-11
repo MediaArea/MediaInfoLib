@@ -1268,6 +1268,8 @@ void File_Ac3::Streams_Fill()
     //E-AC-3
     else if (bsid_Max<=0x10)
     {
+        const bool Channels_AlreadyFilled=!Retrieve_Const(Stream_Audio, 0, Audio_Channel_s_).empty(); //By another format of the stream
+        const bool ChannelLayout_AlreadyFilled=!Retrieve_Const(Stream_Audio, 0, Audio_ChannelLayout).empty();
         for (size_t Pos=0; Pos<8; Pos++)
             if (acmod_Max[Pos][0]!=(int8u)-1)
             {
@@ -1304,7 +1306,8 @@ void File_Ac3::Streams_Fill()
                         Fill(Stream_Audio, 0, Audio_BitRate_Encoded, ((int64u)frmsiz_Total+TimeStamp_Size)*SamplingRate/32/numblks);
                 }
 
-                if (acmod_Max[Pos][1]!=(int8u)-1)
+                const bool HasDependent=acmod_Max[Pos][1]!=(int8u)-1;
+                if (HasDependent)
                 {
                     int16u chanmap_Final=0;
                     for (int8u Pos2=0; Pos2<9; Pos2++)
@@ -1324,15 +1327,15 @@ void File_Ac3::Streams_Fill()
                     Fill(Stream_Audio, 0, Audio_Codec_Profile, "E-AC-3+Dep");
                     Fill(Stream_Audio, 0, Audio_Channel_s_, AC3_chanmap_Channels(chanmap_Final));
                     Fill(Stream_Audio, 0, Audio_ChannelPositions, AC3_chanmap_ChannelPositions(chanmap_Final));
-                    Ztring ChannelPositions2; ChannelPositions2.From_UTF8(AC3_ChannelPositions2[acmod_Max[0][0]]); //TODO: handle the dependancy
+                    Ztring ChannelPositions2; ChannelPositions2.From_UTF8(AC3_ChannelPositions2[acmod_Max[Pos][0]]); //TODO: handle the dependancy
                     if (lfeon_Max[Pos][0])
                     {
                         ChannelPositions2+=__T(".1");
                     }
                     Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, ChannelPositions2);
-                    if (MediaInfoLib::Config.LegacyStreamDisplay_Get() || Retrieve(Stream_Audio, 0, Audio_ChannelLayout).empty())
+                    if (MediaInfoLib::Config.LegacyStreamDisplay_Get() || !ChannelLayout_AlreadyFilled)
                     {
-                        Ztring ChannelLayout; ChannelLayout.From_UTF8(lfeon_Max[0][0]?AC3_ChannelLayout_lfeon[acmod_Max[0][0]]:AC3_ChannelLayout_lfeoff[acmod_Max[0][0]]);
+                        Ztring ChannelLayout; ChannelLayout.From_UTF8(lfeon_Max[Pos][0]?AC3_ChannelLayout_lfeon[acmod_Max[Pos][0]]:AC3_ChannelLayout_lfeoff[acmod_Max[Pos][0]]);
                         Fill(Stream_Audio, 0, Audio_ChannelLayout, AC3_chanmap_ChannelLayout(chanmap_Final, ChannelLayout));
                     }
                 }
@@ -1340,13 +1343,13 @@ void File_Ac3::Streams_Fill()
                     Fill(Stream_Audio, 0, Audio_Format_Profile, Retrieve(Stream_Audio, 0, Audio_Format));
                 if (!Retrieve(Stream_Audio, 0, Audio_Codec_Profile).empty())
                     Fill(Stream_Audio, 0, Audio_Codec_Profile, Retrieve(Stream_Audio, 0, Audio_Format));
-                Fill(Stream_Audio, 0, Audio_ServiceKind, AC3_Mode[bsmod_Max[0][0]]);
-                Fill(Stream_Audio, 0, Audio_ServiceKind_String, AC3_Mode_String[bsmod_Max[0][0]]);
-                if ((MediaInfoLib::Config.LegacyStreamDisplay_Get() || Retrieve(Stream_Audio, 0, Audio_Channel_s_).empty()) && acmod_Max[Pos][0]!=(int8u)-1)
+                Fill(Stream_Audio, 0, Audio_ServiceKind, AC3_Mode[bsmod_Max[Pos][0]]);
+                Fill(Stream_Audio, 0, Audio_ServiceKind_String, AC3_Mode_String[bsmod_Max[Pos][0]]);
+                if (MediaInfoLib::Config.LegacyStreamDisplay_Get() || (!HasDependent && !Channels_AlreadyFilled))
                 {
                     int8u Channels=AC3_Channels[acmod_Max[Pos][0]];
                     Ztring ChannelPositions; ChannelPositions.From_UTF8(AC3_ChannelPositions[acmod_Max[Pos][0]]);
-                    Ztring ChannelPositions2; ChannelPositions2.From_UTF8(AC3_ChannelPositions2[acmod_Max[0][0]]);
+                    Ztring ChannelPositions2; ChannelPositions2.From_UTF8(AC3_ChannelPositions2[acmod_Max[Pos][0]]);
                     if (lfeon_Max[Pos][0])
                     {
                         Channels+=1;
@@ -1356,7 +1359,7 @@ void File_Ac3::Streams_Fill()
                     Fill(Stream_Audio, 0, Audio_Channel_s_, Channels);
                     Fill(Stream_Audio, 0, Audio_ChannelPositions, ChannelPositions);
                     Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, ChannelPositions2);
-                    Fill(Stream_Audio, 0, Audio_ChannelLayout, lfeon_Max[0][0]?AC3_ChannelLayout_lfeon[acmod_Max[0][0]]:AC3_ChannelLayout_lfeoff[acmod_Max[0][0]]);
+                    Fill(Stream_Audio, 0, Audio_ChannelLayout, lfeon_Max[Pos][0]?AC3_ChannelLayout_lfeon[acmod_Max[Pos][0]]:AC3_ChannelLayout_lfeoff[acmod_Max[Pos][0]]);
                 }
             }
     }
