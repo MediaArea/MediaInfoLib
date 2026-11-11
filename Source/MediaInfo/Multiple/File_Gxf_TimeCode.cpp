@@ -67,6 +67,216 @@ static const char* Atc_PayloadType (int8u PayloadType)
 }
 
 //***************************************************************************
+// Time code dump
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_ADVANCED
+// A value is a time address: drop frame flag (1 bit), hours (7 bits), minutes, seconds and frames (8 bits each)
+// Several consecutive values may have the same time address, e.g. frame pairs above 30 frames per second
+static const size_t TimeCode_Dump_Repeat_Max=16;
+static const int8u TimeCode_Dump_FrameRates[]={30, 25, 24};
+
+//---------------------------------------------------------------------------
+static inline int32u TimeCode_Dump_Value(int32u Hours, int32u Minutes, int32u Seconds, int32u Frames, bool DropFrame=false)
+{
+    return ((int32u)DropFrame<<31)|(Hours<<24)|(Minutes<<16)|(Seconds<<8)|Frames;
+}
+
+//---------------------------------------------------------------------------
+static inline bool TimeCode_Dump_IsValid(int32u Value)
+{
+    return ((Value>>16)&0xFF)<60 && ((Value>>8)&0xFF)<60;
+}
+
+//---------------------------------------------------------------------------
+static inline bool TimeCode_Dump_IsSame(int32u A, int32u B)
+{
+    return !((A^B)&0x7FFFFFFF);
+}
+
+//---------------------------------------------------------------------------
+// If the time address of B is the one after the time address of A
+static bool TimeCode_Dump_IsNext(int32u A, int32u B, int8u FramesMax)
+{
+    const auto DropFrame=B>>31;
+    A&=0x7FFFFFFF;
+    B&=0x7FFFFFFF;
+    const auto Frames=(int8u)A;
+
+    //Same second
+    if (Frames!=FramesMax)
+        return Frames<FramesMax && B==A+1;
+
+    //Next second, 24-hour clock
+    auto Hours=A>>24;
+    auto Minutes=(A>>16)&0xFF;
+    auto Seconds=(A>>8)&0xFF;
+    Seconds++;
+    if (Seconds>=60)
+    {
+        Seconds=0;
+        Minutes++;
+        if (Minutes>=60)
+        {
+            Minutes=0;
+            Hours++;
+            if (Hours>=24)
+                Hours=0;
+        }
+    }
+    const int32u Frames_First=(DropFrame && FramesMax==29 && !Seconds && Minutes%10)?2:0; //Drop frame: frame numbers 00 and 01 are skipped at the start of each minute except each tenth minute
+    return B==TimeCode_Dump_Value(Hours, Minutes, Seconds, Frames_First);
+}
+
+//---------------------------------------------------------------------------
+// Frame number max and count of values per time address, from the count of values per second
+static bool TimeCode_Dump_FromFrameRate(float64 FrameRate, int8u& FramesMax, size_t& Repeat)
+{
+    const auto FrameRate_Rounded=float64_int64s(FrameRate);
+    if (FrameRate_Rounded<=0 || FrameRate<FrameRate_Rounded*0.9985 || FrameRate>FrameRate_Rounded*1.0005)
+        return false; //Neither an integer nor an integer divided by 1.001
+    for (Repeat=1; Repeat<=TimeCode_Dump_Repeat_Max; Repeat++)
+        for (const auto FrameRate_Base : TimeCode_Dump_FrameRates)
+            if ((int64u)FrameRate_Rounded==FrameRate_Base*Repeat)
+            {
+                FramesMax=(int8u)(FrameRate_Base-1);
+                return true;
+            }
+    return false;
+}
+
+//---------------------------------------------------------------------------
+// Frame number max and count of values per time address, from the values
+static void TimeCode_Dump_FromValues(const std::vector<int32u>& Values, int8u& FramesMax, size_t& Repeat)
+{
+    //Frame number max: most seen frame number before the first time address of the next second
+    size_t FramesMax_Counts[sizeof(TimeCode_Dump_FrameRates)]={};
+    for (size_t i=1; i<Values.size(); i++)
+        if (TimeCode_Dump_IsValid(Values[i-1]) && TimeCode_Dump_IsValid(Values[i]))
+            for (size_t j=0; j<sizeof(TimeCode_Dump_FrameRates); j++)
+            {
+                const auto FramesMax_Candidate=(int8u)(TimeCode_Dump_FrameRates[j]-1);
+                if ((int8u)Values[i-1]==FramesMax_Candidate && TimeCode_Dump_IsNext(Values[i-1], Values[i], FramesMax_Candidate))
+                    FramesMax_Counts[j]++;
+            }
+    FramesMax=(int8u)-1; //Not needed if there is no such change of second
+    size_t FramesMax_Count=0;
+    for (size_t j=0; j<sizeof(TimeCode_Dump_FrameRates); j++)
+        if (FramesMax_Counts[j]>FramesMax_Count)
+        {
+            FramesMax_Count=FramesMax_Counts[j];
+            FramesMax=(int8u)(TimeCode_Dump_FrameRates[j]-1);
+        }
+
+    //Count of values per time address: most seen count between 2 changes to the next time address, else before such change
+    size_t Repeat_Counts[2][TimeCode_Dump_Repeat_Max+1]={};
+    size_t Run=0;
+    bool Run_IsAfterNext=false;
+    for (size_t i=0; i<Values.size(); i++)
+    {
+        if (!TimeCode_Dump_IsValid(Values[i]))
+        {
+            Run=0;
+            continue;
+        }
+        if (Run && TimeCode_Dump_IsSame(Values[i-1], Values[i]))
+        {
+            Run++;
+            continue;
+        }
+        const auto IsNext=Run && TimeCode_Dump_IsNext(Values[i-1], Values[i], FramesMax);
+        if (IsNext && Run<=TimeCode_Dump_Repeat_Max)
+        {
+            if (Run_IsAfterNext)
+                Repeat_Counts[0][Run]++;
+            Repeat_Counts[1][Run]++;
+        }
+        Run=1;
+        Run_IsAfterNext=IsNext;
+    }
+    Repeat=1;
+    for (const auto& Repeat_Count : Repeat_Counts)
+    {
+        size_t Repeat_Count_Max=0;
+        for (size_t j=1; j<=TimeCode_Dump_Repeat_Max; j++)
+            if (Repeat_Count[j]>Repeat_Count_Max)
+            {
+                Repeat_Count_Max=Repeat_Count[j];
+                Repeat=j;
+            }
+        if (Repeat_Count_Max)
+            break;
+    }
+}
+
+//---------------------------------------------------------------------------
+static void TimeCode_Dump_List_Finish(MediaInfo_Config_MediaInfo::timecode_dump& TimeCode_Dump)
+{
+    //The frame rate provides the expected time addresses, they are guessed from the values if it is not known
+    const auto& Values=TimeCode_Dump.Values;
+    int8u FramesMax;
+    size_t Repeat;
+    if (!TimeCode_Dump_FromFrameRate(TimeCode_Dump.FrameRate, FramesMax, Repeat))
+        TimeCode_Dump_FromValues(Values, FramesMax, Repeat);
+
+    auto& List=TimeCode_Dump.List;
+    List.clear();
+    List.reserve(Values.size()*26);
+    size_t Run=0; //Count of consecutive values with the current time address, 0 if the previous value is not valid
+    bool Run_IsPartial=false; //Values with the current time address may be before the first value or after a discontinuity
+    for (size_t i=0; i<Values.size(); i++)
+    {
+        const auto Value=Values[i];
+        bool IsNotContinuous;
+        List+="    <tc v=\"";
+        if (!TimeCode_Dump_IsValid(Value))
+        {
+            IsNotContinuous=Run?true:false;
+            Run=0;
+        }
+        else
+        {
+            const auto IsSame=Run && TimeCode_Dump_IsSame(Values[i-1], Value);
+            if (!Run)
+                IsNotContinuous=false;
+            else if (IsSame)
+                IsNotContinuous=Run>=Repeat; //Too many values with this time address
+            else
+                IsNotContinuous=(Run<Repeat && !Run_IsPartial) //Not enough values with the previous time address
+                             || !TimeCode_Dump_IsNext(Values[i-1], Value, FramesMax);
+            if (!IsSame || IsNotContinuous)
+            {
+                Run_IsPartial=!Run || IsNotContinuous;
+                Run=0;
+            }
+            Run++;
+
+            const auto Hours=(Value>>24)&0x7F;
+            const auto Minutes=(Value>>16)&0xFF;
+            const auto Seconds=(Value>>8)&0xFF;
+            const auto Frames=Value&0xFF;
+            List+=(char)('0'+Hours/10);
+            List+=(char)('0'+Hours%10);
+            List+=':';
+            List+=(char)('0'+Minutes/10);
+            List+=(char)('0'+Minutes%10);
+            List+=':';
+            List+=(char)('0'+Seconds/10);
+            List+=(char)('0'+Seconds%10);
+            List+=((Value>>31) && FramesMax>=29)?';':':'; //No drop frame flag with 24 or 25 frames per second
+            List+=(char)('0'+Frames/10);
+            List+=(char)('0'+Frames%10);
+        }
+        List+='\"';
+        if (IsNotContinuous)
+            List+=" nc=\"1\"";
+        List+="/>\n";
+    }
+}
+#endif //MEDIAINFO_ADVANCED
+
+//***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
 
@@ -379,22 +589,14 @@ void File_Gxf_TimeCode::Read_Buffer_Continue()
                         if (id.empty())
                             id = std::to_string(((*Config->TimeCode_Dumps).size() + 1));
                         auto& TimeCode_Dump = (*Config->TimeCode_Dumps)[id];
-                        if (TimeCode_Dump.List.empty())
+                        if (TimeCode_Dump.Attributes_First.empty())
                         {
                             TimeCode_Dump.Attributes_First += " id=\"" + id + "\" format=\"SMPTE ST12-1\"";
-                            TimeCode_Dump.FramesMax = 99;
+                            TimeCode_Dump.List_Finish = TimeCode_Dump_List_Finish;
                         }
-                        auto Frames = Frames_Tens * 10 + Frames_Units;
-                        if (TimeCode_Dump.FramesMax == 99 && Frames <= 2 && TimeCode_Dump.LastTC.IsValid() && TimeCode_Dump.LastTC.GetFrames() >= 2) {
-                            TimeCode_Dump.FramesMax = TimeCode_Dump.LastTC.GetFrames();
-                            TimeCode_Dump.LastTC.SetFramesMax(TimeCode_Dump.FramesMax);
-                        }
-                        TimeCode CurrentTC(Hours_Tens * 10 + Hours_Units, Minutes_Tens * 10 + Minutes_Units, Seconds_Tens * 10 + Seconds_Units, Frames, TimeCode_Dump.FramesMax, TimeCode::DropFrame(DropFrame));
-                        TimeCode_Dump.List += "    <tc v=\"" + CurrentTC.ToString() + '\"';
-                        if (TimeCode_Dump.LastTC.IsValid() && TimeCode_Dump.LastTC.GetFramesMax() && CurrentTC != TimeCode_Dump.LastTC + 1)
-                            TimeCode_Dump.List += " nc=\"1\"";
-                        TimeCode_Dump.LastTC = CurrentTC;
-                        TimeCode_Dump.List += "/>\n";
+                        if (FieldsPerFrame_Code == 1 || FieldsPerFrame_Code == 2)
+                            TimeCode_Dump.FrameRate = Gxf_FrameRate(FrameRate_Code) * FieldsPerFrame_Code; //1 value per field
+                        TimeCode_Dump.Values.push_back(TimeCode_Dump_Value(Hours_Tens * 10 + Hours_Units, Minutes_Tens * 10 + Minutes_Units, Seconds_Tens * 10 + Seconds_Units, Frames_Tens * 10 + Frames_Units, DropFrame));
                         TimeCode_Dump.FrameCount++;
                     }
                 #endif //MEDIAINFO_ADVANCED

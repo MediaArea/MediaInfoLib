@@ -473,6 +473,9 @@ public :
             int64u FrameCount=0;
             string Attributes_First;
             string Attributes_Last;
+            std::vector<int32u> Values; //Values not yet in List, the check of their continuity needs all of them
+            float64 FrameRate=0; //Count of values per second, 0 if unknown
+            void (*List_Finish)(timecode_dump&)=nullptr; //Fills List from Values
         };
         std::map<std::string, timecode_dump>* TimeCode_Dumps;
     #endif //MEDIAINFO_ADVANCED
