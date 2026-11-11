@@ -58,9 +58,15 @@ public :
 private :
     //Streams management
     void Streams_Fill();
+    void Streams_Finish();
 
     //Buffer - Global
     void Read_Buffer_Continue ();
+
+    //Temp - Matroska BlockAdditional
+    string TimeCode_LastFrame; //Valid time code of the frame with the highest time stamp
+    int64u TimeCode_LastFrame_FrameNumber;
+    int64u TimeCode_LastFrame_PTS;
 };
 
 } //NameSpace

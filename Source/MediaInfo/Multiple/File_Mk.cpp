@@ -1442,6 +1442,8 @@ void File_Mk::Streams_Finish()
                     }
                 }
             #endif //MEDIAINFO_ADVANCED
+            Add->second.Parser->Frame_Count_NotParsedIncluded=Temp->second.PacketCount; //Count of frames of the track
+            Add->second.Parser->FrameInfo.PTS=Temp->second.TimeCode_Last==(int64u)-1?(int64u)-1:(Temp->second.TimeCode_Last*TimecodeScale); //Time stamp of the last frame of the track
             Finish(Add->second.Parser);
             Merge(*Add->second.Parser);
             if (StreamKind_Last!=StreamKind_Last_Sav || StreamPos_Last!=StreamPos_Last_Sav)
@@ -2995,6 +2997,7 @@ void File_Mk::Segment_Cluster_BlockGroup()
 {
     Segment_Cluster_BlockGroup_BlockDuration_Value=(int64u)-1;
     Segment_Cluster_BlockGroup_BlockDuration_TrackNumber=(int64u)-1;
+    Segment_Cluster_BlockGroup_Block_TimeCode=(int64u)-1;
 }
 
 //---------------------------------------------------------------------------
@@ -3022,7 +3025,7 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
         const size_t Trace_Block_Count=streamItem.Trace_Segment_Cluster_Block_Count; //Copy, a finish during the parsing of the block deletes the streams
     #endif // MEDIAINFO_TRACE
     streamItem.PacketCount++;
-    if (streamItem.Searching_Payload || streamItem.Searching_TimeStamps || streamItem.Searching_TimeStamp_Start)
+    if (streamItem.Searching_Payload || streamItem.Searching_TimeStamps || streamItem.Searching_TimeStamp_Start || !streamItem.BlockAdditions.empty())
     {
         //Parsing
         int16u TimeCodeU;
@@ -3046,6 +3049,13 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
                 streamItem.TimeCodes.push_back(Segment_Cluster_TimeCode_Value+TimeCode);
                 if (streamItem.TimeCodes.size()>128)
                     streamItem.Searching_TimeStamps=false;
+            }
+            if (!streamItem.BlockAdditions.empty())
+            {
+                //The block additions are about a frame of the track, the last one is the one with the highest time stamp
+                Segment_Cluster_BlockGroup_Block_TimeCode=Segment_Cluster_TimeCode_Value+TimeCode;
+                if (streamItem.TimeCode_Last==(int64u)-1 || streamItem.TimeCode_Last<Segment_Cluster_BlockGroup_Block_TimeCode)
+                    streamItem.TimeCode_Last=Segment_Cluster_BlockGroup_Block_TimeCode;
             }
 
             if (Segment_Cluster_BlockGroup_BlockDuration_Value!=(int64u)-1)
@@ -3342,6 +3352,11 @@ void File_Mk::Segment_Cluster_BlockGroup_BlockAdditions_BlockMore_BlockAdditiona
     auto Parser=BlockAdditions.find(BlockAddIDValue);
     if (Parser!=BlockAdditions.end())
     {
+        //Number of the frame in the track, time stamp and duration of the frame, when known (the block is not known if the block additions are before it)
+        const bool Block_IsKnown=Segment_Cluster_BlockGroup_Block_TimeCode!=(int64u)-1;
+        Parser->second.Parser->Frame_Count_NotParsedIncluded=(Block_IsKnown && !Probe_IsRunning)?(streamItem.PacketCount-1):(int64u)-1;
+        Parser->second.Parser->FrameInfo.PTS=Block_IsKnown?(Segment_Cluster_BlockGroup_Block_TimeCode*TimecodeScale):(int64u)-1;
+        Parser->second.Parser->FrameInfo.DUR=streamItem.TrackDefaultDuration?streamItem.TrackDefaultDuration:(int64u)-1;
         Open_Buffer_Continue(Parser->second.Parser);
         return;
     }
