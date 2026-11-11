@@ -270,9 +270,9 @@ void File_Gxf::Streams_Finish()
         if (Gxf_MediaTypes_StreamKind(Streams[StreamID].MediaType)==Stream_Video)
         {
             Ztring Title=Streams[StreamID].MediaName;
-            size_t Title_Extension_Offset=Title.find(__T(".M0"));
+            size_t Title_Extension_Offset=Title.rfind(__T(".M0"));
             if (Title_Extension_Offset==std::string::npos || Title_Extension_Offset!=Title.size()-3)
-                Title_Extension_Offset=Title.find(__T(".H0"));
+                Title_Extension_Offset=Title.rfind(__T(".H0"));
             if (Title_Extension_Offset!=std::string::npos && Title_Extension_Offset==Title.size()-3)
             {
                 Title.resize(Title.size()-3);
@@ -282,7 +282,7 @@ void File_Gxf::Streams_Finish()
         if (Gxf_MediaTypes_StreamKind(Streams[StreamID].MediaType)==Stream_Audio && Config->File_Audio_MergeMonoStreams_Get())
         {
             Ztring Title=Streams[StreamID].MediaName;
-            size_t Title_Extension_Offset=Title.find(__T(".A0"));
+            size_t Title_Extension_Offset=Title.rfind(__T(".A0"));
             if (Title_Extension_Offset!=std::string::npos && Title_Extension_Offset==Title.size()-3)
             {
                 Title.resize(Title.size()-3);
