@@ -1431,7 +1431,7 @@ void File_Ac3::Streams_Fill()
     }
 
     //TimeStamp
-    if (TimeStamp_IsPresent)
+    if (TimeStamp_IsPresent && TimeStamp_FirstFrame.IsValid())
     {
         Ztring TimeCode_FrameRate=Ztring::ToZtring(TimeStamp_FirstFrame.GetFrameRate(), 3);
         auto TimeStamp_FirstFrame_String=TimeStamp_FirstFrame.ToString();
@@ -4725,7 +4725,9 @@ void File_Ac3::TimeStamp()
     Skip_B2(                                                    "User private");
 
     FILLING_BEGIN();
-        TimeCode Temp(H1*10+H2, M1*10+M2, S1*10+S2, F1*10+F2, (int32u)(float64_int64s(Mpegv_frame_rate[FrameRate])-1), TimeCode::DropFrame(DropFrame).FPS1001(float64_int64s(Mpegv_frame_rate[FrameRate])!=Mpegv_frame_rate[FrameRate]));
+        TimeCode Temp;
+        if (Mpegv_frame_rate[FrameRate]) //Else the time code can not be used
+            Temp=TimeCode(H1*10+H2, M1*10+M2, S1*10+S2, F1*10+F2, (int32u)(float64_int64s(Mpegv_frame_rate[FrameRate])-1), TimeCode::DropFrame(DropFrame).FPS1001(float64_int64s(Mpegv_frame_rate[FrameRate])!=Mpegv_frame_rate[FrameRate]));
         #if MEDIAINFO_TRACE
         if (Trace_Activated)
         {
