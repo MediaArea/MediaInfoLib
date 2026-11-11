@@ -2079,12 +2079,21 @@ bool File__Analyze::Buffer_Parse()
 
     //Synchro
     if (MustSynchronize)
+    {
+        size_t Buffer_Offset_NotSynched=(size_t)-1;
         do
         {
             if (!Synchro_Manage())
                 return false; //Wait for more data
+            if (!Synched)
+            {
+                if (Buffer_Offset==Buffer_Offset_NotSynched)
+                    Buffer_Offset++; //The synchronization found here is refused by its test again, searching after it
+                Buffer_Offset_NotSynched=Buffer_Offset;
+            }
         }
         while (!Synched);
+    }
     #if MEDIAINFO_DEMUX
     else if (Demux_TotalBytes<=Buffer_TotalBytes+Buffer_Offset)
     {
