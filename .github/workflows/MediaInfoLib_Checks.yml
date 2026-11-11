@@ -78,8 +78,9 @@ jobs:
       RUN_TESTS: ${{ matrix.RUN_TESTS }}
       # curl and graphviz linked for this job, else loaded at run time
       LINK_CURL_GRAPHVIZ: ${{ (matrix.environement == 'link-curl-graphviz' || (matrix.os == 'macos-26' && matrix.environement == 'gcc')) && 'yes' || '' }}
-      # CLI of MediaInfo with this library: with the C++ API, and with the C API loaded at run time
-      CLI_MODES: ${{ (matrix.os == 'ubuntu-26.04' || matrix.os == 'macos-26') && (matrix.environement == 'gcc' && 'shared dll dll_without_unicode' || (matrix.environement == 'utf8' && 'shared' || '')) || '' }}
+      # CLI of MediaInfo with this library (with and without Unicode): with the C++ API, and with the C API loaded at run time by a CLI with and
+      # without Unicode
+      CLI_MODES: ${{ (matrix.os == 'ubuntu-26.04' || matrix.os == 'macos-26') && (matrix.environement == 'gcc' || matrix.environement == 'utf8') && 'shared dll dll_without_unicode' || '' }}
       CCACHE_DIR: ${{ github.workspace }}/.ccache
       CCACHE_MAXSIZE: 300M
       CCACHE_COMPRESS: 1
@@ -115,7 +116,7 @@ jobs:
           key: ccache-${{ matrix.os }}-${{ matrix.environement }}-${{ github.sha }}
           restore-keys: ccache-${{ matrix.os }}-${{ matrix.environement }}-
       - name: pymediainfo
-        if: ${{ env.CLI_MODES && matrix.environement == 'gcc' }}
+        if: ${{ env.CLI_MODES }}
         run: |
           python3 -m venv "${RUNNER_TEMP}/venv"
           "${RUNNER_TEMP}/venv/bin/pip" install pymediainfo
@@ -274,8 +275,13 @@ jobs:
             runner: windows-11-vs2026-arm # Run of the tests on ARM64
             vcvarsall: arm64
             python: arm64
+          - architecture: x64 # DLL without Unicode (CMake), same C API and tests
+            runner: windows-latest
+            vcvarsall: x64
+            python: x64
+            unicode: 'no'
       fail-fast: false
-    name: MSBuild (${{ matrix.architecture }})
+    name: ${{ matrix.unicode == 'no' && 'CMake without Unicode (x64)' || format('MSBuild ({0})', matrix.architecture) }}
     runs-on: ${{ matrix.runner }}
     defaults:
       run:
@@ -306,14 +312,25 @@ jobs:
         with:
           msbuild-architecture: ${{ runner.arch == 'ARM64' && 'arm64' || 'x64' }}
       - name: Build
+        if: matrix.unicode != 'no'
         run: MSBuild.exe -p:Configuration=Release -p:Platform=${{ matrix.architecture }} MediaInfoLib/Project/MSVC2026/MediaInfoLib.slnx -verbosity:quiet -warnaserror -m
+      - name: Build without Unicode
+        if: matrix.unicode == 'no'
+        run: |
+          cmake -S MediaInfoLib/Project/CMake -B build -A ${{ matrix.architecture }} -DENABLE_UNICODE=OFF -DBUILD_SHARED_LIBS=ON -DZLIB_BUILD_SHARED=OFF -DZLIB_BUILD_TESTING=OFF
+          cmake --build build --config Release -j4
       - name: Compile test
         shell: cmd
         working-directory: MediaInfoLib
         run: |
           for /f "usebackq delims=" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do call "%%i\VC\Auxiliary\Build\vcvarsall.bat" ${{ matrix.vcvarsall }}
-          rem Test program for the code page of the system (cp1252) and with the code page of its manifest
-          set Output=Project\MSVC2026\${{ matrix.architecture }}\Release
+          rem Test program for the code page of the system (cp1252) and with the code page of its manifest, the same for the library without
+          rem Unicode (the test program uses only the C API, which gives the same results)
+          if "${{ matrix.unicode }}"=="no" (
+            set Output=..\build\Release
+          ) else (
+            set Output=Project\MSVC2026\${{ matrix.architecture }}\Release
+          )
           set Test=Project\GNU\Library\test
           cl /nologo /EHsc /O1 /DUNICODE /D_UNICODE /Fo%Test%\mil_filename.obj /Fe%Test%\mil_filename_1252.exe %Test%\Source\filename.cpp %Output%\MediaInfo.lib || exit /b 1
           for %%c in (65001 932) do (
