@@ -56,8 +56,10 @@ private :
     int32u Flags;
     int32u Width;
     int32u Height;
+    int32u Depth;
     int32u pfFlags;
     int32u FourCC;
+    int32u Caps2;
 };
 
 } //NameSpace

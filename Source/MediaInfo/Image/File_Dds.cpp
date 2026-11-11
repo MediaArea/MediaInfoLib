@@ -53,8 +53,10 @@ File_Dds::File_Dds()
     Flags=0;
     Width=0;
     Height=0;
+    Depth=0;
     pfFlags=0;
     FourCC=0;
+    Caps2=0;
 }
 
 //***************************************************************************
@@ -80,6 +82,8 @@ void File_Dds::Streams_Accept()
             Fill(StreamKind_Last, 0, "Height", Height);
         if (Flags&0x4) //DDSD_WIDTH
             Fill(StreamKind_Last, 0, "Width", Width);
+        if ((Flags&0x800000) && (Caps2&0x200000) && Depth) //DDSD_DEPTH and DDSCAPS2_VOLUME
+            Fill(StreamKind_Last, 0, "Format_Settings_SliceCount", Depth); //Depth of a volume texture
     }
     else
         Stream_Prepare(StreamKind_Last);
@@ -122,7 +126,7 @@ void File_Dds::FileHeader_Parse()
     Get_L4 (Height,                                             "Height");
     Get_L4 (Width,                                              "Width");
     Skip_L4(                                                    "PitchOrLinearSize");
-    Skip_L4(                                                    "Depth");
+    Get_L4 (Depth,                                              "Depth");
     Skip_L4(                                                    "MipMapCount");
     Skip_XX(4*11,                                               "Reserved1");
     Element_Begin1("Pixel format");
@@ -144,7 +148,7 @@ void File_Dds::FileHeader_Parse()
             Skip_XX(pf_Size-4,                                  "");
     Element_End0();
     Skip_L4(                                                    "Caps");
-    Skip_L4(                                                    "Caps2");
+    Get_L4 (Caps2,                                              "Caps2");
     Skip_L4(                                                    "Caps3");
     Skip_L4(                                                    "Caps4");
     Skip_L4(                                                    "Reserved2");
