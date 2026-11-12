@@ -561,6 +561,10 @@ void File_Flv::Streams_Fill()
         Fill(Stream_Audio, 0, Audio_Delay, Stream[Stream_Audio].Delay+Retrieve(Stream_Audio, 0, Audio_Delay).To_int32u(), 10, true);
         Fill(Stream_Audio, 0, Audio_Delay_Source, "Container");
     }
+
+    //Tags before the stream
+    if (Count_Get(Stream_Audio))
+        File__Tags_Helper::Streams_Fill();
 }
 
 //---------------------------------------------------------------------------
