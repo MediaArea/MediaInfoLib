@@ -277,8 +277,16 @@ void File_Pdf::xref()
         Element_End0();
         return;
     }
-    Element_Begin1("Cross-Reference SubSection");
-        Get_String(SizeOfLine(), FirstLine,                         "Header");
+    const size_t Offsets_Size=Offsets.size();
+    for (;;)
+    {
+        //A section has 1 or more subsections, then the trailer
+        Peek_String(SizeOfLine(), FirstLine);
+        if (FirstLine.empty() || FirstLine[0]<'0' || FirstLine[0]>'9')
+            break;
+
+        Element_Begin1("Cross-Reference SubSection");
+        Skip_String(FirstLine.size(),                               "Header");
         size_t FirstLine_Space=FirstLine.find(' ');
         int32u Base=atoi((const char*)FirstLine.c_str());
         int32u Count=0;
@@ -292,6 +300,7 @@ void File_Pdf::xref()
             if (File_Offset+Buffer_Size<File_Size)
             {
                 // We wait for more data
+                Offsets.resize(Offsets_Size);
                 Buffer_Offset=0;
                 Element_Offset=0;
                 Element_DoNotShow();
@@ -328,7 +337,8 @@ void File_Pdf::xref()
                 Element_Offset+=2; //Skipping spaces at end and line return
             }
         }
-    Element_End0();
+        Element_End0();
+    }
 
     Element_End0();
 
