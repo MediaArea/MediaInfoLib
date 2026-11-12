@@ -893,7 +893,7 @@ const char*  DTS_ChannelPositions[16]=
     "Front: L C R, Back: C",
     "Front: L R, Side: L R",
     "Front: L C R, Side: L R",
-    "Front: L C C R, Side: L R",
+    "Front: L Lc Rc R, Side: L R",
     "Front: L C R, Side: L R",
     "Front: L R, Side: L R, Back: L R",
     "Front: L C R, Side: L R, Back: L R",
@@ -960,14 +960,19 @@ static const char* DTS_ExtensionAudioDescriptor[]=
 std::string DTS_HD_SpeakerActivityMask (int16u SpeakerActivityMask, bool AddCs=false, bool AddLrsRrs=false)
 {
     std::string Text;
-    if ((SpeakerActivityMask&0x0003)==0x0003)
-        Text+="Front: L C R";
-    else
+    if (SpeakerActivityMask&0x0203)
     {
-        if (SpeakerActivityMask&0x0001)
-            Text+="Front: C";
+        Text+="Front:";
         if (SpeakerActivityMask&0x0002)
-            Text+="Front: L R";
+            Text+=" L";
+        if (SpeakerActivityMask&0x0200)
+            Text+=" Lc";
+        if (SpeakerActivityMask&0x0001)
+            Text+=" C";
+        if (SpeakerActivityMask&0x0200)
+            Text+=" Rc";
+        if (SpeakerActivityMask&0x0002)
+            Text+=" R";
     }
 
     if (SpeakerActivityMask&0x0004)
@@ -994,8 +999,6 @@ std::string DTS_HD_SpeakerActivityMask (int16u SpeakerActivityMask, bool AddCs=f
 
     if (SpeakerActivityMask&0x0100)
         Text+=", TopCtrSrrd";
-    if (SpeakerActivityMask&0x0200)
-        Text+=", Ctr: L R";
     if (SpeakerActivityMask&0x0400)
         Text+=", Wide: L R";
     if (SpeakerActivityMask&0x2000)
@@ -1023,17 +1026,14 @@ std::string DTS_HD_SpeakerActivityMask (int16u SpeakerActivityMask, bool AddCs=f
 std::string DTS_HD_SpeakerActivityMask2 (int16u SpeakerActivityMask, bool AddCs=false, bool AddLrsRrs=false)
 {
     std::string Text;
-    if ((SpeakerActivityMask&0x0003)==0x0003)
-        Text+="3";
-    else
-    {
-        if (SpeakerActivityMask&0x0001)
-            Text+="1";
-        else if (SpeakerActivityMask&0x0002)
-            Text+="2";
-        else
-            Text+="0";
-    }
+    int8u Front=0;
+    if (SpeakerActivityMask&0x0001)
+        Front++;
+    if (SpeakerActivityMask&0x0002)
+        Front+=2;
+    if (SpeakerActivityMask&0x0200)
+        Front+=2;
+    Text+=(char)('0'+Front);
 
     if (SpeakerActivityMask&0x0004)
         Text+="/2";
@@ -1062,8 +1062,6 @@ std::string DTS_HD_SpeakerActivityMask2 (int16u SpeakerActivityMask, bool AddCs=
 
     if (SpeakerActivityMask&0x0100)
         Text+=".1";
-    if (SpeakerActivityMask&0x0200)
-        Text+=".2";
     if (SpeakerActivityMask&0x0400)
         Text+=".2";
     if (SpeakerActivityMask&0x2000)
