@@ -886,6 +886,7 @@ void File_Mk::Streams_Finish()
         }
         float64 FrameRate_FromTags = 0.0;
         bool HasStats=false;
+        size_t Track_StreamCount=1; //Several streams in the track, e.g. programs
 
         //Tags (per track)
         if (Temp->second.TrackUID && Temp->second.TrackUID!=(int64u)-1)
@@ -1328,7 +1329,57 @@ void File_Mk::Streams_Finish()
                 }
             #endif //MEDIAINFO_PCM_YES
             Finish(Temp->second.Parser);
+
+            //Several audio streams in the track (e.g. programs), each one is merged in its own stream
+            const size_t Parser_Count=StreamKind_Last==Stream_Audio?Temp->second.Parser->Count_Get(Stream_Audio):0;
+            Ztring Track_ID;
+            ZtringList StreamSave;
+            ZtringListList StreamMoreSave;
+            if (Parser_Count>1)
+            {
+                //Content of the track is for all the streams, content from each stream is preferred
+                Clear(Stream_Audio, StreamPos_Last, Audio_Channel_s_);
+                Clear(Stream_Audio, StreamPos_Last, Audio_BitRate);
+                Clear(Stream_Audio, StreamPos_Last, Audio_BitRate_Encoded);
+                Clear(Stream_Audio, StreamPos_Last, Audio_SamplingRate);
+                Clear(Stream_Audio, StreamPos_Last, Audio_StreamSize);
+                Clear(Stream_Audio, StreamPos_Last, Audio_StreamSize_Encoded);
+                Track_ID=Retrieve(Stream_Audio, StreamPos_Last, Audio_ID);
+                StreamSave.Write((*File__Analyze::Stream)[Stream_Audio][StreamPos_Last].Read());
+                StreamMoreSave.Write((*Stream_More)[Stream_Audio][StreamPos_Last].Read());
+            }
+
             Merge(*Temp->second.Parser, StreamKind_Last, 0, StreamPos_Last);
+            if (Parser_Count>1)
+            {
+                const size_t StreamPos_Track=StreamPos_Last;
+                Fill(Stream_Audio, StreamPos_Track, Audio_ID, Track_ID+__T('-')+Temp->second.Parser->Retrieve(Stream_Audio, 0, Audio_ID), true);
+                for (size_t Parser_Pos=1; Parser_Pos<Parser_Count; Parser_Pos++)
+                {
+                    //Inserting the stream after the previous one of the track, and updating the streams of the next tracks
+                    const size_t StreamPos=StreamPos_Track+Parser_Pos;
+                    Stream_Prepare(Stream_Audio, StreamPos);
+                    for (std::map<int64u, stream>::iterator Other=Stream.begin(); Other!=Stream.end(); ++Other)
+                        if (Other!=Temp && Other->second.StreamKind==Stream_Audio && Other->second.StreamPos!=(size_t)-1 && Other->second.StreamPos>=StreamPos)
+                            Other->second.StreamPos++;
+
+                    //Content of the track
+                    for (size_t Pos=0; Pos<StreamSave.size(); Pos++)
+                        if (Pos!=General_ID && Retrieve(Stream_Audio, StreamPos, Pos).empty())
+                            Fill(Stream_Audio, StreamPos, Pos, StreamSave[Pos]);
+                    for (size_t Pos=0; Pos<StreamMoreSave.size(); Pos++)
+                    {
+                        Fill(Stream_Audio, StreamPos, StreamMoreSave(Pos, 0).To_UTF8().c_str(), StreamMoreSave(Pos, 1));
+                        Fill_SetOptions(Stream_Audio, StreamPos, StreamMoreSave(Pos, 0).To_UTF8().c_str(), StreamMoreSave(Pos, Info_Options).To_UTF8().c_str());
+                    }
+
+                    Merge(*Temp->second.Parser, Stream_Audio, Parser_Pos, StreamPos);
+                    Fill(Stream_Audio, StreamPos, Audio_ID, Track_ID+__T('-')+Temp->second.Parser->Retrieve(Stream_Audio, Parser_Pos, Audio_ID), true);
+                }
+                StreamKind_Last=Stream_Audio;
+                StreamPos_Last=StreamPos_Track;
+                Track_StreamCount=Parser_Count;
+            }
             //if (!Duration_Temp.empty()) Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), Duration_Temp, true);
             if (Temp->second.StreamKind==Stream_Video && !Codec_Temp.empty())
                 Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Codec), Codec_Temp, true);
@@ -1472,13 +1523,16 @@ void File_Mk::Streams_Finish()
         if (Temp->second.FrameRate!=0 && Retrieve(Stream_Video, StreamPos_Last, Video_FrameRate).empty())
             Fill(Stream_Video, StreamPos_Last, Video_FrameRate, Temp->second.FrameRate, 3);
 
-        //Flags
-        Fill(StreamKind_Last, StreamPos_Last, "Default", Temp->second.ServiceKind[Service_Default]?"Yes":"No");
-        Fill(StreamKind_Last, StreamPos_Last, "Forced", Temp->second.ServiceKind[Service_Forced]?"Yes":"No");
-        for (auto i = 0; i < Service_Max; i++) {
-            if (Temp->second.ServiceKind[i]) {
-                Fill(StreamKind_Last, StreamPos_Last, "ServiceKind", Matroska_ServiceKind[i]);
-                Fill(StreamKind_Last, StreamPos_Last, "ServiceKind/String", Matroska_ServiceKind_String[i]);
+        //Flags, for each stream of the track
+        for (size_t StreamPos=StreamPos_Last; StreamPos<StreamPos_Last+Track_StreamCount; StreamPos++)
+        {
+            Fill(StreamKind_Last, StreamPos, "Default", Temp->second.ServiceKind[Service_Default]?"Yes":"No");
+            Fill(StreamKind_Last, StreamPos, "Forced", Temp->second.ServiceKind[Service_Forced]?"Yes":"No");
+            for (auto i = 0; i < Service_Max; i++) {
+                if (Temp->second.ServiceKind[i]) {
+                    Fill(StreamKind_Last, StreamPos, "ServiceKind", Matroska_ServiceKind[i]);
+                    Fill(StreamKind_Last, StreamPos, "ServiceKind/String", Matroska_ServiceKind_String[i]);
+                }
             }
         }
     }
