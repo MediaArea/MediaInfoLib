@@ -599,6 +599,7 @@ File__Analyze::File__Analyze ()
     Config_LineSeparator=MediaInfoLib::Config.LineSeparator_Get();
     IsSub=false;
     StreamSource=IsContainer;
+    StreamSource_IsShared=false;
 
     //In
     #if MEDIAINFO_EVENTS
@@ -4107,7 +4108,7 @@ void File__Analyze::ForceFinish ()
     Status[IsFinished]=true;
 
     //Real stream size
-    if (Config->ParseSpeed>=1 && StreamSource==IsStream && Buffer_TotalBytes)
+    if (Config->ParseSpeed>=1 && StreamSource==IsStream && !StreamSource_IsShared && Buffer_TotalBytes)
     {
         //Exception with text streams embedded in video
         if (StreamKind_Last==Stream_Text)
