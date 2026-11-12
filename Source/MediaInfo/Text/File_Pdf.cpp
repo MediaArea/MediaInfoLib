@@ -34,6 +34,38 @@ namespace MediaInfoLib
 {
 
 //***************************************************************************
+// Infos
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+static inline bool Pdf_IsSpace(int8u Value)
+{
+    return Value==' ' || Value=='\r' || Value=='\n' || Value=='\t' || Value=='\f' || Value=='\0';
+}
+
+//---------------------------------------------------------------------------
+static inline bool Pdf_IsDelimiter(int8u Value)
+{
+    return Value=='/' || Value=='(' || Value==')' || Value=='<' || Value=='>' || Value=='[' || Value==']' || Value=='{' || Value=='}' || Value=='%';
+}
+
+//---------------------------------------------------------------------------
+static size_t Pdf_String_End(const int8u* Data, size_t Size, size_t Pos)
+{
+    //Position after the literal string beginning at Pos
+    size_t Level=0;
+    for (; Pos<Size; Pos++)
+        switch (Data[Pos])
+        {
+            case '\\': Pos++; break; //Escaped character
+            case '(' : Level++; break;
+            case ')' : if (!--Level) return Pos+1; break;
+            default  : ;
+        }
+    return Size;
+}
+
+//***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
 
@@ -735,7 +767,7 @@ bool File_Pdf::Get_Next(string &Key, Ztring &Value, string* Raw)
     string Line;
 
     //Removig end of lines
-    while (Element_Offset<Element_Size && (Buffer[Buffer_Offset+(size_t)Element_Offset]=='\r' || Buffer[Buffer_Offset+(size_t)Element_Offset]=='\n' || Buffer[Buffer_Offset+(size_t)Element_Offset]==' '))
+    while (Element_Offset<Element_Size && Pdf_IsSpace(Buffer[Buffer_Offset+(size_t)Element_Offset]))
         Element_Offset++;
 
     //End
@@ -787,88 +819,77 @@ bool File_Pdf::Get_Next(string &Key, Ztring &Value, string* Raw)
         return false;
     }
 
-    //Base
-    int64u Line_Base=Element_Offset;
-
     //Testing next key
-    size_t Line_End=0;
-    size_t Line_Begin=Line_End;
-
-    // Key-Value
-    if (Line_Begin<Line.size() && Line[Line_Begin]=='/')
-    {
-        Line_End= Line_Begin+1;
-        size_t HasParenthesis=0;
-        size_t HasBracket=0;
-        size_t HasSpace=0;
-        size_t HasValue=0;
-        for (;;)
-        {
-            if (Line_End==Line.size())
-                break;
-
-            if (!HasParenthesis && !HasBracket && HasValue && Line[Line_End]=='<' && Line_End+1<Line.size() && Line[Line_End+1]=='<')
-                break;
-            if (!HasParenthesis && !HasBracket && HasValue && Line[Line_End]=='/')
-                break;
-            else if (!HasValue && Line[Line_End]=='/')
-                ++HasValue;
-            else if (!HasValue && HasSpace)
-                ++HasValue;
-
-            if (Line[Line_End]==' ')
-                ++HasSpace;
-
-            if (HasParenthesis && Line[Line_End]=='\\' && Line_End+1<Line.size())
-            {
-                Line_End+=2; //Escaped character in a string
-                continue;
-            }
-            if (Line[Line_End]=='(')
-                ++HasParenthesis;
-            if (HasParenthesis && Line[Line_End]==')')
-                --HasParenthesis;
-
-            if (Line[Line_End]=='[')
-                ++HasBracket;
-            if (HasBracket && Line[Line_End]==']')
-                --HasBracket;
-
-            ++Line_End;
-        }
-        while(Line_End && Line[Line_End-1]==' ')
-            Line_End--; //Removing trailing spaces
-
-        Element_Offset=Line_Base+Line_Begin;
-        string KeyValue;
-        Get_String(Line_End-Line_Begin, KeyValue,               "Key-Value");
-
-        size_t Key_Max=KeyValue.find_first_of(" (<");
-        if (Key_Max==string::npos)
-            Key_Max=KeyValue.size();
-        Key=KeyValue.substr(1, Key_Max-1);
-        size_t Value_Min=Key_Max;
-        while (Value_Min<KeyValue.size() && KeyValue[Value_Min]==' ')
-            ++Value_Min;
-        if (Raw)
-            Raw->assign(KeyValue, Value_Min, string::npos);
-        if (Value_Min<KeyValue.size() && KeyValue[Value_Min]=='(')
-        {
-            ++Value_Min;
-            size_t Value_Max=KeyValue.find(')', Value_Min);
-            if (Value_Max!=string::npos)
-            {
-                //TODO
-                Value.From_UTF8(KeyValue.c_str()+Value_Min, Value_Max-Value_Min);
-            }
-            else
-                Value.From_UTF8(KeyValue.c_str()+Value_Min);
-        }
-        else
-                Value.From_UTF8(KeyValue.c_str()+Value_Min);
+    const size_t Begin=Buffer_Offset+(size_t)Element_Offset;
+    if (Begin>=Buffer_Size || Buffer[Begin]!='/')
         return false;
-    }
+    const int8u* Data=Buffer+Begin;
+    size_t Size=Buffer_Size-Begin;
+    if (Size>Element_Size-Element_Offset)
+        Size=(size_t)(Element_Size-Element_Offset);
 
+    //Key
+    size_t Key_End=1;
+    while (Key_End<Size && !Pdf_IsSpace(Data[Key_End]) && !Pdf_IsDelimiter(Data[Key_End]))
+        Key_End++;
+
+    //Value, with or without space before it, which can be on several lines
+    size_t Value_Begin=Key_End;
+    while (Value_Begin<Size && Pdf_IsSpace(Data[Value_Begin]))
+        Value_Begin++;
+    size_t Value_End=Value_Begin;
+    if (Value_Begin<Size)
+        switch (Data[Value_Begin])
+        {
+            case '/' : //Name
+                        do
+                            Value_End++;
+                        while (Value_End<Size && !Pdf_IsSpace(Data[Value_End]) && !Pdf_IsDelimiter(Data[Value_End]));
+                        break;
+            case '(' : //Literal string
+                        Value_End=Pdf_String_End(Data, Size, Value_Begin);
+                        break;
+            case '[' : //Array
+                        {
+                        size_t Level=0;
+                        do
+                        {
+                            switch (Data[Value_End])
+                            {
+                                case '[' : Level++; break;
+                                case ']' : Level--; break;
+                                case '(' : Value_End=Pdf_String_End(Data, Size, Value_End)-1; break;
+                                default  : ;
+                            }
+                            Value_End++;
+                        }
+                        while (Level && Value_End<Size);
+                        }
+                        break;
+            case '<' :
+                        if (Value_Begin+1<Size && Data[Value_Begin+1]=='<')
+                            break; //Dictionary, its content is in the next items
+
+                        //Hexadecimal string
+                        while (Value_End<Size && Data[Value_End]!='>')
+                            Value_End++;
+                        if (Value_End<Size)
+                            Value_End++;
+                        break;
+            default  : //Number, boolean, null or reference to an object, up to the next key or the end of the dictionary
+                        while (Value_End<Size && !Pdf_IsDelimiter(Data[Value_End]))
+                            Value_End++;
+                        while (Value_End>Value_Begin && Pdf_IsSpace(Data[Value_End-1]))
+                            Value_End--;
+        }
+    if (Value_End==Value_Begin)
+        Value_Begin=Value_End=Key_End; //No value
+
+    Key.assign((const char*)Data+1, Key_End-1);
+    if (Raw)
+        Raw->assign((const char*)Data+Value_Begin, Value_End-Value_Begin);
+    Value.From_UTF8((const char*)Data+Value_Begin, Value_End-Value_Begin);
+    Skip_String(Value_End,                                      "Key-Value");
     return false;
 }
 
