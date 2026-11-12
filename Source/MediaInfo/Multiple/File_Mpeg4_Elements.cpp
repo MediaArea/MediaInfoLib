@@ -1740,7 +1740,7 @@ void File_Mpeg4::Data_Parse()
                 ATOM_END
             ATOM(moov_udta_WLOC)
             ATOM(moov_udta_thmb)
-            LIST_SKIP(moov_udta_XMP_) //TODO: parse XMP
+            LIST_SKIP(moov_udta_XMP_)
             ATOM(moov_udta_Xtra)
             ATOM(moov_udta_yrrc)
             ATOM_DEFAULT (moov_udta_xxxx); //User data
@@ -12236,6 +12236,23 @@ void File_Mpeg4::moov_udta_XMP_()
     Element_Name("eXtensible Metadata Platform");
 
     //Parsing
+    #if defined(MEDIAINFO_XMP_YES)
+        const int64u TotalSize=Element_TotalSize_Get();
+        if (Element_Size<TotalSize && TotalSize<=Buffer_MaximumSize/2)
+        {
+            Element_WaitForMoreData(); //Parsed when it is complete in the buffer, a bigger one is not parsed
+            return;
+        }
+        if (Element_Size>=TotalSize)
+        {
+            File_Xmp MI;
+            Open_Buffer_Init(&MI);
+            Open_Buffer_Continue(&MI);
+            Open_Buffer_Finalize(&MI);
+            Merge_Tags(MI, Tags_Xmp);
+            return;
+        }
+    #endif //defined(MEDIAINFO_XMP_YES)
     Skip_XX(Element_TotalSize_Get(),                            "Data");
     #if MEDIAINFO_HASH
         if (Hash && !IsSecondPass)
