@@ -1735,6 +1735,7 @@ void File_Ac3::Streams_Finish()
     }
 
     //Duration
+    const bool IsEac3=bsid_Max>0x0A && bsid_Max<=0x10 && numblkscod!=(int8u)-1;
     if (!IsSub)
     {
         int64u Frame_Count_ForDuration=0;
@@ -1756,7 +1757,8 @@ void File_Ac3::Streams_Finish()
         }
         if (Frame_Count_ForDuration)
         {
-            Clear(Stream_Audio, 0, Audio_BitRate);
+            if (!IsEac3) //The E-AC-3 bit rate is kept
+                Clear(Stream_Audio, 0, Audio_BitRate);
 
             //HD part
             if (Frame_Count_HD)
@@ -1787,26 +1789,40 @@ void File_Ac3::Streams_Finish()
             }
             if (Core_IsPresent)
             {
-                Fill(Stream_Audio, 0, Audio_FrameCount, Frame_Count_ForDuration);
-                if (AC3_SamplingRate[fscod])
+                if (IsEac3)
                 {
-                    float64 FrameDuration;
-                    if (bsid_Max<=0x08)
-                        FrameDuration=32;
-                    else if (bsid_Max<=0x09)
-                        FrameDuration=16; // Unofficial hack for low sample rate (e.g. 22.05 kHz)
-                    else
-                        FrameDuration=0;
-                    if (FrameDuration)
+                    int32u SamplingRate=fscod!=3?AC3_SamplingRate[fscod]:AC3_SamplingRate2[fscod2];
+                    int64u SamplingCount=Frame_Count_ForDuration*256*(numblkscod==3?6:(numblkscod+1));
+                    Fill(Stream_Audio, 0, Audio_FrameCount, Frame_Count_ForDuration);
+                    if (SamplingRate)
                     {
-                        FrameDuration*=((float64)48000)/AC3_SamplingRate[fscod]; //32 ms for 48 KHz, else proportional (34.83 for 44.1 KHz, 48 ms for 32 KHz)
-                        Fill(Stream_Audio, 0, Audio_SamplingCount, Frame_Count_ForDuration*1536);
-                        Fill(Stream_Audio, 0, Audio_Duration, Frame_Count_ForDuration*FrameDuration, 0);
-                        if (frmsizecod/2<19)
+                        Fill(Stream_Audio, 0, Audio_SamplingCount, SamplingCount);
+                        Fill(Stream_Audio, 0, Audio_Duration, ((float64)SamplingCount)*1000/SamplingRate, 0);
+                    }
+                }
+                else
+                {
+                    Fill(Stream_Audio, 0, Audio_FrameCount, Frame_Count_ForDuration);
+                    if (AC3_SamplingRate[fscod])
+                    {
+                        float64 FrameDuration;
+                        if (bsid_Max<=0x08)
+                            FrameDuration=32;
+                        else if (bsid_Max<=0x09)
+                            FrameDuration=16; // Unofficial hack for low sample rate (e.g. 22.05 kHz)
+                        else
+                            FrameDuration=0;
+                        if (FrameDuration)
                         {
-                            int32u BitRate=AC3_BitRate[frmsizecod/2]*1000;
-                            int32u Divider=bsid_Max == 9?2:1; // Unofficial hack for low sample rate (e.g. 22.05 kHz)
-                            Fill(Stream_Audio, 0, Audio_BitRate, BitRate/Divider);
+                            FrameDuration*=((float64)48000)/AC3_SamplingRate[fscod]; //32 ms for 48 KHz, else proportional (34.83 for 44.1 KHz, 48 ms for 32 KHz)
+                            Fill(Stream_Audio, 0, Audio_SamplingCount, Frame_Count_ForDuration*1536);
+                            Fill(Stream_Audio, 0, Audio_Duration, Frame_Count_ForDuration*FrameDuration, 0);
+                            if (frmsizecod/2<19)
+                            {
+                                int32u BitRate=AC3_BitRate[frmsizecod/2]*1000;
+                                int32u Divider=bsid_Max == 9?2:1; // Unofficial hack for low sample rate (e.g. 22.05 kHz)
+                                Fill(Stream_Audio, 0, Audio_BitRate, BitRate/Divider);
+                            }
                         }
                     }
                 }
