@@ -170,6 +170,22 @@ enum IPTC_CodedCharacterSet {
 };
 
 //***************************************************************************
+// Streams management
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+void File_Iim::Streams_Finish()
+{
+    //Date as CCYYMMDD, time as HHMMSS then the offset from UTC as +HHMM or -HHMM
+    if (Date.size()!=8 || Date.find_first_not_of(__T("0123456789"))!=string::npos)
+        return;
+    Ztring Value=Date.substr(0, 4)+__T('-')+Date.substr(4, 2)+__T('-')+Date.substr(6, 2);
+    if (Time.size()==11 && Time.find_first_not_of(__T("0123456789"))==6 && (Time[6]==__T('+') || Time[6]==__T('-')) && Time.find_first_not_of(__T("0123456789"), 7)==string::npos)
+        Value+=__T(' ')+Time.substr(0, 2)+__T(':')+Time.substr(2, 2)+__T(':')+Time.substr(4, 2)+Time.substr(6, 3)+__T(':')+Time.substr(9, 2);
+    Fill(Stream_General, 0, General_Recorded_Date, Value);
+}
+
+//***************************************************************************
 // Buffer - File header
 //***************************************************************************
 
@@ -252,37 +268,37 @@ void File_Iim::RecordVersion()
 //---------------------------------------------------------------------------
 void File_Iim::ObjectName()
 {
-    SkipString();
+    FillString(General_Title);
 }
 
 //---------------------------------------------------------------------------
 void File_Iim::DateCreated()
 {
-    SkipString();
+    GetString(Date);
 }
 
 //---------------------------------------------------------------------------
 void File_Iim::TimeCreated()
 {
-    SkipString();
+    GetString(Time);
 }
 
 //---------------------------------------------------------------------------
 void File_Iim::Byline()
 {
-    SkipString();
+    FillString(General_Producer);
 }
 
 //---------------------------------------------------------------------------
 void File_Iim::CopyrightNotice()
 {
-    SkipString();
+    FillString(General_Copyright);
 }
 
 //---------------------------------------------------------------------------
 void File_Iim::CaptionAbstract()
 {
-    SkipString();
+    FillString(General_Description);
 }
 
 //---------------------------------------------------------------------------
@@ -306,6 +322,29 @@ void File_Iim::SkipString()
         Skip_XX(Element_Size,                                   "Data");
         break;
     }
+}
+
+//---------------------------------------------------------------------------
+void File_Iim::GetString(Ztring& Value)
+{
+    switch (CodedCharSet) {
+    case UTF8:
+        Get_UTF8(Element_Size, Value,                           "Data");
+        if (Value.empty())
+            Value.From_ISO_8859_1((const char*)Buffer+Buffer_Offset, (size_t)Element_Size); //Not UTF-8
+        break;
+    default:
+        Skip_XX(Element_Size,                                   "Data");
+        break;
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_Iim::FillString(size_t Parameter)
+{
+    Ztring Value;
+    GetString(Value);
+    Fill(Stream_General, 0, Parameter, Value);
 }
 
 } //NameSpace

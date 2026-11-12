@@ -29,6 +29,9 @@ namespace MediaInfoLib
 class File_Iim : public File__Analyze
 {
 private :
+    //Streams management
+    void Streams_Finish();
+
     //Buffer - File header
     bool FileHeader_Begin();
 
@@ -49,9 +52,13 @@ private :
 
     //Helpers
     void SkipString();
+    void GetString(Ztring& Value);
+    void FillString(size_t Parameter);
 
     //Temp
     int8u CodedCharSet = 0;
+    Ztring Date;
+    Ztring Time;
 };
 
 } //NameSpace
