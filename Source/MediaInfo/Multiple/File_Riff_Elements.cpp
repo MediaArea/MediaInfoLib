@@ -839,7 +839,7 @@ void File_Riff::AIFF_COMM()
     #endif
 
     #if MEDIAINFO_DEMUX
-        unsigned int ComputedBlockAlign=numChannels*sampleSize/8;
+        unsigned int ComputedBlockAlign=numChannels*((sampleSize+7)/8); //Each sample in whole bytes
         if (ComputedBlockAlign<0x10000)
         {
             BlockAlign=(int16u)ComputedBlockAlign;
@@ -4232,7 +4232,7 @@ void File_Riff::WAVE_data()
     Element_Code=(int64u)-1;
 
     FILLING_BEGIN();
-        int64u StreamSize=(Buffer_DataToParse_End?((Buffer_DataToParse_End>File_Size?File_Size:Buffer_DataToParse_End)-Buffer_DataToParse_Begin):(Element_TotalSize_Get()-Alignement_ExtraByte))-(Element_Code==Elements::AIFF_SSND?8:0);
+        int64u StreamSize=Buffer_DataToParse_End?((Buffer_DataToParse_End>File_Size?File_Size:Buffer_DataToParse_End)-Buffer_DataToParse_Begin):(Element_TotalSize_Get()-Alignement_ExtraByte-Element_Offset); //Without the header of the chunk already parsed (offset and blockSize of AIFF SSND)
         Fill(Stream_Audio, StreamPos_Last, Audio_StreamSize, StreamSize, 10, true);
         if (Retrieve(Stream_Audio, StreamPos_Last, Audio_Format)==__T("PCM") && BlockAlign)
             Fill(Stream_Audio, StreamPos_Last, Audio_SamplingCount, StreamSize/BlockAlign, 10, true);
