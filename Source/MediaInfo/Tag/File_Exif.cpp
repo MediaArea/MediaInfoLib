@@ -2635,7 +2635,8 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
 
     ZtringList& Info = Infos[currentIFD][IfdItem.Tag]; Info.clear(); Info.Separator_Set(0, __T(" /"));
 
-    if (IfdItem.Type!=Exif_Type::BYTE && IfdItem.Type!=Exif_Type::ASCII && IfdItem.Type!=Exif_Type::UTF8 && IfdItem.Type!=Exif_Type::UNDEFINED && IfdItem.Count>=1000)
+    if (IfdItem.Type!=Exif_Type::BYTE && IfdItem.Type!=Exif_Type::ASCII && IfdItem.Type!=Exif_Type::UTF8 && IfdItem.Type!=Exif_Type::UNDEFINED && IfdItem.Count>=1000
+     && IfdItem.Tag!=IFD0::IPTC_NAA) //IPTC data is also found with the type LONG, 4 bytes per value
     {
         //Too many data, we don't currently need it and we skip it
         Skip_XX(static_cast<int64u>(Exif_Type_Size(IfdItem.Type))*IfdItem.Count, "Data");
