@@ -853,6 +853,23 @@ File_Mk::~File_Mk()
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+// Language code for comparisons, ISO 639-1 if any (e.g. "eng" and "en" are the same)
+static Ztring Mk_Language_Normalized(const Ztring& Language)
+{
+    if (Language.empty())
+        return __T("und");
+    Ztring Value(Language);
+    Value.MakeLowerCase();
+    if (Value.size()==3)
+    {
+        const Ztring& Iso639_1=MediaInfoLib::Config.Iso639_1_Get(Value);
+        if (!Iso639_1.empty())
+            return Iso639_1;
+    }
+    return Value;
+}
+
+//---------------------------------------------------------------------------
 void File_Mk::Streams_Finish()
 {
     Segment_Tags_Tag_Targets_Remap();
@@ -1087,6 +1104,9 @@ void File_Mk::Streams_Finish()
                 }
 
                 //Filling
+                const auto Title=Segment_Tags_Tag_Titles_Tracks.find(Temp->second.TrackUID);
+                if (Title!=Segment_Tags_Tag_Titles_Tracks.end())
+                    Fill(StreamKind_Last, StreamPos_Last, "Title", Title->second, true); // The tag has the priority over the Name element
                 for (tagspertrack::iterator Tag=Item->second.begin(); Tag!=Item->second.end(); ++Tag)
                 {
                     if (!HasStats && Tag->first==__T("DURATION"))
@@ -1564,7 +1584,12 @@ void File_Mk::Streams_Finish()
     {
         const auto Item = Segment_Tags_Tag_Items_Attachments.find(AttachedFile.FileUID);
         if (Item != Segment_Tags_Tag_Items_Attachments.end() && AttachedFile.StreamPos < Count_Get(Stream_Image))
+        {
+            const auto Title = Segment_Tags_Tag_Titles_Attachments.find(AttachedFile.FileUID);
+            if (Title != Segment_Tags_Tag_Titles_Attachments.end())
+                Fill(Stream_Image, AttachedFile.StreamPos, "Title", Title->second, true); // The tag has the priority over the FileDescription element
             Segment_Tags_Tag_Fill(Stream_Image, AttachedFile.StreamPos, Item->second);
+        }
     }
 
     //Chapters
@@ -1581,6 +1606,7 @@ void File_Mk::Streams_Finish()
             {
                 if (EditionEntries[EditionEntries_Pos].ChapterAtoms[ChapterAtoms_Pos].ChapterTimeStart!=(int64u)-1)
                 {
+                    const auto Titles=Segment_Tags_Tag_Titles_Chapters.find(EditionEntries[EditionEntries_Pos].ChapterAtoms[ChapterAtoms_Pos].ChapterUID);
                     Ztring Text;
                     for (ChapterDisplays_Pos=0; ChapterDisplays_Pos<EditionEntries[EditionEntries_Pos].ChapterAtoms[ChapterAtoms_Pos].ChapterDisplays.size(); ChapterDisplays_Pos++)
                     {
@@ -1593,7 +1619,15 @@ void File_Mk::Streams_Finish()
                             if (!PerLanguage.empty())
                                 PerLanguage+=__T(':');
                         }
-                        PerLanguage+=EditionEntries[EditionEntries_Pos].ChapterAtoms[ChapterAtoms_Pos].ChapterDisplays[ChapterDisplays_Pos].ChapString;
+                        const Ztring* ChapString=&EditionEntries[EditionEntries_Pos].ChapterAtoms[ChapterAtoms_Pos].ChapterDisplays[ChapterDisplays_Pos].ChapString;
+                        if (Titles!=Segment_Tags_Tag_Titles_Chapters.end())
+                        {
+                            const auto& ChapLanguage=EditionEntries[EditionEntries_Pos].ChapterAtoms[ChapterAtoms_Pos].ChapterDisplays[ChapterDisplays_Pos].ChapLanguage;
+                            const auto Title=Titles->second.find(Mk_Language_Normalized(ChapLanguage.empty()?Ztring(__T("eng")):ChapLanguage)); // eng is the default language of a chapter
+                            if (Title!=Titles->second.end())
+                                ChapString=&Title->second; // The tag has the priority over the ChapString element
+                        }
+                        PerLanguage+=*ChapString;
                         Text+=PerLanguage+__T(" - ");
                     }
                     Ztring Time=Ztring().Duration_From_Milliseconds(EditionEntries[EditionEntries_Pos].ChapterAtoms[ChapterAtoms_Pos].ChapterTimeStart/1000000).To_UTF8().c_str();
@@ -2950,6 +2984,18 @@ void File_Mk::Segment_Chapters_EditionEntry_ChapterAtom()
 }
 
 //---------------------------------------------------------------------------
+void File_Mk::Segment_Chapters_EditionEntry_ChapterAtom_ChapterUID()
+{
+    //Parsing
+    int64u Data=UInteger_Get();
+
+    FILLING_BEGIN();
+        if (EditionEntries_Pos<EditionEntries.size() && ChapterAtoms_Pos<EditionEntries[EditionEntries_Pos].ChapterAtoms.size())
+            EditionEntries[EditionEntries_Pos].ChapterAtoms[ChapterAtoms_Pos].ChapterUID=Data;
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
 void File_Mk::Segment_Chapters_EditionEntry_ChapterAtom_ChapterDisplay()
 {
     //Filling
@@ -3720,6 +3766,7 @@ void File_Mk::Segment_Tags_Tag()
     else
         Segment_Tags_Tag_List.back()=tag(); // The previous Tag element has no tag
     Segment_Tags_Tag_SimpleTag_TagString_Value.clear();
+    Segment_Tags_Tag_SimpleTag_Title_Pos=(size_t)-1;
 }
 
 //---------------------------------------------------------------------------
@@ -3729,7 +3776,27 @@ void File_Mk::Segment_Tags_Tag_SimpleTag_TagLanguage()
     Ztring Data=String_Get();
 
     FILLING_BEGIN();
-        //Fill(StreamKind_Last, StreamPos_Last, "Language", Data);
+        if (Element_Level!=5 || Segment_Tags_Tag_SimpleTag_HasLanguageBCP47) //5 is the first level of a tag, TagLanguageBCP47 has the priority
+            return;
+        Segment_Tags_Tag_SimpleTag_Language=Data;
+        if (!Segment_Tags_Tag_List.empty() && Segment_Tags_Tag_SimpleTag_Title_Pos<Segment_Tags_Tag_List.back().Titles.size())
+            Segment_Tags_Tag_List.back().Titles[Segment_Tags_Tag_SimpleTag_Title_Pos].Language=Data;
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Tags_Tag_SimpleTag_TagLanguageIETF()
+{
+    //Parsing
+    Ztring Data=String_Get();
+
+    FILLING_BEGIN();
+        if (Element_Level!=5 || Data.empty()) //5 is the first level of a tag
+            return;
+        Segment_Tags_Tag_SimpleTag_HasLanguageBCP47=true;
+        Segment_Tags_Tag_SimpleTag_Language=Data;
+        if (!Segment_Tags_Tag_List.empty() && Segment_Tags_Tag_SimpleTag_Title_Pos<Segment_Tags_Tag_List.back().Titles.size())
+            Segment_Tags_Tag_List.back().Titles[Segment_Tags_Tag_SimpleTag_Title_Pos].Language=Data;
     FILLING_END();
 }
 
@@ -3737,6 +3804,12 @@ void File_Mk::Segment_Tags_Tag_SimpleTag_TagLanguage()
 void File_Mk::Segment_Tags_Tag_SimpleTag()
 {
     Segment_Tag_SimpleTag_TagNames.resize(Element_Level - 4); //4 is the first level of a tag main element
+    if (Segment_Tag_SimpleTag_TagNames.empty())
+    {
+        Segment_Tags_Tag_SimpleTag_Language.clear();
+        Segment_Tags_Tag_SimpleTag_HasLanguageBCP47=false;
+        Segment_Tags_Tag_SimpleTag_Title_Pos=(size_t)-1;
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -3765,6 +3838,12 @@ void File_Mk::Segment_Tags_Tag_SimpleTag_Assign()
         return;
     auto& Items=Segment_Tags_Tag_List.back().Items;
     auto TagString=std::move(Segment_Tags_Tag_SimpleTag_TagString_Value);
+    if (Segment_Tag_SimpleTag_TagNames.size()==1 && Segment_Tag_SimpleTag_TagNames[0]==__T("TITLE"))
+    {
+        auto& Titles=Segment_Tags_Tag_List.back().Titles;
+        Segment_Tags_Tag_SimpleTag_Title_Pos=Titles.size();
+        Titles.push_back({ Segment_Tags_Tag_SimpleTag_Language, TagString });
+    }
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("AERMS_OF_USE")) Segment_Tag_SimpleTag_TagNames[0]=__T("TermsOfUse"); //Typo in the source file
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("ARTIST")) Segment_Tag_SimpleTag_TagNames[0]=__T("Performer");
     if (Segment_Tag_SimpleTag_TagNames[0]==__T("BITSPS")) Segment_Tag_SimpleTag_TagNames[0].clear(); //Useless
@@ -3867,6 +3946,10 @@ void File_Mk::Segment_Tags_Tag_Targets_Remap()
     for (const auto& AttachedFile : AttachedFiles)
         if (AttachedFile.StreamPos!=(size_t)-1)
             FileUIDs.insert(AttachedFile.FileUID);
+    std::set<int64u> ChapterUIDs;
+    for (const auto& EditionEntry : EditionEntries)
+        for (const auto& ChapterAtom : EditionEntry.ChapterAtoms)
+            ChapterUIDs.insert(ChapterAtom.ChapterUID);
 
     for (auto& Tag : Segment_Tags_Tag_List)
     {
@@ -3879,11 +3962,26 @@ void File_Mk::Segment_Tags_Tag_Targets_Remap()
                 Values->clear(); // As without value
         }
 
+        //TITLE tag in the undetermined language, equivalent to the Name element of a track or to the FileDescription element of an attachment
+        const Ztring* Title_Und=nullptr;
+        for (const auto& Title : Tag.Titles)
+            if (Mk_Language_Normalized(Title.Language)==__T("und"))
+                Title_Und=&Title.Value;
+
         //Tags of chapters, editions or attachments, not of the segment nor of tracks (different kinds of UIDs are a logical AND): in the stream of the edition or of the attachment
         if (!Tag.TagChapterUIDs.empty() || !Tag.TagEditionUIDs.empty() || !Tag.TagAttachmentUIDs.empty())
         {
-            if (!Tag.TagChapterUIDs.empty() || !Tag.TagTrackUIDs.empty() || !Tag.TagBlockAddIDValues.empty())
-                continue; // Chapters have no stream of their own, and the stream of an edition or of an attachment is not per track
+            if (!Tag.TagTrackUIDs.empty() || !Tag.TagBlockAddIDValues.empty())
+                continue; // The stream of an edition or of an attachment is not per track
+            if (!Tag.TagChapterUIDs.empty())
+            {
+                //Chapters have no stream of their own, TITLE tags are equivalent to the ChapString element in their language
+                for (const auto UID : Tag.TagChapterUIDs)
+                    if (ChapterUIDs.find(UID) != ChapterUIDs.end())
+                        for (const auto& Title : Tag.Titles)
+                            Segment_Tags_Tag_Titles_Chapters[UID][Mk_Language_Normalized(Title.Language)] = Title.Value;
+                continue;
+            }
             const auto IsAttachment = !Tag.TagAttachmentUIDs.empty();
             const auto& UIDs = IsAttachment ? Tag.TagAttachmentUIDs : Tag.TagEditionUIDs;
             const auto& Existing = IsAttachment ? FileUIDs : EditionUIDs;
@@ -3894,6 +3992,8 @@ void File_Mk::Segment_Tags_Tag_Targets_Remap()
                     tagspertrack& Items = Items_PerUID[UID]; // Creates it if not yet present, else take the previous one
                     for (const auto& Item : Tag.Items)
                         Items[Item.first] = Item.second;
+                    if (IsAttachment && Title_Und)
+                        Segment_Tags_Tag_Titles_Attachments[UID] = *Title_Und;
                 }
             continue;
         }
@@ -3925,6 +4025,8 @@ void File_Mk::Segment_Tags_Tag_Targets_Remap()
             tagspertrack& Items = Segment_Tags_Tag_Items[Target]; // Creates it if not yet present, else take the previous one
             for (const auto& Item : Tag.Items)
                 Items[Item.first] = Item.second;
+            if (Title_Und && Target.TagTrackUID && !Target.TagBlockAddIDValue)
+                Segment_Tags_Tag_Titles_Tracks[Target.TagTrackUID] = *Title_Und;
         }
     }
     Segment_Tags_Tag_List.clear();

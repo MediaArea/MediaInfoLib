@@ -322,7 +322,7 @@ private :
     void Segment_Chapters_EditionEntry_EditionFlagDefault(){UInteger_Info();};
     void Segment_Chapters_EditionEntry_EditionFlagOrdered(){UInteger_Info();};
     void Segment_Chapters_EditionEntry_ChapterAtom();
-    void Segment_Chapters_EditionEntry_ChapterAtom_ChapterUID(){UInteger_Info();};
+    void Segment_Chapters_EditionEntry_ChapterAtom_ChapterUID();
     void Segment_Chapters_EditionEntry_ChapterAtom_ChapterStringUID(){UTF8_Info();};
     void Segment_Chapters_EditionEntry_ChapterAtom_ChapterTimeStart();
     void Segment_Chapters_EditionEntry_ChapterAtom_ChapterTimeEnd(){UInteger_Info();};
@@ -358,7 +358,7 @@ private :
     void Segment_Tags_Tag_SimpleTag();
     void Segment_Tags_Tag_SimpleTag_TagName();
     void Segment_Tags_Tag_SimpleTag_TagLanguage();
-    void Segment_Tags_Tag_SimpleTag_TagLanguageIETF(){Segment_Tags_Tag_SimpleTag_TagLanguage();};
+    void Segment_Tags_Tag_SimpleTag_TagLanguageIETF();
     void Segment_Tags_Tag_SimpleTag_TagDefault(){UInteger_Info();};
     void Segment_Tags_Tag_SimpleTag_TagString();
     void Segment_Tags_Tag_SimpleTag_TagBinary(){Skip_XX(Element_Size, "Data");};
@@ -528,12 +528,23 @@ private :
         std::vector<int64u> TagChapterUIDs;
         std::vector<int64u> TagAttachmentUIDs;
         tagspertrack Items;
+        struct title {
+            Ztring Language; // Empty is undetermined
+            Ztring Value;
+        };
+        std::vector<title> Titles; // TITLE tags at the first level, with their language
     };
     std::vector<tag> Segment_Tags_Tag_List; // Per Tag element, the targets are known only when all tracks are parsed
     tags    Segment_Tags_Tag_Items; // Per target
     std::map<int64u, tagspertrack> Segment_Tags_Tag_Items_Editions; // Per EditionUID
     std::map<int64u, tagspertrack> Segment_Tags_Tag_Items_Attachments; // Per FileUID
+    std::map<int64u, Ztring> Segment_Tags_Tag_Titles_Tracks; // Per TrackUID, TITLE tag in the undetermined language, equivalent to the Name element
+    std::map<int64u, Ztring> Segment_Tags_Tag_Titles_Attachments; // Per FileUID, TITLE tag in the undetermined language, equivalent to the FileDescription element
+    std::map<int64u, std::map<Ztring, Ztring> > Segment_Tags_Tag_Titles_Chapters; // Per ChapterUID and language, TITLE tag equivalent to the ChapString element in this language
     Ztring  Segment_Tags_Tag_SimpleTag_TagString_Value;
+    Ztring  Segment_Tags_Tag_SimpleTag_Language; // Of the SimpleTag at the first level
+    bool    Segment_Tags_Tag_SimpleTag_HasLanguageBCP47{};
+    size_t  Segment_Tags_Tag_SimpleTag_Title_Pos{(size_t)-1};
     string  AttachedFile_FileName;
     string  AttachedFile_FileMimeType;
     string  AttachedFile_FileDescription;
@@ -563,6 +574,7 @@ private :
     };
     struct chapteratom
     {
+        int64u ChapterUID{};
         int64u ChapterTimeStart;
         std::vector<chapterdisplay> ChapterDisplays;
 
