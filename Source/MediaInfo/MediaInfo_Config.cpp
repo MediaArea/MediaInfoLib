@@ -472,6 +472,7 @@ void MediaInfo_Config::Init(bool Force)
     ReadByHuman=true;
     Inform_Version=false;
     Inform_Timestamp=false;
+    Inform_HalfWidth=false;
     Legacy=false;
     LegacyStreamDisplay=false;
     SkipBinaryData=false;
@@ -1042,6 +1043,15 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
     if (Option_Lower==__T("inform_timestamp_get"))
     {
         return Inform_Timestamp_Get()?__T("1"):__T("0");
+    }
+    if (Option_Lower==__T("inform_halfwidth"))
+    {
+        Inform_HalfWidth_Set(Value.To_int8u()?true:false);
+        return Ztring();
+    }
+    if (Option_Lower==__T("inform_halfwidth_get"))
+    {
+        return Inform_HalfWidth_Get()?__T("1"):__T("0");
     }
     #if MEDIAINFO_ADVANCED
         if (Option_Lower==__T("cover_data"))
@@ -2712,6 +2722,19 @@ bool MediaInfo_Config::Inform_Timestamp_Get ()
 {
     CriticalSectionLocker CSL(CS);
     return Inform_Timestamp;
+}
+
+//---------------------------------------------------------------------------
+void MediaInfo_Config::Inform_HalfWidth_Set (bool NewValue)
+{
+    CriticalSectionLocker CSL(CS);
+    Inform_HalfWidth=NewValue;
+}
+
+bool MediaInfo_Config::Inform_HalfWidth_Get ()
+{
+    CriticalSectionLocker CSL(CS);
+    return Inform_HalfWidth;
 }
 
 //---------------------------------------------------------------------------
