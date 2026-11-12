@@ -2659,6 +2659,9 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
             case IFD0::PhotoshopImageResources:
                 PhotoshopImageResources();
                 break;
+            case IFD0::IPTC_NAA:
+                IPTC_NAA();
+                break;
             default:
                 if (IfdItem.Tag >= IFD0::WinExpTitle && IfdItem.Tag <= IFD0::WinExpSubject) {
                     // Content is actually UTF16LE
@@ -2965,6 +2968,9 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
                 break;
             case IFD0::PhotoshopImageResources:
                 PhotoshopImageResources();
+                break;
+            case IFD0::IPTC_NAA:
+                IPTC_NAA();
                 break;
             case IFD0::ICC_Profile:
                 ICC_Profile();
