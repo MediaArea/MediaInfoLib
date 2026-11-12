@@ -7418,6 +7418,21 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
             channelcount=Channels16;
             Channels=Channels16;
             SampleSize=SampleSize16;
+
+            //The sample size of the sample entry may be 16 whatever is the real one (e.g. FFmpeg), the one of the PCM configuration box is needed before the parsers are created
+            for (int64u Pos=Element_Offset; Pos+14<=Element_Size && Buffer_Offset+Pos+14<=Buffer_Size;)
+            {
+                const int8u* Box=Buffer+Buffer_Offset+(size_t)Pos;
+                if (BigEndian2int32u(Box+4)==Elements::moov_trak_mdia_minf_stbl_stsd_xxxx_pcmC)
+                {
+                    SampleSize=Box[13];
+                    break;
+                }
+                const int32u Box_Size=BigEndian2int32u(Box);
+                if (Box_Size<8)
+                    break;
+                Pos+=Box_Size;
+            }
         }
         else
             channelcount=0;
