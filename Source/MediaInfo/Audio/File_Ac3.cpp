@@ -1131,6 +1131,7 @@ File_Ac3::File_Ac3()
     TimeStamp_IsParsing=false;
     TimeStamp_Parsed=false;
     TimeStamp_Count=0;
+    Stream_Size_Total=0;
     BigEndian=true;
     IgnoreCrc_Done=false;
 }
@@ -1813,6 +1814,8 @@ void File_Ac3::Streams_Finish()
             }
         }
     }
+    if (IsSub && Stream_Size_Total && Core_IsPresent)
+        Fill(Stream_Audio, 0, Audio_StreamSize, Stream_Size_Total);
     else if (FrameInfo.PTS!=(int64u)-1 && FrameInfo.PTS>PTS_Begin)
     {
         float64 FrameDuration;
@@ -2441,6 +2444,8 @@ void File_Ac3::Data_Parse()
         Buffer_Size=Save_Buffer_Size;
         File_Offset-=Buffer_Offset;
     }
+    if (IsSub)
+        Stream_Size_Total+=Element_Size;
 }
 
 //---------------------------------------------------------------------------
