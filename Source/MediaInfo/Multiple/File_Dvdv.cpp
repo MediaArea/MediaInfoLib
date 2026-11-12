@@ -261,6 +261,18 @@ static const char*  IFO_MenuType[]=
 extern const char*  AC3_ChannelPositions[];
 extern const char*  AC3_ChannelPositions2[];
 
+//---------------------------------------------------------------------------
+// The sum starts from the first duration: TimeCode::operator+= gives wrong sums when a default TimeCode and durations with a 1.001 frame rate are mixed
+static void Duration_Add(TimeCode& Total, const TimeCode& Duration)
+{
+    if (!Duration.IsSet())
+        return;
+    if (Total.IsSet())
+        Total+=Duration;
+    else
+        Total=Duration;
+}
+
 //***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
@@ -381,7 +393,7 @@ void File_Dvdv::Streams_Finish()
     for (const auto& Title : Titles)
     {
         Fill(Stream_Menu, Title.second.Pos, Menu_Delay, (int64s)Duration_Total.ToMilliseconds(), 10, true);
-        Duration_Total+=Title.second.Duration;
+        Duration_Add(Duration_Total, Title.second.Duration);
     }
 
     //Purge what is not needed anymore
@@ -1308,8 +1320,8 @@ void File_Dvdv::Get_Duration(TimeCode &Duration, const Ztring &Name)
             return;
         }
 
-        bool Drop=IFO_PlaybackTime_FrameRate[FrameRate]==30;
-        Duration=TimeCode((uint32_t)hh, (uint8_t)mm, (uint8_t)ss, (uint8_t)ff, IFO_PlaybackTime_FrameRate[FrameRate]-1);
+        //At 30 fps the value is a count of frames at 30 per second (non drop frame), real time is 1.001 times longer
+        Duration=TimeCode((uint32_t)hh, (uint8_t)mm, (uint8_t)ss, (uint8_t)ff, IFO_PlaybackTime_FrameRate[FrameRate]-1, TimeCode::FPS1001(IFO_PlaybackTime_FrameRate[FrameRate]==30));
         Element_Info1(Duration.ToString());
     Element_End0();
 }
@@ -1612,12 +1624,12 @@ void File_Dvdv::PGC(bool Title)
                     if (Pos<ProgramMap.size())
                         for (int8u CellPos=ProgramMap[Pos]; CellPos<End; CellPos++)
                             if (CellPos && CellPos<=CellDurations.size())
-                                ProgramDuration+=CellDurations[CellPos-1];
-                    ProgramTotalDuration+=ProgramDuration;
+                                Duration_Add(ProgramDuration, CellDurations[CellPos-1]);
+                    Duration_Add(ProgramTotalDuration, ProgramDuration);
                 }
                 Fill(Stream_Menu, StreamPos_Last, Menu_Chapters_Pos_End, Count_Get(Stream_Menu, StreamPos_Last), 10, true);
                 auto FrameRate=TotalDuration.GetFramesMax()+1;
-                Fill(Stream_Menu, StreamPos_Last, Menu_Duration, (TotalDuration.GetHours()*3600+TotalDuration.GetMinutes()*60+TotalDuration.GetSeconds())*1000+(TotalDuration.GetFrames()*1000/FrameRate));
+                Fill(Stream_Menu, StreamPos_Last, Menu_Duration, (int64s)TotalDuration.ToMilliseconds());
                 Fill(Stream_Menu, StreamPos_Last, Menu_FrameRate, FrameRate/(TotalDuration.Is1001fps()?1.001:1));
                 Fill(Stream_Menu, StreamPos_Last, Menu_FrameRate_Num, FrameRate*(TotalDuration.Is1001fps()?1000:1));
                 Fill(Stream_Menu, StreamPos_Last, Menu_FrameRate_Den, TotalDuration.Is1001fps()?1001:1);
