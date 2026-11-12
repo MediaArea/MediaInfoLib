@@ -869,60 +869,28 @@ void File_Pdf::Object_Metadata()
     Element_Info1("Metadata");
 
     //Parsing
-    string Key;
-    Ztring Value;
-    int32u Length=0;
-    while (Element_Offset<Element_Size)
+    stream_data Stream;
+    if (!Get_Stream(Stream))
     {
-        if (Get_Next(Key, Value))
-        {
-            for (;;)
-            {
-                Get_Next(Key, Value);
-                if (Key.empty())
-                    break;
-                else if (Key=="Length")
-                {
-                    Length=Value.To_int32u();
-                }
-            }
-
-            continue;
-        }
-
-        if (Key.empty())
-            break;
-        else if (Key=="stream")
-        {
-            if (Buffer_Offset>Buffer_Size || Element_Offset>Buffer_Size-Buffer_Offset)
-            {
-                Trusted_IsNot("Invalid metadata offset");
-                return;
-            }
-
-            //Removig end of lines
-            if (Element_Offset<Element_Size && Element_Offset<Buffer_Size-Buffer_Offset && Buffer[Buffer_Offset+(size_t)Element_Offset]=='\r')
-                Element_Offset++;
-            if (Element_Offset<Element_Size && Element_Offset<Buffer_Size-Buffer_Offset && Buffer[Buffer_Offset+(size_t)Element_Offset]=='\n')
-                Element_Offset++;
-
-            if (Element_Offset>Element_Size || Length>Element_Size-Element_Offset
-             || Length>Buffer_Size-Buffer_Offset-Element_Offset)
-            {
-                Trusted_IsNot("Invalid metadata length");
-                return;
-            }
-
-            #if defined(MEDIAINFO_XMP_YES)
-            File_Xmp MI;
-            Open_Buffer_Init(&MI, Length);
-            Open_Buffer_Continue(&MI, Buffer+Buffer_Offset+(size_t)Element_Offset, Length);
-            Open_Buffer_Finalize(&MI);
-            Merge_Tags(MI, Tags_Xmp);
-            #endif
-            Skip_XX(Length,                                     "Stream, Data");
-        }
+        Skip_XX(Element_Size-Element_Offset,                    "Data");
+        return;
     }
+    Skip_Stream(Stream);
+    if (Stream.IsTruncated)
+    {
+        Trusted_IsNot("Invalid metadata length");
+        return;
+    }
+
+    #if defined(MEDIAINFO_XMP_YES)
+    if (!Get_Stream_Decoded(Stream))
+        return;
+    File_Xmp MI;
+    Open_Buffer_Init(&MI, Stream.Size);
+    Open_Buffer_Continue(&MI, Stream.Data, Stream.Size);
+    Open_Buffer_Finalize(&MI);
+    Merge_Tags(MI, Tags_Xmp);
+    #endif
 }
 
 //---------------------------------------------------------------------------
