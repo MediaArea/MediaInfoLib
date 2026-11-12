@@ -499,7 +499,7 @@ void File_Psd::IPTCNAA()
     Open_Buffer_Init(&MI);
     Open_Buffer_Continue(&MI, (size_t)(Element_Size < Resource_Size ? Element_Size : Resource_Size)); //Without the padding byte
     Open_Buffer_Finalize(&MI);
-    Merge(MI, Stream_General, 0, 0, false);
+    Merge_Tags(MI, Tags_Iim);
     Merge(MI, Stream_Image, 0, 0, false);
     size_t Count = MI.Count_Get(Stream_Image);
     for (size_t i = 1; i < Count; ++i) {
