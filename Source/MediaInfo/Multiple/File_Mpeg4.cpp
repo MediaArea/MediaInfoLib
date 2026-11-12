@@ -1115,7 +1115,7 @@ void File_Mpeg4::Streams_Finish()
                     {
                         Stream_Prepare(NewKind, NewPos1+StreamPos);
                         for (size_t Pos=0; Pos<StreamSave.size(); Pos++)
-                            if (Pos!=General_ID && Retrieve(StreamKind_Last, StreamPos_Last, Pos).empty())
+                            if (Pos!=General_ID && Pos!=General_StreamKindPos && Retrieve(StreamKind_Last, StreamPos_Last, Pos).empty()) //The position is the one of the new stream
                                 Fill(StreamKind_Last, StreamPos_Last, Pos, StreamSave[Pos]);
                         for (size_t Pos=0; Pos<StreamMoreSave.size(); Pos++)
                         {
