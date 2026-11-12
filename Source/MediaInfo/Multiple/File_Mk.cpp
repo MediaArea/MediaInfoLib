@@ -853,6 +853,29 @@ File_Mk::~File_Mk()
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+// Several values of a tag (e.g. in several languages), all are kept, in the order of the file
+static void Mk_Value_Add(Ztring& Item, const Ztring& Value)
+{
+    if (Item.empty())
+    {
+        Item=Value;
+        return;
+    }
+    const Ztring Separator(__T(" / "));
+    for (size_t Pos=0;;)
+    {
+        const auto End=Item.find(Separator, Pos);
+        if (!Item.compare(Pos, (End==string::npos?Item.size():End)-Pos, Value))
+            return; // Already present
+        if (End==string::npos)
+            break;
+        Pos=End+Separator.size();
+    }
+    Item+=Separator;
+    Item+=Value;
+}
+
+//---------------------------------------------------------------------------
 // Language code for comparisons, ISO 639-1 if any (e.g. "eng" and "en" are the same)
 static Ztring Mk_Language_Normalized(const Ztring& Language)
 {
@@ -3912,7 +3935,7 @@ void File_Mk::Segment_Tags_Tag_SimpleTag_Assign()
     }
 
     if (!TagName.empty())
-        Items[TagName]=TagString;
+        Mk_Value_Add(Items[TagName], TagString);
 }
 
 //---------------------------------------------------------------------------
@@ -3946,10 +3969,10 @@ void File_Mk::Segment_Tags_Tag_Targets_Remap()
     for (const auto& AttachedFile : AttachedFiles)
         if (AttachedFile.StreamPos!=(size_t)-1)
             FileUIDs.insert(AttachedFile.FileUID);
-    std::set<int64u> ChapterUIDs;
+    std::multimap<int64u, int64u> ChapterUIDs; // With the EditionUID of their edition
     for (const auto& EditionEntry : EditionEntries)
         for (const auto& ChapterAtom : EditionEntry.ChapterAtoms)
-            ChapterUIDs.insert(ChapterAtom.ChapterUID);
+            ChapterUIDs.emplace(ChapterAtom.ChapterUID, EditionEntry.EditionUID);
 
     for (auto& Tag : Segment_Tags_Tag_List)
     {
@@ -3962,24 +3985,44 @@ void File_Mk::Segment_Tags_Tag_Targets_Remap()
                 Values->clear(); // As without value
         }
 
-        //TITLE tag in the undetermined language, equivalent to the Name element of a track or to the FileDescription element of an attachment
-        const Ztring* Title_Und=nullptr;
-        for (const auto& Title : Tag.Titles)
-            if (Mk_Language_Normalized(Title.Language)==__T("und"))
-                Title_Und=&Title.Value;
+        //TITLE tags in the undetermined language, equivalent to the Name element of a track or to the FileDescription element of an attachment, first
+        Ztring Title_Und;
+        if (!Tag.Titles.empty())
+        {
+            Ztring Title_Others;
+            for (const auto& Title : Tag.Titles)
+                Mk_Value_Add(Mk_Language_Normalized(Title.Language)==__T("und") ? Title_Und : Title_Others, Title.Value);
+            Ztring& Title_All=Tag.Items[__T("Title")];
+            Title_All=Title_Und;
+            if (!Title_Others.empty())
+                Mk_Value_Add(Title_All, Title_Others);
+        }
 
-        //Tags of chapters, editions or attachments, not of the segment nor of tracks (different kinds of UIDs are a logical AND): in the stream of the edition or of the attachment
+        //Tags of chapters, editions or attachments, not of the segment nor of tracks
+        //Different kinds of UIDs are a logical AND, the tags are only for a stream representing exactly the targets
         if (!Tag.TagChapterUIDs.empty() || !Tag.TagEditionUIDs.empty() || !Tag.TagAttachmentUIDs.empty())
         {
             if (!Tag.TagTrackUIDs.empty() || !Tag.TagBlockAddIDValues.empty())
-                continue; // The stream of an edition or of an attachment is not per track
+                continue; // The stream of an edition or of an attachment is not per track, chapters have no stream
+            if (!Tag.TagAttachmentUIDs.empty() && (!Tag.TagChapterUIDs.empty() || !Tag.TagEditionUIDs.empty()))
+                continue; // The stream of an attachment is not per edition, an attachment is not in a chapter
             if (!Tag.TagChapterUIDs.empty())
             {
-                //Chapters have no stream of their own, TITLE tags are equivalent to the ChapString element in their language
+                //Chapters have no stream of their own, TITLE tags are equivalent to the ChapString element in their language, chapters of other editions are not targeted
+                std::map<Ztring, Ztring> Titles;
+                for (const auto& Title : Tag.Titles)
+                    Mk_Value_Add(Titles[Mk_Language_Normalized(Title.Language)], Title.Value);
                 for (const auto UID : Tag.TagChapterUIDs)
-                    if (ChapterUIDs.find(UID) != ChapterUIDs.end())
-                        for (const auto& Title : Tag.Titles)
-                            Segment_Tags_Tag_Titles_Chapters[UID][Mk_Language_Normalized(Title.Language)] = Title.Value;
+                {
+                    const auto Chapters_Range = ChapterUIDs.equal_range(UID);
+                    for (auto Chapter = Chapters_Range.first; Chapter != Chapters_Range.second; ++Chapter)
+                        if (Tag.TagEditionUIDs.empty() || std::binary_search(Tag.TagEditionUIDs.begin(), Tag.TagEditionUIDs.end(), Chapter->second))
+                        {
+                            for (const auto& Title : Titles)
+                                Segment_Tags_Tag_Titles_Chapters[UID][Title.first] = Title.second;
+                            break;
+                        }
+                }
                 continue;
             }
             const auto IsAttachment = !Tag.TagAttachmentUIDs.empty();
@@ -3992,8 +4035,8 @@ void File_Mk::Segment_Tags_Tag_Targets_Remap()
                     tagspertrack& Items = Items_PerUID[UID]; // Creates it if not yet present, else take the previous one
                     for (const auto& Item : Tag.Items)
                         Items[Item.first] = Item.second;
-                    if (IsAttachment && Title_Und)
-                        Segment_Tags_Tag_Titles_Attachments[UID] = *Title_Und;
+                    if (IsAttachment && !Title_Und.empty())
+                        Segment_Tags_Tag_Titles_Attachments[UID] = Title_Und;
                 }
             continue;
         }
@@ -4025,8 +4068,8 @@ void File_Mk::Segment_Tags_Tag_Targets_Remap()
             tagspertrack& Items = Segment_Tags_Tag_Items[Target]; // Creates it if not yet present, else take the previous one
             for (const auto& Item : Tag.Items)
                 Items[Item.first] = Item.second;
-            if (Title_Und && Target.TagTrackUID && !Target.TagBlockAddIDValue)
-                Segment_Tags_Tag_Titles_Tracks[Target.TagTrackUID] = *Title_Und;
+            if (!Title_Und.empty() && Target.TagTrackUID && !Target.TagBlockAddIDValue)
+                Segment_Tags_Tag_Titles_Tracks[Target.TagTrackUID] = Title_Und;
         }
     }
     Segment_Tags_Tag_List.clear();
