@@ -145,6 +145,7 @@ extern std::string AC3_dynrngprof_Get(int8u Value)
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Audio/File_Ac3.h"
+#include <algorithm>
 #include <vector>
 #include <cmath>
 #if MEDIAINFO_EVENTS
@@ -1104,7 +1105,11 @@ File_Ac3::File_Ac3()
             chanmap_Max[Pos][Pos2]=0;
         }
     for (int8u Pos=0; Pos<8; Pos++)
+    {
         dynrnge_Exists[Pos]=false;
+        Programs_Frame_Count[Pos]=0;
+        Programs_Frame_First[Pos]=(int64u)-1;
+    }
     numblkscod=(int8u)-1;
     dsurexmod=0;
     dheadphonmod=0;
@@ -1335,102 +1340,7 @@ void File_Ac3::Streams_Fill()
     {
         //One audio stream per program (independent substream and its dependent substreams)
         for (size_t StreamPos=0; StreamPos<Programs.size(); StreamPos++)
-        {
-            const int8u Pos=Programs[StreamPos];
-            const bool Channels_AlreadyFilled=StreamPos<Count_Get(Stream_Audio) && !Retrieve_Const(Stream_Audio, StreamPos, Audio_Channel_s_).empty(); //By another format of the stream
-            const bool ChannelLayout_AlreadyFilled=StreamPos<Count_Get(Stream_Audio) && !Retrieve_Const(Stream_Audio, StreamPos, Audio_ChannelLayout).empty();
-            if (StreamPos>=Count_Get(Stream_Audio))
-                Stream_Prepare(Stream_Audio);
-            if (Retrieve(Stream_Audio, StreamPos, Audio_Format).empty())
-            {
-                const bool IsAc3=!Pos && Formats[0]; //AC-3 syncframes are in the first program only
-                Fill(Stream_Audio, StreamPos, Audio_Format, IsAc3?"AC-3":"E-AC-3");
-                Fill(Stream_Audio, StreamPos, Audio_Codec, IsAc3?"AC-3":"AC3+");
-            }
-
-            if (Programs.size()>1)
-                Fill(Stream_Audio, StreamPos, Audio_ID, 1+Pos);
-
-            Fill(Stream_Audio, StreamPos, Audio_BitRate_Mode, "CBR");
-            int32u SamplingRate;
-            if (fscod!=3)
-                SamplingRate=AC3_SamplingRate[fscod];
-            else
-                SamplingRate=AC3_SamplingRate2[fscod2];
-            Fill(Stream_Audio, StreamPos, Audio_SamplingRate, SamplingRate);
-            if (numblkscod!=(int8u)-1)
-            {
-                int8u numblks=numblkscod==3?6:numblkscod+1;
-                int32u frmsiz_Total=0;
-                for (size_t Pos2=0; Pos2<9; Pos2++)
-                    frmsiz_Total+=frmsizplus1_Max[Pos][Pos2];
-                int32u TimeStamp_Size=0;
-                if (!StreamPos && (TimeStamp_Count==Frame_Count || TimeStamp_Count>Frame_Count/2)) // In case of corrupted stream, check that there is a minimal count of timestamps. Once per frame, counted with the first program
-                    TimeStamp_Size=16;
-                if (frmsiz_Total)
-                    Fill(Stream_Audio, StreamPos, Audio_BitRate, ((int64u)frmsiz_Total)*SamplingRate/32/numblks);
-                if (TimeStamp_Size)
-                    Fill(Stream_Audio, StreamPos, Audio_BitRate_Encoded, ((int64u)frmsiz_Total+TimeStamp_Size)*SamplingRate/32/numblks);
-            }
-
-            const bool HasDependent=acmod_Max[Pos][1]!=(int8u)-1;
-            if (HasDependent)
-            {
-                int16u chanmap_Final=0;
-                for (int8u Pos2=0; Pos2<9; Pos2++)
-                    if (acmod_Max[Pos][Pos2]!=(int8u)-1)
-                    {
-                        if (chanmape_Max[Pos][Pos2])
-                            chanmap_Final|=chanmap_Max[Pos][Pos2];
-                        else
-                        {
-                            chanmap_Final|=AC3_acmod2chanmap[acmod_Max[Pos][Pos2]];
-                            if (lfeon_Max[Pos][Pos2])
-                                chanmap_Final|=1; // LFE position in chanmap is bit 0
-                        }
-                    }
-
-                Fill(Stream_Audio, StreamPos, Audio_Format_Profile, "E-AC-3+Dep");
-                Fill(Stream_Audio, StreamPos, Audio_Codec_Profile, "E-AC-3+Dep");
-                Fill(Stream_Audio, StreamPos, Audio_Channel_s_, AC3_chanmap_Channels(chanmap_Final));
-                Fill(Stream_Audio, StreamPos, Audio_ChannelPositions, AC3_chanmap_ChannelPositions(chanmap_Final));
-                Fill(Stream_Audio, StreamPos, Audio_ChannelPositions_String2, AC3_chanmap_ChannelPositions2(chanmap_Final));
-                if (MediaInfoLib::Config.LegacyStreamDisplay_Get() || !ChannelLayout_AlreadyFilled)
-                {
-                    Ztring ChannelLayout; ChannelLayout.From_UTF8(lfeon_Max[Pos][0]?AC3_ChannelLayout_lfeon[acmod_Max[Pos][0]]:AC3_ChannelLayout_lfeoff[acmod_Max[Pos][0]]);
-                    Fill(Stream_Audio, StreamPos, Audio_ChannelLayout, AC3_chanmap_ChannelLayout(chanmap_Final, ChannelLayout));
-                }
-            }
-            if (!Retrieve(Stream_Audio, StreamPos, Audio_Format_Profile).empty())
-                Fill(Stream_Audio, StreamPos, Audio_Format_Profile, Retrieve(Stream_Audio, StreamPos, Audio_Format));
-            if (!Retrieve(Stream_Audio, StreamPos, Audio_Codec_Profile).empty())
-                Fill(Stream_Audio, StreamPos, Audio_Codec_Profile, Retrieve(Stream_Audio, StreamPos, Audio_Format));
-            Fill(Stream_Audio, StreamPos, Audio_ServiceKind, AC3_Mode[AC3_Mode_Pos(bsmod_Max[Pos][0], acmod_Max[Pos][0])]);
-            Fill(Stream_Audio, StreamPos, Audio_ServiceKind_String, AC3_Mode_String[AC3_Mode_Pos(bsmod_Max[Pos][0], acmod_Max[Pos][0])]);
-            if (MediaInfoLib::Config.LegacyStreamDisplay_Get() || (!HasDependent && !Channels_AlreadyFilled))
-            {
-                int8u Channels=AC3_Channels[acmod_Max[Pos][0]];
-                Ztring ChannelPositions; ChannelPositions.From_UTF8(AC3_ChannelPositions[acmod_Max[Pos][0]]);
-                Ztring ChannelPositions2; ChannelPositions2.From_UTF8(AC3_ChannelPositions2[acmod_Max[Pos][0]]);
-                if (lfeon_Max[Pos][0])
-                {
-                    Channels+=1;
-                    ChannelPositions+=__T(", LFE");
-                    ChannelPositions2+=__T(".1");
-                }
-                Fill(Stream_Audio, StreamPos, Audio_Channel_s_, Channels);
-                Fill(Stream_Audio, StreamPos, Audio_ChannelPositions, ChannelPositions);
-                Fill(Stream_Audio, StreamPos, Audio_ChannelPositions_String2, ChannelPositions2);
-                Fill(Stream_Audio, StreamPos, Audio_ChannelLayout, lfeon_Max[Pos][0]?AC3_ChannelLayout_lfeon[acmod_Max[Pos][0]]:AC3_ChannelLayout_lfeoff[acmod_Max[Pos][0]]);
-            }
-
-            //Surround, the one of the first program is filled above
-            if (StreamPos && dsurmod_Max[Pos][0]==2)
-            {
-                Fill(Stream_Audio, StreamPos, Audio_Format_Settings, "Dolby Surround");
-                Fill(Stream_Audio, StreamPos, Audio_Format_Settings_Mode, "Dolby Surround");
-            }
-        }
+            Streams_Fill_Eac3(StreamPos, Programs[StreamPos]);
     }
 
     if (HD_MajorSync_Parsed)
@@ -1451,6 +1361,104 @@ void File_Ac3::Streams_Fill()
     Fill(Stream_General, 0, General_Format, Retrieve(Stream_Audio, 0, Audio_Format), true);
     Fill(Stream_General, 0, General_Format_Profile, Retrieve(Stream_Audio, 0, Audio_Format_Profile));
     Fill(Stream_General, 0, General_Format_Commercial_IfAny, Retrieve(Stream_Audio, 0, Audio_Format_Commercial_IfAny));
+}
+
+//---------------------------------------------------------------------------
+void File_Ac3::Streams_Fill_Eac3(size_t StreamPos, int8u Program)
+{
+    const bool Channels_AlreadyFilled=StreamPos<Count_Get(Stream_Audio) && !Retrieve_Const(Stream_Audio, StreamPos, Audio_Channel_s_).empty(); //By another format of the stream
+    const bool ChannelLayout_AlreadyFilled=StreamPos<Count_Get(Stream_Audio) && !Retrieve_Const(Stream_Audio, StreamPos, Audio_ChannelLayout).empty();
+    if (StreamPos>=Count_Get(Stream_Audio))
+        Stream_Prepare(Stream_Audio);
+    if (Retrieve(Stream_Audio, StreamPos, Audio_Format).empty())
+    {
+        const bool IsAc3=!Program && Formats[0]; //AC-3 syncframes are in the first program only
+        Fill(Stream_Audio, StreamPos, Audio_Format, IsAc3?"AC-3":"E-AC-3");
+        Fill(Stream_Audio, StreamPos, Audio_Codec, IsAc3?"AC-3":"AC3+");
+    }
+
+    if (Programs.size()>1)
+        Fill(Stream_Audio, StreamPos, Audio_ID, 1+Program);
+
+    Fill(Stream_Audio, StreamPos, Audio_BitRate_Mode, "CBR");
+    int32u SamplingRate;
+    if (fscod!=3)
+        SamplingRate=AC3_SamplingRate[fscod];
+    else
+        SamplingRate=AC3_SamplingRate2[fscod2];
+    Fill(Stream_Audio, StreamPos, Audio_SamplingRate, SamplingRate);
+    if (numblkscod!=(int8u)-1)
+    {
+        int8u numblks=numblkscod==3?6:numblkscod+1;
+        int32u frmsiz_Total=0;
+        for (size_t Pos2=0; Pos2<9; Pos2++)
+            frmsiz_Total+=frmsizplus1_Max[Program][Pos2];
+        int32u TimeStamp_Size=0;
+        if (!StreamPos && (TimeStamp_Count==Frame_Count || TimeStamp_Count>Frame_Count/2)) // In case of corrupted stream, check that there is a minimal count of timestamps. Once per frame, counted with the first program
+            TimeStamp_Size=16;
+        if (frmsiz_Total)
+            Fill(Stream_Audio, StreamPos, Audio_BitRate, ((int64u)frmsiz_Total)*SamplingRate/32/numblks);
+        if (TimeStamp_Size)
+            Fill(Stream_Audio, StreamPos, Audio_BitRate_Encoded, ((int64u)frmsiz_Total+TimeStamp_Size)*SamplingRate/32/numblks);
+    }
+
+    const bool HasDependent=acmod_Max[Program][1]!=(int8u)-1;
+    if (HasDependent)
+    {
+        int16u chanmap_Final=0;
+        for (int8u Pos2=0; Pos2<9; Pos2++)
+            if (acmod_Max[Program][Pos2]!=(int8u)-1)
+            {
+                if (chanmape_Max[Program][Pos2])
+                    chanmap_Final|=chanmap_Max[Program][Pos2];
+                else
+                {
+                    chanmap_Final|=AC3_acmod2chanmap[acmod_Max[Program][Pos2]];
+                    if (lfeon_Max[Program][Pos2])
+                        chanmap_Final|=1; // LFE position in chanmap is bit 0
+                }
+            }
+
+        Fill(Stream_Audio, StreamPos, Audio_Format_Profile, "E-AC-3+Dep");
+        Fill(Stream_Audio, StreamPos, Audio_Codec_Profile, "E-AC-3+Dep");
+        Fill(Stream_Audio, StreamPos, Audio_Channel_s_, AC3_chanmap_Channels(chanmap_Final));
+        Fill(Stream_Audio, StreamPos, Audio_ChannelPositions, AC3_chanmap_ChannelPositions(chanmap_Final));
+        Fill(Stream_Audio, StreamPos, Audio_ChannelPositions_String2, AC3_chanmap_ChannelPositions2(chanmap_Final));
+        if (MediaInfoLib::Config.LegacyStreamDisplay_Get() || !ChannelLayout_AlreadyFilled)
+        {
+            Ztring ChannelLayout; ChannelLayout.From_UTF8(lfeon_Max[Program][0]?AC3_ChannelLayout_lfeon[acmod_Max[Program][0]]:AC3_ChannelLayout_lfeoff[acmod_Max[Program][0]]);
+            Fill(Stream_Audio, StreamPos, Audio_ChannelLayout, AC3_chanmap_ChannelLayout(chanmap_Final, ChannelLayout));
+        }
+    }
+    if (!Retrieve(Stream_Audio, StreamPos, Audio_Format_Profile).empty())
+        Fill(Stream_Audio, StreamPos, Audio_Format_Profile, Retrieve(Stream_Audio, StreamPos, Audio_Format));
+    if (!Retrieve(Stream_Audio, StreamPos, Audio_Codec_Profile).empty())
+        Fill(Stream_Audio, StreamPos, Audio_Codec_Profile, Retrieve(Stream_Audio, StreamPos, Audio_Format));
+    Fill(Stream_Audio, StreamPos, Audio_ServiceKind, AC3_Mode[AC3_Mode_Pos(bsmod_Max[Program][0], acmod_Max[Program][0])]);
+    Fill(Stream_Audio, StreamPos, Audio_ServiceKind_String, AC3_Mode_String[AC3_Mode_Pos(bsmod_Max[Program][0], acmod_Max[Program][0])]);
+    if (MediaInfoLib::Config.LegacyStreamDisplay_Get() || (!HasDependent && !Channels_AlreadyFilled))
+    {
+        int8u Channels=AC3_Channels[acmod_Max[Program][0]];
+        Ztring ChannelPositions; ChannelPositions.From_UTF8(AC3_ChannelPositions[acmod_Max[Program][0]]);
+        Ztring ChannelPositions2; ChannelPositions2.From_UTF8(AC3_ChannelPositions2[acmod_Max[Program][0]]);
+        if (lfeon_Max[Program][0])
+        {
+            Channels+=1;
+            ChannelPositions+=__T(", LFE");
+            ChannelPositions2+=__T(".1");
+        }
+        Fill(Stream_Audio, StreamPos, Audio_Channel_s_, Channels);
+        Fill(Stream_Audio, StreamPos, Audio_ChannelPositions, ChannelPositions);
+        Fill(Stream_Audio, StreamPos, Audio_ChannelPositions_String2, ChannelPositions2);
+        Fill(Stream_Audio, StreamPos, Audio_ChannelLayout, lfeon_Max[Program][0]?AC3_ChannelLayout_lfeon[acmod_Max[Program][0]]:AC3_ChannelLayout_lfeoff[acmod_Max[Program][0]]);
+    }
+
+    //Surround, the one of the first program is filled above
+    if (StreamPos && dsurmod_Max[Program][0]==2)
+    {
+        Fill(Stream_Audio, StreamPos, Audio_Format_Settings, "Dolby Surround");
+        Fill(Stream_Audio, StreamPos, Audio_Format_Settings_Mode, "Dolby Surround");
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -1648,6 +1656,26 @@ void File_Ac3::Streams_Fill_PerProgram(size_t StreamPos, int8u Program, bool Has
 //---------------------------------------------------------------------------
 void File_Ac3::Streams_Finish()
 {
+    //Programs found after the filling, e.g. at the end of the file
+    if (!Programs.empty() && bsid_Max>0x09 && bsid_Max<=0x10)
+    {
+        const size_t Programs_Count_Previous=Programs.size();
+        for (int8u Pos=0; Pos<8; Pos++)
+            if (acmod_Max[Pos][0]!=(int8u)-1 && std::find(Programs.begin(), Programs.end(), Pos)==Programs.end())
+                Programs.push_back(Pos);
+        if (Programs.size()>Programs_Count_Previous)
+        {
+            StreamSource_IsShared=true;
+            if (Programs_Count_Previous==1)
+                Fill(Stream_Audio, 0, Audio_ID, 1+Programs[0]); //Not filled with only one program
+            for (size_t StreamPos=Programs_Count_Previous; StreamPos<Programs.size(); StreamPos++)
+            {
+                Streams_Fill_Eac3(StreamPos, Programs[StreamPos]);
+                Streams_Fill_PerProgram(StreamPos, Programs[StreamPos], false);
+            }
+        }
+    }
+
     //Per program
     const size_t Programs_StreamCount=Programs.empty()?1:Programs.size(); //AC-3 or no program description: only one stream
     for (size_t StreamPos=0; StreamPos<Programs_StreamCount; StreamPos++)
@@ -1712,14 +1740,28 @@ void File_Ac3::Streams_Finish()
                 if (IsEac3)
                 {
                     int32u SamplingRate=fscod!=3?AC3_SamplingRate[fscod]:AC3_SamplingRate2[fscod2];
-                    int64u SamplingCount=Frame_Count_ForDuration*256*(numblkscod==3?6:(numblkscod+1));
+                    int16u SamplesPerFrame=256*(numblkscod==3?6:(numblkscod+1));
                     for (size_t StreamPos=0; StreamPos<Programs_StreamCount; StreamPos++)
                     {
-                        Fill(Stream_Audio, StreamPos, Audio_FrameCount, Frame_Count_ForDuration);
+                        //With several programs, a program may start or end at another frame
+                        int64u Frame_Count_Program=Frame_Count_ForDuration;
+                        int64u Frame_First_Program=0;
+                        if (Programs_StreamCount>1)
+                        {
+                            Frame_Count_Program=Programs_Frame_Count[Programs[StreamPos]];
+                            Frame_First_Program=Programs_Frame_First[Programs[StreamPos]];
+                        }
+                        Fill(Stream_Audio, StreamPos, Audio_FrameCount, Frame_Count_Program);
                         if (SamplingRate)
                         {
+                            int64u SamplingCount=Frame_Count_Program*SamplesPerFrame;
                             Fill(Stream_Audio, StreamPos, Audio_SamplingCount, SamplingCount);
                             Fill(Stream_Audio, StreamPos, Audio_Duration, ((float64)SamplingCount)*1000/SamplingRate, 0);
+                            if (Frame_First_Program && Frame_First_Program!=(int64u)-1 && Retrieve_Const(Stream_Audio, StreamPos, Audio_Delay).empty())
+                            {
+                                Fill(Stream_Audio, StreamPos, Audio_Delay, ((float64)Frame_First_Program)*SamplesPerFrame*1000/SamplingRate, 0);
+                                Fill(Stream_Audio, StreamPos, Audio_Delay_Source, "Stream");
+                            }
                         }
                     }
                 }
@@ -4028,7 +4070,12 @@ void File_Ac3::Core_Frame()
         if (strmtyp>1)
             strmtyp=0; //TODO: check a file with strmtyp==2
         if (strmtyp==0)
+        {
             substreamid_Independant_Current=substreamid;
+            if (Programs_Frame_First[substreamid]==(int64u)-1)
+                Programs_Frame_First[substreamid]=Frame_Count;
+            Programs_Frame_Count[substreamid]++;
+        }
         if (bsid_Max==(int8u)-1 || bsid>bsid_Max)
             bsid_Max=bsid;
 

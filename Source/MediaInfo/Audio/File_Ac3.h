@@ -38,6 +38,7 @@ public :
 private :
     //Streams management
     void Streams_Fill();
+    void Streams_Fill_Eac3(size_t StreamPos, int8u Program);
     void Streams_Fill_PerProgram(size_t StreamPos, int8u Program, bool HasJOC);
     void Streams_Finish();
     void Streams_Finish_PerProgram(size_t StreamPos, int8u Program);
@@ -165,6 +166,8 @@ private :
     std::vector<int64u> comprs[8];
     std::vector<int64u> dynrngs[8];
     std::vector<int8u> Programs; //Program (independent substream) of each audio stream
+    int64u Programs_Frame_Count[8]; //Count of frames of each program
+    int64u Programs_Frame_First[8]; //First frame of each program
     std::map<int8u, int64u> fscods;
     std::map<int8u, int64u> frmsizecods;
     int64u Frame_Count_HD;
