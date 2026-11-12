@@ -507,9 +507,18 @@ void File_Pdf::Object_Root()
                 else if (Key=="Metadata")
                 {
                     int32u ObjectNumber=Value.To_int32u();
-                    Objects[ObjectNumber].Type=Type_Metadata;
-                    Objects[ObjectNumber].TopObject=Objects_Current->first;
-                    Objects[Objects_Current->first].Bottoms.push_back(ObjectNumber);
+                    object& Metadata=Objects[ObjectNumber];
+                    if (Metadata.Type==Type_Root || Metadata.Type==Type_Info)
+                    {
+                        Trusted_IsNot("Metadata is the document catalog or the document information");
+                        return;
+                    }
+                    if (Metadata.Type==Type_Other && ObjectNumber!=(int32u)-1)
+                    {
+                        Metadata.Type=Type_Metadata;
+                        Metadata.TopObject=Objects_Current->first;
+                        Objects_Current->second.Bottoms.push_back(ObjectNumber);
+                    }
                     Param_Info1(__T("Metadata is at offset 0x"+Ztring().From_Number(Objects[ObjectNumber].Offset)));
                 }
             }
