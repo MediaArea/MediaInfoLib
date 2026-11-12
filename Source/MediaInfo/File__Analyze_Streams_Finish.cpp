@@ -3782,12 +3782,20 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
         CopyName(General_Encoded_Hardware_Model, General_Encoded_Application_Name, General_Encoded_Hardware_Model);
     }
     if (Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Model).rfind(__T("Pentax "), 0) == 0) {
-        if (Retrieve_Const(Stream_General, StreamPos, General_Encoded_Application_CompanyName).empty()
-            && !Retrieve_Const(Stream_General, StreamPos, General_Encoded_Application_Name).empty()) {
-            Fill(Stream_General, StreamPos, General_Encoded_Application_CompanyName, Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_CompanyName));
-        }
-        if (Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Model).substr(7) == Retrieve_Const(Stream_General, StreamPos, General_Encoded_Application_Name)) {
-            Fill(Stream_General, StreamPos, General_Encoded_Application_Name, Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Model), true);
+        const Ztring Model = Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Model);
+        const Ztring Application_Name = Retrieve_Const(Stream_General, StreamPos, General_Encoded_Application_Name);
+        if (!Application_Name.empty()) {
+            // From the camera company: the firmware (named as the model, with or without "Pentax "), the Pentax software, and the software of a picture not modified after its recording; not other software (e.g. an editor)
+            const auto IsFirmware = Application_Name == Model || Application_Name == Model.substr(7);
+            const auto IsPentaxSoftware = Application_Name.rfind(__T("Pentax "), 0) == 0;
+            const Ztring Encoded_Date = Retrieve_Const(Stream_General, StreamPos, General_Encoded_Date);
+            const auto IsNotModified = !Encoded_Date.empty() && Encoded_Date == Retrieve_Const(Stream_General, StreamPos, General_Recorded_Date);
+            if ((IsFirmware || IsPentaxSoftware || IsNotModified) && Retrieve_Const(Stream_General, StreamPos, General_Encoded_Application_CompanyName).empty()) {
+                Fill(Stream_General, StreamPos, General_Encoded_Application_CompanyName, Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_CompanyName));
+            }
+            if (Application_Name == Model.substr(7)) {
+                Fill(Stream_General, StreamPos, General_Encoded_Application_Name, Model, true);
+            }
         }
     }
 
