@@ -434,63 +434,24 @@ void File_MpegPs::Streams_Fill_PerStream(size_t StreamID, ps_stream &Temp, kindo
 }
 
 //---------------------------------------------------------------------------
-void File_MpegPs::Streams_Fill_PerStream_PerKind(size_t StreamID, ps_stream &Temp, kindofstream KindOfStream, size_t Count)
+void File_MpegPs::Streams_Fill_PerStream_PerKind(size_t StreamID, ps_stream &Temp, kindofstream KindOfStream, size_t Count, size_t StreamPos_Begin)
 {
+    const bool IsAppended=StreamPos_Begin==(size_t)-1; //Else inserted after the streams of this stream
+    if (IsAppended)
+        StreamPos_Begin=Count_Get(StreamKind_Last)-Count;
 
     //More info
-    for (size_t StreamPos=Count_Get(StreamKind_Last)-Count; StreamPos<Count_Get(StreamKind_Last); StreamPos++)
+    for (size_t StreamPos=StreamPos_Begin; StreamPos<StreamPos_Begin+Count; StreamPos++)
     {
         ///Saving StreamKind and Stream_Pos
-        Temp.StreamKind=StreamKind_Last;
-        Temp.StreamPos=Count_Get(StreamKind_Last)-Count;
+        if (IsAppended)
+        {
+            Temp.StreamKind=StreamKind_Last;
+            Temp.StreamPos=StreamPos_Begin;
+        }
 
         //Common
-        if (KindOfStream==KindOfStream_Main)
-        {
-            Ztring ID; ID.From_Number(StreamID);
-            Ztring ID_String = Get_Hex_ID(StreamID);
-            if (!Retrieve(StreamKind_Last, StreamPos, General_ID).empty())
-            {
-                Fill(StreamKind_Last, StreamPos, General_ID, StreamID);
-                Ztring ID_String = Get_Hex_ID(StreamID);
-                Fill(StreamKind_Last, StreamPos, General_ID_String, ID_String, true); //TODO: merge with Decimal_Hexa in file_MpegTs
-            }
-            Fill(StreamKind_Last, StreamPos, General_ID, ID, true);
-            Fill(StreamKind_Last, StreamPos, General_ID_String, ID_String, true); //TODO: merge with Decimal_Hexa in file_MpegTs
-        }
-        else if (KindOfStream==KindOfStream_Private)
-        {
-            Ztring ID=__T("189");
-            if (StreamID)
-                ID+=__T("-")+Ztring::ToZtring(StreamID);
-            if (!Temp.Parsers[0]->Retrieve(StreamKind_Last, StreamPos, General_ID).empty())
-                ID+=__T("-")+Temp.Parsers[0]->Retrieve(StreamKind_Last, StreamPos, General_ID);
-            Fill(StreamKind_Last, StreamPos, General_ID, ID, true);
-            Ztring ID_String=__T("189 (0xBD)");
-            if (StreamID)
-                ID_String+=__T("-")+ Get_Hex_ID(StreamID);
-            if (!Temp.Parsers[0]->Retrieve(StreamKind_Last, StreamPos, General_ID_String).empty())
-                ID_String+=__T("-")+Temp.Parsers[0]->Retrieve(StreamKind_Last, StreamPos, General_ID_String);
-            else if (!Temp.Parsers[0]->Retrieve(StreamKind_Last, StreamPos, General_ID).empty())
-                ID_String+=__T("-")+Temp.Parsers[0]->Retrieve(StreamKind_Last, StreamPos, General_ID);
-            Fill(StreamKind_Last, StreamPos, General_ID_String, ID_String, true); //TODO: merge with Decimal_Hexa in file_MpegTs
-            if (StreamID)
-                Fill(StreamKind_Last, StreamPos, "MuxingMode", "DVD-Video", Unlimited, true, true);
-        }
-        else if (KindOfStream==KindOfStream_Extension)
-        {
-            if (!IsSub) //Not providing the StreamID if it is e.g. MPEG-TS, useless
-            {
-            Ztring ID=__T("253");
-            if (StreamID)
-                ID+=__T("-")+Ztring::ToZtring(StreamID);
-            Fill(StreamKind_Last, StreamPos, General_ID, ID, true);
-            Ztring ID_String=__T("253 (0xFD)");
-            if (StreamID)
-                ID_String+=__T("-")+ Get_Hex_ID(StreamID);
-            Fill(StreamKind_Last, StreamPos, General_ID_String, ID_String, true); //TODO: merge with Decimal_Hexa in file_MpegTs
-            }
-        }
+        Streams_Fill_PerStream_ID(StreamID, Temp, KindOfStream, StreamPos, StreamPos-Temp.StreamPos);
 
         if (Retrieve(StreamKind_Last, StreamPos, Fill_Parameter(StreamKind_Last, Generic_Format)).empty() && Temp.stream_type!=0)
             Fill(StreamKind_Last, StreamPos, Fill_Parameter(StreamKind_Last, Generic_Format), Mpeg_Psi_stream_type_Format(Temp.stream_type, 0x0000));
@@ -511,6 +472,57 @@ void File_MpegPs::Streams_Fill_PerStream_PerKind(size_t StreamID, ps_stream &Tem
         }
 
         Bitrate_Calc();
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_MpegPs::Streams_Fill_PerStream_ID(size_t StreamID, ps_stream &Temp, kindofstream KindOfStream, size_t StreamPos, size_t Parser_StreamPos)
+{
+    if (KindOfStream==KindOfStream_Main)
+    {
+        Ztring ID; ID.From_Number(StreamID);
+        Ztring ID_String = Get_Hex_ID(StreamID);
+        if (!Retrieve(StreamKind_Last, StreamPos, General_ID).empty())
+        {
+            Fill(StreamKind_Last, StreamPos, General_ID, StreamID);
+            Ztring ID_String = Get_Hex_ID(StreamID);
+            Fill(StreamKind_Last, StreamPos, General_ID_String, ID_String, true); //TODO: merge with Decimal_Hexa in file_MpegTs
+        }
+        Fill(StreamKind_Last, StreamPos, General_ID, ID, true);
+        Fill(StreamKind_Last, StreamPos, General_ID_String, ID_String, true); //TODO: merge with Decimal_Hexa in file_MpegTs
+    }
+    else if (KindOfStream==KindOfStream_Private)
+    {
+        Ztring ID=__T("189");
+        if (StreamID)
+            ID+=__T("-")+Ztring::ToZtring(StreamID);
+        if (!Temp.Parsers[0]->Retrieve(StreamKind_Last, Parser_StreamPos, General_ID).empty())
+            ID+=__T("-")+Temp.Parsers[0]->Retrieve(StreamKind_Last, Parser_StreamPos, General_ID);
+        Fill(StreamKind_Last, StreamPos, General_ID, ID, true);
+        Ztring ID_String=__T("189 (0xBD)");
+        if (StreamID)
+            ID_String+=__T("-")+ Get_Hex_ID(StreamID);
+        if (!Temp.Parsers[0]->Retrieve(StreamKind_Last, Parser_StreamPos, General_ID_String).empty())
+            ID_String+=__T("-")+Temp.Parsers[0]->Retrieve(StreamKind_Last, Parser_StreamPos, General_ID_String);
+        else if (!Temp.Parsers[0]->Retrieve(StreamKind_Last, Parser_StreamPos, General_ID).empty())
+            ID_String+=__T("-")+Temp.Parsers[0]->Retrieve(StreamKind_Last, Parser_StreamPos, General_ID);
+        Fill(StreamKind_Last, StreamPos, General_ID_String, ID_String, true); //TODO: merge with Decimal_Hexa in file_MpegTs
+        if (StreamID)
+            Fill(StreamKind_Last, StreamPos, "MuxingMode", "DVD-Video", Unlimited, true, true);
+    }
+    else if (KindOfStream==KindOfStream_Extension)
+    {
+        if (!IsSub) //Not providing the StreamID if it is e.g. MPEG-TS, useless
+        {
+        Ztring ID=__T("253");
+        if (StreamID)
+            ID+=__T("-")+Ztring::ToZtring(StreamID);
+        Fill(StreamKind_Last, StreamPos, General_ID, ID, true);
+        Ztring ID_String=__T("253 (0xFD)");
+        if (StreamID)
+            ID_String+=__T("-")+ Get_Hex_ID(StreamID);
+        Fill(StreamKind_Last, StreamPos, General_ID_String, ID_String, true); //TODO: merge with Decimal_Hexa in file_MpegTs
+        }
     }
 }
 
@@ -656,6 +668,32 @@ void File_MpegPs::Streams_Finish_PerStream(size_t StreamID, ps_stream &Temp, kin
             Merge(*Temp.Parsers[0], StreamKind_Last, Pos, Temp.StreamPos+Pos);
             Fill(StreamKind_Last, Temp.StreamPos+Pos, General_ID, ID, true);
             Fill(StreamKind_Last, Temp.StreamPos+Pos, General_ID_String, ID_String, true);
+        }
+
+        //Streams added by the parser after the first merge (e.g. a program found at the end), inserted after the other ones of this stream
+        const size_t Count_Parser=Temp.Parsers[0]->Count_Get(StreamKind_Last);
+        if (Count_Parser>Temp.Count)
+        {
+            const size_t StreamPos_Begin=Temp.StreamPos+Temp.Count;
+            for (size_t Pos=Temp.Count; Pos<Count_Parser; Pos++)
+            {
+                const size_t StreamPos=Temp.StreamPos+Pos;
+                Stream_Prepare(Temp.StreamKind, StreamPos);
+                for (size_t i=0; i<3; i++)
+                {
+                    std::vector<ps_stream>& List=i==0?Streams:(i==1?Streams_Private1:Streams_Extension);
+                    for (size_t j=0; j<List.size(); j++)
+                        if (&List[j]!=&Temp && List[j].StreamKind==Temp.StreamKind && List[j].StreamPos!=(size_t)-1 && List[j].StreamPos>=StreamPos)
+                            List[j].StreamPos++;
+                }
+                Merge(*Temp.Parsers[0], Temp.StreamKind, Pos, StreamPos);
+            }
+            StreamKind_Last=Temp.StreamKind;
+            for (size_t Pos=0; Pos<Temp.Count; Pos++)
+                Streams_Fill_PerStream_ID(StreamID, Temp, KindOfStream, Temp.StreamPos+Pos, Pos); //The identifier from the parser may change with more streams
+            Streams_Fill_PerStream_PerKind(StreamID, Temp, KindOfStream, Count_Parser-Temp.Count, StreamPos_Begin);
+            Temp.Count=Count_Parser;
+            StreamPos_Last=Temp.StreamPos;
         }
         }
         if (!IsSub)
