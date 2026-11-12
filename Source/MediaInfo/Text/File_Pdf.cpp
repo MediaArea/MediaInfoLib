@@ -281,7 +281,8 @@ void File_Pdf::xref()
                 atoi_buf[17]=0;
                 memcpy(atoi_buf,(const char*)Buffer_Temp-17,17);
                 const int32u Offset=(int32u)atoi(atoi_buf);
-                Objects[Base+Pos].Offset=Offset;
+                if (Objects[Base+Pos].Offset==(int32u)-1) //The sections are parsed from the last update of the file to the first one, the last content of an object is the one to parse
+                    Objects[Base+Pos].Offset=Offset;
                 //Offsets[Offset]=Base+Pos;
                 Offsets.push_back(Offset);
             }
