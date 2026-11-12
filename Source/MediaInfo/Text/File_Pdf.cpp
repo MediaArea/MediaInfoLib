@@ -210,7 +210,8 @@ void File_Pdf::Data_Parse()
     Element_Name("Object");
 
     string Line;
-    Get_String(SizeOfLine(), Line,                              "Header");
+    const int64u ObjectHeader_Size=SizeOfObjectHeader();
+    Get_String(ObjectHeader_Size?ObjectHeader_Size:SizeOfLine(), Line, "Header");
 
     size_t Space_Pos=Line.find(' ');
     int32u ObjectNumber=Ztring().From_UTF8(Line.substr(0, Space_Pos)).To_int32u();
@@ -750,6 +751,31 @@ int64u File_Pdf::SizeOfLine()
     while (End<Buffer_Size && Buffer[End]!='\r' && Buffer[End]!='\n' && !(End+1<Buffer_Size && Buffer[End]=='<' && Buffer[End+1]=='<') && !(End+1<Buffer_Size && Buffer[End]=='>' && Buffer[End+1]=='>'))
         End++;
     return End-(Buffer_Offset+(size_t)Element_Offset);
+}
+
+//---------------------------------------------------------------------------
+int64u File_Pdf::SizeOfObjectHeader()
+{
+    while (Element_Offset<Element_Size && Pdf_IsSpace(Buffer[Buffer_Offset+(size_t)Element_Offset]))
+        Element_Offset++;
+
+    //Object number, generation number and "obj", with spaces or ends of line between them
+    const size_t Begin=Buffer_Offset+(size_t)Element_Offset;
+    size_t End=Begin;
+    for (size_t Number=0; Number<2; Number++)
+    {
+        const size_t Digits=End;
+        while (End<Buffer_Size && Buffer[End]>='0' && Buffer[End]<='9')
+            End++;
+        const size_t Spaces=End;
+        while (End<Buffer_Size && Pdf_IsSpace(Buffer[End]))
+            End++;
+        if (Spaces==Digits || End==Spaces)
+            return 0;
+    }
+    if (End+3>Buffer_Size || Buffer[End]!='o' || Buffer[End+1]!='b' || Buffer[End+2]!='j' || End+3-Begin>Element_Size-Element_Offset)
+        return 0;
+    return End+3-Begin;
 }
 
 //---------------------------------------------------------------------------

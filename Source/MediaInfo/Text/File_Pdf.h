@@ -58,6 +58,7 @@ private :
 
     //Helpers
     int64u SizeOfLine();
+    int64u SizeOfObjectHeader(); //0 if it is not the beginning of an object
     bool   Get_Next(string &Key, Ztring &Value, string* Raw=NULL); //Returns true if it is an array
 
     //Temp
