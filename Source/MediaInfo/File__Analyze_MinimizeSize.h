@@ -1390,6 +1390,7 @@ public :
         string Name;
         string Options; //Of a parameter which is not in the list of the parameters of the stream kind
         Ztring Value;
+        bool IsFilled=false; //The parameter of this parser is filled from this item
     };
     vector<tags_item> Tags_ToMerge;
 

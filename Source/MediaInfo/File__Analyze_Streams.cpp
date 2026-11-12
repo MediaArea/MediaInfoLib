@@ -35,6 +35,7 @@
 #include <cstdlib>
 #include <iomanip>
 #include <limits>
+#include <set>
 #include <type_traits>
 using namespace std;
 //---------------------------------------------------------------------------
@@ -5376,6 +5377,21 @@ void File__Analyze::Merge_Tags(File__Analyze &ToAdd, tags_format Format)
     if (!ToAdd.Count_Get(Stream_General))
         return;
 
+    const auto Add=[this](const tags_item& Item, size_t Size)
+    {
+        //Several blocks in the same format: the first one has priority
+        for (size_t Pos=0; Pos<Size; Pos++)
+            if (Tags_ToMerge[Pos].Format==Item.Format && Tags_ToMerge[Pos].Name==Item.Name)
+                return;
+        Tags_ToMerge.push_back(Item);
+        Tags_ToMerge.back().IsFilled=false;
+    };
+
+    //Content of these tags, without the content from tags in these tags
+    set<string> FromTags;
+    for (const tags_item& Item : ToAdd.Tags_ToMerge)
+        if (Item.IsFilled)
+            FromTags.insert(Item.Name);
     const size_t Items_Size=Tags_ToMerge.size();
     const size_t Size=ToAdd.Count_Get(Stream_General, 0);
     const size_t Size_NotExtra=MediaInfoLib::Config.Info_Get(Stream_General).size();
@@ -5387,19 +5403,18 @@ void File__Analyze::Merge_Tags(File__Analyze &ToAdd, tags_format Format)
         tags_item Item;
         Item.Format=Format;
         Item.Name=ToAdd.Get(Stream_General, 0, Pos, Info_Name).To_UTF8();
-
-        //Several blocks in the same format: the first one has priority
-        size_t Items_Pos=0;
-        while (Items_Pos<Items_Size && (Tags_ToMerge[Items_Pos].Format!=Format || Tags_ToMerge[Items_Pos].Name!=Item.Name))
-            Items_Pos++;
-        if (Items_Pos<Items_Size)
+        if (FromTags.find(Item.Name)!=FromTags.end())
             continue;
-
         if (Pos>=Size_NotExtra)
             Item.Options=ToAdd.Get(Stream_General, 0, Pos, Info_Options).To_UTF8();
         Item.Value=Value;
-        Tags_ToMerge.push_back(Item);
+        Add(Item, Items_Size);
     }
+
+    //Tags in these tags, in their own format
+    const size_t Items_Size_WithContent=Tags_ToMerge.size();
+    for (const tags_item& Item : ToAdd.Tags_ToMerge)
+        Add(Item, Item.Format==Format?Items_Size_WithContent:Items_Size);
 }
 
 //---------------------------------------------------------------------------
@@ -5442,7 +5457,7 @@ void File__Analyze::Streams_Finish_Tags()
                 if (WasEmpty[Pos] && !Retrieve_Const(Stream_General, 0, Titles[Pos]).empty())
                     Sources[MediaInfoLib::Config.Info_Get(Stream_General, Titles[Pos], Info_Name).To_UTF8()]=(tags_format)(Format-1);
         }
-        for (const tags_item& Item : Tags_ToMerge)
+        for (tags_item& Item : Tags_ToMerge)
         {
             if (Item.Format!=Format)
                 continue;
@@ -5468,6 +5483,7 @@ void File__Analyze::Streams_Finish_Tags()
                 if (!Item.Options.empty())
                     Fill_SetOptions(Stream_General, 0, Name, Item.Options.c_str());
                 Sources[Item.Name]=Item.Format;
+                Item.IsFilled=true;
                 continue;
             }
             if (Current==Item.Value || Tags_Comparable(Item.Name, Current)==Tags_Comparable(Item.Name, Item.Value))
@@ -5488,6 +5504,7 @@ void File__Analyze::Streams_Finish_Tags()
                     {
                         Fill(Stream_General, 0, Name, Item.Value, true);
                         Sources[Item.Name]=Item.Format;
+                        Item.IsFilled=true;
                     }
                     continue;
                 }
@@ -5496,6 +5513,8 @@ void File__Analyze::Streams_Finish_Tags()
             //Not the same content, which is expected for the tool: each part of the file may be written by another one
             if (!Item.Name.compare(0, 19, "Encoded_Application") || !Item.Name.compare(0, 15, "Encoded_Library"))
                 continue;
+            if (IsSub)
+                continue; //Compared by the parser these tags are given to
             const string Format_Name=Tags_Format_Names[Format];
             string Other=Source==Sources.end()?Retrieve_Const(Stream_General, 0, General_Format).To_UTF8():string(Tags_Format_Names[Source->second]);
             if (!Other.empty())
@@ -5504,7 +5523,8 @@ void File__Analyze::Streams_Finish_Tags()
         }
     }
     File_Offset=File_Offset_Save;
-    Tags_ToMerge.clear();
+    if (!IsSub)
+        Tags_ToMerge.clear(); //Else they are also for the parser the tags of this parser are given to, in their own format
 }
 
 //---------------------------------------------------------------------------
