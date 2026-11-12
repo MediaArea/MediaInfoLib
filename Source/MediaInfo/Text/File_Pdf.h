@@ -52,7 +52,7 @@ private :
     void obj();
     void xref();
     void xref_Stream();
-    void xref_End(int32u Prev);
+    void xref_End(int32u Prev, const Ztring &Root, const Ztring &Info);
     void trailer();
     void startxref();
     void Object_Root();
@@ -99,7 +99,6 @@ private :
     };
     state State;
     bool IsEncrypted;
-    bool Info_IsParsed;
     Ztring Info_CreationDate;
     Ztring Info_ModDate;
     std::map<int32u, std::vector<std::string> > Info_Values; //Keys of the document information whose value is the object

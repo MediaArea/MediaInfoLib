@@ -75,7 +75,6 @@ File_Pdf::File_Pdf()
 :File__Analyze()
 {
     IsEncrypted=false;
-    Info_IsParsed=false;
 }
 
 //***************************************************************************
@@ -440,6 +439,7 @@ void File_Pdf::xref_Stream()
     }
 
     int32u Prev=(int32u)-1;
+    Ztring Root, Info;
     if (!IsStream)
         Skip_XX(Element_Size-Element_Offset,                        "(Problem)");
     else
@@ -497,17 +497,8 @@ void File_Pdf::xref_Stream()
         }
 
         //The dictionary of the stream has the content of a trailer
-        const auto Top=[this](const Ztring& Value, type Type)
-        {
-            if (Value.empty())
-                return;
-            const int32u ObjectNumber=Value.To_int32u();
-            Objects[ObjectNumber].Type=Type;
-            Objects[ObjectNumber].TopObject=(int32u)-1;
-            Objects[(int32u)-1].Bottoms.push_back(ObjectNumber);
-        };
-        Top(Stream.Dictionary["Root"], Type_Root);
-        Top(Stream.Dictionary["Info"], Type_Info);
+        Root=Stream.Dictionary["Root"];
+        Info=Stream.Dictionary["Info"];
         if (Stream.Dictionary.find("Encrypt")!=Stream.Dictionary.end())
             IsEncrypted=true;
         const Ztring& Previous=Stream.Dictionary["Prev"];
@@ -525,12 +516,25 @@ void File_Pdf::xref_Stream()
     if (File_Offset+Buffer_Offset>Offsets_Max)
         Offsets_Max=(int32u)(File_Offset+Buffer_Offset);
 
-    xref_End(Prev);
+    xref_End(Prev, Root, Info);
 }
 
 //---------------------------------------------------------------------------
-void File_Pdf::xref_End(int32u Prev)
+void File_Pdf::xref_End(int32u Prev, const Ztring &Root, const Ztring &Info)
 {
+    //Catalog and document information, the ones of the last version of the file (its section is the first one parsed)
+    if (!Root.empty() && Objects.find((int32u)-1)==Objects.end())
+        for (size_t Pos=0; Pos<2; Pos++)
+        {
+            const Ztring& Value=Pos?Info:Root;
+            if (Value.empty())
+                continue;
+            const int32u ObjectNumber=Value.To_int32u();
+            Objects[ObjectNumber].Type=Pos?Type_Info:Type_Root;
+            Objects[ObjectNumber].TopObject=(int32u)-1;
+            Objects[(int32u)-1].Bottoms.push_back(ObjectNumber);
+        }
+
     //Previous Cross-Reference Table
     if (Prev!=(int32u)-1)
     {
@@ -562,7 +566,7 @@ void File_Pdf::trailer()
     //Parsing
     int32u Prev=(int32u)-1;
     string Key;
-    Ztring Value;
+    Ztring Value, Root, Info;
     Get_String(SizeOfLine(), Key,                                   "Object name");
     if (Key!="trailer")
     {
@@ -581,19 +585,13 @@ void File_Pdf::trailer()
                     break;
                 else if (Key=="Root")
                 {
-                    int32u ObjectNumber=Value.To_int32u();
-                    Objects[ObjectNumber].Type=Type_Root;
-                    Objects[ObjectNumber].TopObject=(int32u)-1;
-                    Objects[(int32u)-1].Bottoms.push_back(ObjectNumber);
-                    Param_Info1(__T("Document Catalog is at offset 0x"+Ztring().From_Number(Objects[ObjectNumber].Offset, 16)));
+                    Root=Value;
+                    Param_Info1(__T("Document Catalog is at offset 0x"+Ztring().From_Number(Objects[Value.To_int32u()].Offset, 16)));
                 }
                 else if (Key=="Info")
                 {
-                    int32u ObjectNumber=Value.To_int32u();
-                    Objects[ObjectNumber].Type=Type_Info;
-                    Objects[ObjectNumber].TopObject=(int32u)-1;
-                    Objects[(int32u)-1].Bottoms.push_back(ObjectNumber);
-                    Param_Info1(__T("Info is at offset 0x"+Ztring().From_Number(Objects[ObjectNumber].Offset, 16)));
+                    Info=Value;
+                    Param_Info1(__T("Info is at offset 0x"+Ztring().From_Number(Objects[Value.To_int32u()].Offset, 16)));
                 }
                 else if (Key=="Encrypt")
                     IsEncrypted=true;
@@ -619,7 +617,7 @@ void File_Pdf::trailer()
 
     Element_End0();
 
-    xref_End(Prev);
+    xref_End(Prev, Root, Info);
 }
 
 //---------------------------------------------------------------------------
@@ -867,8 +865,6 @@ void File_Pdf::Object_Info()
     Element_Info1("Info");
 
     //Parsing
-    const bool IsUsed=!IsEncrypted && !Info_IsParsed; //The strings of an encrypted file are encrypted, and the first dictionary parsed is the one of the last update of the file
-    Info_IsParsed=true;
     string Key, Raw;
     Ztring Value;
     while (Element_Offset<Element_Size)
@@ -880,7 +876,7 @@ void File_Pdf::Object_Info()
                 Get_Next(Key, Value, &Raw);
                 if (Key.empty())
                     break;
-                if (!IsUsed || Pdf_Info_Parameter(Key)==(size_t)-1)
+                if (IsEncrypted || Pdf_Info_Parameter(Key)==(size_t)-1) //The strings of an encrypted file are encrypted
                     continue;
                 int32u ObjectNumber;
                 if (!Pdf_Reference(Raw, ObjectNumber))
