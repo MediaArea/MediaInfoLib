@@ -56,6 +56,7 @@ File__Tags_Helper::File__Tags_Helper()
 
     //Temp
     Parser=NULL;
+    Parser_Format=File__Analyze::Tags_Max;
     Id3v1_Offset=(int64u)-1;
     Lyrics3_Offset=(int64u)-1;
     Lyrics3v2_Offset=(int64u)-1;
@@ -88,25 +89,25 @@ void File__Tags_Helper::Streams_Fill()
     {
         if (Parser_Streams_Fill[Pos] && Parser_Streams_Fill[Pos]->Status[File__Analyze::IsAccepted])
         {
-            auto& MI = *Parser_Streams_Fill[Pos];
-            #ifndef MEDIAINFO_ID3V2_YES
-                const bool Priority=false;
-            #else
-                bool Priority=Parser_Streams_Fill_Priority[Pos];
-            #endif
-
             Parser_Streams_Fill[Pos]->Read_Buffer_Finalize();
-            Base->Merge(MI, Stream_General, 0, 0, Priority);
-            Base->Merge(MI, Stream_Audio  , 0, 0, Priority);
-            auto ImageCount = MI.Count_Get(Stream_Image);
-            for (size_t i = 0; i < ImageCount; ++i) {
-                Base->Stream_Prepare(Stream_Image);
-                Base->Merge(MI, Stream_Image, i, Base->StreamPos_Last);
-            }
+            Parser_Merge(*Parser_Streams_Fill[Pos], Parser_Streams_Fill_Format[Pos]);
         }
         delete Parser_Streams_Fill[Pos]; //Parser_Streams_Fill[Pos]=NULL;
     }
     Parser_Streams_Fill.clear();
+    Parser_Streams_Fill_Format.clear();
+}
+
+//---------------------------------------------------------------------------
+void File__Tags_Helper::Parser_Merge(File__Analyze& MI, File__Analyze::tags_format Format)
+{
+    Base->Merge_Tags(MI, Format);
+    Base->Merge(MI, Stream_Audio, 0, 0, Format==File__Analyze::Tags_Id3v2);
+    auto ImageCount = MI.Count_Get(Stream_Image);
+    for (size_t i = 0; i < ImageCount; ++i) {
+        Base->Stream_Prepare(Stream_Image);
+        Base->Merge(MI, Stream_Image, i, Base->StreamPos_Last);
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -185,12 +186,6 @@ bool File__Tags_Helper::Synched_Test()
 
     for (;;)
     {
-        #ifdef MEDIAINFO_ID3V2_YES
-            bool Priority=false;
-        #else
-            const bool Priority=false;
-        #endif
-
         if (!Parser)
         {
             //Must have enough buffer for having header
@@ -219,10 +214,10 @@ bool File__Tags_Helper::Synched_Test()
                     Base->Buffer_TotalBytes_FirstSynched_Max+=Parser_Buffer_Size;
                 #ifdef MEDIAINFO_ID3V2_YES
                     Parser=new File_Id3v2;
-                    Priority=true;
                 #else
                     Parser=new File_Unknown;
                 #endif
+                Parser_Format=File__Analyze::Tags_Id3v2;
                 Base->Element_Begin1("Id3v2");
             }
             else if (ID8==0x4150455441474558LL) //"APETAGEX"
@@ -243,6 +238,7 @@ bool File__Tags_Helper::Synched_Test()
                 #else
                     Parser=new File_Unknown;
                 #endif
+                Parser_Format=File__Analyze::Tags_ApeTag;
                 Base->Element_Begin1("ApeTag");
             }
             else if (ID8==0x4C59524943534245LL) //"LYRICSBE"
@@ -267,6 +263,7 @@ bool File__Tags_Helper::Synched_Test()
                     File_BeginTagSize+=Parser_Buffer_Size;
                 if (Base->File_Offset_FirstSynched==(int64u)-1)
                     Base->Buffer_TotalBytes_FirstSynched_Max+=Parser_Buffer_Size;
+                Parser_Format=File__Analyze::Tags_Lyrics3;
                 if (Pos2!=std::string::npos)
                 {
                     #ifdef MEDIAINFO_LYRICS3V2_YES
@@ -301,6 +298,7 @@ bool File__Tags_Helper::Synched_Test()
                     Parser=new File_Unknown;
                 #endif
                 Parser_Buffer_Size=227+128;
+                Parser_Format=File__Analyze::Tags_Id3v1;
                 Base->Element_Begin1("Id3+");
             }
             else if (ID==0x544147) //"TAG"
@@ -313,6 +311,7 @@ bool File__Tags_Helper::Synched_Test()
                 Parser_Buffer_Size=128;
                 if (!TagSizeIsFinal)
                     File_BeginTagSize+=Parser_Buffer_Size;
+                Parser_Format=File__Analyze::Tags_Id3v1;
                 Base->Element_Begin1("Id3");
             }
             else if (Base->File_Offset+Base->Buffer_Offset==Lyrics3_Offset)
@@ -326,6 +325,7 @@ bool File__Tags_Helper::Synched_Test()
                 Parser_Buffer_Size=(size_t)Lyrics3_Size;
                 if (!TagSizeIsFinal)
                     File_BeginTagSize+=Parser_Buffer_Size;
+                Parser_Format=File__Analyze::Tags_Lyrics3;
                 Base->Element_Begin1("Lyrics3");
             }
             else if (Base->File_Offset+Base->Buffer_Offset==Lyrics3v2_Offset)
@@ -339,6 +339,7 @@ bool File__Tags_Helper::Synched_Test()
                 Parser_Buffer_Size=(size_t)Lyrics3v2_Size;
                 if (!TagSizeIsFinal)
                     File_BeginTagSize+=Parser_Buffer_Size;
+                Parser_Format=File__Analyze::Tags_Lyrics3;
                 Base->Element_Begin1("Lyrics3v2");
             }
             else if (Base->File_Offset+Base->Buffer_Offset==ApeTag_Offset)
@@ -351,6 +352,7 @@ bool File__Tags_Helper::Synched_Test()
                 if (!TagSizeIsFinal)
                     File_BeginTagSize+=Parser_Buffer_Size;
                 Parser_Buffer_Size=(size_t)ApeTag_Size;
+                Parser_Format=File__Analyze::Tags_ApeTag;
                 Base->Element_Begin1("ApeTag");
             }
             else
@@ -379,21 +381,13 @@ bool File__Tags_Helper::Synched_Test()
                     if (!Base->Status[File__Analyze::IsFilled])
                         Base->Fill();
                     Parser->Read_Buffer_Finalize();
-                    Base->Merge(*Parser, Stream_General, 0, 0, Priority);
-                    Base->Merge(*Parser, Stream_Audio  , 0, 0, Priority);
-                    auto ImageCount = (*Parser).Count_Get(Stream_Image);
-                    for (size_t i = 0; i < ImageCount; ++i) {
-                        Base->Stream_Prepare(Stream_Image);
-                        Base->Merge(*Parser, Stream_Image, i, Base->StreamPos_Last);
-                    }
+                    Parser_Merge(*Parser, Parser_Format);
                     delete Parser; Parser=NULL;
                 }
                 else
                 {
                     Parser_Streams_Fill.push_back(Parser);
-                    #ifdef MEDIAINFO_ID3V2_YES
-                        Parser_Streams_Fill_Priority.push_back(Priority);
-                    #endif
+                    Parser_Streams_Fill_Format.push_back(Parser_Format);
                     Parser=NULL;
                 }
                 if (Parser_Buffer_Size)

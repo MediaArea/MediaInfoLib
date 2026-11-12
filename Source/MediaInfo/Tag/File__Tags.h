@@ -95,10 +95,10 @@ public :
 private :
     //Temp
     File__Analyze* Parser;
+    File__Analyze::tags_format Parser_Format;
     vector<File__Analyze*> Parser_Streams_Fill; //Parser to merge when filling
-    #ifdef MEDIAINFO_ID3V2_YES
-        vector<bool> Parser_Streams_Fill_Priority; //Parser to merge when filling
-    #endif
+    vector<File__Analyze::tags_format> Parser_Streams_Fill_Format;
+    void Parser_Merge(File__Analyze& MI, File__Analyze::tags_format Format);
     size_t         Parser_Buffer_Size;
     int64u Id3v1_Offset;
     int64u Lyrics3_Offset;
