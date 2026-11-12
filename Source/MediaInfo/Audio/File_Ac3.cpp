@@ -714,14 +714,19 @@ int8u AC3_TrueHD_Channels(int16u ChannelsMap)
 std::string AC3_TrueHD_Channels_Positions(int16u ChannelsMap, bool Bit11=false)
 {
     std::string Text;
-    if ((ChannelsMap&0x0003)==0x0003)
-        Text+="Front: L C R";
-    else
+    if (ChannelsMap&0x0023)
     {
+        Text+="Front:";
         if (ChannelsMap&0x0001)
-            Text+="Front: L R";
+            Text+=" L";
+        if (ChannelsMap&0x0020)
+            Text+=" Lc";
         if (ChannelsMap&0x0002)
-            Text+="Front: C";
+            Text+=" C";
+        if (ChannelsMap&0x0020)
+            Text+=" Rc";
+        if (ChannelsMap&0x0001)
+            Text+=" R";
     }
 
     if (ChannelsMap&0x08)
@@ -740,8 +745,6 @@ std::string AC3_TrueHD_Channels_Positions(int16u ChannelsMap, bool Bit11=false)
             Text+=", High: C";
     }
 
-    if (ChannelsMap&0x0020)
-        Text+=", Ctr: L R";
     if (ChannelsMap&0x0040)
         Text+=", Back: L R";
     if (ChannelsMap&0x0100)
@@ -785,7 +788,7 @@ Ztring AC3_TrueHD_Channels_Positions2(int16u ChannelsMap, bool Bit11=false)
 
 
     if (ChannelsMap&0x0020)
-        Rear+=2; //c
+        Front+=2; //c
     if (ChannelsMap&0x0040)
         Rear+=2; //rs
     if (ChannelsMap&0x0100)

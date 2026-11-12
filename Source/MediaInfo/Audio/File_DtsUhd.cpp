@@ -1040,7 +1040,7 @@ struct DTSUHD_ChannelMaskInfo DTSUHD_DecodeChannelMask(int32u ChannelMask)
     // ETSI TS 103 491 V1.2.1 Table C-4: Speaker Labels for ChannelMask
     if (ChannelMask)
     {
-        if (ChannelMask & 0x00000003)
+        if (ChannelMask & 0x00001803)
         {
             Info.ChannelPositionsText+=", Front:";
             if (ChannelMask & 0x00000002)
@@ -1049,12 +1049,16 @@ struct DTSUHD_ChannelMaskInfo DTSUHD_DecodeChannelMask(int32u ChannelMask)
                 Info.ChannelPositionsText+=" L";
                 Info.CountFront++;
             }
+            if (ChannelMask & 0x00000800)
+                Info.ChannelPositionsText+=" Lc"; //Channel layout and count with the other Lc/Rc code
             if (ChannelMask & 0x00000001)
             {
                 Info.ChannelLayoutText+=" C";
                 Info.ChannelPositionsText+=" C";
                 Info.CountFront++;
             }
+            if (ChannelMask & 0x00001000)
+                Info.ChannelPositionsText+=" Rc";
             if (ChannelMask & 0x00000004)
             {
                 Info.ChannelLayoutText+=" R";
@@ -1207,21 +1211,15 @@ struct DTSUHD_ChannelMaskInfo DTSUHD_DecodeChannelMask(int32u ChannelMask)
             Info.CountHeights++;
         }
 
-        if (ChannelMask & 0x00001800)
+        if (ChannelMask & 0x00000800)
         {
-            Info.ChannelPositionsText+=", Center:";
-            if (ChannelMask & 0x00000800)
-            {
-                Info.ChannelLayoutText+=" Lc";
-                Info.ChannelPositionsText+=" L";
-                Info.CountFront++;
-            }
-            if (ChannelMask & 0x00001000)
-            {
-                Info.ChannelLayoutText+=" Rc";
-                Info.ChannelPositionsText+=" R";
-                Info.CountFront++;
-            }
+            Info.ChannelLayoutText+=" Lc"; //In the front channel positions
+            Info.CountFront++;
+        }
+        if (ChannelMask & 0x00001000)
+        {
+            Info.ChannelLayoutText+=" Rc";
+            Info.CountFront++;
         }
 
         if (ChannelMask & 0xC0000000)
