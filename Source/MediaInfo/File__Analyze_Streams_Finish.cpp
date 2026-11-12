@@ -3518,7 +3518,7 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
         auto And_Pos = Name.rfind(__T(" & "), Extra_Pos);
         auto Slash_Pos = Name.rfind(__T(" / "), Extra_Pos);
         auto Comma_Pos = Extra_Pos ? Name.rfind(__T(", "), Extra_Pos - 1) : string::npos;
-        if (Plus_Pos != string::npos || And_Pos != string::npos || Comma_Pos != string::npos) {
+        if (Plus_Pos != string::npos || And_Pos != string::npos || Slash_Pos != string::npos || Comma_Pos != string::npos) {
             return; // TODO: handle complex string e.g. with 2 versions
         }
 
@@ -3861,6 +3861,13 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
         const auto Parameter_String = ++Parameter_Start;
         if (!Retrieve_Const(Stream_General, StreamPos, Parameter_String).empty()) {
             return;
+        }
+        if (!HasModel) {
+            const auto& Value_Source = Retrieve_Const(Stream_General, StreamPos, Parameter);
+            if (Value_Source.find(__T(" / ")) != string::npos) {
+                Fill(Stream_General, StreamPos, Parameter_String, Value_Source, true);
+                return; // Several values e.g. from several sources, not split into name and version
+            }
         }
         const auto Parameter_CompanyName = ++Parameter_Start;
         const auto Parameter_Name = ++Parameter_Start;
