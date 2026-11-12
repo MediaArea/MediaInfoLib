@@ -4158,6 +4158,7 @@ void File__Analyze::ForceFinish ()
                     return;
             #endif //MEDIAINFO_DEMUX
         }
+        Streams_Finish_Tags();
         Streams_Finish_Conformance();
         Streams_Finish_Global();
         #if MEDIAINFO_DEMUX
