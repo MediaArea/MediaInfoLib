@@ -2331,7 +2331,7 @@ void File_Riff::AVI__INFO_IID3()
         Open_Buffer_Init(&MI);
         Open_Buffer_Continue(&MI);
         Finish(&MI);
-        Merge(MI, Stream_General, 0, 0);
+        Merge_Tags(MI, Tags_Id3v1);
     #endif
 }
 
@@ -3642,19 +3642,13 @@ void File_Riff::WAVE__pmx()
 
     //Parsing
     #if defined(MEDIAINFO_XMP_YES)
-        File_Xmp* MI=new File_Xmp;
-        MI->NoTrace=true; //The content is in the trace as text
-        Open_Buffer_Init(MI);
-        Open_Buffer_Continue(MI, Buffer+Buffer_Offset, (size_t)Element_Size);
-        Open_Buffer_Finalize(MI);
+        File_Xmp MI;
+        MI.NoTrace=true; //The content is in the trace as text
+        Open_Buffer_Init(&MI);
+        Open_Buffer_Continue(&MI, Buffer+Buffer_Offset, (size_t)Element_Size);
+        Open_Buffer_Finalize(&MI);
         Element_Show(); //Else the element is removed from the trace, the sub-parser having no trace
-        if (Xmp)
-        {
-            Xmp->Merge(*MI, Stream_General, 0, 0, false); //Only the content which is not in the previous XMP chunks
-            delete MI;
-        }
-        else
-            Xmp=MI;
+        Merge_Tags(MI, Tags_Xmp);
     #endif //defined(MEDIAINFO_XMP_YES)
     Skip_UTF8(Element_Size,                                     "XML data");
 }
@@ -4411,7 +4405,7 @@ void File_Riff::WAVE_ID3_()
         Open_Buffer_Init(&MI);
         Open_Buffer_Continue(&MI);
         Finish(&MI);
-        Merge(MI, Stream_General, 0, 0);
+        Merge_Tags(MI, Tags_Id3v2);
     #endif
 }
 
