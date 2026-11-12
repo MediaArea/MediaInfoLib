@@ -5364,7 +5364,7 @@ static Ztring Tags_Genre(const Ztring& Value)
 //---------------------------------------------------------------------------
 static Ztring Tags_Comparable(const string& Name, const Ztring& Value)
 {
-    //Same content in another form: name of the genre, number without leading zeros
+    //Same content in another form: name of the genre, number without leading zeros, list of values in another order
     if (Name=="Genre")
         return Tags_Genre(Value);
     size_t Zeros=0;
@@ -5372,6 +5372,14 @@ static Ztring Tags_Comparable(const string& Name, const Ztring& Value)
         Zeros++;
     if (Zeros && Value.find_first_not_of(__T("0123456789"))==string::npos)
         return Value.substr(Zeros);
+    if (Value.find(__T(" / "))!=string::npos)
+    {
+        ZtringList List;
+        List.Separator_Set(0, __T(" / "));
+        List.Write(Value);
+        sort(List.begin(), List.end());
+        return List.Read();
+    }
     return Value;
 }
 
