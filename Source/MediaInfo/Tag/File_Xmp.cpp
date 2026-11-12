@@ -100,6 +100,9 @@ namespace MediaInfoLib
         if (Result > 0) { \
             return Result; \
         } \
+        if (Result < 0) { \
+            v.len = 0; /* Element without content, the previous value is not kept */ \
+        } \
 
 #define XML_ELEMENT_NAMESPACE(NAMESPACE) \
         } \
