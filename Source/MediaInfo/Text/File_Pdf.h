@@ -59,7 +59,7 @@ private :
 
     //Helpers
     int64u SizeOfLine();
-    bool   Get_Next(string &Key, Ztring &Value); //Returns true if it is an array
+    bool   Get_Next(string &Key, Ztring &Value, string* Raw=NULL); //Returns true if it is an array
 
     //Temp
     enum state
@@ -70,6 +70,8 @@ private :
         State_Parsing_object,
     };
     state State;
+    bool IsEncrypted;
+    bool Info_IsParsed;
     //typedef std::map<int32u, int32u> offsets;
     //offsets Offsets; //Key is offset
     //offsets::iterator Offsets_Current;

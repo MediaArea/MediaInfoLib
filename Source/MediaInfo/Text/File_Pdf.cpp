@@ -41,6 +41,8 @@ namespace MediaInfoLib
 File_Pdf::File_Pdf()
 :File__Analyze()
 {
+    IsEncrypted=false;
+    Info_IsParsed=false;
 }
 
 //***************************************************************************
@@ -343,6 +345,8 @@ void File_Pdf::trailer()
                     Objects[(int32u)-1].Bottoms.push_back(ObjectNumber);
                     Param_Info1(__T("Info is at offset 0x"+Ztring().From_Number(Objects[ObjectNumber].Offset, 16)));
                 }
+                else if (Key=="Encrypt")
+                    IsEncrypted=true;
                 else if (Key=="Prev")
                 {
                     Prev=Value.To_int32u();
@@ -478,22 +482,156 @@ void File_Pdf::Object_Root()
 }
 
 //---------------------------------------------------------------------------
+static Ztring Pdf_String(const string& Raw)
+{
+    string Bytes;
+    if (Raw.size()>=2 && Raw[0]=='(')
+    {
+        //Literal string
+        size_t Level=1;
+        for (size_t Pos=1; Pos<Raw.size(); Pos++)
+        {
+            char Byte=Raw[Pos];
+            if (Byte=='\\')
+            {
+                if (++Pos>=Raw.size())
+                    break;
+                Byte=Raw[Pos];
+                switch (Byte)
+                {
+                    case 'n' : Byte='\n'; break;
+                    case 'r' : Byte='\r'; break;
+                    case 't' : Byte='\t'; break;
+                    case 'b' : Byte='\b'; break;
+                    case 'f' : Byte='\f'; break;
+                    default   :
+                                if (Byte>='0' && Byte<='7')
+                                {
+                                    //Up to 3 octal digits
+                                    int8u Code=(int8u)(Byte-'0');
+                                    for (size_t Digits=1; Digits<3 && Pos+1<Raw.size() && Raw[Pos+1]>='0' && Raw[Pos+1]<='7'; Digits++)
+                                        Code=(int8u)((Code<<3)|(Raw[++Pos]-'0'));
+                                    Byte=(char)Code;
+                                }
+                }
+            }
+            else if (Byte=='(')
+                Level++;
+            else if (Byte==')' && !--Level)
+                break;
+            Bytes+=Byte;
+        }
+    }
+    else if (Raw.size()>=2 && Raw[0]=='<')
+    {
+        //Hexadecimal string
+        bool HasHigh=false;
+        int8u High=0;
+        for (size_t Pos=1; Pos<Raw.size() && Raw[Pos]!='>'; Pos++)
+        {
+            const char Digit=Raw[Pos];
+            int8u Value;
+                 if (Digit>='0' && Digit<='9') Value=(int8u)(Digit-'0');
+            else if (Digit>='A' && Digit<='F') Value=(int8u)(Digit-'A'+10);
+            else if (Digit>='a' && Digit<='f') Value=(int8u)(Digit-'a'+10);
+            else
+                continue;
+            if (HasHigh)
+                Bytes+=(char)((High<<4)|Value);
+            else
+                High=Value;
+            HasHigh=!HasHigh;
+        }
+        if (HasHigh)
+            Bytes+=(char)(High<<4);
+    }
+
+    //Encoding
+    Ztring Text;
+    if (Bytes.size()>=2 && (int8u)Bytes[0]==0xFE && (int8u)Bytes[1]==0xFF)
+        Text.From_UTF16BE(Bytes.c_str()+2, Bytes.size()-2);
+    else if (Bytes.size()>=3 && (int8u)Bytes[0]==0xEF && (int8u)Bytes[1]==0xBB && (int8u)Bytes[2]==0xBF)
+        Text.From_UTF8(Bytes.c_str()+3, Bytes.size()-3);
+    else
+        Text.From_ISO_8859_1(Bytes.c_str(), Bytes.size()); //PDFDocEncoding, which is ISO 8859-1 for most of the characters
+    return Text;
+}
+
+//---------------------------------------------------------------------------
+static Ztring Pdf_Date(const Ztring& Value)
+{
+    //"D:YYYYMMDDHHmmSS" then "Z" or the offset from UTC as +HH'mm', everything after the year may be missing
+    const string Date=Value.To_UTF8();
+    size_t Pos=Date.compare(0, 2, "D:")?0:2;
+    const size_t Digits=min(Date.find_first_not_of("0123456789", Pos), Date.size())-Pos;
+    if (Digits<4 || Digits>14 || Digits%2)
+        return Value;
+    static const char Separators[]="-- ::";
+    string Result=Date.substr(Pos, 4);
+    for (size_t Part=0; 4+Part*2<Digits; Part++)
+    {
+        Result+=Separators[Part];
+        Result+=Date.substr(Pos+4+Part*2, 2);
+    }
+    Pos+=Digits;
+    if (Digits==14 && Pos<Date.size())
+    {
+        if (Date[Pos]=='Z')
+            Result+=" UTC";
+        else if ((Date[Pos]=='+' || Date[Pos]=='-') && Pos+3<=Date.size() && Date.find_first_not_of("0123456789", Pos+1)>=Pos+3)
+        {
+            Result+=Date.substr(Pos, 3);
+            Result+=':';
+            Pos+=3;
+            if (Pos<Date.size() && Date[Pos]=='\'')
+                Pos++;
+            if (Pos+2<=Date.size() && Date.find_first_not_of("0123456789", Pos)>=Pos+2)
+                Result+=Date.substr(Pos, 2);
+            else
+                Result+="00";
+        }
+    }
+    return Ztring().From_UTF8(Result);
+}
+
+//---------------------------------------------------------------------------
 void File_Pdf::Object_Info()
 {
     Element_Info1("Info");
 
     //Parsing
-    string Key;
-    Ztring Value;
+    const bool IsUsed=!IsEncrypted && !Info_IsParsed; //The strings of an encrypted file are encrypted, and the first dictionary parsed is the one of the last update of the file
+    Info_IsParsed=true;
+    string Key, Raw;
+    Ztring Value, CreationDate, ModDate;
     while (Element_Offset<Element_Size)
     {
-        if (Get_Next(Key, Value))
+        if (Get_Next(Key, Value, &Raw))
         {
             for (;;)
             {
-                Get_Next(Key, Value);
+                Get_Next(Key, Value, &Raw);
                 if (Key.empty())
                     break;
+                if (!IsUsed)
+                    continue;
+                const Ztring Text=Pdf_String(Raw);
+                     if (Key=="Title")
+                    Fill(Stream_General, 0, General_Title, Text);
+                else if (Key=="Author")
+                    Fill(Stream_General, 0, General_Producer, Text);
+                else if (Key=="Subject")
+                    Fill(Stream_General, 0, General_Description, Text);
+                else if (Key=="Keywords")
+                    Fill(Stream_General, 0, General_Keywords, Text);
+                else if (Key=="Creator")
+                    Fill(Stream_General, 0, General_Encoded_Application, Text);
+                else if (Key=="Producer")
+                    Fill(Stream_General, 0, General_Encoded_Library, Text);
+                else if (Key=="CreationDate")
+                    CreationDate=Pdf_Date(Text);
+                else if (Key=="ModDate")
+                    ModDate=Pdf_Date(Text);
             }
 
             continue;
@@ -502,6 +640,9 @@ void File_Pdf::Object_Info()
         if (Key.empty())
             break;
     }
+
+    //Same parameters as the ones filled from the XMP metadata
+    Fill(Stream_General, 0, General_Encoded_Date, ModDate.empty()?CreationDate:ModDate);
 }
 
 //---------------------------------------------------------------------------
@@ -583,10 +724,12 @@ int64u File_Pdf::SizeOfLine()
 }
 
 //---------------------------------------------------------------------------
-bool File_Pdf::Get_Next(string &Key, Ztring &Value)
+bool File_Pdf::Get_Next(string &Key, Ztring &Value, string* Raw)
 {
     Key.clear();
     Value.clear();
+    if (Raw)
+        Raw->clear();
 
     string Line;
 
@@ -675,6 +818,11 @@ bool File_Pdf::Get_Next(string &Key, Ztring &Value)
             if (Line[Line_End]==' ')
                 ++HasSpace;
 
+            if (HasParenthesis && Line[Line_End]=='\\' && Line_End+1<Line.size())
+            {
+                Line_End+=2; //Escaped character in a string
+                continue;
+            }
             if (Line[Line_End]=='(')
                 ++HasParenthesis;
             if (HasParenthesis && Line[Line_End]==')')
@@ -694,13 +842,15 @@ bool File_Pdf::Get_Next(string &Key, Ztring &Value)
         string KeyValue;
         Get_String(Line_End-Line_Begin, KeyValue,               "Key-Value");
 
-        size_t Key_Max=KeyValue.find_first_of(" (");
+        size_t Key_Max=KeyValue.find_first_of(" (<");
         if (Key_Max==string::npos)
             Key_Max=KeyValue.size();
         Key=KeyValue.substr(1, Key_Max-1);
         size_t Value_Min=Key_Max;
         while (Value_Min<KeyValue.size() && KeyValue[Value_Min]==' ')
             ++Value_Min;
+        if (Raw)
+            Raw->assign(KeyValue, Value_Min, string::npos);
         if (Value_Min<KeyValue.size() && KeyValue[Value_Min]=='(')
         {
             ++Value_Min;
