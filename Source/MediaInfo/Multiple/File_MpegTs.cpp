@@ -2975,7 +2975,14 @@ void File_MpegTs::Data_Parse()
 
     //TSP specific
     if (TSP_Size)
+    {
+        if (Element_Size<TSP_Size)
+        {
+            Trusted_IsNot("Size is wrong");
+            return;
+        }
         Element_Size-=TSP_Size;
+    }
 
     #if MEDIAINFO_DUPLICATE
         if (Complete_Stream->Streams[pid]->ShouldDuplicate)
