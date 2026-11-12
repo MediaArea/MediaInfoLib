@@ -101,7 +101,6 @@ void File__Tags_Helper::Streams_Fill()
 //---------------------------------------------------------------------------
 void File__Tags_Helper::Parser_Merge(File__Analyze& MI, File__Analyze::tags_format Format)
 {
-    Base->Merge_Tags(MI, Format);
     Base->Merge(MI, Stream_Audio, 0, 0, Format==File__Analyze::Tags_Id3v2);
     auto ImageCount = MI.Count_Get(Stream_Image);
     for (size_t i = 0; i < ImageCount; ++i) {
@@ -113,6 +112,8 @@ void File__Tags_Helper::Parser_Merge(File__Analyze& MI, File__Analyze::tags_form
 //---------------------------------------------------------------------------
 void File__Tags_Helper::Streams_Finish()
 {
+    Streams_Fill(); //Tags before the stream, if the parser does not merge them when it fills its streams
+
     if (!Base->IsSub)
     {
         Base->Fill(Stream_General, 0, General_StreamSize, TagsSize+Base->Retrieve(Stream_General, 0, General_StreamSize).To_int64u(), 10, true);
@@ -376,6 +377,7 @@ bool File__Tags_Helper::Synched_Test()
             Parser_Buffer_Size-=(size_t)Size_ToParse;
             if (Parser->Status[File__Analyze::IsFinished] || Parser_Buffer_Size==0)
             {
+                Base->Merge_Tags(*Parser, Parser_Format); //General part, also when the stream is not yet detected
                 if (Base->Status[File__Analyze::IsAccepted] && Parser->Count_Get(Stream_General)>0)
                 {
                     if (!Base->Status[File__Analyze::IsFilled])
@@ -422,6 +424,14 @@ size_t File__Tags_Helper::Stream_Prepare(stream_t StreamKind)
 //---------------------------------------------------------------------------
 void File__Tags_Helper::GoTo (int64u GoTo, const char* ParserName)
 {
+    //Tags before the stream, if the parser does not merge them when it fills its streams
+    if (Base->Status[File__Analyze::IsAccepted] && !Parser_Streams_Fill.empty())
+    {
+        if (!Base->Status[File__Analyze::IsFilled])
+            Base->Fill();
+        Streams_Fill();
+    }
+
     if (Base->IsSub)
     {
         Base->GoTo(GoTo, ParserName);
