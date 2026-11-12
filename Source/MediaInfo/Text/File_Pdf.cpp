@@ -190,7 +190,7 @@ bool File_Pdf::Header_Begin()
 //---------------------------------------------------------------------------
 void File_Pdf::Header_Parse()
 {
-    offsets::iterator Offsets_Next=upper_bound(Offsets.begin(), Offsets.end(), (int32u)(File_Offset+Buffer_Offset));
+    offsets::iterator Offsets_Next=upper_bound(Offsets.begin(), Offsets.end(), File_Offset+Buffer_Offset);
     if (Offsets_Next!=Offsets.end() && *Offsets_Next>File_Offset+Buffer_Size)
     {
         Element_WaitForMoreData();
@@ -267,11 +267,11 @@ void File_Pdf::Objects_Next()
         Objects_Current=Objects.find(Objects_Current->second.Bottoms[Objects_Current->second.BottomPos]);
 
         //Offset of the object, or of the object stream it is in
-        int32u Offset=Objects_Current->second.Offset;
+        int64u Offset=Objects_Current->second.Offset;
         if (Objects_Current->second.ObjectStream!=(int32u)-1)
         {
             objects::iterator ObjectStream=Objects.find(Objects_Current->second.ObjectStream);
-            Offset=ObjectStream==Objects.end()?(int32u)-1:ObjectStream->second.Offset;
+            Offset=ObjectStream==Objects.end()?(int64u)-1:ObjectStream->second.Offset;
         }
         if (Offset>=File_Size)
             continue; //Not in the file
@@ -357,7 +357,7 @@ void File_Pdf::xref()
                 char atoi_buf[18];
                 atoi_buf[17]=0;
                 memcpy(atoi_buf,(const char*)Buffer_Temp-17,17);
-                const int32u Offset=(int32u)atoi(atoi_buf);
+                const int64u Offset=strtoull(atoi_buf, NULL, 10);
                 object& Object=Objects[Base+Pos];
                 if (!Object.IsSet()) //The sections are parsed from the last update of the file to the first one, the last content of an object is the one to parse
                     Object.Offset=Offset;
@@ -397,7 +397,7 @@ void File_Pdf::xref()
     Element_End0();
 
     if (File_Offset+Buffer_Offset>Offsets_Max)
-        Offsets_Max=(int32u)(File_Offset+Buffer_Offset);
+        Offsets_Max=File_Offset+Buffer_Offset;
 
     trailer();
 }
@@ -438,7 +438,7 @@ void File_Pdf::xref_Stream()
         return;
     }
 
-    int32u Prev=(int32u)-1;
+    int64u Prev=(int64u)-1;
     Ztring Root, Info;
     if (!IsStream)
         Skip_XX(Element_Size-Element_Offset,                        "(Problem)");
@@ -480,15 +480,15 @@ void File_Pdf::xref_Stream()
                         for (int64u Byte=0; Byte<W[1]; Byte++)
                             Value=(Value<<8)|*Entry++;
                         Entry+=W[2];
-                        if ((Type!=1 && Type!=2) || Value>=(int32u)-1 || Objects.size()>=Objects_Max)
+                        if ((Type!=1 && Type!=2) || Value>=(Type==1?(int64u)-1:(int32u)-1) || Objects.size()>=Objects_Max)
                             continue; //Free, or not kept
                         if (Type==1)
-                            Offsets.push_back((int32u)Value);
+                            Offsets.push_back(Value);
                         object& Object=Objects[(int32u)Number];
                         if (Object.IsSet())
                             continue; //The sections are parsed from the last update of the file to the first one, the last content of an object is the one to parse
                         if (Type==1)
-                            Object.Offset=(int32u)Value;
+                            Object.Offset=Value;
                         else
                             Object.ObjectStream=(int32u)Value;
                     }
@@ -503,24 +503,24 @@ void File_Pdf::xref_Stream()
             IsEncrypted=true;
         const Ztring& Previous=Stream.Dictionary["Prev"];
         if (!Previous.empty())
-            Prev=Previous.To_int32u();
-        if (Prev!=(int32u)-1 && find(xref_Offsets.begin(), xref_Offsets.end(), Prev)!=xref_Offsets.end())
+            Prev=Previous.To_int64u();
+        if (Prev!=(int64u)-1 && find(xref_Offsets.begin(), xref_Offsets.end(), Prev)!=xref_Offsets.end())
         {
             Trusted_IsNot("Cross-reference section already parsed");
-            Prev=(int32u)-1;
+            Prev=(int64u)-1;
         }
     }
 
     Element_End0();
 
     if (File_Offset+Buffer_Offset>Offsets_Max)
-        Offsets_Max=(int32u)(File_Offset+Buffer_Offset);
+        Offsets_Max=File_Offset+Buffer_Offset;
 
     xref_End(Prev, Root, Info);
 }
 
 //---------------------------------------------------------------------------
-void File_Pdf::xref_End(int32u Prev, const Ztring &Root, const Ztring &Info)
+void File_Pdf::xref_End(int64u Prev, const Ztring &Root, const Ztring &Info)
 {
     //Catalog and document information, the ones of the last version of the file (its section is the first one parsed)
     if (!Root.empty() && Objects.find((int32u)-1)==Objects.end())
@@ -536,7 +536,7 @@ void File_Pdf::xref_End(int32u Prev, const Ztring &Root, const Ztring &Info)
         }
 
     //Previous Cross-Reference Table
-    if (Prev!=(int32u)-1)
+    if (Prev!=(int64u)-1)
     {
         xref_Offsets.push_back(Prev);
         GoTo(Prev);
@@ -564,7 +564,7 @@ void File_Pdf::trailer()
     Element_Begin1("Trailer");
 
     //Parsing
-    int32u Prev=(int32u)-1;
+    int64u Prev=(int64u)-1;
     string Key;
     Ztring Value, Root, Info;
     Get_String(SizeOfLine(), Key,                                   "Object name");
@@ -597,7 +597,7 @@ void File_Pdf::trailer()
                     IsEncrypted=true;
                 else if (Key=="Prev")
                 {
-                    Prev=Value.To_int32u();
+                    Prev=Value.To_int64u();
                     Param_Info1(__T("Previous Cross-Reference Table is at offset 0x"+Ztring().From_Number(Prev, 16)));
                 }
             }
@@ -609,10 +609,10 @@ void File_Pdf::trailer()
             break;
     }
 
-    if (Prev!=(int32u)-1 && find(xref_Offsets.begin(), xref_Offsets.end(), Prev)!=xref_Offsets.end())
+    if (Prev!=(int64u)-1 && find(xref_Offsets.begin(), xref_Offsets.end(), Prev)!=xref_Offsets.end())
     {
         Trusted_IsNot("Cross-reference section already parsed");
-        Prev=(int32u)-1;
+        Prev=(int64u)-1;
     }
 
     Element_End0();
@@ -650,7 +650,7 @@ void File_Pdf::startxref()
     Element_Begin1("End Of File");
     Skip_String(SizeOfLine(),                                   "Object name");
     Element_End0();
-    int32u xref_Offset=atoi(xrefOffsetS.c_str());
+    const int64u xref_Offset=strtoull(xrefOffsetS.c_str(), NULL, 10);
 
     //Going to xref
     xref_Offsets.push_back(xref_Offset);

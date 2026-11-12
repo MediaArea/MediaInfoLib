@@ -52,7 +52,7 @@ private :
     void obj();
     void xref();
     void xref_Stream();
-    void xref_End(int32u Prev, const Ztring &Root, const Ztring &Info);
+    void xref_End(int64u Prev, const Ztring &Root, const Ztring &Info);
     void trailer();
     void startxref();
     void Object_Root();
@@ -105,10 +105,10 @@ private :
     //typedef std::map<int32u, int32u> offsets;
     //offsets Offsets; //Key is offset
     //offsets::iterator Offsets_Current;
-    typedef std::vector<int32u> offsets;
+    typedef std::vector<int64u> offsets;
     offsets Offsets;
     offsets xref_Offsets; //Of the cross-reference sections already parsed
-    int32u Offsets_Max;
+    int64u Offsets_Max;
     enum type
     {
         Type_Root,
@@ -119,7 +119,7 @@ private :
     };
     struct object
     {
-        int32u Offset;
+        int64u Offset;
         int32u ObjectStream; //Object stream the object is in, if any
         type Type;
         int32u TopObject;
@@ -128,7 +128,7 @@ private :
 
         object()
         :
-            Offset((int32u)-1),
+            Offset((int64u)-1),
             ObjectStream((int32u)-1),
             #ifdef __BORLANDC__
             Type(type::Type_Other),
@@ -142,7 +142,7 @@ private :
 
         bool IsSet() const
         {
-            return Offset!=(int32u)-1 || ObjectStream!=(int32u)-1;
+            return Offset!=(int64u)-1 || ObjectStream!=(int32u)-1;
         }
     };
     typedef std::map<int32u, object> objects;
