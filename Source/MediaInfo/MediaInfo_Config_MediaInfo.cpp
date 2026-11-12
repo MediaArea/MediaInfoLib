@@ -3937,6 +3937,35 @@ void MediaInfo_Config_MediaInfo::TimeCode_Dumps_Jump(int64u From, int64u To)
 }
 
 //---------------------------------------------------------------------------
+// If the time address is not the expected one after LastTC, Repeat_Max+1 values per time address
+bool MediaInfo_Config_MediaInfo::timecode_dump::IsNotContinuous(const TimeCode& Current)
+{
+    bool Result=false;
+    if (!LastTC.IsValid() || !LastTC.GetFramesMax())
+    {
+        Repeat_Count=0;
+        Repeat_IsPartial=true;
+    }
+    else
+    {
+        if (Current==LastTC)
+            Result=Repeat_Count>=Repeat_Max; //Too many values with this time address
+        else
+            Result=(Repeat_Count<Repeat_Max && !Repeat_IsPartial) //Not enough values with the previous time address
+                || Current!=LastTC+1;
+        if (Current!=LastTC || Result)
+        {
+            Repeat_Count=0;
+            Repeat_IsPartial=Result;
+        }
+        else
+            Repeat_Count++;
+    }
+    LastTC=Current;
+    return Result;
+}
+
+//---------------------------------------------------------------------------
 // If some parts of the file were not parsed
 bool MediaInfo_Config_MediaInfo::TimeCode_Dumps_IsPartial()
 {
