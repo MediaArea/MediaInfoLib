@@ -230,7 +230,7 @@ const char*  DolbyE_ChannelPositions[64]=
     "Front: L R / Front: C / Front: C",
     "Front: C / Front: C / Front: C / Front: C",
     "Front: L C R, Side: L R, Back: L R, LFE",
-    "Front: L C C C R, Side: L R, LFE",
+    "Front: L Lc C Rc R, Side: L R, LFE",
     "",
     "",
     "",
@@ -337,7 +337,7 @@ const char*  DolbyE_ChannelPositions_PerProgram(int8u program_config, int8u prog
         case 21 :   return "Front: C";
         case 11 :   return "Front: L C R, Side: L R, LFE";
         case 22 :   return "Front: L C R, Side: L R, Back: L R, LFE";
-        case 23 :   return "Front: L C C C R, Side: L R, LFE";
+        case 23 :   return "Front: L Lc C Rc R, Side: L R, LFE";
         default :   return "";
     }
 };
