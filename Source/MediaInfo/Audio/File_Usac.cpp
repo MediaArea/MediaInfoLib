@@ -1670,24 +1670,7 @@ bool File_Usac::huff_dec_2D(const int16s (*Table)[2], int8s (&aTmp)[2], const ch
 File_Usac::bs_bookmark File_Usac::BS_Bookmark(size_t NewSize)
 {
     bs_bookmark B;
-    auto RemainingSize=Data_BS_Remain();
-    #if !MEDIAINFO_TRACE
-        size_t BS_Size=(Element_Size-Element_Offset)*8;
-    #endif //MEDIAINFO_TRACE
-    auto AlreadyParsed=BS_Size-RemainingSize;
-    if (NewSize>RemainingSize)
-        NewSize=RemainingSize;
-    B.BS_Save=*BS;
-    B.Element_Offset=Element_Offset;
-    B.Element_Size=Element_Size;
-    B.Trusted=Trusted;
-    B.UnTrusted=Element[Element_Level].UnTrusted;
-    B.End=RemainingSize-NewSize;
-    B.BitsNotIncluded=B.End%8;
-    B.NewSize=NewSize+B.BitsNotIncluded;
-    BS->Resize(B.NewSize);
-    BS_Size=AlreadyParsed+B.NewSize;
-    Element_Size=Element_Offset+(BS_Size+7)/8;
+    static_cast<File__Analyze::bs_bookmark&>(B)=File__Analyze::BS_Bookmark(NewSize);
     #if MEDIAINFO_CONFORMANCE
         for (size_t Level=0; Level<ConformanceLevel_Max; Level++)
             B.ConformanceErrors[Level]=ConformanceErrors[Level];
@@ -1745,15 +1728,7 @@ bool File_Usac::BS_Bookmark(File_Usac::bs_bookmark& B)
             Fill_Conformance((ConformanceFieldName + " GeneralCompliance").c_str(), "Bitstream parsing ran out of data to read before the end of the syntax was reached, most probably the bitstream is malformed");
         }
     #endif
-    *BS=B.BS_Save; //Position at the end of the bookmarked part, wherever its parsing stopped
-    BS->Skip(BS->Remain()-B.End);
-    Element_Offset=B.Element_Offset;
-    Element_Size=B.Element_Size;
-    #if MEDIAINFO_TRACE
-        BS_Size=(Element_Size-Element_Offset)*8;
-    #endif //MEDIAINFO_TRACE
-    Trusted=B.Trusted;
-    Element[Element_Level].UnTrusted=B.UnTrusted;
+    BS_Bookmark_Restore(B);
     return IsNotValid;
 }
 

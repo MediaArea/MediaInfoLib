@@ -114,17 +114,9 @@ public :
     };
     #endif
 
-    //Bookmark
-    struct bs_bookmark
+    //Bookmark, with the conformance errors
+    struct bs_bookmark : File__Analyze::bs_bookmark
     {
-        BitStream_Fast              BS_Save;
-        int64u                      Element_Offset;
-        int64u                      Element_Size;
-        size_t                      Trusted;
-        size_t                      NewSize;
-        size_t                      End;
-        int8u                       BitsNotIncluded;
-        bool                        UnTrusted;
         #if MEDIAINFO_CONFORMANCE
             vector<field_value>     ConformanceErrors[ConformanceLevel_Max];
         #endif

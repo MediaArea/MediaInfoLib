@@ -3866,6 +3866,68 @@ void File__Analyze::Trusted_IsNot ()
 }
 
 //***************************************************************************
+// Bitstream bookmark
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+File__Analyze::bs_bookmark File__Analyze::BS_Bookmark(size_t NewSize)
+{
+    bs_bookmark B;
+    auto RemainingSize=Data_BS_Remain();
+    #if !MEDIAINFO_TRACE
+        size_t BS_Size=(Element_Size-Element_Offset)*8;
+    #endif //MEDIAINFO_TRACE
+    auto AlreadyParsed=BS_Size-RemainingSize;
+    if (NewSize>RemainingSize)
+        NewSize=RemainingSize;
+    B.BS_Save=*BS;
+    B.Element_Offset=Element_Offset;
+    B.Element_Size=Element_Size;
+    B.Trusted=Trusted;
+    B.UnTrusted=Element[Element_Level].UnTrusted;
+    B.Synched=Synched;
+    B.End=RemainingSize-NewSize;
+    B.BitsNotIncluded=B.End%8;
+    B.NewSize=NewSize+B.BitsNotIncluded;
+    BS->Resize(B.NewSize);
+    BS_Size=AlreadyParsed+B.NewSize;
+    Element_Size=Element_Offset+(BS_Size+7)/8;
+    Trusted=(size_t)-1; //Errors in the part do not count in the trust in the stream
+    return B;
+}
+
+//---------------------------------------------------------------------------
+bool File__Analyze::BS_Bookmark(bs_bookmark& B)
+{
+    auto BitsRemaining=Data_BS_Remain();
+    if (BitsRemaining>B.BitsNotIncluded)
+    {
+        BitsRemaining-=B.BitsNotIncluded;
+        Skip_BS(BitsRemaining,                                  BitsRemaining<8?"Padding":"Unknown");
+    }
+    else if (BitsRemaining<B.BitsNotIncluded)
+        Trusted_IsNot("Too big");
+    return BS_Bookmark_Restore(B);
+}
+
+//---------------------------------------------------------------------------
+bool File__Analyze::BS_Bookmark_Restore(bs_bookmark& B)
+{
+    bool IsNotValid=!Trusted_Get();
+    *BS=B.BS_Save; //Position at the end of the bookmarked part, wherever its parsing stopped
+    BS->Skip(BS->Remain()-B.End);
+    Element_Offset=B.Element_Offset;
+    Element_Size=B.Element_Size;
+    #if MEDIAINFO_TRACE
+        BS_Size=(Element_Size-Element_Offset)*8;
+    #endif //MEDIAINFO_TRACE
+    Trusted=B.Trusted;
+    Element[Element_Level].UnTrusted=B.UnTrusted;
+    Synched=B.Synched;
+    return IsNotValid;
+}
+
+//***************************************************************************
 // Actions
 //***************************************************************************
 
