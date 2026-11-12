@@ -719,12 +719,13 @@ void File_MpegTs::Streams_Update_Programs_PerStream(size_t StreamID)
     size_t Counts[Stream_Max];
     for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
         Counts[StreamKind]=Count_Get((stream_t)StreamKind);
-    if (Temp->StreamKind != Stream_Max && Temp->StreamPos != (size_t)-1 && Temp->Parser)
+    if (Temp->StreamKind != Stream_Max && Temp->StreamPos != (size_t)-1)
     {
-        if (Temp->StreamCount>1)
+        //Streams already filled by a previous update (e.g. information requested during the parsing), keeping the identifiers from the PID
+        if (Temp->Parser)
         {
-            //Several streams from this PID (e.g. programs), each one in its own stream
-            for (size_t Pos=0; Pos<Temp->StreamCount; Pos++)
+            const size_t Sub_Count=Temp->StreamCount>1?Temp->StreamCount:1; //Several streams from this PID (e.g. programs), each one in its own stream
+            for (size_t Pos=0; Pos<Sub_Count; Pos++)
             {
                 Ztring ID=Retrieve(Temp->StreamKind, Temp->StreamPos+Pos, General_ID);
                 Ztring ID_String=Retrieve(Temp->StreamKind, Temp->StreamPos+Pos, General_ID_String);
@@ -733,8 +734,6 @@ void File_MpegTs::Streams_Update_Programs_PerStream(size_t StreamID)
                 Fill(Temp->StreamKind, Temp->StreamPos+Pos, General_ID_String, ID_String, true);
             }
         }
-        else
-            Merge(*Temp->Parser, Temp->StreamKind, 0, Temp->StreamPos);
         StreamKind_Last=Temp->StreamKind;
         StreamPos_Last=Temp->StreamPos;
     }
