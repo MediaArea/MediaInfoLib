@@ -294,7 +294,10 @@ void File_Dsdiff::Header_Parse()
 
     //Top level chunks
     if (Name==Elements::FRM8)
+    {
         Get_C4 (Name,                                           "Real Name");
+        Size-=Size<4?Size:4; //The form type is part of the chunk
+    }
 
     //Padding
     if (Size%2)
