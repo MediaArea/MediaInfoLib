@@ -218,6 +218,8 @@ public :
           void      Inform_Replace_Set (const ZtringListList &NewInform_Replace);
           ZtringListList Inform_Replace_Get_All ();
 
+          void      Inform_JsonArray_Set (bool NewValue);
+          bool      Inform_JsonArray_Get ();
           void      Inform_Version_Set (bool NewValue);
           bool      Inform_Version_Get ();
 
@@ -515,6 +517,7 @@ private :
     std::map<Ztring, bool> Trace_Modificators; //If we want to add/remove some details
     bool            Language_Raw;
     bool            ReadByHuman;
+    bool            Inform_JsonArray; //JSON output: array even with 1 file
     bool            Inform_Version;
     bool            Inform_Timestamp;
     bool            Inform_HalfWidth;

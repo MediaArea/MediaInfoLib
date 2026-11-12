@@ -2761,7 +2761,8 @@ Ztring MediaInfo_Internal::Inform(std::vector<MediaInfo_Internal*>& Info)
     #if defined(MEDIAINFO_JSON_YES)
     if (MediaInfoLib::Config.Inform_Get()==__T("JSON"))
     {
-        if (Info.size() > 1)
+        bool IsArray=Info.size()>1 || MediaInfoLib::Config.Inform_JsonArray_Get(); //Always an array if requested, for a consistent handling whatever is the count of files
+        if (IsArray)
             Result+=__T("[")+MediaInfoLib::Config.LineSeparator_Get();
         for (size_t FilePos=0; FilePos<Info.size(); FilePos++)
         {
@@ -2772,7 +2773,7 @@ Ztring MediaInfo_Internal::Inform(std::vector<MediaInfo_Internal*>& Info)
 
             Result+=MediaInfoLib::Config.LineSeparator_Get();
         }
-        if (Info.size() > 1)
+        if (IsArray)
             Result+=__T("]")+MediaInfoLib::Config.LineSeparator_Get();
     }
     else

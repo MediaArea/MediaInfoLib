@@ -470,6 +470,7 @@ void MediaInfo_Config::Init(bool Force)
     Trace_Format=Trace_Format_Tree;
     Language_Raw=false;
     ReadByHuman=true;
+    Inform_JsonArray=false;
     Inform_Version=false;
     Inform_Timestamp=false;
     Inform_HalfWidth=false;
@@ -1025,6 +1026,15 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
     if (Option_Lower==__T("inform_replace_get"))
     {
         return Inform_Get();
+    }
+    if (Option_Lower==__T("inform_jsonarray"))
+    {
+        Inform_JsonArray_Set(Value.To_int8u()?true:false);
+        return Ztring();
+    }
+    if (Option_Lower==__T("inform_jsonarray_get"))
+    {
+        return Inform_JsonArray_Get()?__T("1"):__T("0");
     }
     if (Option_Lower==__T("inform_version"))
     {
@@ -2696,6 +2706,19 @@ ZtringListList MediaInfo_Config::Inform_Replace_Get_All ()
 {
     CriticalSectionLocker CSL(CS);
     return Custom_View_Replace;
+}
+
+//---------------------------------------------------------------------------
+void MediaInfo_Config::Inform_JsonArray_Set (bool NewValue)
+{
+    CriticalSectionLocker CSL(CS);
+    Inform_JsonArray=NewValue;
+}
+
+bool MediaInfo_Config::Inform_JsonArray_Get ()
+{
+    CriticalSectionLocker CSL(CS);
+    return Inform_JsonArray;
 }
 
 //---------------------------------------------------------------------------
