@@ -144,6 +144,7 @@ private :
     void Segment_Cluster_BlockGroup_BlockAdditions_BlockMore();
     void Segment_Cluster_BlockGroup_BlockAdditions_BlockMore_BlockAddID();
     void Segment_Cluster_BlockGroup_BlockAdditions_BlockMore_BlockAdditional();
+    void Segment_Cluster_BlockGroup_BlockAdditions_BlockMore_BlockAdditional_Parse(const int8u* Data, size_t Data_Size);
     void Segment_Cluster_BlockGroup_BlockDuration();
     void Segment_Cluster_BlockGroup_ReferencePriority(){UInteger_Info();};
     void Segment_Cluster_BlockGroup_ReferenceBlock(){UInteger_Info();};
@@ -619,6 +620,14 @@ private :
     int64u Segment_Cluster_BlockGroup_BlockDuration_Value{};
     int64u Segment_Cluster_BlockGroup_BlockDuration_TrackNumber{};
     int64u Segment_Cluster_BlockGroup_Block_TimeCode{(int64u)-1}; //Time stamp of the block of the block group, only for a track with block additions
+    bool   Segment_Cluster_BlockGroup_Block_IsParsed{}; //The block of the block group is parsed, its track is known
+    struct block_addition_pending
+    {
+        int64u BlockAddIDValue;
+        int64u File_Offset;
+        std::vector<int8u> Data;
+    };
+    std::vector<block_addition_pending> Segment_Cluster_BlockGroup_BlockAdditions_Pending; //Block additions before the block of the block group, parsed after it
     std::vector<int64u> Laces;
     size_t              Laces_Pos;
     #if MEDIAINFO_DEMUX
