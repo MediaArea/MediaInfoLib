@@ -343,7 +343,8 @@ struct complete_stream
         #endif //MEDIAINFO_TRACE
         stream_t                                    StreamKind;
         stream_t                                    StreamKind_FromDescriptor;
-        size_t                                      StreamPos;
+        size_t                                      StreamPos; //First stream from this PID
+        size_t                                      StreamCount; //Count of streams from this PID, of the StreamKind kind
         ts_kind                                     Kind;
         bool                                        IsParsed;
         bool                                        IsPCR;
@@ -414,6 +415,7 @@ struct complete_stream
             StreamKind=Stream_Max;
             StreamKind_FromDescriptor=Stream_Max;
             StreamPos=(size_t)-1;
+            StreamCount=0;
             Kind=unknown;
             IsParsed=false;
             IsPCR=false;
