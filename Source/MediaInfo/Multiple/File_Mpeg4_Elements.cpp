@@ -2910,6 +2910,7 @@ void File_Mpeg4::meta_iinf_infe()
                                 Stream.Parsers.push_back(Parser);
                                 Stream.StreamKind = Stream_General;
                                 Stream.StreamPos = 0;
+                                Stream.Tags_Format = Tags_Exif;
                                 mdat_MustParse = true;
                                 #endif
                                 Skip = true;
@@ -2925,6 +2926,7 @@ void File_Mpeg4::meta_iinf_infe()
                                     Stream.Parsers.push_back(Parser);
                                     Stream.StreamKind = Stream_General;
                                     Stream.StreamPos = 0;
+                                    Stream.Tags_Format = Tags_Xmp;
                                     mdat_MustParse = true;
                                     Skip = true;
                                     break;
@@ -4024,6 +4026,7 @@ void File_Mpeg4::mini()
             Stream.Parsers.push_back(Parser);
             Stream.StreamKind=Stream_General;
             Stream.StreamPos=0;
+            Stream.Tags_Format=item_ID==6?Tags_Exif:Tags_Xmp;
             Stream.Infos_List["Describes for"].push_back(1);
             Streams[1].Infos_List["Describes"].push_back(item_ID);
         }

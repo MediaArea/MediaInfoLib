@@ -1009,7 +1009,10 @@ void File_Mpeg4::Streams_Finish()
             Finish(Temp->second.Parsers[0]);
             if (StreamKind_Last==Stream_General)
             {
-                Merge(*Temp->second.Parsers[0], Stream_General, 0, 0, false);
+                if (Temp->second.Tags_Format==Tags_Max)
+                    Merge(*Temp->second.Parsers[0], Stream_General, 0, 0, false);
+                else
+                    Merge_Tags(*Temp->second.Parsers[0], Temp->second.Tags_Format);
                 //Special case for TimeCode without link
                 for (std::map<int32u, stream>::iterator Target=Streams.begin(); Target!=Streams.end(); ++Target)
                     if (Target->second.StreamKind!=Stream_General)

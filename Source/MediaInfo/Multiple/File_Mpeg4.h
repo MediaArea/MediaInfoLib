@@ -530,6 +530,7 @@ private :
         Ztring                  File_Name;
         std::vector<int32u>     CodecConfigurationBoxInfo;
         std::vector<File__Analyze*> Parsers;
+        tags_format             Tags_Format; //Of the parser of a metadata item
         std::map<string, Ztring> Infos;
         MediaInfo_Internal*     MI;
         struct timecode
@@ -675,6 +676,7 @@ private :
 
         stream()
         {
+            Tags_Format=Tags_Max;
             MI=NULL;
             TimeCode=NULL;
             Nclc=NULL;
