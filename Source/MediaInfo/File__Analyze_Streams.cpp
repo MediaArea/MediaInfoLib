@@ -443,30 +443,35 @@ bool DateTime_Adapt(string& Value_)
         Value.erase(10, 1);
 
     // Time
-    if (Value.size() <= 18)
+    if (Value.size() <= 15)
         return false;
     if (Value[11] < '0' || Value[11] > '9'
      || Value[12] < '0' || Value[12] > '9'
      || Value[13] != ':'
      || Value[14] < '0' || Value[14] > '9'
-     || Value[15] < '0' || Value[15] > '9'
-     || Value[16] != ':'
-     || Value[17] < '0' || Value[17] > '9'
-     || Value[18] < '0' || Value[18] > '9')
+     || Value[15] < '0' || Value[15] > '9')
         return false;
-    if (Value.size() == 19)
-        return DateTime_Adapt_Finalize(Value_, Value, IsUtc);
-
-    // Fraction
-    size_t i = 19;
-    if (Value[i] == '.')
-    {
-        i++;
-        while (i < Value.size() && Value[i] >= '0' && Value[i] <= '9')
-            i++;
-    }
+    size_t i = 16;
     if (Value.size() == i)
         return DateTime_Adapt_Finalize(Value_, Value, IsUtc);
+
+    // Seconds and fraction, if any
+    if (Value[i] == ':')
+    {
+        if (Value.size() <= 18
+         || Value[17] < '0' || Value[17] > '9'
+         || Value[18] < '0' || Value[18] > '9')
+            return false;
+        i = 19;
+        if (Value.size() > i && Value[i] == '.')
+        {
+            i++;
+            while (i < Value.size() && Value[i] >= '0' && Value[i] <= '9')
+                i++;
+        }
+        if (Value.size() == i)
+            return DateTime_Adapt_Finalize(Value_, Value, IsUtc);
+    }
 
     // Time zone
     if (Value[i] == 'Z')
@@ -5373,8 +5378,8 @@ static Ztring Tags_Comparable(const string& Name, const Ztring& Value)
 //---------------------------------------------------------------------------
 static bool Tags_Date_Utc(const string& Date, int64s& Seconds, string& Fraction)
 {
-    //"YYYY-MM-DD hh:mm:ss", fraction of second if any, then " UTC" or an offset as "+hh:mm"
-    static const char Mask[]="dddd-dd-dd dd:dd:dd";
+    //"YYYY-MM-DD hh:mm", seconds and fraction of second if any, then " UTC" or an offset as "+hh:mm"
+    static const char Mask[]="dddd-dd-dd dd:dd";
     if (Date.size()<sizeof(Mask))
         return false;
     for (size_t Pos=0; Pos<sizeof(Mask)-1; Pos++)
@@ -5386,15 +5391,20 @@ static bool Tags_Date_Utc(const string& Date, int64s& Seconds, string& Fraction)
     const int64s Era=(Year>=0?Year:Year-399)/400;
     const int64s YearOfEra=Year-Era*400;
     const int64s Days=Era*146097+YearOfEra*365+YearOfEra/4-YearOfEra/100+(153*(Month+(Month>2?-3:9))+2)/5+Number(8); //In the Gregorian calendar, the day 0 does not matter
-    Seconds=((Days*24+Number(11))*60+Number(14))*60+Number(17);
+    Seconds=((Days*24+Number(11))*60+Number(14))*60;
 
     size_t Pos=sizeof(Mask)-1;
     Fraction.clear();
-    if (Date[Pos]=='.')
+    if (Date[Pos]==':' && Date.find_first_not_of("0123456789", Pos+1)==Pos+3)
     {
-        const size_t End=min(Date.find_first_not_of("0123456789", Pos+1), Date.size());
-        Fraction.assign(Date, Pos+1, End-Pos-1);
-        Pos=End;
+        Seconds+=Number(Pos+1);
+        Pos+=3;
+        if (Date[Pos]=='.')
+        {
+            const size_t End=min(Date.find_first_not_of("0123456789", Pos+1), Date.size());
+            Fraction.assign(Date, Pos+1, End-Pos-1);
+            Pos=End;
+        }
     }
     if (!Date.compare(Pos, string::npos, " UTC"))
         return true;
