@@ -52,7 +52,6 @@ private :
     void xref();
     void trailer();
     void startxref();
-    void eof();
     void Object_Root();
     void Object_Info();
     void Object_Metadata();

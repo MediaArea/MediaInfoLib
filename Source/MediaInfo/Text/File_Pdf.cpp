@@ -142,7 +142,7 @@ void File_Pdf::FileHeader_Parse()
     //Filling
     Fill(Stream_General, 0, General_Format_Version, PdfHeader.substr(5));
 
-    GoToFromEnd(9+2+10+2+5+2); // "startxref" + EOL +  10max digits + EOL + "%%EOF" + EOL
+    GoToFromEnd(1024); //"startxref", the offset of the cross-reference data and "%%EOF" are at the end of the file, some bytes after them are accepted
     State=State_Parsing_startxref;
 }
 
@@ -156,7 +156,7 @@ void File_Pdf::Read_Buffer_Continue()
     switch (State)
     {
         case State_Parsing_xref         : xref(); if (!Element_IsWaitingForMoreData()) trailer(); break;
-        case State_Parsing_startxref    : eof(); startxref(); break;
+        case State_Parsing_startxref    : startxref(); break;
         case State_Parsing_object       : break; //Using elements
         default                         : Finish();
     }
@@ -429,31 +429,34 @@ void File_Pdf::trailer()
 //---------------------------------------------------------------------------
 void File_Pdf::startxref()
 {
-    //We need to find the exact begin
-    Buffer_Offset=Buffer_Size-1;
-    while (Buffer_Offset && (Buffer[Buffer_Offset]=='\r' || Buffer[Buffer_Offset]=='\n'))
-        Buffer_Offset--;
-    Buffer_Offset-=5; // "%%EOF"
-    while (Buffer_Offset && (Buffer[Buffer_Offset]=='\r' || Buffer[Buffer_Offset]=='\n'))
-        Buffer_Offset--;
-    while (Buffer_Offset && Buffer[Buffer_Offset]>='0' && Buffer[Buffer_Offset]<='9') // Value
-        Buffer_Offset--;
-    while (Buffer_Offset && (Buffer[Buffer_Offset]=='\r' || Buffer[Buffer_Offset]=='\n'))
-        Buffer_Offset--;
+    if (File_Size!=(int64u)-1 && File_Offset+Buffer_Size<File_Size)
+    {
+        Element_WaitForMoreData();
+        return;
+    }
 
-    Buffer_Offset-=8;
+    //The offset of the cross-reference data is after the last "startxref" of the file
+    static const char Keyword[]="startxref";
+    const int8u* Begin=find_end(Buffer+Buffer_Offset, Buffer+Buffer_Size, Keyword, Keyword+9);
+    if (Begin==Buffer+Buffer_Size)
+    {
+        Trusted_IsNot("Offset of the cross-reference data not found");
+        ForceFinish();
+        return;
+    }
+    Buffer_Offset=Begin-Buffer;
+    Element_Size=Buffer_Size-Buffer_Offset;
 
     //Parsing
     Element_Begin1("Cross-Reference Table Offset");
-
     string xrefOffsetS;
-    Skip_String(SizeOfLine(),                                   "Object name");
+    Skip_String(9,                                              "Object name");
     Get_String (SizeOfLine(), xrefOffsetS,                      "xref Offset");
-    while (Buffer_Offset<Buffer_Size && (Buffer[Buffer_Offset]=='\r' || Buffer[Buffer_Offset]=='\n'))
-        ++Buffer_Offset;
-    int32u xref_Offset=atoi(xrefOffsetS.c_str());
-
     Element_End0();
+    Element_Begin1("End Of File");
+    Skip_String(SizeOfLine(),                                   "Object name");
+    Element_End0();
+    int32u xref_Offset=atoi(xrefOffsetS.c_str());
 
     //Going to xref
     xref_Offsets.push_back(xref_Offset);
@@ -461,30 +464,6 @@ void File_Pdf::startxref()
         Offsets_Max=xref_Offset;
     GoTo (xref_Offset);
     State=State_Parsing_xref;
-}
-
-//---------------------------------------------------------------------------
-void File_Pdf::eof()
-{
-    if (File_Size!=(int64u)-1 && File_Offset+Buffer_Size<File_Size)
-    {
-        Element_WaitForMoreData();
-        return;
-    }
-
-    //We need to find the exact begin
-    Buffer_Offset=Buffer_Size-1;
-    while (Buffer_Offset && (Buffer[Buffer_Offset]=='\r' || Buffer[Buffer_Offset]=='\n'))
-        Buffer_Offset--;
-
-    Buffer_Offset-=5;
-
-    //Parsing
-    Element_Begin1("End Of File");
-
-    Skip_String(SizeOfLine(),                                   "Object name");
-
-    Element_End0();
 }
 
 //---------------------------------------------------------------------------
