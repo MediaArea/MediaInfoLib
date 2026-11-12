@@ -4543,21 +4543,28 @@ void File__Analyze::Streams_Finish_StreamOnly_Audio(size_t Pos)
                     IsNok=true;
             if (!IsNok && !List[2].empty() && List[2].size()==List[3].size())
             {
-                size_t Audio_Begin;
-                for (Audio_Begin=0; Audio_Begin <List[2].size(); Audio_Begin++)
-                    if (List[2][Audio_Begin]==__T("2"))
-                        break;
-                if (Audio_Begin!=List[2].size())
+                //Entries of the merged streams removed (one per PID, or one per stream when a PID has several streams), next ones shifted
+                const size_t Merged_Count=1+OtherID_Count;
+                bool IsModified=false;
+                for (size_t j=List[2].size(); j--;)
                 {
-                    for (size_t j=0; j<6; j++)
-                        if (!List[j].empty() && Audio_Begin+i<List[j].size())
-                            List[j].erase(List[j].begin()+Audio_Begin+i);
-                    size_t Audio_End;
-                    for (Audio_End=Audio_Begin+1; Audio_End<List[2].size(); Audio_End++)
-                        if (List[2][Audio_End]!=__T("2"))
-                            break;
-                    for (size_t j=Audio_Begin+i; j<Audio_End; j++)
-                        List[3][j].From_Number(List[3][j].To_int32u()-1-OtherID_Count);
+                    if (List[2][j]!=__T("2"))
+                        continue;
+                    const size_t Menu_StreamPos=List[3][j].To_int32u();
+                    if (Menu_StreamPos<i)
+                        continue;
+                    if (Menu_StreamPos<i+Merged_Count)
+                    {
+                        for (size_t k=0; k<6; k++)
+                            if (!List[k].empty())
+                                List[k].erase(List[k].begin()+j);
+                    }
+                    else
+                        List[3][j].From_Number(Menu_StreamPos-Merged_Count);
+                    IsModified=true;
+                }
+                if (IsModified)
+                {
                     Fill(Stream_Menu, 0, "Format", List[0].Read(), true);
                     Fill(Stream_Menu, 0, "Format/String", List[1].Read(), true);
                     Fill(Stream_Menu, 0, "List_StreamKind", List[2].Read(), true);
