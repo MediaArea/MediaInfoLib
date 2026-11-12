@@ -41,6 +41,7 @@ public :
     bool   IsAtc; // SMPTE ST 12-2
     bool   IsBigEndian;
     bool   IsTimeCodeTrack;
+    bool   IsBlockAddition; // Matroska BlockAdditional, 1 time code of 1 frame of the track per buffer
     string Format;
     #if MEDIAINFO_ADVANCED
     string id;
@@ -57,9 +58,15 @@ public :
 private :
     //Streams management
     void Streams_Fill();
+    void Streams_Finish();
 
     //Buffer - Global
     void Read_Buffer_Continue ();
+
+    //Temp - Matroska BlockAdditional
+    string TimeCode_LastFrame; //Valid time code of the frame with the highest time stamp
+    int64u TimeCode_LastFrame_FrameNumber;
+    int64u TimeCode_LastFrame_PTS;
 };
 
 } //NameSpace

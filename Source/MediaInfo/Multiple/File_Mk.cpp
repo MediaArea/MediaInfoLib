@@ -1493,12 +1493,28 @@ void File_Mk::Streams_Finish()
                     }
                 }
             #endif //MEDIAINFO_ADVANCED
+            Add->second.Parser->Frame_Count_NotParsedIncluded=Temp->second.PacketCount; //Count of frames of the track
+            Add->second.Parser->FrameInfo.PTS=Temp->second.TimeCode_Last==(int64u)-1?(int64u)-1:(Temp->second.TimeCode_Last*TimecodeScale); //Time stamp of the last frame of the track
             Finish(Add->second.Parser);
             Merge(*Add->second.Parser);
             if (StreamKind_Last!=StreamKind_Last_Sav || StreamPos_Last!=StreamPos_Last_Sav)
             {
                 Fill(StreamKind_Last, StreamPos_Last, Other_ID, to_string(Temp->first)+"-Add-"+to_string(Add->first));
                 Fill(StreamKind_Last, StreamPos_Last, Other_MuxingMode, "BlockAddition");
+
+                //Duration, frame rate and frame count of the track, the block additions are about its frames
+                const Ztring& Duration_Track=Retrieve_Const(StreamKind_Last_Sav, StreamPos_Last_Sav, Fill_Parameter(StreamKind_Last_Sav, Generic_Duration));
+                const Ztring& Duration=Duration_Track.empty()?Retrieve_Const(Stream_General, 0, General_Duration):Duration_Track; //Without statistics tags, the duration of the track comes later from the general one
+                const Ztring& FrameRate=Retrieve_Const(StreamKind_Last_Sav, StreamPos_Last_Sav, Fill_Parameter(StreamKind_Last_Sav, Generic_FrameRate));
+                const Ztring& FrameCount=Retrieve_Const(StreamKind_Last_Sav, StreamPos_Last_Sav, Fill_Parameter(StreamKind_Last_Sav, Generic_FrameCount));
+                Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Duration), Duration);
+                Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameRate), FrameRate);
+                Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameRate_Num), Retrieve_Const(StreamKind_Last_Sav, StreamPos_Last_Sav, Fill_Parameter(StreamKind_Last_Sav, Generic_FrameRate_Num)));
+                Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameRate_Den), Retrieve_Const(StreamKind_Last_Sav, StreamPos_Last_Sav, Fill_Parameter(StreamKind_Last_Sav, Generic_FrameRate_Den)));
+                if (!FrameCount.empty())
+                    Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameCount), FrameCount);
+                else if (!Duration.empty() && !FrameRate.empty())
+                    Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_FrameCount), Duration.To_int64s()*FrameRate.To_float64()/1000, 0); //As it is computed later for the track
 
                 //Tags (BlockID), the ones for this track have the priority over the ones for all tracks
                 tagspertrack Tags;
@@ -3035,6 +3051,7 @@ void File_Mk::Segment_Cluster_BlockGroup()
 {
     Segment_Cluster_BlockGroup_BlockDuration_Value=(int64u)-1;
     Segment_Cluster_BlockGroup_BlockDuration_TrackNumber=(int64u)-1;
+    Segment_Cluster_BlockGroup_Block_TimeCode=(int64u)-1;
 }
 
 //---------------------------------------------------------------------------
@@ -3062,7 +3079,7 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
         const size_t Trace_Block_Count=streamItem.Trace_Segment_Cluster_Block_Count; //Copy, a finish during the parsing of the block deletes the streams
     #endif // MEDIAINFO_TRACE
     streamItem.PacketCount++;
-    if (streamItem.Searching_Payload || streamItem.Searching_TimeStamps || streamItem.Searching_TimeStamp_Start)
+    if (streamItem.Searching_Payload || streamItem.Searching_TimeStamps || streamItem.Searching_TimeStamp_Start || !streamItem.BlockAdditions.empty())
     {
         //Parsing
         int16u TimeCodeU;
@@ -3086,6 +3103,13 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
                 streamItem.TimeCodes.push_back(Segment_Cluster_TimeCode_Value+TimeCode);
                 if (streamItem.TimeCodes.size()>128)
                     streamItem.Searching_TimeStamps=false;
+            }
+            if (!streamItem.BlockAdditions.empty())
+            {
+                //The block additions are about a frame of the track, the last one is the one with the highest time stamp
+                Segment_Cluster_BlockGroup_Block_TimeCode=Segment_Cluster_TimeCode_Value+TimeCode;
+                if (streamItem.TimeCode_Last==(int64u)-1 || streamItem.TimeCode_Last<Segment_Cluster_BlockGroup_Block_TimeCode)
+                    streamItem.TimeCode_Last=Segment_Cluster_BlockGroup_Block_TimeCode;
             }
 
             if (Segment_Cluster_BlockGroup_BlockDuration_Value!=(int64u)-1)
@@ -3382,6 +3406,11 @@ void File_Mk::Segment_Cluster_BlockGroup_BlockAdditions_BlockMore_BlockAdditiona
     auto Parser=BlockAdditions.find(BlockAddIDValue);
     if (Parser!=BlockAdditions.end())
     {
+        //Number of the frame in the track, time stamp and duration of the frame, when known (the block is not known if the block additions are before it)
+        const bool Block_IsKnown=Segment_Cluster_BlockGroup_Block_TimeCode!=(int64u)-1;
+        Parser->second.Parser->Frame_Count_NotParsedIncluded=(Block_IsKnown && !Probe_IsRunning)?(streamItem.PacketCount-1):(int64u)-1;
+        Parser->second.Parser->FrameInfo.PTS=Block_IsKnown?(Segment_Cluster_BlockGroup_Block_TimeCode*TimecodeScale):(int64u)-1;
+        Parser->second.Parser->FrameInfo.DUR=streamItem.TrackDefaultDuration?streamItem.TrackDefaultDuration:(int64u)-1;
         Open_Buffer_Continue(Parser->second.Parser);
         return;
     }
@@ -4125,6 +4154,7 @@ void File_Mk::Segment_Tracks_TrackEntry_BlockAdditionMapping_Manage()
             auto Temp=new File_Gxf_TimeCode();
             Temp->IsBigEndian=true;
             Temp->IsTimeCodeTrack=true;
+            Temp->IsBlockAddition=true;
             Temp->Format="SMPTE ST 12-1";
             #if MEDIAINFO_ADVANCED
             Temp->id=std::to_string(TrackNumber)+"-Add-"+std::to_string(BlockAddIDValue);

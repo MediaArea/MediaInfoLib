@@ -406,6 +406,7 @@ private :
             File__Analyze* Parser = nullptr;
         };
         std::map<int64u, block_addition> BlockAdditions;
+        int64u                  TimeCode_Last{(int64u)-1}; //Highest time stamp of the blocks, only for a track with block additions
         #if MEDIAINFO_TRACE
             size_t Trace_Segment_Cluster_Block_Count;
         #endif // MEDIAINFO_TRACE
@@ -617,6 +618,7 @@ private :
     std::vector<Ztring> Segment_Tag_SimpleTag_TagNames;
     int64u Segment_Cluster_BlockGroup_BlockDuration_Value{};
     int64u Segment_Cluster_BlockGroup_BlockDuration_TrackNumber{};
+    int64u Segment_Cluster_BlockGroup_Block_TimeCode{(int64u)-1}; //Time stamp of the block of the block group, only for a track with block additions
     std::vector<int64u> Laces;
     size_t              Laces_Pos;
     #if MEDIAINFO_DEMUX

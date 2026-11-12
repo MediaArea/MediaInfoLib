@@ -66,6 +66,41 @@ static const char* Atc_PayloadType (int8u PayloadType)
     }
 }
 
+//---------------------------------------------------------------------------
+// Count of frames per second of a time code (24, 25 or 30) from the duration in nanoseconds of a frame of the content, 0 if unknown
+static int8u TimeCode_FramesPerSecond(int64u FrameDuration)
+{
+    if (!FrameDuration || FrameDuration==(int64u)-1)
+        return 0;
+    const float64 FrameRate=1000000000.0/FrameDuration;
+    static const int8u Values[]={24, 25, 30};
+    for (const auto Value : Values)
+        for (int8u FramesPerValue=1; FramesPerValue<=2; FramesPerValue++) //A time code value is for a pair of frames above 30 frames per second
+            if (FrameRate>Value*FramesPerValue*0.985 && FrameRate<Value*FramesPerValue*1.015) //Including the frame rates divided by 1.001
+                return Value;
+    return 0;
+}
+
+//---------------------------------------------------------------------------
+// Digits of a time address as they are, a digit out of the decimal range is in hexadecimal
+static string TimeAddress_String(int8u Hours_Tens, int8u Hours_Units, int8u Minutes_Tens, int8u Minutes_Units, int8u Seconds_Tens, int8u Seconds_Units, bool DropFrame, int8u Frames_Tens, int8u Frames_Units)
+{
+    static const char Digits[]="0123456789ABCDEF";
+    string Value;
+    Value+=Digits[Hours_Tens&0xF];
+    Value+=Digits[Hours_Units&0xF];
+    Value+=':';
+    Value+=Digits[Minutes_Tens&0xF];
+    Value+=Digits[Minutes_Units&0xF];
+    Value+=':';
+    Value+=Digits[Seconds_Tens&0xF];
+    Value+=Digits[Seconds_Units&0xF];
+    Value+=DropFrame?';':':';
+    Value+=Digits[Frames_Tens&0xF];
+    Value+=Digits[Frames_Units&0xF];
+    return Value;
+}
+
 //***************************************************************************
 // Time code dump
 //***************************************************************************
@@ -300,9 +335,14 @@ File_Gxf_TimeCode::File_Gxf_TimeCode()
     IsAtc=false;
     IsBigEndian=false;
     IsTimeCodeTrack=false;
+    IsBlockAddition=false;
 
     //Out
     TimeCode_FirstFrame_ms=(int64u)-1;
+
+    //Temp
+    TimeCode_LastFrame_FrameNumber=(int64u)-1;
+    TimeCode_LastFrame_PTS=(int64u)-1;
 }
 
 //---------------------------------------------------------------------------
@@ -318,6 +358,8 @@ File_Gxf_TimeCode::~File_Gxf_TimeCode()
 void File_Gxf_TimeCode::Streams_Fill()
 {
     Stream_Prepare(Stream_Other);
+    if (IsBlockAddition)
+        Fill(Stream_Other, 0, Other_Type, "Time code");
     Fill(Stream_Other, 0, Other_Format, Format);
     Fill(Stream_Other, 0, Other_TimeCode_FirstFrame, TimeCode_FirstFrame);
     if (IsTimeCodeTrack)
@@ -341,6 +383,26 @@ void File_Gxf_TimeCode::Streams_Fill()
     //Fill(Stream_Audio, 0, Video_TimeCode_Source, "Time code track");
 }
 
+//---------------------------------------------------------------------------
+void File_Gxf_TimeCode::Streams_Finish()
+{
+    if (!IsBlockAddition)
+        return;
+
+    //Time code of the last frame, if all the frames are parsed and the last frame of the track has a valid time code
+    //When known, the container provides before the finish the count of frames of the track (Frame_Count_NotParsedIncluded) and the time stamp of its last frame (FrameInfo.PTS)
+    if (TimeCode_LastFrame.empty() || Config->ParseSpeed<1.0)
+        return;
+    if (TimeCode_LastFrame_PTS!=(int64u)-1 && FrameInfo.PTS!=(int64u)-1)
+    {
+        if (TimeCode_LastFrame_PTS!=FrameInfo.PTS)
+            return;
+    }
+    else if (TimeCode_LastFrame_FrameNumber==(int64u)-1 || TimeCode_LastFrame_FrameNumber+1!=Frame_Count_NotParsedIncluded)
+        return;
+    Fill(Stream_Other, 0, Other_TimeCode_LastFrame, TimeCode_LastFrame);
+}
+
 //***************************************************************************
 // Buffer - Global
 //***************************************************************************
@@ -349,6 +411,30 @@ void File_Gxf_TimeCode::Streams_Fill()
 void File_Gxf_TimeCode::Read_Buffer_Continue()
 {
     int8u Validity[504];
+
+    //Matroska BlockAdditional: a buffer is the time code of 64 bits of a frame of the track, the stream is present also when no time code is valid
+    //When known, the container provides before each buffer the number of the frame in the track (Frame_Count_NotParsedIncluded), its time stamp (FrameInfo.PTS) and the duration of a frame (FrameInfo.DUR)
+    auto BlockAddition_End=[&]()
+    {
+        if (Element_Offset<Element_Size)
+            Skip_XX(Element_Size-Element_Offset,                "Unknown");
+        if (!Status[IsFilled])
+        {
+            Accept();
+            Fill();
+        }
+        Merge_Conformance();
+        Frame_Count++;
+    };
+    if (IsBlockAddition && Element_Size!=8)
+    {
+        Fill_Conformance("BlockAdditional", "Size is not the size of a SMPTE ST 12-1 time code (actual "+std::to_string(Element_Size)+", expected 8)");
+        if (Element_Size<8)
+        {
+            BlockAddition_End();
+            return;
+        }
+    }
 
     if (!IsAtc && !IsBigEndian) // TODO: enum of timecode "formats"
     {
@@ -541,7 +627,41 @@ void File_Gxf_TimeCode::Read_Buffer_Continue()
                                       + Seconds_Units           *1000
                                       + (Gxf_FrameRate(FrameRate_Code)==0?0:((Frames_Tens*10+Frames_Units)*1000/float64_int32s(Gxf_FrameRate(FrameRate_Code)/(Gxf_FrameRate(FrameRate_Code)>30?2:1)))));
 
-            if (TimeCode_FirstFrame.empty())
+            //Matroska BlockAdditional, check of the flag bits and of the time address
+            bool DropFrame_IsUsed=DropFrame;
+            bool TimeAddress_IsValid=true;
+            if (IsBlockAddition)
+            {
+                const auto FramesPerSecond=TimeCode_FramesPerSecond(FrameInfo.DUR);
+                const auto Frames=Frames_Tens*10+Frames_Units;
+                if (FramesPerSecond && FramesPerSecond!=30)
+                    DropFrame_IsUsed=false; //Unused flag bits are set to 0 by original sources and ignored by receiving equipment
+                Element_Offset-=8; //The conformance items are about the time code just parsed
+                if (Hours_Units>9 || Hours_Tens*10+Hours_Units>23 || Minutes_Units>9 || Minutes_Tens>5 || Seconds_Units>9 || Seconds_Tens>5 || Frames_Units>9 || Frames>29
+                 || (DropFrame_IsUsed && !Seconds_Tens && !Seconds_Units && Frames<2 && Minutes_Units)) //With drop frame, frames 00 and 01 are not in the count at the start of a minute, except for minutes 00, 10, 20, 30, 40 and 50
+                {
+                    Fill_Conformance("TimeAddress", "Time address is not valid (actual "+TimeAddress_String(Hours_Tens, Hours_Units, Minutes_Tens, Minutes_Units, Seconds_Tens, Seconds_Units, DropFrame_IsUsed, Frames_Tens, Frames_Units)+')');
+                    TimeAddress_IsValid=false;
+                }
+                else if (FramesPerSecond && Frames>=FramesPerSecond)
+                {
+                    Fill_Conformance("TimeAddress", "Frames of the time address are out of range (actual "+std::to_string(Frames)+", expected <="+std::to_string(FramesPerSecond-1)+')');
+                    TimeAddress_IsValid=false;
+                }
+                else if (DropFrame && !DropFrame_IsUsed)
+                    Fill_Conformance("FlagBits", "Drop frame flag is unused at "+std::to_string(FramesPerSecond)+" frames per second (actual 1, expected 0)", {}, Conformance_Warning);
+                Element_Offset+=8;
+
+                //Time code of the last frame, used only if all the frames are parsed
+                if (TimeAddress_IsValid && Config->ParseSpeed>=1.0 && (TimeCode_LastFrame.empty() || FrameInfo.PTS==(int64u)-1 || TimeCode_LastFrame_PTS==(int64u)-1 || FrameInfo.PTS>=TimeCode_LastFrame_PTS))
+                {
+                    TimeCode_LastFrame=TimeAddress_String(Hours_Tens, Hours_Units, Minutes_Tens, Minutes_Units, Seconds_Tens, Seconds_Units, DropFrame_IsUsed, Frames_Tens, Frames_Units);
+                    TimeCode_LastFrame_FrameNumber=Frame_Count_NotParsedIncluded;
+                    TimeCode_LastFrame_PTS=FrameInfo.PTS;
+                }
+            }
+
+            if (TimeCode_FirstFrame.empty() && (!IsBlockAddition || (TimeAddress_IsValid && !Frame_Count_NotParsedIncluded))) //Matroska BlockAdditional: only the valid time code of the first frame of the track
             {
                 TimeCode_FirstFrame+=('0'+Hours_Tens);
                 TimeCode_FirstFrame+=('0'+Hours_Units);
@@ -551,7 +671,7 @@ void File_Gxf_TimeCode::Read_Buffer_Continue()
                 TimeCode_FirstFrame+=':';
                 TimeCode_FirstFrame+=('0'+Seconds_Tens);
                 TimeCode_FirstFrame+=('0'+Seconds_Units);
-                TimeCode_FirstFrame+=DropFrame?';':':';
+                TimeCode_FirstFrame+=DropFrame_IsUsed?';':':';
                 TimeCode_FirstFrame+=('0'+Frames_Tens);
                 TimeCode_FirstFrame+=('0'+Frames_Units);
             }
@@ -608,6 +728,8 @@ void File_Gxf_TimeCode::Read_Buffer_Continue()
 
     if (!IsAtc && !IsBigEndian)
         Element_Offset+=64; //bitmap, already parsed
+    if (IsBlockAddition)
+        BlockAddition_End();
 
     FILLING_BEGIN();
     if (!Status[IsFilled] && TimeCode_FirstFrame_ms!=(int64u)-1)
