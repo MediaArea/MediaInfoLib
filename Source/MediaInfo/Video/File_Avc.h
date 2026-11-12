@@ -613,7 +613,6 @@ private :
     Ztring                              Encoded_Library_Date;
     Ztring                              Encoded_Library_Settings;
     Ztring                              BitRate_Nominal;
-    Ztring                              MuxingMode;
     string                              PictureTypes_PreviousFrames;
     int64u                              tc;
     int64s                              pic_order_cnt_Delta;

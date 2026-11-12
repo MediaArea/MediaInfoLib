@@ -1209,7 +1209,6 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
     Fill(Stream_Video, 0, Video_Encoded_Library_Settings, Encoded_Library_Settings);
     if (Retrieve_Const(Stream_Video, 0, Video_BitRate_Nominal).empty()) // SPS has priority over other metadata
         Fill(Stream_Video, 0, Video_BitRate_Nominal, BitRate_Nominal);
-    Fill(Stream_Video, 0, Video_MuxingMode, MuxingMode);
     for (std::vector<pic_parameter_set_struct*>::iterator pic_parameter_set_Item=pic_parameter_sets.begin(); pic_parameter_set_Item!=pic_parameter_sets.end(); ++pic_parameter_set_Item)
         if (*pic_parameter_set_Item && (*pic_parameter_set_Item)->seq_parameter_set_id==seq_parameter_set_Item_-(seq_parameter_sets.empty()?subset_seq_parameter_sets.begin():seq_parameter_sets.begin()))
         {
@@ -4951,9 +4950,26 @@ void File_Avc::SPS_PPS()
 
     //Filling
     FILLING_BEGIN_PRECISE();
-        //Detection of some bugs in the file
-        if (!seq_parameter_sets.empty() && seq_parameter_sets[0] && (Profile!=seq_parameter_sets[0]->profile_idc || Level!=seq_parameter_sets[0]->level_idc))
-            MuxingMode=Ztring("Container profile=")+Ztring().From_UTF8(Avc_profile_level_string(Profile, Level));
+        #if MEDIAINFO_CONFORMANCE
+            //Crosscheck with each SPS: the record indicates a profile to which the stream conforms and a level equal to or greater than the SPS level
+            auto Level_Rank=[](int8u level_idc) { return level_idc==9?105:level_idc*10; }; //Level 1b (level_idc 9) is between levels 1 and 1.1
+            for (const auto seq_parameter_set_Item : seq_parameter_sets)
+            {
+                if (!seq_parameter_set_Item)
+                    continue;
+                const auto profile_idc=seq_parameter_set_Item->profile_idc;
+                const auto constraint_set_flags=seq_parameter_set_Item->constraint_set_flags;
+                if (Profile!=profile_idc
+                 && !(Profile==66 && (constraint_set_flags&0x80))  //constraint_set0_flag, the stream obeys the Baseline constraints
+                 && !(Profile==77 && (constraint_set_flags&0x40))  //constraint_set1_flag, the stream obeys the Main constraints
+                 && !(Profile==88 && (constraint_set_flags&0x20))) //constraint_set2_flag, the stream obeys the Extended constraints
+                    Fill_Conformance("Crosscheck AVCDecoderConfigurationRecord AVCProfileIndication", "MP4 AVCDecoderConfigurationRecord AVCProfileIndication "+to_string(Profile)+" does not match AVC SPS profile_idc "+to_string(profile_idc)+" (actual "+to_string(Profile)+", expected "+to_string(profile_idc)+')');
+                const auto level_idc=seq_parameter_set_Item->level_idc;
+                if (Level_Rank(Level)<Level_Rank(level_idc))
+                    Fill_Conformance("Crosscheck AVCDecoderConfigurationRecord AVCLevelIndication", "MP4 AVCDecoderConfigurationRecord AVCLevelIndication "+to_string(Level)+" is less than AVC SPS level_idc "+to_string(level_idc)+" (actual "+to_string(Level)+", expected >="+to_string(level_idc)+')');
+            }
+            Merge_Conformance(true);
+        #endif //MEDIAINFO_CONFORMANCE
 
         MustParse_SPS_PPS=false;
         if (!Status[IsAccepted])
