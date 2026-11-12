@@ -25,6 +25,7 @@
 #if defined(MEDIAINFO_XMP_YES)
     #include "MediaInfo/Tag/File_Xmp.h"
 #endif
+#include <zlib.h>
 #include <cstdlib>
 #include <algorithm>
 using namespace std;
@@ -155,7 +156,7 @@ void File_Pdf::Read_Buffer_Continue()
 {
     switch (State)
     {
-        case State_Parsing_xref         : xref(); if (!Element_IsWaitingForMoreData()) trailer(); break;
+        case State_Parsing_xref         : xref(); break;
         case State_Parsing_startxref    : startxref(); break;
         case State_Parsing_object       : break; //Using elements
         default                         : Finish();
@@ -217,7 +218,9 @@ void File_Pdf::Data_Parse()
     int32u ObjectNumber=Ztring().From_UTF8(Line.substr(0, Space_Pos)).To_int32u();
     Element_Info1(ObjectNumber);
     objects::iterator Object=Objects.find(ObjectNumber);
-    if (Object==Objects.end())
+    if (Objects_Current!=Objects.end() && Objects_Current->second.ObjectStream!=(int32u)-1 && Objects_Current->second.ObjectStream==ObjectNumber)
+        Object_ObjStm();
+    else if (Object==Objects.end())
         Skip_XX(Element_Size-Element_Offset,                    "Data");
     else
         switch(Object->second.Type)
@@ -228,6 +231,12 @@ void File_Pdf::Data_Parse()
             default             : Skip_XX(Element_Size-Element_Offset, "Data");
         }
 
+    Objects_Next();
+}
+
+//---------------------------------------------------------------------------
+void File_Pdf::Objects_Next()
+{
     for (;;)
     {
         if (Objects_Current==Objects.end())
@@ -249,9 +258,19 @@ void File_Pdf::Data_Parse()
             continue;
         }
 
-         Objects_Current=Objects.find(Objects_Current->second.Bottoms[Objects_Current->second.BottomPos]);
-         GoTo(Objects_Current->second.Offset);
-         break;
+        Objects_Current=Objects.find(Objects_Current->second.Bottoms[Objects_Current->second.BottomPos]);
+
+        //Offset of the object, or of the object stream it is in
+        int32u Offset=Objects_Current->second.Offset;
+        if (Objects_Current->second.ObjectStream!=(int32u)-1)
+        {
+            objects::iterator ObjectStream=Objects.find(Objects_Current->second.ObjectStream);
+            Offset=ObjectStream==Objects.end()?(int32u)-1:ObjectStream->second.Offset;
+        }
+        if (Offset>=File_Size)
+            continue; //Not in the file
+        GoTo(Offset);
+        break;
     }
 }
 
@@ -262,6 +281,13 @@ void File_Pdf::Data_Parse()
 //---------------------------------------------------------------------------
 void File_Pdf::xref()
 {
+    //Cross-reference stream, which is an object
+    if (SizeOfObjectHeader())
+    {
+        xref_Stream();
+        return;
+    }
+
     //Parsing
     Element_Begin1("Cross-Reference Table");
 
@@ -275,6 +301,7 @@ void File_Pdf::xref()
         Skip_XX(Element_Size-Element_Offset,                        "(Problem)");
         Element_End0();
         Element_End0();
+        trailer();
         return;
     }
     const size_t Offsets_Size=Offsets.size();
@@ -311,6 +338,8 @@ void File_Pdf::xref()
             Element_End0();
             Element_End0();
             Element_End0();
+            if (!Element_IsWaitingForMoreData())
+                trailer();
             return;
         }
 
@@ -323,8 +352,9 @@ void File_Pdf::xref()
                 atoi_buf[17]=0;
                 memcpy(atoi_buf,(const char*)Buffer_Temp-17,17);
                 const int32u Offset=(int32u)atoi(atoi_buf);
-                if (Objects[Base+Pos].Offset==(int32u)-1) //The sections are parsed from the last update of the file to the first one, the last content of an object is the one to parse
-                    Objects[Base+Pos].Offset=Offset;
+                object& Object=Objects[Base+Pos];
+                if (!Object.IsSet()) //The sections are parsed from the last update of the file to the first one, the last content of an object is the one to parse
+                    Object.Offset=Offset;
                 //Offsets[Offset]=Base+Pos;
                 Offsets.push_back(Offset);
             }
@@ -362,6 +392,159 @@ void File_Pdf::xref()
 
     if (File_Offset+Buffer_Offset>Offsets_Max)
         Offsets_Max=(int32u)(File_Offset+Buffer_Offset);
+
+    trailer();
+}
+
+//---------------------------------------------------------------------------
+static vector<int64u> Pdf_Numbers(const Ztring& Array)
+{
+    vector<int64u> Numbers;
+    const string Text=Array.To_UTF8();
+    for (size_t Pos=0; Pos<Text.size(); Pos++)
+    {
+        if (Text[Pos]<'0' || Text[Pos]>'9')
+            continue;
+        int64u Number=0;
+        for (; Pos<Text.size() && Text[Pos]>='0' && Text[Pos]<='9'; Pos++)
+            Number=Number*10+(Text[Pos]-'0');
+        Numbers.push_back(Number);
+    }
+    return Numbers;
+}
+
+//---------------------------------------------------------------------------
+void File_Pdf::xref_Stream()
+{
+    Element_Begin1("Cross-Reference Stream");
+
+    //Parsing
+    Skip_String(SizeOfObjectHeader(),                               "Header");
+    stream_data Stream;
+    const bool IsStream=Get_Stream(Stream);
+    if (Stream.IsTruncated && File_Offset+Buffer_Size<File_Size)
+    {
+        // We wait for more data
+        Element_Offset=0;
+        Element_DoNotShow();
+        Element_WaitForMoreData();
+        Element_End0();
+        return;
+    }
+
+    int32u Prev=(int32u)-1;
+    if (!IsStream)
+        Skip_XX(Element_Size-Element_Offset,                        "(Problem)");
+    else
+    {
+        Skip_Stream(Stream);
+
+        //Entries
+        if (Stream.IsTruncated)
+            Trusted_IsNot("Stream is not complete");
+        else if (Get_Stream_Decoded(Stream))
+        {
+            const vector<int64u> W=Pdf_Numbers(Stream.Dictionary["W"]);
+            vector<int64u> Index=Pdf_Numbers(Stream.Dictionary["Index"]);
+            if (W.size()!=3 || W[0]>8 || !W[1] || W[1]>8 || W[2]>8)
+                Trusted_IsNot("Sizes of the fields of the entries are not valid");
+            else
+            {
+                if (Index.empty())
+                {
+                    Index.push_back(0);
+                    Index.push_back(Stream.Dictionary["Size"].To_int64u());
+                }
+                const int64u Entry_Size=W[0]+W[1]+W[2];
+                const int64u Objects_Max=File_Size/16<0x10000?0x10000:File_Size/16; //Arbitrary limit on the count of objects kept
+                const int8u* Entry=Stream.Data;
+                int64u Remaining=Stream.Size;
+                for (size_t Pos=0; Pos+1<Index.size(); Pos+=2)
+                {
+                    int64u Count=Index[Pos+1];
+                    Loop_CheckValue(Count, Remaining, Entry_Size, "Count");
+                    Remaining-=Count*Entry_Size;
+                    for (int64u Number=Index[Pos]; Count; Number++, Count--)
+                    {
+                        int64u Type=W[0]?0:1; //In use and not in an object stream when there is no such field
+                        for (int64u Byte=0; Byte<W[0]; Byte++)
+                            Type=(Type<<8)|*Entry++;
+                        int64u Value=0;
+                        for (int64u Byte=0; Byte<W[1]; Byte++)
+                            Value=(Value<<8)|*Entry++;
+                        Entry+=W[2];
+                        if ((Type!=1 && Type!=2) || Value>=(int32u)-1 || Objects.size()>=Objects_Max)
+                            continue; //Free, or not kept
+                        if (Type==1)
+                            Offsets.push_back((int32u)Value);
+                        object& Object=Objects[(int32u)Number];
+                        if (Object.IsSet())
+                            continue; //The sections are parsed from the last update of the file to the first one, the last content of an object is the one to parse
+                        if (Type==1)
+                            Object.Offset=(int32u)Value;
+                        else
+                            Object.ObjectStream=(int32u)Value;
+                    }
+                }
+            }
+        }
+
+        //The dictionary of the stream has the content of a trailer
+        const auto Top=[this](const Ztring& Value, type Type)
+        {
+            if (Value.empty())
+                return;
+            const int32u ObjectNumber=Value.To_int32u();
+            Objects[ObjectNumber].Type=Type;
+            Objects[ObjectNumber].TopObject=(int32u)-1;
+            Objects[(int32u)-1].Bottoms.push_back(ObjectNumber);
+        };
+        Top(Stream.Dictionary["Root"], Type_Root);
+        Top(Stream.Dictionary["Info"], Type_Info);
+        if (Stream.Dictionary.find("Encrypt")!=Stream.Dictionary.end())
+            IsEncrypted=true;
+        const Ztring& Previous=Stream.Dictionary["Prev"];
+        if (!Previous.empty())
+            Prev=Previous.To_int32u();
+        if (Prev!=(int32u)-1 && find(xref_Offsets.begin(), xref_Offsets.end(), Prev)!=xref_Offsets.end())
+        {
+            Trusted_IsNot("Cross-reference section already parsed");
+            Prev=(int32u)-1;
+        }
+    }
+
+    Element_End0();
+
+    if (File_Offset+Buffer_Offset>Offsets_Max)
+        Offsets_Max=(int32u)(File_Offset+Buffer_Offset);
+
+    xref_End(Prev);
+}
+
+//---------------------------------------------------------------------------
+void File_Pdf::xref_End(int32u Prev)
+{
+    //Previous Cross-Reference Table
+    if (Prev!=(int32u)-1)
+    {
+        xref_Offsets.push_back(Prev);
+        GoTo(Prev);
+        return;
+    }
+
+    objects::iterator Object_Top=Objects.find((int32u)-1);
+    if (Offsets.empty() || Object_Top==Objects.end())
+    {
+        ForceFinish();
+        return;
+    }
+
+    sort(Offsets.begin(), Offsets.end());
+
+    //Offsets_Current=Offsets.end(); //No more used for the moment
+    State=State_Parsing_object;
+    Objects_Current=Object_Top;
+    Objects_Next();
 }
 
 //---------------------------------------------------------------------------
@@ -429,28 +612,7 @@ void File_Pdf::trailer()
 
     Element_End0();
 
-    //Previous Cross-Reference Table
-    if (Prev!=(int32u)-1)
-    {
-        xref_Offsets.push_back(Prev);
-        GoTo(Prev);
-        return;
-    }
-
-    objects::iterator Object_Top=Objects.find((int32u)-1);
-    if (Offsets.empty() || Object_Top==Objects.end())
-    {
-        ForceFinish();
-        return;
-    }
-
-    sort(Offsets.begin(), Offsets.end());
-
-    //Offsets_Current=Offsets.end(); //No more used for the moment
-    Objects[(int32u)-1].BottomPos=0;
-    Objects_Current=Objects.find(Object_Top->second.Bottoms[0]);
-    GoTo(Objects_Current->second.Offset);
-    State=State_Parsing_object;
+    xref_End(Prev);
 }
 
 //---------------------------------------------------------------------------
@@ -763,6 +925,94 @@ void File_Pdf::Object_Metadata()
     }
 }
 
+//---------------------------------------------------------------------------
+void File_Pdf::Object_ObjStm()
+{
+    Element_Info1("Object stream");
+
+    //Parsing
+    stream_data Stream;
+    if (IsEncrypted || !Get_Stream(Stream)) //The content of the object streams of an encrypted file is encrypted
+    {
+        Skip_XX(Element_Size-Element_Offset,                    "Data");
+        return;
+    }
+    Skip_Stream(Stream);
+    if (Stream.IsTruncated)
+    {
+        Trusted_IsNot("Stream is not complete");
+        return;
+    }
+    if (!Get_Stream_Decoded(Stream))
+        return;
+
+    //Place of the object in the stream, which begins with the number of each object and its offset from the first object
+    int64u First=Stream.Dictionary["First"].To_int64u();
+    if (First>Stream.Size)
+    {
+        Trusted_IsNot("Offset of the first object is after the end of the stream");
+        return;
+    }
+    int64u Count=Stream.Dictionary["N"].To_int64u();
+    Loop_CheckValue(Count, First, 3, "N"); //At least 1 digit for each number and 1 space between 2 numbers
+    size_t Pos=0;
+    const auto Number=[&]() -> int64u
+    {
+        while (Pos<First && (Stream.Data[Pos]<'0' || Stream.Data[Pos]>'9'))
+            Pos++;
+        int64u Value=0;
+        for (; Pos<First && Stream.Data[Pos]>='0' && Stream.Data[Pos]<='9'; Pos++)
+            Value=Value*10+(Stream.Data[Pos]-'0');
+        return Value;
+    };
+    int64u Begin=(int64u)-1;
+    for (int64u Remaining=Count; Remaining && Begin==(int64u)-1; Remaining--)
+    {
+        const int64u ObjectNumber=Number();
+        const int64u Offset=Number();
+        if (ObjectNumber==Objects_Current->first)
+            Begin=Offset;
+    }
+    if (Begin>=Stream.Size-First)
+    {
+        Trusted_IsNot("Object is not in the stream");
+        return;
+    }
+    int64u End=Stream.Size-First; //Up to the next object
+    Pos=0;
+    for (; Count; Count--)
+    {
+        Number();
+        const int64u Offset=Number();
+        if (Offset>Begin && Offset<End)
+            End=Offset;
+    }
+
+    //Parsing the object in the content of the stream
+    const int8u* Save_Buffer=Buffer;
+    const size_t Save_Buffer_Offset=Buffer_Offset;
+    const size_t Save_Buffer_Size=Buffer_Size;
+    const int64u Save_Element_Size=Element_Size;
+    File_Offset+=Buffer_Offset+Stream.Offset;
+    Buffer=Stream.Data;
+    Buffer_Offset=0;
+    Buffer_Size=(size_t)(First+End); //The bytes after the object are not readable
+    Element_Offset=First+Begin;
+    Element_Size=First+End;
+    switch (Objects_Current->second.Type)
+    {
+        case Type_Root      : Object_Root(); break;
+        case Type_Info      : Object_Info(); break;
+        default             : ;
+    }
+    Buffer=Save_Buffer;
+    Buffer_Offset=Save_Buffer_Offset;
+    Buffer_Size=Save_Buffer_Size;
+    Element_Size=Save_Element_Size;
+    Element_Offset=Element_Size;
+    File_Offset-=Buffer_Offset+Stream.Offset;
+}
+
 //***************************************************************************
 // Helpers
 //***************************************************************************
@@ -939,6 +1189,198 @@ bool File_Pdf::Get_Next(string &Key, Ztring &Value, string* Raw)
     Value.From_UTF8((const char*)Data+Value_Begin, Value_End-Value_Begin);
     Skip_String(Value_End,                                      "Key-Value");
     return false;
+}
+
+//---------------------------------------------------------------------------
+bool File_Pdf::Get_Stream(stream_data &Stream)
+{
+    //Dictionary
+    const size_t Catalog_Level_Base=Catalog_Level;
+    string Key, Parent;
+    Ztring Value;
+    for (;;)
+    {
+        if (Element_Offset>=Element_Size)
+        {
+            Stream.IsTruncated=true;
+            return false;
+        }
+        if (Get_Next(Key, Value))
+            continue;
+        if (Key=="stream")
+            break;
+        if (Key.empty() || Key=="endstream" || Key=="endobj")
+        {
+            Stream.IsTruncated=Key.empty() && Element_Offset+SizeOfLine()>=Element_Size; //The end of the line may be after the available data
+            return false;
+        }
+        switch (Catalog_Level-Catalog_Level_Base)
+        {
+            case 1 : Parent=Key; Stream.Dictionary[Key]=Value; break;
+            case 2 : Stream.Dictionary[Parent+'/'+Key]=Value; break;
+            default: ;
+        }
+    }
+
+    //Data, up to the end of the stream when its length is in another object or is not valid
+    if (Element_Offset<Element_Size && Buffer[Buffer_Offset+(size_t)Element_Offset]=='\r')
+        Element_Offset++;
+    if (Element_Offset<Element_Size && Buffer[Buffer_Offset+(size_t)Element_Offset]=='\n')
+        Element_Offset++;
+    Stream.Offset=Element_Offset;
+    Stream.Data=Buffer+Buffer_Offset+(size_t)Element_Offset;
+    const size_t Size_Max=(size_t)(Element_Size-Element_Offset);
+    const Ztring& Length=Stream.Dictionary["Length"];
+    if (!Length.empty() && Length.find_first_not_of(__T("0123456789"))==string::npos && Length.To_int64u()<=Size_Max)
+        Stream.Size=(size_t)Length.To_int64u();
+    else
+    {
+        static const char EndStream[]="endstream";
+        Stream.Size=search(Stream.Data, Stream.Data+Size_Max, EndStream, EndStream+9)-Stream.Data;
+        if (Stream.Size==Size_Max)
+            Stream.IsTruncated=true;
+        else
+        {
+            //Without the end of line before the keyword
+            if (Stream.Size && Stream.Data[Stream.Size-1]=='\n')
+                Stream.Size--;
+            if (Stream.Size && Stream.Data[Stream.Size-1]=='\r')
+                Stream.Size--;
+        }
+    }
+    return true;
+}
+
+//---------------------------------------------------------------------------
+void File_Pdf::Skip_Stream(const stream_data &Stream)
+{
+    Skip_XX(Stream.Size,                                        "Stream, Data");
+
+    //End of the stream and of the object
+    string Key;
+    Ztring Value;
+    while (Element_Offset<Element_Size && !Get_Next(Key, Value) && !Key.empty());
+}
+
+//---------------------------------------------------------------------------
+static bool Pdf_Inflate(const int8u* Data, size_t Size, vector<int8u>& Decoded)
+{
+    z_stream strm{};
+    if (inflateInit(&strm)!=Z_OK)
+        return false;
+    strm.next_in=(Bytef*)Data;
+    strm.avail_in=(uInt)Size;
+    const size_t Decoded_Max=0x4000000; //Arbitrary limit of 64 MiB
+    int Result=Z_OK;
+    while (Result==Z_OK && strm.total_out<Decoded_Max)
+    {
+        const size_t Decoded_Size=(size_t)strm.total_out;
+        size_t Decoded_NewSize=Decoded_Size?Decoded_Size*2:(Size<0x400?0x1000:Size*4);
+        if (Decoded_NewSize>Decoded_Max)
+            Decoded_NewSize=Decoded_Max;
+        Decoded.resize(Decoded_NewSize);
+        strm.next_out=Decoded.data()+Decoded_Size;
+        strm.avail_out=(uInt)(Decoded_NewSize-Decoded_Size);
+        Result=inflate(&strm, Z_NO_FLUSH);
+        if (strm.avail_out)
+            break; //No more data to decode
+    }
+    Decoded.resize((size_t)strm.total_out);
+    inflateEnd(&strm);
+    return Result==Z_OK || Result==Z_STREAM_END || Result==Z_BUF_ERROR; //The end of the data may be missing
+}
+
+//---------------------------------------------------------------------------
+static bool Pdf_Predictor(vector<int8u>& Data, int32u Predictor, int32u Colors, int32u BitsPerComponent, int32u Columns)
+{
+    if (Predictor<2)
+        return true;
+    if (!Colors || Colors>32 || !Columns || Columns>0x100000 || (BitsPerComponent!=1 && BitsPerComponent!=2 && BitsPerComponent!=4 && BitsPerComponent!=8 && BitsPerComponent!=16))
+        return false;
+    const size_t Pixel_Size=(Colors*BitsPerComponent+7)/8;
+    const size_t Row_Size=((size_t)Colors*BitsPerComponent*Columns+7)/8;
+    if (Predictor==2)
+    {
+        //TIFF predictor, with components of 1 byte only
+        if (BitsPerComponent!=8)
+            return false;
+        for (size_t Row=0; Row+Row_Size<=Data.size(); Row+=Row_Size)
+            for (size_t Pos=Pixel_Size; Pos<Row_Size; Pos++)
+                Data[Row+Pos]+=Data[Row+Pos-Pixel_Size];
+        return true;
+    }
+    if (Predictor<10 || Predictor>15)
+        return false;
+
+    //PNG predictors, the first byte of each row is the kind of filter of the row
+    size_t Out=0;
+    for (size_t In=0; In+1+Row_Size<=Data.size(); In+=1+Row_Size, Out+=Row_Size)
+    {
+        const int8u Filter=Data[In];
+        if (Filter>4)
+            return false;
+        for (size_t Pos=0; Pos<Row_Size; Pos++)
+        {
+            const int Left=Pos<Pixel_Size?0:Data[Out+Pos-Pixel_Size];
+            const int Up=Out?Data[Out+Pos-Row_Size]:0;
+            const int UpLeft=(Out && Pos>=Pixel_Size)?Data[Out+Pos-Row_Size-Pixel_Size]:0;
+            int Predicted=0;
+            switch (Filter)
+            {
+                case 1 : Predicted=Left; break;
+                case 2 : Predicted=Up; break;
+                case 3 : Predicted=(Left+Up)/2; break;
+                case 4 : {
+                         //Paeth
+                         const int FromLeft=abs(Up-UpLeft);
+                         const int FromUp=abs(Left-UpLeft);
+                         const int FromUpLeft=abs(Left+Up-2*UpLeft);
+                         Predicted=(FromLeft<=FromUp && FromLeft<=FromUpLeft)?Left:(FromUp<=FromUpLeft?Up:UpLeft);
+                         }
+                         break;
+                default: ;
+            }
+            Data[Out+Pos]=(int8u)(Data[In+1+Pos]+Predicted);
+        }
+    }
+    Data.resize(Out);
+    return true;
+}
+
+//---------------------------------------------------------------------------
+bool File_Pdf::Get_Stream_Decoded(stream_data &Stream)
+{
+    //Filter, alone or in an array
+    string Filter=Stream.Dictionary["Filter"].To_UTF8();
+    const size_t Filter_Begin=Filter.find_first_not_of("[ \r\n\t");
+    if (Filter_Begin==string::npos)
+        return true;
+    Filter=Filter.substr(Filter_Begin, Filter.find_last_not_of("] \r\n\t")+1-Filter_Begin);
+    if (Filter!="/FlateDecode")
+        return false; //Not supported
+    if (!Pdf_Inflate(Stream.Data, Stream.Size, Stream.Decoded))
+    {
+        Trusted_IsNot("Problem during the decompression");
+        return false;
+    }
+
+    //Predictor, its parameters are in a dictionary, in an array when the filter is in an array
+    const auto Parameter=[&Stream](const char* Name, int32u Default) -> int32u
+    {
+        const auto Item=Stream.Dictionary.find(string("DecodeParms/")+Name);
+        if (Item!=Stream.Dictionary.end())
+            return Item->second.To_int32u();
+        const string Parameters=Stream.Dictionary["DecodeParms"].To_UTF8();
+        size_t Pos=Parameters.find(string("/")+Name);
+        if (Pos!=string::npos)
+            Pos=Parameters.find_first_of("0123456789", Pos);
+        return Pos==string::npos?Default:(int32u)strtoul(Parameters.c_str()+Pos, NULL, 10);
+    };
+    if (!Pdf_Predictor(Stream.Decoded, Parameter("Predictor", 1), Parameter("Colors", 1), Parameter("BitsPerComponent", 8), Parameter("Columns", 1)))
+        return false; //Not supported
+    Stream.Data=Stream.Decoded.data();
+    Stream.Size=Stream.Decoded.size();
+    return true;
 }
 
 } //NameSpace
