@@ -38,7 +38,10 @@ public :
 private :
     //Streams management
     void Streams_Fill();
+    void Streams_Fill_Eac3(size_t StreamPos, int8u Program);
+    void Streams_Fill_PerProgram(size_t StreamPos, int8u Program, bool HasJOC);
     void Streams_Finish();
+    void Streams_Finish_PerProgram(size_t StreamPos, int8u Program);
 
     //Buffer - File header
     bool FileHeader_Begin();
@@ -130,7 +133,7 @@ private :
         {
         }
     };
-    dolby  FirstFrame_Dolby;
+    dolby  FirstFrame_Dolby[8]; //Per program (independent substream)
     struct hd_best //TrueHD major sync values of the most complete presentation found, used for the description
     {
         int32u nonstd_bed_channel_assignment_mask;
@@ -159,9 +162,12 @@ private :
     int8u* addbsi_Buffer;
     size_t addbsi_Buffer_Size;
     int64u Formats[2]; // AC-3 or E-AC-3
-    std::vector<int64u> dialnorms;
-    std::vector<int64u> comprs;
-    std::vector<int64u> dynrngs;
+    std::vector<int64u> dialnorms[8]; //Per program (independent substream)
+    std::vector<int64u> comprs[8];
+    std::vector<int64u> dynrngs[8];
+    std::vector<int8u> Programs; //Program (independent substream) of each audio stream
+    int64u Programs_Frame_Count[8]; //Count of frames of each program
+    int64u Programs_Frame_First[8]; //First frame of each program
     std::map<int8u, int64u> fscods;
     std::map<int8u, int64u> frmsizecods;
     int64u Frame_Count_HD;
@@ -214,7 +220,7 @@ private :
     bool   HD_HasAtmos;
     bool   Core_IsPresent;
     bool   HD_IsPresent;
-    bool   dynrnge_Exists;
+    bool   dynrnge_Exists[8]; //Per program (independent substream)
     bool   chanmape_Max[8][9];
     bool   TimeStamp_IsPresent;
     bool   TimeStamp_IsParsing;

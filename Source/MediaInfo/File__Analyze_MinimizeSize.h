@@ -1422,6 +1422,7 @@ protected :
         StreamSource_Max,
     };
     stream_source   StreamSource;
+    bool            StreamSource_IsShared; //Several streams of the same kind (e.g. programs) share the stream, its size is not the one of the first stream
 
     //Configuration
     bool DataMustAlwaysBeComplete;  //Data must always be complete, else wait for more data

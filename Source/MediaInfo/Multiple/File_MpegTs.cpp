@@ -532,39 +532,45 @@ void File_MpegTs::Streams_Update_Programs()
                         else
                         #endif //MEDIAINFO_TELETEXT_YES
                         {
-                        Ztring Format=Retrieve(Complete_Stream->Streams[elementary_PID]->StreamKind, Complete_Stream->Streams[elementary_PID]->StreamPos, Fill_Parameter(Complete_Stream->Streams[elementary_PID]->StreamKind, Generic_Format));
-                        if (Format.empty())
-                            Format=Mpeg_Psi_stream_type_Format(Complete_Stream->Streams[elementary_PID]->stream_type, Complete_Stream->Streams[elementary_PID]->registration_format_identifier?Complete_Stream->Streams[elementary_PID]->registration_format_identifier:Program->second.registration_format_identifier);
-                        if (Format.empty())
+                        const stream_t Sub_Kind=Complete_Stream->Streams[elementary_PID]->StreamKind;
+                        const size_t Sub_Count=(Sub_Kind!=Stream_Max && Complete_Stream->Streams[elementary_PID]->StreamCount>1)?Complete_Stream->Streams[elementary_PID]->StreamCount:1; //Several streams from this PID, e.g. programs
+                        for (size_t Sub=0; Sub<Sub_Count; Sub++)
                         {
-                            std::map<std::string, Ztring>::iterator Format_FromInfo=Complete_Stream->Streams[elementary_PID]->Infos.find("Format");
-                            if (Format_FromInfo!=Complete_Stream->Streams[elementary_PID]->Infos.end())
-                                Format=Format_FromInfo->second;
+                            const size_t Sub_Pos=Complete_Stream->Streams[elementary_PID]->StreamPos==(size_t)-1?(size_t)-1:(Complete_Stream->Streams[elementary_PID]->StreamPos+Sub);
+                            Ztring Format=Retrieve(Sub_Kind, Sub_Pos, Fill_Parameter(Sub_Kind, Generic_Format));
+                            if (Format.empty())
+                                Format=Mpeg_Psi_stream_type_Format(Complete_Stream->Streams[elementary_PID]->stream_type, Complete_Stream->Streams[elementary_PID]->registration_format_identifier?Complete_Stream->Streams[elementary_PID]->registration_format_identifier:Program->second.registration_format_identifier);
+                            if (Format.empty())
+                            {
+                                std::map<std::string, Ztring>::iterator Format_FromInfo=Complete_Stream->Streams[elementary_PID]->Infos.find("Format");
+                                if (Format_FromInfo!=Complete_Stream->Streams[elementary_PID]->Infos.end())
+                                    Format=Format_FromInfo->second;
+                            }
+                            if (Format.empty())
+                                Program->second.HasNotDisplayableStreams=true;
+                            Formats+=Format+__T(" / ");
+                            Codecs+=Retrieve(Sub_Kind, Sub_Pos, Fill_Parameter(Sub_Kind, Generic_Codec))+__T(" / ");
+                            if (Complete_Stream->Streams[elementary_PID]->StreamKind!=Stream_Max)
+                            {
+                                StreamKinds+=Ztring::ToZtring(Sub_Kind);
+                                StreamPoss+=Ztring::ToZtring(Sub_Pos);
+                            }
+                            StreamKinds+=__T(" / ");
+                            StreamPoss+=__T(" / ");
+                            elementary_PIDs+=(Sub_Count>1?Retrieve(Sub_Kind, Sub_Pos, General_ID):Ztring::ToZtring(elementary_PID))+__T(" / ");
+                            Ztring Language=Retrieve(Sub_Kind, Sub_Pos, "Language/String");
+                            Languages+=Language+__T(" / ");
+                            Ztring List_String=Sub_Count>1?Retrieve(Sub_Kind, Sub_Pos, General_ID_String):Decimal_Hexa(elementary_PID);
+                            List_String+=__T(" (");
+                            List_String+=Format;
+                            if (!Language.empty())
+                            {
+                                List_String+=__T(", ");
+                                List_String+=Language;
+                            }
+                            List_String+=__T(")");
+                            elementary_PIDs_String+=List_String+__T(" / ");
                         }
-                        if (Format.empty())
-                            Program->second.HasNotDisplayableStreams=true;
-                        Formats+=Format+__T(" / ");
-                        Codecs+=Retrieve(Complete_Stream->Streams[elementary_PID]->StreamKind, Complete_Stream->Streams[elementary_PID]->StreamPos, Fill_Parameter(Complete_Stream->Streams[elementary_PID]->StreamKind, Generic_Codec))+__T(" / ");
-                        if (Complete_Stream->Streams[elementary_PID]->StreamKind!=Stream_Max)
-                        {
-                            StreamKinds+=Ztring::ToZtring(Complete_Stream->Streams[elementary_PID]->StreamKind);
-                            StreamPoss+=Ztring::ToZtring(Complete_Stream->Streams[elementary_PID]->StreamPos);
-                        }
-                        StreamKinds+=__T(" / ");
-                        StreamPoss+=__T(" / ");
-                        elementary_PIDs+=Ztring::ToZtring(elementary_PID)+__T(" / ");
-                        Ztring Language=Retrieve(Complete_Stream->Streams[elementary_PID]->StreamKind, Complete_Stream->Streams[elementary_PID]->StreamPos, "Language/String");
-                        Languages+=Language+__T(" / ");
-                        Ztring List_String=Decimal_Hexa(elementary_PID);
-                        List_String+=__T(" (");
-                        List_String+=Format;
-                        if (!Language.empty())
-                        {
-                            List_String+=__T(", ");
-                            List_String+=Language;
-                        }
-                        List_String+=__T(")");
-                        elementary_PIDs_String+=List_String+__T(" / ");
                         }
 
                         if (Complete_Stream->Streams[elementary_PID]->IsPCR)
@@ -715,7 +721,20 @@ void File_MpegTs::Streams_Update_Programs_PerStream(size_t StreamID)
         Counts[StreamKind]=Count_Get((stream_t)StreamKind);
     if (Temp->StreamKind != Stream_Max && Temp->StreamPos != (size_t)-1 && Temp->Parser)
     {
-        Merge(*Temp->Parser, Temp->StreamKind, 0, Temp->StreamPos);
+        if (Temp->StreamCount>1)
+        {
+            //Several streams from this PID (e.g. programs), each one in its own stream
+            for (size_t Pos=0; Pos<Temp->StreamCount; Pos++)
+            {
+                Ztring ID=Retrieve(Temp->StreamKind, Temp->StreamPos+Pos, General_ID);
+                Ztring ID_String=Retrieve(Temp->StreamKind, Temp->StreamPos+Pos, General_ID_String);
+                Merge(*Temp->Parser, Temp->StreamKind, Pos, Temp->StreamPos+Pos);
+                Fill(Temp->StreamKind, Temp->StreamPos+Pos, General_ID, ID, true);
+                Fill(Temp->StreamKind, Temp->StreamPos+Pos, General_ID_String, ID_String, true);
+            }
+        }
+        else
+            Merge(*Temp->Parser, Temp->StreamKind, 0, Temp->StreamPos);
         StreamKind_Last=Temp->StreamKind;
         StreamPos_Last=Temp->StreamPos;
     }
@@ -824,7 +843,16 @@ void File_MpegTs::Streams_Update_Programs_PerStream(size_t StreamID)
         for (size_t StreamPos=Counts[StreamKind]; StreamPos<Counts_Now; StreamPos++)
         {
             Temp->StreamKind=StreamKind_Last;
-            Temp->StreamPos=StreamPos;
+            if (StreamKind==StreamKind_Last)
+            {
+                if (StreamPos==Counts[StreamKind])
+                {
+                    Temp->StreamPos=StreamPos; //First stream from this PID
+                    Temp->StreamCount=Counts_Now-Counts[StreamKind];
+                }
+            }
+            else if (!Temp->StreamCount)
+                Temp->StreamPos=StreamPos;
 
             //Encryption
             if (Temp->CA_system_ID)

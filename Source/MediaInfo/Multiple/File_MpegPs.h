@@ -317,7 +317,8 @@ private :
         KindOfStream_Extension,
     };
     void Streams_Fill_PerStream(size_t StreamID, ps_stream &Temp, kindofstream KindOfStream);
-    void Streams_Fill_PerStream_PerKind(size_t StreamID, ps_stream &Temp, kindofstream KindOfStream, size_t Count);
+    void Streams_Fill_PerStream_PerKind(size_t StreamID, ps_stream &Temp, kindofstream KindOfStream, size_t Count, size_t StreamPos_Begin=(size_t)-1);
+    void Streams_Fill_PerStream_ID(size_t StreamID, ps_stream &Temp, kindofstream KindOfStream, size_t StreamPos, size_t Parser_StreamPos);
     void Streams_Finish_PerStream(size_t StreamID, ps_stream &Temp, kindofstream KindOfStream);
     void xxx_stream_Parse(ps_stream &Temp, int8u &stream_Count);
     void MergeGeneral(File__Analyze* Parser, general Parameter);
