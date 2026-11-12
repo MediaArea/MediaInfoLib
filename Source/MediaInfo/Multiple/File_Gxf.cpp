@@ -223,6 +223,9 @@ File_Gxf::File_Gxf()
     #endif //MEDIAINFO_DEMUX
 
     //Temp
+    Material_Fields_First=0;
+    Material_Fields_Last=0;
+    Material_File_Size=0;
     Material_Fields_FieldsPerFrame=1; //Progressive by default
     Parsers_Count=0;
     AncillaryData_StreamID=(int8u)-1;
@@ -386,7 +389,7 @@ void File_Gxf::Streams_Finish_PerStream(size_t StreamID, stream &Temp)
 
                 if (TimeCodes.empty())
                 {
-                    if (Gxf_FrameRate(Streams[0x00].FrameRate_Code))
+                    if (Material_Fields_First_IsValid && Gxf_FrameRate(Streams[0x00].FrameRate_Code))
                     {
                         Fill(Stream_Video, StreamPos_Last, Video_Delay, ((float64)(Material_Fields_First/Material_Fields_FieldsPerFrame))/Gxf_FrameRate(Streams[0x00].FrameRate_Code)*1000, 0);
                         Fill(Stream_Video, StreamPos_Last, Video_Delay_Source, "Container");
@@ -459,7 +462,7 @@ void File_Gxf::Streams_Finish_PerStream(size_t StreamID, stream &Temp)
 
                 if (TimeCodes.empty())
                 {
-                    if (Gxf_FrameRate(Streams[0x00].FrameRate_Code))
+                    if (Material_Fields_First_IsValid && Gxf_FrameRate(Streams[0x00].FrameRate_Code))
                     {
                         Fill(Stream_Audio, StreamPos_Last, Audio_Delay, ((float64)(Material_Fields_First/Material_Fields_FieldsPerFrame))/Gxf_FrameRate(Streams[0x00].FrameRate_Code)*1000, 0);
                         Fill(Stream_Audio, StreamPos_Last, Audio_Delay_Source, "Container");
