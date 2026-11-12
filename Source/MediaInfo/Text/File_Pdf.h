@@ -34,6 +34,7 @@ public :
 private :
     //Streams management
     void Streams_Accept();
+    void Streams_Finish();
 
     //Buffer - File header
     bool FileHeader_Begin();
@@ -56,6 +57,8 @@ private :
     void startxref();
     void Object_Root();
     void Object_Info();
+    void Object_Info_Fill(const string &Key, const string &Raw);
+    void Object_InfoValue(int32u ObjectNumber);
     void Object_Metadata();
     void Object_ObjStm();
     void Objects_Next();
@@ -97,6 +100,9 @@ private :
     state State;
     bool IsEncrypted;
     bool Info_IsParsed;
+    Ztring Info_CreationDate;
+    Ztring Info_ModDate;
+    std::map<int32u, std::vector<std::string> > Info_Values; //Keys of the document information whose value is the object
     //typedef std::map<int32u, int32u> offsets;
     //offsets Offsets; //Key is offset
     //offsets::iterator Offsets_Current;
@@ -109,6 +115,7 @@ private :
         Type_Root,
         Type_Info,
         Type_Metadata,
+        Type_InfoValue,
         Type_Other,
     };
     struct object

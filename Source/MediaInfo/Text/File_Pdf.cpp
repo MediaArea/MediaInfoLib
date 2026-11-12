@@ -91,6 +91,12 @@ void File_Pdf::Streams_Accept()
     Fill(Stream_Text, 0, "Format", "PDF");
 }
 
+//---------------------------------------------------------------------------
+void File_Pdf::Streams_Finish()
+{
+    Fill(Stream_General, 0, General_Encoded_Date, Info_ModDate.empty()?Info_CreationDate:Info_ModDate);
+}
+
 //***************************************************************************
 // Buffer - File header
 //***************************************************************************
@@ -228,6 +234,7 @@ void File_Pdf::Data_Parse()
             case Type_Root      : Object_Root(); break;
             case Type_Info      : Object_Info(); break;
             case Type_Metadata  : Object_Metadata(); break;
+            case Type_InfoValue : Object_InfoValue(ObjectNumber); break;
             default             : Skip_XX(Element_Size-Element_Offset, "Data");
         }
 
@@ -813,6 +820,48 @@ static Ztring Pdf_Date(const Ztring& Value)
 }
 
 //---------------------------------------------------------------------------
+static size_t Pdf_Info_Parameter(const string& Key)
+{
+    //Same parameters as the ones filled from the XMP metadata
+    if (Key=="Title")
+        return General_Title;
+    if (Key=="Author")
+        return General_Producer;
+    if (Key=="Subject")
+        return General_Description;
+    if (Key=="Keywords")
+        return General_Keywords;
+    if (Key=="Creator")
+        return General_Encoded_Application;
+    if (Key=="Producer")
+        return General_Encoded_Library;
+    if (Key=="CreationDate" || Key=="ModDate")
+        return General_Encoded_Date;
+    return (size_t)-1;
+}
+
+//---------------------------------------------------------------------------
+static bool Pdf_Reference(const string& Raw, int32u& ObjectNumber)
+{
+    //Object number, generation number and "R"
+    static const char* const Spaces=" \r\n\t\f";
+    const size_t Number_End=Raw.find_first_not_of("0123456789");
+    if (!Number_End || Number_End==string::npos)
+        return false;
+    const size_t Generation=Raw.find_first_not_of(Spaces, Number_End);
+    if (Generation==Number_End || Generation==string::npos)
+        return false;
+    const size_t Generation_End=Raw.find_first_not_of("0123456789", Generation);
+    if (Generation_End==Generation || Generation_End==string::npos)
+        return false;
+    const size_t Keyword=Raw.find_first_not_of(Spaces, Generation_End);
+    if (Keyword==Generation_End || Keyword==string::npos || Raw[Keyword]!='R' || Keyword+1!=Raw.size())
+        return false;
+    ObjectNumber=(int32u)strtoul(Raw.c_str(), NULL, 10);
+    return true;
+}
+
+//---------------------------------------------------------------------------
 void File_Pdf::Object_Info()
 {
     Element_Info1("Info");
@@ -821,7 +870,7 @@ void File_Pdf::Object_Info()
     const bool IsUsed=!IsEncrypted && !Info_IsParsed; //The strings of an encrypted file are encrypted, and the first dictionary parsed is the one of the last update of the file
     Info_IsParsed=true;
     string Key, Raw;
-    Ztring Value, CreationDate, ModDate;
+    Ztring Value;
     while (Element_Offset<Element_Size)
     {
         if (Get_Next(Key, Value, &Raw))
@@ -831,25 +880,25 @@ void File_Pdf::Object_Info()
                 Get_Next(Key, Value, &Raw);
                 if (Key.empty())
                     break;
-                if (!IsUsed)
+                if (!IsUsed || Pdf_Info_Parameter(Key)==(size_t)-1)
                     continue;
-                const Ztring Text=Pdf_String(Raw);
-                     if (Key=="Title")
-                    Fill(Stream_General, 0, General_Title, Text);
-                else if (Key=="Author")
-                    Fill(Stream_General, 0, General_Producer, Text);
-                else if (Key=="Subject")
-                    Fill(Stream_General, 0, General_Description, Text);
-                else if (Key=="Keywords")
-                    Fill(Stream_General, 0, General_Keywords, Text);
-                else if (Key=="Creator")
-                    Fill(Stream_General, 0, General_Encoded_Application, Text);
-                else if (Key=="Producer")
-                    Fill(Stream_General, 0, General_Encoded_Library, Text);
-                else if (Key=="CreationDate")
-                    CreationDate=Pdf_Date(Text);
-                else if (Key=="ModDate")
-                    ModDate=Pdf_Date(Text);
+                int32u ObjectNumber;
+                if (!Pdf_Reference(Raw, ObjectNumber))
+                {
+                    Object_Info_Fill(Key, Raw);
+                    continue;
+                }
+
+                //The value is in another object
+                object& Object=Objects[ObjectNumber];
+                if (Object.Type==Type_Other && ObjectNumber!=(int32u)-1)
+                {
+                    Object.Type=Type_InfoValue;
+                    Object.TopObject=Objects_Current->first;
+                    Objects_Current->second.Bottoms.push_back(ObjectNumber);
+                }
+                if (Object.Type==Type_InfoValue)
+                    Info_Values[ObjectNumber].push_back(Key);
             }
 
             continue;
@@ -858,9 +907,47 @@ void File_Pdf::Object_Info()
         if (Key.empty())
             break;
     }
+}
 
-    //Same parameters as the ones filled from the XMP metadata
-    Fill(Stream_General, 0, General_Encoded_Date, ModDate.empty()?CreationDate:ModDate);
+//---------------------------------------------------------------------------
+void File_Pdf::Object_Info_Fill(const string &Key, const string &Raw)
+{
+    const size_t Parameter=Pdf_Info_Parameter(Key);
+    const Ztring Text=Pdf_String(Raw);
+    if (Parameter!=General_Encoded_Date)
+        Fill(Stream_General, 0, Parameter, Text);
+    else if (Key=="ModDate")
+        Info_ModDate=Pdf_Date(Text);
+    else
+        Info_CreationDate=Pdf_Date(Text);
+}
+
+//---------------------------------------------------------------------------
+void File_Pdf::Object_InfoValue(int32u ObjectNumber)
+{
+    Element_Info1("Info value");
+
+    //Parsing
+    while (Element_Offset<Element_Size && Pdf_IsSpace(Buffer[Buffer_Offset+(size_t)Element_Offset]))
+        Element_Offset++;
+    const int8u* Data=Buffer+Buffer_Offset+(size_t)Element_Offset;
+    const size_t Size=(size_t)(Element_Size-Element_Offset);
+    size_t End=0;
+    if (Size && Data[0]=='(')
+        End=Pdf_String_End(Data, Size, 0);
+    else if (Size>1 && Data[0]=='<' && Data[1]!='<')
+    {
+        End=find(Data, Data+Size, '>')-Data;
+        if (End<Size)
+            End++;
+    }
+    string Raw;
+    Get_String(End, Raw,                                        "Value");
+
+    const std::map<int32u, std::vector<std::string> >::iterator Keys=Info_Values.find(ObjectNumber);
+    if (Keys!=Info_Values.end())
+        for (size_t Pos=0; Pos<Keys->second.size(); Pos++)
+            Object_Info_Fill(Keys->second[Pos], Raw);
 }
 
 //---------------------------------------------------------------------------
@@ -971,6 +1058,7 @@ void File_Pdf::Object_ObjStm()
     {
         case Type_Root      : Object_Root(); break;
         case Type_Info      : Object_Info(); break;
+        case Type_InfoValue : Object_InfoValue(Objects_Current->first); break;
         default             : ;
     }
     Buffer=Save_Buffer;
