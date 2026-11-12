@@ -2269,7 +2269,7 @@ void File_Mpeg4::mdat_xxxx()
     }
     Stream_Temp.ParsedEndOffset=File_Offset+Buffer_Offset+Element_Size;
 
-    int64u Element_Size2;
+    int64u Element_Size2=Element_Size; //End of the data for the parsers
     if (Stream_Temp.HasAtomStyle)
     {
         while(Element_Offset<Element_Size)
@@ -2290,8 +2290,6 @@ void File_Mpeg4::mdat_xxxx()
             Skip_XX(Size-12,                                    "Data (unsupported)");
         }
     }
-    else
-        Element_Size2=Element_Size;
 
     #if MEDIAINFO_DEMUX
         if (Stream_Temp.StreamKind!=Stream_Other && Stream_Temp.StreamKind!=Stream_Max)
@@ -2446,7 +2444,7 @@ void File_Mpeg4::mdat_xxxx()
         Stream_Temp.Parsers[Pos]->FrameInfo=FrameInfo;
         #endif //MEDIAINFO_DEMUX
 
-        Open_Buffer_Continue(Stream_Temp.Parsers[Pos], Buffer+Buffer_Offset+(size_t)Element_Offset, (size_t)(Element_Size-Element_Offset));
+        Open_Buffer_Continue(Stream_Temp.Parsers[Pos], Buffer+Buffer_Offset+(size_t)Element_Offset, (size_t)(Element_Size2-Element_Offset));
         #if MEDIAINFO_DEMUX
             if (Config->Demux_EventWasSent && (Config->Demux_Unpacketize_Get() || Stream_Temp.Demux_Level==4)) //Intermediate, the parser demuxes also without unpacketize option
                 Stream_Temp.Demux_EventWasSent=true;
@@ -2534,6 +2532,11 @@ void File_Mpeg4::mdat_xxxx()
                 Stream_Temp.Parsers.push_back(Parser);
             }
         }
+    }
+    if (Element_Size2<Element_Size)
+    {
+        Element_Offset=Element_Size2;
+        Skip_XX(Element_Size-Element_Size2,                     "Data (unsupported)");
     }
 
     //Next piece of data

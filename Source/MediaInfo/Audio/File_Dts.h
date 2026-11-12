@@ -41,6 +41,35 @@ protected :
 };
 
 //***************************************************************************
+// DTS-HD extension substream static fields
+//***************************************************************************
+
+struct dts_exss_static_header
+{
+    int32u FrameDuration=0;
+    int8u  SpeakerMetadataPresent=0;
+    int8u  SpeakerMaskCount=0;
+    int8u  SpeakerCounts[8]{};
+};
+
+struct dts_exss_static_asset
+{
+    int32u ChannelCount=0;
+    bool   OneToOneMapping=false;
+    bool   EmbeddedStereo=false;
+    bool   EmbeddedSixChannel=false;
+    bool   SpeakerMaskPresent=false;
+    int32u SpeakerActivityMask=0;
+};
+
+// Constant over the stream, kept for the extension substream headers without static fields
+struct dts_exss_static
+{
+    dts_exss_static_header Header;
+    dts_exss_static_asset  Asset; //First asset
+};
+
+//***************************************************************************
 // Class File_Dts
 //***************************************************************************
 
@@ -121,6 +150,7 @@ private :
     bool   ES;
     bool   Core_Exists;
     bool   One2OneMapChannels2Speakers;
+    dts_exss_static DtsXExssStatic;
     enum   presence
     {
         presence_Core_Core,
