@@ -292,7 +292,8 @@ Ztring AC3_chanmap_ChannelPositions (int16u chanmap)
                                 Front.resize(Front.size()-2);
                                 HasR=true;
                             }
-                            Front+=__T(" C C");
+                            Front.insert(Front.find(__T(" L"))==0?2:0, __T(" Lc")); //Lc after L, Rc before R
+                            Front+=__T(" Rc");
                             if (HasR)
                                 Front+=__T(" R");
                             }
