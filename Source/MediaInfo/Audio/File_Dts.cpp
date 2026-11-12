@@ -1291,6 +1291,7 @@ File_Dts::File_Dts()
     ES=false;
     Core_Exists=false;
     One2OneMapChannels2Speakers=false; //Static field of the first asset, kept for the extension substream headers without static fields
+    Core_XXCH_nuNumChSetsInXXCH=0;
 }
 
 //***************************************************************************
@@ -2983,6 +2984,8 @@ void File_Dts::XXCH()
     Get_S1 (5, Bits4SpkrMaskXXCH,                               "Bits4SpkrMaskXXCH minus 1");
     Bits4SpkrMaskXXCH++;
     Get_S1 (2, NumChSetsInXXCH,                                 "NumChSetsInXXCH minus 1");
+    if (!Element_Code)
+        Core_XXCH_nuNumChSetsInXXCH=NumChSetsInXXCH+1;
     for (int8u nChSet=0; nChSet<=NumChSetsInXXCH; nChSet++)
     {
         int16u ChSetFsizeXXCH;
