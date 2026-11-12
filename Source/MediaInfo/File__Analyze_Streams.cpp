@@ -5371,6 +5371,41 @@ static Ztring Tags_Comparable(const string& Name, const Ztring& Value)
 }
 
 //---------------------------------------------------------------------------
+static bool Tags_Date_Utc(const string& Date, int64s& Seconds, string& Fraction)
+{
+    //"YYYY-MM-DD hh:mm:ss", fraction of second if any, then " UTC" or an offset as "+hh:mm"
+    static const char Mask[]="dddd-dd-dd dd:dd:dd";
+    if (Date.size()<sizeof(Mask))
+        return false;
+    for (size_t Pos=0; Pos<sizeof(Mask)-1; Pos++)
+        if (Mask[Pos]=='d'?(Date[Pos]<'0' || Date[Pos]>'9'):(Date[Pos]!=Mask[Pos]))
+            return false;
+    const auto Number=[&Date](size_t Pos) { return (int64s)(Date[Pos]-'0')*10+(Date[Pos+1]-'0'); };
+    const int64s Month=Number(5);
+    const int64s Year=Number(0)*100+Number(2)-(Month<=2);
+    const int64s Era=(Year>=0?Year:Year-399)/400;
+    const int64s YearOfEra=Year-Era*400;
+    const int64s Days=Era*146097+YearOfEra*365+YearOfEra/4-YearOfEra/100+(153*(Month+(Month>2?-3:9))+2)/5+Number(8); //In the Gregorian calendar, the day 0 does not matter
+    Seconds=((Days*24+Number(11))*60+Number(14))*60+Number(17);
+
+    size_t Pos=sizeof(Mask)-1;
+    Fraction.clear();
+    if (Date[Pos]=='.')
+    {
+        const size_t End=min(Date.find_first_not_of("0123456789", Pos+1), Date.size());
+        Fraction.assign(Date, Pos+1, End-Pos-1);
+        Pos=End;
+    }
+    if (!Date.compare(Pos, string::npos, " UTC"))
+        return true;
+    if (Date.size()!=Pos+6 || (Date[Pos]!='+' && Date[Pos]!='-') || Date[Pos+3]!=':' || Date.find_first_not_of("0123456789", Pos+1)!=Pos+3 || Date.find_first_not_of("0123456789", Pos+4)!=string::npos)
+        return false;
+    const int64s Offset=(Number(Pos+1)*60+Number(Pos+4))*60;
+    Seconds+=Date[Pos]=='+'?-Offset:Offset;
+    return true;
+}
+
+//---------------------------------------------------------------------------
 void File__Analyze::Merge_Tags(File__Analyze &ToAdd, tags_format Format)
 {
     ToAdd.Streams_Finish_Tags(); //Tags in these tags, not yet merged if their parser is not finished
@@ -5494,9 +5529,19 @@ void File__Analyze::Streams_Finish_Tags()
             const bool Current_IsShort=Current.size()<Item.Value.size();
             const Ztring& Short=Current_IsShort?Current:Item.Value;
             const Ztring& Long=Current_IsShort?Item.Value:Current;
+            const bool IsDate=Item.Name.size()>5 && !Item.Name.compare(Item.Name.size()-5, 5, "_Date");
+            if (IsDate)
+            {
+                //Same instant in another time zone
+                int64s Seconds_Current, Seconds_Item;
+                string Fraction_Current, Fraction_Item;
+                if (Tags_Date_Utc(Current.To_UTF8(), Seconds_Current, Fraction_Current) && Tags_Date_Utc(Item.Value.To_UTF8(), Seconds_Item, Fraction_Item)
+                 && Seconds_Current==Seconds_Item && (Fraction_Current.empty() || Fraction_Item.empty() || Fraction_Current==Fraction_Item))
+                    continue;
+            }
             if (!Long.compare(0, Short.size(), Short))
             {
-                if (Item.Name.size()>5 && !Item.Name.compare(Item.Name.size()-5, 5, "_Date") && (Long[Short.size()]<__T('0') || Long[Short.size()]>__T('9')))
+                if (IsDate && (Long[Short.size()]<__T('0') || Long[Short.size()]>__T('9')))
                     continue;
                 if (Short.size()>=28 && (Current_IsShort?(Source!=Sources.end() && Source->second==Tags_Id3v1):(Format==Tags_Id3v1)))
                 {
