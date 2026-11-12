@@ -1299,7 +1299,6 @@ void File_Ac3::Streams_Fill()
                 Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, AC3_TrueHD_Channels_Positions2(HD_Channels2, HD_flags&(1<<11)));
                 Fill(Stream_Audio, 0, Audio_ChannelLayout, AC3_TrueHD_Channels_ChannelLayout(HD_Channels2, HD_flags&(1<<11)));
             }
-            Fill(Stream_Audio, 0, Audio_BitDepth, AC3_MLP_Resolution[HD_Resolution2]);
             Fill(Stream_Audio, 0, "NumberOfPresentations", HD_HasAtmos ? 4 : 3);
             Fill(Stream_Audio, 0, "NumberOfSubstreams", HD_Best_SubStreams_Count?HD_Best_SubStreams_Count:HD_SubStreams_Count);
         }
@@ -5740,7 +5739,6 @@ void File_Ac3::HD_format_info()
         Get_S1 ( 2, dsurexmod,                                  "8ch_presentation_channel_modifier");
         Get_S2 (13, HD_Channels2,                               "8ch_presentation_channel_assignment"); Param_Info1(AC3_TrueHD_Channels(HD_Channels2)); Param_Info1(Ztring().From_UTF8(AC3_TrueHD_Channels_Positions(HD_Channels2)));
         BS_End();
-        HD_Resolution2=HD_Resolution1=2; //24-bits
         HD_SamplingRate2=HD_SamplingRate1;
         if (dsurexmod_6ch && !(HD_Channels2 & (1 << 3)))
             dsurexmod_6ch = 0; //Only if Ls/Rs
