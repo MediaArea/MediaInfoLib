@@ -356,7 +356,7 @@ void File_WebP::WEBP_XMP_()
     Open_Buffer_Init(&MI);
     Open_Buffer_Continue(&MI);
     Open_Buffer_Finalize(&MI);
-    Merge(MI, Stream_General, 0, 0);
+    Merge_Tags(MI, Tags_Xmp);
     #else
     Skip_UTF8(Element_Size,                                     "XMP metadata");
     #endif

@@ -815,7 +815,7 @@ void File_Rm::TAG()
         Open_Buffer_Init(&MI);
         Open_Buffer_Continue(&MI);
         Finish(&MI);
-        Merge(MI, Stream_General, 0, 0, false); //The metadata of the file has priority
+        Merge_Tags(MI, Tags_Id3v1);
     #else
         Skip_XX(Element_Size,                                   "Data");
     #endif

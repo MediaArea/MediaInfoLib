@@ -186,7 +186,7 @@ void File_Gif::Read_Buffer_Continue()
                                                 Open_Buffer_Init(&MI);
                                                 Open_Buffer_Continue(&MI, XMP_size - 257);
                                                 Open_Buffer_Finalize(&MI);
-                                                Merge(MI, Stream_General, 0, 0, false);
+                                                Merge_Tags(MI, Tags_Xmp);
                                                 #else
                                                 Skip_UTF8(XMP_size - 257, "XMP metadata");
                                                 #endif

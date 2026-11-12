@@ -559,7 +559,7 @@ void File_Pdf::Object_Metadata()
             Open_Buffer_Init(&MI, Length);
             Open_Buffer_Continue(&MI, Buffer+Buffer_Offset+(size_t)Element_Offset, Length);
             Open_Buffer_Finalize(&MI);
-            Merge(MI, Stream_General, 0, 0);
+            Merge_Tags(MI, Tags_Xmp);
             #endif
             Skip_XX(Length,                                     "Stream, Data");
         }
