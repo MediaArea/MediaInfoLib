@@ -230,9 +230,16 @@ void File_Iim::Data_Parse()
     ELEMENT_CASE(  1,  90, CodedCharacterSet)
     ELEMENT_CASE(  2,   0, RecordVersion)
     ELEMENT_CASE(  2,   5, ObjectName)
+    ELEMENT_CASE(  2,  25, Keywords)
     ELEMENT_CASE(  2,  55, DateCreated)
     ELEMENT_CASE(  2,  60, TimeCreated)
     ELEMENT_CASE(  2,  80, Byline)
+    ELEMENT_CASE(  2,  90, City)
+    ELEMENT_CASE(  2,  92, Sublocation)
+    ELEMENT_CASE(  2,  95, ProvinceState)
+    ELEMENT_CASE(  2, 101, CountryName)
+    ELEMENT_CASE(  2, 105, Headline)
+    ELEMENT_CASE(  2, 110, Credit)
     ELEMENT_CASE(  2, 116, CopyrightNotice)
     ELEMENT_CASE(  2, 120, CaptionAbstract)
     ELEMENT_CASE(  2, 221, PhotoMechanicPrefs)
@@ -272,6 +279,12 @@ void File_Iim::ObjectName()
 }
 
 //---------------------------------------------------------------------------
+void File_Iim::Keywords()
+{
+    FillString(General_Subject);
+}
+
+//---------------------------------------------------------------------------
 void File_Iim::DateCreated()
 {
     GetString(Date);
@@ -287,6 +300,42 @@ void File_Iim::TimeCreated()
 void File_Iim::Byline()
 {
     FillString(General_Producer);
+}
+
+//---------------------------------------------------------------------------
+void File_Iim::City()
+{
+    FillString("City");
+}
+
+//---------------------------------------------------------------------------
+void File_Iim::Sublocation()
+{
+    FillString("Sublocation");
+}
+
+//---------------------------------------------------------------------------
+void File_Iim::ProvinceState()
+{
+    FillString("State");
+}
+
+//---------------------------------------------------------------------------
+void File_Iim::CountryName()
+{
+    FillString(General_Country);
+}
+
+//---------------------------------------------------------------------------
+void File_Iim::Headline()
+{
+    FillString("Headline");
+}
+
+//---------------------------------------------------------------------------
+void File_Iim::Credit()
+{
+    FillString(General_Copyright);
 }
 
 //---------------------------------------------------------------------------
@@ -341,6 +390,14 @@ void File_Iim::GetString(Ztring& Value)
 
 //---------------------------------------------------------------------------
 void File_Iim::FillString(size_t Parameter)
+{
+    Ztring Value;
+    GetString(Value);
+    Fill(Stream_General, 0, Parameter, Value);
+}
+
+//---------------------------------------------------------------------------
+void File_Iim::FillString(const char* Parameter)
 {
     Ztring Value;
     GetString(Value);

@@ -43,9 +43,16 @@ private :
     void CodedCharacterSet();
     void RecordVersion();
     void ObjectName();
+    void Keywords();
     void DateCreated();
     void TimeCreated();
     void Byline();
+    void City();
+    void Sublocation();
+    void ProvinceState();
+    void CountryName();
+    void Headline();
+    void Credit();
     void CopyrightNotice();
     void CaptionAbstract();
     void PhotoMechanicPrefs();
@@ -54,6 +61,7 @@ private :
     void SkipString();
     void GetString(Ztring& Value);
     void FillString(size_t Parameter);
+    void FillString(const char* Parameter);
 
     //Temp
     int8u CodedCharSet = 0;
