@@ -77,6 +77,7 @@ private :
     //offsets::iterator Offsets_Current;
     typedef std::vector<int32u> offsets;
     offsets Offsets;
+    offsets xref_Offsets; //Of the cross-reference sections already parsed
     int32u Offsets_Max;
     enum type
     {

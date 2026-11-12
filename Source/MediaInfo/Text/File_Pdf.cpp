@@ -394,11 +394,18 @@ void File_Pdf::trailer()
             break;
     }
 
+    if (Prev!=(int32u)-1 && find(xref_Offsets.begin(), xref_Offsets.end(), Prev)!=xref_Offsets.end())
+    {
+        Trusted_IsNot("Cross-reference section already parsed");
+        Prev=(int32u)-1;
+    }
+
     Element_End0();
 
     //Previous Cross-Reference Table
     if (Prev!=(int32u)-1)
     {
+        xref_Offsets.push_back(Prev);
         GoTo(Prev);
         return;
     }
@@ -449,6 +456,7 @@ void File_Pdf::startxref()
     Element_End0();
 
     //Going to xref
+    xref_Offsets.push_back(xref_Offset);
     if (xref_Offset>Offsets_Max)
         Offsets_Max=xref_Offset;
     GoTo (xref_Offset);
