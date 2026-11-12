@@ -5384,6 +5384,30 @@ static Ztring Tags_Comparable(const string& Name, const Ztring& Value)
 }
 
 //---------------------------------------------------------------------------
+static size_t Tags_Size_Max(File__Analyze::tags_format Format, const string& Name)
+{
+    //Size from which a content may be cut by the format, 0 if there is no such limit: in characters for ID3v1,
+    //in bytes for IPTC (3 bytes less than the size of the data set, a character of several bytes may not fit)
+    switch (Format)
+    {
+        case File__Analyze::Tags_Id3v1 :
+            return 28;
+        case File__Analyze::Tags_Iim :
+            if (Name=="Producer" || Name=="City" || Name=="Sublocation" || Name=="State")
+                return 29;
+            if (Name=="Title" || Name=="Country")
+                return 61;
+            if (Name=="Headline")
+                return 253;
+            if (Name=="Description")
+                return 1997;
+            return 0;
+        default :
+            return 0;
+    }
+}
+
+//---------------------------------------------------------------------------
 static bool Tags_Date_Utc(const string& Date, int64s& Seconds, string& Fraction)
 {
     //"YYYY-MM-DD hh:mm", seconds and fraction of second if any, then " UTC" or an offset as "+hh:mm"
@@ -5542,7 +5566,7 @@ void File__Analyze::Streams_Finish_Tags()
             if (Current==Item.Value || Tags_Comparable(Item.Name, Current)==Tags_Comparable(Item.Name, Item.Value))
                 continue;
 
-            //A content which is the start of the other one is the same content for a date (it has less details) and for a field of ID3v1 (it has a fixed size, the longer content is then used)
+            //A content which is the start of the other one is the same content for a date (it has less details) and for a field with a maximal size in its format (ID3v1, IPTC), the longer content is then used
             const auto Source=Sources.find(Item.Name);
             const bool Current_IsShort=Current.size()<Item.Value.size();
             const Ztring& Short=Current_IsShort?Current:Item.Value;
@@ -5561,7 +5585,9 @@ void File__Analyze::Streams_Finish_Tags()
             {
                 if (IsDate && (Long[Short.size()]<__T('0') || Long[Short.size()]>__T('9')))
                     continue;
-                if (Short.size()>=28 && (Current_IsShort?(Source!=Sources.end() && Source->second==Tags_Id3v1):(Format==Tags_Id3v1)))
+                const tags_format Short_Format=Current_IsShort?(Source==Sources.end()?Tags_Max:Source->second):(tags_format)Format;
+                const size_t Size_Max=Tags_Size_Max(Short_Format, Item.Name);
+                if (Size_Max && (Short_Format==Tags_Iim?Short.To_UTF8().size():Short.size())>=Size_Max)
                 {
                     if (Current_IsShort)
                     {
