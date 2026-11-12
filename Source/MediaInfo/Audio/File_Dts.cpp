@@ -193,30 +193,20 @@ private:
     bool IsValid;
 };
 
-struct dtsx_exss_probe
+struct dtsx_exss_probe : dts_exss_static_header
 {
     bool StaticFieldsPresent=false;
     int8u SizeFieldBits=0;
     int32u HeaderSize=0;
     int32u FrameSize=0;
-    int32u FrameDuration=0;
     int8u AssetCount=0;
-    int8u SpeakerMetadataPresent=0;
-    int8u SpeakerMaskCount=0;
-    int8u SpeakerCounts[8]{};
     int32u AssetSizes[8]{};
     size_t AssetHeaderBitOffsets[8]{};
 };
 
-struct dtsx_asset_probe
+struct dtsx_asset_probe : dts_exss_static_asset
 {
     int32u HeaderSize=0;
-    int32u ChannelCount=0;
-    bool OneToOneMapping=false;
-    bool EmbeddedStereo=false;
-    bool EmbeddedSixChannel=false;
-    bool SpeakerMaskPresent=false;
-    int32u SpeakerActivityMask=0;
     int8u CodingMode=0;
     int16u CodingComponents=0;
     int32u ComponentSize[12]{};
@@ -312,7 +302,7 @@ static int8u DtsX_AddedSpeakerCount(const int8u* Buffer, size_t Size, size_t Off
     return Source.Valid()?AddedCount:0;
 }
 
-static bool DtsX_ExssHeader(const int8u* Buffer, size_t Size, dtsx_exss_probe& Header)
+static bool DtsX_ExssHeader(const int8u* Buffer, size_t Size, dtsx_exss_probe& Header, dts_exss_static& Static)
 {
     dtsx_bit_reader Source(Buffer, Size);
     if (Source.Get(32)!=0x64582025)
@@ -352,9 +342,14 @@ static bool DtsX_ExssHeader(const int8u* Buffer, size_t Size, dtsx_exss_probe& H
             for (size_t i=0; i<Header.SpeakerMaskCount; ++i)
                 Header.SpeakerCounts[i]=DtsX_SpeakerCount(Source.Get(4*(SpeakerMaskBits+1)));
         }
+        if (Source.Valid())
+            Static.Header=Header;
     }
     else
+    {
         Header.AssetCount=1;
+        static_cast<dts_exss_static_header&>(Header)=Static.Header;
+    }
 
     if (PresentationCount>8 || Header.AssetCount>8)
         return false;
@@ -371,7 +366,7 @@ static bool DtsX_ExssHeader(const int8u* Buffer, size_t Size, dtsx_exss_probe& H
     return Source.Valid();
 }
 
-static bool DtsX_AssetHeader(const int8u* Buffer, size_t Size, const dtsx_exss_probe& Exss, size_t AssetOrdinal, dtsx_asset_probe& Asset)
+static bool DtsX_AssetHeader(const int8u* Buffer, size_t Size, const dtsx_exss_probe& Exss, size_t AssetOrdinal, dtsx_asset_probe& Asset, dts_exss_static& Static)
 {
     if (AssetOrdinal>=Exss.AssetCount || Exss.AssetHeaderBitOffsets[AssetOrdinal]>=Size*8)
         return false;
@@ -425,7 +420,11 @@ static bool DtsX_AssetHeader(const int8u* Buffer, size_t Size, const dtsx_exss_p
         }
         else
             Source.Skip(3);
+        if (!AssetOrdinal && Source.Valid())
+            Static.Asset=Asset;
     }
+    else
+        static_cast<dts_exss_static_asset&>(Asset)=Static.Asset;
 
     bool LanguagePresent=Source.Get(1)!=0;
     if (LanguagePresent)
@@ -510,7 +509,7 @@ static bool DtsX_AssetHeader(const int8u* Buffer, size_t Size, const dtsx_exss_p
     const size_t XllPrivateEnd=Size*8;
     if (HasXll && Source.Offset()+3<=XllPrivateEnd)
         Source.Skip(3);
-    if (Asset.OneToOneMapping && Exss.StaticFieldsPresent && Exss.SpeakerMetadataPresent && !MixMetadataPresent && Source.Offset()<XllPrivateEnd)
+    if (Asset.OneToOneMapping && Exss.SpeakerMetadataPresent && !MixMetadataPresent && Source.Offset()<XllPrivateEnd)
     {
         if (Source.Get(1) && Source.Offset()<XllPrivateEnd)
         {
@@ -761,10 +760,10 @@ static bool DtsX_ExtensionProbe(const int8u* Buffer, size_t Size, int8u& ObjectC
     return HasValidatedEvidence;
 }
 
-static int8u DtsX_ObjectCount(const int8u* Buffer, size_t Size, int8u& SupplementalChannelCount)
+static int8u DtsX_ObjectCount(const int8u* Buffer, size_t Size, int8u& SupplementalChannelCount, dts_exss_static& Static)
 {
     dtsx_exss_probe Exss;
-    if (!DtsX_ExssHeader(Buffer, Size, Exss))
+    if (!DtsX_ExssHeader(Buffer, Size, Exss, Static))
         return 0;
 
     int8u MaximumObjectCount=0;
@@ -772,7 +771,7 @@ static int8u DtsX_ObjectCount(const int8u* Buffer, size_t Size, int8u& Supplemen
     for (size_t AssetOrdinal=0; AssetOrdinal<Exss.AssetCount; ++AssetOrdinal)
     {
         dtsx_asset_probe Asset;
-        if (!DtsX_AssetHeader(Buffer, Size, Exss, AssetOrdinal, Asset)
+        if (!DtsX_AssetHeader(Buffer, Size, Exss, AssetOrdinal, Asset, Static)
          || !Asset.XllMetadataPresent
          || Asset.MetadataElementSizes.empty()
          || !(Asset.CodingMode==1 || (Asset.CodingComponents&(1<<9))))
@@ -1291,6 +1290,7 @@ File_Dts::File_Dts()
     ExtendedCoding=false;
     ES=false;
     Core_Exists=false;
+    One2OneMapChannels2Speakers=false; //Static field of the first asset, kept for the extension substream headers without static fields
 }
 
 //***************************************************************************
@@ -2144,7 +2144,7 @@ void File_Dts::Data_Parse()
         if (Presence[presence_Extended_X] || !DtsXObjectCountProbeDone)
         {
             int8u FrameDtsXSupplementalChannelCount=0;
-            int8u FrameDtsXObjectCount=DtsX_ObjectCount(Buffer+Buffer_Offset, Element_Size, FrameDtsXSupplementalChannelCount);
+            int8u FrameDtsXObjectCount=DtsX_ObjectCount(Buffer+Buffer_Offset, Element_Size, FrameDtsXSupplementalChannelCount, DtsXExssStatic);
             if (FrameDtsXObjectCount || FrameDtsXSupplementalChannelCount)
             {
                 DtsXObjectCount=max(DtsXObjectCount, FrameDtsXObjectCount);
