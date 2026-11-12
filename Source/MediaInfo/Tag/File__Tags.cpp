@@ -101,7 +101,8 @@ void File__Tags_Helper::Streams_Fill()
 //---------------------------------------------------------------------------
 void File__Tags_Helper::Parser_Merge(File__Analyze& MI, File__Analyze::tags_format Format)
 {
-    Base->Merge(MI, Stream_Audio, 0, 0, Format==File__Analyze::Tags_Id3v2);
+    if (Base->Count_Get(Stream_Audio)) //The audio part of the tags is for the audio stream of the file
+        Base->Merge(MI, Stream_Audio, 0, 0, Format==File__Analyze::Tags_Id3v2);
     auto ImageCount = MI.Count_Get(Stream_Image);
     for (size_t i = 0; i < ImageCount; ++i) {
         Base->Stream_Prepare(Stream_Image);

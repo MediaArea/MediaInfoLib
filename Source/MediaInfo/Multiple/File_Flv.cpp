@@ -563,8 +563,7 @@ void File_Flv::Streams_Fill()
     }
 
     //Tags before the stream
-    if (Count_Get(Stream_Audio))
-        File__Tags_Helper::Streams_Fill();
+    File__Tags_Helper::Streams_Fill();
 }
 
 //---------------------------------------------------------------------------

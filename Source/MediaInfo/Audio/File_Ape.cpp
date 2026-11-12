@@ -185,12 +185,12 @@ void File_Ape::FileHeader_Parse()
 
         //Filling
         File__Tags_Helper::Accept("APE");
-        File__Tags_Helper::Streams_Fill();
 
         Duration=((int64u)Samples)*1000/SampleRate;
         UncompressedSize=Samples*Channels*(Resolution/8);
 
         File__Tags_Helper::Stream_Prepare(Stream_Audio);
+        File__Tags_Helper::Streams_Fill();
         Fill(Stream_Audio, 0, Audio_Format, "Monkey's Audio");
         auto VersionS = Ztring::ToZtring(Version/1000.0, 3);
         Fill(Stream_General, 0, General_Format_Version, VersionS);
