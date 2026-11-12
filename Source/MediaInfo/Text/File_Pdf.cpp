@@ -340,6 +340,22 @@ void File_Pdf::xref()
         Element_End0();
     }
 
+    //The trailer must be in the buffer too, it is followed by the offset of the cross-reference data
+    static const char Keyword[]="startxref";
+    const int8u* Trailer=Buffer+Buffer_Offset+(size_t)Element_Offset;
+    if (File_Offset+Buffer_Size<File_Size && Buffer+Buffer_Size-Trailer<0x10000 && search(Trailer, Buffer+Buffer_Size, Keyword, Keyword+9)==Buffer+Buffer_Size)
+    {
+        // We wait for more data
+        Offsets.resize(Offsets_Size);
+        Buffer_Offset=0;
+        Element_Offset=0;
+        Element_DoNotShow();
+        Element_WaitForMoreData();
+        Element_End0();
+        Element_End0();
+        return;
+    }
+
     Element_End0();
 
     Element_End0();
