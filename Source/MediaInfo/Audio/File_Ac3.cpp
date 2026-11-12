@@ -4947,8 +4947,8 @@ bool File_Ac3::FrameSynchPoint_Test()
         if (Size>=6)
         {
             size_t Size_Total=Core_Size_Get();
-            if (Element_IsWaitingForMoreData() || Buffer_Offset+Size_Total>=Buffer_Size)
-                return false; //Need more data
+            if (Element_IsWaitingForMoreData() || Buffer_Offset+Size_Total>Buffer_Size || (Buffer_Offset+Size_Total==Buffer_Size && File_Offset+Buffer_Size<File_Size))
+                return false; //Need more data, the frame may also be the last one of the file
 
             Save_Buffer=Buffer;
             Save_Buffer_Offset=Buffer_Offset;
