@@ -283,6 +283,7 @@ File_MpegTs::File_MpegTs()
     MpegTs_JumpTo_End=MediaInfoLib::Config.MpegTs_MaximumOffset_Get();
     MpegTs_ScanUpTo=(int64u)-1;
     Searching_TimeStamp_Start=true;
+    Streams_Update_Parts=0;
     Complete_Stream=NULL;
     ForceStreamDisplay=MediaInfoLib::Config.MpegTs_ForceStreamDisplay_Get();
     ForceTextStreamDisplay=MediaInfoLib::Config.MpegTs_ForceTextStreamDisplay_Get();
@@ -353,6 +354,36 @@ void File_MpegTs::Streams_Fill ()
 //---------------------------------------------------------------------------
 void File_MpegTs::Streams_Update()
 {
+    //Parts already filled by a previous update (e.g. information requested during the parsing), filled again as by a single update
+    for (size_t Pos=User_16; Pos<=User_19 && !Status[IsFinished]; Pos++)
+    {
+        const int8u Part=(int8u)(1<<(Pos-User_16));
+        if (Status[Pos])
+            Streams_Update_Parts|=Part;
+        else if (Streams_Update_Parts&Part)
+            Status[Pos]=true;
+    }
+    #ifdef MEDIAINFO_MPEGTS_PCR_YES
+        if (Status[User_16] && !(*Stream_More)[Stream_General].empty())
+        {
+            //Fields from the PCR filled again after the other ones (e.g. from the EPG, filled during the parsing), as by a single update; removed before the EPG which keeps the position of its fields
+            static const char* const Fields[]={"OverallBitRate_Precision_Min", "OverallBitRate_Precision_Max", "PCR_Distance_Average", "PCR_Distance_Min", "PCR_Distance_Max", "PCR_Invalid_Count"};
+            ZtringListList& More=(*Stream_More)[Stream_General][0];
+            bool IsRemoved=false;
+            for (size_t i=0; i<sizeof(Fields)/sizeof(*Fields); i++)
+            {
+                size_t Pos=Stream_More_Find(More, Ztring().From_UTF8(Fields[i]));
+                if (Pos!=Error)
+                {
+                    More.erase(More.begin()+Pos);
+                    IsRemoved=true;
+                }
+            }
+            if (IsRemoved)
+                Fill(Stream_General, 0, (size_t)General_Count, Count_Get(Stream_General, 0), 10, true);
+        }
+    #endif //MEDIAINFO_MPEGTS_PCR_YES
+
     if (Status[User_19])
         Streams_Update_Programs();
 
@@ -374,6 +405,9 @@ void File_MpegTs::Streams_Update()
 //---------------------------------------------------------------------------
 void File_MpegTs::Streams_Update_Programs()
 {
+    //Streams already filled by a previous update (e.g. information requested during the parsing), filled again as by a single update
+    Streams_Update_Programs_Reset();
+
     //Per stream
     bool PerStream_AlwaysParse=ForceStreamDisplay;
     if (!PerStream_AlwaysParse)
@@ -392,12 +426,8 @@ void File_MpegTs::Streams_Update_Programs()
         }
     }
     for (std::set<int16u>::iterator StreamID=Complete_Stream->PES_PIDs.begin(); StreamID!=Complete_Stream->PES_PIDs.end(); ++StreamID)
-        if (PerStream_AlwaysParse || Complete_Stream->Streams[*StreamID]->IsUpdated_IsRegistered || Complete_Stream->Streams[*StreamID]->IsUpdated_Info)
-        {
+        if (PerStream_AlwaysParse || Complete_Stream->Streams[*StreamID]->IsUpdated_IsRegistered || Complete_Stream->Streams[*StreamID]->IsUpdated_Info) //Not reset, as the streams are filled again at each update
             Streams_Update_Programs_PerStream(*StreamID);
-            Complete_Stream->Streams[*StreamID]->IsUpdated_IsRegistered=false;
-            Complete_Stream->Streams[*StreamID]->IsUpdated_Info=false;
-        }
 
     //Fill General
     if (Complete_Stream->transport_stream_id_IsValid)
@@ -435,10 +465,7 @@ void File_MpegTs::Streams_Update_Programs()
         Complete_Stream->TimeZones.clear();
     }
     if (!Complete_Stream->Duration_Start.empty())
-    {
-        Fill(Stream_General, 0, General_Duration_Start, Complete_Stream->Duration_Start, true);
-        Complete_Stream->Duration_Start.clear();
-    }
+        Fill(Stream_General, 0, General_Duration_Start, Complete_Stream->Duration_Start, true); //Kept, as it is set only with the first time
     complete_stream::transport_streams::iterator Transport_Stream=Complete_Stream->transport_stream_id_IsValid?Complete_Stream->Transport_Streams.find(Complete_Stream->transport_stream_id):Complete_Stream->Transport_Streams.end();
     if (Transport_Stream!=Complete_Stream->Transport_Streams.end())
     {
@@ -460,7 +487,7 @@ void File_MpegTs::Streams_Update_Programs()
                         Texts+=text->second+__T(" - ");
                     if (!Texts.empty())
                         Texts.resize(Texts.size()-3);
-                    Fill(Stream_General, 0, General_ServiceProvider, Texts);
+                    Fill(Stream_General, 0, General_ServiceProvider, Texts, true);
                 }
             }
         }
@@ -491,6 +518,7 @@ void File_MpegTs::Streams_Update_Programs()
                 }
 
                 //Per pid
+                bool HasNotDisplayableStreams=Program->second.HasNotDisplayableStreams; //From the tables, then from the streams of this update
                 Ztring Languages, Codecs, Formats, StreamKinds, StreamPoss, elementary_PIDs, elementary_PIDs_String, Delay, LawRating, Title;
                 for (size_t Pos=0; Pos<Program->second.elementary_PIDs.size(); Pos++)
                 {
@@ -547,7 +575,7 @@ void File_MpegTs::Streams_Update_Programs()
                                     Format=Format_FromInfo->second;
                             }
                             if (Format.empty())
-                                Program->second.HasNotDisplayableStreams=true;
+                                HasNotDisplayableStreams=true;
                             Formats+=Format+__T(" / ");
                             Codecs+=Retrieve(Sub_Kind, Sub_Pos, Fill_Parameter(Sub_Kind, Generic_Codec))+__T(" / ");
                             if (Complete_Stream->Streams[elementary_PID]->StreamKind!=Stream_Max)
@@ -595,7 +623,7 @@ void File_MpegTs::Streams_Update_Programs()
                 {
                     if (!Transport_Stream->second.Programs.empty()
                      && (Transport_Stream->second.Programs.size()>1
-                      || Transport_Stream->second.Programs.begin()->second.HasNotDisplayableStreams
+                      || HasNotDisplayableStreams
                       || !Transport_Stream->second.Programs.begin()->second.Infos.empty()
                       || !Transport_Stream->second.Programs.begin()->second.DVB_EPG_Blocks.empty()
                       || (Transport_Stream->second.Programs.begin()->second.source_id_IsValid && Complete_Stream->Sources.find(Transport_Stream->second.Programs.begin()->second.source_id)!=Complete_Stream->Sources.end())
@@ -631,15 +659,13 @@ void File_MpegTs::Streams_Update_Programs()
                         for (size_t programs_List_Pos=0; programs_List_Pos<Transport_Stream->second.programs_List.size(); ++programs_List_Pos)
                             if (Transport_Stream->second.programs_List[programs_List_Pos]==Program->first)
                                 Fill(Stream_Menu, StreamPos_Last, General_StreamOrder, programs_List_Pos);
+                        //TS info kept, the menus are filled again by the next update
                         for (std::map<std::string, ZenLib::Ztring>::iterator Info=Program->second.Infos.begin(); Info!=Program->second.Infos.end(); ++Info)
                             Fill(Stream_Menu, StreamPos_Last, Info->first.c_str(), Info->second, true);
-                        Program->second.Infos.clear();
                         for (std::map<std::string, ZenLib::Ztring>::iterator Info=Program->second.ExtraInfos_Content.begin(); Info!=Program->second.ExtraInfos_Content.end(); ++Info)
                             Fill(Stream_Menu, StreamPos_Last, Info->first.c_str(), Info->second, true);
-                        Program->second.ExtraInfos_Content.clear();
                         for (std::map<std::string, ZenLib::Ztring>::iterator Info=Program->second.ExtraInfos_Option.begin(); Info!=Program->second.ExtraInfos_Option.end(); ++Info)
                             Fill_SetOptions(Stream_Menu, StreamPos_Last, Info->first.c_str(), Info->second.To_UTF8().c_str());
-                        Program->second.ExtraInfos_Option.clear();
 
                         if (!Formats.empty())
                             Formats.resize(Formats.size()-3);
@@ -683,7 +709,7 @@ void File_MpegTs::Streams_Update_Programs()
                         case 0 : Fill(Stream_General, 0, General_Delay, Delay, true); break;
                         default: Fill(Stream_Menu, StreamPos_Last, Menu_Delay, Delay, true); break;
                     }
-                    Program->second.Update_Needed_IsRegistered=false;
+                    //Not reset, the menus are filled again by the next update
                 }
                 if (Count_Get(Stream_Menu)==2)
                     Clear(Stream_General, 0, General_Delay); //Not valid, multiple menus
@@ -701,6 +727,48 @@ void File_MpegTs::Streams_Update_Programs()
      && Retrieve(Stream_Audio, 0, Audio_Format_Profile)==__T("Layer 2")
      && Retrieve(Stream_Audio, 0, Audio_BitRate)==__T("384000"))
         Fill(Stream_General, 0, General_Format_Commercial_IfAny, Retrieve(Stream_Video, 0, Video_Format_Commercial_IfAny));
+}
+
+//---------------------------------------------------------------------------
+void File_MpegTs::Streams_Update_Programs_Reset()
+{
+    //Removing the streams and the menus filled by a previous update, as a merge in a filled stream keeps its values as the ones from the container, the streams of the PIDs filled later would be after the other ones and the menus depend on all the streams
+    if (Status[IsFinished])
+        return; //Not after the end, the streams are completed
+    bool IsReset=false;
+    for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
+    {
+        if (!Count_Get((stream_t)StreamKind))
+            continue;
+        while (size_t Count=Count_Get((stream_t)StreamKind))
+            Stream_Erase((stream_t)StreamKind, Count-1);
+        if (!IsSub)
+            Clear(Stream_General, 0, Ztring(MediaInfoLib::Config.Info_Get((stream_t)StreamKind).Read(General_StreamKind, Info_Text)+__T("Count")).To_UTF8().c_str());
+        IsReset=true;
+    }
+    if (!IsReset)
+        return;
+    Clear(Stream_General, 0, General_Delay); //In the menu if there is a menu
+
+    //Positions of the streams and of the menus, filled again
+    for (size_t StreamID=0; StreamID<0x2000; StreamID++)
+    {
+        complete_stream::stream* Temp=Complete_Stream->Streams[StreamID];
+        Temp->StreamKind=Stream_Max;
+        Temp->StreamPos=(size_t)-1;
+        Temp->StreamCount=0;
+        #if defined(MEDIAINFO_TELETEXT_YES)
+            for (std::map<int16u, teletext>::iterator Teletext=Temp->Teletexts.begin(); Teletext!=Temp->Teletexts.end(); ++Teletext)
+            {
+                Teletext->second.StreamKind=Stream_Max;
+                Teletext->second.StreamPos=(size_t)-1;
+            }
+        #endif //MEDIAINFO_TELETEXT_YES
+    }
+    for (complete_stream::transport_streams::iterator Transport_Stream=Complete_Stream->Transport_Streams.begin(); Transport_Stream!=Complete_Stream->Transport_Streams.end(); ++Transport_Stream)
+        for (complete_stream::transport_stream::programs::iterator Program=Transport_Stream->second.Programs.begin(); Program!=Transport_Stream->second.Programs.end(); ++Program)
+            Program->second.StreamPos=(size_t)-1;
+    Complete_Stream->program_number_Order.clear();
 }
 
 //---------------------------------------------------------------------------
@@ -1058,8 +1126,7 @@ void File_MpegTs::Streams_Update_Programs_PerStream(size_t StreamID)
             }
         }
         }
-        Temp->Infos.clear();
-        Temp->Infos_Option.clear();
+        //TS info kept, the streams are filled again by the next update
 
         //Special cases
         if (Temp->Parser && Temp->Parser->Count_Get(Stream_Video))
@@ -1141,7 +1208,7 @@ void File_MpegTs::Streams_Update_Programs_PerStream(size_t StreamID)
                 if (Retrieve(StreamKind_Last, StreamPos_Last, Info->first.c_str()).empty())
                     Fill(StreamKind_Last, StreamPos_Last, Info->first.c_str(), Info->second);
             }
-            Teletext->second.Infos.clear();
+            //TS info kept, the streams are filled again by the next update
         }
         Teletext->second.StreamKind=StreamKind_Last;
         Teletext->second.StreamPos=StreamPos_Last;
@@ -1228,7 +1295,7 @@ void File_MpegTs::Streams_Update_EPG()
                         for (complete_stream::transport_stream::program::dvb_epg_block::events::iterator Event=DVB_EPG_Block->second.Events.begin(); Event!=DVB_EPG_Block->second.Events.end(); ++Event)
                             if (EPGs.find(Event->second.start_time)==EPGs.end() || DVB_EPG_Block->first==0x4E) //Does not exist or "DVB - event_information_section - actual_transport_stream : return present/following"
                                 EPGs[Event->second.start_time]=Event->second.short_event.event_name+__T(" / ")+Event->second.short_event.text+__T(" / ")+Event->second.content+__T(" /  / ")+Event->second.duration+__T(" / ")+Event->second.running_status;
-                    Program->second.DVB_EPG_Blocks_IsUpdated=false;
+                    //Not reset, the menus are filled again by the next update
                     EPGs_IsUpdated=true;
                 }
 
@@ -1272,7 +1339,7 @@ void File_MpegTs::Streams_Update_EPG()
                                         }
                                         EPGs[Time]=Event->second.title+__T(" / ")+Texts+__T(" /  /  / ")+Event->second.duration+__T(" / ");
                                     }
-                            Source->second.ATSC_EPG_Blocks_IsUpdated=false;
+                            //Not reset, the menus are filled again by the next update
                             EPGs_IsUpdated=true;
                         }
                     }
@@ -1323,6 +1390,10 @@ void File_MpegTs::Streams_Update_EPG_PerProgram(complete_stream::transport_strea
 #ifdef MEDIAINFO_MPEGTS_PCR_YES
 void File_MpegTs::Streams_Update_Duration_Update()
 {
+    //Filled again by each update from all the PCR PIDs, as by a single update
+    Clear(Stream_General, 0, General_Duration);
+    Clear(Stream_General, 0, General_OverallBitRate);
+
     bool IsVbr=false;
     bool IsCbr=false;
     #if MEDIAINFO_ADVANCED
@@ -1372,7 +1443,7 @@ void File_MpegTs::Streams_Update_Duration_Update()
                 Duration_Sum+=Duration;
                 Bytes_Sum+=Bytes;
 
-                (*Stream)->TimeStamp_End_IsUpdated=false;
+                //TimeStamp_End_IsUpdated not reset, the durations are filled again by the next update
                 (*Stream)->IsPCR_Duration=(float64)Duration;
 
                 //Filling menu duration
@@ -1501,6 +1572,10 @@ void File_MpegTs::Streams_Finish()
                 #endif //MEDIAINFO_DEMUX
             }
         }
+
+    //Information already filled by a previous update (e.g. information requested during the parsing), filled again with the finished parsers
+    if (Streams_Update_Parts)
+        Status[IsUpdated]=true;
 
     #if MEDIAINFO_DUPLICATE
         File__Duplicate_Streams_Finish();
