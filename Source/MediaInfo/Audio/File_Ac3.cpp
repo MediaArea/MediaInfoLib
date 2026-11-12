@@ -303,12 +303,14 @@ Ztring AC3_chanmap_ChannelPositions (int16u chanmap)
                             else
                                 Back=__T(" L C R");
                             break;
-                case  8 :   More+=__T(", s: T"); break;
-                case  9 :   More+=__T(", sd: L R"); break;
-                case 10 :   More+=__T(", w: L R"); break;
-                case 11 :   More+=__T(", vh: L R"); break;
-                case 12 :   More+=__T(", vh: C"); break;
-                case 13 :   More+=__T(", ts: L R"); break;
+                case  8 :   More+=__T(", TopCtrSrrd"); break;
+                case  9 :   More+=__T(", SurroundDirect: L R"); break;
+                case 10 :   More+=__T(", Wide: L R"); break;
+                case 11 :   More+=(chanmap&(1<<(15-12)))?__T(", High: L C R"):__T(", High: L R"); break;
+                case 12 :   if (!(chanmap&(1<<(15-11))))
+                                More+=__T(", High: C");
+                            break;
+                case 13 :   More+=__T(", HiSide: L R"); break;
                 case 15 :   More+=__T(", LFE");
                             break;
                 default: ;
@@ -728,25 +730,25 @@ std::string AC3_TrueHD_Channels_Positions(int16u ChannelsMap, bool Bit11=false)
         Text+=", Back: C";
 
     if ((ChannelsMap&0x0810)==0x0810 && !Bit11)
-        Text+=", vh: L C R";
+        Text+=", High: L C R";
     else
     {
         if (ChannelsMap&0x0010)
-            Text+=Bit11?", ts: L R":", vh: L R"; //The pair is at the top side with the other channel assignment
+            Text+=Bit11?", HiSide: L R":", High: L R"; //The pair is at the top side with the other channel assignment
         if (ChannelsMap&0x0800)
-            Text+=", vh: C";
+            Text+=", High: C";
     }
 
     if (ChannelsMap&0x0020)
-        Text+=", c: L R";
+        Text+=", Ctr: L R";
     if (ChannelsMap&0x0040)
         Text+=", Back: L R";
     if (ChannelsMap&0x0100)
-        Text+=", s: T";
+        Text+=", TopCtrSrrd";
     if (ChannelsMap&0x0200)
-        Text+=", sd: L R";
+        Text+=", SurroundDirect: L R";
     if (ChannelsMap&0x0400)
-        Text+=", w: L R";
+        Text+=", Wide: L R";
 
     if (ChannelsMap&0x0004)
         Text+=", LFE";
