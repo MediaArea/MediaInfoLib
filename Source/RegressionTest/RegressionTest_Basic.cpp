@@ -396,5 +396,7 @@ void RegressionTest_Basic(Ztring Files, Ztring DataBaseDirectory, int32u Scenari
                 Dir::Create(DataBaseDirectory+__T("\\Basic\\Diff"));
             Diff.Save(DataBaseDirectory+__T("\\Basic\\Diff\\")+Ztring::ToZtring(StreamKind)+__T(".csv"));
         }
+        else
+            File::Delete(DataBaseDirectory+__T("\\Basic\\Diff\\")+Ztring::ToZtring(StreamKind)+__T(".csv")); //No difference, the file of a previous run would be stale
     }
 }
