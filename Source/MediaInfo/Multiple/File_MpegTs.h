@@ -111,6 +111,7 @@ private :
     bool   ForceStreamDisplay;
     bool   ForceTextStreamDisplay;
     bool   Searching_TimeStamp_Start;
+    int8u  Streams_Update_Parts; //Parts of the update already filled, from User_16 to User_19
 
     #if MEDIAINFO_EVENTS
         void Header_Parse_Events();
@@ -123,6 +124,7 @@ private :
 
     //Helpers
     void Streams_Update_Programs();
+    void Streams_Update_Programs_Reset();
     void Streams_Update_Programs_PerStream(size_t StreamID);
     void Streams_Update_EPG();
     void Streams_Update_EPG_PerProgram(complete_stream::transport_stream::programs::iterator Program);

@@ -1774,6 +1774,9 @@ void File_Mpegv::Streams_Finish()
         if (Cdp_Parser && !Cdp_Parser->Status[IsFinished] && Cdp_Parser->Status[IsAccepted])
             Finish(Cdp_Parser);
     #endif //defined(MEDIAINFO_CDP_YES)
+    for (size_t Text_Positions_Pos=0; Text_Positions_Pos<Text_Positions.size(); Text_Positions_Pos++)
+        if (*Text_Positions[Text_Positions_Pos].Parser && (*Text_Positions[Text_Positions_Pos].Parser)->Status[IsUpdated])
+            Status[IsUpdated]=true; //Captions merged by the update at the end of the parsing, also after a previous update (e.g. information requested during the parsing)
     #if defined(MEDIAINFO_AFDBARDATA_YES)
         if (AfdBarData_Parser && !AfdBarData_Parser->Status[IsFinished] && AfdBarData_Parser->Status[IsAccepted])
         {
