@@ -67,6 +67,19 @@ private :
     string TimeCode_LastFrame; //Valid time code of the frame with the highest time stamp
     int64u TimeCode_LastFrame_FrameNumber;
     int64u TimeCode_LastFrame_PTS;
+    struct blockaddition_value
+    {
+        int8u  Digits[8]; //Hours, minutes, seconds and frames, tens then units
+        bool   DropFrame;
+        int64u Frame_Count;
+        int64u Frame_Count_NotParsedIncluded;
+        int64u PTS;
+        int64u Offset;
+    };
+    std::vector<blockaddition_value> BlockAddition_Pending; //Values checked once the count of frames per second is known
+    int8u  BlockAddition_FramesPerSecond; //(int8u)-1 if not yet known, 0 if unknown
+    void   BlockAddition_Check(const blockaddition_value& Value);
+    void   BlockAddition_FramesPerSecond_Set(int64u FrameDuration);
 };
 
 } //NameSpace

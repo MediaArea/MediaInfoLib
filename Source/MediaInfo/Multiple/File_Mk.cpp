@@ -1495,6 +1495,12 @@ void File_Mk::Streams_Finish()
             #endif //MEDIAINFO_ADVANCED
             Add->second.Parser->Frame_Count_NotParsedIncluded=Temp->second.PacketCount; //Count of frames of the track
             Add->second.Parser->FrameInfo.PTS=Temp->second.TimeCode_Last==(int64u)-1?(int64u)-1:(Temp->second.TimeCode_Last*TimecodeScale); //Time stamp of the last frame of the track
+            if (StreamKind_Last==Stream_Video) //Duration of a frame of the track, for the values not yet checked without TrackDefaultDuration
+            {
+                const auto FrameRate=Retrieve_Const(Stream_Video, StreamPos_Last, Video_FrameRate).To_float64();
+                if (FrameRate)
+                    Add->second.Parser->FrameInfo.DUR=float64_int64s(1000000000/FrameRate);
+            }
             Finish(Add->second.Parser);
             Merge(*Add->second.Parser);
             if (StreamKind_Last!=StreamKind_Last_Sav || StreamPos_Last!=StreamPos_Last_Sav)
