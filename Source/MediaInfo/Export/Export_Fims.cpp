@@ -964,7 +964,8 @@ Ztring Fims_Transform_TimeCode(Ztring &ToReturn, MediaInfo_Internal &MI, size_t 
         ToReturn+=__T(" timecodeFormatName=\"")+Fims_XML_Encode(MI.Get(Stream_Other, StreamPos, Other_Format))+__T("\"");
     ToReturn+=__T(">\n");
 
-    //start
+    //start, optional, an empty time code is not permitted
+    if (!MI.Get(Stream_Other, StreamPos, Other_TimeCode_FirstFrame).empty())
     {
         ToReturn+=__T("\t\t\t\t\t<ebucore:timecodeStart>\n");
         ToReturn+=__T("\t\t\t\t\t\t<ebucore:timecode>")+Fims_XML_Encode(MI.Get(Stream_Other, StreamPos, Other_TimeCode_FirstFrame))+__T("</ebucore:timecode>\n");

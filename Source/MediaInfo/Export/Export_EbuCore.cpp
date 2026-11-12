@@ -1366,9 +1366,11 @@ void EbuCore_Transform_TimeCode(Node* Parent, MediaInfo_Internal &MI, size_t Str
     Node* Child=Parent->Add_Child("ebucore:timecodeFormat", true);
     Child->Add_Attribute_IfNotEmpty(MI, Stream_Other, StreamPos, Other_Format, "timecodeFormatName");
 
-    //start
+    //start, optional, an empty time code is not permitted
+    const Ztring& TimeCode_FirstFrame=MI.Get(Stream_Other, StreamPos, Other_TimeCode_FirstFrame);
+    if (!TimeCode_FirstFrame.empty())
     {
-        Child->Add_Child("ebucore:timecodeStart", true)->Add_Child("ebucore:timecode", MI.Get(Stream_Other, StreamPos, Other_TimeCode_FirstFrame), true);
+        Child->Add_Child("ebucore:timecodeStart", true)->Add_Child("ebucore:timecode", TimeCode_FirstFrame, true);
     }
 
     if (!MI.Get(Stream_Other, StreamPos, Other_ID).empty() || !MI.Get(Stream_Other, StreamPos, Other_Title).empty())

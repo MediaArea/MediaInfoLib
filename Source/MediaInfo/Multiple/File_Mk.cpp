@@ -1495,6 +1495,12 @@ void File_Mk::Streams_Finish()
             #endif //MEDIAINFO_ADVANCED
             Add->second.Parser->Frame_Count_NotParsedIncluded=Temp->second.PacketCount; //Count of frames of the track
             Add->second.Parser->FrameInfo.PTS=Temp->second.TimeCode_Last==(int64u)-1?(int64u)-1:(Temp->second.TimeCode_Last*TimecodeScale); //Time stamp of the last frame of the track
+            if (StreamKind_Last==Stream_Video) //Duration of a frame of the track, for the values not yet checked without TrackDefaultDuration
+            {
+                const auto FrameRate=Retrieve_Const(Stream_Video, StreamPos_Last, Video_FrameRate).To_float64();
+                if (FrameRate)
+                    Add->second.Parser->FrameInfo.DUR=float64_int64s(1000000000/FrameRate);
+            }
             Finish(Add->second.Parser);
             Merge(*Add->second.Parser);
             if (StreamKind_Last!=StreamKind_Last_Sav || StreamPos_Last!=StreamPos_Last_Sav)
@@ -3052,6 +3058,8 @@ void File_Mk::Segment_Cluster_BlockGroup()
     Segment_Cluster_BlockGroup_BlockDuration_Value=(int64u)-1;
     Segment_Cluster_BlockGroup_BlockDuration_TrackNumber=(int64u)-1;
     Segment_Cluster_BlockGroup_Block_TimeCode=(int64u)-1;
+    Segment_Cluster_BlockGroup_Block_IsParsed=false;
+    Segment_Cluster_BlockGroup_BlockAdditions_Pending.clear();
 }
 
 //---------------------------------------------------------------------------
@@ -3065,6 +3073,7 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
 
     //Parsing
     Get_EB (TrackNumber,                                        "TrackNumber"); Element_Info1(TrackNumber);
+    Segment_Cluster_BlockGroup_Block_IsParsed=true;
 
     //Finished?
     stream& streamItem = Stream[TrackNumber];
@@ -3211,6 +3220,23 @@ void File_Mk::Segment_Cluster_BlockGroup_Block()
     else
     {
         Laces.push_back(Element_Size-Element_Offset);
+    }
+
+    //Block additions before the block, parsed now that their track and time stamp are known
+    if (!Segment_Cluster_BlockGroup_BlockAdditions_Pending.empty())
+    {
+        auto Pending=std::move(Segment_Cluster_BlockGroup_BlockAdditions_Pending);
+        Segment_Cluster_BlockGroup_BlockAdditions_Pending.clear();
+        const auto BlockAddIDValue_Save=BlockAddIDValue;
+        const auto File_Offset_Save=File_Offset;
+        for (const auto& Item : Pending)
+        {
+            BlockAddIDValue=Item.BlockAddIDValue;
+            File_Offset=Item.File_Offset-(Buffer_Offset+Element_Offset); //Offsets of the sub-parser are the ones of the block addition
+            Segment_Cluster_BlockGroup_BlockAdditions_BlockMore_BlockAdditional_Parse(Item.Data.data(), Item.Data.size());
+        }
+        File_Offset=File_Offset_Save;
+        BlockAddIDValue=BlockAddIDValue_Save;
     }
 
     if (Laces.size()==1)
@@ -3401,17 +3427,26 @@ void File_Mk::Segment_Cluster_BlockGroup_BlockAdditions_BlockMore_BlockAdditiona
         return;
     }
 
-    const auto& streamItem=Stream[TrackNumber];
-    const auto& BlockAdditions=streamItem.BlockAdditions;
-    auto Parser=BlockAdditions.find(BlockAddIDValue);
-    if (Parser!=BlockAdditions.end())
+    //Block additions before the block of the block group: the track is not yet known, the ones of a mapping are parsed after the block
+    if (!Segment_Cluster_BlockGroup_Block_IsParsed)
     {
-        //Number of the frame in the track, time stamp and duration of the frame, when known (the block is not known if the block additions are before it)
-        const bool Block_IsKnown=Segment_Cluster_BlockGroup_Block_TimeCode!=(int64u)-1;
-        Parser->second.Parser->Frame_Count_NotParsedIncluded=(Block_IsKnown && !Probe_IsRunning)?(streamItem.PacketCount-1):(int64u)-1;
-        Parser->second.Parser->FrameInfo.PTS=Block_IsKnown?(Segment_Cluster_BlockGroup_Block_TimeCode*TimecodeScale):(int64u)-1;
-        Parser->second.Parser->FrameInfo.DUR=streamItem.TrackDefaultDuration?streamItem.TrackDefaultDuration:(int64u)-1;
-        Open_Buffer_Continue(Parser->second.Parser);
+        bool HasMapping=false;
+        for (const auto& Item : Stream)
+            if (Item.second.BlockAdditions.find(BlockAddIDValue)!=Item.second.BlockAdditions.end())
+                HasMapping=true;
+        if (HasMapping)
+        {
+            Segment_Cluster_BlockGroup_BlockAdditions_Pending.push_back({BlockAddIDValue, File_Offset+Buffer_Offset+Element_Offset, std::vector<int8u>(Buffer+Buffer_Offset+(size_t)Element_Offset, Buffer+Buffer_Offset+(size_t)Element_Size)});
+            Skip_XX(Element_Size-Element_Offset,                "Data (parsed after the block)");
+            return;
+        }
+    }
+
+    const auto& BlockAdditions=Stream[TrackNumber].BlockAdditions;
+    if (BlockAdditions.find(BlockAddIDValue)!=BlockAdditions.end())
+    {
+        Segment_Cluster_BlockGroup_BlockAdditions_BlockMore_BlockAdditional_Parse(Buffer+Buffer_Offset+(size_t)Element_Offset, (size_t)(Element_Size-Element_Offset));
+        Element_Offset=Element_Size;
         return;
     }
 
@@ -3420,6 +3455,22 @@ void File_Mk::Segment_Cluster_BlockGroup_BlockAdditions_BlockMore_BlockAdditiona
         case 4 : sei_message_user_data_registered_itu_t_t35(); break;
         default: {Skip_XX(Element_Size, "Data"); }
     }
+}
+
+//---------------------------------------------------------------------------
+void File_Mk::Segment_Cluster_BlockGroup_BlockAdditions_BlockMore_BlockAdditional_Parse(const int8u* Data, size_t Data_Size)
+{
+    const auto& streamItem=Stream[TrackNumber];
+    auto Parser=streamItem.BlockAdditions.find(BlockAddIDValue);
+    if (Parser==streamItem.BlockAdditions.end())
+        return;
+
+    //Number of the frame in the track, time stamp and duration of the frame, when known
+    const bool Block_IsKnown=Segment_Cluster_BlockGroup_Block_TimeCode!=(int64u)-1;
+    Parser->second.Parser->Frame_Count_NotParsedIncluded=(Block_IsKnown && !Probe_IsRunning)?(streamItem.PacketCount-1):(int64u)-1;
+    Parser->second.Parser->FrameInfo.PTS=Block_IsKnown?(Segment_Cluster_BlockGroup_Block_TimeCode*TimecodeScale):(int64u)-1;
+    Parser->second.Parser->FrameInfo.DUR=streamItem.TrackDefaultDuration?streamItem.TrackDefaultDuration:(int64u)-1;
+    Open_Buffer_Continue(Parser->second.Parser, Data, Data_Size);
 }
 
 //---------------------------------------------------------------------------
