@@ -581,7 +581,6 @@ void File__Analyze::Attachment(const char* MuxingMode, const Ztring& Description
         Fill(Stream_General, 0, General_Cover, "Yes");
         Fill(Stream_General, 0, General_Cover_Description, Description);
         Fill(Stream_General, 0, General_Cover_Type, Type_String2);
-        Fill(Stream_General, 0, General_Cover_Mime, MimeType);
         #if MEDIAINFO_ADVANCED
             if (MediaInfoLib::Config.Flags1_Get(Flags_Cover_Data_base64)) {
                 std::string Data_Raw((const char*)(Buffer + (size_t)(Buffer_Offset + Element_Offset)), Data_Size);
@@ -596,13 +595,24 @@ void File__Analyze::Attachment(const char* MuxingMode, const Ztring& Description
     Open_Buffer_Continue(&MI);
     Open_Buffer_Finalize(&MI);
     Element_Show(); //TODO: why is it needed?
+
+    // MIME type without sub-type (e.g. "image/" in ID3v2), the one of the detected format is used
+    Ztring MimeType2(MimeType);
+    if (!MimeType2.empty() && MimeType2.back() == __T('/')) {
+        const Ztring& Detected = MediaInfoLib::Config.Format_Get(MI.Retrieve_Const(Stream_General, 0, General_Format), InfoFormat_InternetMediaType);
+        if (!Detected.compare(0, MimeType2.size(), MimeType2))
+            MimeType2 = Detected;
+    }
+    if (IsCover)
+        Fill(Stream_General, 0, General_Cover_Mime, MimeType2);
+
     auto ImageCount = MI.Count_Get(Stream_Image);
     if (IsCover || ImageCount) {
         Stream_Prepare(Stream_Image);
         Fill(Stream_Image, StreamPos_Last, Image_Type, ModifiedType);
         Fill(Stream_Image, StreamPos_Last, Image_Title, Description);
         Fill(Stream_Image, StreamPos_Last, Image_MuxingMode, MuxingMode);
-        Fill(Stream_Image, StreamPos_Last, Image_InternetMediaType, MimeType);
+        Fill(Stream_Image, StreamPos_Last, Image_InternetMediaType, MimeType2);
         Fill(Stream_Image, StreamPos_Last, Image_StreamSize, Data_Size);
         if (ImageCount) {
             Merge(MI, Stream_Image, 0, StreamPos_Last); // We ignore thumbnails in thumbnails/covers on purpose (not the goal of the cover)
