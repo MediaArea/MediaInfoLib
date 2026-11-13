@@ -485,8 +485,12 @@ void OtherLanguages(const std::string& Directory)
     const unsigned JaCounts[]={0,1,2}; const char* JaForms[]={"other","other","other"};
     const Ztring Ar=Catalog(Directory, "ar");
     Load(Ar);
-    Equal("legacy Arabic approximation singular", Unit(__T("1")), __T("1\u0642\u0646\u0627\u0629"));
-    Equal("legacy Arabic approximation plural", Unit(__T("2")), __T("2\u0627\u0644\u0642\u0646\u0648\u0627\u062A"));
+    Equal("Arabic singular without number", Unit(__T("1")), __T("\u0642\u0646\u0627\u0629"));
+    Equal("Arabic dual without number", Unit(__T("2")), __T("\u0642\u0646\u0627\u062A\u0627\u0646"));
+    Equal("Arabic plural of 3 to 10", Unit(__T("3")), __T("3 \u0642\u0646\u0648\u0627\u062A"));
+    Equal("Arabic singular of 100", Unit(__T("100")), __T("100 \u0642\u0646\u0627\u0629"));
+    Equal("Arabic accusative of 11 to 99", Unit(__T("11"), __T(" day")), __T("11 \u064A\u0648\u0645\u064B\u0627"));
+    Equal("Arabic invariant unit", Unit(__T("2"), __T(" Byte")), __T("2 \u0628\u0627\u064A\u062A"));
     Categories(En, "English", EnCounts, EnForms, 2);
     Categories(Pl, "Polish", PlCounts, PlForms, 2);
     Categories(Ru, "Russian", RuCounts, RuForms, 2);
@@ -511,6 +515,11 @@ void FallbackAndArguments(const Ztring& Cs)
     Equal("unclosed placeholder fallback", Message("FileCount", __T("22")), __T("22 files"));
     Load(__T("  Language_ISO639;cs\nFileCount.other;missing count"));
     Equal("missing count placeholder fallback", Message("FileCount", __T("22")), __T("22 files"));
+    Load(__T("  Language_ISO639;ar\nFileCount.two;LOCAL\nFileCount.other;{count} LOCALS"));
+    Equal("dual pattern without count", Message("FileCount", __T("2")), __T("LOCAL"));
+    Equal("other pattern with count", Message("FileCount", __T("3")), __T("3 LOCALS"));
+    Load(__T("  Language_ISO639;ar\nFileCount.other;LOCALS"));
+    Equal("other pattern without count falls back", Message("FileCount", __T("3")), __T("3 files"));
     Load(__T("  Language_ISO639;cs\nFileCount.other;{count} {count}"));
     Equal("repeated placeholder fallback", Message("FileCount", __T("22")), __T("22 files"));
     Load(__T("  Language_ISO639;cs\nStreamSummary.Audio.other;{count} streams"));

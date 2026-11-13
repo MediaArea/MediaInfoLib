@@ -100,7 +100,8 @@ struct CatalogRules
 };
 
 // Only named arguments are interpreted. Inserted metadata is never parsed again.
-inline bool Expand(const Ztring& Pattern, const Ztring& Count, const Ztring& Formats, bool WithFormats, Ztring& Result)
+// CountOptional: the text may express the count without the number (e.g. Arabic dual).
+inline bool Expand(const Ztring& Pattern, const Ztring& Count, const Ztring& Formats, bool WithFormats, Ztring& Result, bool CountOptional=false)
 {
     Result.clear();
     unsigned Counts=0, FormatLists=0;
@@ -128,7 +129,7 @@ inline bool Expand(const Ztring& Pattern, const Ztring& Count, const Ztring& For
         }
         else Result+=C;
     }
-    return Counts==1 && FormatLists==(WithFormats?1U:0U);
+    return (Counts==1 || (CountOptional && !Counts)) && FormatLists==(WithFormats?1U:0U);
 }
 
 inline Ztring Number(const Ztring& Count, const Translation& Catalog)
@@ -189,8 +190,10 @@ inline bool Pattern(const Translation& Catalog, const Ztring& Key, CountPlural::
     Ztring Other=Lookup(Catalog, Key+__T(".other"));
     if (Other.empty()) return false;
     Ztring Text=Lookup(Catalog, Key+__T('.')+Ztring().From_UTF8(CountPlural::Name(Category)));
+    // One and two may be expressed by the noun alone (e.g. Arabic singular and dual), not the other categories
+    const bool CountOptional=!Text.empty() && (Category==CountPlural::One || Category==CountPlural::Two);
     if (Text.empty()) Text=Other;
-    return Expand(Text, Number(Count, Numbers?*Numbers:Catalog), Formats, WithFormats, Result);
+    return Expand(Text, Number(Count, Numbers?*Numbers:Catalog), Formats, WithFormats, Result, CountOptional);
 }
 
 inline bool Unit(const Translation& Catalog, const CatalogRules& Rules, const std::string& Locale, const Ztring& Count,

@@ -76,7 +76,10 @@ semicolons and line breaks remain literal. No private library header is needed.
 
 Catalog keys are `FileCount.<category>` or `<message>.<kind>.<category>`, with
 categories zero/one/two/few/many/other. `other` is required. Patterns contain
-exactly one `{count}` and, for StreamSummary, exactly one `{formats}`. `{{`/`}}`
+exactly one `{count}` and, for StreamSummary, exactly one `{formats}`. A pattern
+of the `one` or `two` category may omit `{count}` when the noun alone expresses
+the number: CLDR writes 1 and 2 hours in Arabic as the singular and the dual
+noun, without the number. `{{`/`}}`
 escape braces. Inserted values are not reinterpreted. Invalid patterns fall back
 to legacy entries, then a complete English message. Language changes replace the
 unmerged catalog atomically; there is no cached pattern state.
