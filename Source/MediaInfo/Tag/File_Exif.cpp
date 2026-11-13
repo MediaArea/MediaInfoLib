@@ -1564,13 +1564,27 @@ void File_Exif::Streams_Finish()
         Ztring Value = DateTime.Read();
         if (Infos_Exif_It != Infos.end()) {
             const auto& Infos_Exif = Infos_Exif_It->second;
+            // Some cameras write spaces when the content is not known, e.g. "   :  " as offset
             const auto SubSecTime = Infos_Exif.find(SubSecTimeTag);
             if (SubSecTime != Infos_Exif.end()) {
-                Value += __T('.') + SubSecTime->second.Read();
+                Ztring SubSec = SubSecTime->second.Read();
+                SubSec.Trim(__T(' '));
+                if (!SubSec.empty() && SubSec.find_first_not_of(__T("0123456789")) == string::npos) {
+                    Value += __T('.') + SubSec;
+                }
             }
             const auto OffsetTime = Infos_Exif.find(OffsetTimeTag);
             if (OffsetTime != Infos_Exif.end()) {
-                Value += OffsetTime->second.Read();
+                // "+HH:MM" or "-HH:MM" is expected, "Z", "+HHMM" and "+HH" are also adapted
+                Ztring Offset = OffsetTime->second.Read();
+                Offset.Trim(__T(' '));
+                const bool HasSign = !Offset.empty() && (Offset[0] == __T('+') || Offset[0] == __T('-'));
+                const size_t NotDigit = HasSign ? Offset.find_first_not_of(__T("0123456789"), 1) : 0;
+                if (Offset == __T("Z")
+                 || (HasSign && NotDigit == string::npos && (Offset.size() == 3 || Offset.size() == 5))
+                 || (HasSign && NotDigit == 3 && Offset.size() == 6 && Offset[3] == __T(':') && Offset.find_first_not_of(__T("0123456789"), 4) == string::npos)) {
+                    Value += Offset;
+                }
             }
         }
         return Value;
