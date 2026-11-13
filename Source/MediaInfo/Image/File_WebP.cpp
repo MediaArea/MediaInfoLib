@@ -22,6 +22,9 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Image/File_WebP.h"
+#if defined(MEDIAINFO_EXIF_YES)
+    #include "MediaInfo/Tag/File_Exif.h"
+#endif
 #if defined(MEDIAINFO_ICC_YES)
     #include "MediaInfo/Tag/File_Icc.h"
 #endif
@@ -246,9 +249,25 @@ void File_WebP::WEBP_ANMF()
 //---------------------------------------------------------------------------
 void File_WebP::WEBP_EXIF()
 {
-    Skip_XX(Element_Size,                                       "EXIF metadata"); 
-
-    //Fill(Stream_Image, 0, "Metadata_Exif", "Yes"); 
+    //Parsing
+    #if defined(MEDIAINFO_EXIF_YES)
+    if (Element_Size>=6 && CC4(Buffer+Buffer_Offset)==0x45786966 && !CC2(Buffer+Buffer_Offset+4))
+        Skip_XX(6,                                              "Identifier"); //"Exif" and 2 null bytes, not expected in this chunk but written by some tools
+    File_Exif MI;
+    Open_Buffer_Init(&MI);
+    Open_Buffer_Continue(&MI);
+    Open_Buffer_Finalize(&MI);
+    Merge_Tags(MI, Tags_Exif);
+    if (StreamKind_Last==Stream_Image)
+    {
+        Merge(MI, Stream_Image, 0, 0, false);
+        size_t Count=MI.Count_Get(Stream_Image);
+        for (size_t i=1; i<Count; i++)
+            Merge(MI, Stream_Image, i, StreamPos_Last+1, false);
+    }
+    #else
+    Skip_XX(Element_Size,                                       "EXIF metadata");
+    #endif
 }
 
 //---------------------------------------------------------------------------
@@ -356,7 +375,7 @@ void File_WebP::WEBP_XMP_()
     Open_Buffer_Init(&MI);
     Open_Buffer_Continue(&MI);
     Open_Buffer_Finalize(&MI);
-    Merge(MI, Stream_General, 0, 0);
+    Merge_Tags(MI, Tags_Xmp);
     #else
     Skip_UTF8(Element_Size,                                     "XMP metadata");
     #endif

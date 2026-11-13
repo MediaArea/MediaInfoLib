@@ -456,6 +456,7 @@ namespace Elements
     const int32u WAVE_ID3_=0x49443320;
     const int32u WAVE_id3_=0x69643320;
     const int32u WAVE_INFO=0x494E464F;
+    const int32u WAVE_INFO_IID3=0x49494433;
     const int32u WAVE_iXML=0x69584D4C;
     const int32u WAVE_MD5_=0x4D443520;
     const int32u WAVE_mext=0x6D657874;
@@ -682,7 +683,10 @@ void File_Riff::Data_Parse()
         ATOM(WAVE_ID3_)
         ATOM(WAVE_id3_)
         LIST(WAVE_INFO)
-            ATOM_DEFAULT_ALONE(WAVE_INFO_xxxx)
+            ATOM_BEGIN
+            ATOM(WAVE_INFO_IID3)
+            ATOM_DEFAULT(WAVE_INFO_xxxx)
+            ATOM_END_DEFAULT
         ATOM(WAVE_iXML)
         ATOM(WAVE_MD5_)
         ATOM(WAVE_mext)
@@ -2327,7 +2331,7 @@ void File_Riff::AVI__INFO_IID3()
         Open_Buffer_Init(&MI);
         Open_Buffer_Continue(&MI);
         Finish(&MI);
-        Merge(MI, Stream_General, 0, 0);
+        Merge_Tags(MI, Tags_Id3v1);
     #endif
 }
 
@@ -3638,19 +3642,13 @@ void File_Riff::WAVE__pmx()
 
     //Parsing
     #if defined(MEDIAINFO_XMP_YES)
-        File_Xmp* MI=new File_Xmp;
-        MI->NoTrace=true; //The content is in the trace as text
-        Open_Buffer_Init(MI);
-        Open_Buffer_Continue(MI, Buffer+Buffer_Offset, (size_t)Element_Size);
-        Open_Buffer_Finalize(MI);
+        File_Xmp MI;
+        MI.NoTrace=true; //The content is in the trace as text
+        Open_Buffer_Init(&MI);
+        Open_Buffer_Continue(&MI, Buffer+Buffer_Offset, (size_t)Element_Size);
+        Open_Buffer_Finalize(&MI);
         Element_Show(); //Else the element is removed from the trace, the sub-parser having no trace
-        if (Xmp)
-        {
-            Xmp->Merge(*MI, Stream_General, 0, 0, false); //Only the content which is not in the previous XMP chunks
-            delete MI;
-        }
-        else
-            Xmp=MI;
+        Merge_Tags(MI, Tags_Xmp);
     #endif //defined(MEDIAINFO_XMP_YES)
     Skip_UTF8(Element_Size,                                     "XML data");
 }
@@ -4407,7 +4405,7 @@ void File_Riff::WAVE_ID3_()
         Open_Buffer_Init(&MI);
         Open_Buffer_Continue(&MI);
         Finish(&MI);
-        Merge(MI, Stream_General, 0, 0);
+        Merge_Tags(MI, Tags_Id3v2);
     #endif
 }
 

@@ -5210,6 +5210,7 @@ void File_Ac3::HD()
             Skip_XX(Element_Size-Element_Offset,                "Data");
             return;
         }
+        HD_flags=BigEndian2int16u(Buffer+Buffer_Offset+(size_t)Element_Offset+6); //Before the format information, the meaning of its 8-channel assignment depends on them
         HD_format_info();
         Skip_B2(                                                "signature");
         Get_B2 (HD_flags,                                       "flags");
@@ -5738,7 +5739,7 @@ void File_Ac3::HD_format_info()
         Get_S1 ( 2, dsurexmod_6ch,                              "6ch_presentation_channel_modifier");
         Get_S1 ( 5, HD_Channels1,                               "6ch_presentation_channel_assignment"); Param_Info1(AC3_TrueHD_Channels(HD_Channels1)); Param_Info1(Ztring().From_UTF8(AC3_TrueHD_Channels_Positions(HD_Channels1)));
         Get_S1 ( 2, dsurexmod,                                  "8ch_presentation_channel_modifier");
-        Get_S2 (13, HD_Channels2,                               "8ch_presentation_channel_assignment"); Param_Info1(AC3_TrueHD_Channels(HD_Channels2)); Param_Info1(Ztring().From_UTF8(AC3_TrueHD_Channels_Positions(HD_Channels2)));
+        Get_S2 (13, HD_Channels2,                               "8ch_presentation_channel_assignment"); Param_Info1(AC3_TrueHD_Channels(HD_Channels2)); Param_Info1(Ztring().From_UTF8(AC3_TrueHD_Channels_Positions(HD_Channels2, HD_flags&(1<<11))));
         BS_End();
         HD_Resolution2=HD_Resolution1=2; //24-bits
         HD_SamplingRate2=HD_SamplingRate1;

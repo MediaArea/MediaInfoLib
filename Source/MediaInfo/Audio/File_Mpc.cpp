@@ -130,7 +130,7 @@ bool File_Mpc::FileHeader_Begin()
         return false;
 
     //Test
-    if (CC3(Buffer)!=0x4D502B || (CC1(Buffer+3)&0x0F)!=7) //"MP+" version 7
+    if (CC3(Buffer+Buffer_Offset)!=0x4D502B || (CC1(Buffer+Buffer_Offset+3)&0x0F)!=7) //"MP+" version 7
     {
         File__Tags_Helper::Reject("Musepack SV7");
         return false;

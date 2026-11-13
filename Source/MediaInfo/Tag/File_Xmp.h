@@ -63,6 +63,7 @@ private :
     void pdf(const string& name, const string& value);
     void photoshop(const string& name, const string& value);
     void xmp(const string& name, const string& value);
+    void Iptc4xmpCore(const string& name, const string& value);
     void Iptc4xmpExt(const string& name, const string& value);
 
     //Gain map

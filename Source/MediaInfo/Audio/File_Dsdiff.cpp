@@ -294,7 +294,10 @@ void File_Dsdiff::Header_Parse()
 
     //Top level chunks
     if (Name==Elements::FRM8)
+    {
         Get_C4 (Name,                                           "Real Name");
+        Size-=Size<4?Size:4; //The form type is part of the chunk
+    }
 
     //Padding
     if (Size%2)
@@ -606,7 +609,7 @@ void File_Dsdiff::DSD__ID3_()
         Open_Buffer_Init(&MI);
         Open_Buffer_Continue(&MI);
         Finish(&MI);
-        Merge(MI, Stream_General, 0, 0);
+        Merge_Tags(MI, Tags_Id3v2);
     #else //defined(MEDIAINFO_ID3V2_YES)
         Skip_XX(Element_Size,                                   "Id3v2 data");
     #endif

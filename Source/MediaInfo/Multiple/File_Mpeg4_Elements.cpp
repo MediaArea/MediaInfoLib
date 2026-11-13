@@ -1740,7 +1740,7 @@ void File_Mpeg4::Data_Parse()
                 ATOM_END
             ATOM(moov_udta_WLOC)
             ATOM(moov_udta_thmb)
-            LIST_SKIP(moov_udta_XMP_) //TODO: parse XMP
+            LIST_SKIP(moov_udta_XMP_)
             ATOM(moov_udta_Xtra)
             ATOM(moov_udta_yrrc)
             ATOM_DEFAULT (moov_udta_xxxx); //User data
@@ -2913,6 +2913,7 @@ void File_Mpeg4::meta_iinf_infe()
                                 Stream.Parsers.push_back(Parser);
                                 Stream.StreamKind = Stream_General;
                                 Stream.StreamPos = 0;
+                                Stream.Tags_Format = Tags_Exif;
                                 mdat_MustParse = true;
                                 #endif
                                 Skip = true;
@@ -2928,6 +2929,7 @@ void File_Mpeg4::meta_iinf_infe()
                                     Stream.Parsers.push_back(Parser);
                                     Stream.StreamKind = Stream_General;
                                     Stream.StreamPos = 0;
+                                    Stream.Tags_Format = Tags_Xmp;
                                     mdat_MustParse = true;
                                     Skip = true;
                                     break;
@@ -4027,6 +4029,7 @@ void File_Mpeg4::mini()
             Stream.Parsers.push_back(Parser);
             Stream.StreamKind=Stream_General;
             Stream.StreamPos=0;
+            Stream.Tags_Format=item_ID==6?Tags_Exif:Tags_Xmp;
             Stream.Infos_List["Describes for"].push_back(1);
             Streams[1].Infos_List["Describes"].push_back(item_ID);
         }
@@ -7421,6 +7424,21 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxSound()
             channelcount=Channels16;
             Channels=Channels16;
             SampleSize=SampleSize16;
+
+            //The sample size of the sample entry may be 16 whatever is the real one (e.g. FFmpeg), the one of the PCM configuration box is needed before the parsers are created
+            for (int64u Pos=Element_Offset; Pos+14<=Element_Size && Buffer_Offset+Pos+14<=Buffer_Size;)
+            {
+                const int8u* Box=Buffer+Buffer_Offset+(size_t)Pos;
+                if (BigEndian2int32u(Box+4)==Elements::moov_trak_mdia_minf_stbl_stsd_xxxx_pcmC)
+                {
+                    SampleSize=Box[13];
+                    break;
+                }
+                const int32u Box_Size=BigEndian2int32u(Box);
+                if (Box_Size<8)
+                    break;
+                Pos+=Box_Size;
+            }
         }
         else
             channelcount=0;
@@ -12221,6 +12239,23 @@ void File_Mpeg4::moov_udta_XMP_()
     Element_Name("eXtensible Metadata Platform");
 
     //Parsing
+    #if defined(MEDIAINFO_XMP_YES)
+        const int64u TotalSize=Element_TotalSize_Get();
+        if (Element_Size<TotalSize && TotalSize<=Buffer_MaximumSize/2)
+        {
+            Element_WaitForMoreData(); //Parsed when it is complete in the buffer, a bigger one is not parsed
+            return;
+        }
+        if (Element_Size>=TotalSize)
+        {
+            File_Xmp MI;
+            Open_Buffer_Init(&MI);
+            Open_Buffer_Continue(&MI);
+            Open_Buffer_Finalize(&MI);
+            Merge_Tags(MI, Tags_Xmp);
+            return;
+        }
+    #endif //defined(MEDIAINFO_XMP_YES)
     Skip_XX(Element_TotalSize_Get(),                            "Data");
     #if MEDIAINFO_HASH
         if (Hash && !IsSecondPass)

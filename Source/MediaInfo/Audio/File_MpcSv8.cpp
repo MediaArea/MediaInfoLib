@@ -77,11 +77,15 @@ File_MpcSv8::File_MpcSv8()
 //---------------------------------------------------------------------------
 bool File_MpcSv8::FileHeader_Begin()
 {
+    //Tags
+    if (!File__Tags_Helper::FileHeader_Begin())
+        return false;
+
     //Element_Size
-    if (Buffer_Size<4)
+    if (Buffer_Offset+4>Buffer_Size)
         return false; //Must wait for more data
 
-    if (CC4(Buffer)!=0x4D50434B) //"MPCK"
+    if (CC4(Buffer+Buffer_Offset)!=0x4D50434B) //"MPCK"
     {
         File__Tags_Helper::Reject("Musepack SV8");
         return false;

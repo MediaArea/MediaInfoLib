@@ -1370,6 +1370,30 @@ public :
     size_t Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t StreamPos_From, size_t StreamPos_To, bool Erase=true); //Merge 2 streams
     void Merge_HDR(size_t StreamPos_To, const Ztring* Container, const Ztring* ToAdd, const Ztring& ToAdd_colour_range, const Ztring& ToAdd_matrix_coefficients); //Merge HDR formats of a container and of a stream, from Video_HDR_Format to Video_HDR_Format_Compatibility
 
+    //Tags in a format which is not the one of the container, by date of the first specification of their format
+    enum tags_format
+    {
+        Tags_Iim,       //1991
+        Tags_Photoshop, //1994
+        Tags_Exif,      //1995
+        Tags_Id3v2,     //1996 for ID3v1, ID3v2 is the same format without the limits of its first version
+        Tags_Id3v1,
+        Tags_Lyrics3,   //1997
+        Tags_ApeTag,    //2000
+        Tags_Xmp,       //2001
+        Tags_Max
+    };
+    void Merge_Tags(File__Analyze &ToAdd, tags_format Format); //General part only, merged when the parsing is finished: the tags of the container have priority, then the formats in the order above, a content which is not the same in 2 of them is a conformance error
+    struct tags_item
+    {
+        tags_format Format;
+        string Name;
+        string Options; //Of a parameter which is not in the list of the parameters of the stream kind
+        Ztring Value;
+        bool IsFilled=false; //The parameter of this parser is filled from this item
+    };
+    vector<tags_item> Tags_ToMerge;
+
     void CodecID_Fill           (const Ztring &Value, stream_t StreamKind, size_t StreamPos, infocodecid_format_t Format, stream_t StreamKind_CodecID=Stream_Max);
     void PixelAspectRatio_Fill  (const Ztring &Value, stream_t StreamKind, size_t StreamPos, size_t Parameter_Width, size_t Parameter_Height, size_t Parameter_PixelAspectRatio, size_t Parameter_DisplayAspectRatio);
     void DisplayAspectRatio_Fill(const Ztring &Value, stream_t StreamKind, size_t StreamPos, size_t Parameter_Width, size_t Parameter_Height, size_t Parameter_PixelAspectRatio, size_t Parameter_DisplayAspectRatio);
@@ -1383,6 +1407,7 @@ public :
     //***************************************************************************
 
     //End
+    void Streams_Finish_Tags();
     void Streams_Finish_Global();
 
 protected :

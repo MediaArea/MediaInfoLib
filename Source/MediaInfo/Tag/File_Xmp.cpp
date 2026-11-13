@@ -100,6 +100,9 @@ namespace MediaInfoLib
         if (Result > 0) { \
             return Result; \
         } \
+        if (Result < 0) { \
+            v.len = 0; /* Element without content, the previous value is not kept */ \
+        } \
 
 #define XML_ELEMENT_NAMESPACE(NAMESPACE) \
         } \
@@ -239,6 +242,7 @@ bool File_Xmp::FileHeader_Begin()
             XML_ATTRIBUTE_NAMESPACE(pdf)
             XML_ATTRIBUTE_NAMESPACE(photoshop)
             XML_ATTRIBUTE_NAMESPACE(xmp)
+            XML_ATTRIBUTE_NAMESPACE(Iptc4xmpCore)
             XML_ATTRIBUTE_NAMESPACE(Iptc4xmpExt)
             XML_ATTRIBUTE_END
             XML_ELEMENT_START
@@ -389,6 +393,7 @@ bool File_Xmp::FileHeader_Begin()
                 pdfaid_conformance = tfsxml_decode(v);
             XML_ELEMENT_NAMESPACE(photoshop)
             XML_ELEMENT_NAMESPACE(xmp)
+            XML_ELEMENT_NAMESPACE(Iptc4xmpCore)
             XML_ELEMENT_NAMESPACE(Iptc4xmpExt)
             XML_ELEMENT_END
         XML_ELEMENT_END
@@ -623,6 +628,14 @@ void File_Xmp::photoshop(const string& name, const string& value)
 {
     if (name == "photoshop:Credit")
         Fill(Stream_General, 0, General_Copyright, value);
+    if (name == "photoshop:Country")
+        Fill(Stream_General, 0, General_Country, value);
+    if (name == "photoshop:City")
+        Fill(Stream_General, 0, "City", value);
+    if (name == "photoshop:State")
+        Fill(Stream_General, 0, "State", value);
+    if (name == "photoshop:Headline")
+        Fill(Stream_General, 0, "Headline", value);
     if (name == "photoshop:DateCreated") {
         Ztring CreateDateT = Ztring().From_UTF8(value);
         if (CreateDateT > CreateDate) CreateDate = CreateDateT;
@@ -660,6 +673,13 @@ void File_Xmp::xmp(const string& name, const string& value)
         if (Stars > 0 && Stars <= 5)
             Fill_Rating(Stream_General, 0, Stars, Rating, 5);
     }
+}
+
+//---------------------------------------------------------------------------
+void File_Xmp::Iptc4xmpCore(const string& name, const string& value)
+{
+    if (name == "Iptc4xmpCore:Location")
+        Fill(Stream_General, 0, "Sublocation", value);
 }
 
 //---------------------------------------------------------------------------

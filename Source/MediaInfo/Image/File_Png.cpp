@@ -650,7 +650,7 @@ void File_Png::eXIf()
     Open_Buffer_Init(&MI);
     Open_Buffer_Continue(&MI);
     Open_Buffer_Finalize(&MI);
-    Merge(MI, Stream_General, 0, 0, false);
+    Merge_Tags(MI, Tags_Exif);
     Merge(MI, Stream_Image, 0, 0, false);
     size_t Count = MI.Count_Get(Stream_Image);
     for (size_t i = 1; i < Count; ++i) {
@@ -1094,7 +1094,7 @@ void File_Png::Textual(bitset8 Method)
             Open_Buffer_Continue(&MI, (const int8u*)Text_UTF8.c_str(), Text_UTF8.size());
             Open_Buffer_Finalize(&MI);
             Element_Show(); //Needed since element (including the previous trace) will be removed if sub parser has no trace output
-            Merge(MI, Stream_General, 0, 0, false);
+            Merge_Tags(MI, Tags_Xmp);
             Text.clear();
             #endif
         }
@@ -1181,16 +1181,19 @@ void File_Png::Decode_RawProfile(const char* in, size_t in_len, const string& ty
         Pos = 6;
 
     std::unique_ptr<File__Analyze> MI;
+    auto Format = Tags_Max;
 #if defined(MEDIAINFO_PSD_YES)
     if (type == "8bim" || (type == "iptc" && !data.compare(0, 4, "8bim", 4))) {
         auto Parser = new File_Psd;
         Parser->Step = File_Psd::Step_ImageResourcesBlock;
         MI.reset(Parser);
+        Format = Tags_Photoshop;
     }
 #endif //MEDIAINFO_PSD_YES
 #if defined(MEDIAINFO_EXIF_YES)
     if (type == "APP1" || type == "exif") {
         MI.reset(new File_Exif);
+        Format = Tags_Exif;
     }
 #endif //MEDIAINFO_EXIF_YES
 #if defined(MEDIAINFO_ICC_YES)
@@ -1201,11 +1204,13 @@ void File_Png::Decode_RawProfile(const char* in, size_t in_len, const string& ty
 #if defined(MEDIAINFO_IIM_YES)
     if (type == "iptc" && data.compare(0, 4, "8bim", 4)) {
         MI.reset(new File_Iim);
+        Format = Tags_Iim;
     }
 #endif //MEDIAINFO_IIM_YES
 #if defined(MEDIAINFO_XMP_YES)
     if (type == "xmp") {
         MI.reset(new File_Xmp);
+        Format = Tags_Xmp;
     }
 #endif //MEDIAINFO_ICC_YES
     if (!MI) {
@@ -1226,7 +1231,10 @@ void File_Png::Decode_RawProfile(const char* in, size_t in_len, const string& ty
     Open_Buffer_Init(MI.get());
     Open_Buffer_Continue(MI.get());
     Open_Buffer_Finalize(MI.get());
-    Merge(*MI, Stream_General, 0, 0, false);
+    if (Format == Tags_Max)
+        Merge(*MI, Stream_General, 0, 0, false);
+    else
+        Merge_Tags(*MI, Format);
     Merge(*MI, Stream_Image, 0, 0, false);
     size_t Count = MI->Count_Get(Stream_Image);
     for (size_t i = 1; i < Count; ++i) {

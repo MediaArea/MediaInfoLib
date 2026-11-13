@@ -7308,7 +7308,7 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
                     Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_BitRate_Encoded), StreamPos?0:(StreamSave[Pos].To_int64u()*2), 10, true);
                 else if (Pos==Fill_Parameter(StreamKind_Last, Generic_StreamSize) && (*Parser)->Count_Get(NewKind)>1 && (!StreamSave[Pos].empty() || StreamPos))
                     Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_StreamSize_Encoded), StreamPos?0:(StreamSave[Pos].To_int64u()*2), 10, true);
-                else if (Retrieve(StreamKind_Last, StreamPos_Last, Pos).empty())
+                else if (Pos!=General_StreamKindPos && Retrieve(StreamKind_Last, StreamPos_Last, Pos).empty()) //The position is the one of the new stream
                     Fill(StreamKind_Last, StreamPos_Last, Pos, StreamSave[Pos]);
             }
             for (size_t Pos=0; Pos<StreamMoreSave.size(); Pos++)

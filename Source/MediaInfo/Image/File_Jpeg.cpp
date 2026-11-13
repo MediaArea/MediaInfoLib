@@ -525,7 +525,7 @@ void File_Jpeg::Streams_Finish_PerImage()
     #if defined(MEDIAINFO_EXIF_YES)
     if (Exif_Parser) {
         if (CurrentMainStream == 0)
-            Merge(*Exif_Parser, Stream_General, 0, 0, false);
+            Merge_Tags(*Exif_Parser, Tags_Exif);
         Merge(*Exif_Parser, StreamKind, 0, CurrentMainStream);
         size_t Count = Exif_Parser->Count_Get(StreamKind);
         for (size_t i = 1; i < Count; ++i) {
@@ -540,7 +540,7 @@ void File_Jpeg::Streams_Finish_PerImage()
     #if defined(MEDIAINFO_PSD_YES)
     if (PSD_Parser) {
         if (CurrentMainStream == 0)
-            Merge(*PSD_Parser, Stream_General, 0, 0, false);
+            Merge_Tags(*PSD_Parser, Tags_Photoshop);
         Merge(*PSD_Parser, StreamKind, 0, CurrentMainStream);
         size_t Count = PSD_Parser->Count_Get(StreamKind);
         for (size_t i = 1; i < Count; ++i) {
@@ -561,7 +561,7 @@ void File_Jpeg::Streams_Finish_PerImage()
         if (Item.second.Parser) {
             Item.second.Parser->Finish();
             if (CurrentMainStream == 0) {
-                Merge(*Item.second.Parser, Stream_General, 0, 0);
+                Merge_Tags(*Item.second.Parser, Tags_Xmp);
                 Merge(*Item.second.Parser, false);
             }
         }
@@ -1903,7 +1903,7 @@ void File_Jpeg::APP1_XMP()
             ImgOffset += Entry.Padding;
         }
     }
-    Merge(MI, Stream_General, 0, 0, false);
+    Merge_Tags(MI, Tags_Xmp);
     if (MI.Count_Get(StreamKind))
         GainMap_Xmp_Parser.reset(MI_Pointer.release()); // Gain map metadata, merged in the image when it is finished
     #else

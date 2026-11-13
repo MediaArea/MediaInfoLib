@@ -35,6 +35,7 @@
 #include <cstdlib>
 #include <iomanip>
 #include <limits>
+#include <set>
 #include <type_traits>
 using namespace std;
 //---------------------------------------------------------------------------
@@ -442,30 +443,35 @@ bool DateTime_Adapt(string& Value_)
         Value.erase(10, 1);
 
     // Time
-    if (Value.size() <= 18)
+    if (Value.size() <= 15)
         return false;
     if (Value[11] < '0' || Value[11] > '9'
      || Value[12] < '0' || Value[12] > '9'
      || Value[13] != ':'
      || Value[14] < '0' || Value[14] > '9'
-     || Value[15] < '0' || Value[15] > '9'
-     || Value[16] != ':'
-     || Value[17] < '0' || Value[17] > '9'
-     || Value[18] < '0' || Value[18] > '9')
+     || Value[15] < '0' || Value[15] > '9')
         return false;
-    if (Value.size() == 19)
-        return DateTime_Adapt_Finalize(Value_, Value, IsUtc);
-
-    // Fraction
-    size_t i = 19;
-    if (Value[i] == '.')
-    {
-        i++;
-        while (i < Value.size() && Value[i] >= '0' && Value[i] <= '9')
-            i++;
-    }
+    size_t i = 16;
     if (Value.size() == i)
         return DateTime_Adapt_Finalize(Value_, Value, IsUtc);
+
+    // Seconds and fraction, if any
+    if (Value[i] == ':')
+    {
+        if (Value.size() <= 18
+         || Value[17] < '0' || Value[17] > '9'
+         || Value[18] < '0' || Value[18] > '9')
+            return false;
+        i = 19;
+        if (Value.size() > i && Value[i] == '.')
+        {
+            i++;
+            while (i < Value.size() && Value[i] >= '0' && Value[i] <= '9')
+                i++;
+        }
+        if (Value.size() == i)
+            return DateTime_Adapt_Finalize(Value_, Value, IsUtc);
+    }
 
     // Time zone
     if (Value[i] == 'Z')
@@ -5330,6 +5336,287 @@ void File__Analyze::Audio_BitRate_Rounding(size_t Pos, audio Parameter)
 }
 
 //---------------------------------------------------------------------------
+static const char* const Tags_Format_Names[]=
+{
+    "IPTC",
+    "Photoshop",
+    "Exif",
+    "ID3v2",
+    "ID3v1",
+    "Lyrics3",
+    "APE",
+    "XMP",
+};
+static_assert(sizeof(Tags_Format_Names)/sizeof(*Tags_Format_Names)==File__Analyze::Tags_Max, "");
+
+//---------------------------------------------------------------------------
+static Ztring Tags_Genre(const Ztring& Value)
+{
+    //Name of a genre given as a number of the ID3v1 list
+    if (Value.empty() || Value.size()>=4 || Value[0]<__T('0') || Value[0]>__T('9'))
+        return Value;
+    Ztring Name(__T("Genre_"));
+    Name.append(3-Value.size(), __T('0'));
+    Name+=Value;
+    return MediaInfoLib::Config.Language_Get(Name);
+}
+
+//---------------------------------------------------------------------------
+static Ztring Tags_Comparable(const string& Name, const Ztring& Value)
+{
+    //Same content in another form: name of the genre, number without leading zeros, list of values in another order
+    if (Name=="Genre")
+        return Tags_Genre(Value);
+    size_t Zeros=0;
+    while (Zeros+1<Value.size() && Value[Zeros]==__T('0'))
+        Zeros++;
+    if (Zeros && Value.find_first_not_of(__T("0123456789"))==string::npos)
+        return Value.substr(Zeros);
+    if (Value.find(__T(" / "))!=string::npos)
+    {
+        ZtringList List;
+        List.Separator_Set(0, __T(" / "));
+        List.Write(Value);
+        sort(List.begin(), List.end());
+        return List.Read();
+    }
+    return Value;
+}
+
+//---------------------------------------------------------------------------
+static size_t Tags_Size_Max(File__Analyze::tags_format Format, const string& Name)
+{
+    //Size from which a content may be cut by the format, 0 if there is no such limit: in characters for ID3v1,
+    //in bytes for IPTC (3 bytes less than the size of the data set, a character of several bytes may not fit)
+    switch (Format)
+    {
+        case File__Analyze::Tags_Id3v1 :
+            return 28;
+        case File__Analyze::Tags_Iim :
+            if (Name=="Producer" || Name=="City" || Name=="Sublocation" || Name=="State")
+                return 29;
+            if (Name=="Title" || Name=="Country")
+                return 61;
+            if (Name=="Headline")
+                return 253;
+            if (Name=="Description")
+                return 1997;
+            return 0;
+        default :
+            return 0;
+    }
+}
+
+//---------------------------------------------------------------------------
+static bool Tags_Date_Utc(const string& Date, int64s& Seconds, string& Fraction)
+{
+    //"YYYY-MM-DD hh:mm", seconds and fraction of second if any, then " UTC" or an offset as "+hh:mm"
+    static const char Mask[]="dddd-dd-dd dd:dd";
+    if (Date.size()<sizeof(Mask))
+        return false;
+    for (size_t Pos=0; Pos<sizeof(Mask)-1; Pos++)
+        if (Mask[Pos]=='d'?(Date[Pos]<'0' || Date[Pos]>'9'):(Date[Pos]!=Mask[Pos]))
+            return false;
+    const auto Number=[&Date](size_t Pos) { return (int64s)(Date[Pos]-'0')*10+(Date[Pos+1]-'0'); };
+    const int64s Month=Number(5);
+    const int64s Year=Number(0)*100+Number(2)-(Month<=2);
+    const int64s Era=(Year>=0?Year:Year-399)/400;
+    const int64s YearOfEra=Year-Era*400;
+    const int64s Days=Era*146097+YearOfEra*365+YearOfEra/4-YearOfEra/100+(153*(Month+(Month>2?-3:9))+2)/5+Number(8); //In the Gregorian calendar, the day 0 does not matter
+    Seconds=((Days*24+Number(11))*60+Number(14))*60;
+
+    size_t Pos=sizeof(Mask)-1;
+    Fraction.clear();
+    if (Date[Pos]==':' && Date.find_first_not_of("0123456789", Pos+1)==Pos+3)
+    {
+        Seconds+=Number(Pos+1);
+        Pos+=3;
+        if (Date[Pos]=='.')
+        {
+            const size_t End=min(Date.find_first_not_of("0123456789", Pos+1), Date.size());
+            Fraction.assign(Date, Pos+1, End-Pos-1);
+            Pos=End;
+        }
+    }
+    if (!Date.compare(Pos, string::npos, " UTC"))
+        return true;
+    if (Date.size()!=Pos+6 || (Date[Pos]!='+' && Date[Pos]!='-') || Date[Pos+3]!=':' || Date.find_first_not_of("0123456789", Pos+1)!=Pos+3 || Date.find_first_not_of("0123456789", Pos+4)!=string::npos)
+        return false;
+    const int64s Offset=(Number(Pos+1)*60+Number(Pos+4))*60;
+    Seconds+=Date[Pos]=='+'?-Offset:Offset;
+    return true;
+}
+
+//---------------------------------------------------------------------------
+void File__Analyze::Merge_Tags(File__Analyze &ToAdd, tags_format Format)
+{
+    ToAdd.Streams_Finish_Tags(); //Tags in these tags, not yet merged if their parser is not finished
+    if (!ToAdd.Count_Get(Stream_General))
+        return;
+
+    const auto Add=[this](const tags_item& Item, size_t Size)
+    {
+        //Several blocks in the same format: the first one has priority
+        for (size_t Pos=0; Pos<Size; Pos++)
+            if (Tags_ToMerge[Pos].Format==Item.Format && Tags_ToMerge[Pos].Name==Item.Name)
+                return;
+        Tags_ToMerge.push_back(Item);
+        Tags_ToMerge.back().IsFilled=false;
+    };
+
+    //Content of these tags, without the content from tags in these tags
+    set<string> FromTags;
+    for (const tags_item& Item : ToAdd.Tags_ToMerge)
+        if (Item.IsFilled)
+            FromTags.insert(Item.Name);
+    const size_t Items_Size=Tags_ToMerge.size();
+    const size_t Size=ToAdd.Count_Get(Stream_General, 0);
+    const size_t Size_NotExtra=MediaInfoLib::Config.Info_Get(Stream_General).size();
+    for (size_t Pos=General_Format+1; Pos<Size; Pos++)
+    {
+        const Ztring& Value=ToAdd.Get(Stream_General, 0, Pos);
+        if (Value.empty())
+            continue;
+        tags_item Item;
+        Item.Format=Format;
+        Item.Name=ToAdd.Get(Stream_General, 0, Pos, Info_Name).To_UTF8();
+        if (FromTags.find(Item.Name)!=FromTags.end())
+            continue;
+        if (Pos>=Size_NotExtra)
+            Item.Options=ToAdd.Get(Stream_General, 0, Pos, Info_Options).To_UTF8();
+        Item.Value=Value;
+        Add(Item, Items_Size);
+    }
+
+    //Tags in these tags, in their own format
+    const size_t Items_Size_WithContent=Tags_ToMerge.size();
+    for (const tags_item& Item : ToAdd.Tags_ToMerge)
+        Add(Item, Item.Format==Format?Items_Size_WithContent:Items_Size);
+}
+
+//---------------------------------------------------------------------------
+void File__Analyze::Streams_Finish_Tags()
+{
+    if (Tags_ToMerge.empty())
+        return;
+    if (!Count_Get(Stream_General))
+        Stream_Prepare(Stream_General);
+
+    auto Quoted=[](const Ztring& Value)
+    {
+        string Text=Value.To_UTF8();
+        if (Text.size()>64)
+        {
+            size_t Size=61;
+            while (Size && (Text[Size]&0xC0)==0x80)
+                Size--; //Not in the middle of a character
+            Text.resize(Size);
+            Text+="...";
+        }
+        return '"'+Text+'"';
+    };
+
+    static const size_t Titles[]={General_Title, General_Title_More, General_Title_Url, General_Movie, General_Movie_More, General_Movie_Url, General_Movie_Country, General_Track, General_Track_More, General_Track_Url};
+    const size_t Titles_Size=sizeof(Titles)/sizeof(*Titles);
+    map<string, tags_format> Sources; //Format a parameter is filled from, a parameter which is not there is filled from the container
+    const auto File_Offset_Save=File_Offset;
+    File_Offset=(int64u)-1-(Buffer_Offset+Element_Offset); //The conformance errors are about several parts of the file, no offset is provided
+    for (size_t Format=0; Format<Tags_Max; Format++)
+    {
+        if (!IsSub)
+        {
+            //A title may be the name of a track or of a movie, it is then from the same tags
+            bool WasEmpty[Titles_Size];
+            for (size_t Pos=0; Pos<Titles_Size; Pos++)
+                WasEmpty[Pos]=Retrieve_Const(Stream_General, 0, Titles[Pos]).empty();
+            Tags();
+            for (size_t Pos=0; Format && Pos<Titles_Size; Pos++)
+                if (WasEmpty[Pos] && !Retrieve_Const(Stream_General, 0, Titles[Pos]).empty())
+                    Sources[MediaInfoLib::Config.Info_Get(Stream_General, Titles[Pos], Info_Name).To_UTF8()]=(tags_format)(Format-1);
+        }
+        for (tags_item& Item : Tags_ToMerge)
+        {
+            if (Item.Format!=Format)
+                continue;
+            const char* Name=Item.Name.c_str();
+
+            //A parameter about another parameter (e.g. "Rating/5Stars" about "Rating") is from the same tags as this other parameter
+            if (!Item.Options.empty())
+            {
+                const size_t Separator=Item.Name.rfind('/');
+                if (Separator!=string::npos)
+                {
+                    const string Parent=Item.Name.substr(0, Separator);
+                    const auto Parent_Source=Sources.find(Parent);
+                    if (!Retrieve_Const(Stream_General, 0, Parent.c_str()).empty() && (Parent_Source==Sources.end() || Parent_Source->second!=Format))
+                        continue;
+                }
+            }
+
+            const Ztring Current=Retrieve_Const(Stream_General, 0, Name);
+            if (Current.empty())
+            {
+                Fill(Stream_General, 0, Name, Item.Value);
+                if (!Item.Options.empty())
+                    Fill_SetOptions(Stream_General, 0, Name, Item.Options.c_str());
+                Sources[Item.Name]=Item.Format;
+                Item.IsFilled=true;
+                continue;
+            }
+            if (Current==Item.Value || Tags_Comparable(Item.Name, Current)==Tags_Comparable(Item.Name, Item.Value))
+                continue;
+
+            //A content which is the start of the other one is the same content for a date (it has less details) and for a field with a maximal size in its format (ID3v1, IPTC), the longer content is then used
+            const auto Source=Sources.find(Item.Name);
+            const bool Current_IsShort=Current.size()<Item.Value.size();
+            const Ztring& Short=Current_IsShort?Current:Item.Value;
+            const Ztring& Long=Current_IsShort?Item.Value:Current;
+            const bool IsDate=Item.Name.size()>5 && !Item.Name.compare(Item.Name.size()-5, 5, "_Date");
+            if (IsDate)
+            {
+                //Same instant in another time zone
+                int64s Seconds_Current, Seconds_Item;
+                string Fraction_Current, Fraction_Item;
+                if (Tags_Date_Utc(Current.To_UTF8(), Seconds_Current, Fraction_Current) && Tags_Date_Utc(Item.Value.To_UTF8(), Seconds_Item, Fraction_Item)
+                 && Seconds_Current==Seconds_Item && (Fraction_Current.empty() || Fraction_Item.empty() || Fraction_Current==Fraction_Item))
+                    continue;
+            }
+            if (!Long.compare(0, Short.size(), Short))
+            {
+                if (IsDate && (Long[Short.size()]<__T('0') || Long[Short.size()]>__T('9')))
+                    continue;
+                const tags_format Short_Format=Current_IsShort?(Source==Sources.end()?Tags_Max:Source->second):(tags_format)Format;
+                const size_t Size_Max=Tags_Size_Max(Short_Format, Item.Name);
+                if (Size_Max && (Short_Format==Tags_Iim?Short.To_UTF8().size():Short.size())>=Size_Max)
+                {
+                    if (Current_IsShort)
+                    {
+                        Fill(Stream_General, 0, Name, Item.Value, true);
+                        Sources[Item.Name]=Item.Format;
+                        Item.IsFilled=true;
+                    }
+                    continue;
+                }
+            }
+
+            //Not the same content, which is expected for the tool: each part of the file may be written by another one
+            if (!Item.Name.compare(0, 19, "Encoded_Application") || !Item.Name.compare(0, 15, "Encoded_Library"))
+                continue;
+            if (IsSub)
+                continue; //Compared by the parser these tags are given to
+            const string Format_Name=Tags_Format_Names[Format];
+            string Other=Source==Sources.end()?Retrieve_Const(Stream_General, 0, General_Format).To_UTF8():string(Tags_Format_Names[Source->second]);
+            if (!Other.empty())
+                Other+=' ';
+            Fill_Conformance(("Crosscheck "+BuildConformanceName(Format_Name, nullptr, Name)).c_str(), Format_Name+' '+Item.Name+' '+Quoted(Item.Value)+" does not match "+Other+Item.Name+' '+Quoted(Current));
+        }
+    }
+    File_Offset=File_Offset_Save;
+    if (!IsSub)
+        Tags_ToMerge.clear(); //Else they are also for the parser the tags of this parser are given to, in their own format
+}
+
+//---------------------------------------------------------------------------
 void File__Analyze::Tags()
 {
     //Integrity
@@ -5379,14 +5666,9 @@ void File__Analyze::Tags()
         Fill(Stream_General, 0, General_Title_Url, Retrieve(Stream_General, 0, General_Track_Url));
 
     //-Genre
-    if (!Retrieve(Stream_General, 0, General_Genre).empty() && Retrieve(Stream_General, 0, General_Genre).size()<4 && Retrieve(Stream_General, 0, General_Genre)[0]>=__T('0') && Retrieve(Stream_General, 0, General_Genre)[0]<=__T('9'))
-    {
-        Ztring Genre;
-        if (Retrieve(Stream_General, 0, General_Genre).size()==1) Genre=Ztring(__T("Genre_00"))+Retrieve(Stream_General, 0, General_Genre);
-        if (Retrieve(Stream_General, 0, General_Genre).size()==2) Genre=Ztring(__T("Genre_0" ))+Retrieve(Stream_General, 0, General_Genre);
-        if (Retrieve(Stream_General, 0, General_Genre).size()==3) Genre=Ztring(__T("Genre_"  ))+Retrieve(Stream_General, 0, General_Genre);
-        Fill(Stream_General, 0, "Genre", MediaInfoLib::Config.Language_Get(Genre), true);
-    }
+    const Ztring Genre=Tags_Genre(Retrieve_Const(Stream_General, 0, General_Genre));
+    if (Genre!=Retrieve_Const(Stream_General, 0, General_Genre))
+        Fill(Stream_General, 0, General_Genre, Genre, true);
 }
 
 //***************************************************************************
