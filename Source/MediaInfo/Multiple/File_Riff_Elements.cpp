@@ -46,12 +46,16 @@ namespace MediaInfoLib
 std::string ExtensibleWave_ChannelMask (int32u ChannelMask)
 {
     std::string Text;
-    if ((ChannelMask&0x0007)!=0x0000)
+    if ((ChannelMask&0x00C7)!=0x0000)
         Text+="Front:";
     if (ChannelMask&0x0001)
         Text+=" L";
+    if (ChannelMask&0x0040)
+        Text+=" Lc";
     if (ChannelMask&0x0004)
         Text+=" C";
+    if (ChannelMask&0x0080)
+        Text+=" Rc";
     if (ChannelMask&0x0002)
         Text+=" R";
 
@@ -71,45 +75,58 @@ std::string ExtensibleWave_ChannelMask (int32u ChannelMask)
     if (ChannelMask&0x0020)
         Text+=" R";
 
+    if ((ChannelMask&0x7000)!=0x0000)
+        Text+=", High:";
+    if (ChannelMask&0x1000)
+        Text+=" L";
+    if (ChannelMask&0x2000)
+        Text+=" C";
+    if (ChannelMask&0x4000)
+        Text+=" R";
+
+    if ((ChannelMask&0x0800)!=0x0000)
+        Text+=", TopCtrSrrd";
+
+    if ((ChannelMask&0x38000)!=0x0000)
+        Text+=", HiRear:";
+    if (ChannelMask&0x08000)
+        Text+=" L";
+    if (ChannelMask&0x10000)
+        Text+=" C";
+    if (ChannelMask&0x20000)
+        Text+=" R";
+
     if ((ChannelMask&0x0008)!=0x0000)
         Text+=", LFE";
 
+    if (Text.find(", ")==0)
+        Text.erase(0, 2); //No front channel
     return Text;
+}
+
+//---------------------------------------------------------------------------
+static int8u ExtensibleWave_ChannelCount (int32u ChannelMask)
+{
+    int8u Count=0;
+    for (; ChannelMask; ChannelMask&=ChannelMask-1)
+        Count++;
+    return Count;
 }
 
 //---------------------------------------------------------------------------
 std::string ExtensibleWave_ChannelMask2 (int32u ChannelMask)
 {
-    std::string Text;
-    int8u Count=0;
-    if (ChannelMask&0x0001)
-        Count++;
-    if (ChannelMask&0x0004)
-        Count++;
-    if (ChannelMask&0x0002)
-        Count++;
-    Text+=Ztring::ToZtring(Count).To_UTF8();
-    Count=0;
+    int8u Front=ExtensibleWave_ChannelCount(ChannelMask&0x000C7);
+    int8u Side=ExtensibleWave_ChannelCount(ChannelMask&0x00600);
+    int8u Back=ExtensibleWave_ChannelCount(ChannelMask&0x00130);
+    int8u LFE=ExtensibleWave_ChannelCount(ChannelMask&0x00008);
+    int8u Height=ExtensibleWave_ChannelCount(ChannelMask&0x3F800); //Top channels
 
-    if (ChannelMask&0x0200)
-        Count++;
-    if (ChannelMask&0x0400)
-        Count++;
-    Text+="/"+Ztring::ToZtring(Count).To_UTF8();
-    Count=0;
-
-    if (ChannelMask&0x0010)
-        Count++;
-    if (ChannelMask&0x0100)
-        Count++;
-    if (ChannelMask&0x0020)
-        Count++;
-    Text+="/"+Ztring::ToZtring(Count).To_UTF8();
-    Count=0;
-
-    if (ChannelMask&0x0008)
-        Text+=".1";
-
+    std::string Text=std::to_string(Front)+'/'+std::to_string(Side)+'/'+std::to_string(Back);
+    if (LFE || Height)
+        Text+='.'+std::to_string(LFE);
+    if (Height)
+        Text+='.'+std::to_string(Height);
     return Text;
 }
 

@@ -106,6 +106,8 @@ static const char* Wvpk_id(int8u ID)
 }
 
 //---------------------------------------------------------------------------
+extern std::string ExtensibleWave_ChannelMask (int32u ChannelMask); //In Multiple/File_Riff_Elements.cpp
+extern std::string ExtensibleWave_ChannelMask2 (int32u ChannelMask); //In Multiple/File_Riff_Elements.cpp
 extern std::string ExtensibleWave_ChannelMask_ChannelLayout(int32u ChannelMask); //In Multiple/File_Riff_Elements.cpp
                                                                                  
 //***************************************************************************
@@ -499,92 +501,8 @@ void File_Wvpk::Data_Parse_Fill()
     Fill(Stream_Audio, StreamPos_Last, Audio_Channel_s_, num_channels?num_channels:(mono?1:2));
     if (channel_mask)
     {
-        Ztring Channels_Positions, Channels_Positions2;
-        if (channel_mask&0x00C7)
-        {
-            int8u Count=0;
-            Channels_Positions+=__T("Front:");
-            if (channel_mask&0x0001)
-            {
-                Channels_Positions+=__T(" L");
-                Count++;
-            }
-            if (channel_mask&0x0004)
-            {
-                Channels_Positions+=__T(" C");
-                Count++;
-            }
-            if (channel_mask&0x0040)
-            {
-                Channels_Positions+=__T(" C");
-                Count++;
-            }
-            if (channel_mask&0x0080)
-            {
-                Channels_Positions+=__T(" C");
-                Count++;
-            }
-            if (channel_mask&0x0002)
-            {
-                Channels_Positions+=__T(" R");
-                Count++;
-            }
-            Channels_Positions2+=Ztring::ToZtring(Count);
-        }
-        if (channel_mask&0x0600)
-        {
-            int8u Count=0;
-            if (!Channels_Positions.empty())
-                Channels_Positions+=__T(", ");
-            Channels_Positions+=__T("Side:");
-            if (channel_mask&0x0200)
-            {
-                Channels_Positions+=__T(" L");
-                Count++;
-            }
-            if (channel_mask&0x0400)
-            {
-                Channels_Positions+=__T(" R");
-                Count++;
-            }
-            Channels_Positions2+=__T('.')+Ztring::ToZtring(Count);
-        }
-        else
-            Channels_Positions2+=__T("/0");
-        if (channel_mask&0x0130)
-        {
-            int8u Count=0;
-            if (!Channels_Positions.empty())
-                Channels_Positions+=__T(", ");
-            Channels_Positions+=__T("Back:");
-            if (channel_mask&0x0010)
-            {
-                Channels_Positions+=__T(" L");
-                Count++;
-            }
-            if (channel_mask&0x0100)
-            {
-                Channels_Positions+=__T(" C");
-                Count++;
-            }
-            if (channel_mask&0x0020)
-            {
-                Channels_Positions+=__T(" R");
-                Count++;
-            }
-            Channels_Positions2+=__T('/')+Ztring::ToZtring(Count);
-        }
-        else
-            Channels_Positions2+=__T("/0");
-        if (channel_mask&0x0008)
-        {
-            if (!Channels_Positions.empty())
-                Channels_Positions+=__T(", ");
-            Channels_Positions+=__T("LFE");
-            Channels_Positions2+=__T(".1");
-        }
-        Fill(Stream_Audio, 0, Audio_ChannelPositions, Channels_Positions);
-        Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, Channels_Positions2);
+        Fill(Stream_Audio, 0, Audio_ChannelPositions, ExtensibleWave_ChannelMask(channel_mask));
+        Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, ExtensibleWave_ChannelMask2(channel_mask));
         Fill(Stream_Audio, 0, Audio_ChannelLayout, ExtensibleWave_ChannelMask_ChannelLayout(channel_mask));
     }
 
