@@ -842,7 +842,8 @@ Ztring AC3_TrueHD_Channels_Positions2(int16u ChannelsMap, bool Bit11=false)
     Text+=Ztring::ToZtring(Front);
     Text+=__T('/')+Ztring::ToZtring(Side);
     Text+=__T('/')+Ztring::ToZtring(Back);
-    Text+=__T('.')+Ztring::ToZtring(LFE);
+    if (LFE || Height)
+        Text+=__T('.')+Ztring::ToZtring(LFE);
     if (Height)
         Text+=__T('.')+Ztring::ToZtring(Height);
     return Text;
@@ -946,6 +947,14 @@ static const char* AC3_TrueHD_ExtendedSubstreamInfoNum(int8u extended_substream_
     case 0b11: return "0 + 1 + 2 + 3";
     default: return "";
     }
+}
+
+//---------------------------------------------------------------------------
+// Presentation with the illegal value 0 or declared as a copy of another one (index of the 2-ch, 6-ch, 8-ch and 16-ch presentations: 0 to 3)
+static bool AC3_TrueHD_Presentation_IsHidden(size_t Index, int8u presentation)
+{
+    return (Index==1 && presentation<=0b01) // 6-ch presentation: illegal, copy of the 2-ch one
+        || (Index==2 && presentation<=0b011); // 8-ch presentation: illegal, copy of the 2-ch or 6-ch one
 }
 
 //---------------------------------------------------------------------------
@@ -1304,7 +1313,11 @@ void File_Ac3::Streams_Fill()
                 Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, AC3_TrueHD_Channels_Positions2(HD_Channels2, HD_flags&(1<<11)));
                 Fill(Stream_Audio, 0, Audio_ChannelLayout, AC3_TrueHD_Channels_ChannelLayout(HD_Channels2, HD_flags&(1<<11)));
             }
-            Fill(Stream_Audio, 0, "NumberOfPresentations", HD_HasAtmos ? 4 : 3);
+            int8u NumberOfPresentations=0;
+            for (size_t p=0; p<(size_t)(p_max-!HD_HasAtmos); p++)
+                if (!AC3_TrueHD_Presentation_IsHidden(p, presentations[p].presentation))
+                    NumberOfPresentations++;
+            Fill(Stream_Audio, 0, "NumberOfPresentations", NumberOfPresentations);
             Fill(Stream_Audio, 0, "NumberOfSubstreams", HD_Best_SubStreams_Count?HD_Best_SubStreams_Count:HD_SubStreams_Count);
         }
 
@@ -1472,9 +1485,12 @@ void File_Ac3::Streams_Fill()
 
     //TrueHD presentations
     if (HD_MajorSync_Parsed && HD_StreamType == 0xBA) {
-        for (int p = 0; p < p_max - !HD_HasAtmos; ++p) {
+        size_t Pos = 0;
+        for (int p = p_max - 1 - !HD_HasAtmos; p >= 0; --p) { //From the most complete presentation
             const Presentation& Presentation_Current = presentations[p];
-            string P = Ztring(__T("Presentation") + Ztring::ToZtring(p)).To_UTF8();
+            if (AC3_TrueHD_Presentation_IsHidden(p, Presentation_Current.presentation))
+                continue; //Illegal or same audio as another presentation
+            string P = Ztring(__T("Presentation") + Ztring::ToZtring(Pos++)).To_UTF8();
             if (p == p_16ch) {
                 Fill(Stream_Audio, 0, P.c_str(), "16-ch presentation");
                 Fill(Stream_Audio, 0, (P + " LinkedTo_Substream_Pos").c_str(), AC3_TrueHD_ExtendedSubstreamInfoNum(Presentation_Current.presentation));
@@ -1504,14 +1520,14 @@ void File_Ac3::Streams_Fill()
                     Fill(Stream_Audio, 0, (P + " Format_Settings_Mode").c_str(), "Dolby Pro Logic IIz");
             }
             Fill(Stream_Audio, 0, (P + " control_enabled").c_str(), Presentation_Current.control_enabled ? "Yes" : "No");
-            Fill(Stream_Audio, 0, (P + " dialogue_norm").c_str(), Presentation_Current.dialogue_norm == 0 ? -31 : -Presentation_Current.dialogue_norm);
-            Fill_SetOptions(Stream_Audio, 0, (P + " dialogue_norm").c_str(), "N NT");
-            Fill(Stream_Audio, 0, (P + " dialogue_norm/String").c_str(), Ztring::ToZtring(Presentation_Current.dialogue_norm == 0 ? -31 : -Presentation_Current.dialogue_norm) + __T(" LKFS"));
-            Fill_SetOptions(Stream_Audio, 0, (P + " dialogue_norm/String").c_str(), "Y NTN");
-            Fill(Stream_Audio, 0, (P + " mix_level").c_str(), 70 + Presentation_Current.mix_level);
-            Fill_SetOptions(Stream_Audio, 0, (P + " mix_level").c_str(), "N NT");
-            Fill(Stream_Audio, 0, (P + " mix_level/String").c_str(), Ztring::ToZtring(70 + Presentation_Current.mix_level) + __T(" dB"));
-            Fill_SetOptions(Stream_Audio, 0, (P + " mix_level/String").c_str(), "Y NTN");
+            Fill(Stream_Audio, 0, (P + " dialnorm").c_str(), Presentation_Current.dialogue_norm == 0 ? -31 : -Presentation_Current.dialogue_norm);
+            Fill_SetOptions(Stream_Audio, 0, (P + " dialnorm").c_str(), "N NT");
+            Fill(Stream_Audio, 0, (P + " dialnorm/String").c_str(), Ztring::ToZtring(Presentation_Current.dialogue_norm == 0 ? -31 : -Presentation_Current.dialogue_norm) + __T(" dB"));
+            Fill_SetOptions(Stream_Audio, 0, (P + " dialnorm/String").c_str(), "Y NTN");
+            Fill(Stream_Audio, 0, (P + " mixlevel").c_str(), 70 + Presentation_Current.mix_level);
+            Fill_SetOptions(Stream_Audio, 0, (P + " mixlevel").c_str(), "N NT");
+            Fill(Stream_Audio, 0, (P + " mixlevel/String").c_str(), Ztring::ToZtring(70 + Presentation_Current.mix_level) + __T(" dB"));
+            Fill_SetOptions(Stream_Audio, 0, (P + " mixlevel/String").c_str(), "Y NTN");
         }
     }
 
@@ -5249,12 +5265,12 @@ void File_Ac3::HD()
                 Get_SB (  presentations[p_8ch].control_enabled, "8ch_control_enabled");
                 Skip_S1( 1,                                     "reserved");
                 Skip_S1( 7,                                     "drc_start_up_gain");
-                Get_S1 ( 6, presentations[p_2ch].dialogue_norm, "2ch_dialogue_norm"); Param_Info2(presentations[p_2ch].dialogue_norm == 0 ? -31 : -presentations[p_2ch].dialogue_norm, " LKFS");
+                Get_S1 ( 6, presentations[p_2ch].dialogue_norm, "2ch_dialogue_norm"); Param_Info2(presentations[p_2ch].dialogue_norm == 0 ? -31 : -presentations[p_2ch].dialogue_norm, " dB");
                 Get_S1 ( 6, presentations[p_2ch].mix_level,     "2ch_mix_level");     Param_Info2(70 + presentations[p_2ch].mix_level, " dB");
-                Get_S1 ( 5, presentations[p_6ch].dialogue_norm, "6ch_dialogue_norm"); Param_Info2(presentations[p_6ch].dialogue_norm == 0 ? -31 : -presentations[p_6ch].dialogue_norm, " LKFS");
+                Get_S1 ( 5, presentations[p_6ch].dialogue_norm, "6ch_dialogue_norm"); Param_Info2(presentations[p_6ch].dialogue_norm == 0 ? -31 : -presentations[p_6ch].dialogue_norm, " dB");
                 Get_S1 ( 6, presentations[p_6ch].mix_level,     "6ch_mix_level");     Param_Info2(70 + presentations[p_6ch].mix_level, " dB");
                 Skip_S1( 5,                                     "6ch_source_format");
-                Get_S1 ( 5, presentations[p_8ch].dialogue_norm, "8ch_dialogue_norm"); Param_Info2(presentations[p_8ch].dialogue_norm == 0 ? -31 : -presentations[p_8ch].dialogue_norm, " LKFS");
+                Get_S1 ( 5, presentations[p_8ch].dialogue_norm, "8ch_dialogue_norm"); Param_Info2(presentations[p_8ch].dialogue_norm == 0 ? -31 : -presentations[p_8ch].dialogue_norm, " dB");
                 Get_S1 ( 6, presentations[p_8ch].mix_level,     "8ch_mix_level");     Param_Info2(70 + presentations[p_8ch].mix_level, " dB");
                 Skip_S1( 6,                                     "8ch_source_format");
                 Skip_S1( 1,                                     "reserved");
@@ -5273,7 +5289,7 @@ void File_Ac3::HD()
                     if (HD_HasAtmos)
                     {
                         Element_Begin1("16ch_channel_meaning");
-                        Get_S1 (5, presentations[p_16ch].dialogue_norm, "16ch_dialogue_norm");  Param_Info2(presentations[p_16ch].dialogue_norm == 0 ? -31 : -presentations[p_16ch].dialogue_norm, " LKFS");
+                        Get_S1 (5, presentations[p_16ch].dialogue_norm, "16ch_dialogue_norm");  Param_Info2(presentations[p_16ch].dialogue_norm == 0 ? -31 : -presentations[p_16ch].dialogue_norm, " dB");
                         Get_S1 (6, presentations[p_16ch].mix_level,     "16ch_mix_level");      Param_Info2(70 + presentations[p_16ch].mix_level, " dB");
                         Get_S1 (5, num_dynamic_objects,                 "16ch_channel_count");
                         num_dynamic_objects++;                                                  Param_Info2(num_dynamic_objects, " channels");

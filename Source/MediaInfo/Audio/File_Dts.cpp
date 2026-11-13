@@ -232,8 +232,9 @@ static int8u DtsX_SpeakerCount(int32u Mask)
     return Count;
 }
 
-static int8u DtsX_AddedSpeakerCount(const int8u* Buffer, size_t Size, size_t Offset, int32u FallbackReferenceMask)
+static int8u DtsX_AddedSpeakerCount(const int8u* Buffer, size_t Size, size_t Offset, int32u FallbackReferenceMask, int32u& AddedMask)
 {
+    AddedMask=0;
     if (Offset>=Size)
         return 0;
     dtsx_bit_reader Source(Buffer+Offset, Size-Offset);
@@ -299,7 +300,10 @@ static int8u DtsX_AddedSpeakerCount(const int8u* Buffer, size_t Size, size_t Off
             if ((UpdateMask&((int32u)1<<Reference)) && Source.Get(6)>61)
                 return 0;
     }
-    return Source.Valid()?AddedCount:0;
+    if (!Source.Valid())
+        return 0;
+    AddedMask=OutputMask&~ReferenceMask;
+    return AddedCount;
 }
 
 static bool DtsX_ExssHeader(const int8u* Buffer, size_t Size, dtsx_exss_probe& Header, dts_exss_static& Static)
@@ -761,7 +765,7 @@ static bool DtsX_ExtensionProbe(const int8u* Buffer, size_t Size, int8u& ObjectC
     return HasValidatedEvidence;
 }
 
-static int8u DtsX_ObjectCount(const int8u* Buffer, size_t Size, int8u& SupplementalChannelCount, dts_exss_static& Static)
+static int8u DtsX_ObjectCount(const int8u* Buffer, size_t Size, int8u& SupplementalChannelCount, int32u& SupplementalMask, dts_exss_static& Static)
 {
     dtsx_exss_probe Exss;
     if (!DtsX_ExssHeader(Buffer, Size, Exss, Static))
@@ -824,7 +828,8 @@ static int8u DtsX_ObjectCount(const int8u* Buffer, size_t Size, int8u& Supplemen
             ElementOffset+=2+ElementSize;
         }
         size_t AssociatedOffset=MetadataOffset+MetadataSize;
-        int8u AddedSpeakerCount=DtsX_AddedSpeakerCount(Buffer, Size, MetadataOffset, Asset.SpeakerActivityMask);
+        int32u AddedSpeakerMask;
+        int8u AddedSpeakerCount=DtsX_AddedSpeakerCount(Buffer, Size, MetadataOffset, Asset.SpeakerActivityMask, AddedSpeakerMask);
         for (size_t i=0; i<Asset.AssociatedChunkTypes.size() && i<Asset.AssociatedChunkExtents.size(); ++i)
         {
             size_t Extent=Asset.AssociatedChunkExtents[i];
@@ -836,6 +841,7 @@ static int8u DtsX_ObjectCount(const int8u* Buffer, size_t Size, int8u& Supplemen
                     if (DtsX_FourChannelSetHeader(Buffer, ChunkEnd, Candidate))
                     {
                         SupplementalChannelCount=max(SupplementalChannelCount, (int8u)4);
+                        SupplementalMask|=AddedSpeakerMask;
                         break;
                     }
             AssociatedOffset=ChunkEnd;
@@ -975,27 +981,29 @@ std::string DTS_HD_SpeakerActivityMask (int16u SpeakerActivityMask, bool AddCs=f
             Text+=" R";
     }
 
-    if (SpeakerActivityMask&0x0004)
-        Text+=", Side: L R";
+    if (SpeakerActivityMask&0x0804)
+    {
+        Text+=", Side:";
+        if (SpeakerActivityMask&0x0004)
+            Text+=" L R"; //Ls Rs
+        if (SpeakerActivityMask&0x0800)
+            Text+=" L R"; //Lss Rss
+    }
 
-    if (SpeakerActivityMask&0x0010 || AddCs)
-        Text+=", Back: C";
+    bool HasCs=(SpeakerActivityMask&0x0010) || AddCs;
+    bool HasLsrRsr=(SpeakerActivityMask&0x0040) || AddLrsRrs;
+    if (HasCs || HasLsrRsr)
+        Text+=HasLsrRsr?(HasCs?", Back: L C R":", Back: L R"):", Back: C";
 
     if ((SpeakerActivityMask&0x00A0)==0x00A0)
         Text+=", High: L C R";
     else
     {
-        if (SpeakerActivityMask&0x0020 || AddLrsRrs)
+        if (SpeakerActivityMask&0x0020)
             Text+=", High: L R";
         if (SpeakerActivityMask&0x0080)
             Text+=", High: C";
     }
-
-    if (SpeakerActivityMask&0x0800)
-        Text+=", Side: L R";
-
-    if (SpeakerActivityMask&0x0040)
-        Text+=", Back: L R";
 
     if (SpeakerActivityMask&0x0100)
         Text+=", TopCtrSrrd";
@@ -1019,6 +1027,8 @@ std::string DTS_HD_SpeakerActivityMask (int16u SpeakerActivityMask, bool AddCs=f
     if (SpeakerActivityMask&0x1000)
         Text+=", LFE2";
 
+    if (Text.find(", ")==0)
+        Text.erase(0, 2); //No front channel
     return Text;
 }
 
@@ -1109,7 +1119,7 @@ std::string DTS_HD_SpeakerActivityMask_ChannelLayout (int16u SpeakerActivityMask
     if (SpeakerActivityMask&0x4000)
         Text+=" Chr";
     if (SpeakerActivityMask&0x8000)
-        Text+=" Lhr";
+        Text+=" Lhr Rhr";
 
     if (!Text.empty())
         Text.erase(0, 1);
@@ -1273,7 +1283,9 @@ File_Dts::File_Dts()
     HD_ExSSFrameDurationCode=(int8u)-1;
     DtsXObjectCount=0;
     DtsXSupplementalChannelCount=0;
+    DtsXSupplementalMask=0;
     DtsXObjectCountProbeDone=false;
+    Extension_SpeakerActivityMask=(int16u)-1;
     AuxiliaryData=false;
     ExtendedCoding=false;
     ES=false;
@@ -1330,6 +1342,7 @@ void File_Dts::Streams_Fill_Extension()
     {
         Data[Channels].push_back(Ztring());
     }
+    Extension_SpeakerActivityMask=(HD_SpeakerActivityMask==(int16u)-1 || !AddCs)?HD_SpeakerActivityMask:(int16u)(HD_SpeakerActivityMask|0x0010);
     if (HD_SpeakerActivityMask!=(int16u)-1) // && !AddX)
     {
         Data[ChannelPositions].push_back(DTS_HD_SpeakerActivityMask(HD_SpeakerActivityMask, AddCs).c_str()); //AddLrsRrs
@@ -1428,14 +1441,14 @@ void File_Dts::Streams_Fill_Core(bool With96k)
     {
         Data[Channels].push_back(Ztring::ToZtring(DTS_Channels[Core_Core_AMODE]+(Core_Core_LFF?1:0)));
         Data[ChannelPositions].push_back(Ztring().From_UTF8(DTS_ChannelPositions[Core_Core_AMODE])+(Core_Core_LFF?__T(", LFE"):__T("")));
-        Data[ChannelPositions2].push_back(Ztring().From_UTF8(DTS_ChannelPositions2[Core_Core_AMODE])+(Core_Core_LFF?__T(".1"):__T(".0")));
+        Data[ChannelPositions2].push_back(Ztring().From_UTF8(DTS_ChannelPositions2[Core_Core_AMODE])+(Core_Core_LFF?__T(".1"):__T("")));
         Data[ChannelLayout].push_back(Ztring().From_UTF8(DTS_ChannelLayout[Core_Core_AMODE])+(Core_Core_LFF?__T(" LFE"):__T("")));
     }
     else
     {
         Data[Channels].push_back(__T("User Defined"));
         Data[ChannelPositions].push_back(Ztring(__T("User Defined"))+(Core_Core_LFF?__T(", LFE"):__T("")));
-        Data[ChannelPositions2].push_back(Ztring(__T("User Defined"))+(Core_Core_LFF?__T(".1"):__T(".0")));
+        Data[ChannelPositions2].push_back(Ztring(__T("User Defined"))+(Core_Core_LFF?__T(".1"):__T("")));
         Data[ChannelLayout].push_back(Ztring(__T("User Defined"))+(Core_Core_LFF?__T(" LFE"):__T("")));
     }
     Data[BitDepth].push_back(bits_per_sample<sizeof(DTS_Resolution)?Ztring::ToZtring(DTS_Resolution[bits_per_sample]):Ztring());
@@ -1483,36 +1496,16 @@ void File_Dts::Streams_Fill()
     {
         Data[Profiles].push_back(__T("X"));
         Streams_Fill_Extension();
-        if (DtsXSupplementalChannelCount && !Data[ChannelLayout].back().empty() && !Data[Channels].back().empty())
+        if (DtsXSupplementalChannelCount && Extension_SpeakerActivityMask!=(int16u)-1 && !Data[ChannelLayout].back().empty() && !Data[Channels].back().empty())
         {
-            DtsXBedChannelConfiguration=Data[ChannelLayout].back()+__T(" Tfl Tfr Tbl Tbr");
-            if (!Data[ChannelPositions].back().empty())
-            {
-                DtsXBedChannelPositions=Data[ChannelPositions].back();
-                Ztring Heights=__T(", TopFront: L R, TopRear: L R");
-                size_t LfePos=DtsXBedChannelPositions.find(__T(", LFE"));
-                if (LfePos==string::npos)
-                    DtsXBedChannelPositions+=Heights;
-                else
-                    DtsXBedChannelPositions.insert(LfePos, Heights);
-            }
-            if (!Data[ChannelPositions2].back().empty())
-            {
-                //Height count after the LFE count, which is absent without LFE channel
-                DtsXBedChannelPositions2=Data[ChannelPositions2].back();
-                size_t LfeDot=DtsXBedChannelPositions2.find(__T('.'));
-                size_t HeightDot=LfeDot==string::npos?string::npos:DtsXBedChannelPositions2.find(__T('.'), LfeDot+1);
-                if (LfeDot==string::npos)
-                    DtsXBedChannelPositions2+=__T(".0.4");
-                else if (HeightDot==string::npos)
-                    DtsXBedChannelPositions2+=__T(".4");
-                else
-                {
-                    int32u Heights=Ztring(DtsXBedChannelPositions2.substr(HeightDot+1)).To_int32u();
-                    DtsXBedChannelPositions2.resize(HeightDot+1);
-                    DtsXBedChannelPositions2+=Ztring::ToZtring(Heights+4);
-                }
-            }
+            //Supplemental speakers from the stream when known, else the front and rear height pairs, without the speakers of the bed
+            int16u SupplementalMask=(DtsXSupplementalMask && !(DtsXSupplementalMask>>16))?(int16u)DtsXSupplementalMask:0x8020; //Lh Rh Lhr Rhr
+            SupplementalMask=(int16u)(SupplementalMask&~Extension_SpeakerActivityMask);
+            DtsXBedChannelConfiguration=Data[ChannelLayout].back(); //Supplemental channels coded after the bed
+            if (SupplementalMask)
+                DtsXBedChannelConfiguration+=__T(' ')+Ztring().From_UTF8(SupplementalMask==1?string("C"):DTS_HD_SpeakerActivityMask_ChannelLayout(SupplementalMask));
+            DtsXBedChannelPositions.From_UTF8(DTS_HD_SpeakerActivityMask(Extension_SpeakerActivityMask|SupplementalMask));
+            DtsXBedChannelPositions2.From_UTF8(DTS_HD_SpeakerActivityMask2(Extension_SpeakerActivityMask|SupplementalMask));
             DtsXBedChannelCount=Data[Channels].back().To_int64u()+DtsXSupplementalChannelCount;
 
             for (int8u pos = 0; pos < (Presence[presence_Extended_IMAX] ? 2 : 1); ++pos) {
@@ -2148,11 +2141,13 @@ void File_Dts::Data_Parse()
         if (Presence[presence_Extended_X] || !DtsXObjectCountProbeDone)
         {
             int8u FrameDtsXSupplementalChannelCount=0;
-            int8u FrameDtsXObjectCount=DtsX_ObjectCount(Buffer+Buffer_Offset, Element_Size, FrameDtsXSupplementalChannelCount, DtsXExssStatic);
+            int32u FrameDtsXSupplementalMask=0;
+            int8u FrameDtsXObjectCount=DtsX_ObjectCount(Buffer+Buffer_Offset, Element_Size, FrameDtsXSupplementalChannelCount, FrameDtsXSupplementalMask, DtsXExssStatic);
             if (FrameDtsXObjectCount || FrameDtsXSupplementalChannelCount)
             {
                 DtsXObjectCount=max(DtsXObjectCount, FrameDtsXObjectCount);
                 DtsXSupplementalChannelCount=max(DtsXSupplementalChannelCount, FrameDtsXSupplementalChannelCount);
+                DtsXSupplementalMask|=FrameDtsXSupplementalMask;
                 Presence.set(presence_Extended_X);
             }
             if (!Presence[presence_Extended_X])

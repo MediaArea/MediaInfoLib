@@ -76,15 +76,15 @@ const char* Pcm_VOB_ChannelsPositions2(int8u channel_assignment)
 {
     switch (channel_assignment)
     {
-        case  1 : return "1/0/0.0";                                     //1 channel
-        case  3 : return "2/0/0.0";                                     //2 channels
-        case  4 : return "3/0/0.0";                                     //3 channels
+        case  1 : return "1/0/0";                                       //1 channel
+        case  3 : return "2/0/0";                                       //2 channels
+        case  4 : return "3/0/0";                                       //3 channels
         case  5 : return "2/0/0.1";                                     //3 channels
         case  6 : return "3/0/0.1";                                     //4 channels
-        case  7 : return "2/2/0.0";                                     //4 channels
-        case  8 : return "3/2/0.0";                                     //5 channels
+        case  7 : return "2/2/0";                                       //4 channels
+        case  8 : return "3/2/0";                                       //5 channels
         case  9 : return "3/2/0.1";                                     //6 channels
-        case 10 : return "3/2/2.0";                                     //7 channels
+        case 10 : return "3/2/2";                                       //7 channels
         case 11 : return "3/2/2.1";                                     //8 channels
         default : return "";
     }

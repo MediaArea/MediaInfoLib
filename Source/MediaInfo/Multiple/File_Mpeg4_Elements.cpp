@@ -61,8 +61,8 @@ const char* Mpeg4_chan(int16u Ordering)
         case 108 : return "Front: L R, Side: L R";
         case 109 : return "Front: L C R, Back: L R";
         case 110 : return "Front: L C R, Back: L C R";
-        case 111 : return "Front: L C R, Side: L R, Back: L C R";
-        case 112 : return "Front: L R, TopFront: L R, Back: L R, TopRear: L R";
+        case 111 : return "Front: L C R, Wide: L R, Back: L C R";
+        case 112 : return "Front: L R, Back: L R, High: L R, HiRear: L R";
         case 113 : return "Front: L C R";
         case 114 : return "Front: L C R";
         case 115 : return "Front: L C R, Back: C";
@@ -75,28 +75,28 @@ const char* Mpeg4_chan(int16u Ordering)
         case 122 : return "Front: L C R, Side: L R, LFE";
         case 123 : return "Front: L C R, Side: L R, LFE";
         case 124 : return "Front: L C R, Side: L R, LFE";
-        case 125 : return "Front: L C R, Side: L C R";
-        case 126 : return "Front: L Lc C Rc R, Side: L R";
-        case 127 : return "Front: L Lc Rc R, Side: L R, LFE";
+        case 125 : return "Front: L C R, Side: L R, Back: C, LFE";
+        case 126 : return "Front: L Lc C Rc R, Side: L R, LFE";
+        case 127 : return "Front: L Lc C Rc R, Side: L R, LFE";
         case 128 : return "Front: L C R, Side: L R, Back: L R, LFE";
-        case 129 : return "Front: L C R, Side: L R, Back: L R, LFE";
-        case 130 : return "Front: L C R, Side: L R, LF, Front: L R (Matrix)";
+        case 129 : return "Front: L Lc C Rc R, Side: L R, LFE";
+        case 130 : return "Front: L C R, Side: L R, LFE, Front: L R (Matrix)";
         case 131 : return "Front: L R, Back: C";
         case 132 : return "Front: L R, Side: L R";
         case 133 : return "Front: L R, LFE";
         case 134 : return "Front: L R, Back: C, LFE";
-        case 135 : return "Front: L C R, Side: L R, LFE";
+        case 135 : return "Front: L R, Side: L R, LFE";
         case 136 : return "Front: L C R, LFE";
         case 137 : return "Front: L C R, Back: C, LFE";
-        case 138 : return "Front: L R, Back: L R, LFE";
-        case 139 : return "Front: L C R, Back: L R, LFE";
+        case 138 : return "Front: L R, Side: L R, LFE";
+        case 139 : return "Front: L C R, Side: L R, Back: C";
         case 140 : return "Front: L C R, Side: L R, Back: L R";
         case 141 : return "Front: L C R, Side: L R, Back: C";
         case 142 : return "Front: L C R, Side: L R, Back: C, LFE";
         case 143 : return "Front: L C R, Side: L R, Back: L R";
         case 144 : return "Front: L C R, Side: L R, Back: L C R";
-        case 145 : return "Front: Lw L C R Rw, TopFront: L C R, Side: L R, Back: L C Cd R, LFE: L R"; //d=direct, all must be confirmed
-        case 146 : return "Front: Lw L Lc C Rc R Rw, TopFront: L C R, Side: L R, Back: L C Cd R, LFE: L R, HI, VI, Haptic"; //d=direct, all must be confirmed
+        case 145 : return "Front: L C R, Side: L R, Wide: L R, Back: C, SurroundDirect: L C R, High: L C R, LFE, LFE2";
+        case 146 : return "Front: L Lc C Rc R, Side: L R, Wide: L R, Back: C, SurroundDirect: L C R, High: L C R, LFE, LFE2, HI, VI, Haptic";
         default  : return "";
     }
 }
@@ -138,8 +138,8 @@ const char* Mpeg4_chan_Layout(int16u Ordering)
         case 108 : return "L R Ls Rs";
         case 109 : return "L R Lrs Rrs C";
         case 110 : return "L R Lrs Rrs C Cs";
-        case 111 : return "L R Lrs Rrs C Crs, Ls, Rs";
-        case 112 : return "L R Lrs Rrs Vhl Vhr, Vhlrs, Vhrrs";
+        case 111 : return "L R Lrs Rrs C Cs Lw Rw";
+        case 112 : return "L R Lrs Rrs Vhl Vhr Tbl Tbr";
         case 113 : return "L R C";
         case 114 : return "C L R";
         case 115 : return "L R C Cs";
@@ -508,7 +508,7 @@ static std::string Mpeg4_AuroCx_ChannelPositions(int16u Layout)
     if (Layout&0x0E00)
     {
         if (!Text.empty()) Text+=", ";
-        Text+="TopFront:";
+        Text+="High:";
         if (Layout&0x0200) Text+=" L";
         if (Layout&0x0800) Text+=" C";
         if (Layout&0x0400) Text+=" R";
@@ -516,12 +516,12 @@ static std::string Mpeg4_AuroCx_ChannelPositions(int16u Layout)
     if (Layout&0x1000)
     {
         if (!Text.empty()) Text+=", ";
-        Text+="Top: C";
+        Text+="TopCtrSrrd";
     }
     if (Layout&0xE000)
     {
         if (!Text.empty()) Text+=", ";
-        Text+="TopRear:";
+        Text+="HiRear:";
         if (Layout&0x2000) Text+=" L";
         if (Layout&0x8000) Text+=" C";
         if (Layout&0x4000) Text+=" R";
@@ -558,68 +558,107 @@ static std::string Mpeg4_AuroCx_ChannelPositions2(int16u Layout)
     Text+=Ztring::ToZtring(Front);
     Text+=__T('/')+Ztring::ToZtring(Side);
     Text+=__T('/')+Ztring::ToZtring(Back);
-    Text+=__T('.')+Ztring::ToZtring(LFE);
+    if (LFE || Height)
+        Text+=__T('.')+Ztring::ToZtring(LFE);
     if (Height)
         Text+=__T('.')+Ztring::ToZtring(Height);
     return Text.To_UTF8();
 }
 
 //---------------------------------------------------------------------------
+static bool Mpeg4_chan_Label(int64u ChannelLabels, int8u ChannelLabel)
+{
+    return ((ChannelLabels>>ChannelLabel)&1)!=0;
+}
+
+// Sets of left, center and right channel labels (0 for none)
+static void Mpeg4_chan_ChannelDescription_Group (std::string& Text, int64u ChannelLabels, const char* Name, const int8u (*Sets)[3], size_t Sets_Size)
+{
+    std::string Letters;
+    for (size_t i=0; i<Sets_Size; i++)
+        for (size_t j=0; j<3; j++)
+            if (Sets[i][j] && Mpeg4_chan_Label(ChannelLabels, Sets[i][j]))
+            {
+                Letters+=' ';
+                Letters+="LCR"[j];
+            }
+    if (Letters.empty())
+        return;
+    if (!Text.empty())
+        Text+=", ";
+    Text+=Name;
+    Text+=':';
+    Text+=Letters;
+}
+
 static std::string Mpeg4_chan_ChannelDescription (int64u ChannelLabels)
 {
+    //The labels 1 to 18 are the speaker positions of WAVEFORMATEXTENSIBLE, in the same order (as in the channel bitmap)
+    static const int8u Side[][3]={{10, 0, 11}, {55, 0, 56}}; //Side left and right, side surround
+    static const int8u Wide[][3]={{35, 0, 36}}; //Lw Rw
+    static const int8u Back[][3]={{5, 9, 6}, {33, 0, 34}}; //Back left, center and right, rear surround
+    static const int8u High[][3]={{13, 14, 15}, {46, 47, 48}}; //Vhl Vhc Vhr, top front
+    static const int8u HiSide[][3]={{49, 0, 51}, {60, 0, 61}}; //Top middle, top surround
+    static const int8u HiRear[][3]={{16, 17, 18}, {52, 53, 54}}; //Top back, top rear
+    static const int8u LowFront[][3]={{57, 59, 58}}; //Bottom
+
     std::string Text;
-    if ((ChannelLabels&0x000E)!=0x0000)
+    if (Mpeg4_chan_Label(ChannelLabels, 1) || Mpeg4_chan_Label(ChannelLabels, 2) || Mpeg4_chan_Label(ChannelLabels, 3) || Mpeg4_chan_Label(ChannelLabels, 7) || Mpeg4_chan_Label(ChannelLabels, 8))
+    {
         Text+="Front:";
-    if (ChannelLabels&0x0002)
-        Text+=" L";
-    if (ChannelLabels&0x0008)
-        Text+=" C";
-    if (ChannelLabels&0x0004)
-        Text+=" R";
-
-    if ((ChannelLabels&0x0C00)!=0x0000)
+        if (Mpeg4_chan_Label(ChannelLabels, 1))
+            Text+=" L";
+        if (Mpeg4_chan_Label(ChannelLabels, 7))
+            Text+=" Lc";
+        if (Mpeg4_chan_Label(ChannelLabels, 3))
+            Text+=" C";
+        if (Mpeg4_chan_Label(ChannelLabels, 8))
+            Text+=" Rc";
+        if (Mpeg4_chan_Label(ChannelLabels, 2))
+            Text+=" R";
+    }
+    Mpeg4_chan_ChannelDescription_Group(Text, ChannelLabels, "Side", Side, sizeof(Side)/sizeof(*Side));
+    Mpeg4_chan_ChannelDescription_Group(Text, ChannelLabels, "Wide", Wide, sizeof(Wide)/sizeof(*Wide));
+    Mpeg4_chan_ChannelDescription_Group(Text, ChannelLabels, "Back", Back, sizeof(Back)/sizeof(*Back));
+    Mpeg4_chan_ChannelDescription_Group(Text, ChannelLabels, "High", High, sizeof(High)/sizeof(*High));
+    if (Mpeg4_chan_Label(ChannelLabels, 12) || Mpeg4_chan_Label(ChannelLabels, 50)) //Ts, top center middle
     {
         if (!Text.empty())
             Text+=", ";
-        Text+="Side:";
+        Text+="TopCtrSrrd";
     }
-    if (ChannelLabels&0x0400)
-        Text+=" L";
-    if (ChannelLabels&0x0800)
-        Text+=" R";
-
-    if ((ChannelLabels&0x0260)!=0x0000)
-    {
-        if (!Text.empty())
-            Text+=", ";
-        Text+="Back:";
-    }
-    if (ChannelLabels&0x0020)
-        Text+=" L";
-    if (ChannelLabels&0x0200)
-        Text+=" C";
-    if (ChannelLabels&0x0040)
-        Text+=" R";
-
-    if ((ChannelLabels&0x0010)!=0x0000)
+    Mpeg4_chan_ChannelDescription_Group(Text, ChannelLabels, "HiSide", HiSide, sizeof(HiSide)/sizeof(*HiSide));
+    Mpeg4_chan_ChannelDescription_Group(Text, ChannelLabels, "HiRear", HiRear, sizeof(HiRear)/sizeof(*HiRear));
+    Mpeg4_chan_ChannelDescription_Group(Text, ChannelLabels, "LowFront", LowFront, sizeof(LowFront)/sizeof(*LowFront));
+    if (Mpeg4_chan_Label(ChannelLabels, 4))
     {
         if (!Text.empty())
             Text+=", ";
         Text+="LFE";
     }
-
-    if (ChannelLabels&0x000000C000000000LL)
+    if (Mpeg4_chan_Label(ChannelLabels, 37))
+    {
+        if (!Text.empty())
+            Text+=", ";
+        Text+="LFE2";
+    }
+    if (Mpeg4_chan_Label(ChannelLabels, 62))
+    {
+        if (!Text.empty())
+            Text+=", ";
+        Text+="LFE3";
+    }
+    if (Mpeg4_chan_Label(ChannelLabels, 38) || Mpeg4_chan_Label(ChannelLabels, 39))
     {
         if (!Text.empty())
             Text+=", ";
         Text+="Front:";
-    }
-    if (ChannelLabels&0x0000004000000000LL)
-        Text+=" L";
-    if (ChannelLabels&0x0000008000000000LL)
-        Text+=" R";
-    if (ChannelLabels&0x000000C000000000LL)
+        if (Mpeg4_chan_Label(ChannelLabels, 38))
+            Text+=" L";
+        if (Mpeg4_chan_Label(ChannelLabels, 39))
+            Text+=" R";
         Text+=" (Matrix)";
+    }
 
     return Text;
 }
@@ -634,20 +673,20 @@ static string Mpeg4_chan_ChannelDescription_Layout (int32u ChannelLabel)
         case   2 : return "R";
         case   3 : return "C";
         case   4 : return "LFE";
-        case   5 : return "Ls";
-        case   6 : return "Rs";
+        case   5 : return "Lb";
+        case   6 : return "Rb";
         case   7 : return "Lc";
         case   8 : return "Rc";
         case   9 : return "Cs";
-        case  10 : return "Lsd";
-        case  11 : return "Rsd";
-        case  12 : return "Tcs";
+        case  10 : return "Ls";
+        case  11 : return "Rs";
+        case  12 : return "Ts";
         case  13 : return "Vhl";
         case  14 : return "Vhc";
         case  15 : return "Vhr";
-        case  16 : return "Trs";
-        case  17 : return "Trs";
-        case  18 : return "Trs";
+        case  16 : return "Tbl";
+        case  17 : return "Tbc";
+        case  18 : return "Tbr";
         case  33 : return "Lrs";
         case  34 : return "Rrs";
         case  35 : return "Lw";
@@ -659,8 +698,29 @@ static string Mpeg4_chan_ChannelDescription_Layout (int32u ChannelLabel)
         case  41 : return "Narration";
         case  42 : return "M";
         case  43 : return "DialogCentricMix";
-        case  44 : return "CenterSurroundDirect";
+        case  44 : return "Csd";
         case  45 : return "Haptic";
+        case  46 : return "Tfl";
+        case  47 : return "Tfc";
+        case  48 : return "Tfr";
+        case  49 : return "Tsl";
+        case  50 : return "Tc";
+        case  51 : return "Tsr";
+        case  52 : return "Tbl";
+        case  53 : return "Tbc";
+        case  54 : return "Tbr";
+        case  55 : return "Lss";
+        case  56 : return "Rss";
+        case  57 : return "Bfl";
+        case  58 : return "Bfr";
+        case  59 : return "Bfc";
+        case  60 : return "Lvs";
+        case  61 : return "Rvs";
+        case  62 : return "LFE3";
+        case  63 : return "Lb";
+        case  64 : return "Rb";
+        case  65 : return "Lscr";
+        case  66 : return "Rscr";
         case 200 : return "W";
         case 201 : return "X";
         case 202 : return "Y";
@@ -684,63 +744,7 @@ static string Mpeg4_chan_ChannelDescription_Layout (int32u ChannelLabel)
 //---------------------------------------------------------------------------
 static std::string Mpeg4_chan_ChannelBitmap (int32u ChannelBitmap)
 {
-    std::string Text;
-    if ((ChannelBitmap&0x0007)!=0x0000)
-        Text+="Front:";
-    if (ChannelBitmap&0x0001)
-        Text+=" L";
-    if (ChannelBitmap&0x0004)
-        Text+=" C";
-    if (ChannelBitmap&0x0002)
-        Text+=" R";
-
-    if ((ChannelBitmap&0x0600)!=0x0000)
-        Text+=", Side:";
-    if (ChannelBitmap&0x0200)
-        Text+=" L";
-    if (ChannelBitmap&0x0400)
-        Text+=" R";
-
-    if ((ChannelBitmap&0x0130)!=0x0000)
-        Text+=", Back:";
-    if (ChannelBitmap&0x0010)
-        Text+=" L";
-    if (ChannelBitmap&0x0100)
-        Text+=" C";
-    if (ChannelBitmap&0x0020)
-        Text+=" R";
-
-    if ((ChannelBitmap&0x0008)!=0x0000)
-        Text+=", LFE";
-
-    return Text;
-}
-
-//---------------------------------------------------------------------------
-static const char* Mpeg4_chan_ChannelBitmap_Layout (int32u ChannelBitmap)
-{
-    switch(ChannelBitmap)
-    {
-        case   0 : return "L";      // Left
-        case   1 : return "R";      // Right
-        case   2 : return "C";      // Center
-        case   3 : return "LFE";    // LFEScreen
-        case   4 : return "Lb";     // LeftSurround / Back Left
-        case   5 : return "Rb";     // RightSurround / Back Right
-        case   6 : return "?";      // LeftCenter
-        case   7 : return "?";      // RightCenter
-        case   8 : return "Cb";     // CenterSurround / Back Center
-        case   9 : return "Ls";     // LeftSurroundDirect / Side Left
-        case  10 : return "Rs";     // RightSurroundDirect / Side Right
-        case  11 : return "?";      // TopCenterSurround
-        case  12 : return "?";      // VerticalHeightLeft / Top Front Left
-        case  13 : return "?";      // VerticalHeightCenter / Top Front Center
-        case  14 : return "?";      // VerticalHeightRight / Top Front Right"
-        case  15 : return "?";      // TopBackLeft
-        case  16 : return "?";      // TopBackCenter
-        case  17 : return "?";      // TopBackRight
-        default  : return "?";
-    }
+    return Mpeg4_chan_ChannelDescription(((int64u)(ChannelBitmap&0x3FFFF))<<1); //Bit n is the channel label n+1
 }
 
 //---------------------------------------------------------------------------
@@ -8843,7 +8847,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_chan()
                 if (ChannelBitmap&(1<<Bit))
                 {
                     Channels++;
-                    ChannelDescription_Layout+=Mpeg4_chan_ChannelBitmap_Layout((int32u)(Bit));
+                    ChannelDescription_Layout+=Mpeg4_chan_ChannelDescription_Layout((int32u)(Bit+1));
                     ChannelDescription_Layout+=__T(' ');
                 }
             if (Channels)
@@ -9352,6 +9356,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_ddts()
     int32u  DTSSamplingFrequency, maxBitrate, avgBitrate;
     int16u  ChannelLayout;
     int8u   CoreLayout;
+    bool    CoreLFEPresent;
 
     //Parsing
     Get_B4 (DTSSamplingFrequency,                               "DTSSamplingFrequency");
@@ -9361,7 +9366,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_ddts()
     BS_Begin();
         Skip_S1(2,                                              "FrameDuration");  // 0 = 512, 1 = 1024, 2 = 2048, 3 = 4096
         Skip_S1(5,                                              "StreamConstruction");
-        Skip_SB(                                                "CoreLFEPresent"); // 0 = none, 1 = LFE exists
+        Get_SB (    CoreLFEPresent,                             "CoreLFEPresent"); // 0 = none, 1 = LFE exists
         Get_S1 (6,  CoreLayout,                                 "CoreLayout");
         Skip_S2(14,                                             "CoreSize");
         Skip_SB(                                                "StereoDownmix"); // 0 = none, 1 = downmix present
@@ -9387,8 +9392,8 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_ddts()
         }
         if (CoreLayout && CoreLayout<16)
         {
-            Fill(Stream_Audio, 0, Audio_ChannelPositions, DTS_ChannelPositions[CoreLayout]);
-            Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, DTS_ChannelPositions2[CoreLayout]);
+            Fill(Stream_Audio, 0, Audio_ChannelPositions, (string(DTS_ChannelPositions[CoreLayout])+(CoreLFEPresent?", LFE":"")).c_str());
+            Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, (string(DTS_ChannelPositions2[CoreLayout])+(CoreLFEPresent?".1":"")).c_str());
         }
         #endif //defined(MEDIAINFO_DTS_YES)
     FILLING_END();
