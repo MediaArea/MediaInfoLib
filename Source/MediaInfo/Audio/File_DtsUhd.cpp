@@ -1103,7 +1103,7 @@ struct DTSUHD_ChannelMaskInfo DTSUHD_DecodeChannelMask(int32u ChannelMask)
 
         if (ChannelMask & 0x000001C0)
         {
-            Info.ChannelPositionsText+=", Rear:";
+            Info.ChannelPositionsText+=", Back:";
             if (ChannelMask & 0x00000080)
             {
                 Info.ChannelLayoutText+=" Lsr";
@@ -1147,7 +1147,7 @@ struct DTSUHD_ChannelMaskInfo DTSUHD_DecodeChannelMask(int32u ChannelMask)
             }
         }
 
-        if (ChannelMask & 0x0000E000)
+        if (ChannelMask & 0x3000E000)
         {
             Info.ChannelPositionsText+=", High:";
             if (ChannelMask & 0x00002000)
@@ -1168,6 +1168,10 @@ struct DTSUHD_ChannelMaskInfo DTSUHD_DecodeChannelMask(int32u ChannelMask)
                 Info.ChannelPositionsText+=" R";
                 Info.CountHeights++;
             }
+            if (ChannelMask & 0x10000000)
+                Info.ChannelPositionsText+=" L"; //Ltf, channel layout and count with the other Ltf/Rtf code
+            if (ChannelMask & 0x20000000)
+                Info.ChannelPositionsText+=" R"; //Rtf
         }
 
         if (ChannelMask & 0x00060000)
@@ -1187,21 +1191,15 @@ struct DTSUHD_ChannelMaskInfo DTSUHD_DecodeChannelMask(int32u ChannelMask)
             }
         }
 
-        if (ChannelMask & 0x30000000)
+        if (ChannelMask & 0x10000000)
         {
-            Info.ChannelPositionsText+=", TopFront:";
-            if (ChannelMask & 0x10000000)
-            {
-                Info.ChannelLayoutText+=" Ltf";
-                Info.ChannelPositionsText+=" L";
-                Info.CountHeights++;
-            }
-            if (ChannelMask & 0x20000000)
-            {
-                Info.ChannelLayoutText+=" Rtf";
-                Info.ChannelPositionsText+=" R";
-                Info.CountHeights++;
-            }
+            Info.ChannelLayoutText+=" Ltf"; //In the high channel positions
+            Info.CountHeights++;
+        }
+        if (ChannelMask & 0x20000000)
+        {
+            Info.ChannelLayoutText+=" Rtf";
+            Info.CountHeights++;
         }
 
         if (ChannelMask & 0x00080000)
@@ -1222,26 +1220,20 @@ struct DTSUHD_ChannelMaskInfo DTSUHD_DecodeChannelMask(int32u ChannelMask)
             Info.CountFront++;
         }
 
-        if (ChannelMask & 0xC0000000)
+        if (ChannelMask & 0x40000000)
         {
-            Info.ChannelPositionsText+=", TopRear:";
-            if (ChannelMask & 0x40000000)
-            {
-                Info.ChannelLayoutText+=" Ltr";
-                Info.ChannelPositionsText+=" L";
-                Info.CountHeights++;
-            }
-            if (ChannelMask & 0x80000000)
-            {
-                Info.ChannelLayoutText+=" Rtr";
-                Info.ChannelPositionsText+=" R";
-                Info.CountHeights++;
-            }
+            Info.ChannelLayoutText+=" Ltr"; //In the high rear channel positions
+            Info.CountHeights++;
+        }
+        if (ChannelMask & 0x80000000)
+        {
+            Info.ChannelLayoutText+=" Rtr";
+            Info.CountHeights++;
         }
 
         if (ChannelMask & 0x00300000)
         {
-            Info.ChannelPositionsText+=", HighSide:";
+            Info.ChannelPositionsText+=", HiSide:";
             if (ChannelMask & 0x00100000)
             {
                 Info.ChannelLayoutText+=" Lhs";
@@ -1256,9 +1248,9 @@ struct DTSUHD_ChannelMaskInfo DTSUHD_DecodeChannelMask(int32u ChannelMask)
             }
         }
 
-        if (ChannelMask & 0x01C00000)
+        if (ChannelMask & 0xC1C00000)
         {
-            Info.ChannelPositionsText+=", HighRear:";
+            Info.ChannelPositionsText+=", HiRear:";
             if (ChannelMask & 0x00800000)
             {
                 Info.ChannelLayoutText+=" Lhr";
@@ -1277,6 +1269,10 @@ struct DTSUHD_ChannelMaskInfo DTSUHD_DecodeChannelMask(int32u ChannelMask)
                 Info.ChannelPositionsText+=" R";
                 Info.CountHeights++;
             }
+            if (ChannelMask & 0x40000000)
+                Info.ChannelPositionsText+=" L"; //Ltr, channel layout and count with the other Ltr/Rtr code
+            if (ChannelMask & 0x80000000)
+                Info.ChannelPositionsText+=" R"; //Rtr
         }
 
         if (ChannelMask & 0x00000020)
