@@ -348,7 +348,7 @@ Ztring AC3_chanmap_ChannelPositions (int16u chanmap)
 //---------------------------------------------------------------------------
 Ztring AC3_chanmap_ChannelPositions2 (int16u chanmap)
 {
-    int8u Front=0, Side=0, Back=0, LFE=0;
+    int8u Front=0, Side=0, Back=0, LFE=0, Height=0;
 
     for (int8u Pos=0; Pos<16; Pos++)
     {
@@ -361,20 +361,26 @@ Ztring AC3_chanmap_ChannelPositions2 (int16u chanmap)
                 case  2 :   Front++; break;
                 case  3 :
                 case  4 :   Side++; break;
-                case  5 :   Front+=2; break;
-                case  7 :
-                case  8 :
-                case 12 :   Back++; break;
+                case  5 :   Front+=2; break; //Lc Rc
+                case  6 :   Back+=2; break;
+                case  7 :   Back++; break;
+                case  8 :   //Ts
+                case 12 :   Height++; break; //Cvh
+                case  9 :   //Lsd Rsd
+                case 10 :   Side+=2; break; //Lw Rw, between front and side
+                case 11 :   //Lvh Rvh
+                case 13 :   Height+=2; break; //Lts Rts
                 case 14 :
                 case 15 :   LFE++; break;
-                default :   Back+=2; //The other locations are pairs
             }
         }
     }
 
     Ztring ToReturn=Ztring::ToZtring(Front)+__T('/')+Ztring::ToZtring(Side)+__T('/')+Ztring::ToZtring(Back);
-    if (LFE)
+    if (LFE || Height)
         ToReturn+=__T('.')+Ztring::ToZtring(LFE);
+    if (Height)
+        ToReturn+=__T('.')+Ztring::ToZtring(Height);
 
     return ToReturn;
 }
@@ -798,7 +804,7 @@ std::string AC3_TrueHD_Channels_Positions(int16u ChannelsMap, bool Bit11=false)
 //---------------------------------------------------------------------------
 Ztring AC3_TrueHD_Channels_Positions2(int16u ChannelsMap, bool Bit11=false)
 {
-    int8u Front=0, Surround=0, Rear=0, LFE=0;
+    int8u Front=0, Side=0, Back=0, LFE=0, Height=0;
 
     if (ChannelsMap&0x0001)
         Front+=2;
@@ -806,40 +812,39 @@ Ztring AC3_TrueHD_Channels_Positions2(int16u ChannelsMap, bool Bit11=false)
         Front++;
 
     if (ChannelsMap&0x08)
-        Surround+=2;
+        Side+=2;
     if (ChannelsMap&0x80)
-        Surround++;
+        Back++;   //Cs
 
-    if (ChannelsMap & 0x0010)
-        Rear+=2; //vh, or ts with the other channel assignment
+    if (ChannelsMap&0x0010)
+        Height+=2; //Lvh Rvh, or Lts Rts with the other channel assignment
     if (ChannelsMap&0x0004)
         LFE++;
     if (!Bit11)
     {
-    if (ChannelsMap&0x0800)
-        Rear++;  //vh
-
-
-    if (ChannelsMap&0x0020)
-        Front+=2; //c
-    if (ChannelsMap&0x0040)
-        Rear+=2; //rs
-    if (ChannelsMap&0x0100)
-        Rear++;  //s
-    if (ChannelsMap&0x0200)
-        Rear+=2; //sd
-    if (ChannelsMap&0x0400)
-        Rear+=2; //w
-
-    if (ChannelsMap&0x1000)
-        LFE++;
+        if (ChannelsMap&0x0800)
+            Height++; //Cvh
+        if (ChannelsMap&0x0020)
+            Front+=2; //Lc Rc
+        if (ChannelsMap&0x0040)
+            Back+=2;  //Lrs Rrs
+        if (ChannelsMap&0x0100)
+            Height++; //Ts
+        if (ChannelsMap&0x0200)
+            Side+=2;  //Lsd Rsd
+        if (ChannelsMap&0x0400)
+            Side+=2;  //Lw Rw, between front and side
+        if (ChannelsMap&0x1000)
+            LFE++;
     }
 
     Ztring Text;
     Text+=Ztring::ToZtring(Front);
-    Text+=__T('/')+Ztring::ToZtring(Surround);
-    Text+=__T('/')+Ztring::ToZtring(Rear);
+    Text+=__T('/')+Ztring::ToZtring(Side);
+    Text+=__T('/')+Ztring::ToZtring(Back);
     Text+=__T('.')+Ztring::ToZtring(LFE);
+    if (Height)
+        Text+=__T('.')+Ztring::ToZtring(Height);
     return Text;
 }
 
