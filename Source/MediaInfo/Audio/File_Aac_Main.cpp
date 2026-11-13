@@ -241,14 +241,14 @@ static const char* Aac_ChannelConfiguration[Aac_Channels_Size]=
     "Front: L C R, Back: C",
     "Front: L C R, Side: L R",
     "Front: L C R, Side: L R, LFE",
-    "Front: L C R, Side: L R, Back: L R, LFE",
+    "Front: L C R, Side: L R, Wide: L R, LFE",
     //AudioSpecificConfig
     "Dual mono",
     "Front: L R, Back: C",
-    "Front: L C R, Back: L R",
-    "Front: L C R, Back: L C R, LFE",
-    "Front: L C R, Back: L L R R, LFE",
-    "",
+    "Front: L R, Side: L R",
+    "Front: L C R, Side: L R, Back: C, LFE",
+    "Front: L C R, Side: L R, Back: L R, LFE",
+    "Front: L C R, Side: L R, Wide: L R, Back: L C R, High: L C R, TopCtrSrrd, HiSide: L R, HiRear: L C R, LowFront: L C R, LFE, LFE2",
     //MPEG-H 3D Audio
     "",
     "",
@@ -280,10 +280,10 @@ static const char* Aac_ChannelConfiguration2[Aac_Channels_Size]=
     //AudioSpecificConfig
     "1+1",
     "2/0/1",
-    "3/2/0",
+    "2/2/0",
     "3/2/1.1",
     "3/2/2.1",
-    "",
+    "3/4/3.2.9.3",
     //MPEG-H 3D Audio
     "",
     "",
