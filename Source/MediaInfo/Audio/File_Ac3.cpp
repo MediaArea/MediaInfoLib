@@ -950,6 +950,14 @@ static const char* AC3_TrueHD_ExtendedSubstreamInfoNum(int8u extended_substream_
 }
 
 //---------------------------------------------------------------------------
+// Presentation with the illegal value 0 or declared as a copy of another one (index of the 2-ch, 6-ch, 8-ch and 16-ch presentations: 0 to 3)
+static bool AC3_TrueHD_Presentation_IsHidden(size_t Index, int8u presentation)
+{
+    return (Index==1 && presentation<=0b01) // 6-ch presentation: illegal, copy of the 2-ch one
+        || (Index==2 && presentation<=0b011); // 8-ch presentation: illegal, copy of the 2-ch or 6-ch one
+}
+
+//---------------------------------------------------------------------------
 static const char* AC3_TrueHD_SubstreamInfoNum(int8u presentation)
 {
     switch (presentation) {
@@ -1305,7 +1313,11 @@ void File_Ac3::Streams_Fill()
                 Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, AC3_TrueHD_Channels_Positions2(HD_Channels2, HD_flags&(1<<11)));
                 Fill(Stream_Audio, 0, Audio_ChannelLayout, AC3_TrueHD_Channels_ChannelLayout(HD_Channels2, HD_flags&(1<<11)));
             }
-            Fill(Stream_Audio, 0, "NumberOfPresentations", HD_HasAtmos ? 4 : 3);
+            int8u NumberOfPresentations=0;
+            for (size_t p=0; p<(size_t)(p_max-!HD_HasAtmos); p++)
+                if (!AC3_TrueHD_Presentation_IsHidden(p, presentations[p].presentation))
+                    NumberOfPresentations++;
+            Fill(Stream_Audio, 0, "NumberOfPresentations", NumberOfPresentations);
             Fill(Stream_Audio, 0, "NumberOfSubstreams", HD_Best_SubStreams_Count?HD_Best_SubStreams_Count:HD_SubStreams_Count);
         }
 
@@ -1473,9 +1485,12 @@ void File_Ac3::Streams_Fill()
 
     //TrueHD presentations
     if (HD_MajorSync_Parsed && HD_StreamType == 0xBA) {
-        for (int p = 0; p < p_max - !HD_HasAtmos; ++p) {
+        size_t Pos = 0;
+        for (int p = p_max - 1 - !HD_HasAtmos; p >= 0; --p) { //From the most complete presentation
             const Presentation& Presentation_Current = presentations[p];
-            string P = Ztring(__T("Presentation") + Ztring::ToZtring(p)).To_UTF8();
+            if (AC3_TrueHD_Presentation_IsHidden(p, Presentation_Current.presentation))
+                continue; //Illegal or same audio as another presentation
+            string P = Ztring(__T("Presentation") + Ztring::ToZtring(Pos++)).To_UTF8();
             if (p == p_16ch) {
                 Fill(Stream_Audio, 0, P.c_str(), "16-ch presentation");
                 Fill(Stream_Audio, 0, (P + " LinkedTo_Substream_Pos").c_str(), AC3_TrueHD_ExtendedSubstreamInfoNum(Presentation_Current.presentation));
