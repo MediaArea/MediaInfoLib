@@ -481,6 +481,8 @@ bool DateTime_Adapt(string& Value_)
         Value.pop_back();
         return DateTime_Adapt_Finalize(Value_, Value, true);
     }
+    if (Value.size() == i + 5 && (Value[i] == '+' || Value[i] == '-') && Value[i + 1] >= '0' && Value[i + 1] <= '9' && Value[i + 2] == ':')
+        Value.insert(i + 1, 1, '0'); // Hours on 1 digit, e.g. "+1:00"
     if (Value.size() <= i + 2)
         return false;
     if ((Value[i] != '+' && Value[i] != '-')
