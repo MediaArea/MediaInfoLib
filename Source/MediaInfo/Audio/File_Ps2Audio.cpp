@@ -37,12 +37,19 @@ void File_Ps2Audio::Read_Buffer_Continue()
     //Parsing
     while (Element_Offset<Element_Size)
     {
+        if (Element_Size-Element_Offset<4)
+            return; //Waiting for the identifier of the next element
+
         int32u ID;
         Peek_B4(ID);
         switch (ID)
         {
-            case 0x53536264 :   SSbd(); break;
-            case 0x53536864 :   SShd(); break;
+            case 0x53536264 :   if (Element_Size-Element_Offset<8)
+                                    return; //Waiting for the size of the body
+                                SSbd(); break;
+            case 0x53536864 :   if (Element_Size-Element_Offset<0x20)
+                                    return; //Waiting for the end of the header
+                                SShd(); break;
             default         :   Element_Offset=Element_Size; Reject("PS2 Audio");
         }
     }
@@ -85,6 +92,7 @@ void File_Ps2Audio::SShd()
         if (Size!=0x18)
         {
             Trusted_IsNot("Bad size");
+            Element_End0();
             return;
         }
         Get_L4 (Format,                                         "Format");
@@ -96,9 +104,13 @@ void File_Ps2Audio::SShd()
     Element_End0();
 
     FILLING_BEGIN();
+        if (Status[IsAccepted])
+            return; //Only the first header is used
+
         Accept("PS2 Audio");
 
-        BitRate=SamplingRate*Channels*16; //Always 16 bits
+        const int64u BitRate64=((int64u)SamplingRate)*Channels*16; //Always 16 bits
+        BitRate=BitRate64>(int32u)-1?0:(int32u)BitRate64;
 
         Stream_Prepare(Stream_Audio);
         Ztring FormatS;
@@ -111,9 +123,12 @@ void File_Ps2Audio::SShd()
         Fill(Stream_Audio, 0, Audio_Format, FormatS);
         Fill(Stream_Audio, 0, Audio_Codec,  FormatS);
         Fill(Stream_Audio, 0, Audio_MuxingMode, "PS2");
-        Fill(Stream_Audio, 0, Audio_SamplingRate, SamplingRate);
-        Fill(Stream_Audio, 0, Audio_Channel_s_, Channels);
-        Fill(Stream_Audio, 0, Audio_BitRate, BitRate);
+        if (SamplingRate)
+            Fill(Stream_Audio, 0, Audio_SamplingRate, SamplingRate);
+        if (Channels)
+            Fill(Stream_Audio, 0, Audio_Channel_s_, Channels);
+        if (BitRate)
+            Fill(Stream_Audio, 0, Audio_BitRate, BitRate);
     FILLING_END();
 }
 
