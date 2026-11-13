@@ -5408,42 +5408,88 @@ static size_t Tags_Size_Max(File__Analyze::tags_format Format, const string& Nam
 }
 
 //---------------------------------------------------------------------------
-static bool Tags_Date_Utc(const string& Date, int64s& Seconds, string& Fraction)
+static bool Tags_Date_Merge(const Ztring& Date1, const Ztring& Date2, Ztring& Merged)
 {
-    //"YYYY-MM-DD hh:mm", seconds and fraction of second if any, then " UTC" or an offset as "+hh:mm"
-    static const char Mask[]="dddd-dd-dd dd:dd";
-    if (Date.size()<sizeof(Mask))
-        return false;
-    for (size_t Pos=0; Pos<sizeof(Mask)-1; Pos++)
-        if (Mask[Pos]=='d'?(Date[Pos]<'0' || Date[Pos]>'9'):(Date[Pos]!=Mask[Pos]))
-            return false;
-    const auto Number=[&Date](size_t Pos) { return (int64s)(Date[Pos]-'0')*10+(Date[Pos+1]-'0'); };
-    const int64s Month=Number(5);
-    const int64s Year=Number(0)*100+Number(2)-(Month<=2);
-    const int64s Era=(Year>=0?Year:Year-399)/400;
-    const int64s YearOfEra=Year-Era*400;
-    const int64s Days=Era*146097+YearOfEra*365+YearOfEra/4-YearOfEra/100+(153*(Month+(Month>2?-3:9))+2)/5+Number(8); //In the Gregorian calendar, the day 0 does not matter
-    Seconds=((Days*24+Number(11))*60+Number(14))*60;
-
-    size_t Pos=sizeof(Mask)-1;
-    Fraction.clear();
-    if (Date[Pos]==':' && Date.find_first_not_of("0123456789", Pos+1)==Pos+3)
+    //"YYYY", "YYYY-MM", "YYYY-MM-DD", "YYYY-MM-DD hh:mm" or "YYYY-MM-DD hh:mm:ss", then the fraction of second if any, then " UTC" or an offset as "+hh:mm" if any.
+    //2 dates are the same date when what is in both is the same (the same instant when both have a time zone), what is only in one of them is a detail: time, seconds, more digits in the fraction of second, time zone.
+    //Merged is then the first date, so in its time zone, with the details of the second date
+    struct date
     {
-        Seconds+=Number(Pos+1);
-        Pos+=3;
-        if (Date[Pos]=='.')
+        size_t Base_Size=0; //Date and time, up to the seconds
+        size_t Fraction_Size=0; //With the dot
+        bool HasZone=false;
+        int64s Minutes=0; //UTC, only with a time zone
+    };
+    const auto Parse=[](const Ztring& Date, date& Parsed)
+    {
+        const auto Number=[&Date](size_t Pos) { return (int64s)(Date[Pos]-__T('0'))*10+(Date[Pos+1]-__T('0')); };
+        static const char Mask[]="dddd-dd-dd dd:dd:dd";
+        size_t Pos=0;
+        while (Pos<sizeof(Mask)-1 && Pos<Date.size() && (Mask[Pos]=='d'?(Date[Pos]>=__T('0') && Date[Pos]<=__T('9')):(Date[Pos]==(Char)Mask[Pos])))
+            Pos++;
+        if (Pos!=4 && Pos!=7 && Pos!=10 && Pos!=16 && Pos!=19)
+            return false;
+        Parsed.Base_Size=Pos;
+        if (Pos==19 && Pos<Date.size() && Date[Pos]==__T('.'))
         {
-            const size_t End=min(Date.find_first_not_of("0123456789", Pos+1), Date.size());
-            Fraction.assign(Date, Pos+1, End-Pos-1);
+            const size_t End=min(Date.find_first_not_of(__T("0123456789"), Pos+1), Date.size());
+            if (End==Pos+1)
+                return false;
+            Parsed.Fraction_Size=End-Pos;
             Pos=End;
         }
-    }
-    if (!Date.compare(Pos, string::npos, " UTC"))
+        if (Pos==Date.size())
+            return true;
+        if (Parsed.Base_Size<16)
+            return false;
+        int64s Offset=0;
+        if (Date.compare(Pos, string::npos, __T(" UTC")))
+        {
+            if (Date.size()!=Pos+6 || (Date[Pos]!=__T('+') && Date[Pos]!=__T('-')) || Date[Pos+3]!=__T(':') || Date.find_first_not_of(__T("0123456789"), Pos+1)!=Pos+3 || Date.find_first_not_of(__T("0123456789"), Pos+4)!=string::npos)
+                return false;
+            Offset=Number(Pos+1)*60+Number(Pos+4);
+            if (Date[Pos]==__T('-'))
+                Offset=-Offset;
+        }
+        const int64s Month=Number(5);
+        const int64s Year=Number(0)*100+Number(2)-(Month<=2);
+        const int64s Era=(Year>=0?Year:Year-399)/400;
+        const int64s YearOfEra=Year-Era*400;
+        const int64s Days=Era*146097+YearOfEra*365+YearOfEra/4-YearOfEra/100+(153*(Month+(Month>2?-3:9))+2)/5+Number(8); //In the Gregorian calendar, the day 0 does not matter
+        Parsed.Minutes=(Days*24+Number(11))*60+Number(14)-Offset;
+        Parsed.HasZone=true;
         return true;
-    if (Date.size()!=Pos+6 || (Date[Pos]!='+' && Date[Pos]!='-') || Date[Pos+3]!=':' || Date.find_first_not_of("0123456789", Pos+1)!=Pos+3 || Date.find_first_not_of("0123456789", Pos+4)!=string::npos)
+    };
+    date Parsed1, Parsed2;
+    if (!Parse(Date1, Parsed1) || !Parse(Date2, Parsed2))
         return false;
-    const int64s Offset=(Number(Pos+1)*60+Number(Pos+4))*60;
-    Seconds+=Date[Pos]=='+'?-Offset:Offset;
+
+    //Date and time, the seconds are compared as they are because the offset of a time zone is in minutes
+    const size_t Base_Size=min(Parsed1.Base_Size, Parsed2.Base_Size);
+    if (Parsed1.HasZone && Parsed2.HasZone)
+    {
+        if (Parsed1.Minutes!=Parsed2.Minutes || (Base_Size==19 && Date1.compare(16, 3, Date2, 16, 3)))
+            return false;
+    }
+    else if (Date1.compare(0, Base_Size, Date2, 0, Base_Size))
+        return false;
+
+    //Fraction of second
+    const size_t Fraction_Size=min(Parsed1.Fraction_Size, Parsed2.Fraction_Size);
+    if (Date1.compare(Parsed1.Base_Size, Fraction_Size, Date2, Parsed2.Base_Size, Fraction_Size))
+        return false;
+
+    Merged.assign(Date1, 0, Parsed1.Base_Size);
+    if (Parsed1.Base_Size<Parsed2.Base_Size)
+        Merged.append(Date2, Parsed1.Base_Size, Parsed2.Base_Size-Parsed1.Base_Size);
+    if (Parsed1.Fraction_Size<Parsed2.Fraction_Size)
+        Merged.append(Date2, Parsed2.Base_Size, Parsed2.Fraction_Size);
+    else
+        Merged.append(Date1, Parsed1.Base_Size, Parsed1.Fraction_Size);
+    if (Parsed1.HasZone)
+        Merged.append(Date1, Parsed1.Base_Size+Parsed1.Fraction_Size, string::npos);
+    else
+        Merged.append(Date2, Parsed2.Base_Size+Parsed2.Fraction_Size, string::npos);
     return true;
 }
 
@@ -5574,12 +5620,21 @@ void File__Analyze::Streams_Finish_Tags()
             const bool IsDate=Item.Name.size()>5 && !Item.Name.compare(Item.Name.size()-5, 5, "_Date");
             if (IsDate)
             {
-                //Same instant in another time zone
-                int64s Seconds_Current, Seconds_Item;
-                string Fraction_Current, Fraction_Item;
-                if (Tags_Date_Utc(Current.To_UTF8(), Seconds_Current, Fraction_Current) && Tags_Date_Utc(Item.Value.To_UTF8(), Seconds_Item, Fraction_Item)
-                 && Seconds_Current==Seconds_Item && (Fraction_Current.empty() || Fraction_Item.empty() || Fraction_Current==Fraction_Item))
+                //Same date with other details or in another time zone, the details of both are shown
+                Ztring Merged;
+                if (Tags_Date_Merge(Current, Item.Value, Merged))
+                {
+                    if (Merged!=Current)
+                    {
+                        Fill(Stream_General, 0, Name, Merged, true);
+                        if (Merged==Item.Value)
+                        {
+                            Sources[Item.Name]=Item.Format;
+                            Item.IsFilled=true;
+                        }
+                    }
                     continue;
+                }
             }
             if (!Long.compare(0, Short.size(), Short))
             {
