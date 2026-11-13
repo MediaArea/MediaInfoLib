@@ -9353,6 +9353,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_ddts()
     int32u  DTSSamplingFrequency, maxBitrate, avgBitrate;
     int16u  ChannelLayout;
     int8u   CoreLayout;
+    bool    CoreLFEPresent;
 
     //Parsing
     Get_B4 (DTSSamplingFrequency,                               "DTSSamplingFrequency");
@@ -9362,7 +9363,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_ddts()
     BS_Begin();
         Skip_S1(2,                                              "FrameDuration");  // 0 = 512, 1 = 1024, 2 = 2048, 3 = 4096
         Skip_S1(5,                                              "StreamConstruction");
-        Skip_SB(                                                "CoreLFEPresent"); // 0 = none, 1 = LFE exists
+        Get_SB (    CoreLFEPresent,                             "CoreLFEPresent"); // 0 = none, 1 = LFE exists
         Get_S1 (6,  CoreLayout,                                 "CoreLayout");
         Skip_S2(14,                                             "CoreSize");
         Skip_SB(                                                "StereoDownmix"); // 0 = none, 1 = downmix present
@@ -9388,8 +9389,8 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_ddts()
         }
         if (CoreLayout && CoreLayout<16)
         {
-            Fill(Stream_Audio, 0, Audio_ChannelPositions, DTS_ChannelPositions[CoreLayout]);
-            Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, DTS_ChannelPositions2[CoreLayout]);
+            Fill(Stream_Audio, 0, Audio_ChannelPositions, (string(DTS_ChannelPositions[CoreLayout])+(CoreLFEPresent?", LFE":"")).c_str());
+            Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, (string(DTS_ChannelPositions2[CoreLayout])+(CoreLFEPresent?".1":"")).c_str());
         }
         #endif //defined(MEDIAINFO_DTS_YES)
     FILLING_END();
