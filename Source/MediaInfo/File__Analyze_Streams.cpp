@@ -5365,7 +5365,7 @@ static Ztring Tags_Genre(const Ztring& Value)
 //---------------------------------------------------------------------------
 static Ztring Tags_Comparable(const string& Name, const Ztring& Value)
 {
-    //Same content in another form: name of the genre, number without leading zeros, list of values in another order or with a value several times
+    //Same content in another form: list of values in another order or with a value several times, name of the genre in upper or lower case, number without leading zeros
     if (Name=="Performer" && Value.find(__T("; "))!=string::npos)
     {
         //List of the artists of Exif, e.g. "Camera owner, John Smith; Photographer, Michael Brown"
@@ -5373,22 +5373,28 @@ static Ztring Tags_Comparable(const string& Name, const Ztring& Value)
         List.FindAndReplace(__T("; "), __T(" / "), 0, Ztring_Recursive);
         return Tags_Comparable(Name, List);
     }
-    if (Name=="Genre")
-        return Tags_Genre(Value);
-    size_t Zeros=0;
-    while (Zeros+1<Value.size() && Value[Zeros]==__T('0'))
-        Zeros++;
-    if (Zeros && Value.find_first_not_of(__T("0123456789"))==string::npos)
-        return Value.substr(Zeros);
     if (Value.find(__T(" / "))!=string::npos)
     {
         ZtringList List;
         List.Separator_Set(0, __T(" / "));
         List.Write(Value);
+        for (Ztring& Item : List)
+            Item=Tags_Comparable(Name, Item);
         sort(List.begin(), List.end());
         List.erase(unique(List.begin(), List.end()), List.end());
         return List.Read();
     }
+    if (Name=="Genre")
+    {
+        Ztring Genre=Tags_Genre(Value);
+        Genre.MakeLowerCase();
+        return Genre;
+    }
+    size_t Zeros=0;
+    while (Zeros+1<Value.size() && Value[Zeros]==__T('0'))
+        Zeros++;
+    if (Zeros && Value.find_first_not_of(__T("0123456789"))==string::npos)
+        return Value.substr(Zeros);
     return Value;
 }
 
@@ -5965,6 +5971,8 @@ void File__Analyze::Streams_Finish_Tags()
             {
                 if (Tags_HasCharacterAbove(Item.Value, 0x7F) && Tags_HasCharacterAbove(Current, 0xFF))
                     continue;
+                if (Item.Name=="Genre" && Item.Value==__T("12"))
+                    continue; //"Other", for a genre which is not in the list of ID3v1
             }
             else if (Source!=Sources.end() && Source->second==Tags_Id3v1 && Tags_HasCharacterAbove(Current, 0x7F) && Tags_HasCharacterAbove(Item.Value, 0xFF))
             {
@@ -5983,7 +5991,8 @@ void File__Analyze::Streams_Finish_Tags()
             string Other=Source==Sources.end()?Retrieve_Const(Stream_General, 0, General_Format).To_UTF8():string(Tags_Format_Names[Source->second]);
             if (!Other.empty())
                 Other+=' ';
-            Fill_Conformance(("Crosscheck "+BuildConformanceName(Format_Name, nullptr, Name)).c_str(), Format_Name+' '+Item.Name+' '+Quoted(Item.Value)+" does not match "+Other+Item.Name+' '+Quoted(Current));
+            const bool IsGenre=Item.Name=="Genre"; //Shown with its name when it is a number of the list of ID3v1
+            Fill_Conformance(("Crosscheck "+BuildConformanceName(Format_Name, nullptr, Name)).c_str(), Format_Name+' '+Item.Name+' '+Quoted(IsGenre?Tags_Genre(Item.Value):Item.Value)+" does not match "+Other+Item.Name+' '+Quoted(IsGenre?Tags_Genre(Current):Current));
         }
     }
     File_Offset=File_Offset_Save;
