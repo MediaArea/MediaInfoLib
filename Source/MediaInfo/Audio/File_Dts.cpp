@@ -975,27 +975,29 @@ std::string DTS_HD_SpeakerActivityMask (int16u SpeakerActivityMask, bool AddCs=f
             Text+=" R";
     }
 
-    if (SpeakerActivityMask&0x0004)
-        Text+=", Side: L R";
+    if (SpeakerActivityMask&0x0804)
+    {
+        Text+=", Side:";
+        if (SpeakerActivityMask&0x0004)
+            Text+=" L R"; //Ls Rs
+        if (SpeakerActivityMask&0x0800)
+            Text+=" L R"; //Lss Rss
+    }
 
-    if (SpeakerActivityMask&0x0010 || AddCs)
-        Text+=", Back: C";
+    bool HasCs=(SpeakerActivityMask&0x0010) || AddCs;
+    bool HasLsrRsr=(SpeakerActivityMask&0x0040) || AddLrsRrs;
+    if (HasCs || HasLsrRsr)
+        Text+=HasLsrRsr?(HasCs?", Back: L C R":", Back: L R"):", Back: C";
 
     if ((SpeakerActivityMask&0x00A0)==0x00A0)
         Text+=", High: L C R";
     else
     {
-        if (SpeakerActivityMask&0x0020 || AddLrsRrs)
+        if (SpeakerActivityMask&0x0020)
             Text+=", High: L R";
         if (SpeakerActivityMask&0x0080)
             Text+=", High: C";
     }
-
-    if (SpeakerActivityMask&0x0800)
-        Text+=", Side: L R";
-
-    if (SpeakerActivityMask&0x0040)
-        Text+=", Back: L R";
 
     if (SpeakerActivityMask&0x0100)
         Text+=", TopCtrSrrd";
@@ -1019,6 +1021,8 @@ std::string DTS_HD_SpeakerActivityMask (int16u SpeakerActivityMask, bool AddCs=f
     if (SpeakerActivityMask&0x1000)
         Text+=", LFE2";
 
+    if (Text.find(", ")==0)
+        Text.erase(0, 2); //No front channel
     return Text;
 }
 
