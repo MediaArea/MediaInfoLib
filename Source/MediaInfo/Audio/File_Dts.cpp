@@ -1024,63 +1024,50 @@ std::string DTS_HD_SpeakerActivityMask (int16u SpeakerActivityMask, bool AddCs=f
 //---------------------------------------------------------------------------
 std::string DTS_HD_SpeakerActivityMask2 (int16u SpeakerActivityMask, bool AddCs=false, bool AddLrsRrs=false)
 {
-    std::string Text;
-    int8u Front=0;
+    int8u Front=0, Side=0, Back=0, LFE=0, Height=0;
+
     if (SpeakerActivityMask&0x0001)
-        Front++;
+        Front++;   //C
     if (SpeakerActivityMask&0x0002)
-        Front+=2;
+        Front+=2;  //L R
     if (SpeakerActivityMask&0x0200)
-        Front+=2;
-    Text+=(char)('0'+Front);
+        Front+=2;  //Lc Rc
 
     if (SpeakerActivityMask&0x0004)
-        Text+="/2";
-    else if ((SpeakerActivityMask&0x0840)==0x0000)
-        Text+="/0";
+        Side+=2;   //Ls Rs
+    if (SpeakerActivityMask&0x0800)
+        Side+=2;   //Lss Rss
+    if (SpeakerActivityMask&0x0400)
+        Side+=2;   //Lw Rw, between front and side
 
     if (SpeakerActivityMask&0x0010 || AddCs)
-        Text+="/1";
-    else if ((SpeakerActivityMask&0x0840)==0x0000)
-        Text+="/0";
-
-    if ((SpeakerActivityMask&0x00A0)==0x00A0)
-        Text+=".3";
-    else
-    {
-        if (SpeakerActivityMask&0x0020 || AddLrsRrs)
-            Text+=".2";
-        if (SpeakerActivityMask&0x0080)
-            Text+=".2";
-    }
-
-    if (SpeakerActivityMask&0x0800)
-        Text+="/2";
-    if (SpeakerActivityMask&0x0040)
-        Text+="/2";
-
-    if (SpeakerActivityMask&0x0100)
-        Text+=".1";
-    if (SpeakerActivityMask&0x0400)
-        Text+=".2";
-    if (SpeakerActivityMask&0x2000)
-        Text+=".2";
-
-    if ((SpeakerActivityMask&0xC000)==0x0C000)
-        Text+=".3";
-    else
-    {
-        if (SpeakerActivityMask&0x4000)
-            Text+=".1";
-        if (SpeakerActivityMask&0x8000)
-            Text+=".2";
-    }
+        Back++;    //Cs
+    if (SpeakerActivityMask&0x0040 || AddLrsRrs)
+        Back+=2;   //Lsr Rsr
 
     if (SpeakerActivityMask&0x0008)
-        Text+=".1";
+        LFE++;
     if (SpeakerActivityMask&0x1000)
-        Text+=".1";
+        LFE++;
 
+    if (SpeakerActivityMask&0x0020)
+        Height+=2; //Lh Rh
+    if (SpeakerActivityMask&0x0080)
+        Height++;  //Ch
+    if (SpeakerActivityMask&0x0100)
+        Height++;  //Oh
+    if (SpeakerActivityMask&0x2000)
+        Height+=2; //Lhs Rhs
+    if (SpeakerActivityMask&0x4000)
+        Height++;  //Chr
+    if (SpeakerActivityMask&0x8000)
+        Height+=2; //Lhr Rhr
+
+    std::string Text=std::to_string(Front)+'/'+std::to_string(Side)+'/'+std::to_string(Back);
+    if (LFE || Height)
+        Text+='.'+std::to_string(LFE);
+    if (Height)
+        Text+='.'+std::to_string(Height);
     return Text;
 }
 
@@ -1509,7 +1496,22 @@ void File_Dts::Streams_Fill()
                     DtsXBedChannelPositions.insert(LfePos, Heights);
             }
             if (!Data[ChannelPositions2].back().empty())
-                DtsXBedChannelPositions2=Data[ChannelPositions2].back()+__T(".4");
+            {
+                //Height count after the LFE count, which is absent without LFE channel
+                DtsXBedChannelPositions2=Data[ChannelPositions2].back();
+                size_t LfeDot=DtsXBedChannelPositions2.find(__T('.'));
+                size_t HeightDot=LfeDot==string::npos?string::npos:DtsXBedChannelPositions2.find(__T('.'), LfeDot+1);
+                if (LfeDot==string::npos)
+                    DtsXBedChannelPositions2+=__T(".0.4");
+                else if (HeightDot==string::npos)
+                    DtsXBedChannelPositions2+=__T(".4");
+                else
+                {
+                    int32u Heights=Ztring(DtsXBedChannelPositions2.substr(HeightDot+1)).To_int32u();
+                    DtsXBedChannelPositions2.resize(HeightDot+1);
+                    DtsXBedChannelPositions2+=Ztring::ToZtring(Heights+4);
+                }
+            }
             DtsXBedChannelCount=Data[Channels].back().To_int64u()+DtsXSupplementalChannelCount;
 
             for (int8u pos = 0; pos < (Presence[presence_Extended_IMAX] ? 2 : 1); ++pos) {
