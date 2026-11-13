@@ -674,13 +674,14 @@ void File_Xmp::photoshop(const string& name, const string& value)
 //---------------------------------------------------------------------------
 void File_Xmp::xmp(const string& name, const string& value)
 {
-    if (name == "xmp:CreateDate") {
+    const bool IsNotSet = !value.compare(0, 10, "1970-01-01"); //Some tools write this date (0 as Unix time) when the date is not known
+    if (name == "xmp:CreateDate" && !IsNotSet) {
         Ztring CreateDateT = Ztring().From_UTF8(value);
         if (CreateDateT > CreateDate) CreateDate = CreateDateT;
         if (CreateDate > ModifyDate)
             Fill(Stream_General, 0, General_Encoded_Date, CreateDate, true);
     }
-    if (name == "xmp:ModifyDate") {
+    if (name == "xmp:ModifyDate" && !IsNotSet) {
         ModifyDate = Ztring().From_UTF8(value);
         if (ModifyDate > CreateDate)
             Fill(Stream_General, 0, General_Encoded_Date, ModifyDate, true);
