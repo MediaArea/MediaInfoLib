@@ -2634,6 +2634,8 @@ void File_MpegTs::Header_Parse()
             if (transport_scrambling_control>0)
                 Complete_Stream->Streams[pid]->Scrambled_Count++;
         }
+        else if (Element_Offset+TSP_Size<TS_Size && Element_Offset<Element_Size)
+            Element_Offset=min<int64u>(TS_Size-TSP_Size, Element_Size); //Junk
 
         //Filling
         /*Element[1].Next=File_Offset+Buffer_Offset+TS_Size;  //*/Header_Fill_Size(TS_Size);
