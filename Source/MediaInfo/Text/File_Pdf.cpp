@@ -824,7 +824,7 @@ static size_t Pdf_Info_Parameter(const string& Key)
     if (Key=="Title")
         return General_Title;
     if (Key=="Author")
-        return General_Producer;
+        return General_Performer;
     if (Key=="Subject")
         return General_Description;
     if (Key=="Keywords")

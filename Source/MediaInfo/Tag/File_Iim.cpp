@@ -299,7 +299,7 @@ void File_Iim::TimeCreated()
 //---------------------------------------------------------------------------
 void File_Iim::Byline()
 {
-    FillString(General_Producer);
+    FillString(General_Performer);
 }
 
 //---------------------------------------------------------------------------

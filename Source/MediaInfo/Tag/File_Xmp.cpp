@@ -444,7 +444,7 @@ void File_Xmp::dc(const string& name, const string& value)
     if (name == "dc:subject")
         parameter = General_Subject;
     if (name == "dc:creator")
-        parameter = General_Producer;
+        parameter = General_Performer;
     if (name == "dc:rights")
         parameter = General_Copyright;
     if (parameter)
