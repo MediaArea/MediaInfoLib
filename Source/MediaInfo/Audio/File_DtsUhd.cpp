@@ -1177,13 +1177,13 @@ struct DTSUHD_ChannelMaskInfo DTSUHD_DecodeChannelMask(int32u ChannelMask)
             {
                 Info.ChannelLayoutText+=" Lw";
                 Info.ChannelPositionsText+=" L";
-                Info.CountFront++;
+                Info.CountSide++; //Between front and side
             }
             if (ChannelMask & 0x00040000)
             {
                 Info.ChannelLayoutText+=" Rw";
                 Info.ChannelPositionsText+=" R";
-                Info.CountFront++;
+                Info.CountSide++;
             }
         }
 
