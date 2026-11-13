@@ -142,6 +142,8 @@ private :
     int8u  HD_ExSSFrameDurationCode;
     int8u  DtsXObjectCount;
     int8u  DtsXSupplementalChannelCount;
+    int32u DtsXSupplementalMask;
+    int16u Extension_SpeakerActivityMask;
     bool   DtsXObjectCountProbeDone;
     bool   AuxiliaryData;
     bool   ExtendedCoding;
