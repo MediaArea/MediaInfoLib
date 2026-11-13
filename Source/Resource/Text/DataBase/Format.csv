@@ -110,6 +110,7 @@ MPEG Audio;;;A;Mpega;;m1a mpa mpa1 mp1 m2a mpa2 mp2 mp3;audio/mpeg;;Lossy
 OpenMG;;;A;OpenMG;;oma omg aa3 at3;;;Lossy
 Musepack SV7;;;A;Mpc;;mpc mp+ mpp;;http://www.musepack.net;Lossy
 Musepack SV8;;;A;MpcSv8;;mpc;;http://www.musepack.net;Lossy
+PS2 Audio;;;A;Ps2Audio;;ss2;;;
 QCELP;;;A;;;;audio/QCELP;;
 QLCM;;;A;Riff;;qcp;;https://tools.ietf.org/html/rfc3625;Lossy
 RIFF-MIDI;;;A;Riff;RIFF Musical Instrument Digital Interface;;;;

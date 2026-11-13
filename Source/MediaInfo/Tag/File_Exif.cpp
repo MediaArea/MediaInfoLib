@@ -1590,6 +1590,7 @@ void File_Exif::Streams_Finish()
             case IFD0::Make: Parameter = General_Encoded_Hardware_CompanyName; break;
             case IFD0::Model: Parameter = General_Encoded_Hardware_Model; break;
             case IFD0::Software: Parameter = General_Encoded_Application; break;
+            case IFD0::Artist: Parameter = General_Performer; break;
             case IFD0::DateTime: {
                 Parameter = General_Encoded_Date;
                 Value = MergeDateTimeSubSecOffset(Item.second, IFDExif::SubSecTime, IFDExif::OffsetTime);

@@ -251,6 +251,9 @@ bool File_Xmp::FileHeader_Begin()
             XML_ELEMENT_LIST_NAMESPACE(dc, "dc:subject", "rdf:Bag")
             XML_ELEMENT_LIST_NAMESPACE(dc, "dc:creator", "rdf:Seq")
             XML_ELEMENT_LIST_NAMESPACE(dc, "dc:rights", "rdf:Alt")
+            XML_ELEMENT_LIST_NAMESPACE(photoshop, "photoshop:SupplementalCategories", "rdf:Bag")
+            XML_ELEMENT_LIST_NAMESPACE(Iptc4xmpCore, "Iptc4xmpCore:SubjectCode", "rdf:Bag")
+            XML_ELEMENT_LIST_NAMESPACE(Iptc4xmpCore, "Iptc4xmpCore:Scene", "rdf:Bag")
             XML_ELEMENT("GDepth:Data")
                 XML_VALUE
                 ParseBase64Image(tfsxml_decode(v).c_str(), "Extended XMP / GDepth Data", "Depth");
@@ -391,6 +394,9 @@ bool File_Xmp::FileHeader_Begin()
             XML_ELEMENT("pdfaid:conformance")
                 XML_VALUE
                 pdfaid_conformance = tfsxml_decode(v);
+            XML_ELEMENT_NAMESPACE(exif)
+            XML_ELEMENT_NAMESPACE(GIMP)
+            XML_ELEMENT_NAMESPACE(pdf)
             XML_ELEMENT_NAMESPACE(photoshop)
             XML_ELEMENT_NAMESPACE(xmp)
             XML_ELEMENT_NAMESPACE(Iptc4xmpCore)
@@ -441,7 +447,7 @@ void File_Xmp::dc(const string& name, const string& value)
     if (name == "dc:subject")
         parameter = General_Subject;
     if (name == "dc:creator")
-        parameter = General_Producer;
+        parameter = General_Performer;
     if (name == "dc:rights")
         parameter = General_Copyright;
     if (parameter)
@@ -451,7 +457,7 @@ void File_Xmp::dc(const string& name, const string& value)
 //---------------------------------------------------------------------------
 void File_Xmp::exif(const string& name, const string& value)
 {
-    if (name == "exif:DateTimeOriginal")
+    if (name == "exif:DateTimeOriginal" && Retrieve_Const(Stream_General, 0, General_Recorded_Date).empty())
         Fill(Stream_General, 0, General_Recorded_Date, value);
     if (name == "exif:DateTimeDigitized")
         Fill(Stream_General, 0, General_Mastered_Date, value);
@@ -636,12 +642,24 @@ void File_Xmp::photoshop(const string& name, const string& value)
         Fill(Stream_General, 0, "State", value);
     if (name == "photoshop:Headline")
         Fill(Stream_General, 0, "Headline", value);
-    if (name == "photoshop:DateCreated") {
-        Ztring CreateDateT = Ztring().From_UTF8(value);
-        if (CreateDateT > CreateDate) CreateDate = CreateDateT;
-        if (CreateDate > ModifyDate)
-            Fill(Stream_General, 0, General_Encoded_Date, CreateDate, true);
-    }
+    if (name == "photoshop:Category")
+        Fill(Stream_General, 0, "Category", value);
+    if (name == "photoshop:SupplementalCategories")
+        Fill(Stream_General, 0, "SupplementalCategories", value);
+    if (name == "photoshop:Urgency")
+        Fill(Stream_General, 0, "Urgency", value);
+    if (name == "photoshop:Instructions")
+        Fill(Stream_General, 0, "Instructions", value);
+    if (name == "photoshop:AuthorsPosition")
+        Fill(Stream_General, 0, "CreatorJobTitle", value);
+    if (name == "photoshop:TransmissionReference")
+        Fill(Stream_General, 0, "JobId", value);
+    if (name == "photoshop:Source")
+        Fill(Stream_General, 0, "Source", value);
+    if (name == "photoshop:CaptionWriter")
+        Fill(Stream_General, 0, "DescriptionWriter", value);
+    if (name == "photoshop:DateCreated" && Retrieve_Const(Stream_General, 0, General_Recorded_Date).empty())
+        Fill(Stream_General, 0, General_Recorded_Date, value); //Date of creation of the content, as exif:DateTimeOriginal and the IPTC date created
 }
 
 //---------------------------------------------------------------------------
@@ -680,6 +698,14 @@ void File_Xmp::Iptc4xmpCore(const string& name, const string& value)
 {
     if (name == "Iptc4xmpCore:Location")
         Fill(Stream_General, 0, "Sublocation", value);
+    if (name == "Iptc4xmpCore:CountryCode")
+        Fill(Stream_General, 0, "CountryCode", value);
+    if (name == "Iptc4xmpCore:IntellectualGenre")
+        Fill(Stream_General, 0, "IntellectualGenre", value);
+    if (name == "Iptc4xmpCore:SubjectCode")
+        Fill(Stream_General, 0, "SubjectCode", value);
+    if (name == "Iptc4xmpCore:Scene")
+        Fill(Stream_General, 0, "SceneCode", value);
 }
 
 //---------------------------------------------------------------------------

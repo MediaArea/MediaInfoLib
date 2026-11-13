@@ -1970,6 +1970,11 @@ bool File_MpegTs::Synched_Test()
                     TSP_Size=0; // Last bytes of a content and partial TS packet without the content after the TS content
                 else
                     TSP_Size-=LastPacker_Missing;
+
+                //The last packet is parsed only if its header, with the length of its adaptation field, is complete
+                const size_t Remain=Buffer_Size-Buffer_Offset;
+                if (Remain<BDAV_Size+4 || ((Buffer[Buffer_Offset+BDAV_Size+3]&0x20) && Remain<BDAV_Size+5))
+                    Buffer_Offset=Buffer_Size;
             }
         }
         return true;
@@ -2601,8 +2606,8 @@ void File_MpegTs::Header_Parse()
             if (transport_scrambling_control>0)
                 Complete_Stream->Streams[pid]->Scrambled_Count++;
         }
-        else if (Element_Offset+TSP_Size<TS_Size)
-            Skip_XX(TS_Size-Element_Offset-TSP_Size,            "Junk");
+        else if (Element_Offset+TSP_Size<TS_Size && Element_Offset<Element_Size)
+            Skip_XX(min<int64u>(TS_Size-TSP_Size, Element_Size)-Element_Offset, "Junk");
 
         //Filling
         Header_Fill_Code(pid, __T("0x")+Ztring().From_CC2(pid));
@@ -2614,6 +2619,8 @@ void File_MpegTs::Header_Parse()
     {
     #endif //MEDIAINFO_TRACE
         //Parsing
+               pid=                        ((Buffer[Buffer_Offset+BDAV_Size+1]&0x1F)<<8)
+                                          |  Buffer[Buffer_Offset+BDAV_Size+2]; //Not set by Synched_Test() for the last packet of a truncated file
                payload_unit_start_indicator=(Buffer[Buffer_Offset+BDAV_Size+1]&0x40)!=0;
                transport_scrambling_control= Buffer[Buffer_Offset+BDAV_Size+3]&0xC0;
         bool   adaptation=                  (Buffer[Buffer_Offset+BDAV_Size+3]&0x20)!=0;
@@ -2634,6 +2641,8 @@ void File_MpegTs::Header_Parse()
             if (transport_scrambling_control>0)
                 Complete_Stream->Streams[pid]->Scrambled_Count++;
         }
+        else if (Element_Offset+TSP_Size<TS_Size && Element_Offset<Element_Size)
+            Element_Offset=min<int64u>(TS_Size-TSP_Size, Element_Size); //Junk
 
         //Filling
         /*Element[1].Next=File_Offset+Buffer_Offset+TS_Size;  //*/Header_Fill_Size(TS_Size);
@@ -2656,11 +2665,11 @@ void File_MpegTs::Header_Parse_AdaptationField()
         int8u adaptation_field_length;
         Get_B1 (adaptation_field_length,                            "adaptation_field_length");
         if (adaptation_field_length>188-4-1) //TS size - header - adaptation_field_length
-        {
             adaptation_field_length=188-4-1;
-            Skip_XX(188-4-1,                                        "stuffing_bytes");
-        }
-        else if (adaptation_field_length>0)
+        if (Element_Pos_Save+1+adaptation_field_length>Element_Size)
+            adaptation_field_length=(int8u)(Element_Size-(Element_Pos_Save+1)); //Last packet of a truncated file
+        const int64u AdaptationField_End=Element_Pos_Save+1+adaptation_field_length;
+        if (adaptation_field_length>0)
         {
             bool discontinuity_indicator, PCR_flag, OPCR_flag, splicing_point_flag, transport_private_data_flag, adaptation_field_extension_flag;
             BS_Begin();
@@ -2673,6 +2682,10 @@ void File_MpegTs::Header_Parse_AdaptationField()
             Get_SB (    transport_private_data_flag,                "transport_private_data_flag");
             Get_SB (    adaptation_field_extension_flag,            "adaptation_field_extension_flag");
             BS_End();
+
+            //A field declared by the flags and not in the adaptation field is not parsed, and the next ones neither (same result as without trace)
+            if (PCR_flag && adaptation_field_length<6)
+                PCR_flag=OPCR_flag=splicing_point_flag=transport_private_data_flag=adaptation_field_extension_flag=false;
             if (PCR_flag)
             {
                 #ifdef MEDIAINFO_MPEGTS_PCR_YES
@@ -2751,6 +2764,8 @@ void File_MpegTs::Header_Parse_AdaptationField()
                     Skip_B6(                                        "program_clock_reference");
                 #endif //MEDIAINFO_MPEGTS_PCR_YES
             }
+            if (OPCR_flag && Element_Offset+6>AdaptationField_End)
+                OPCR_flag=splicing_point_flag=transport_private_data_flag=adaptation_field_extension_flag=false;
             if (OPCR_flag)
             {
                 BS_Begin();
@@ -2759,24 +2774,33 @@ void File_MpegTs::Header_Parse_AdaptationField()
                 Skip_S2( 9,                                         "original_program_clock_reference_extension");
                 BS_End();
             }
+            if (splicing_point_flag && Element_Offset+1>AdaptationField_End)
+                splicing_point_flag=transport_private_data_flag=adaptation_field_extension_flag=false;
             if (splicing_point_flag)
             {
                 Skip_B1(                                            "splice_countdown");
             }
+            if (transport_private_data_flag && Element_Offset+1>=AdaptationField_End)
+                transport_private_data_flag=adaptation_field_extension_flag=false;
             if (transport_private_data_flag)
             {
                 int8u transport_private_data_length;
                 Get_B1 (transport_private_data_length,              "transport_private_data_length");
-                if (Element_Offset+transport_private_data_length<=Element_Pos_Save+1+adaptation_field_length)
+                if (Element_Offset+transport_private_data_length<=AdaptationField_End)
                     transport_private_data(transport_private_data_length);
                 else
-                    Skip_XX(Element_Pos_Save+1+adaptation_field_length-Element_Offset, "problem");
+                {
+                    Skip_XX(AdaptationField_End-Element_Offset,     "problem");
+                    adaptation_field_extension_flag=false;
+                }
             }
+            if (adaptation_field_extension_flag && Element_Offset+1>AdaptationField_End)
+                adaptation_field_extension_flag=false;
             if (adaptation_field_extension_flag)
             {
                 int8u adaptation_field_extension_length;
                 Get_B1 (adaptation_field_extension_length,          "adaptation_field_extension_length");
-                if (Element_Offset+adaptation_field_extension_length<=Element_Pos_Save+1+adaptation_field_length)
+                if (adaptation_field_extension_length && Element_Offset+adaptation_field_extension_length<=AdaptationField_End)
                 {
                     Element_Begin1("adaptation_field_extension");
                     int64u End=Element_Offset+adaptation_field_extension_length;
@@ -2786,6 +2810,8 @@ void File_MpegTs::Header_Parse_AdaptationField()
                     Get_SB (    piecewise_rate_flag,                        "piecewise_rate_flag");
                     Get_SB (    seamless_splice_flag,                       "seamless_splice_flag");
                     Skip_S1( 5,                                             "reserved");
+                    if (1+(ltw_flag?2:0)+(piecewise_rate_flag?3:0)+(seamless_splice_flag?5:0)>adaptation_field_extension_length)
+                        ltw_flag=piecewise_rate_flag=seamless_splice_flag=false; //Fields declared by the flags and not in the extension are not parsed
                     if (ltw_flag)
                     {
                         Skip_SB(                                            "ltw_valid_flag");
@@ -2803,11 +2829,11 @@ void File_MpegTs::Header_Parse_AdaptationField()
                         int8u  DTS_32;
                         Element_Begin1("DTS");
                         Get_S1 ( 3, DTS_32,                                 "DTS_32");
-                        Mark_1();
+                        Mark_1_NoTrustError(); //The packet is parsed the same way with and without trace
                         Get_S2 (15, DTS_29,                                 "DTS_29");
-                        Mark_1();
+                        Mark_1_NoTrustError();
                         Get_S2 (15, DTS_14,                                 "DTS_14");
-                        Mark_1();
+                        Mark_1_NoTrustError();
 
                         //Filling
                         int64u DTS;
@@ -2823,12 +2849,14 @@ void File_MpegTs::Header_Parse_AdaptationField()
                     Element_End0();
                 }
                 else
-                    Skip_XX(Element_Pos_Save+1+adaptation_field_length-Element_Offset, "problem");
+                    Skip_XX(AdaptationField_End-Element_Offset,     "problem");
             }
         }
 
-        if (Element_Offset<Element_Pos_Save+1+adaptation_field_length)
-            Skip_XX(Element_Pos_Save+1+adaptation_field_length-Element_Offset, "stuffing_bytes");
+        if (Element_Offset<AdaptationField_End)
+            Skip_XX(AdaptationField_End-Element_Offset,             "stuffing_bytes");
+        else if (Element_Offset>AdaptationField_End)
+            Element_Offset=AdaptationField_End; //Field ending after the adaptation field
         Element_End0();
     }
     else
@@ -2839,6 +2867,8 @@ void File_MpegTs::Header_Parse_AdaptationField()
         int8u adaptation_field_length=Buffer[Buffer_Offset+BDAV_Size+4];
         if (adaptation_field_length>188-(4+1)) //TS size - header - adaptation_field_length
             adaptation_field_length=188-(4+1);
+        if (BDAV_Size+5+adaptation_field_length>Element_Size)
+            adaptation_field_length=(int8u)(Element_Size-(BDAV_Size+5)); //Last packet of a truncated file
         #ifdef MEDIAINFO_MPEGTS_PCR_YES
             if (adaptation_field_length)
             {
@@ -3000,7 +3030,7 @@ void File_MpegTs::Header_Parse_AdaptationField()
                     if (transport_private_data_length<=adaptation_field_length-(adaptation_field_length_Min+1))
                     {
                         int64u Element_Offset_Save=Element_Offset;
-                        Element_Offset=5+adaptation_field_length_Min+1;
+                        Element_Offset=BDAV_Size+5+adaptation_field_length_Min+1;
                         transport_private_data(transport_private_data_length);
                         Element_Offset=Element_Offset_Save;
                     }

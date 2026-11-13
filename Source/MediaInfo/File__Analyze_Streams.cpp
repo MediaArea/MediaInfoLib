@@ -5393,11 +5393,11 @@ static size_t Tags_Size_Max(File__Analyze::tags_format Format, const string& Nam
         case File__Analyze::Tags_Id3v1 :
             return 28;
         case File__Analyze::Tags_Iim :
-            if (Name=="Producer" || Name=="City" || Name=="Sublocation" || Name=="State")
+            if (Name=="Performer" || Name=="City" || Name=="Sublocation" || Name=="State" || Name=="CreatorJobTitle" || Name=="JobId" || Name=="Source" || Name=="DescriptionWriter")
                 return 29;
             if (Name=="Title" || Name=="Country")
                 return 61;
-            if (Name=="Headline")
+            if (Name=="Headline" || Name=="Instructions")
                 return 253;
             if (Name=="Description")
                 return 1997;
@@ -5584,7 +5584,15 @@ void File__Analyze::Streams_Finish_Tags()
             if (!Long.compare(0, Short.size(), Short))
             {
                 if (IsDate && (Long[Short.size()]<__T('0') || Long[Short.size()]>__T('9')))
+                {
+                    if (Current_IsShort)
+                    {
+                        Fill(Stream_General, 0, Name, Item.Value, true);
+                        Sources[Item.Name]=Item.Format;
+                        Item.IsFilled=true;
+                    }
                     continue;
+                }
                 const tags_format Short_Format=Current_IsShort?(Source==Sources.end()?Tags_Max:Source->second):(tags_format)Format;
                 const size_t Size_Max=Tags_Size_Max(Short_Format, Item.Name);
                 if (Size_Max && (Short_Format==Tags_Iim?Short.To_UTF8().size():Short.size())>=Size_Max)

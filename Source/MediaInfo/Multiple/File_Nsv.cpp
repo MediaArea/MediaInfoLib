@@ -399,6 +399,38 @@ void File_Nsv::FileHeader_Parse()
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+// A sync frame which is not followed by another frame (e.g. junk between frames) is trusted when it has the formats of the stream or,
+// before the first sync frame is parsed, when another sync frame of the buffer has the same formats, sizes and frame rate
+static bool Nsv_SyncFrame_IsTrusted(const int8u* Buffer, size_t Buffer_Size, size_t Buffer_Offset, const stream* Streams)
+{
+    const int8u* Frame=Buffer+Buffer_Offset;
+    if (Streams)
+    {
+        auto vidfmt=BigEndian2int32u(Frame+4);
+        auto audfmt=BigEndian2int32u(Frame+8);
+        return (vidfmt==Elements::NONE?0:vidfmt)==Streams[0].codecid && (audfmt==Elements::NONE?0:audfmt)==Streams[1].codecid;
+    }
+
+    //Formats are upper case letters, digits and spaces
+    for (size_t i=4; i<12; i++)
+        if (!((Frame[i]>='A' && Frame[i]<='Z') || (Frame[i]>='0' && Frame[i]<='9') || Frame[i]==' '))
+            return false;
+
+    //Searching another sync frame
+    for (size_t Pos=Buffer_Offset+4; Pos+17<=Buffer_Size; Pos++)
+    {
+        auto Next=(const int8u*)memchr(Buffer+Pos, 'N', Buffer_Size-16-Pos);
+        if (!Next)
+            break;
+        Pos=Next-Buffer;
+        if (BigEndian2int32u(Next)==Elements::NSVs && !memcmp(Next+4, Frame+4, 13))
+            return true;
+    }
+
+    return false;
+}
+
+//---------------------------------------------------------------------------
 bool File_Nsv::Synchronize()
 {
     //Synchronizing
@@ -431,6 +463,8 @@ bool File_Nsv::Synchronize()
                 return false;
             auto sync_hdr1=BigEndian2int32u(Buffer+Buffer_Offset+Size);
             if (sync_hdr1==Elements::NSVs || (sync_hdr1>>16)==0xEFBE)
+                break;
+            if (IsMainSync && Nsv_SyncFrame_IsTrusted(Buffer, Buffer_Size, Buffer_Offset, P && P->IsMajorSynched?P->Streams:nullptr))
                 break;
         }
 

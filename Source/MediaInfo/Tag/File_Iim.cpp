@@ -174,15 +174,28 @@ enum IPTC_CodedCharacterSet {
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-void File_Iim::Streams_Finish()
+static Ztring Iim_DateTime(const Ztring& Date, const Ztring& Time)
 {
-    //Date as CCYYMMDD, time as HHMMSS then the offset from UTC as +HHMM or -HHMM
+    //Date as CCYYMMDD, time as HHMMSS then the offset from UTC as +HHMM or -HHMM (some tools do not write the offset)
     if (Date.size()!=8 || Date.find_first_not_of(__T("0123456789"))!=string::npos)
-        return;
+        return Ztring();
     Ztring Value=Date.substr(0, 4)+__T('-')+Date.substr(4, 2)+__T('-')+Date.substr(6, 2);
     if (Time.size()==11 && Time.find_first_not_of(__T("0123456789"))==6 && (Time[6]==__T('+') || Time[6]==__T('-')) && Time.find_first_not_of(__T("0123456789"), 7)==string::npos)
         Value+=__T(' ')+Time.substr(0, 2)+__T(':')+Time.substr(2, 2)+__T(':')+Time.substr(4, 2)+Time.substr(6, 3)+__T(':')+Time.substr(9, 2);
-    Fill(Stream_General, 0, General_Recorded_Date, Value);
+    else if (Time.size()==6 && Time.find_first_not_of(__T("0123456789"))==string::npos)
+        Value+=__T(' ')+Time.substr(0, 2)+__T(':')+Time.substr(2, 2)+__T(':')+Time.substr(4, 2);
+    return Value;
+}
+
+//---------------------------------------------------------------------------
+void File_Iim::Streams_Finish()
+{
+    Fill(Stream_General, 0, General_Recorded_Date, Iim_DateTime(Date, Time));
+    Fill(Stream_General, 0, General_Mastered_Date, Iim_DateTime(Date_Digital, Time_Digital));
+    Fill(Stream_General, 0, General_Released_Date, Iim_DateTime(Date_Release, Time_Release));
+    Fill(Stream_General, 0, "ExpirationDate", Iim_DateTime(Date_Expiration, Time_Expiration));
+    if (!Program.empty())
+        Fill(Stream_General, 0, General_Encoded_Application, ProgramVersion.empty()?Program:(Program+__T(' ')+ProgramVersion));
 }
 
 //***************************************************************************
@@ -225,26 +238,57 @@ void File_Iim::Header_Parse()
 void File_Iim::Data_Parse()
 {
     #define ELEMENT_CASE(record, dataset, call) case ((unsigned)record << 8) | dataset: call(); break;
+    #define ELEMENT_FILL(record, dataset, parameter) case ((unsigned)record << 8) | dataset: FillString(parameter); break;
+    #define ELEMENT_GET(record, dataset, value) case ((unsigned)record << 8) | dataset: GetString(value); break;
 
     switch (Element_Code) {
     ELEMENT_CASE(  1,  90, CodedCharacterSet)
     ELEMENT_CASE(  2,   0, RecordVersion)
+    ELEMENT_FILL(  2,   4, "ObjectAttributeReference")
     ELEMENT_CASE(  2,   5, ObjectName)
+    ELEMENT_FILL(  2,   7, "EditStatus")
+    ELEMENT_FILL(  2,  10, "Urgency")
+    ELEMENT_FILL(  2,  12, "SubjectReference")
+    ELEMENT_FILL(  2,  15, "Category")
+    ELEMENT_FILL(  2,  20, "SupplementalCategories")
+    ELEMENT_FILL(  2,  22, "FixtureIdentifier")
     ELEMENT_CASE(  2,  25, Keywords)
+    ELEMENT_FILL(  2,  26, "ContentLocationCode")
+    ELEMENT_FILL(  2,  27, "ContentLocationName")
+    ELEMENT_GET (  2,  30, Date_Release)
+    ELEMENT_GET (  2,  35, Time_Release)
+    ELEMENT_GET (  2,  37, Date_Expiration)
+    ELEMENT_GET (  2,  38, Time_Expiration)
+    ELEMENT_FILL(  2,  40, "Instructions")
     ELEMENT_CASE(  2,  55, DateCreated)
     ELEMENT_CASE(  2,  60, TimeCreated)
+    ELEMENT_GET (  2,  62, Date_Digital)
+    ELEMENT_GET (  2,  63, Time_Digital)
+    ELEMENT_GET (  2,  65, Program)
+    ELEMENT_GET (  2,  70, ProgramVersion)
+    ELEMENT_FILL(  2,  75, "ObjectCycle")
     ELEMENT_CASE(  2,  80, Byline)
+    ELEMENT_FILL(  2,  85, "CreatorJobTitle")
     ELEMENT_CASE(  2,  90, City)
     ELEMENT_CASE(  2,  92, Sublocation)
     ELEMENT_CASE(  2,  95, ProvinceState)
+    ELEMENT_FILL(  2, 100, "CountryCode")
     ELEMENT_CASE(  2, 101, CountryName)
+    ELEMENT_FILL(  2, 103, "JobId")
     ELEMENT_CASE(  2, 105, Headline)
     ELEMENT_CASE(  2, 110, Credit)
+    ELEMENT_FILL(  2, 115, "Source")
     ELEMENT_CASE(  2, 116, CopyrightNotice)
+    ELEMENT_FILL(  2, 118, "Contact")
     ELEMENT_CASE(  2, 120, CaptionAbstract)
+    ELEMENT_FILL(  2, 122, "DescriptionWriter")
     ELEMENT_CASE(  2, 221, PhotoMechanicPrefs)
     default: Skip_XX(Element_Size,                               "(Unknown)");
     }
+
+    #undef ELEMENT_CASE
+    #undef ELEMENT_FILL
+    #undef ELEMENT_GET
 }
 
 //***************************************************************************
@@ -299,7 +343,7 @@ void File_Iim::TimeCreated()
 //---------------------------------------------------------------------------
 void File_Iim::Byline()
 {
-    FillString(General_Producer);
+    FillString(General_Performer);
 }
 
 //---------------------------------------------------------------------------
