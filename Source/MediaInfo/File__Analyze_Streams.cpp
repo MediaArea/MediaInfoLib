@@ -5985,6 +5985,9 @@ void File__Analyze::Streams_Finish_Tags()
             //Not the same content, which is expected for the tool: each part of the file may be written by another one
             if (!Item.Name.compare(0, 19, "Encoded_Application") || !Item.Name.compare(0, 15, "Encoded_Library"))
                 continue;
+            //Not the same content, which is expected for the user comment of Exif: it is not the comment of the file
+            if (Item.Name=="Comment" && (Format==Tags_Exif || (Source!=Sources.end() && Source->second==Tags_Exif)))
+                continue;
             if (IsSub)
                 continue; //Compared by the parser these tags are given to
             const string Format_Name=Tags_Format_Names[Format];
