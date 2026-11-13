@@ -198,11 +198,11 @@ void File_ApeTag::Data_Parse()
     else if (Key=="ALBUM ARTIST")   Fill(Stream_General, 0, General_Album_Performer, Value);
     else if (Key=="ARTIST")         Fill(Stream_General, 0, General_Performer, Value);
     else if (Key=="AUTHOR")         Fill(Stream_General, 0, General_WrittenBy, Value);
-    else if (Key=="BAND")           Fill(Stream_General, 0, General_Performer, Value);
+    else if (Key=="BAND")           Fill(Stream_General, 0, General_Album_Performer, Value); //As the ID3v2 frame of the same content (TPE2)
     else if (Key=="COMMENT")        Fill(Stream_General, 0, General_Comment, Value);
     else if (Key=="COMMENTS")       Fill(Stream_General, 0, General_Comment, Value);
     else if (Key=="COMPOSER")       Fill(Stream_General, 0, General_Composer, Value);
-    else if (Key=="CONTENTGROUP")   Fill(Stream_General, 0, General_Genre, Value);
+    else if (Key=="CONTENTGROUP")   Fill(Stream_General, 0, General_Grouping, Value); //As the ID3v2 frame of the same content (TIT1)
     else if (Key=="COPYRIGHT")      Fill(Stream_General, 0, General_Copyright, Value);
     else if (Key=="DISK" || Key=="DISC")
     {
@@ -236,7 +236,7 @@ void File_ApeTag::Data_Parse()
     else if (Key=="UNSYNCEDLYRICS") Fill(Stream_General, 0, General_Lyrics, Value);
     else if (Key=="WWW")            Fill(Stream_General, 0, General_Title_Url, Value);
     else if (Key=="YEAR")           Fill(Stream_General, 0, General_Recorded_Date, Value);
-    else if (Key=="CONTENT GROUP DESCRIPTION") Fill(Stream_General, 0, General_Title, Value);
+    else if (Key=="CONTENT GROUP DESCRIPTION") Fill(Stream_General, 0, General_Grouping, Value);
     else if (Key=="ORIGINAL ALBUM/MOVIE/SHOW TITLE") Fill(Stream_General, 0, General_Original_Album, Value);
     else if (Key=="ORIGINAL ARTIST(S)/PERFORMER(S)") Fill(Stream_General, 0, General_Original_Performer, Value);
     else if (Key=="MP3GAIN_MINMAX") Fill(Stream_Audio, 0, "MP3Gain, Min/Max", Value);
