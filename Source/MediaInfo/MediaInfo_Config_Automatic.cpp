@@ -1549,6 +1549,7 @@ void MediaInfo_Config_Format (InfoMap &Info)
     "OpenMG;;;A;OpenMG;;oma omg aa3 at3;;;Lossy\n"
     "Musepack SV7;;;A;Mpc;;mpc mp+ mpp;;http://www.musepack.net;Lossy\n"
     "Musepack SV8;;;A;MpcSv8;;mpc;;http://www.musepack.net;Lossy\n"
+    "PS2 Audio;;;A;Ps2Audio;;ss2\n"
     "QCELP;;;A;;;;audio/QCELP\n"
     "QLCM;;;A;Riff;;qcp;;https://tools.ietf.org/html/rfc3625;Lossy\n"
     "RIFF-MIDI;;;A;Riff;RIFF Musical Instrument Digital Interface\n"

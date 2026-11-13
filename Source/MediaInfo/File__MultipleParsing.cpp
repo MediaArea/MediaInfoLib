@@ -278,6 +278,9 @@
 #if defined(MEDIAINFO_OPENMG_YES)
     #include "MediaInfo/Audio/File_OpenMG.h"
 #endif
+#if defined(MEDIAINFO_PS2A_YES)
+    #include "MediaInfo/Audio/File_Ps2Audio.h"
+#endif
 #if defined(MEDIAINFO_RKAU_YES)
     #include "MediaInfo/Audio/File_Rkau.h"
 #endif
@@ -732,6 +735,9 @@ File__MultipleParsing::File__MultipleParsing()
     #endif
     #if defined(MEDIAINFO_OPENMG_YES)
         Parser.push_back(new File_OpenMG());
+    #endif
+    #if defined(MEDIAINFO_PS2A_YES)
+        Parser.push_back(new File_Ps2Audio());
     #endif
     #if defined(MEDIAINFO_RKAU_YES)
         Parser.push_back(new File_Rkau());

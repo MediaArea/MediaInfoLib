@@ -298,6 +298,9 @@
 #if defined(MEDIAINFO_OPENMG_YES)
     #include "MediaInfo/Audio/File_OpenMG.h"
 #endif
+#if defined(MEDIAINFO_PS2A_YES)
+    #include "MediaInfo/Audio/File_Ps2Audio.h"
+#endif
 #if defined(MEDIAINFO_RKAU_YES)
     #include "MediaInfo/Audio/File_Rkau.h"
 #endif
@@ -741,6 +744,9 @@ static File__Analyze* SelectFromExtension(const String& Parser)
     #if defined(MEDIAINFO_OPENMG_YES)
         if (Parser==__T("OpenMG"))      return new File_OpenMG();
     #endif
+    #if defined(MEDIAINFO_PS2A_YES)
+        if (Parser==__T("Ps2Audio"))    return new File_Ps2Audio();
+    #endif
     #if defined(MEDIAINFO_RKAU_YES)
         if (Parser==__T("Rkau"))        return new File_Rkau();
     #endif
@@ -1183,6 +1189,9 @@ int MediaInfo_Internal::ListFormats(const String &File_Name)
     #endif
     #if defined(MEDIAINFO_OPENMG_YES)
         SAFE_DELETE(Info); Info=new File_OpenMG();             if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;
+    #endif
+    #if defined(MEDIAINFO_PS2A_YES)
+        SAFE_DELETE(Info); Info=new File_Ps2Audio();           if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;
     #endif
     #if defined(MEDIAINFO_RKAU_YES)
         SAFE_DELETE(Info); Info=new File_Rkau();                if (((Reader_File*)Reader)->Format_Test_PerParser(this, File_Name)>0) return 1;

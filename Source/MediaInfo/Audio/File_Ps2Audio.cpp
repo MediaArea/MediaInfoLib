@@ -69,10 +69,17 @@ void File_Ps2Audio::SSbd()
         int32u Size;
         Skip_C4(                                                "ID");
         Get_L4 (Size,                                           "Size");
+        int64u Data_Begin=File_Offset+Buffer_Offset+Element_Offset;
         Skip_XX(Element_Size-Element_Offset,                    "Data (Partial)");
     Element_End0();
 
     FILLING_BEGIN();
+        if (!IsSub && Data_Begin+Size>File_Size)
+        {
+            //The file ends before the end of the body
+            IsTruncated(Data_Begin+Size, false, "PS2 Audio");
+            Size=(int32u)(File_Size-Data_Begin);
+        }
         Fill(Stream_Audio, 0, Audio_StreamSize, Size);
         if (BitRate)
             Fill(Stream_Audio, 0, Audio_Duration, ((int64u)Size)*1000*8/BitRate);
@@ -108,6 +115,7 @@ void File_Ps2Audio::SShd()
             return; //Only the first header is used
 
         Accept("PS2 Audio");
+        Fill(Stream_General, 0, General_Format, "PS2 Audio");
 
         const int64u BitRate64=((int64u)SamplingRate)*Channels*16; //Always 16 bits
         BitRate=BitRate64>(int32u)-1?0:(int32u)BitRate64;
