@@ -3314,6 +3314,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
         switch (Parameter)
         {
         case General_Title:
+        case General_Performer:
         case General_Encoded_Application:
         case General_Encoded_Application_CompanyName:
         case General_Encoded_Application_Name:
