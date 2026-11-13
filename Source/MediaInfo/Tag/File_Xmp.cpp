@@ -633,7 +633,7 @@ void File_Xmp::pdf(const string& name, const string& value)
 void File_Xmp::photoshop(const string& name, const string& value)
 {
     if (name == "photoshop:Credit")
-        Fill(Stream_General, 0, General_Copyright, value);
+        Fill(Stream_General, 0, "Credit", value); //Provider of the content, not the copyright notice
     if (name == "photoshop:Country")
         Fill(Stream_General, 0, General_Country, value);
     if (name == "photoshop:City")

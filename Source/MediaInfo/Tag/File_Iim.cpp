@@ -276,7 +276,7 @@ void File_Iim::Data_Parse()
     ELEMENT_CASE(  2, 101, CountryName)
     ELEMENT_FILL(  2, 103, "JobId")
     ELEMENT_CASE(  2, 105, Headline)
-    ELEMENT_CASE(  2, 110, Credit)
+    ELEMENT_FILL(  2, 110, "Credit")
     ELEMENT_FILL(  2, 115, "Source")
     ELEMENT_CASE(  2, 116, CopyrightNotice)
     ELEMENT_FILL(  2, 118, "Contact")
@@ -374,12 +374,6 @@ void File_Iim::CountryName()
 void File_Iim::Headline()
 {
     FillString("Headline");
-}
-
-//---------------------------------------------------------------------------
-void File_Iim::Credit()
-{
-    FillString(General_Copyright);
 }
 
 //---------------------------------------------------------------------------

@@ -52,7 +52,6 @@ private :
     void ProvinceState();
     void CountryName();
     void Headline();
-    void Credit();
     void CopyrightNotice();
     void CaptionAbstract();
     void PhotoMechanicPrefs();

@@ -5402,7 +5402,7 @@ static size_t Tags_Size_Max(File__Analyze::tags_format Format, const string& Nam
         case File__Analyze::Tags_Id3v1 :
             return 28;
         case File__Analyze::Tags_Iim :
-            if (Name=="Performer" || Name=="City" || Name=="Sublocation" || Name=="State" || Name=="CreatorJobTitle" || Name=="JobId" || Name=="Source" || Name=="DescriptionWriter")
+            if (Name=="Performer" || Name=="City" || Name=="Sublocation" || Name=="State" || Name=="CreatorJobTitle" || Name=="JobId" || Name=="Credit" || Name=="Source" || Name=="DescriptionWriter")
                 return 29;
             if (Name=="Title" || Name=="Country")
                 return 61;
