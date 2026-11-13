@@ -457,8 +457,12 @@ void File_Xmp::dc(const string& name, const string& value)
 //---------------------------------------------------------------------------
 void File_Xmp::exif(const string& name, const string& value)
 {
-    if (name == "exif:DateTimeOriginal" && Retrieve_Const(Stream_General, 0, General_Recorded_Date).empty())
-        Fill(Stream_General, 0, General_Recorded_Date, value);
+    if (name == "exif:DateTimeOriginal") {
+        //Has the time when photoshop:DateCreated has only the date
+        const Ztring& Current = Retrieve_Const(Stream_General, 0, General_Recorded_Date);
+        if (Current.empty() || (Current.size() == 10 && !Ztring().From_UTF8(value).compare(0, 10, Current)))
+            Fill(Stream_General, 0, General_Recorded_Date, value, true, true);
+    }
     if (name == "exif:DateTimeDigitized")
         Fill(Stream_General, 0, General_Mastered_Date, value);
 }
@@ -658,8 +662,13 @@ void File_Xmp::photoshop(const string& name, const string& value)
         Fill(Stream_General, 0, "Source", value);
     if (name == "photoshop:CaptionWriter")
         Fill(Stream_General, 0, "DescriptionWriter", value);
-    if (name == "photoshop:DateCreated" && Retrieve_Const(Stream_General, 0, General_Recorded_Date).empty())
-        Fill(Stream_General, 0, General_Recorded_Date, value); //Date of creation of the content, as exif:DateTimeOriginal and the IPTC date created
+    if (name == "photoshop:DateCreated" && Retrieve_Const(Stream_General, 0, General_Recorded_Date).empty()) {
+        //Date of creation of the content, as exif:DateTimeOriginal and the IPTC date created. Some tools write the time 00:00 (without seconds) when there is only a date
+        string Date(value);
+        if (Date.size() >= 16 && !Date.compare(10, 6, "T00:00") && (Date.size() == 16 || Date[16] == '+' || Date[16] == '-' || Date[16] == 'Z'))
+            Date.resize(10);
+        Fill(Stream_General, 0, General_Recorded_Date, Date);
+    }
 }
 
 //---------------------------------------------------------------------------

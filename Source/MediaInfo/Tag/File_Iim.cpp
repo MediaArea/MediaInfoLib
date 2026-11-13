@@ -180,6 +180,8 @@ static Ztring Iim_DateTime(const Ztring& Date, const Ztring& Time)
     if (Date.size()!=8 || Date.find_first_not_of(__T("0123456789"))!=string::npos)
         return Ztring();
     Ztring Value=Date.substr(0, 4)+__T('-')+Date.substr(4, 2)+__T('-')+Date.substr(6, 2);
+    if (Time==__T("000000+0000"))
+        return Value; //Written by some tools when there is only a date (e.g. Photoshop for photoshop:DateCreated of XMP without time)
     if (Time.size()==11 && Time.find_first_not_of(__T("0123456789"))==6 && (Time[6]==__T('+') || Time[6]==__T('-')) && Time.find_first_not_of(__T("0123456789"), 7)==string::npos)
         Value+=__T(' ')+Time.substr(0, 2)+__T(':')+Time.substr(2, 2)+__T(':')+Time.substr(4, 2)+Time.substr(6, 3)+__T(':')+Time.substr(9, 2);
     else if (Time.size()==6 && Time.find_first_not_of(__T("0123456789"))==string::npos)
