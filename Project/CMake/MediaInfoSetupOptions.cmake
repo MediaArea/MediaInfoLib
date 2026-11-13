@@ -133,6 +133,7 @@ set(MEDIAINFO_FEATURE_LIST
     MINIMAL
     MIXML
     MK
+    MMTTLV
     MOD
     MPC
     MPCSV8
