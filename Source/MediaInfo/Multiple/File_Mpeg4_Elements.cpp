@@ -12256,7 +12256,7 @@ void File_Mpeg4::moov_udta_XMP_()
             File_Xmp MI;
             Open_Buffer_Init(&MI);
             Open_Buffer_Continue(&MI);
-            Open_Buffer_Finalize(&MI);
+            Finish(&MI); //Not Open_Buffer_Finalize(), which would set the whole file as finishing and stop the reading
             Merge_Tags(MI, Tags_Xmp);
             return;
         }
