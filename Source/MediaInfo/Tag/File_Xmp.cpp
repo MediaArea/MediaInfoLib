@@ -454,7 +454,7 @@ void File_Xmp::dc(const string& name, const string& value)
 //---------------------------------------------------------------------------
 void File_Xmp::exif(const string& name, const string& value)
 {
-    if (name == "exif:DateTimeOriginal")
+    if (name == "exif:DateTimeOriginal" && Retrieve_Const(Stream_General, 0, General_Recorded_Date).empty())
         Fill(Stream_General, 0, General_Recorded_Date, value);
     if (name == "exif:DateTimeDigitized")
         Fill(Stream_General, 0, General_Mastered_Date, value);
@@ -639,12 +639,8 @@ void File_Xmp::photoshop(const string& name, const string& value)
         Fill(Stream_General, 0, "State", value);
     if (name == "photoshop:Headline")
         Fill(Stream_General, 0, "Headline", value);
-    if (name == "photoshop:DateCreated") {
-        Ztring CreateDateT = Ztring().From_UTF8(value);
-        if (CreateDateT > CreateDate) CreateDate = CreateDateT;
-        if (CreateDate > ModifyDate)
-            Fill(Stream_General, 0, General_Encoded_Date, CreateDate, true);
-    }
+    if (name == "photoshop:DateCreated" && Retrieve_Const(Stream_General, 0, General_Recorded_Date).empty())
+        Fill(Stream_General, 0, General_Recorded_Date, value); //Date of creation of the content, as exif:DateTimeOriginal and the IPTC date created
 }
 
 //---------------------------------------------------------------------------
