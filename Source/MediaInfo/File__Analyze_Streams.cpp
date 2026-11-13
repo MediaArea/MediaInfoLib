@@ -5566,6 +5566,13 @@ static bool Tags_Date_IsMoreRecent(const Ztring& Date1, const Ztring& Date2)
 }
 
 //---------------------------------------------------------------------------
+static bool Tags_IsPicasa(const Ztring& Value)
+{
+    //Name of Picasa, with its version if any (e.g. "Picasa 3.0")
+    return !Value.compare(0, 6, __T("Picasa")) && (Value.size()==6 || (Value.size()>7 && Value[6]==__T(' ') && Value.find_first_not_of(__T("0123456789."), 7)==string::npos));
+}
+
+//---------------------------------------------------------------------------
 void File__Analyze::Merge_Tags(File__Analyze &ToAdd, tags_format Format)
 {
     ToAdd.Streams_Finish_Tags(); //Tags in these tags, not yet merged if their parser is not finished
@@ -5841,6 +5848,7 @@ void File__Analyze::Streams_Finish_Tags()
 
     const auto File_Offset_Save=File_Offset;
     File_Offset=(int64u)-1-(Buffer_Offset+Element_Offset); //The conformance errors are about several parts of the file, no offset is provided
+    Ztring Picasa; //Name of Picasa written as author
     for (size_t Format=0; Format<Tags_Max; Format++)
     {
         if (!IsSub)
@@ -5876,6 +5884,14 @@ void File__Analyze::Streams_Finish_Tags()
             }
             if (std::find(Digitizations.begin(), Digitizations.end(), &Item)!=Digitizations.end())
                 continue; //Date of the digitization, see above
+            if (Item.Name=="Performer" && Tags_IsPicasa(Item.Value))
+            {
+                //Picasa writes its name as author (by-line of IPTC, artist of Exif, creator of XMP), it is the tool and not the creator of the content, see below
+                if (Picasa.size()<Item.Value.size())
+                    Picasa=Item.Value; //With its version if any
+                Item.IsFilled=true;
+                continue;
+            }
 
             const Ztring Current=Retrieve_Const(Stream_General, 0, Name);
             if (Current.empty())
@@ -5997,6 +6013,13 @@ void File__Analyze::Streams_Finish_Tags()
             const bool IsGenre=Item.Name=="Genre"; //Shown with its name when it is a number of the list of ID3v1
             Fill_Conformance(("Crosscheck "+BuildConformanceName(Format_Name, nullptr, Name)).c_str(), Format_Name+' '+Item.Name+' '+Quoted(IsGenre?Tags_Genre(Item.Value):Item.Value)+" does not match "+Other+Item.Name+' '+Quoted(IsGenre?Tags_Genre(Current):Current));
         }
+    }
+    if (!Picasa.empty())
+    {
+        //Picasa is a writing application, the last tool which wrote the file
+        const Ztring& Applications=Retrieve_Const(Stream_General, 0, General_Encoded_Application);
+        if (Applications.find(__T("Picasa"))==string::npos)
+            Fill(Stream_General, 0, General_Encoded_Application, Applications.empty()?Picasa:(Picasa+__T(" / ")+Applications), true);
     }
     File_Offset=File_Offset_Save;
     if (!IsSub)

@@ -53,6 +53,7 @@ private :
     void CountryName();
     void Headline();
     void CopyrightNotice();
+    void Contact();
     void CaptionAbstract();
     void PhotoMechanicPrefs();
 
@@ -74,6 +75,7 @@ private :
     Ztring Time_Expiration;
     Ztring Program;
     Ztring ProgramVersion;
+    bool IsPicasa = false;
 };
 
 } //NameSpace

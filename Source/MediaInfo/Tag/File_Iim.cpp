@@ -196,6 +196,14 @@ void File_Iim::Streams_Finish()
     Fill(Stream_General, 0, "ExpirationDate", Iim_DateTime(Date_Expiration, Time_Expiration));
     if (!Program.empty())
         Fill(Stream_General, 0, General_Encoded_Application, ProgramVersion.empty()?Program:(Program+__T(' ')+ProgramVersion));
+    if (IsPicasa) {
+        // Picasa writes its name as by-line, it is the tool and not the creator of the content
+        const Ztring Byline = Retrieve_Const(Stream_General, 0, General_Performer);
+        if (!Byline.rfind(__T("Picasa"), 0)) {
+            Clear(Stream_General, 0, General_Performer);
+            Fill(Stream_General, 0, General_Encoded_Application, Byline);
+        }
+    }
 }
 
 //***************************************************************************
@@ -279,7 +287,7 @@ void File_Iim::Data_Parse()
     ELEMENT_FILL(  2, 110, "Credit")
     ELEMENT_FILL(  2, 115, "Source")
     ELEMENT_CASE(  2, 116, CopyrightNotice)
-    ELEMENT_FILL(  2, 118, "Contact")
+    ELEMENT_CASE(  2, 118, Contact)
     ELEMENT_CASE(  2, 120, CaptionAbstract)
     ELEMENT_FILL(  2, 122, "DescriptionWriter")
     ELEMENT_CASE(  2, 221, PhotoMechanicPrefs)
@@ -383,6 +391,18 @@ void File_Iim::CopyrightNotice()
 }
 
 //---------------------------------------------------------------------------
+void File_Iim::Contact()
+{
+    Ztring Value;
+    GetString(Value);
+    if (Value == __T("<picasastamp/>")) {
+        IsPicasa = true; // Marker of Picasa, not a contact
+        return;
+    }
+    Fill(Stream_General, 0, "Contact", Value);
+}
+
+//---------------------------------------------------------------------------
 void File_Iim::CaptionAbstract()
 {
     FillString(General_Description);
@@ -424,6 +444,10 @@ void File_Iim::GetString(Ztring& Value)
         Skip_XX(Element_Size,                                   "Data");
         break;
     }
+
+    // Some tools write a null character or a line end after the text
+    while (!Value.empty() && (Value.back() == __T('\0') || Value.back() == __T('\n') || Value.back() == __T('\r') || Value.back() == __T(' ')))
+        Value.pop_back();
 }
 
 //---------------------------------------------------------------------------
