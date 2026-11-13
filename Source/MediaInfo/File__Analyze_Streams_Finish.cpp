@@ -3731,6 +3731,9 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
             const auto& Application_CompanyName = Retrieve_Const(Stream_General, StreamPos, Parameter_CompanyName);
             if (Application_CompanyName.empty()) {
                 const auto& Application = Retrieve_Const(Stream_General, StreamPos, CheckName ? Parameter_Name : Parameter);
+                if (!CheckName && Application.find(__T(" / ")) != string::npos) {
+                    return; // Several values e.g. from several sources, kept as is
+                }
                 auto CompanyNameU = CompanyName;
                 CompanyNameU.MakeUpperCase();
                 auto ApplicationU = Application;
