@@ -2714,6 +2714,14 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
         break;
     case Exif_Type::ASCII:                                      /* ASCII */
         {
+            if (currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::UserComment && IfdItem.Count >= 8 && Element_Offset + 8 <= Element_Size) {
+                // Some tools write the type ASCII for the content of the type UNDEFINED, which begins with a character code
+                const int64u CharacterCode = BigEndian2int64u(Buffer + Buffer_Offset + (size_t)Element_Offset);
+                if (CharacterCode == 0x4153434949000000LL || CharacterCode == 0x554E49434F444500LL || CharacterCode == 0x4A49530000000000LL) {
+                    MulticodeString(Info);
+                    break;
+                }
+            }
             string Data;
             Get_String(IfdItem.Count, Data,                     "Data"); Element_Info1(Data.c_str());
             Info.push_back(Ztring().From_UTF8(Data.c_str()));
