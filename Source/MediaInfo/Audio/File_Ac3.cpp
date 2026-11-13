@@ -1520,14 +1520,14 @@ void File_Ac3::Streams_Fill()
                     Fill(Stream_Audio, 0, (P + " Format_Settings_Mode").c_str(), "Dolby Pro Logic IIz");
             }
             Fill(Stream_Audio, 0, (P + " control_enabled").c_str(), Presentation_Current.control_enabled ? "Yes" : "No");
-            Fill(Stream_Audio, 0, (P + " dialogue_norm").c_str(), Presentation_Current.dialogue_norm == 0 ? -31 : -Presentation_Current.dialogue_norm);
-            Fill_SetOptions(Stream_Audio, 0, (P + " dialogue_norm").c_str(), "N NT");
-            Fill(Stream_Audio, 0, (P + " dialogue_norm/String").c_str(), Ztring::ToZtring(Presentation_Current.dialogue_norm == 0 ? -31 : -Presentation_Current.dialogue_norm) + __T(" LKFS"));
-            Fill_SetOptions(Stream_Audio, 0, (P + " dialogue_norm/String").c_str(), "Y NTN");
-            Fill(Stream_Audio, 0, (P + " mix_level").c_str(), 70 + Presentation_Current.mix_level);
-            Fill_SetOptions(Stream_Audio, 0, (P + " mix_level").c_str(), "N NT");
-            Fill(Stream_Audio, 0, (P + " mix_level/String").c_str(), Ztring::ToZtring(70 + Presentation_Current.mix_level) + __T(" dB"));
-            Fill_SetOptions(Stream_Audio, 0, (P + " mix_level/String").c_str(), "Y NTN");
+            Fill(Stream_Audio, 0, (P + " dialnorm").c_str(), Presentation_Current.dialogue_norm == 0 ? -31 : -Presentation_Current.dialogue_norm);
+            Fill_SetOptions(Stream_Audio, 0, (P + " dialnorm").c_str(), "N NT");
+            Fill(Stream_Audio, 0, (P + " dialnorm/String").c_str(), Ztring::ToZtring(Presentation_Current.dialogue_norm == 0 ? -31 : -Presentation_Current.dialogue_norm) + __T(" dB"));
+            Fill_SetOptions(Stream_Audio, 0, (P + " dialnorm/String").c_str(), "Y NTN");
+            Fill(Stream_Audio, 0, (P + " mixlevel").c_str(), 70 + Presentation_Current.mix_level);
+            Fill_SetOptions(Stream_Audio, 0, (P + " mixlevel").c_str(), "N NT");
+            Fill(Stream_Audio, 0, (P + " mixlevel/String").c_str(), Ztring::ToZtring(70 + Presentation_Current.mix_level) + __T(" dB"));
+            Fill_SetOptions(Stream_Audio, 0, (P + " mixlevel/String").c_str(), "Y NTN");
         }
     }
 
@@ -5265,12 +5265,12 @@ void File_Ac3::HD()
                 Get_SB (  presentations[p_8ch].control_enabled, "8ch_control_enabled");
                 Skip_S1( 1,                                     "reserved");
                 Skip_S1( 7,                                     "drc_start_up_gain");
-                Get_S1 ( 6, presentations[p_2ch].dialogue_norm, "2ch_dialogue_norm"); Param_Info2(presentations[p_2ch].dialogue_norm == 0 ? -31 : -presentations[p_2ch].dialogue_norm, " LKFS");
+                Get_S1 ( 6, presentations[p_2ch].dialogue_norm, "2ch_dialogue_norm"); Param_Info2(presentations[p_2ch].dialogue_norm == 0 ? -31 : -presentations[p_2ch].dialogue_norm, " dB");
                 Get_S1 ( 6, presentations[p_2ch].mix_level,     "2ch_mix_level");     Param_Info2(70 + presentations[p_2ch].mix_level, " dB");
-                Get_S1 ( 5, presentations[p_6ch].dialogue_norm, "6ch_dialogue_norm"); Param_Info2(presentations[p_6ch].dialogue_norm == 0 ? -31 : -presentations[p_6ch].dialogue_norm, " LKFS");
+                Get_S1 ( 5, presentations[p_6ch].dialogue_norm, "6ch_dialogue_norm"); Param_Info2(presentations[p_6ch].dialogue_norm == 0 ? -31 : -presentations[p_6ch].dialogue_norm, " dB");
                 Get_S1 ( 6, presentations[p_6ch].mix_level,     "6ch_mix_level");     Param_Info2(70 + presentations[p_6ch].mix_level, " dB");
                 Skip_S1( 5,                                     "6ch_source_format");
-                Get_S1 ( 5, presentations[p_8ch].dialogue_norm, "8ch_dialogue_norm"); Param_Info2(presentations[p_8ch].dialogue_norm == 0 ? -31 : -presentations[p_8ch].dialogue_norm, " LKFS");
+                Get_S1 ( 5, presentations[p_8ch].dialogue_norm, "8ch_dialogue_norm"); Param_Info2(presentations[p_8ch].dialogue_norm == 0 ? -31 : -presentations[p_8ch].dialogue_norm, " dB");
                 Get_S1 ( 6, presentations[p_8ch].mix_level,     "8ch_mix_level");     Param_Info2(70 + presentations[p_8ch].mix_level, " dB");
                 Skip_S1( 6,                                     "8ch_source_format");
                 Skip_S1( 1,                                     "reserved");
@@ -5289,7 +5289,7 @@ void File_Ac3::HD()
                     if (HD_HasAtmos)
                     {
                         Element_Begin1("16ch_channel_meaning");
-                        Get_S1 (5, presentations[p_16ch].dialogue_norm, "16ch_dialogue_norm");  Param_Info2(presentations[p_16ch].dialogue_norm == 0 ? -31 : -presentations[p_16ch].dialogue_norm, " LKFS");
+                        Get_S1 (5, presentations[p_16ch].dialogue_norm, "16ch_dialogue_norm");  Param_Info2(presentations[p_16ch].dialogue_norm == 0 ? -31 : -presentations[p_16ch].dialogue_norm, " dB");
                         Get_S1 (6, presentations[p_16ch].mix_level,     "16ch_mix_level");      Param_Info2(70 + presentations[p_16ch].mix_level, " dB");
                         Get_S1 (5, num_dynamic_objects,                 "16ch_channel_count");
                         num_dynamic_objects++;                                                  Param_Info2(num_dynamic_objects, " channels");
