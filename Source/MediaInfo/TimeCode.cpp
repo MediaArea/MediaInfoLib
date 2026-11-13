@@ -87,7 +87,7 @@ static int64_t gcd_compute(int64_t a, int64_t b)
 {
     while (b)
     {
-        unsigned t = b;
+        int64_t t = b;
         b = a % b;
         a = t;
     }
@@ -95,8 +95,32 @@ static int64_t gcd_compute(int64_t a, int64_t b)
 }
 
 //---------------------------------------------------------------------------
+// Frame rate of the result of 2 time codes with different frame rates, with the 1.001 flag of the first one,
+// and multipliers of their frame counts for this frame rate
+static void Mix_FrameRates(int64_t FrameRate1, bool Is1001fps1, int64_t FrameRate2, bool Is1001fps2, int64_t& FrameRate, int64_t& Multiplier1, int64_t& Multiplier2)
+{
+    // A frame lasts Factor/(1000*FrameRate) seconds, the frames of the second time code are a whole number of frames
+    // of the first one at the frame rate FrameRate2_Unit1
+    int64_t Factor1 = 1000 + Is1001fps1;
+    int64_t Factor2 = 1000 + Is1001fps2;
+    int64_t Unit2 = Factor1 * FrameRate2;
+    int64_t Gcd2 = gcd_compute(Factor2, Unit2);
+    int64_t FrameRate2_Unit1 = Unit2 / Gcd2;
+    FrameRate = FrameRate1 / gcd_compute(FrameRate1, FrameRate2_Unit1) * FrameRate2_Unit1;
+    Multiplier1 = FrameRate / FrameRate1;
+    Multiplier2 = Factor2 / Gcd2 * (FrameRate / FrameRate2_Unit1);
+}
+
+//---------------------------------------------------------------------------
 TimeCode& TimeCode::operator +=(const TimeCode& b)
 {
+    if (!b.IsSet())
+        return *this;
+    if (!IsSet())
+    {
+        *this = b; // Unset value plus b is b, with its frame rate and flags
+        return *this;
+    }
     int64_t FrameRate1 = GetFramesMax();
     int64_t FrameRate2 = b.GetFramesMax();
     if (FrameRate1 == FrameRate2)
@@ -108,18 +132,9 @@ TimeCode& TimeCode::operator +=(const TimeCode& b)
     }
     FrameRate1++;
     FrameRate2++;
-    int64_t Frames1 = ToFrames();
-    int64_t Frames2 = b.ToFrames();
-    Frames1 *= FrameRate2;
-    Frames2 *= FrameRate1;
-    auto gcd = gcd_compute(FrameRate1, FrameRate2);
-    auto FrameRate = FrameRate1 * FrameRate2 / gcd;
-    int64_t Result = (Frames1 + Frames2) / gcd;
-    if (Is1001fps() != b.Is1001fps())
-    {
-        Result *= int64_t(1000 + b.Is1001fps());
-        FrameRate *= int64_t(1000 + Is1001fps());
-    }
+    int64_t FrameRate, Multiplier1, Multiplier2;
+    Mix_FrameRates(FrameRate1, Is1001fps(), FrameRate2, b.Is1001fps(), FrameRate, Multiplier1, Multiplier2);
+    int64_t Result = ToFrames() * Multiplier1 + b.ToFrames() * Multiplier2;
     SetFramesMax(FrameRate - 1);
     FromFrames(Result);
     if (b.IsTimed() && FrameRate1 - 1 != GetFramesMax())
@@ -130,6 +145,14 @@ TimeCode& TimeCode::operator +=(const TimeCode& b)
 //---------------------------------------------------------------------------
 TimeCode& TimeCode::operator -=(const TimeCode& b)
 {
+    if (!b.IsSet())
+        return *this;
+    if (!IsSet())
+    {
+        *this = b; // Unset value minus b is -b, with its frame rate and flags
+        FromFrames(-b.ToFrames());
+        return *this;
+    }
     int64_t FrameRate1 = GetFramesMax();
     int64_t FrameRate2 = b.GetFramesMax();
     if (FrameRate1 == FrameRate2)
@@ -141,19 +164,10 @@ TimeCode& TimeCode::operator -=(const TimeCode& b)
     }
     FrameRate1++;
     FrameRate2++;
-    int64_t Frames1 = ToFrames();
-    int64_t Frames2 = b.ToFrames();
-    Frames1 *= FrameRate2;
-    Frames2 *= FrameRate1;
-    auto gcd = gcd_compute(FrameRate1, FrameRate2);
-    auto FrameRate = FrameRate1 * FrameRate2 / gcd;
-    int64_t Result = (Frames1 - Frames2) / gcd;
-    if (Is1001fps() != b.Is1001fps())
-    {
-        Result *= int64_t(1000 + b.Is1001fps());
-        FrameRate *= int64_t(1000 + Is1001fps());
-    }
-    SetFramesMax(FrameRate-1);
+    int64_t FrameRate, Multiplier1, Multiplier2;
+    Mix_FrameRates(FrameRate1, Is1001fps(), FrameRate2, b.Is1001fps(), FrameRate, Multiplier1, Multiplier2);
+    int64_t Result = ToFrames() * Multiplier1 - b.ToFrames() * Multiplier2;
+    SetFramesMax(FrameRate - 1);
     FromFrames(Result);
     if (b.IsTimed() && FrameRate1 - 1 != GetFramesMax())
         SetTimed();

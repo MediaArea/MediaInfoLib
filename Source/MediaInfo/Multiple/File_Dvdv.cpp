@@ -261,18 +261,6 @@ static const char*  IFO_MenuType[]=
 extern const char*  AC3_ChannelPositions[];
 extern const char*  AC3_ChannelPositions2[];
 
-//---------------------------------------------------------------------------
-// The sum starts from the first duration: TimeCode::operator+= gives wrong sums when a default TimeCode and durations with a 1.001 frame rate are mixed
-static void Duration_Add(TimeCode& Total, const TimeCode& Duration)
-{
-    if (!Duration.IsSet())
-        return;
-    if (Total.IsSet())
-        Total+=Duration;
-    else
-        Total=Duration;
-}
-
 //***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
@@ -393,7 +381,7 @@ void File_Dvdv::Streams_Finish()
     for (const auto& Title : Titles)
     {
         Fill(Stream_Menu, Title.second.Pos, Menu_Delay, (int64s)Duration_Total.ToMilliseconds(), 10, true);
-        Duration_Add(Duration_Total, Title.second.Duration);
+        Duration_Total+=Title.second.Duration;
     }
 
     //Purge what is not needed anymore
@@ -1624,8 +1612,8 @@ void File_Dvdv::PGC(bool Title)
                     if (Pos<ProgramMap.size())
                         for (int8u CellPos=ProgramMap[Pos]; CellPos<End; CellPos++)
                             if (CellPos && CellPos<=CellDurations.size())
-                                Duration_Add(ProgramDuration, CellDurations[CellPos-1]);
-                    Duration_Add(ProgramTotalDuration, ProgramDuration);
+                                ProgramDuration+=CellDurations[CellPos-1];
+                    ProgramTotalDuration+=ProgramDuration;
                 }
                 Fill(Stream_Menu, StreamPos_Last, Menu_Chapters_Pos_End, Count_Get(Stream_Menu, StreamPos_Last), 10, true);
                 auto FrameRate=TotalDuration.GetFramesMax()+1;
