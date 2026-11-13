@@ -3249,6 +3249,57 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
     if (Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_CompanyName) == Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Model)) {
         Clear(Stream_General, StreamPos, General_Encoded_Hardware_CompanyName);
     }
+    auto RemoveContainedValues = [&](size_t Parameter) {
+        // Values from several sources: a value made of whole words of another value (e.g. the TIFF software "Ver.1.20" with the XMP creator tool "NIKON D4S Ver.1.20") or the same as a previous value is redundant
+        const auto& Value = Retrieve_Const(Stream_General, StreamPos, Parameter);
+        if (Value.find(__T(" / ")) == string::npos) {
+            return;
+        }
+        vector<Ztring> Values;
+        for (size_t Begin = 0;;) {
+            const auto End = Value.find(__T(" / "), Begin);
+            Values.push_back(Value.substr(Begin, End == string::npos ? string::npos : (End - Begin)));
+            if (End == string::npos) {
+                break;
+            }
+            Begin = End + 3;
+        }
+        auto IsContained = [](const Ztring& Small, const Ztring& Big) {
+            if (Small.empty() || Small.size() >= Big.size()) {
+                return false;
+            }
+            for (auto Pos = Big.find(Small); Pos != string::npos; Pos = Big.find(Small, Pos + 1)) {
+                const auto End = Pos + Small.size();
+                if ((!Pos || Big[Pos - 1] == ' ') && (End == Big.size() || Big[End] == ' ')) {
+                    return true;
+                }
+            }
+            return false;
+        };
+        vector<Ztring> Values_Kept;
+        for (size_t i = 0; i < Values.size(); i++) {
+            auto IsRedundant = false;
+            for (size_t j = 0; j < Values.size() && !IsRedundant; j++) {
+                IsRedundant = j != i && (IsContained(Values[i], Values[j]) || (j < i && !Values[i].empty() && Values[i] == Values[j]));
+            }
+            if (!IsRedundant) {
+                Values_Kept.push_back(Values[i]);
+            }
+        }
+        if (Values_Kept.size() == Values.size()) {
+            return;
+        }
+        Ztring Result;
+        for (size_t i = 0; i < Values_Kept.size(); i++) {
+            if (i) {
+                Result += __T(" / ");
+            }
+            Result += Values_Kept[i];
+        }
+        Fill(Stream_General, StreamPos, Parameter, Result, true);
+    };
+    RemoveContainedValues(General_Encoded_Application);
+    RemoveContainedValues(General_Encoded_Library);
 
     // Remove useless characters
     auto RemoveUseless = [&](size_t Parameter) {
