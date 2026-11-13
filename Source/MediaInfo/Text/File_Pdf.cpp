@@ -1315,6 +1315,9 @@ void File_Pdf::Skip_Stream(const stream_data &Stream)
 }
 
 //---------------------------------------------------------------------------
+static const size_t Pdf_Decoded_Max=0x4000000; //Arbitrary limit of 64 MiB
+
+//---------------------------------------------------------------------------
 static bool Pdf_Inflate(const int8u* Data, size_t Size, vector<int8u>& Decoded)
 {
     z_stream strm{};
@@ -1322,7 +1325,7 @@ static bool Pdf_Inflate(const int8u* Data, size_t Size, vector<int8u>& Decoded)
         return false;
     strm.next_in=(Bytef*)Data;
     strm.avail_in=(uInt)Size;
-    const size_t Decoded_Max=0x4000000; //Arbitrary limit of 64 MiB
+    const size_t Decoded_Max=Pdf_Decoded_Max;
     int Result=Z_OK;
     while (Result==Z_OK && strm.total_out<Decoded_Max)
     {
@@ -1400,38 +1403,292 @@ static bool Pdf_Predictor(vector<int8u>& Data, int32u Predictor, int32u Colors, 
 }
 
 //---------------------------------------------------------------------------
+static bool Pdf_AsciiHex(const int8u* Data, size_t Size, vector<int8u>& Decoded)
+{
+    Decoded.reserve(Size/2);
+    int High=-1;
+    for (size_t Pos=0; Pos<Size; Pos++)
+    {
+        const int8u Value=Data[Pos];
+        int Digit;
+        if (Value>='0' && Value<='9')
+            Digit=Value-'0';
+        else if (Value>='A' && Value<='F')
+            Digit=Value-'A'+10;
+        else if (Value>='a' && Value<='f')
+            Digit=Value-'a'+10;
+        else if (Value=='>')
+            break; //End of data
+        else if (Pdf_IsSpace(Value))
+            continue;
+        else
+            return false;
+        if (High<0)
+            High=Digit;
+        else
+        {
+            Decoded.push_back((int8u)((High<<4)|Digit));
+            High=-1;
+        }
+    }
+    if (High>=0)
+        Decoded.push_back((int8u)(High<<4)); //A last digit alone is followed by 0
+    return true;
+}
+
+//---------------------------------------------------------------------------
+static bool Pdf_Ascii85(const int8u* Data, size_t Size, vector<int8u>& Decoded)
+{
+    Decoded.reserve(Size/5*4);
+    int64u Group=0;
+    size_t Group_Size=0;
+    for (size_t Pos=0; Pos<Size; Pos++)
+    {
+        const int8u Value=Data[Pos];
+        if (Value=='~')
+            break; //End of data
+        if (Pdf_IsSpace(Value))
+            continue;
+        if (Value=='z' && !Group_Size)
+        {
+            Decoded.insert(Decoded.end(), 4, 0x00); //4 bytes of value 0
+            continue;
+        }
+        if (Value<'!' || Value>'u')
+            return false;
+        Group=Group*85+(Value-'!');
+        Group_Size++;
+        if (Group_Size==5)
+        {
+            if (Group>0xFFFFFFFF)
+                return false;
+            for (int Shift=24; Shift>=0; Shift-=8)
+                Decoded.push_back((int8u)(Group>>Shift));
+            Group=0;
+            Group_Size=0;
+        }
+    }
+    if (Group_Size==1)
+        return false; //A group has at least 2 characters
+    if (Group_Size)
+    {
+        //Last group, with 1 byte less than its count of characters
+        for (size_t Pos=Group_Size; Pos<5; Pos++)
+            Group=Group*85+84;
+        if (Group>0xFFFFFFFF)
+            return false;
+        for (size_t Pos=0; Pos+1<Group_Size; Pos++)
+            Decoded.push_back((int8u)(Group>>(24-8*Pos)));
+    }
+    return true;
+}
+
+//---------------------------------------------------------------------------
+static bool Pdf_RunLength(const int8u* Data, size_t Size, vector<int8u>& Decoded)
+{
+    for (size_t Pos=0; Pos<Size;)
+    {
+        const int8u Length=Data[Pos++];
+        if (Length==128)
+            break; //End of data
+        if (Length<128)
+        {
+            //Copy of the next bytes
+            const size_t Count=min((size_t)Length+1, Size-Pos);
+            Decoded.insert(Decoded.end(), Data+Pos, Data+Pos+Count);
+            Pos+=Count;
+        }
+        else if (Pos<Size)
+            Decoded.insert(Decoded.end(), (size_t)257-Length, Data[Pos++]); //Next byte repeated
+        if (Decoded.size()>Pdf_Decoded_Max)
+            return false;
+    }
+    return true;
+}
+
+//---------------------------------------------------------------------------
+static bool Pdf_Lzw(const int8u* Data, size_t Size, int32u EarlyChange, vector<int8u>& Decoded)
+{
+    //Codes of 9 to 12 bits, most significant bit first: 0-255 = a byte, 256 = table cleared, 257 = end of data, then a previous content with 1 more byte
+    vector<int16u> Prefix(4096);
+    vector<int8u> Suffix(4096), Content(4096);
+    const int32u NoCode=(int32u)-1;
+    int32u Next=258, Bits=9, Previous=NoCode;
+    int32u Pending=0, Pending_Bits=0;
+    if (EarlyChange>1)
+        EarlyChange=1;
+    for (size_t Pos=0;;)
+    {
+        while (Pending_Bits<Bits && Pos<Size)
+        {
+            Pending=(Pending<<8)|Data[Pos++];
+            Pending_Bits+=8;
+        }
+        if (Pending_Bits<Bits)
+            break; //The end of the data may be missing
+        const int32u Code=(Pending>>(Pending_Bits-Bits))&((1<<Bits)-1);
+        Pending_Bits-=Bits;
+        if (Code==256)
+        {
+            Next=258;
+            Bits=9;
+            Previous=NoCode;
+            continue;
+        }
+        if (Code==257)
+            break; //End of data
+        if (Code>Next || (Code==Next && Previous==NoCode))
+            return false;
+
+        //Content of the code (from its last byte to its first one), a code not in the table yet being the previous content with its first byte again
+        size_t Content_Size=0;
+        for (int32u Item=Code==Next?Previous:Code;;)
+        {
+            if (Item<256)
+            {
+                Content[Content_Size++]=(int8u)Item;
+                break;
+            }
+            Content[Content_Size++]=Suffix[Item];
+            Item=Prefix[Item];
+        }
+        const int8u First=Content[Content_Size-1];
+        if (Decoded.size()+Content_Size+1>Pdf_Decoded_Max)
+            return false;
+        for (size_t Content_Pos=Content_Size; Content_Pos; Content_Pos--)
+            Decoded.push_back(Content[Content_Pos-1]);
+        if (Code==Next)
+            Decoded.push_back(First);
+
+        //New item of the table
+        if (Previous!=NoCode && Next<4096)
+        {
+            Prefix[Next]=(int16u)Previous;
+            Suffix[Next]=First;
+            Next++;
+            if (Next+EarlyChange>=((int32u)1<<Bits) && Bits<12)
+                Bits++;
+        }
+        Previous=Code;
+    }
+    return true;
+}
+
+//---------------------------------------------------------------------------
 bool File_Pdf::Get_Stream_Decoded(stream_data &Stream)
 {
-    //Filter, alone or in an array
-    string Filter=Stream.Dictionary["Filter"].To_UTF8();
-    const size_t Filter_Begin=Filter.find_first_not_of("[ \r\n\t");
-    if (Filter_Begin==string::npos)
-        return true;
-    Filter=Filter.substr(Filter_Begin, Filter.find_last_not_of("] \r\n\t")+1-Filter_Begin);
-    if (Filter!="/FlateDecode")
-        return false; //Not supported
-    if (!Pdf_Inflate(Stream.Data, Stream.Size, Stream.Decoded))
+    //Filters, alone or in an array, in the order of the decoding
+    const string Filter=Stream.Dictionary["Filter"].To_UTF8();
+    vector<string> Filters;
+    for (size_t Pos=Filter.find('/'); Pos!=string::npos;)
     {
-        Trusted_IsNot("Problem during the decompression");
-        return false;
+        const size_t End=Filter.find_first_of("/] \r\n\t", Pos+1);
+        Filters.push_back(Filter.substr(Pos+1, End==string::npos?End:(End-(Pos+1))));
+        Pos=End==string::npos?End:Filter.find('/', End);
     }
+    if (Filters.empty())
+        return Filter.find_first_not_of("[] \r\n\t")==string::npos; //No filter, anything else (e.g. in another object) is not supported
+    if (Filters.size()>8)
+        return false; //Arbitrary limit
 
-    //Predictor, its parameters are in a dictionary, in an array when the filter is in an array
-    const auto Parameter=[&Stream](const char* Name, int32u Default) -> int32u
+    //Parameters of the filters, in a dictionary or, when the filters are in an array, in an array with 1 item (dictionary or null) per filter
+    const string Parameters=Stream.Dictionary["DecodeParms"].To_UTF8();
+    vector<string> Parameters_PerFilter;
+    size_t Parameters_Pos=Parameters.find_first_not_of(" \r\n\t");
+    if (Parameters_Pos!=string::npos && Parameters[Parameters_Pos]=='[')
     {
-        const auto Item=Stream.Dictionary.find(string("DecodeParms/")+Name);
-        if (Item!=Stream.Dictionary.end())
-            return Item->second.To_int32u();
-        const string Parameters=Stream.Dictionary["DecodeParms"].To_UTF8();
-        size_t Pos=Parameters.find(string("/")+Name);
+        for (Parameters_Pos++;;)
+        {
+            Parameters_Pos=Parameters.find_first_not_of(" \r\n\t", Parameters_Pos);
+            if (Parameters_Pos==string::npos || Parameters[Parameters_Pos]==']')
+                break;
+            size_t End=Parameters_Pos;
+            if (!Parameters.compare(Parameters_Pos, 2, "<<"))
+            {
+                //Dictionary, up to its end
+                size_t Level=0;
+                do
+                {
+                    if (!Parameters.compare(End, 2, "<<"))
+                    {
+                        Level++;
+                        End+=2;
+                    }
+                    else if (!Parameters.compare(End, 2, ">>"))
+                    {
+                        Level--;
+                        End+=2;
+                    }
+                    else
+                        End++;
+                }
+                while (Level && End<Parameters.size());
+            }
+            else
+            {
+                End=Parameters.find_first_of("] \r\n\t<", Parameters_Pos+1); //At least 1 character
+                if (End==string::npos)
+                    End=Parameters.size();
+            }
+            Parameters_PerFilter.push_back(Parameters.substr(Parameters_Pos, End-Parameters_Pos));
+            Parameters_Pos=End;
+        }
+    }
+    else
+        Parameters_PerFilter.push_back(Parameters);
+    const auto Parameter=[&](size_t Filter_Pos, const char* Name, int32u Default) -> int32u
+    {
+        if (!Filter_Pos)
+        {
+            const auto Item=Stream.Dictionary.find(string("DecodeParms/")+Name);
+            if (Item!=Stream.Dictionary.end())
+                return Item->second.To_int32u();
+        }
+        if (Filter_Pos>=Parameters_PerFilter.size())
+            return Default;
+        const string& Content=Parameters_PerFilter[Filter_Pos];
+        size_t Pos=Content.find(string("/")+Name);
         if (Pos!=string::npos)
-            Pos=Parameters.find_first_of("0123456789", Pos);
-        return Pos==string::npos?Default:(int32u)strtoul(Parameters.c_str()+Pos, NULL, 10);
+            Pos=Content.find_first_of("0123456789", Pos);
+        return Pos==string::npos?Default:(int32u)strtoul(Content.c_str()+Pos, NULL, 10);
     };
-    if (!Pdf_Predictor(Stream.Decoded, Parameter("Predictor", 1), Parameter("Colors", 1), Parameter("BitsPerComponent", 8), Parameter("Columns", 1)))
-        return false; //Not supported
-    Stream.Data=Stream.Decoded.data();
-    Stream.Size=Stream.Decoded.size();
+
+    //Decoding, the content after a filter being the content before the next one
+    for (size_t Filter_Pos=0; Filter_Pos<Filters.size(); Filter_Pos++)
+    {
+        const string& Name=Filters[Filter_Pos];
+        vector<int8u> Decoded;
+        bool HasPredictor=false;
+        bool IsOk;
+        if (Name=="FlateDecode" || Name=="Fl")
+        {
+            IsOk=Pdf_Inflate(Stream.Data, Stream.Size, Decoded);
+            HasPredictor=true;
+        }
+        else if (Name=="LZWDecode" || Name=="LZW")
+        {
+            IsOk=Pdf_Lzw(Stream.Data, Stream.Size, Parameter(Filter_Pos, "EarlyChange", 1), Decoded);
+            HasPredictor=true;
+        }
+        else if (Name=="ASCIIHexDecode" || Name=="AHx")
+            IsOk=Pdf_AsciiHex(Stream.Data, Stream.Size, Decoded);
+        else if (Name=="ASCII85Decode" || Name=="A85")
+            IsOk=Pdf_Ascii85(Stream.Data, Stream.Size, Decoded);
+        else if (Name=="RunLengthDecode" || Name=="RL")
+            IsOk=Pdf_RunLength(Stream.Data, Stream.Size, Decoded);
+        else
+            return false; //Not supported
+        if (!IsOk)
+        {
+            Trusted_IsNot("Problem during the decoding");
+            return false;
+        }
+        if (HasPredictor && !Pdf_Predictor(Decoded, Parameter(Filter_Pos, "Predictor", 1), Parameter(Filter_Pos, "Colors", 1), Parameter(Filter_Pos, "BitsPerComponent", 8), Parameter(Filter_Pos, "Columns", 1)))
+            return false; //Not supported
+        Stream.Decoded.swap(Decoded);
+        Stream.Data=Stream.Decoded.data();
+        Stream.Size=Stream.Decoded.size();
+    }
     return true;
 }
 
