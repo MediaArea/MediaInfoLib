@@ -5393,6 +5393,15 @@ static Ztring Tags_Comparable(const string& Name, const Ztring& Value)
 }
 
 //---------------------------------------------------------------------------
+static bool Tags_HasCharacterAbove(const Ztring& Value, wchar_t Max)
+{
+    for (const wchar_t Character : Value.To_Unicode())
+        if (Character>Max)
+            return true;
+    return false;
+}
+
+//---------------------------------------------------------------------------
 static size_t Tags_Size_Max(File__Analyze::tags_format Format, const string& Name)
 {
     //Size from which a content may be cut by the format, 0 if there is no such limit: in characters for ID3v1,
@@ -5949,6 +5958,20 @@ void File__Analyze::Streams_Finish_Tags()
                     }
                     continue;
                 }
+            }
+
+            //ID3v1 has no character encoding: a text with characters which are not in ASCII is in a code page which is not known when the text of the other format has characters which are not in ISO-8859-1, it is not comparable and the text of the other format is used
+            if (Format==Tags_Id3v1)
+            {
+                if (Tags_HasCharacterAbove(Item.Value, 0x7F) && Tags_HasCharacterAbove(Current, 0xFF))
+                    continue;
+            }
+            else if (Source!=Sources.end() && Source->second==Tags_Id3v1 && Tags_HasCharacterAbove(Current, 0x7F) && Tags_HasCharacterAbove(Item.Value, 0xFF))
+            {
+                Fill(Stream_General, 0, Name, Item.Value, true);
+                Sources[Item.Name]=Item.Format;
+                Item.IsFilled=true;
+                continue;
             }
 
             //Not the same content, which is expected for the tool: each part of the file may be written by another one
