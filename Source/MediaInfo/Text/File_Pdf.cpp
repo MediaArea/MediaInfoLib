@@ -910,6 +910,8 @@ void File_Pdf::Object_Info_Fill(const string &Key, const string &Raw)
 {
     const size_t Parameter=Pdf_Info_Parameter(Key);
     const Ztring Text=Pdf_String(Raw);
+    if (Parameter==General_Keywords && Text.find_first_not_of(__T(" ,;"))==string::npos)
+        return; //Only separators, e.g. ", " written by some tools for no keyword
     if (Parameter!=General_Encoded_Date)
         Fill(Stream_General, 0, Parameter, Text);
     else if (Key=="ModDate")

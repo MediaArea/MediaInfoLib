@@ -623,7 +623,7 @@ void File_Xmp::pdf(const string& name, const string& value)
 {
     if (name == "pdf:Description" && Retrieve_Const(Stream_General, 0, General_Description).empty())
         Fill(Stream_General, 0, General_Description, value);
-    if (name == "pdf:Keywords" && Retrieve_Const(Stream_General, 0, General_Keywords).empty())
+    if (name == "pdf:Keywords" && Retrieve_Const(Stream_General, 0, General_Keywords).empty() && value.find_first_not_of(" ,;") != string::npos) //Not only separators, e.g. ", " written by some tools for no keyword
         Fill(Stream_General, 0, General_Keywords, value);
     if (name == "pdf:Producer" && Retrieve_Const(Stream_General, 0, General_Encoded_Library).empty())
         Fill(Stream_General, 0, General_Encoded_Library, value);
