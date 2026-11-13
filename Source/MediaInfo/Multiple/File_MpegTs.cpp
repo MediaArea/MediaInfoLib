@@ -1970,6 +1970,11 @@ bool File_MpegTs::Synched_Test()
                     TSP_Size=0; // Last bytes of a content and partial TS packet without the content after the TS content
                 else
                     TSP_Size-=LastPacker_Missing;
+
+                //The last packet is parsed only if its header, with the length of its adaptation field, is complete
+                const size_t Remain=Buffer_Size-Buffer_Offset;
+                if (Remain<BDAV_Size+4 || ((Buffer[Buffer_Offset+BDAV_Size+3]&0x20) && Remain<BDAV_Size+5))
+                    Buffer_Offset=Buffer_Size;
             }
         }
         return true;
@@ -2601,8 +2606,8 @@ void File_MpegTs::Header_Parse()
             if (transport_scrambling_control>0)
                 Complete_Stream->Streams[pid]->Scrambled_Count++;
         }
-        else if (Element_Offset+TSP_Size<TS_Size)
-            Skip_XX(TS_Size-Element_Offset-TSP_Size,            "Junk");
+        else if (Element_Offset+TSP_Size<TS_Size && Element_Offset<Element_Size)
+            Skip_XX(min<int64u>(TS_Size-TSP_Size, Element_Size)-Element_Offset, "Junk");
 
         //Filling
         Header_Fill_Code(pid, __T("0x")+Ztring().From_CC2(pid));
@@ -2614,6 +2619,8 @@ void File_MpegTs::Header_Parse()
     {
     #endif //MEDIAINFO_TRACE
         //Parsing
+               pid=                        ((Buffer[Buffer_Offset+BDAV_Size+1]&0x1F)<<8)
+                                          |  Buffer[Buffer_Offset+BDAV_Size+2]; //Not set by Synched_Test() for the last packet of a truncated file
                payload_unit_start_indicator=(Buffer[Buffer_Offset+BDAV_Size+1]&0x40)!=0;
                transport_scrambling_control= Buffer[Buffer_Offset+BDAV_Size+3]&0xC0;
         bool   adaptation=                  (Buffer[Buffer_Offset+BDAV_Size+3]&0x20)!=0;
@@ -2659,6 +2666,8 @@ void File_MpegTs::Header_Parse_AdaptationField()
         Get_B1 (adaptation_field_length,                            "adaptation_field_length");
         if (adaptation_field_length>188-4-1) //TS size - header - adaptation_field_length
             adaptation_field_length=188-4-1;
+        if (Element_Pos_Save+1+adaptation_field_length>Element_Size)
+            adaptation_field_length=(int8u)(Element_Size-(Element_Pos_Save+1)); //Last packet of a truncated file
         const int64u AdaptationField_End=Element_Pos_Save+1+adaptation_field_length;
         if (adaptation_field_length>0)
         {
@@ -2858,6 +2867,8 @@ void File_MpegTs::Header_Parse_AdaptationField()
         int8u adaptation_field_length=Buffer[Buffer_Offset+BDAV_Size+4];
         if (adaptation_field_length>188-(4+1)) //TS size - header - adaptation_field_length
             adaptation_field_length=188-(4+1);
+        if (BDAV_Size+5+adaptation_field_length>Element_Size)
+            adaptation_field_length=(int8u)(Element_Size-(BDAV_Size+5)); //Last packet of a truncated file
         #ifdef MEDIAINFO_MPEGTS_PCR_YES
             if (adaptation_field_length)
             {
