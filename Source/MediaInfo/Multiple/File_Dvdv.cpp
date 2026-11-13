@@ -1289,9 +1289,9 @@ void File_Dvdv::Get_Duration(TimeCode &Duration, const Ztring &Name)
     int32u FrameRate, FF;
     int8u HH, MM, SS;
     Element_Begin1(Name);
-        Get_C1 (HH,                                     "Hours (BCD)");
-        Get_C1 (MM,                                     "Minutes (BCD)");
-        Get_C1 (SS,                                     "Seconds (BCD)");
+        Get_B1 (HH,                                     "Hours (BCD)");
+        Get_B1 (MM,                                     "Minutes (BCD)");
+        Get_B1 (SS,                                     "Seconds (BCD)");
         BS_Begin();
         Get_BS (2, FrameRate,                           "Frame rate"); Param_Info2C(IFO_PlaybackTime_FrameRate[FrameRate], IFO_PlaybackTime_FrameRate[FrameRate], " fps");
         Get_BS (6, FF,                                  "Frames (BCD)");
