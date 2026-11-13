@@ -174,15 +174,23 @@ enum IPTC_CodedCharacterSet {
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-void File_Iim::Streams_Finish()
+static Ztring Iim_DateTime(const Ztring& Date, const Ztring& Time)
 {
-    //Date as CCYYMMDD, time as HHMMSS then the offset from UTC as +HHMM or -HHMM
+    //Date as CCYYMMDD, time as HHMMSS then the offset from UTC as +HHMM or -HHMM (some tools do not write the offset)
     if (Date.size()!=8 || Date.find_first_not_of(__T("0123456789"))!=string::npos)
-        return;
+        return Ztring();
     Ztring Value=Date.substr(0, 4)+__T('-')+Date.substr(4, 2)+__T('-')+Date.substr(6, 2);
     if (Time.size()==11 && Time.find_first_not_of(__T("0123456789"))==6 && (Time[6]==__T('+') || Time[6]==__T('-')) && Time.find_first_not_of(__T("0123456789"), 7)==string::npos)
         Value+=__T(' ')+Time.substr(0, 2)+__T(':')+Time.substr(2, 2)+__T(':')+Time.substr(4, 2)+Time.substr(6, 3)+__T(':')+Time.substr(9, 2);
-    Fill(Stream_General, 0, General_Recorded_Date, Value);
+    else if (Time.size()==6 && Time.find_first_not_of(__T("0123456789"))==string::npos)
+        Value+=__T(' ')+Time.substr(0, 2)+__T(':')+Time.substr(2, 2)+__T(':')+Time.substr(4, 2);
+    return Value;
+}
+
+//---------------------------------------------------------------------------
+void File_Iim::Streams_Finish()
+{
+    Fill(Stream_General, 0, General_Recorded_Date, Iim_DateTime(Date, Time));
 }
 
 //***************************************************************************
