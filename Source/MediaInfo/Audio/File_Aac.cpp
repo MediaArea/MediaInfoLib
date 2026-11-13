@@ -85,6 +85,7 @@ File_Aac::File_Aac()
     FrameSize_Min=(int64u)-1;
     FrameSize_Max=0;
     adts_buffer_fullness_Is7FF=false;
+    Frame_IsCut=false;
     #if MEDIAINFO_ADVANCED
         aac_frame_length_Total=0;
     #endif //MEDIAINFO_ADVANCED
@@ -809,6 +810,7 @@ void File_Aac::Header_Parse_ADTS()
 {
     //There is no "header" in ADTS, retrieving only the frame length
     int16u aac_frame_length=(BigEndian2int24u(Buffer+Buffer_Offset+3)>>5)&0x1FFF; //13 bits
+    Frame_IsCut=Buffer_Offset+aac_frame_length>Buffer_Size;
 
     //Filling
     Header_Fill_Size(aac_frame_length);
@@ -823,6 +825,7 @@ void File_Aac::Header_Parse_LATM()
     Skip_S2(11,                                                 "syncword");
     Get_S2 (13, audioMuxLengthBytes,                            "audioMuxLengthBytes");
     BS_End();
+    Frame_IsCut=Buffer_Offset+3+audioMuxLengthBytes>Buffer_Size;
 
     //Filling
     Header_Fill_Size(3+audioMuxLengthBytes);

@@ -216,6 +216,7 @@ protected :
     int64u  FrameSize_Min;
     int64u  FrameSize_Max;
     bool    adts_buffer_fullness_Is7FF;
+    bool    Frame_IsCut; //The frame is parsed without all its data (end of the file)
     #if MEDIAINFO_ADVANCED
         int64u  aac_frame_length_Total;
     #endif //MEDIAINFO_ADVANCED

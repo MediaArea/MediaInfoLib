@@ -3216,7 +3216,8 @@ void File_Aac::raw_data_block()
         Trusted_IsNot("Not ending by END element");
     if (Element_IsOK() && Data_BS_Remain()%8)
         Skip_S1(Data_BS_Remain()%8,                             "byte_alignment");
-    if ((!HasEnd || (ChannelCount_Temp && ChannelPos_Temp!=ChannelCount_Temp)) && Retrieve_Const(Stream_Audio, 0, "Errors").empty())
+    if ((!HasEnd || (ChannelCount_Temp && ChannelPos_Temp!=ChannelCount_Temp)) && Retrieve_Const(Stream_Audio, 0, "Errors").empty()
+     && !Frame_IsCut) //Not for a frame cut by the end of the file, its end is not there
     {
         if (!HasEnd)
             Fill(Stream_Audio, 0, "Errors", "Missing ID_END");
