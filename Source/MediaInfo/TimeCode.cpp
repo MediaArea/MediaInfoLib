@@ -863,7 +863,10 @@ int64_t TimeCode::ToMilliseconds() const
         return 0;
 
     int64_t Den = (uint64_t)GetFramesMax() + 1;
-    int64_t MS = (ToFrames() * 1000 * (GetFramesMax() && (IsDropFrame() || Is1001fps()) ? 1.001 : 1.000) + Den / 2) / Den;
+    auto Frames = ToFrames();
+    if (IsNegative())
+        Frames = -Frames; // ToFrames() is signed, the rounding and the sign are applied below
+    int64_t MS = (Frames * 1000 * (GetFramesMax() && (IsDropFrame() || Is1001fps()) ? 1.001 : 1.000) + Den / 2) / Den;
     if (IsNegative())
         MS = -MS;
 
@@ -888,7 +891,10 @@ double TimeCode::ToSeconds(bool TimeIsDropFrame) const
     }
     else
     {
-        Result = ((double)ToFrames()) / FrameRate;
+        auto Frames = ToFrames();
+        if (IsNegative())
+            Frames = -Frames; // ToFrames() is signed, the sign is applied below
+        Result = ((double)Frames) / FrameRate;
         if (Is1001fps())
             Result *= 1.001;
     }
