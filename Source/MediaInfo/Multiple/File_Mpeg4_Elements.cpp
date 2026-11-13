@@ -508,7 +508,7 @@ static std::string Mpeg4_AuroCx_ChannelPositions(int16u Layout)
     if (Layout&0x0E00)
     {
         if (!Text.empty()) Text+=", ";
-        Text+="TopFront:";
+        Text+="High:";
         if (Layout&0x0200) Text+=" L";
         if (Layout&0x0800) Text+=" C";
         if (Layout&0x0400) Text+=" R";
@@ -516,12 +516,12 @@ static std::string Mpeg4_AuroCx_ChannelPositions(int16u Layout)
     if (Layout&0x1000)
     {
         if (!Text.empty()) Text+=", ";
-        Text+="Top: C";
+        Text+="TopCtrSrrd";
     }
     if (Layout&0xE000)
     {
         if (!Text.empty()) Text+=", ";
-        Text+="TopRear:";
+        Text+="HiRear:";
         if (Layout&0x2000) Text+=" L";
         if (Layout&0x8000) Text+=" C";
         if (Layout&0x4000) Text+=" R";
