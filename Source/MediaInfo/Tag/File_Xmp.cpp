@@ -391,6 +391,9 @@ bool File_Xmp::FileHeader_Begin()
             XML_ELEMENT("pdfaid:conformance")
                 XML_VALUE
                 pdfaid_conformance = tfsxml_decode(v);
+            XML_ELEMENT_NAMESPACE(exif)
+            XML_ELEMENT_NAMESPACE(GIMP)
+            XML_ELEMENT_NAMESPACE(pdf)
             XML_ELEMENT_NAMESPACE(photoshop)
             XML_ELEMENT_NAMESPACE(xmp)
             XML_ELEMENT_NAMESPACE(Iptc4xmpCore)
