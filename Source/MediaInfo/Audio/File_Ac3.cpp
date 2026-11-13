@@ -842,7 +842,8 @@ Ztring AC3_TrueHD_Channels_Positions2(int16u ChannelsMap, bool Bit11=false)
     Text+=Ztring::ToZtring(Front);
     Text+=__T('/')+Ztring::ToZtring(Side);
     Text+=__T('/')+Ztring::ToZtring(Back);
-    Text+=__T('.')+Ztring::ToZtring(LFE);
+    if (LFE || Height)
+        Text+=__T('.')+Ztring::ToZtring(LFE);
     if (Height)
         Text+=__T('.')+Ztring::ToZtring(Height);
     return Text;

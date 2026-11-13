@@ -1294,9 +1294,10 @@ struct DTSUHD_ChannelMaskInfo DTSUHD_DecodeChannelMask(int32u ChannelMask)
         Info.ChannelPositionsText.erase(0, 2);
         Info.ChannelPositions2Text = std::to_string(Info.CountFront) + "/" +
                 std::to_string(Info.CountSide) + "/" +
-                std::to_string(Info.CountRear) + "." +
-                std::to_string(Info.CountLFE);
-        if (Info.CountHeights)
+                std::to_string(Info.CountRear);
+        if (Info.CountLFE || Info.CountHeights || Info.CountLows)
+            Info.ChannelPositions2Text+="." + std::to_string(Info.CountLFE);
+        if (Info.CountHeights || Info.CountLows)
             Info.ChannelPositions2Text+="." + std::to_string(Info.CountHeights);
         if (Info.CountLows)
             Info.ChannelPositions2Text+="." + std::to_string(Info.CountLows);

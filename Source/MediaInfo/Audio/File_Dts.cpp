@@ -1432,14 +1432,14 @@ void File_Dts::Streams_Fill_Core(bool With96k)
     {
         Data[Channels].push_back(Ztring::ToZtring(DTS_Channels[Core_Core_AMODE]+(Core_Core_LFF?1:0)));
         Data[ChannelPositions].push_back(Ztring().From_UTF8(DTS_ChannelPositions[Core_Core_AMODE])+(Core_Core_LFF?__T(", LFE"):__T("")));
-        Data[ChannelPositions2].push_back(Ztring().From_UTF8(DTS_ChannelPositions2[Core_Core_AMODE])+(Core_Core_LFF?__T(".1"):__T(".0")));
+        Data[ChannelPositions2].push_back(Ztring().From_UTF8(DTS_ChannelPositions2[Core_Core_AMODE])+(Core_Core_LFF?__T(".1"):__T("")));
         Data[ChannelLayout].push_back(Ztring().From_UTF8(DTS_ChannelLayout[Core_Core_AMODE])+(Core_Core_LFF?__T(" LFE"):__T("")));
     }
     else
     {
         Data[Channels].push_back(__T("User Defined"));
         Data[ChannelPositions].push_back(Ztring(__T("User Defined"))+(Core_Core_LFF?__T(", LFE"):__T("")));
-        Data[ChannelPositions2].push_back(Ztring(__T("User Defined"))+(Core_Core_LFF?__T(".1"):__T(".0")));
+        Data[ChannelPositions2].push_back(Ztring(__T("User Defined"))+(Core_Core_LFF?__T(".1"):__T("")));
         Data[ChannelLayout].push_back(Ztring(__T("User Defined"))+(Core_Core_LFF?__T(" LFE"):__T("")));
     }
     Data[BitDepth].push_back(bits_per_sample<sizeof(DTS_Resolution)?Ztring::ToZtring(DTS_Resolution[bits_per_sample]):Ztring());

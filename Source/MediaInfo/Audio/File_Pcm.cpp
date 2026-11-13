@@ -52,7 +52,7 @@ static const char* Smpte_St0302_ChannelsPositions2(int8u Channels)
 {
     switch (Channels)
     {
-        case  2 : return "2/0/0.0";                                     //2 channels
+        case  2 : return "2/0/0";                                       //2 channels
         case  4 : return "3/0/0.1";                                     //4 channels
         case  6 : return "3/2/0.1";                                     //6 channels
         case  8 : return "3/2/2.1";                                     //8 channels

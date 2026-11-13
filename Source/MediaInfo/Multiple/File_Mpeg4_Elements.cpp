@@ -558,7 +558,8 @@ static std::string Mpeg4_AuroCx_ChannelPositions2(int16u Layout)
     Text+=Ztring::ToZtring(Front);
     Text+=__T('/')+Ztring::ToZtring(Side);
     Text+=__T('/')+Ztring::ToZtring(Back);
-    Text+=__T('.')+Ztring::ToZtring(LFE);
+    if (LFE || Height)
+        Text+=__T('.')+Ztring::ToZtring(LFE);
     if (Height)
         Text+=__T('.')+Ztring::ToZtring(Height);
     return Text.To_UTF8();
