@@ -67,6 +67,14 @@ private :
     int8u CodedCharSet = 0;
     Ztring Date;
     Ztring Time;
+    Ztring Date_Digital;
+    Ztring Time_Digital;
+    Ztring Date_Release;
+    Ztring Time_Release;
+    Ztring Date_Expiration;
+    Ztring Time_Expiration;
+    Ztring Program;
+    Ztring ProgramVersion;
 };
 
 } //NameSpace
