@@ -43,10 +43,9 @@ struct CatalogRules
 {
     CountPlural::Rules Plurals;
     bool HasRules;
-    bool LegacyDecimals;
     int Legacy[6];
 
-    CatalogRules() : HasRules(false), LegacyDecimals(false)
+    CatalogRules() : HasRules(false)
     {
         for (size_t Pos=0; Pos<6; ++Pos) Legacy[Pos]=0;
     }
@@ -78,7 +77,7 @@ struct CatalogRules
                 size_t End=Mapping.find(',', Start);
                 const std::string Item=Mapping.substr(Start, End==std::string::npos?End:End-Start);
                 const size_t Equal=Item.find('=');
-                if (Equal==std::string::npos || Equal+2!=Item.size() || Item[Equal+1]<'0' || Item[Equal+1]>'3') return;
+                if (Equal==std::string::npos || Equal+2!=Item.size() || Item[Equal+1]<'0' || Item[Equal+1]>'4') return;
                 size_t Category=0;
                 while (Category<6 && Item.substr(0, Equal)!=CountPlural::Name((CountPlural::Category)Category)) ++Category;
                 if (Category==6 || (Seen&(1U<<Category))) return;
@@ -91,9 +90,6 @@ struct CatalogRules
             for (size_t Pos=0; Pos<6; ++Pos)
                 if (!(Seen&(1U<<Pos))) Legacy[Pos]=Legacy[CountPlural::Other];
         }
-        const Ztring Decimals=Lookup(Catalog, __T("  Config_Text_PluralLegacyDecimals"));
-        if (!Decimals.empty() && Decimals!=__T("0") && Decimals!=__T("1")) return;
-        LegacyDecimals=Decimals==__T("1");
         HasRules=true;
     }
 
@@ -173,6 +169,13 @@ inline int LegacyForm(const std::string& Locale, CountPlural::Category Category)
         // These catalogs distinguish one, few and the remaining integer forms.
         if (Category==CountPlural::One) return 1;
         if (Category==CountPlural::Few) return 2;
+        // Decimal numbers: 4th form (genitive singular), the few form in Russian.
+        if (Base=="cs" || Base=="sk" || Base=="lt")
+            return Category==CountPlural::Many?4:3;
+        if (Base=="pl" || Base=="be" || Base=="uk")
+            return Category==CountPlural::Other?4:3;
+        if (Base=="ru")
+            return Category==CountPlural::Other?2:3;
         return 3;
     }
     // Other legacy catalogs provide a binary distinction (or invariant forms).
@@ -223,15 +226,16 @@ inline bool Unit(const Translation& Catalog, const CatalogRules& Rules, const st
         return true;
     }
     if (!Plural.KnownLocale) return false;
-    std::string Base=Locale.substr(0, Locale.find_first_of("-_"));
-    // These legacy triplets have no fractional form. A named message is needed.
-    if (Count.find(__T('.'))!=Ztring::npos &&
-        (Rules.HasRules?!Rules.LegacyDecimals:
-        (Base=="cs" || Base=="sk" || Base=="pl" || Base=="ru" || Base=="be" || Base=="uk" || Base=="hr")))
-        return false;
-    const int Form=Rules.HasRules?Rules.Legacy[Plural.Value]:LegacyForm(Locale, Plural.Value);
-    if (!Form) return false;
-    Ztring Text=Lookup(Catalog, Name+ZenLib::Char(__T('0')+Form));
+    int Form=Rules.HasRules?Rules.Legacy[Plural.Value]:LegacyForm(Locale, Plural.Value);
+    Ztring Text=Form?Lookup(Catalog, Name+ZenLib::Char(__T('0')+Form)):Ztring();
+    const size_t Dot=Count.find(__T('.'));
+    if (Text.empty() && Dot!=Ztring::npos)
+    {
+        // Catalog without the form of decimal numbers: form of the integer part, as before.
+        const CountPlural::Result Integer=Rules.Select(Locale, Ztring(Count.substr(0, Dot)).To_UTF8());
+        Form=Rules.HasRules?Rules.Legacy[Integer.Value]:LegacyForm(Locale, Integer.Value);
+        if (Form) Text=Lookup(Catalog, Name+ZenLib::Char(__T('0')+Form));
+    }
     if (Text.empty()) return false;
     Result=Number(Count, Catalog)+Text;
     return true;

@@ -14,7 +14,6 @@ MediaInfo catalogs define rules in the metadata rows below. For example, English
   Config_Text_PluralRules;1
   Config_Text_PluralRule.one;v == 0 && i == 1
   Config_Text_PluralLegacy;one=1,other=2
-  Config_Text_PluralLegacyDecimals;1
 ```
 
 The version must be `1`. Optional `Config_Text_PluralRule.<category>` entries
@@ -35,14 +34,15 @@ other arithmetic operators or function calls. Constants and moduli are at most
 1,000,000; expressions are limited to 1,024 bytes and 16 nested parentheses.
 Every branch is validated, including branches whose result is already determined.
 
-`Config_Text_PluralLegacy` maps categories to existing numbered catalog suffixes,
+`Config_Text_PluralLegacy` maps categories to numbered catalog suffixes,
 for example `one=1,few=2,other=3`. It is optional; if present, `other` is required
 and supplies the mapping for unspecified categories. Values are `1`, `2`, `3`,
-or `0` to disable that legacy form. Duplicate categories are invalid. Without
-this mapping, only named messages and invariant units use the catalog rules.
-`Config_Text_PluralLegacyDecimals` is `1` if numbered legacy forms support
-fractional notation, otherwise `0` (the default). Named messages may always
-express fractional categories. Existing exact-zero messages remain supported.
+`4`, or `0` to disable that legacy form. Form `4` holds the form of decimal
+numbers where it differs from the integer forms, for example the Czech genitive
+singular (`one=1,few=2,many=4,other=3`). Duplicate categories are invalid.
+Without this mapping, only named messages and invariant units use the catalog
+rules. Named messages may also express fractional categories. Existing
+exact-zero messages remain supported.
 
 Valid metadata takes precedence over the language identifier, allowing new
 languages without a C++ rule change. Unsupported versions, malformed expressions
@@ -84,8 +84,9 @@ unmerged catalog atomically; there is no cached pattern state.
 ## Compatibility
 
 Without valid rule metadata, legacy suffixes are interpreted per catalog: cs/sk/pl/ru/be/uk/hr/lt/ro use
-one=1, few=2, remaining integer categories=3; other existing catalogs use
-one=1, remaining categories=2. Existing invariant units and exact `0` whole
+one=1, few=2, remaining integer categories=3; decimal numbers use form 4 in
+cs/sk/pl/be/uk/lt and form 2 in ru, and follow these categories in hr/ro;
+other existing catalogs use one=1, remaining categories=2. Existing invariant units and exact `0` whole
 messages retain their meanings. Missing local forms are resolved from the
 English family using English rules. Historical identifiers gr and pt mean el
 and pt-PT; pt-BR retains Brazilian rules. Unknown locales fall back to English
@@ -96,8 +97,9 @@ remain approximations; named messages can express every category.
 Numeric units accept `[+-]?[0-9]+(\.[0-9]+)?`. Signs are ignored for plural
 selection; visible fraction digits and arbitrarily large counts are preserved.
 Named unit messages (` channel.<category>`) support fractional categories
-and require a ` channel.other` fallback. Legacy cs/sk/pl/ru/be/uk/hr
-triplets have no fractional form and fall back to English unless invariant.
+and require a ` channel.other` fallback. A catalog without the form mapped to
+decimal numbers (e.g. an older catalog without form 4) uses the form of the
+integer part, as before.
 Expressions such as `29.97 (30000/1001)` remain literal and may only receive an
 invariant unit. Other invalid inputs are returned unchanged. Number grouping is
 outside this change and retains its existing presentation policy.

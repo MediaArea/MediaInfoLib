@@ -96,8 +96,8 @@ void Czech(const Ztring& Cs)
     Equal("Czech full summary", Message("StreamSummary", __T("6")), __T("6 zvukov\u00FDch stream\u016F: AAC"));
     Equal("empty formats", Message("StreamSummary", __T("6"), "Audio", Ztring()), __T("6 zvukov\u00FDch stream\u016F: "));
     Equal("Czech negative zero", Unit(__T("-0")), __T("-0 kan\u00E1l\u016F"));
-    Equal("Czech decimal falls back as whole English unit", Unit(__T("1.5")), __T("1.5 channels"));
-    Equal("Czech visible fraction digits", Unit(__T("1.0")), __T("1.0 channels"));
+    Equal("Czech decimal genitive singular", Unit(__T("1.5")), __T("1,5 kan\u00E1lu"));
+    Equal("Czech visible fraction digits", Unit(__T("1.0")), __T("1,0 kan\u00E1lu"));
     Equal("invalid numeric text", Unit(__T("unknown")), __T("unknown"));
     Equal("invalid numeric exponent", Unit(__T("1e2")), __T("1e2"));
     Equal("legacy expression inflected unit", Unit(__T("2 / 3")), __T("2 / 3"));
@@ -412,10 +412,9 @@ void CatalogRules()
         __T("  Config_Text_PluralRule.one;i == 6"),
         __T("  Config_Text_PluralRules;1\n  Config_Text_PluralRule.one;i == 6\n  Config_Text_PluralRule.few;i % 0 == 1"),
         __T("  Config_Text_PluralRules;1\n  Config_Text_PluralRule.one;i == 6\n  Config_Text_PluralLegacy;one=1"),
-        __T("  Config_Text_PluralRules;1\n  Config_Text_PluralRule.one;i == 6\n  Config_Text_PluralLegacy;one=4,other=3"),
+        __T("  Config_Text_PluralRules;1\n  Config_Text_PluralRule.one;i == 6\n  Config_Text_PluralLegacy;one=5,other=3"),
         __T("  Config_Text_PluralRules;1\n  Config_Text_PluralRule.one;i == 6\n  Config_Text_PluralLegacy;one=1,one=2,other=3"),
         __T("  Config_Text_PluralRules;1\n  Config_Text_PluralRule.one;i == 6\n  Config_Text_PluralLegacy;bogus=1,other=3"),
-        __T("  Config_Text_PluralRules;1\n  Config_Text_PluralRule.one;i == 6\n  Config_Text_PluralLegacyDecimals;2"),
         __T("  Config_Text_PluralRules;1\n  Config_Text_PluralRule.one;i == 6\n  Config_Text_PluralRule.other;true"),
         __T("  Config_Text_PluralRules;1\n  Config_Text_PluralRule.one;i == 6\n  Config_Text_PluralRule.bogus;true")
     };
@@ -436,16 +435,19 @@ void CatalogRules()
     Equal("catalog legacy one mapping", Unit(__T("1")), __T("1 second"));
     Equal("catalog legacy few mapping", Unit(__T("2")), __T("2 first"));
     Equal("catalog legacy other mapping", Unit(__T("6")), __T("6 third"));
-    Equal("catalog legacy decimals disabled by default", Unit(__T("1.5")), __T("1.5 channels"));
+    Equal("catalog legacy decimals follow their category", Unit(__T("1.5")), __T("1.5 first"));
     Load(Legacy+__T("\n  Config_Text_PluralLegacy;one=0,few=1,other=0"));
     Equal("zero legacy mapping disables singular form", Unit(__T("1")), __T("1 channel"));
     Equal("zero other mapping disables plural form", Unit(__T("6")), __T("6 channels"));
     Equal("zero mapping preserves other categories", Unit(__T("2")), __T("2 first"));
-    Load(Legacy+Mapping+__T("\n  Config_Text_PluralLegacyDecimals;1"));
-    Equal("catalog explicitly allows legacy decimals", Unit(__T("1.5")), __T("1.5 first"));
+    Load(Legacy+__T("\n  Config_Text_PluralLegacy;one=1,few=4,other=3\n channel4; fourth"));
+    Equal("catalog form of decimal numbers", Unit(__T("1.5")), __T("1.5 fourth"));
+    Load(Legacy+__T("\n  Config_Text_PluralLegacy;one=1,few=4,other=3"));
+    Equal("missing decimal form uses the integer part", Unit(__T("1.5")), __T("1.5 first"));
+    Equal("missing integer form uses English", Unit(__T("2")), __T("2 channels"));
     Load(Legacy+Mapping+__T("\n  Config_Text_PluralRule.zero;i == 0"));
     Equal("unmapped legacy category uses other mapping", Unit(__T("0")), __T("0 third"));
-    Load(Legacy+Mapping+__T("\n  Config_Text_PluralLegacyDecimals;0\n channel0;NONE"));
+    Load(Legacy+Mapping+__T("\n channel0;NONE"));
     Equal("catalog metadata preserves exact zero message", Unit(__T("0")), __T("NONE"));
     Load(Legacy+__T("\n dB; dB"));
     Equal("catalog metadata preserves invariant unit", Unit(__T("1.5"), __T(" dB")), __T("1.5 dB"));
@@ -550,6 +552,51 @@ void FallbackAndArguments(const Ztring& Cs)
     Equal("legacy Greek identifier", Message("FileCount", __T("1")), __T("1 one"));
 }
 
+void DecimalForms(const std::string& Directory)
+{
+    // Catalogs without metadata: form of decimal numbers per language, form of the integer part without it
+    static const char* Fourth[]={"cs", "sk", "lt", "pl", "be", "uk"};
+    for (size_t I=0; I<sizeof(Fourth)/sizeof(*Fourth); ++I)
+    {
+        const Ztring Legacy=__T("  Language_ISO639;")+Utf8(Fourth[I])+__T("\n channel1; one\n channel2; few\n channel3; other");
+        Load(Legacy+__T("\n channel4; decimal"));
+        Equal((std::string("decimal form ")+Fourth[I]).c_str(), Unit(__T("1.5")), __T("1.5 decimal"));
+        Load(Legacy);
+        Equal((std::string("decimal without its form ")+Fourth[I]).c_str(), Unit(__T("2.5")), __T("2.5 few"));
+    }
+    Load(__T("  Language_ISO639;ru\n channel1; one\n channel2; few\n channel3; many"));
+    Equal("Russian decimal uses the few form", Unit(__T("25.5")), __T("25.5 few"));
+    Load(__T("  Language_ISO639;hr\n channel1; one\n channel2; few\n channel3; other"));
+    Equal("Croatian decimal ending in 1", Unit(__T("1.1")), __T("1.1 one"));
+    Equal("Croatian decimal ending in 2", Unit(__T("1.2")), __T("1.2 few"));
+    Equal("Croatian decimal ending in 5", Unit(__T("1.5")), __T("1.5 other"));
+
+    // Shipped catalogs
+    struct Case { const char* Locale; const char* Count; const char* Name; const Char* Expected; };
+    static const Case Cases[]={
+        {"sk", "1.5", " channel", __T("1,5 kan\u00E1la")},
+        {"pl", "1.5", " channel", __T("1,5 kana\u0142u")},
+        {"uk", "1.5", " channel", __T("1.5 \u043A\u0430\u043D\u0430\u043B\u0443")},
+        {"be", "1.5", " channel", __T("1,5 \u043A\u0430\u043D\u0430\u043B\u0430")},
+        {"lt", "1.5", " channel", __T("1,5 kanalo")},
+        {"ru", "1.5", " channel", __T("1,5 \u043A\u0430\u043D\u0430\u043B\u0430")},
+        {"ru", "1.5", " text stream", __T("1,5 \u0442\u0435\u043A\u0441\u0442\u043E\u0432\u043E\u0433\u043E \u043F\u043E\u0442\u043E\u043A\u0430")},
+        {"hr", "1.1", " channel", __T("1,1 kanal")},
+        {"hr", "1.5", " channel", __T("1,5 kanala")},
+        {"ru", "25.000", " fps", __T("25,000 \u043A\u0430\u0434\u0440\u0430/\u0441\u0435\u043A")},
+        {"uk", "25.000", " fps", __T("25.000 \u043A\u0430\u0434\u0440\u0443/\u0441\u0435\u043A")},
+        {"be", "29.970", " fps", __T("29,970 \u043A\u0430\u0434\u0440\u0430/\u0441\u0435\u043A")},
+        {"be", "25.000", " fps", __T("25,000 \u043A\u0430\u0434\u0440\u0430\u045E/\u0441\u0435\u043A")}, // CLDR n operand: whole value
+        {"pl", "70.0", " Byte", __T("70,0 bajta")}
+    };
+    for (size_t I=0; I<sizeof(Cases)/sizeof(*Cases); ++I)
+    {
+        Load(Catalog(Directory, Cases[I].Locale));
+        const std::string Label=std::string("shipped decimal form ")+Cases[I].Locale+" "+Cases[I].Count+Cases[I].Name;
+        Equal(Label.c_str(), Unit(Utf8(Cases[I].Count), Utf8(Cases[I].Name)), Cases[I].Expected);
+    }
+}
+
 void Le(std::vector<int8u>& Bytes, size_t Offset, unsigned Value, size_t Width)
 {
     for (size_t I=0; I<Width; ++I)
@@ -611,6 +658,7 @@ int main(int Argc, char** Argv)
     CatalogRules();
     ShippedCatalogs(Argv[1]);
     OtherLanguages(Argv[1]);
+    DecimalForms(Argv[1]);
     FallbackAndArguments(Cs);
     MediaIntegration(Cs);
     std::cout << (Failures ? "FAIL: " : "PASS: ") << Checks << " assertions, " << Failures << " failures\n";
