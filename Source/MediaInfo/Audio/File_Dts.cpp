@@ -513,8 +513,9 @@ static bool DtsX_AssetHeader(const int8u* Buffer, size_t Size, const dtsx_exss_p
     {
         if (Source.Get(1) && Source.Offset()<XllPrivateEnd)
         {
-            bool PerSpeaker=Source.Get(1)!=0;
-            Source.Skip(6*(PerSpeaker?Asset.ChannelCount:1));
+            bool PerChannel=Source.Get(1)!=0;
+            for (size_t Config=0; Config<Exss.SpeakerMaskCount; ++Config)
+                Source.Skip(6*(PerChannel?Exss.SpeakerCounts[Config]:1));
         }
     }
     if (Source.Offset()<XllPrivateEnd)
