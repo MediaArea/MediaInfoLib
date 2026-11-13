@@ -3019,7 +3019,7 @@ void File_MpegTs::Header_Parse_AdaptationField()
                     if (transport_private_data_length<=adaptation_field_length-(adaptation_field_length_Min+1))
                     {
                         int64u Element_Offset_Save=Element_Offset;
-                        Element_Offset=5+adaptation_field_length_Min+1;
+                        Element_Offset=BDAV_Size+5+adaptation_field_length_Min+1;
                         transport_private_data(transport_private_data_length);
                         Element_Offset=Element_Offset_Save;
                     }
