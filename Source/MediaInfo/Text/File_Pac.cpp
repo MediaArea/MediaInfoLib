@@ -365,12 +365,7 @@ void File_Pac::Data_Parse()
             }
             if (Is8bit) {
                 Count_1byte8++;
-                for (auto i = Value_Unicode.size() - 1; i; --i) {
-                    const auto Character = Value_Unicode[i];
-                    if ((unsigned)Character >= 0xE0) {
-                        Value_Unicode.erase(i, 1); // Content reading not supported but no need for counting
-                    }
-                }
+                Value_Unicode.erase(remove_if(Value_Unicode.begin(), Value_Unicode.end(), [](wchar_t Character) { return (unsigned)Character >= 0xE0; }), Value_Unicode.end()); // Content reading not supported but no need for counting
             }
             else if (Size) {
                 Count_1byte7++;
