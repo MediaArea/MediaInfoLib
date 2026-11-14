@@ -2102,7 +2102,12 @@ static const char* Model_Name_Xiaomi =
     "XIG07;14T\n"
 ;
 
+static const char* Model_Name_DS_Global =
+    "POLSP01;Polaroid Snap\n"
+;
+
 static const FindReplaceCompany_struct Model_Name[] = {
+    { "DS GLOBAL", Model_Name_DS_Global, nullptr },
     { "Sony", Model_Name_Sony, "Xperia " },
     { "Sony Ericsson", Model_Name_Sony_Ericsson, "Xperia " },
     { "Samsung", Model_Name_Samsung, "Galaxy " },
@@ -3938,6 +3943,16 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
         }
     };
     FillModelName(General_Encoded_Hardware_CompanyName, General_Encoded_Hardware_Model, General_Encoded_Hardware_Name);
+
+    // Brand of a product of a licensee, e.g. "Polaroid" for "DS GLOBAL"
+    {
+        const auto CompanyName = Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_CompanyName).To_UTF8();
+        const auto Name = Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Name).To_UTF8();
+        if (CompanyName == "DS GLOBAL" && Name.rfind("Polaroid ", 0) == 0) {
+            Fill(Stream_General, StreamPos, General_Encoded_Hardware_CompanyName, Name.substr(0, 8), true, true);
+            Fill(Stream_General, StreamPos, General_Encoded_Hardware_Name, Name.substr(9), true, true);
+        }
+    }
 
     // Attempt to derive Samsung Galaxy model number
     auto DetermineModel = [&](size_t Parameter_CompanyName, size_t Parameter_Name, size_t Parameter_Application, size_t Parameter_Model) {
