@@ -20,7 +20,7 @@
 #ifdef __BORLANDC__
     #pragma hdrstop
 #endif
-#ifdef UNICODE //DLL C Interface is currently done only in UNICODE mode
+#ifndef WSTRING_MISSING //Wide strings in the C interface, also without Unicode
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 //#if defined(MUST_INCLUDE_STDAFX) //Windows ATL for Shell Extension request stdafx.h
@@ -54,7 +54,11 @@ typedef std::map<void*, mi_output*> mi_outputs;
 
 struct mi_input
 {
+    #ifdef UNICODE
     Ztring Unicode[3];  //Unicode characters multiple times
+    #else //UNICODE
+    std::wstring Unicode[3];  //Unicode characters multiple times
+    #endif //UNICODE
 };
 typedef std::map<void*, mi_input*> mi_inputs;
 
@@ -63,6 +67,24 @@ mi_inputs MI_Inputs;
 
 static CriticalSection Critical;
 static bool utf8=false;
+
+//---------------------------------------------------------------------------
+//Strings of the classes from and to the wide strings of this interface: without Unicode, UTF-8 text (with the values which are not
+//characters kept, see Ztring::From_Unicode()), so the results are the same as with Unicode
+#ifdef UNICODE
+    #define MI_In(_VALUE)   (_VALUE)
+    #define MI_Out(_VALUE)  (_VALUE)
+#else //UNICODE
+    static Ztring MI_In(const wchar_t* Value)
+    {
+        return Ztring().From_Unicode(Value);
+    }
+
+    static std::wstring MI_Out(const Ztring& Value)
+    {
+        return Value.To_Unicode();
+    }
+#endif //UNICODE
 
 //---------------------------------------------------------------------------
 static mi_outputs::iterator MI_Outputs_Find(void* Handle)
@@ -84,9 +106,9 @@ static const char* WC2MB(void* Handle, const wchar_t* Text)
 
     //Adaptation
     if (utf8)
-        MI_Output->second->Ansi=Ztring(Text).To_UTF8();
+        MI_Output->second->Ansi=Ztring(MI_In(Text)).To_UTF8();
     else
-        MI_Output->second->Ansi=Ztring(Text).To_Local();
+        MI_Output->second->Ansi=Ztring(MI_In(Text)).To_Local();
     return  MI_Output->second->Ansi.c_str();
 }
 
@@ -103,12 +125,22 @@ static const wchar_t* MB2WC(void* Handle, size_t Pos, const char* Text, bool IsF
     Critical.Leave();
 
     //Adaptation
+    #ifdef UNICODE
     if (utf8)
         return MI_Input->second->Unicode[Pos].From_UTF8(Text).c_str();
     else if (IsFileName)
         return (MI_Input->second->Unicode[Pos]=FileName_From_Native(Text)).c_str();
     else
         return MI_Input->second->Unicode[Pos].From_Local(Text).c_str();
+    #else //UNICODE
+    if (utf8)
+        MI_Input->second->Unicode[Pos]=MI_Out(Ztring().From_UTF8(Text));
+    else if (IsFileName)
+        MI_Input->second->Unicode[Pos]=MI_Out(FileName_From_Native(Text));
+    else
+        MI_Input->second->Unicode[Pos]=MI_Out(Ztring().From_Local(Text));
+    return MI_Input->second->Unicode[Pos].c_str();
+    #endif //UNICODE
 }
 
 //***************************************************************************
@@ -335,14 +367,14 @@ static const wchar_t* MB2WC(void* Handle, size_t Pos, const char* Text, bool IsF
 #define EXECUTE_STRING(_NAME,_CLASS,_METHOD) \
     try \
     { \
-        MI_Output->second->Unicode=((_CLASS*)Handle)->_METHOD; \
+        MI_Output->second->Unicode=MI_Out(((_CLASS*)Handle)->_METHOD); \
     } catch (...) {MI_Output->second->Unicode.clear();} \
     return MI_Output->second->Unicode.c_str();
 #else //MEDIAINFO_DEBUG
 #define EXECUTE_STRING(_NAME,_CLASS,_METHOD) \
     try \
     { \
-        MI_Output->second->Unicode=((_CLASS*)Handle)->_METHOD; \
+        MI_Output->second->Unicode=MI_Out(((_CLASS*)Handle)->_METHOD); \
     } catch (...) {MEDIAINFO_DEBUG2(_NAME, Debug+="!!!Exception thrown!!!";) MI_Output->second->Unicode.clear();} \
     Ztring ToReturn=MI_Output->second->Unicode; \
     MEDIAINFO_DEBUG2(_NAME, Debug+=", returns ";Debug+=ToReturn.To_UTF8();) \
@@ -648,7 +680,7 @@ size_t          __stdcall MediaInfo_Open (void* Handle, const wchar_t* File)
 {
     MANAGE_SIZE_T(  "Open",
                     MediaInfo,
-                    Open(File),
+                    Open(MI_In(File)),
                     Debug+=", File=";Debug+=Ztring(File).To_UTF8();)
 }
 
@@ -741,7 +773,7 @@ const wchar_t*  __stdcall MediaInfo_Get (void* Handle, MediaInfo_stream_t Stream
     KindOfSearch=(MediaInfo_info_C)(((size_t)KindOfSearch)&0xFF);
     MANAGE_STRING(  "Get",
                     MediaInfo,
-                    Get((stream_t)StreamKind, StreamNumber, Parameter, (info_t)KindOfInfo, (info_t)KindOfSearch),
+                    Get((stream_t)StreamKind, StreamNumber, MI_In(Parameter), (info_t)KindOfInfo, (info_t)KindOfSearch),
                     Debug+=", StreamKind=";Debug+=Ztring::ToZtring((size_t)StreamKind).To_UTF8();Debug+=", StreamNumber=";Debug+=Ztring::ToZtring(StreamNumber).To_UTF8();Debug+=", Parameter=";Debug+=Ztring(Parameter).To_UTF8();Debug+=", KindOfInfo=";Debug+=Ztring::ToZtring(KindOfInfo).To_UTF8();Debug+=", KindOfSearch=";Debug+=Ztring::ToZtring(KindOfSearch).To_UTF8();)
 }
 
@@ -750,7 +782,7 @@ size_t          __stdcall MediaInfo_SetI (void* Handle, const wchar_t* ToSet, Me
     StreamKind=(MediaInfo_stream_t)(((size_t)StreamKind)&0xFF);
     MANAGE_SIZE_T(  "SetI",
                     MediaInfo,
-                    Set(ToSet, (stream_t)StreamKind, StreamNumber, Parameter, OldParameter),
+                    Set(MI_In(ToSet), (stream_t)StreamKind, StreamNumber, Parameter, MI_In(OldParameter)),
                     Debug+=", ToSet=";Debug+=Ztring(ToSet).To_UTF8();Debug+=", StreamKind=";Debug+=Ztring::ToZtring((size_t)StreamKind).To_UTF8();Debug+=", StreamNumber=";Debug+=Ztring::ToZtring(StreamNumber).To_UTF8();Debug+=", Parameter=";Debug+=Ztring::ToZtring(Parameter).To_UTF8();)
 }
 
@@ -759,7 +791,7 @@ size_t          __stdcall MediaInfo_Set (void* Handle, const wchar_t* ToSet, Med
     StreamKind=(MediaInfo_stream_t)(((size_t)StreamKind)&0xFF);
     MANAGE_SIZE_T(  "Set",
                     MediaInfo,
-                    Set(ToSet, (stream_t)StreamKind, StreamNumber, Parameter, OldParameter),
+                    Set(MI_In(ToSet), (stream_t)StreamKind, StreamNumber, MI_In(Parameter), MI_In(OldParameter)),
                     Debug+=", ToSet=";Debug+=Ztring(ToSet).To_UTF8();Debug+=", StreamKind=";Debug+=Ztring::ToZtring((size_t)StreamKind).To_UTF8();Debug+=", StreamNumber=";Debug+=Ztring::ToZtring(StreamNumber).To_UTF8();Debug+=", Parameter=";Debug+=Ztring(Parameter).To_UTF8();)
 }
 
@@ -767,7 +799,7 @@ size_t          __stdcall MediaInfo_Output_Buffer_Get (void* Handle, const wchar
 {
     MANAGE_SIZE_T(  "Output_Buffer_Get",
                     MediaInfo,
-                    Output_Buffer_Get(Value),
+                    Output_Buffer_Get(MI_In(Value)),
                     Debug+=", Value=";Debug+=Ztring(Value).To_UTF8();)
 }
 
@@ -782,7 +814,7 @@ size_t          __stdcall MediaInfo_Output_Buffer_GetI (void* Handle, size_t Pos
 const wchar_t*     __stdcall MediaInfo_Option (void* Handle, const wchar_t* Option, const wchar_t* Value)
 {
     //DLL only option
-    if (Ztring(Option).Compare(L"CharSet", L"=="))
+    if (Ztring(MI_In(Option)).Compare(__T("CharSet"), __T("==")))
     {
         MEDIAINFO_DEBUG1(   "Option",
                             Debug+=", Option=";Debug+=Ztring(Option).To_UTF8();Debug+=", Value=";Debug+=Ztring(Value).To_UTF8();)
@@ -790,7 +822,7 @@ const wchar_t*     __stdcall MediaInfo_Option (void* Handle, const wchar_t* Opti
         //Coherancy
         mi_outputs::iterator MI_Output=MI_Outputs_Find(NULL);
 
-        if (Ztring(Value).Compare(L"UTF-8", L"=="))
+        if (Ztring(MI_In(Value)).Compare(__T("UTF-8"), __T("==")))
             utf8=true;
         else
             utf8=false;
@@ -801,12 +833,12 @@ const wchar_t*     __stdcall MediaInfo_Option (void* Handle, const wchar_t* Opti
 
        return MI_Output->second->Unicode.c_str();
     }
-    if (Ztring(Option).Compare(L"setlocale_LC_CTYPE", L"=="))
+    if (Ztring(MI_In(Option)).Compare(__T("setlocale_LC_CTYPE"), __T("==")))
     {
         //Coherancy
         mi_outputs::iterator MI_Output=MI_Outputs_Find(NULL);
 
-        setlocale(LC_CTYPE, utf8?Ztring(Value).To_UTF8().c_str():Ztring(Value).To_Local().c_str());
+        setlocale(LC_CTYPE, utf8?Ztring(MI_In(Value)).To_UTF8().c_str():Ztring(MI_In(Value)).To_Local().c_str());
         MI_Output->second->Unicode.clear();
 
         MEDIAINFO_DEBUG2(   "setlocale_LC_CTYPE",
@@ -819,7 +851,7 @@ const wchar_t*     __stdcall MediaInfo_Option (void* Handle, const wchar_t* Opti
     {
         MANAGE_STRING(  "Option",
                         MediaInfo,
-                        Option(Option, Value),
+                        Option(MI_In(Option), MI_In(Value)),
                         )
     }
     else
@@ -829,7 +861,7 @@ const wchar_t*     __stdcall MediaInfo_Option (void* Handle, const wchar_t* Opti
 
         EXECUTE_STRING( "Option_Static",
                         MediaInfo,
-                        Option_Static(Option, Value));
+                        Option_Static(MI_In(Option), MI_In(Value)));
     }
 }
 
@@ -940,7 +972,7 @@ size_t          __stdcall MediaInfoList_Open (void* Handle, const wchar_t* File,
     Options=(MediaInfo_fileoptions_C)(((size_t)Options)&0xFF);
     MANAGE_SIZE_T(  "Open",
                     MediaInfoList,
-                    Open(File, (fileoptions_t)Options),
+                    Open(MI_In(File), (fileoptions_t)Options),
                     Debug+=", File=";Debug+=Ztring(File).To_UTF8();Debug+=", Options=";Debug+=Ztring(Options).To_UTF8();)
 }
 
@@ -989,7 +1021,7 @@ const wchar_t*  __stdcall MediaInfoList_Get (void* Handle, size_t  FilePos, Medi
     KindOfInfo=(MediaInfo_info_C)  (((size_t)KindOfInfo)&0xFF);
     MANAGE_STRING(  "Get",
                     MediaInfoList,
-                    Get(FilePos, (stream_t)StreamKind, StreamNumber, Parameter, (info_t)KindOfInfo, (info_t)KindOfSearch),
+                    Get(FilePos, (stream_t)StreamKind, StreamNumber, MI_In(Parameter), (info_t)KindOfInfo, (info_t)KindOfSearch),
                     Debug+=", StreamKind=";Debug+=Ztring::ToZtring((size_t)StreamKind).To_UTF8();Debug+=", StreamNumber=";Debug+=Ztring::ToZtring(StreamNumber).To_UTF8();Debug+=", Parameter=";Debug+=Ztring(Parameter).To_UTF8();Debug+=", KindOfInfo=";Debug+=Ztring::ToZtring(KindOfInfo).To_UTF8();Debug+=", KindOfSearch=";Debug+=Ztring::ToZtring(KindOfSearch).To_UTF8();)
 }
 
@@ -998,7 +1030,7 @@ size_t          __stdcall MediaInfoList_SetI (void* Handle, const wchar_t* ToSet
     StreamKind=(MediaInfo_stream_t)(((size_t)StreamKind)&0xFF);
     MANAGE_SIZE_T(  "SetI",
                     MediaInfoList,
-                    Set(ToSet, FilePos, (stream_t)StreamKind, StreamNumber, Parameter),
+                    Set(MI_In(ToSet), FilePos, (stream_t)StreamKind, StreamNumber, Parameter),
                     Debug+=", ToSet=";Debug+=Ztring(ToSet).To_UTF8();Debug+=", StreamKind=";Debug+=Ztring::ToZtring((size_t)StreamKind).To_UTF8();Debug+=", StreamNumber=";Debug+=Ztring::ToZtring(StreamNumber).To_UTF8();Debug+=", Parameter=";Debug+=Ztring::ToZtring(Parameter).To_UTF8();)
 }
 
@@ -1007,14 +1039,14 @@ size_t          __stdcall MediaInfoList_Set (void* Handle, const wchar_t* ToSet,
     StreamKind=(MediaInfo_stream_t)(((size_t)StreamKind)&0xFF);
     MANAGE_SIZE_T(  "Set",
                     MediaInfoList,
-                    Set(ToSet, FilePos, (stream_t)StreamKind, StreamNumber, Parameter, OldParameter),
+                    Set(MI_In(ToSet), FilePos, (stream_t)StreamKind, StreamNumber, MI_In(Parameter), MI_In(OldParameter)),
                     Debug+=", ToSet=";Debug+=Ztring(ToSet).To_UTF8();Debug+=", StreamKind=";Debug+=Ztring::ToZtring((size_t)StreamKind).To_UTF8();Debug+=", StreamNumber=";Debug+=Ztring::ToZtring(StreamNumber).To_UTF8();Debug+=", Parameter=";Debug+=Ztring(Parameter).To_UTF8();)
 }
 
 const wchar_t*     __stdcall MediaInfoList_Option (void* Handle, const wchar_t* Option, const wchar_t* Value)
 {
     //DLL only option
-    if (Ztring(Option).Compare(L"CharSet", L"=="))
+    if (Ztring(MI_In(Option)).Compare(__T("CharSet"), __T("==")))
     {
         MEDIAINFO_DEBUG1(   "Option",
                             Debug+=", Option=";Debug+=Ztring(Option).To_UTF8();Debug+=", Value=";Debug+=Ztring(Value).To_UTF8();)
@@ -1022,7 +1054,7 @@ const wchar_t*     __stdcall MediaInfoList_Option (void* Handle, const wchar_t* 
         //Coherancy
         mi_outputs::iterator MI_Output=MI_Outputs_Find(NULL);
 
-        if (Ztring(Value).Compare(L"UTF-8", L"=="))
+        if (Ztring(MI_In(Value)).Compare(__T("UTF-8"), __T("==")))
             utf8=true;
         else
             utf8=false;
@@ -1033,12 +1065,12 @@ const wchar_t*     __stdcall MediaInfoList_Option (void* Handle, const wchar_t* 
 
        return MI_Output->second->Unicode.c_str();
     }
-    if (Ztring(Option).Compare(L"setlocale_LC_CTYPE", L"=="))
+    if (Ztring(MI_In(Option)).Compare(__T("setlocale_LC_CTYPE"), __T("==")))
     {
         //Coherancy
         mi_outputs::iterator MI_Output=MI_Outputs_Find(NULL);
 
-        setlocale(LC_CTYPE, utf8?Ztring(Value).To_UTF8().c_str():Ztring(Value).To_Local().c_str());
+        setlocale(LC_CTYPE, utf8?Ztring(MI_In(Value)).To_UTF8().c_str():Ztring(MI_In(Value)).To_Local().c_str());
         MI_Output->second->Unicode.clear();
 
         MEDIAINFO_DEBUG2(   "setlocale_LC_CTYPE",
@@ -1051,7 +1083,7 @@ const wchar_t*     __stdcall MediaInfoList_Option (void* Handle, const wchar_t* 
     {
         MANAGE_STRING(  "Option",
                         MediaInfoList,
-                        Option(Option, Value),
+                        Option(MI_In(Option), MI_In(Value)),
                         )
     }
     else
@@ -1061,7 +1093,7 @@ const wchar_t*     __stdcall MediaInfoList_Option (void* Handle, const wchar_t* 
 
         EXECUTE_STRING( "Option_Static",
                         MediaInfoList,
-                        Option_Static(Option, Value));
+                        Option_Static(MI_In(Option), MI_In(Value)));
     }
 }
 
@@ -1116,4 +1148,4 @@ const char*     __stdcall MediaInfo_Info_Version()
 //
 //***************************************************************************
 
-#endif //UNICODE
+#endif //WSTRING_MISSING
