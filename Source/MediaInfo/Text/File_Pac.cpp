@@ -46,7 +46,9 @@ namespace MediaInfoLib
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
-void Pac_Convert(Ztring& ToConvert, const codepage& CodePage) {
+// The text is in wide characters also without Unicode (Ztring is then UTF-8 text), one per byte of the 8-bit parts as the code pages
+// convert them
+void Pac_Convert(wstring& ToConvert, const codepage& CodePage) {
     auto Table = CodePage.List - 0x20;
     auto Table_Size = CodePage.Size + 0x20;
     for (auto& Item : ToConvert) {
@@ -278,7 +280,7 @@ void File_Pac::Data_Parse()
             }
         }
     }
-    ZtringList Content;
+    vector<wstring> Content;
     auto NextPartIsStart = true;
     auto NextPartFormat = Format_8bit;
     while (Element_Offset < Element_Size) {
@@ -354,25 +356,26 @@ void File_Pac::Data_Parse()
                 }
             }
             Get_ISO_8859_1(Size, Value,                         "Content");
+            auto Value_Unicode = Value.To_Unicode(); // One character per byte
             bool Is8bit = false;
-            for (const auto& Character : Value) {
+            for (const auto& Character : Value_Unicode) {
                 if ((unsigned)Character >= 0x80) {
                     Is8bit = true;
                 }
             }
             if (Is8bit) {
                 Count_1byte8++;
-                for (auto i = Value.size() - 1; i; --i) {
-                    const auto Character = Value[i];
+                for (auto i = Value_Unicode.size() - 1; i; --i) {
+                    const auto Character = Value_Unicode[i];
                     if ((unsigned)Character >= 0xE0) {
-                        Value.erase(i, 1); // Content reading not supported but no need for counting
+                        Value_Unicode.erase(i, 1); // Content reading not supported but no need for counting
                     }
                 }
             }
             else if (Size) {
                 Count_1byte7++;
             }
-            Content.back() += Value;
+            Content.back() += Value_Unicode;
             break;
         }
         case Format_Skip4:
@@ -386,10 +389,10 @@ void File_Pac::Data_Parse()
                 if (Data == 0x2E || Data == 0xFF) {
                     Ztring Value;
                     Get_UTF8(Element_UTF8End - Element_Offset, Value, "Content");
-                    Content.back() += Value;
+                    Content.back() += Value.To_Unicode();
                     if (Data == 0xFF) {
                         Skip_L1(                                "Dot");
-                        Content.back() += __T('.');
+                        Content.back() += L'.';
                         continue;
                     }
                     Skip_C1(                                    "UTF-8 end");
@@ -442,28 +445,28 @@ void File_Pac::Data_Parse()
             bool IsFrameNumber = false;
             if (MayBeTags) {
                 size_t Pac_MetadataMap_Pos = 0;
-                Ztring Language;
+                wstring Language_Unicode;
                 Ztring CatalogNumber;
                 Ztring Title;
-                map<Ztring, Ztring> More;
+                map<wstring, wstring> More;
                 for (size_t i = 0; i < Pac_MetadataMap_Size; i++) {
                     const auto& Item = Pac_MetadataMap[i];
                     More.clear();
                     for (const auto& Line : Content) {
                         auto Separator_Pos = Line.find(Item.Separator, 0);
                         if (Separator_Pos != string::npos) {
-                            auto Space_Pos = Line.rfind(__T(' '), Separator_Pos);
+                            auto Space_Pos = Line.rfind(L' ', Separator_Pos);
                             if (Space_Pos == string::npos) {
                                 IsTags = true;
-                                Ztring Field = Line.substr(0, Separator_Pos);
+                                wstring Field = Line.substr(0, Separator_Pos);
                                 Separator_Pos++;
-                                if (Separator_Pos < Line.size() && Line[Separator_Pos] == __T(' ')) {
+                                if (Separator_Pos < Line.size() && Line[Separator_Pos] == L' ') {
                                     Separator_Pos++;
                                 }
-                                Ztring Value = Line.substr(Separator_Pos);
+                                wstring Value = Line.substr(Separator_Pos);
                                 if (Item.Lang && Field == Item.Lang) {
                                     Pac_MetadataMap_Pos = i;
-                                    Language = Value;
+                                    Language_Unicode = Value;
                                 }
                                 else {
                                     More[Field] = Value;
@@ -471,13 +474,14 @@ void File_Pac::Data_Parse()
                             }
                         }
                     }
-                    if (!Language.empty()) {
+                    if (!Language_Unicode.empty()) {
                         break;
                     }
                 }
                 if (Pac_MetadataMap_Pos == 1) {
-                    Pac_Convert(Language, Pac_CodePages[0]);
+                    Pac_Convert(Language_Unicode, Pac_CodePages[0]);
                 }
+                Ztring Language = Ztring().From_Unicode(Language_Unicode);
                 auto LanguageS = Language.To_UTF8();
                 for (size_t i = 0; i < Pac_CodePages_Size; i++) {
                     const auto& CodePage = Pac_CodePages[i];
@@ -489,9 +493,9 @@ void File_Pac::Data_Parse()
                         Pac_Convert(Line, CodePage);
                     }
                     decltype(More) More2;
-                    set<Ztring> More_ToDelete;
+                    set<wstring> More_ToDelete;
                     for (auto& Item : More) {
-                        Ztring Field = Item.first;
+                        wstring Field = Item.first;
                         Pac_Convert(Field, CodePage);
                         Pac_Convert(Item.second, CodePage);
                         if (Field != Item.first) {
@@ -513,16 +517,17 @@ void File_Pac::Data_Parse()
                     }
                 Fill(Stream_Text, 0, Text_Language, Language, true);
                 for (const auto& Item : More) {
+                    Ztring Value = Ztring().From_Unicode(Item.second);
                     if (false) {
                     }
-                    else if (Item.first == __T("STORY")) {
-                        Fill(Stream_General, 0, General_CatalogNumber, Item.second, true);
+                    else if (Item.first == L"STORY") {
+                        Fill(Stream_General, 0, General_CatalogNumber, Value, true);
                     }
-                    else if (Item.first == __T("TITLE")) {
-                        Fill(Stream_General, 0, General_Title, Item.second, true);
+                    else if (Item.first == L"TITLE") {
+                        Fill(Stream_General, 0, General_Title, Value, true);
                     }
                     else {
-                        Fill(Stream_General, 0, Item.first.To_UTF8().c_str(), Item.second, true);
+                        Fill(Stream_General, 0, Ztring().From_Unicode(Item.first).To_UTF8().c_str(), Value, true);
                     }
                 }
             }
@@ -532,13 +537,13 @@ void File_Pac::Data_Parse()
                     Pac_Convert(Line, CodePage);
                 }
             }
-            bool FirstFrameOfVideo = !Frame_Count && Content.size() == 2 && Content[0] == __T("First Frame of Video");
+            bool FirstFrameOfVideo = !Frame_Count && Content.size() == 2 && Content[0] == L"First Frame of Video";
             if (Content.size() == 1 + FirstFrameOfVideo) {
                 const auto& Line = Content[FirstFrameOfVideo];
-                if (Line.rfind(__T("FRAME "), 0) == 0 && Line.find_first_not_of(__T("0123456789"), 6) == string::npos) {
+                if (Line.rfind(L"FRAME ", 0) == 0 && Line.find_first_not_of(L"0123456789", 6) == string::npos) {
                     IsFrameNumber = true;
                     if (!Delay) {
-                        Delay = Ztring(Line.substr(6)).To_int64u(); //No exception in case of empty or too big value
+                        Delay = Ztring().From_Unicode(Line.substr(6)).To_int64u(); //No exception in case of empty or too big value
                         Time_Delay = Time_Start_Command_Temp;
                     }
                 }
