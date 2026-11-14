@@ -62,6 +62,7 @@ private :
     void HDRToneMap(const string& name, const string& value, const int count = 0);
     void pdf(const string& name, const string& value);
     void photoshop(const string& name, const string& value);
+    void tiff(const string& name, const string& value);
     void xmp(const string& name, const string& value);
     void Iptc4xmpCore(const string& name, const string& value);
     void Iptc4xmpExt(const string& name, const string& value);

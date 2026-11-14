@@ -307,6 +307,7 @@ static const char* CompanyNames_Replace =
     "CAMERA;\n"
     "CONCORD;Jenoptik\n"
     "CREATIVE;Creative Labs\n"
+    "CREO/LEAF;Leaf\n"
     "DEFAULT;\n"
     "DOCOMO;DoCoMo\n"
     "EASTMAN KODAK;KODAK\n"

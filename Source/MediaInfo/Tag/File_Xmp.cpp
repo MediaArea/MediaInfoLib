@@ -241,6 +241,7 @@ bool File_Xmp::FileHeader_Begin()
             XML_ATTRIBUTE_NAMESPACE(HDRToneMap)
             XML_ATTRIBUTE_NAMESPACE(pdf)
             XML_ATTRIBUTE_NAMESPACE(photoshop)
+            XML_ATTRIBUTE_NAMESPACE(tiff)
             XML_ATTRIBUTE_NAMESPACE(xmp)
             XML_ATTRIBUTE_NAMESPACE(Iptc4xmpCore)
             XML_ATTRIBUTE_NAMESPACE(Iptc4xmpExt)
@@ -414,6 +415,7 @@ bool File_Xmp::FileHeader_Begin()
             XML_ELEMENT_NAMESPACE(GIMP)
             XML_ELEMENT_NAMESPACE(pdf)
             XML_ELEMENT_NAMESPACE(photoshop)
+            XML_ELEMENT_NAMESPACE(tiff)
             XML_ELEMENT_NAMESPACE(xmp)
             XML_ELEMENT_NAMESPACE(Iptc4xmpCore)
             XML_ELEMENT_NAMESPACE(Iptc4xmpExt)
@@ -427,6 +429,17 @@ bool File_Xmp::FileHeader_Begin()
     if (application == "GIMP" && !gimp_version.empty()) {
         application += " " + gimp_version;
         Fill(Stream_General, 0, General_Encoded_Application, application, true, true);
+    }
+
+    //Leaf: the model is followed by the serial number and the camera, e.g. "Leaf Aptus 75(LI400146   )/Large Format"
+    {
+        Ztring Model = Retrieve_Const(Stream_General, 0, General_Encoded_Hardware_Model);
+        const auto Serial = Model.find(__T('('));
+        if (!Model.rfind(__T("Leaf "), 0) && Serial != string::npos) {
+            Model.resize(Serial);
+            Model.Trim(__T(' '));
+            Fill(Stream_General, 0, General_Encoded_Hardware_Model, Model, true);
+        }
     }
 
     //The creator tool is the first known tool, the last tool which wrote the file is in the history: merged with the creator tool and with the application of the container and of the other tag formats, see Streams_Finish_Tags()
@@ -495,6 +508,16 @@ void File_Xmp::exif(const string& name, const string& value)
     }
     if (name == "exif:DateTimeDigitized")
         Fill(Stream_General, 0, General_Mastered_Date, value);
+}
+
+//---------------------------------------------------------------------------
+void File_Xmp::tiff(const string& name, const string& value)
+{
+    //Copy of the TIFF tags, e.g. the camera when the TIFF tags have it not (Leaf camera backs)
+    if (name == "tiff:Make")
+        Fill(Stream_General, 0, General_Encoded_Hardware_CompanyName, value);
+    if (name == "tiff:Model")
+        Fill(Stream_General, 0, General_Encoded_Hardware_Model, value);
 }
 
 //---------------------------------------------------------------------------

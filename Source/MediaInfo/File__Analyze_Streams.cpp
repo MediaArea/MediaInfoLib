@@ -5996,6 +5996,16 @@ void File__Analyze::Streams_Finish_Tags()
                 Item.IsFilled=true;
                 continue;
             }
+            if (Format==Tags_Exif && Source!=Sources.end() && Source->second==Tags_Xmp && !Item.Name.compare(0, 16, "Encoded_Hardware"))
+            {
+                //The camera is written by itself in the TIFF tags, XMP has a copy of them which is sometimes not the same (e.g. a placeholder or a code name): Exif has priority and XMP is not conform
+                if (!IsSub)
+                    Fill_Conformance(("Crosscheck "+BuildConformanceName(Tags_Format_Names[Tags_Xmp], nullptr, Name)).c_str(), string(Tags_Format_Names[Tags_Xmp])+' '+Item.Name+' '+Quoted(Current)+" does not match "+Tags_Format_Names[Tags_Exif]+' '+Item.Name+' '+Quoted(Item.Value));
+                Fill(Stream_General, 0, Name, Item.Value, true);
+                Sources[Item.Name]=Item.Format;
+                Item.IsFilled=true;
+                continue;
+            }
             if (IsDate)
             {
                 //Same date with other details or in another time zone, the details of both are shown
