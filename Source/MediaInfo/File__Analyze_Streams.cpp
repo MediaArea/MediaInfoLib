@@ -5448,10 +5448,29 @@ static size_t Tags_Size_Max(File__Analyze::tags_format Format, const string& Nam
 }
 
 //---------------------------------------------------------------------------
+static bool Tags_Fraction_IsRounded(const Ztring& Long, size_t Long_Pos, const Ztring& Short, size_t Short_Pos, size_t Digits)
+{
+    //The digits of the short fraction of second are the ones of the long one rounded, e.g. "663" for "662983"
+    if (!Digits || Long_Pos+Digits>=Long.size() || Long[Long_Pos+Digits]<__T('0') || Long[Long_Pos+Digits]>__T('9'))
+        return false;
+    Ztring Rounded=Long.substr(Long_Pos, Digits);
+    if (Long[Long_Pos+Digits]>=__T('5'))
+    {
+        size_t Pos=Digits;
+        while (Pos && Rounded[Pos-1]==__T('9'))
+            Rounded[--Pos]=__T('0');
+        if (!Pos)
+            return false; //Up to the next second, not handled
+        Rounded[Pos-1]++;
+    }
+    return !Short.compare(Short_Pos, Digits, Rounded);
+}
+
+//---------------------------------------------------------------------------
 static bool Tags_Date_Merge(const Ztring& Date1, const Ztring& Date2, Ztring& Merged)
 {
     //"YYYY", "YYYY-MM", "YYYY-MM-DD", "YYYY-MM-DD hh:mm" or "YYYY-MM-DD hh:mm:ss", then the fraction of second if any, then " UTC" or an offset as "+hh:mm" if any.
-    //2 dates are the same date when what is in both is the same (the same instant when both have a time zone), what is only in one of them is a detail: time, seconds, more digits in the fraction of second, time zone.
+    //2 dates are the same date when what is in both is the same (the same instant when both have a time zone), what is only in one of them is a detail: time, seconds, more digits in the fraction of second (cut or rounded in the other one), time zone.
     //Merged is then the first date, so in its time zone, with the details of the second date
     struct date
     {
@@ -5517,7 +5536,11 @@ static bool Tags_Date_Merge(const Ztring& Date1, const Ztring& Date2, Ztring& Me
     //Fraction of second
     const size_t Fraction_Size=min(Parsed1.Fraction_Size, Parsed2.Fraction_Size);
     if (Date1.compare(Parsed1.Base_Size, Fraction_Size, Date2, Parsed2.Base_Size, Fraction_Size))
-        return false;
+    {
+        const bool Date1_IsLong=Parsed1.Fraction_Size>Parsed2.Fraction_Size;
+        if (Fraction_Size<2 || !(Date1_IsLong?Tags_Fraction_IsRounded(Date1, Parsed1.Base_Size+1, Date2, Parsed2.Base_Size+1, Fraction_Size-1):Tags_Fraction_IsRounded(Date2, Parsed2.Base_Size+1, Date1, Parsed1.Base_Size+1, Fraction_Size-1)))
+            return false;
+    }
 
     Merged.assign(Date1, 0, Parsed1.Base_Size);
     if (Parsed1.Base_Size<Parsed2.Base_Size)
