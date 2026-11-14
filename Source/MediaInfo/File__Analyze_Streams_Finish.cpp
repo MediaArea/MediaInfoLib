@@ -3118,27 +3118,56 @@ void File__Analyze::Streams_Finish_StreamOnly_General(size_t StreamPos)
         }
     }
     {
-        if (Retrieve_Const(Stream_General, StreamPos, General_Encoded_OperatingSystem_Name).empty()) {
-            auto Application = Retrieve_Const(Stream_General, StreamPos, General_Encoded_Application).To_UTF8();
-            auto pos = Application.rfind(" (Android)");
-            if (Application.length() >= 12) {
-            if (pos == Application.length() - 10) {
-                Application.erase(pos, 10);
-                Fill(Stream_General, 0, General_Encoded_OperatingSystem_Name, "Android");
+        // Operating system at the end of the name of the first application with one, the first application being the last tool which wrote the file (e.g. "Adobe Photoshop 23.5 (Macintosh)", or "Adobe Photoshop CS5 Windows" and "Adobe After Effects CS5.5 10.5 Macintosh 64" for the old names of Adobe), removed from the name of each application with this operating system
+        const auto Applications = Retrieve_Const(Stream_General, StreamPos, General_Encoded_Application).To_UTF8();
+        if (!Applications.empty()) {
+            struct operating_system { const char* Suffix; const char* Name; bool IsAdobeOnly; };
+            static const operating_system OperatingSystems[] = { { " (Android)", "Android", false }, { " (Macintosh)", "macOS", false }, { " (Windows)", "Windows", false }, { " Macintosh", "macOS", true }, { " Macintosh 64", "macOS", true }, { " Windows", "Windows", true }, { " Windows 64", "Windows", true } };
+            auto OperatingSystem_Find = [&](const string& Application) -> const operating_system* {
+                for (const auto& OperatingSystem : OperatingSystems) {
+                    const auto Suffix_Size = strlen(OperatingSystem.Suffix);
+                    if (Application.size() > Suffix_Size && !Application.compare(Application.size() - Suffix_Size, Suffix_Size, OperatingSystem.Suffix) && (!OperatingSystem.IsAdobeOnly || !Application.rfind("Adobe ", 0))) {
+                        return &OperatingSystem;
+                    }
+                }
+                return nullptr;
+            };
+            vector<string> Values;
+            for (size_t Begin = 0;;) {
+                const auto End = Applications.find(" / ", Begin);
+                Values.push_back(Applications.substr(Begin, End == string::npos ? string::npos : (End - Begin)));
+                if (End == string::npos) {
+                    break;
+                }
+                Begin = End + 3;
             }
-            pos = Application.rfind(" (Macintosh)");
-            if (pos == Application.length() - 12) {
-                Application.erase(pos, 12);
-                Fill(Stream_General, 0, General_Encoded_OperatingSystem_Name, "macOS");
+            auto OperatingSystem_Name = Retrieve_Const(Stream_General, StreamPos, General_Encoded_OperatingSystem_Name).To_UTF8();
+            if (OperatingSystem_Name.empty()) {
+                for (const auto& Value : Values) {
+                    if (const auto OperatingSystem = OperatingSystem_Find(Value)) {
+                        OperatingSystem_Name = OperatingSystem->Name;
+                        Fill(Stream_General, 0, General_Encoded_OperatingSystem_Name, OperatingSystem_Name);
+                        break;
+                    }
+                }
             }
-            pos = Application.rfind(" (Windows)");
-            if (pos == Application.length() - 10) {
-                Application.erase(pos, 10);
-                Fill(Stream_General, 0, General_Encoded_OperatingSystem_Name, "Windows");
+            if (!OperatingSystem_Name.empty()) {
+                string Applications_New;
+                for (size_t i = 0; i < Values.size(); i++) {
+                    auto& Value = Values[i];
+                    const auto OperatingSystem = OperatingSystem_Find(Value);
+                    if (OperatingSystem && OperatingSystem_Name == OperatingSystem->Name) { // Else kept, the operating system of the file is another one
+                        Value.erase(Value.find_last_not_of(' ', Value.size() - strlen(OperatingSystem->Suffix) - 1) + 1);
+                    }
+                    if (i) {
+                        Applications_New += " / ";
+                    }
+                    Applications_New += Value;
+                }
+                if (Applications_New != Applications) {
+                    Fill(Stream_General, 0, General_Encoded_Application, Applications_New, true, true);
+                }
             }
-            }
-            if (Application != Retrieve_Const(Stream_General, 0, General_Encoded_Application).To_UTF8())
-                Fill(Stream_General, 0, General_Encoded_Application, Application, true, true);
         }
         if (Retrieve_Const(Stream_General, StreamPos, General_Encoded_OperatingSystem_CompanyName).empty()) {
             const auto OperatingSystem = Retrieve_Const(Stream_General, StreamPos, General_Encoded_OperatingSystem_Name).To_UTF8();
