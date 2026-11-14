@@ -20,6 +20,9 @@
 #if defined(_WIN32)
     #include <direct.h>
     #include <windows.h>
+    #if defined(WINDOWS_UWP)
+        #include <roapi.h>
+    #endif
 #else
     #include <cstdlib>
     #include <langinfo.h>
@@ -456,6 +459,9 @@ int main(int argc, char* argv[])
         return 2;
     }
     setvbuf(stdout, NULL, _IONBF, 0); // Lines already written if the program is stopped, e.g. endless directory listing
+    #if defined(WINDOWS_UWP)
+        RoInitialize(RO_INIT_MULTITHREADED); // WinRT for the files, as an application does it (the program is run without package)
+    #endif
     if (!strcmp(argv[1], "1"))
         setlocale(LC_ALL, "");
     bool CharSet_UTF8=!strcmp(argv[2], "1");
