@@ -313,6 +313,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Pmp.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Ptx.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_SequenceInfo.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_T35.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Vbi.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Wtv.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Multiple\File_Xdcam_Clip.cpp" />
@@ -369,6 +370,7 @@
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_Mpeg4v.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_Mpegv.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_ProRes.cpp" />
+    <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_SmpteSt209450.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_Theora.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Video\File_Vc1.cpp" />
     <ClCompile Include="..\..\..\Source\MediaInfo\Image\File_Bmp.cpp" />
@@ -521,6 +523,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\MediaInfo\Archive\File_Iso9660.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Archive\File_MachO.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Aac_GeneralAudio.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Aac_GeneralAudio_Sbr.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Audio\File_Aac_GeneralAudio_Sbr_Ps.h" />
@@ -602,11 +605,13 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Ism.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Ivf.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Lxf.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Mxf_Automated.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Nsv.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_P2_Clip.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Pmp.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Ptx.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_SequenceInfo.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_T35.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Vbi.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Wtv.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Multiple\File_Xdcam_Clip.h" />
@@ -727,6 +732,7 @@
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_Mpeg4v.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_Mpegv.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_ProRes.h" />
+    <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_SmpteSt209450.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_Theora.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Video\File_Vc1.h" />
     <ClInclude Include="..\..\..\Source\MediaInfo\Text\File_Cdp.h" />
