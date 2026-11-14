@@ -24,11 +24,11 @@ extern "C"
 {
 
 #if defined (_WIN32) || defined (WIN32)
-    #ifndef _UNICODE
+    #if !defined(_UNICODE) && !defined(WINDOWS_UWP)
         #define GVCDLL_NAME "gvc.dll"
         #define CGRAPHDLL_NAME "cgraph.dll"
-    #else //_UNICODE
-        #define GVCDLL_NAME L"gvc.dll"
+    #else //!defined(_UNICODE) && !defined(WINDOWS_UWP)
+        #define GVCDLL_NAME L"gvc.dll" //With UWP, LoadPackagedLibrary() has only wide characters
         #define CGRAPHDLL_NAME L"cgraph.dll"
     #endif
 #elif defined(__APPLE__) && defined(__MACH__)
