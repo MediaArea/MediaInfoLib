@@ -409,6 +409,8 @@ bool DateTime_Adapt(string& Value_)
         return DateTime_Adapt_Finalize(Value_, Value, IsUtc);
 
     // Month
+    if (Value.size() >= 6 && (Value[4] == '-' || Value[4] == ':') && Value[5] >= '0' && Value[5] <= '9' && (Value.size() == 6 || Value[6] == Value[4]))
+        Value.insert(5, 1, '0'); // Month on 1 digit, e.g. "2017-2-23"
     if (Value.size() <= 6)
         return false;
     if ((Value[4] != '-' && Value[4] != ':')
@@ -422,6 +424,8 @@ bool DateTime_Adapt(string& Value_)
         return DateTime_Adapt_Finalize(Value_, Value, IsUtc);
 
     // Day
+    if (Value.size() >= 9 && (Value[7] == '-' || Value[7] == ':') && Value[8] >= '0' && Value[8] <= '9' && (Value.size() == 9 || Value[9] == ' ' || Value[9] == 'T'))
+        Value.insert(8, 1, '0'); // Day on 1 digit
     if (Value.size() <= 9)
         return false;
     if ((Value[7] != '-' && Value[7] != ':')
@@ -437,7 +441,7 @@ bool DateTime_Adapt(string& Value_)
     // Separator
     if (Value.size() <= 11)
         return false;
-    if (Value[10] == 'T')
+    if (Value[10] == 'T' || Value[10] == ':') // ':' e.g. "2011:06:06:17:31:57" in Exif
         Value[10] = ' ';
     if (Value[10] == ',' && Value[11] == ' ')
         Value.erase(10, 1);
