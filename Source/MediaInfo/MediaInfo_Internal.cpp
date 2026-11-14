@@ -28,7 +28,9 @@
 #include "ZenLib/Dir.h"
 #endif //defined(MEDIAINFO_DIRECTORY_YES)
 #include "ZenLib/FileName.h"
-#include "ZenLib/OS_Utils.h"
+#if !defined(UNICODE) //Only used without Unicode
+    #include "ZenLib/OS_Utils.h"
+#endif //!defined(UNICODE)
 #if defined(MEDIAINFO_DIRECTORY_YES)
     #include "MediaInfo/Reader/Reader_Directory.h"
 #endif
