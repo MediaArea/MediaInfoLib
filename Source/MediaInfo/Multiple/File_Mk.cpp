@@ -163,6 +163,7 @@ const char* Mk_Video_Colour_Range(int8u range)
 #if MEDIAINFO_EVENTS
     #include "MediaInfo/MediaInfo_Events.h"
 #endif //MEDIAINFO_EVENTS
+#include "MediaInfo/File__Analyze_Streams.h" //declaration of Encoded_Library_Tag
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #include "MediaInfo/MediaInfo_Internal.h"
 #include "ZenLib/File.h"
@@ -182,6 +183,7 @@ using namespace std;
 namespace MediaInfoLib
 {
 
+Ztring Encoded_Library_Tag;
 //***************************************************************************
 // Constants
 //***************************************************************************
@@ -1169,6 +1171,8 @@ void File_Mk::Streams_Finish()
                     }
                     if (Tag->first!=__T("BPS") && (Tag->first!=__T("Language") || Retrieve(StreamKind_Last, StreamPos_Last, "Language").empty())) // Prioritize Tracks block over tags
                         Fill(StreamKind_Last, StreamPos_Last, Tag->first.To_UTF8().c_str(), Tag->second);
+                    if (Tag->first==__T("Encoded_Library") && StreamKind_Last==Stream_Video && Encoded_Library_Tag.empty())
+                        Encoded_Library_Tag = Tag->second; //save video Encoder tag value in a shared variable (once)
                 }
             }
         }
