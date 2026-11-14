@@ -1680,7 +1680,7 @@ bool Reader_libcurl::Load(const Ztring &File_Name)
                 libcurl_Module=g_module_open(MEDIAINFODLL_NAME, G_MODULE_BIND_LAZY);
             #elif defined (_WIN32) || defined (WIN32)
                 #ifdef WINDOWS_UWP
-                    libcurl_Module=LoadPackagedLibrary(__T("libcurl.dll"), 0);
+                    libcurl_Module=LoadPackagedLibrary(L"libcurl.dll", 0); //Only wide characters
                 #else
                     if (sizeof(size_t)==8)
                         libcurl_Module=LoadLibrary(__T("libcurl-x64.dll"));
