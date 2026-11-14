@@ -5855,27 +5855,33 @@ void File__Analyze::Streams_Finish_Tags()
     const size_t Titles_Size=sizeof(Titles)/sizeof(*Titles);
     map<string, tags_format> Sources; //Format a parameter is filled from, a parameter which is not there is filled from the container
 
-    //Writing application with XMP: the one of the container, the one of Exif, then the creator tool of XMP, which is the first known tool
+    //Writing application with XMP: the one of the container, the last tool of the history of XMP, the one of Exif, then the creator tool of XMP, which is the first known tool
     //All are kept, the last tool which wrote the file first, and a tool given several times is kept once (with the most details); a firmware of a camera is handled by the curation
     bool Applications_AreMerged=false;
     if (!IsSub) //Else merged by the parser these tags are given to
     {
+        tags_item* Xmp_Last=nullptr;
         tags_item* Xmp_Creator=nullptr;
         tags_item* Exif=nullptr;
         for (tags_item& Item : Tags_ToMerge)
         {
-            if (Item.Format==Tags_Xmp && Item.Name=="Encoded_Application")
+            if (Item.Format==Tags_Xmp && Item.Name=="Encoded_Application_Last")
+                Xmp_Last=&Item;
+            else if (Item.Format==Tags_Xmp && Item.Name=="Encoded_Application")
                 Xmp_Creator=&Item;
             else if (Item.Format==Tags_Exif && Item.Name=="Encoded_Application")
                 Exif=&Item;
         }
-        if (Xmp_Creator)
+        if (Xmp_Last || Xmp_Creator)
         {
             vector<Ztring> List;
             Tags_Application_Add(List, Retrieve_Const(Stream_General, 0, General_Encoded_Application));
+            if (Xmp_Last)
+                Tags_Application_Add(List, Xmp_Last->Value);
             if (Exif)
                 Tags_Application_Add(List, Exif->Value);
-            Tags_Application_Add(List, Xmp_Creator->Value);
+            if (Xmp_Creator)
+                Tags_Application_Add(List, Xmp_Creator->Value);
             Ztring Applications;
             for (const Ztring& Application : List)
             {
@@ -5885,7 +5891,7 @@ void File__Analyze::Streams_Finish_Tags()
             }
             if (!Applications.empty())
                 Fill(Stream_General, 0, General_Encoded_Application, Applications, true);
-            for (tags_item* Item : { Xmp_Creator, Exif })
+            for (tags_item* Item : { Xmp_Last, Xmp_Creator, Exif })
                 if (Item)
                     Item->IsFilled=true;
             Applications_AreMerged=true;
@@ -5935,7 +5941,7 @@ void File__Analyze::Streams_Finish_Tags()
             if (Item.Format!=Format)
                 continue;
             const char* Name=Item.Name.c_str();
-            if (Applications_AreMerged && Item.Name=="Encoded_Application" && (Format==Tags_Xmp || Format==Tags_Exif))
+            if (Item.Name=="Encoded_Application_Last" || (Applications_AreMerged && Item.Name=="Encoded_Application" && (Format==Tags_Xmp || Format==Tags_Exif)))
                 continue; //Already merged
 
             //A parameter about another parameter (e.g. "Rating/5Stars" about "Rating") is from the same tags as this other parameter

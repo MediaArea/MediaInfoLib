@@ -93,6 +93,7 @@ private :
     //Temp
     Ztring ModifyDate, CreateDate;
     string gimp_version, pdfaid, pdfaid_part, pdfaid_conformance;
+    string History_SoftwareAgent; //Of the last event of the history having one, so the last tool which wrote the file
 };
 
 } //NameSpace

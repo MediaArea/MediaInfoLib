@@ -388,6 +388,22 @@ bool File_Xmp::FileHeader_Begin()
             XML_ELEMENT_NAMESPACE(hdrgm)
             XML_ELEMENT_NAMESPACE(HDRGainMap)
             XML_ELEMENT_NAMESPACE(HDRToneMap)
+            XML_ELEMENT("xmpMM:History")
+                XML_ELEMENT_START
+                XML_ELEMENT_LIST("rdf:Seq")
+                    XML_ATTRIBUTE_START
+                    XML_ATTRIBUTE("stEvt:softwareAgent")
+                        if (v.len)
+                            History_SoftwareAgent = tfsxml_decode(v);
+                    XML_ATTRIBUTE_END
+                    XML_ELEMENT_START
+                    XML_ELEMENT("stEvt:softwareAgent")
+                        XML_VALUE
+                        if (v.len)
+                            History_SoftwareAgent = tfsxml_decode(v);
+                    XML_ELEMENT_END
+                XML_ELEMENT_LIST_END
+                XML_ELEMENT_END
             XML_ELEMENT("pdfaid:part")
                 XML_VALUE
                 pdfaid_part = tfsxml_decode(v);
@@ -411,6 +427,20 @@ bool File_Xmp::FileHeader_Begin()
     if (application == "GIMP" && !gimp_version.empty()) {
         application += " " + gimp_version;
         Fill(Stream_General, 0, General_Encoded_Application, application, true, true);
+    }
+
+    //The creator tool is the first known tool, the last tool which wrote the file is in the history: merged with the creator tool and with the application of the container and of the other tag formats, see Streams_Finish_Tags()
+    if (!History_SoftwareAgent.empty()) {
+        //Name of the company twice, e.g. "Adobe Adobe Media Encoder CC (Macintosh)"
+        const auto FirstWord_Size = History_SoftwareAgent.find(' ') + 1;
+        if (FirstWord_Size && !History_SoftwareAgent.compare(FirstWord_Size, FirstWord_Size, History_SoftwareAgent, 0, FirstWord_Size)) {
+            History_SoftwareAgent.erase(0, FirstWord_Size);
+        }
+        tags_item Item;
+        Item.Format = Tags_Xmp;
+        Item.Name = "Encoded_Application_Last";
+        Item.Value.From_UTF8(History_SoftwareAgent);
+        Tags_ToMerge.push_back(Item);
     }
 
     if (!pdfaid.empty()) {
