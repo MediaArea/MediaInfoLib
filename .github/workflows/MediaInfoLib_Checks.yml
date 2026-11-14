@@ -219,7 +219,7 @@ jobs:
           export CCACHE_DIR="${PWD}/.ccache" # In the directory of the cache action, the path of the runner is not the one of the container
           sh .github/clone_branch.sh ZenLib ../ZenLib
           ( cd ../ZenLib/Project/GNU/Library && autoreconf -if && ./configure --enable-silent-rules --enable-unicode=${{ matrix.unicode }} && make -j4 && make install )
-          ( cd Project/GNU/Library && autoreconf -if && ./configure --enable-silent-rules && make -j4 && make check TESTS=filename.sh && make install )
+          ( cd Project/GNU/Library && autoreconf -if && ./configure --enable-silent-rules && make -j4 && make check TESTS='filename.sh longpath.sh' && make install )
           sh .github/check_cli.sh shared
           ccache --show-stats || true
 
@@ -253,7 +253,7 @@ jobs:
             export CCACHE_DIR="${PWD}/.ccache" CCACHE_MAXSIZE=300M CCACHE_COMPRESS=1 CC="ccache cc" CXX="ccache c++" CXXFLAGS=-O0 MAKE=gmake
             sh .github/clone_branch.sh ZenLib ../ZenLib
             ( cd ../ZenLib/Project/GNU/Library && autoreconf -if && ./configure --enable-silent-rules --enable-unicode=${{ matrix.unicode }} && gmake -j4 && gmake install )
-            ( cd Project/GNU/Library && autoreconf -if && ./configure --enable-silent-rules && gmake -j4 && gmake check TESTS=filename.sh && gmake install )
+            ( cd Project/GNU/Library && autoreconf -if && ./configure --enable-silent-rules && gmake -j4 && gmake check TESTS='filename.sh longpath.sh' && gmake install )
             ldconfig -m /usr/local/lib
             sh .github/check_cli.sh shared
             ccache --show-stats || true
@@ -320,6 +320,10 @@ jobs:
             copy /y %Test%\mil_filename_1252.exe %Test%\mil_filename_%%c.exe >nul
             mt -nologo -manifest %Test%\codepage_%%c.manifest -outputresource:%Test%\mil_filename_%%c.exe;1 || exit /b 1
           )
+          rem Test program for the long paths, without and with longPathAware in its manifest
+          cl /nologo /EHsc /O1 /DUNICODE /D_UNICODE /Fo%Test%\mil_longpath.obj /Fe%Test%\mil_longpath_unaware.exe %Test%\Source\longpath.cpp %Output%\MediaInfo.lib || exit /b 1
+          copy /y %Test%\mil_longpath_unaware.exe %Test%\mil_longpath_aware.exe >nul
+          mt -nologo -manifest %Test%\longpathaware.manifest -outputresource:%Test%\mil_longpath_aware.exe;1 || exit /b 1
           copy %Output%\MediaInfo.dll %Test%\
           rem Test program for the search of FFmpeg, whose copies are the FFmpeg programs (MediaInfo.dll loaded when used, static run-time library)
           cl /nologo /EHsc /O1 /MT /DUNICODE /D_UNICODE /ISource /Fo%Test%\mil_ffmpeg.obj /Fe%Test%\mil_ffmpeg.exe %Test%\Source\ffmpeg.cpp || exit /b 1
@@ -343,6 +347,26 @@ jobs:
           echo "::group::Search of FFmpeg"
           bash ffmpeg.sh 9>&1 || Status=1
           echo "::endgroup::"
+          exit ${Status}
+      - name: Check long paths
+        working-directory: MediaInfoLib/Project/GNU/Library/test
+        run: |
+          # Names longer than MAX_PATH with the support of long paths by the system (read at the start of each process) and the program, or
+          # without it (then the extended-length prefix)
+          Status=0
+          for LongPathsEnabled in 0 1 ; do
+            MSYS_NO_PATHCONV=1 reg add 'HKLM\SYSTEM\CurrentControlSet\Control\FileSystem' /v LongPathsEnabled /t REG_DWORD /d ${LongPathsEnabled} /f >/dev/null || exit 1
+            for Aware in no yes ; do
+              cp mil_longpath_$([ "${Aware}" == "yes" ] && echo aware || echo unaware).exe mil_longpath.exe
+              Expected=disabled
+              if [ "${LongPathsEnabled}" == "1" ] && [ "${Aware}" == "yes" ] ; then
+                Expected=enabled
+              fi
+              echo "::group::LongPathsEnabled ${LongPathsEnabled}, longPathAware ${Aware}"
+              LONGPATHS_EXPECTED=${Expected} bash longpath.sh 9>&1 || Status=1
+              echo "::endgroup::"
+            done
+          done
           exit ${Status}
 
   # Functions of the UWP API (WinRT for the files, which works without package except FutureAccessList), not in a solution: files of the UWP
