@@ -5467,6 +5467,35 @@ static bool Tags_Fraction_IsRounded(const Ztring& Long, size_t Long_Pos, const Z
 }
 
 //---------------------------------------------------------------------------
+static bool Tags_Date_FractionAsMilliseconds(const Ztring& Xmp, const Ztring& Exif)
+{
+    //Same date and time up to the seconds, and the 3 digits of the fraction of second of XMP are the digits of the one of Exif without their trailing zeros
+    //read as a count of milliseconds, e.g. ".066" for ".66" or ".001" for ".10", an error of some tools converting Exif to XMP
+    if (Xmp.size()<23 || Exif.size()<21 || Xmp.compare(0, 19, Exif, 0, 19) || Xmp[19]!=__T('.') || Exif[19]!=__T('.'))
+        return false;
+    const size_t Xmp_End=min(Xmp.find_first_not_of(__T("0123456789"), 20), Xmp.size());
+    const size_t Exif_End=min(Exif.find_first_not_of(__T("0123456789"), 20), Exif.size());
+    if (Xmp_End!=23 || Exif_End==20)
+        return false;
+    Ztring Digits=Exif.substr(20, Exif_End-20);
+    while (Digits.size()>1 && Digits.back()==__T('0'))
+        Digits.pop_back();
+    if (Digits.size()>3)
+        return false;
+    Ztring AsMilliseconds;
+    AsMilliseconds.append(3-Digits.size(), __T('0'));
+    AsMilliseconds+=Digits;
+    Ztring AsFraction=Exif.substr(20, Exif_End-20);
+    AsFraction.append(3, __T('0'));
+    AsFraction.resize(3);
+    if (Xmp.compare(20, 3, AsMilliseconds) || AsMilliseconds==AsFraction)
+        return false; //Not this error, or the right fraction too
+    const Ztring Xmp_Zone=Xmp.substr(23);
+    const Ztring Exif_Zone=Exif.substr(Exif_End);
+    return Xmp_Zone.empty() || Exif_Zone.empty() || Xmp_Zone==Exif_Zone;
+}
+
+//---------------------------------------------------------------------------
 static bool Tags_Date_Merge(const Ztring& Date1, const Ztring& Date2, Ztring& Merged)
 {
     //"YYYY", "YYYY-MM", "YYYY-MM-DD", "YYYY-MM-DD hh:mm" or "YYYY-MM-DD hh:mm:ss", then the fraction of second if any, then " UTC" or an offset as "+hh:mm" if any.
@@ -5951,6 +5980,16 @@ void File__Analyze::Streams_Finish_Tags()
             const Ztring& Short=Current_IsShort?Current:Item.Value;
             const Ztring& Long=Current_IsShort?Item.Value:Current;
             const bool IsDate=Item.Name.size()>5 && !Item.Name.compare(Item.Name.size()-5, 5, "_Date");
+            if (IsDate && Format==Tags_Exif && Source!=Sources.end() && Source->second==Tags_Xmp && Tags_Date_FractionAsMilliseconds(Current, Item.Value))
+            {
+                //The fraction of second of XMP is the one of Exif read as a count of milliseconds, an error of the tool converting Exif to XMP: Exif has priority and XMP is not conform
+                if (!IsSub)
+                    Fill_Conformance(("Crosscheck "+BuildConformanceName(Tags_Format_Names[Tags_Xmp], nullptr, Name)).c_str(), string(Tags_Format_Names[Tags_Xmp])+' '+Item.Name+' '+Quoted(Current)+" does not match "+Tags_Format_Names[Tags_Exif]+' '+Item.Name+' '+Quoted(Item.Value));
+                Fill(Stream_General, 0, Name, Item.Value, true);
+                Sources[Item.Name]=Item.Format;
+                Item.IsFilled=true;
+                continue;
+            }
             if (IsDate)
             {
                 //Same date with other details or in another time zone, the details of both are shown
