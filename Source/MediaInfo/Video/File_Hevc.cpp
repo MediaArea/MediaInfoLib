@@ -912,7 +912,7 @@ bool File_Hevc::Demux_UnpacketizeContainer_Test()
                 TranscodedBuffer_Pos+=(*Data_Item)->AnnexB_Buffer_Size;
             }
         }
-        while (Buffer_Offset<Buffer_Size)
+        while (Buffer_Offset+lengthSizeMinusOne+1+1<=Buffer_Size)
         {
             //Sync layer
             TranscodedBuffer[TranscodedBuffer_Pos]=0x00;
@@ -944,7 +944,7 @@ bool File_Hevc::Demux_UnpacketizeContainer_Test()
             }
 
             //Coherency checking
-            if (Size==0 || Buffer_Offset+Size>Buffer_Size || (Buffer_Offset+Size!=Buffer_Size && Buffer_Offset+Size+lengthSizeMinusOne+1>Buffer_Size))
+            if (Size<2 || Buffer_Offset+Size>Buffer_Size || (Buffer_Offset+Size!=Buffer_Size && Buffer_Offset+Size+lengthSizeMinusOne+1>Buffer_Size))
                 Size=Buffer_Size-Buffer_Offset;
 
             std::memcpy(TranscodedBuffer+TranscodedBuffer_Pos, Buffer+Buffer_Offset, Size);
@@ -956,7 +956,7 @@ bool File_Hevc::Demux_UnpacketizeContainer_Test()
         Buffer_Temp=Buffer;
         Buffer=TranscodedBuffer;
         Buffer_Temp_Size=Buffer_Size;
-        Buffer_Size=TranscodedBuffer_Size;
+        Buffer_Size=TranscodedBuffer_Pos;
         Demux_Offset=Buffer_Size;
     }
     else
