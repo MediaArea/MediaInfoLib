@@ -5496,17 +5496,19 @@ static bool Tags_Date_FractionAsMilliseconds(const Ztring& Xmp, const Ztring& Ex
 }
 
 //---------------------------------------------------------------------------
-static bool Tags_Date_Merge(const Ztring& Date1, const Ztring& Date2, Ztring& Merged)
+static bool Tags_Date_Merge(const Ztring& Date1, const Ztring& Date2, Ztring& Merged, Ztring* Zone_Guessed=nullptr)
 {
     //"YYYY", "YYYY-MM", "YYYY-MM-DD", "YYYY-MM-DD hh:mm" or "YYYY-MM-DD hh:mm:ss", then the fraction of second if any, then " UTC" or an offset as "+hh:mm" if any.
     //2 dates are the same date when what is in both is the same (the same instant when both have a time zone), what is only in one of them is a detail: time, seconds, more digits in the fraction of second (cut or rounded in the other one), time zone.
     //Merged is then the first date, so in its time zone, with the details of the second date
+    //A date in UTC is also the same date as a date without time zone shifted by a time zone (up to 1 second), a copy of it converted to UTC by a tool with the time zone of the computer: Merged is then the date without time zone, with this time zone, which is deduced (in Zone_Guessed)
     struct date
     {
         size_t Base_Size=0; //Date and time, up to the seconds
         size_t Fraction_Size=0; //With the dot
         bool HasZone=false;
-        int64s Minutes=0; //UTC, only with a time zone
+        bool IsUtc=false;
+        int64s Minutes=0; //UTC with a time zone, else as if the date is in UTC, only with a time
     };
     const auto Parse=[](const Ztring& Date, date& Parsed)
     {
@@ -5526,18 +5528,21 @@ static bool Tags_Date_Merge(const Ztring& Date1, const Ztring& Date2, Ztring& Me
             Parsed.Fraction_Size=End-Pos;
             Pos=End;
         }
-        if (Pos==Date.size())
-            return true;
         if (Parsed.Base_Size<16)
-            return false;
+            return Pos==Date.size();
         int64s Offset=0;
-        if (Date.compare(Pos, string::npos, __T(" UTC")))
+        if (Pos<Date.size())
         {
-            if (Date.size()!=Pos+6 || (Date[Pos]!=__T('+') && Date[Pos]!=__T('-')) || Date[Pos+3]!=__T(':') || Date.find_first_not_of(__T("0123456789"), Pos+1)!=Pos+3 || Date.find_first_not_of(__T("0123456789"), Pos+4)!=string::npos)
-                return false;
-            Offset=Number(Pos+1)*60+Number(Pos+4);
-            if (Date[Pos]==__T('-'))
-                Offset=-Offset;
+            if (Date.compare(Pos, string::npos, __T(" UTC")))
+            {
+                if (Date.size()!=Pos+6 || (Date[Pos]!=__T('+') && Date[Pos]!=__T('-')) || Date[Pos+3]!=__T(':') || Date.find_first_not_of(__T("0123456789"), Pos+1)!=Pos+3 || Date.find_first_not_of(__T("0123456789"), Pos+4)!=string::npos)
+                    return false;
+                Offset=Number(Pos+1)*60+Number(Pos+4);
+                if (Date[Pos]==__T('-'))
+                    Offset=-Offset;
+            }
+            Parsed.HasZone=true;
+            Parsed.IsUtc=!Offset;
         }
         const int64s Month=Number(5);
         const int64s Year=Number(0)*100+Number(2)-(Month<=2);
@@ -5545,7 +5550,6 @@ static bool Tags_Date_Merge(const Ztring& Date1, const Ztring& Date2, Ztring& Me
         const int64s YearOfEra=Year-Era*400;
         const int64s Days=Era*146097+YearOfEra*365+YearOfEra/4-YearOfEra/100+(153*(Month+(Month>2?-3:9))+2)/5+Number(8); //In the Gregorian calendar, the day 0 does not matter
         Parsed.Minutes=(Days*24+Number(11))*60+Number(14)-Offset;
-        Parsed.HasZone=true;
         return true;
     };
     date Parsed1, Parsed2;
@@ -5554,21 +5558,55 @@ static bool Tags_Date_Merge(const Ztring& Date1, const Ztring& Date2, Ztring& Me
 
     //Date and time, the seconds are compared as they are because the offset of a time zone is in minutes
     const size_t Base_Size=min(Parsed1.Base_Size, Parsed2.Base_Size);
+    int64s Shift=0; //Of the date without time zone from the date in UTC
+    bool Seconds_AreNotSame=false;
     if (Parsed1.HasZone && Parsed2.HasZone)
     {
         if (Parsed1.Minutes!=Parsed2.Minutes || (Base_Size==19 && Date1.compare(16, 3, Date2, 16, 3)))
             return false;
     }
     else if (Date1.compare(0, Base_Size, Date2, 0, Base_Size))
-        return false;
+    {
+        //A date without time zone and a date in UTC, both with seconds: the same date when the difference is a time zone (a multiple of 15 minutes, from -12:00 to +14:00), up to 1 second (2 dates written one after the other by the same tool)
+        const date& Utc=Parsed1.HasZone?Parsed1:Parsed2;
+        const date& Local=Parsed1.HasZone?Parsed2:Parsed1;
+        if (!Utc.IsUtc || Utc.Base_Size!=19 || Local.Base_Size!=19)
+            return false;
+        const auto Seconds=[](const Ztring& Date) { return (int64s)(Date[17]-__T('0'))*10+(Date[18]-__T('0')); };
+        const int64s Difference=(Local.Minutes-Utc.Minutes)*60+Seconds(Parsed1.HasZone?Date2:Date1)-Seconds(Parsed1.HasZone?Date1:Date2);
+        Shift=(Difference+(Difference<0?-450:450))/900*15; //Nearest multiple of 15 minutes
+        if (!Shift || Shift<-12*60 || Shift>14*60 || Difference-Shift*60<-1 || Difference-Shift*60>1)
+            return false;
+        Seconds_AreNotSame=Difference!=Shift*60;
+    }
 
-    //Fraction of second
+    //Fraction of second, not comparable when the seconds are not the same
     const size_t Fraction_Size=min(Parsed1.Fraction_Size, Parsed2.Fraction_Size);
-    if (Date1.compare(Parsed1.Base_Size, Fraction_Size, Date2, Parsed2.Base_Size, Fraction_Size))
+    if (!Seconds_AreNotSame && Date1.compare(Parsed1.Base_Size, Fraction_Size, Date2, Parsed2.Base_Size, Fraction_Size))
     {
         const bool Date1_IsLong=Parsed1.Fraction_Size>Parsed2.Fraction_Size;
         if (Fraction_Size<2 || !(Date1_IsLong?Tags_Fraction_IsRounded(Date1, Parsed1.Base_Size+1, Date2, Parsed2.Base_Size+1, Fraction_Size-1):Tags_Fraction_IsRounded(Date2, Parsed2.Base_Size+1, Date1, Parsed1.Base_Size+1, Fraction_Size-1)))
             return false;
+    }
+
+    if (Shift)
+    {
+        //The date without time zone, with the time zone
+        Merged.assign(Parsed1.HasZone?Date2:Date1, 0, 19);
+        if (Seconds_AreNotSame)
+            Merged.append(Parsed1.HasZone?Date2:Date1, 19, (Parsed1.HasZone?Parsed2:Parsed1).Fraction_Size);
+        else if (Parsed1.Fraction_Size<Parsed2.Fraction_Size)
+            Merged.append(Date2, Parsed2.Base_Size, Parsed2.Fraction_Size);
+        else
+            Merged.append(Date1, Parsed1.Base_Size, Parsed1.Fraction_Size);
+        const int64s Shift_Abs=Shift<0?-Shift:Shift;
+        const int64s Hours=Shift_Abs/60;
+        const int64s Minutes=Shift_Abs%60;
+        const Char Zone[]={Shift<0?__T('-'):__T('+'), (Char)(__T('0')+Hours/10), (Char)(__T('0')+Hours%10), __T(':'), (Char)(__T('0')+Minutes/10), (Char)(__T('0')+Minutes%10), __T('\0')};
+        Merged+=Zone;
+        if (Zone_Guessed)
+            *Zone_Guessed=Zone;
+        return true;
     }
 
     Merged.assign(Date1, 0, Parsed1.Base_Size);
@@ -6009,9 +6047,27 @@ void File__Analyze::Streams_Finish_Tags()
             if (IsDate)
             {
                 //Same date with other details or in another time zone, the details of both are shown
-                Ztring Merged;
-                if (Tags_Date_Merge(Current, Item.Value, Merged))
+                Ztring Merged, Zone_Guessed;
+                if (Tags_Date_Merge(Current, Item.Value, Merged, &Zone_Guessed))
                 {
+                    if (!Zone_Guessed.empty())
+                    {
+                        //A date in UTC in XMP is then a copy of the date without time zone converted to UTC with an assumed time zone (e.g. the one of the computer, which is not always the one of the camera), which XMP does not permit: XMP is not conform, and the time zone is not known
+                        //Else the dates are conform, e.g. the date of the last modification of PNG, which is in UTC, and the one of Exif, which is in local time, written by the same tool
+                        const bool Item_IsUtc=!Merged.compare(0, 19, Current, 0, 19);
+                        const bool Utc_IsXmp=Item_IsUtc?(Format==Tags_Xmp):(Source!=Sources.end() && Source->second==Tags_Xmp);
+                        if (Utc_IsXmp)
+                        {
+                            if (!IsSub)
+                            {
+                                string Other=Item_IsUtc?(Source==Sources.end()?Retrieve_Const(Stream_General, 0, General_Format).To_UTF8():string(Tags_Format_Names[Source->second])):string(Tags_Format_Names[Format]);
+                                if (!Other.empty())
+                                    Other+=' ';
+                                Fill_Conformance(("Crosscheck "+BuildConformanceName(Tags_Format_Names[Tags_Xmp], nullptr, Name)).c_str(), string(Tags_Format_Names[Tags_Xmp])+' '+Item.Name+" is "+Other+Item.Name+" converted to UTC with an assumed time zone (actual "+Quoted(Item_IsUtc?Item.Value:Current)+", expected "+Quoted(Item_IsUtc?Current:Item.Value)+')');
+                            }
+                            Merged.resize(Merged.size()-Zone_Guessed.size());
+                        }
+                    }
                     if (Merged!=Current)
                     {
                         Fill(Stream_General, 0, Name, Merged, true);
@@ -6026,7 +6082,7 @@ void File__Analyze::Streams_Finish_Tags()
 
                 //Not the same date
                 //The date of the last modification is sometimes updated by a tool in one tag format only: the most recent one is used
-                //The dates of the original and of the digitization are written by the camera itself in Exif, XMP has a copy of them which is sometimes not the same (e.g. converted to UTC, or the time of an edit): Exif has priority
+                //The dates of the original and of the digitization are written by the camera itself in Exif, XMP has a copy of them which is sometimes not the same (e.g. the time of an edit): Exif has priority
                 //The other tag format is not conform
                 const bool IsMoreRecent=Item.Name=="Encoded_Date" && Source!=Sources.end() && Tags_Date_IsMoreRecent(Item.Value, Current);
                 if (IsMoreRecent || (Format==Tags_Exif && Source!=Sources.end() && Source->second==Tags_Xmp && (Item.Name=="Recorded_Date" || Item.Name=="Mastered_Date")))
