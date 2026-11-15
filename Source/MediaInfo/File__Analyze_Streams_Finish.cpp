@@ -3292,6 +3292,80 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
     if (Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_CompanyName) == Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Model)) {
         Clear(Stream_General, StreamPos, General_Encoded_Hardware_CompanyName);
     }
+
+    // The hardware given as performer, e.g. the make written as artist of Exif by some phones ("LG Electronics Inc.", or "Mobile SAGEM" for "SAGEM"): it is not a performer
+    // (not for the writing application: the make or the model of some files is the software written by a tool, e.g. "FinePixViewer Ver.4.2", or a build number of the firmware)
+    {
+        auto CompanyWords = [](const Ztring& Value) {
+            // Words in upper case without the legal suffixes and the other generic words of the company names, with the other name of the company if any
+            const auto ValueU = Ztring(Value).MakeUpperCase().To_UTF8();
+            string Result;
+            for (size_t Begin = 0; Begin < ValueU.size();) {
+                const auto End = min(ValueU.find_first_of(" ,", Begin), ValueU.size());
+                const auto Word = ValueU.substr(Begin, End - Begin);
+                auto IsGeneric = Word.empty();
+                for (const auto& CompanySuffix : NewlineRange(CompanySuffixes)) {
+                    if (!IsGeneric && !Word.compare(0, string::npos, CompanySuffix.data(), CompanySuffix.size())) {
+                        IsGeneric = true;
+                    }
+                }
+                if (!IsGeneric) {
+                    if (!Result.empty()) {
+                        Result += ' ';
+                    }
+                    Result += Word;
+                }
+                Begin = End + 1;
+            }
+            const auto Replacement = Find_Replacement(CompanyNames_Replace, Result);
+            if (Replacement.data()) {
+                Result.assign(Replacement.data(), Replacement.size());
+            }
+            return Ztring().From_UTF8(Result).MakeUpperCase();
+        };
+        const auto CompanyName = CompanyWords(Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_CompanyName));
+        auto ModelU = Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Model);
+        ModelU.Trim(__T(' '));
+        ModelU.MakeUpperCase();
+        auto NameU = Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Name);
+        NameU.MakeUpperCase();
+        auto IsHardware = [&](const Ztring& Value) {
+            const auto ValueU = CompanyWords(Value);
+            return !ValueU.empty() && ((!CompanyName.empty() && (ValueU == CompanyName || ValueU == CompanyName + __T(' ') + ModelU)) || ValueU == ModelU || ValueU == NameU);
+        };
+        const auto Parameter = General_Performer;
+        const auto Value = Retrieve_Const(Stream_General, StreamPos, Parameter);
+        if (!Value.empty() && (!CompanyName.empty() || !ModelU.empty())) {
+            Ztring Kept;
+            auto IsModified = false;
+            for (size_t Begin = 0;;) {
+                const auto End = Value.find(__T(" / "), Begin);
+                const auto Item = Value.substr(Begin, End == string::npos ? string::npos : (End - Begin));
+                if (IsHardware(Item)) {
+                    IsModified = true;
+                }
+                else {
+                    if (!Kept.empty()) {
+                        Kept += __T(" / ");
+                    }
+                    Kept += Item;
+                }
+                if (End == string::npos) {
+                    break;
+                }
+                Begin = End + 3;
+            }
+            if (IsModified) {
+                if (Kept.empty()) {
+                    Clear(Stream_General, StreamPos, Parameter);
+                }
+                else {
+                    Fill(Stream_General, StreamPos, Parameter, Kept, true);
+                }
+            }
+        }
+    }
+
     auto RemoveContainedValues = [&](size_t Parameter) {
         // Values from several sources: a value made of whole words of another value (e.g. the TIFF software "Ver.1.20" with the XMP creator tool "NIKON D4S Ver.1.20") or the same as a previous value is redundant
         const auto& Value = Retrieve_Const(Stream_General, StreamPos, Parameter);
