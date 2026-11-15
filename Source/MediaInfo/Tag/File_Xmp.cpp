@@ -431,6 +431,13 @@ bool File_Xmp::FileHeader_Begin()
         Fill(Stream_General, 0, General_Encoded_Application, application, true, true);
     }
 
+    //Date of the original: photoshop:DateCreated, the date of the content (e.g. of the photo when the file is a scan of it), whatever the order of the elements
+    //exif:DateTimeOriginal, a copy of the date of Exif, is used for its time when it is the same day as photoshop:DateCreated without time, or without photoshop:DateCreated
+    if (!DateCreated.empty() || !DateTimeOriginal.empty()) {
+        const auto UseDateTimeOriginal = DateCreated.empty() || (DateCreated.size() == 10 && !DateTimeOriginal.compare(0, 10, DateCreated));
+        Fill(Stream_General, 0, General_Recorded_Date, UseDateTimeOriginal ? DateTimeOriginal : DateCreated, true, true);
+    }
+
     //Leaf: the model is followed by the serial number and the camera, e.g. "Leaf Aptus 75(LI400146   )/Large Format"
     {
         Ztring Model = Retrieve_Const(Stream_General, 0, General_Encoded_Hardware_Model);
@@ -500,12 +507,8 @@ void File_Xmp::dc(const string& name, const string& value)
 //---------------------------------------------------------------------------
 void File_Xmp::exif(const string& name, const string& value)
 {
-    if (name == "exif:DateTimeOriginal") {
-        //Has the time when photoshop:DateCreated has only the date
-        const Ztring& Current = Retrieve_Const(Stream_General, 0, General_Recorded_Date);
-        if (Current.empty() || (Current.size() == 10 && !Ztring().From_UTF8(value).compare(0, 10, Current)))
-            Fill(Stream_General, 0, General_Recorded_Date, value, true, true);
-    }
+    if (name == "exif:DateTimeOriginal" && DateTimeOriginal.empty())
+        DateTimeOriginal = value; //See after the parsing
     if (name == "exif:DateTimeDigitized")
         Fill(Stream_General, 0, General_Mastered_Date, value);
 }
@@ -715,12 +718,11 @@ void File_Xmp::photoshop(const string& name, const string& value)
         Fill(Stream_General, 0, "Source", value);
     if (name == "photoshop:CaptionWriter")
         Fill(Stream_General, 0, "DescriptionWriter", value);
-    if (name == "photoshop:DateCreated" && Retrieve_Const(Stream_General, 0, General_Recorded_Date).empty()) {
-        //Date of creation of the content, as exif:DateTimeOriginal and the IPTC date created. Some tools write the time 00:00 (without seconds) when there is only a date
-        string Date(value);
-        if (Date.size() >= 16 && !Date.compare(10, 6, "T00:00") && (Date.size() == 16 || Date[16] == '+' || Date[16] == '-' || Date[16] == 'Z'))
-            Date.resize(10);
-        Fill(Stream_General, 0, General_Recorded_Date, Date);
+    if (name == "photoshop:DateCreated" && DateCreated.empty()) {
+        //Date of creation of the content, as the IPTC date created, see after the parsing. Some tools write the time 00:00 (without seconds) when there is only a date
+        DateCreated = value;
+        if (DateCreated.size() >= 16 && !DateCreated.compare(10, 6, "T00:00") && (DateCreated.size() == 16 || DateCreated[16] == '+' || DateCreated[16] == '-' || DateCreated[16] == 'Z'))
+            DateCreated.resize(10);
     }
 }
 
