@@ -1426,7 +1426,7 @@ bool File_Avc::Demux_UnpacketizeContainer_Test()
             Size+=SizeOfNALU_Minus1+1;
 
             //Coherency checking
-            if (Size==0 || Buffer_Offset+Size>Buffer_Size || (Buffer_Offset+Size!=Buffer_Size && Buffer_Offset+Size+SizeOfNALU_Minus1+1>Buffer_Size))
+            if (Size<(size_t)(SizeOfNALU_Minus1+1+1) || Buffer_Offset+Size>Buffer_Size || (Buffer_Offset+Size!=Buffer_Size && Buffer_Offset+Size+SizeOfNALU_Minus1+1>Buffer_Size))
                 Size=Buffer_Size-Buffer_Offset;
 
             //Random access check
@@ -1486,7 +1486,7 @@ bool File_Avc::Demux_UnpacketizeContainer_Test()
                 TranscodedBuffer_Pos+=(*Data_Item)->Iso14496_10_Buffer_Size;
             }
         }
-        while (Buffer_Offset<Buffer_Size)
+        while (Buffer_Offset+SizeOfNALU_Minus1+1+1<=Buffer_Size)
         {
             //Sync layer
             TranscodedBuffer[TranscodedBuffer_Pos]=0x00;
@@ -1530,7 +1530,7 @@ bool File_Avc::Demux_UnpacketizeContainer_Test()
         Buffer_Temp=Buffer;
         Buffer=TranscodedBuffer;
         Buffer_Temp_Size=Buffer_Size;
-        Buffer_Size=TranscodedBuffer_Size;
+        Buffer_Size=TranscodedBuffer_Pos;
         Demux_Offset=Buffer_Size;
     }
     else
