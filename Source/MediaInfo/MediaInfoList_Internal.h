@@ -65,6 +65,9 @@ private :
     std::vector<String> ToParse_ToIgnore;
     #endif //defined(MEDIAINFO_FILE_YES)
     std::queue<String> ToParse;
+    #if defined(MEDIAINFO_DIRECTORY_YES)
+    ZtringList ToParse_Listed; //Names given by Dir::GetAllFileNames(), released when the files are parsed (see Dir::ReleaseFileNames())
+    #endif //defined(MEDIAINFO_DIRECTORY_YES)
     std::map<String, String> Config_MediaInfo_Items; //Config per file
     size_t  ToParse_AlreadyDone;
     size_t  ToParse_Total;
