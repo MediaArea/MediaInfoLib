@@ -6038,7 +6038,7 @@ void File__Analyze::Streams_Finish_Tags()
             {
                 //The fraction of second of XMP is the one of Exif read as a count of milliseconds, an error of the tool converting Exif to XMP: Exif has priority and XMP is not conform
                 if (!IsSub)
-                    Fill_Conformance(("Crosscheck "+BuildConformanceName(Tags_Format_Names[Tags_Xmp], nullptr, Name)).c_str(), string(Tags_Format_Names[Tags_Xmp])+' '+Item.Name+' '+Quoted(Current)+" does not match "+Tags_Format_Names[Tags_Exif]+' '+Item.Name+' '+Quoted(Item.Value));
+                    Fill_Conformance(("Crosscheck "+BuildConformanceName(Tags_Format_Names[Tags_Xmp], nullptr, Name)).c_str(), string(Tags_Format_Names[Tags_Xmp])+' '+Item.Name+" does not match "+Tags_Format_Names[Tags_Exif]+' '+Item.Name+" (actual "+Quoted(Current)+", expected "+Quoted(Item.Value)+')');
                 Fill(Stream_General, 0, Name, Item.Value, true);
                 Sources[Item.Name]=Item.Format;
                 Item.IsFilled=true;
@@ -6048,7 +6048,7 @@ void File__Analyze::Streams_Finish_Tags()
             {
                 //The camera is written by itself in the TIFF tags, XMP has a copy of them which is sometimes not the same (e.g. a placeholder or a code name): Exif has priority and XMP is not conform
                 if (!IsSub)
-                    Fill_Conformance(("Crosscheck "+BuildConformanceName(Tags_Format_Names[Tags_Xmp], nullptr, Name)).c_str(), string(Tags_Format_Names[Tags_Xmp])+' '+Item.Name+' '+Quoted(Current)+" does not match "+Tags_Format_Names[Tags_Exif]+' '+Item.Name+' '+Quoted(Item.Value));
+                    Fill_Conformance(("Crosscheck "+BuildConformanceName(Tags_Format_Names[Tags_Xmp], nullptr, Name)).c_str(), string(Tags_Format_Names[Tags_Xmp])+' '+Item.Name+" does not match "+Tags_Format_Names[Tags_Exif]+' '+Item.Name+" (actual "+Quoted(Current)+", expected "+Quoted(Item.Value)+')');
                 Fill(Stream_General, 0, Name, Item.Value, true);
                 Sources[Item.Name]=Item.Format;
                 Item.IsFilled=true;
@@ -6098,7 +6098,7 @@ void File__Analyze::Streams_Finish_Tags()
                 if (IsMoreRecent || (Format==Tags_Exif && Source!=Sources.end() && Source->second==Tags_Xmp && (Item.Name=="Recorded_Date" || Item.Name=="Mastered_Date")))
                 {
                     if (!IsSub)
-                        Fill_Conformance(("Crosscheck "+BuildConformanceName(Tags_Format_Names[Source->second], nullptr, Name)).c_str(), string(Tags_Format_Names[Source->second])+' '+Item.Name+' '+Quoted(Current)+" does not match "+Tags_Format_Names[Format]+' '+Item.Name+' '+Quoted(Item.Value));
+                        Fill_Conformance(("Crosscheck "+BuildConformanceName(Tags_Format_Names[Source->second], nullptr, Name)).c_str(), string(Tags_Format_Names[Source->second])+' '+Item.Name+" does not match "+Tags_Format_Names[Format]+' '+Item.Name+" (actual "+Quoted(Current)+", expected "+Quoted(Item.Value)+')');
                     Fill(Stream_General, 0, Name, Item.Value, true);
                     Sources[Item.Name]=Item.Format;
                     Item.IsFilled=true;
@@ -6171,7 +6171,7 @@ void File__Analyze::Streams_Finish_Tags()
             if (!Other.empty())
                 Other+=' ';
             const bool IsGenre=Item.Name=="Genre"; //Shown with its name when it is a number of the list of ID3v1
-            Fill_Conformance(("Crosscheck "+BuildConformanceName(Format_Name, nullptr, Name)).c_str(), Format_Name+' '+Item.Name+' '+Quoted(IsGenre?Tags_Genre(Item.Value):Item.Value)+" does not match "+Other+Item.Name+' '+Quoted(IsGenre?Tags_Genre(Current):Current));
+            Fill_Conformance(("Crosscheck "+BuildConformanceName(Format_Name, nullptr, Name)).c_str(), Format_Name+' '+Item.Name+" does not match "+Other+Item.Name+" (actual "+Quoted(IsGenre?Tags_Genre(Item.Value):Item.Value)+", expected "+Quoted(IsGenre?Tags_Genre(Current):Current)+')');
         }
     }
     if (!Picasa.empty())
