@@ -2086,10 +2086,14 @@ bool File__Analyze::Buffer_Parse()
     //Synchro
     if (MustSynchronize)
     {
+        size_t Buffer_Offset_Synchro=Buffer_Offset;
         size_t Buffer_Offset_NotSynched=(size_t)-1;
         do
         {
-            if (!Synchro_Manage())
+            bool Synchro_Result=Synchro_Manage();
+            if (Buffer_Offset!=Buffer_Offset_Synchro)
+                Buffer_Offset_Temp=0; //The element waiting for its end (e.g. search of the next start code) is skipped, the search is for another element
+            if (!Synchro_Result)
                 return false; //Wait for more data
             if (!Synched)
             {
