@@ -5119,11 +5119,11 @@ void File__Analyze::Merge_HDR(size_t StreamPos_To, const Ztring* Container, cons
                     default:;
                 }
                 if (!Container_Profile_RPU.empty() && !Stream_Profile.empty() && Container_Profile_RPU!=Stream_Profile)
-                    Fill_Conformance("Crosscheck DolbyVisionConfiguration dv_profile", ("Dolby Vision configuration dv_profile " + Container_Profile.To_UTF8() + " does not match Dolby Vision RPU profile " + Stream_Profile.To_UTF8()).c_str(), {}, Conformance_Error, Stream_Video, StreamPos_To);
+                    Fill_Conformance("Crosscheck DolbyVisionConfiguration dv_profile", ("Dolby Vision configuration dv_profile does not match Dolby Vision RPU profile (actual " + Container_Profile.To_UTF8() + ", expected " + Stream_Profile.To_UTF8() + ')').c_str(), {}, Conformance_Error, Stream_Video, StreamPos_To);
                 const auto& Container_Layers=Container_Values[Video_HDR_Format_Settings-Video_HDR_Format][Container_DolbyVision];
                 const auto& Stream_Layers=Stream_Values[Video_HDR_Format_Settings-Video_HDR_Format][Stream_DolbyVision];
                 if (!Container_Layers.empty() && !Stream_Layers.empty() && Layers_HasEL(Container_Layers)!=Layers_HasEL(Stream_Layers))
-                    Fill_Conformance("Crosscheck DolbyVisionConfiguration el_present_flag", (string("Dolby Vision configuration el_present_flag ") + (Layers_HasEL(Container_Layers)?'1':'0') + " does not match Dolby Vision RPU " + (Layers_HasEL(Stream_Layers)?"with":"without") + " enhancement layer").c_str(), {}, Conformance_Error, Stream_Video, StreamPos_To);
+                    Fill_Conformance("Crosscheck DolbyVisionConfiguration el_present_flag", (string("Dolby Vision configuration el_present_flag does not match the enhancement layer of Dolby Vision RPU (actual ") + (Layers_HasEL(Container_Layers)?'1':'0') + ", expected " + (Layers_HasEL(Stream_Layers)?'1':'0') + ')').c_str(), {}, Conformance_Error, Stream_Video, StreamPos_To);
             #endif //MEDIAINFO_CONFORMANCE
 
             for (size_t i=Video_HDR_Format; i<=Video_HDR_Format_Compatibility; i++)
@@ -5182,9 +5182,9 @@ void File__Analyze::Merge_HDR(size_t StreamPos_To, const Ztring* Container, cons
             {
                 //Profile 5 VUI is either 1,2,2,2,0 or 1,9,16,15,0 (video_full_range_flag, colour_primaries, transfer_characteristics, matrix_coeffs, chroma_sample_loc_type)
                 if (ToAdd_colour_range==__T("Limited"))
-                    Fill_Conformance("Crosscheck DolbyVisionConfiguration dv_profile", "Dolby Vision configuration dv_profile 5 does not permit HEVC VUI video_full_range_flag 0", {}, Conformance_Error, Stream_Video, StreamPos_To);
+                    Fill_Conformance("Crosscheck DolbyVisionConfiguration dv_profile", "Dolby Vision configuration dv_profile 5 does not permit HEVC VUI video_full_range_flag (actual 0, expected 1)", {}, Conformance_Error, Stream_Video, StreamPos_To);
                 if (!ToAdd_matrix_coefficients.empty() && ToAdd_matrix_coefficients!=__T("IPT-PQ-C2"))
-                    Fill_Conformance("Crosscheck DolbyVisionConfiguration dv_profile", ("Dolby Vision configuration dv_profile 5 does not permit HEVC VUI matrix_coeffs " + ToAdd_matrix_coefficients.To_UTF8()).c_str(), {}, Conformance_Error, Stream_Video, StreamPos_To);
+                    Fill_Conformance("Crosscheck DolbyVisionConfiguration dv_profile", ("Dolby Vision configuration dv_profile 5 does not permit HEVC VUI matrix_coeffs (actual " + ToAdd_matrix_coefficients.To_UTF8() + ", expected IPT-PQ-C2)").c_str(), {}, Conformance_Error, Stream_Video, StreamPos_To);
             }
         }
     #endif //MEDIAINFO_CONFORMANCE

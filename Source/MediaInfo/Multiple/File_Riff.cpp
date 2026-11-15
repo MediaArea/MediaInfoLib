@@ -282,7 +282,7 @@ void File_Riff::Streams_Finish ()
                 if (!Current.empty() && Current!=New)
                 {
                     const char* Legacy=IsText?(ubxt_Present?"ubxt":"bext"):(bext_Present?"bext":"ubxt");
-                    Fill_Conformance((string("Crosscheck ")+Legacy+' '+Name).c_str(), string(Legacy)+' '+Name+" is not same as "+Adm->MuxingMode+' '+Name+" (\""+Current.To_UTF8()+"\" vs \""+New.To_UTF8()+"\")", {}, Conformance_Warning);
+                    Fill_Conformance((string("Crosscheck ")+Legacy+' '+Name).c_str(), string(Legacy)+' '+Name+" does not match "+Adm->MuxingMode+' '+Name+" (actual \""+Current.To_UTF8()+"\", expected \""+New.To_UTF8()+"\")", {}, Conformance_Warning);
                 }
             };
             Fill_Item("Description", "Description", BroadcastMetadata_Clean(BroadcastMetadata->Description), true);

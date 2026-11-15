@@ -1835,17 +1835,17 @@ void File_Usac::Streams_Finish_Conformance_Profile(usac_config& CurrentConf)
         {
             int32u MaxSamplingRate = 24000 << (xHEAAC_Constraints[ProfileLevel.level].MaxSamplingRate - 1);
             if (CurrentConf.sampling_frequency > MaxSamplingRate)
-                Fill_Conformance("Crosscheck InitialObjectDescriptor audioProfileLevelIndication", ("MP4 InitialObjectDescriptor audioProfileLevelIndication " + Mpeg4_Descriptors_AudioProfileLevelString(ProfileLevel) + " does not permit USAC UsacConfig usacSamplingFrequency " + to_string(CurrentConf.sampling_frequency) + ", max is " + to_string(MaxSamplingRate)).c_str());
+                Fill_Conformance("Crosscheck InitialObjectDescriptor audioProfileLevelIndication", ("MP4 InitialObjectDescriptor audioProfileLevelIndication " + Mpeg4_Descriptors_AudioProfileLevelString(ProfileLevel) + " does not permit USAC UsacConfig usacSamplingFrequency (actual " + to_string(CurrentConf.sampling_frequency) + ", expected <=" + to_string(MaxSamplingRate) + ')').c_str());
         }
         else if (CurrentConf.sampling_frequency > 48000)
-            Fill_Conformance("Crosscheck InitialObjectDescriptor audioProfileLevelIndication", ("MP4 InitialObjectDescriptor audioProfileLevelIndication " + Mpeg4_Descriptors_AudioProfileLevelString(ProfileLevel) + " does not permit USAC UsacConfig usacSamplingFrequency " + to_string(CurrentConf.sampling_frequency) + ", max is 48000").c_str());
+            Fill_Conformance("Crosscheck InitialObjectDescriptor audioProfileLevelIndication", ("MP4 InitialObjectDescriptor audioProfileLevelIndication " + Mpeg4_Descriptors_AudioProfileLevelString(ProfileLevel) + " does not permit USAC UsacConfig usacSamplingFrequency (actual " + to_string(CurrentConf.sampling_frequency) + ", expected <=48000)").c_str());
         else if (CurrentConf.sampling_frequency_index < Aac_sampling_frequency_Size && Aac_sampling_frequency[CurrentConf.sampling_frequency_index] == CurrentConf.sampling_frequency
          && ((CurrentConf.sampling_frequency_index < 0x03 || CurrentConf.sampling_frequency_index > 0x0C) && (CurrentConf.sampling_frequency_index < 0x11 || CurrentConf.sampling_frequency_index > 0x1B)))
-            Fill_Conformance("Crosscheck InitialObjectDescriptor audioProfileLevelIndication", ("MP4 InitialObjectDescriptor audioProfileLevelIndication " + Mpeg4_Descriptors_AudioProfileLevelString(ProfileLevel) + " does not permit USAC UsacConfig usacSamplingFrequency " + to_string(CurrentConf.sampling_frequency)).c_str());
+            Fill_Conformance("Crosscheck InitialObjectDescriptor audioProfileLevelIndication", ("MP4 InitialObjectDescriptor audioProfileLevelIndication " + Mpeg4_Descriptors_AudioProfileLevelString(ProfileLevel) + " does not permit USAC UsacConfig usacSamplingFrequency (actual " + to_string(CurrentConf.sampling_frequency) + ')').c_str());
         if (!CurrentConf.channelConfigurationIndex)
         {
             if (CurrentConf.numOutChannels && CurrentConf.numOutChannels > xHEAAC_Constraints[ProfileLevel.level].MaxChannels)
-                Fill_Conformance("Crosscheck InitialObjectDescriptor audioProfileLevelIndication", ("MP4 InitialObjectDescriptor audioProfileLevelIndication " + Mpeg4_Descriptors_AudioProfileLevelString(ProfileLevel) + " does not permit USAC UsacConfig numOutChannels " + to_string(CurrentConf.numOutChannels) + ", max is " + to_string(xHEAAC_Constraints[ProfileLevel.level].MaxChannels)).c_str());
+                Fill_Conformance("Crosscheck InitialObjectDescriptor audioProfileLevelIndication", ("MP4 InitialObjectDescriptor audioProfileLevelIndication " + Mpeg4_Descriptors_AudioProfileLevelString(ProfileLevel) + " does not permit USAC UsacConfig numOutChannels (actual " + to_string(CurrentConf.numOutChannels) + ", expected <=" + to_string(xHEAAC_Constraints[ProfileLevel.level].MaxChannels) + ')').c_str());
         }
         else
         {
@@ -1856,12 +1856,12 @@ void File_Usac::Streams_Finish_Conformance_Profile(usac_config& CurrentConf)
                 case 8 :
                         break;
                 default:
-                    Fill_Conformance("Crosscheck InitialObjectDescriptor audioProfileLevelIndication", ("MP4 InitialObjectDescriptor audioProfileLevelIndication " + Mpeg4_Descriptors_AudioProfileLevelString(ProfileLevel) + " does not permit USAC UsacConfig channelConfigurationIndex " + to_string(CurrentConf.channelConfigurationIndex)).c_str());
+                    Fill_Conformance("Crosscheck InitialObjectDescriptor audioProfileLevelIndication", ("MP4 InitialObjectDescriptor audioProfileLevelIndication " + Mpeg4_Descriptors_AudioProfileLevelString(ProfileLevel) + " does not permit USAC UsacConfig channelConfigurationIndex (actual " + to_string(CurrentConf.channelConfigurationIndex) + ", expected 1, 2 or 8)").c_str());
             }
         }
     }
     if (IsCmaf && *IsCmaf && CurrentConf.channelConfigurationIndex != 1 && CurrentConf.channelConfigurationIndex != 2)
-        Fill_Conformance("Crosscheck CMAF channelConfiguration", ("CMAF does not permit USAC UsacConfig channelConfigurationIndex " + to_string(CurrentConf.channelConfigurationIndex) + ", permitted values are 1 and 2").c_str());
+        Fill_Conformance("Crosscheck CMAF channelConfiguration", ("CMAF does not permit USAC UsacConfig channelConfigurationIndex (actual " + to_string(CurrentConf.channelConfigurationIndex) + ", expected 1 or 2)").c_str());
 }
 void File_Usac::Streams_Finish_Conformance()
 {
@@ -1901,7 +1901,27 @@ void File_Usac::Streams_Finish_Conformance()
             if (!ConformanceError.FramePoss.empty() && (ConformanceError.FramePoss.size() != 1 || ConformanceError.FramePoss[0].Main != (int64u)-1))
             {
                 auto HasConfError = ConformanceError.FramePoss[0].Main == (int64u)-1;
-                Value += " (";
+                auto EndsWithActual = [&Value]() {
+                    // Actual and expected values at the end, with their parentheses if any (e.g. a channel layout)
+                    const auto Actual = Value.rfind(" (actual ");
+                    if (Actual == string::npos)
+                        return false;
+                    size_t Depth = 0;
+                    for (size_t i = Actual + 1; i < Value.size(); i++) {
+                        if (Value[i] == '(')
+                            Depth++;
+                        else if (Value[i] == ')' && !--Depth)
+                            return i == Value.size() - 1;
+                    }
+                    return false;
+                };
+                if (EndsWithActual()) {
+                    // The frames are with the actual and expected values, as for the other conformance errors
+                    Value.pop_back();
+                    Value += ", ";
+                }
+                else
+                    Value += " (";
                 if (HasConfError)
                     Value += "conf & ";
                 Value += "frame";
@@ -2016,14 +2036,14 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
                 {
                     for (size_t i = 0; i < Aac_sampling_frequency_Size_Usac; i++)
                         if (Aac_sampling_frequency[i] == Frequency_b)
-                            Fill_Conformance("Crosscheck AudioSpecificConfig samplingFrequency", ("MP4 AudioSpecificConfig samplingFrequency " + to_string(Frequency_b) + " does not match USAC UsacConfig usacSamplingFrequencyIndex " + to_string(C.sampling_frequency_index)).c_str());
+                            Fill_Conformance("Crosscheck AudioSpecificConfig samplingFrequency", ("MP4 AudioSpecificConfig samplingFrequency does not match USAC UsacConfig usacSamplingFrequencyIndex (actual " + to_string(Frequency_b) + ", expected index " + to_string(C.sampling_frequency_index) + ')').c_str());
                 }
             }
         #endif
     }
     #if MEDIAINFO_CONFORMANCE
         if (Frequency_b && C.sampling_frequency && C.sampling_frequency != Frequency_b)
-            Fill_Conformance("Crosscheck AudioSpecificConfig samplingFrequency", ("MP4 AudioSpecificConfig samplingFrequency " + to_string(Frequency_b) + " does not match USAC UsacConfig usacSamplingFrequency " + to_string(C.sampling_frequency)).c_str());
+            Fill_Conformance("Crosscheck AudioSpecificConfig samplingFrequency", ("MP4 AudioSpecificConfig samplingFrequency does not match USAC UsacConfig usacSamplingFrequency (actual " + to_string(Frequency_b) + ", expected " + to_string(C.sampling_frequency) + ')').c_str());
     #endif
     Get_S1 (3, C.coreSbrFrameLengthIndex,                       "coreSbrFrameLengthIndex");
     if (C.coreSbrFrameLengthIndex >= coreSbrFrameLengthIndex_Mapping_Size) {
@@ -2036,7 +2056,7 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
     Get_S1 (5, C.channelConfigurationIndex,                     "channelConfigurationIndex"); Param_Info1C(C.channelConfigurationIndex, Aac_ChannelLayout_GetString(C.channelConfigurationIndex));
     #if MEDIAINFO_CONFORMANCE
         if (channelConfiguration && C.channelConfigurationIndex && C.channelConfigurationIndex != channelConfiguration)
-            Fill_Conformance("Crosscheck AudioSpecificConfig channelConfiguration", ("MP4 AudioSpecificConfig channelConfiguration " + to_string(channelConfiguration) + Aac_ChannelLayout_GetString(channelConfiguration, false, true) + " does not match USAC UsacConfig channelConfigurationIndex " + to_string(C.channelConfigurationIndex) + Aac_ChannelLayout_GetString(C.channelConfigurationIndex, false, true)).c_str());
+            Fill_Conformance("Crosscheck AudioSpecificConfig channelConfiguration", ("MP4 AudioSpecificConfig channelConfiguration does not match USAC UsacConfig channelConfigurationIndex (actual " + to_string(channelConfiguration) + Aac_ChannelLayout_GetString(channelConfiguration, false, true) + ", expected " + to_string(C.channelConfigurationIndex) + Aac_ChannelLayout_GetString(C.channelConfigurationIndex, false, true) + ')').c_str());
     #endif
     if (!C.channelConfigurationIndex)
     {
@@ -2085,7 +2105,7 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
                 if (ConformanceFlags[xHEAAC] && ProfileLevel.profile == Extended_HE_AAC && ProfileLevel.level > 1 && ProfileLevel.level <= 5)
                 {
                     if (C.numOutChannels == 2 && ActualOrder != "L R")
-                        Fill_Conformance("Crosscheck InitialObjectDescriptor audioProfileLevelIndication", ("MP4 InitialObjectDescriptor audioProfileLevelIndication " + Mpeg4_Descriptors_AudioProfileLevelString(ProfileLevel) + " implies a channel layout of L R, a channel layout of " + ActualOrder + " is not recommended").c_str(), bitset8(), Warning);
+                        Fill_Conformance("Crosscheck InitialObjectDescriptor audioProfileLevelIndication", ("MP4 InitialObjectDescriptor audioProfileLevelIndication " + Mpeg4_Descriptors_AudioProfileLevelString(ProfileLevel) + " implies a channel layout of L R, another channel layout is not recommended (actual " + ActualOrder + ", expected L R)").c_str(), bitset8(), Warning);
                 }
             }
             if (!C.numOutChannels)
@@ -2093,7 +2113,7 @@ void File_Usac::UsacConfig(size_t BitsNotIncluded)
             else if (!ExpectedOrder.empty())
             {
                 if (ExpectedOrder != ActualOrder)
-                    Fill_Conformance("Crosscheck AudioSpecificConfig channelConfigurationIndex", ("MP4 AudioSpecificConfig channelConfigurationIndex " + to_string(channelConfiguration) + " (" + ExpectedOrder + ") does not match USAC UsacConfig channel mapping " + ActualOrder).c_str());
+                    Fill_Conformance("Crosscheck AudioSpecificConfig channelConfigurationIndex", ("MP4 AudioSpecificConfig channelConfigurationIndex does not match USAC UsacConfig channel mapping (actual " + to_string(channelConfiguration) + " (" + ExpectedOrder + "), expected " + ActualOrder + ')').c_str());
             }
         #endif
     }
@@ -2744,7 +2764,7 @@ void File_Usac::uniDrcConfig()
         Get_S3 (18, bsSampleRate ,                              "bsSampleRate"); bsSampleRate+=1000; Param_Info2(bsSampleRate, " Hz");
         #if MEDIAINFO_CONFORMANCE
             if (C.sampling_frequency && bsSampleRate != C.sampling_frequency)
-                Fill_Conformance("Crosscheck UsacConfig usacSamplingFrequency", ("USAC UsacConfig usacSamplingFrequency " + to_string(C.sampling_frequency) + " does not match DRC uniDrcConfig bsSampleRate " + to_string(bsSampleRate)).c_str());
+                Fill_Conformance("Crosscheck UsacConfig usacSamplingFrequency", ("USAC UsacConfig usacSamplingFrequency does not match DRC uniDrcConfig bsSampleRate (actual " + to_string(C.sampling_frequency) + ", expected " + to_string(bsSampleRate) + ')').c_str());
         #endif
     TEST_SB_END();
     Get_S1 (7, downmixInstructionsCount,                        "downmixInstructionsCount");
@@ -3298,7 +3318,7 @@ void File_Usac::channelLayout()
     Get_S1 (7, C.baseChannelCount,                              "C.baseChannelCount");
     #if MEDIAINFO_CONFORMANCE
         if (C.channelConfigurationIndex && C.channelConfigurationIndex < Aac_Channels_Size_Usac && Aac_Channels[C.channelConfigurationIndex] != C.baseChannelCount)
-            Fill_Conformance("Crosscheck UsacConfig numOutChannels", ("USAC UsacConfig numOutChannels " + to_string(Aac_Channels[C.channelConfigurationIndex]) + " does not match DRC uniDrcConfig baseChannelCount " + to_string(C.baseChannelCount)).c_str());
+            Fill_Conformance("Crosscheck UsacConfig numOutChannels", ("USAC UsacConfig numOutChannels does not match DRC uniDrcConfig baseChannelCount (actual " + to_string(Aac_Channels[C.channelConfigurationIndex]) + ", expected " + to_string(C.baseChannelCount) + ')').c_str());
     #endif
     Get_SB (   layoutSignalingPresent,                          "layoutSignalingPresent");
     if (layoutSignalingPresent)
@@ -3763,7 +3783,7 @@ void File_Usac::UsacFrame(size_t BitsNotIncluded)
                     auto SampleDuration_FromStream = ((int32u)coreSbrFrameLengthIndex_Mapping[C.coreSbrFrameLengthIndex].outputFrameLengthDivided256) * 256;
                     bool IsLastFrame = i == outputFrameLength->size() && Frame_Count_NotParsedIncluded == outputFrameLength_FrameTotal - 1;
                     if (SampleDuration_FromContainer != SampleDuration_FromStream && (!IsLastFrame || SampleDuration_FromContainer > SampleDuration_FromStream))
-                        Fill_Conformance("Crosscheck stts sample_count", ("MP4 stts sample_count " + to_string(SampleDuration_FromContainer) + " does not match USAC UsacConfig coreCoderFrameLength " + to_string(SampleDuration_FromStream)).c_str());
+                        Fill_Conformance("Crosscheck stts sample_count", ("MP4 stts sample_count does not match USAC UsacConfig coreCoderFrameLength (actual " + to_string(SampleDuration_FromContainer) + ", expected " + to_string(SampleDuration_FromStream) + ')').c_str());
                 }
             }
             if (roll_distance_FramePos && usacIndependencyFlag)
