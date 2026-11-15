@@ -4305,10 +4305,12 @@ void File_Aac::FillInfosHEAACv2(const Ztring& Format_Settings)
     Infos["Format_Profile"] = __T("HE-AACv2");
     const Ztring Channels = Infos["Channel(s)"];
     const Ztring ChannelPositions = Infos["ChannelPositions"];
+    const Ztring ChannelPositions2 = Infos["ChannelPositions/String2"];
     if (!FromIamf)
     {
         Infos["Channel(s)"] = __T("2");
         Infos["ChannelPositions"] = __T("Front: L R");
+        Infos["ChannelPositions/String2"] = __T("2/0/0");
         Infos["ChannelLayout"] = __T("L R");
     }
     if (MediaInfoLib::Config.LegacyStreamDisplay_Get())
@@ -4319,6 +4321,8 @@ void File_Aac::FillInfosHEAACv2(const Ztring& Format_Settings)
         {
             Infos["Channel(s)"] += __T(" / ") + Channels + __T(" / ") + Channels;
             Infos["ChannelPositions"] += __T(" / ") + ChannelPositions + __T(" / ") + ChannelPositions;
+            if (!ChannelPositions2.empty())
+                Infos["ChannelPositions/String2"] += __T(" / ") + ChannelPositions2 + __T(" / ") + ChannelPositions2;
         }
         const int32u SamplingRate = (extension_sampling_frequency_index == (int8u)-1) ? (((int32u)Frequency_b) * 2) : extension_sampling_frequency;
         if (SamplingRate)
