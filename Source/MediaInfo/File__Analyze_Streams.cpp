@@ -5684,6 +5684,43 @@ static bool Tags_Date_IsMoreRecent(const Ztring& Date1, const Ztring& Date2)
 }
 
 //---------------------------------------------------------------------------
+static bool Tags_Date_Difference(const Ztring& Date1, const Ztring& Date2, int64s& Difference)
+{
+    //Difference in seconds between 2 dates with a time up to the seconds and a time zone, false if one of them has not them
+    const auto Instant=[](const Ztring& Date, int64s& Seconds)
+    {
+        const int64s Days=Tags_Date_Days(Date);
+        if (Days<0 || Date.size()<19 || Date[10]!=__T(' ') || Date[13]!=__T(':') || Date[16]!=__T(':'))
+            return false;
+        for (const size_t Pos : { 11, 12, 14, 15, 17, 18 })
+            if (Date[Pos]<__T('0') || Date[Pos]>__T('9'))
+                return false;
+        size_t End=19;
+        if (End<Date.size() && Date[End]==__T('.'))
+            End=min(Date.find_first_not_of(__T("0123456789"), End+1), Date.size());
+        int64s Offset;
+        if (!Date.compare(End, string::npos, __T(" UTC")))
+            Offset=0;
+        else if (Date.size()==End+6 && (Date[End]==__T('+') || Date[End]==__T('-')) && Date[End+3]==__T(':') && Date.find_first_not_of(__T("0123456789"), End+1)==End+3 && Date.find_first_not_of(__T("0123456789"), End+4)==string::npos)
+        {
+            Offset=((Date[End+1]-__T('0'))*10+(Date[End+2]-__T('0')))*60+(Date[End+4]-__T('0'))*10+(Date[End+5]-__T('0'));
+            if (Date[End]==__T('-'))
+                Offset=-Offset;
+        }
+        else
+            return false;
+        const auto Number=[&Date](size_t Pos) { return (int64s)(Date[Pos]-__T('0'))*10+(Date[Pos+1]-__T('0')); };
+        Seconds=((Days*24+Number(11))*60+Number(14)-Offset)*60+Number(17);
+        return true;
+    };
+    int64s Seconds1, Seconds2;
+    if (!Instant(Date1, Seconds1) || !Instant(Date2, Seconds2))
+        return false;
+    Difference=Seconds1>Seconds2?Seconds1-Seconds2:Seconds2-Seconds1;
+    return true;
+}
+
+//---------------------------------------------------------------------------
 static bool Tags_IsPicasa(const Ztring& Value)
 {
     //Name of Picasa, with its version if any (e.g. "Picasa 3.0")
@@ -5901,6 +5938,16 @@ void File__Analyze::Streams_Finish_Tags()
         return '"'+Text+'"';
     };
 
+    auto Duration_Seconds=[this]()
+    {
+        //Duration of the file, from the streams when the one of the file is not yet known
+        float64 Duration=Retrieve_Const(Stream_General, 0, General_Duration).To_float64();
+        for (const stream_t StreamKind : { Stream_Video, Stream_Audio, Stream_Text, Stream_Other })
+            for (size_t StreamPos=0; StreamPos<Count_Get(StreamKind); StreamPos++)
+                Duration=max(Duration, Retrieve_Const(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Duration)).To_float64());
+        return (int64s)(Duration/1000);
+    };
+
     static const size_t Titles[]={General_Title, General_Title_More, General_Title_Url, General_Movie, General_Movie_More, General_Movie_Url, General_Movie_Country, General_Track, General_Track_More, General_Track_Url};
     const size_t Titles_Size=sizeof(Titles)/sizeof(*Titles);
     map<string, tags_format> Sources; //Format a parameter is filled from, a parameter which is not there is filled from the container
@@ -6091,6 +6138,11 @@ void File__Analyze::Streams_Finish_Tags()
                     }
                     continue;
                 }
+
+                //The date of the container and the date of the tags written when the file is finished (e.g. XMP written by the tool which exported the file): the same date when their difference is up to the duration of the file, with a margin of 1 minute as the writing is sometimes slower than real time
+                int64s Difference;
+                if (Source==Sources.end() && Tags_Date_Difference(Current, Item.Value, Difference) && Difference<=Duration_Seconds()+60)
+                    continue;
 
                 //Not the same date
                 //The date of the last modification is sometimes updated by a tool in one tag format only: the most recent one is used
