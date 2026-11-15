@@ -10,7 +10,7 @@ Blu-ray Playlist;;;M;Bdmv;;mpls;;;
 CDDA;;;M;Riff;;cda;;;
 CDXA;;;M;Cdxa;;dat;;;
 DASH MPD;;;M;DashMpd;;mpd;application/dash+xml;;Lossy
-DV;;;M;DvdDif;;dv dif;video/DV;;Lossy
+DV;;;M;DvDif;;dv dif;video/DV;;Lossy
 DivX;;;M;Riff;Hack of AVI;divx;video/vnd.avi;http://www.divx.com;
 DPG;;;M;Dpg;Nintendo DS;dpg;;;
 DVD Video;;;M;Dvdv;;ifo;;;
@@ -40,7 +40,7 @@ RealMedia;;;M;Rm;;rm rmvb ra;application/vnd.rn-realmedia;;
 RIFF-MMP;;;M;Riff;RIFF Multimedia Movie;;;;
 ShockWave;;;M;Swf;;swf;application/x-shockwave;http://www.macromedia.com/go/getflashplayer;
 SKM;;;M;Skm;Sky Korean Mobilephone;skm;;http://www.isky.co.kr/html/cs/download.jsp;
-WebM;;;M;Mkv;;webm;video/webm;http://www.webmproject.org/;
+WebM;;;M;Mk;;webm;video/webm;http://www.webmproject.org/;
 Windows Media;;;M;Wm;;asf dvr-ms wma wmv;video/x-ms-wmv;;
 WTV;;;M;Wtv;;wtv;;;
 APV;;;V;;Advanced Professional Video;apv;;https://github.com/AcademySoftwareFoundation/openapv
@@ -92,7 +92,7 @@ DTS;;;A;Dts;Digital Theater Systems;dts dtshd dtsma dtshdma;;https://en.wikipedi
 DTS-HD;;;A;Dts;Digital Theater Systems;dts dtshd dtsma dtshdma;;;Lossy
 DTS-UHD;;;A;Dts;;dtsx;;;
 E-AC-3;;;A;Ac3;Enhanced AC-3;dd+ ec3 eac3;audio/eac3;https://en.wikipedia.org/wiki/Dolby_Digital_Plus;Lossy
-Extended Module;;;A;ExtendedModule;;xm;;;
+Extended Module;;;A;Xm;;xm;;;
 FLAC;;;A;Flac;Free Lossless Audio Codec;fla flac;audio/x-flac;https://xiph.org/flac/;Lossless
 G.719;;;A;;;;audio/G719;;Lossy
 G.722;;;A;;;;audio/G722;;Lossy
@@ -101,10 +101,10 @@ G.723;;;A;;;;audio/G723;;Lossy
 G.729;;;A;;;;audio/G729;;Lossy
 G.729.1;;;A;;;;audio/G7291;;Lossy
 IAMF;;;A;Iamf;Immersive Audio Model and Formats;iamf;;http://aomedia.org/
-Impulse Tracker;;;A;ImpulseTracker;;it;;;
+Impulse Tracker;;;A;It;;it;;;
 LA;;;A;La;Lossless Audio Codec;la;;http://www.lossless-audio.com/;Lossless
 MIDI;;;A;Riff;RIFF Musical Instrument Digital Interface;midi mid kar;audio/midi;;
-Module;;;A;Module;;mod;;;
+Module;;;A;Mod;;mod;;;
 Monkey's Audio;;;A;Ape;;ape mac;;http://www.monkeysaudio.com/;Lossless
 MPEG Audio;;;A;Mpega;;m1a mpa mpa1 mp1 m2a mpa2 mp2 mp3;audio/mpeg;;Lossy
 OpenMG;;;A;OpenMG;;oma omg aa3 at3;;;Lossy
@@ -131,7 +131,7 @@ Wave64;;;A;Riff;;w64;;;
 WavPack;;;A;Wvpk;;wv wvc;;http://www.wavpack.com;
 Amiga Icon;;;I;AmigaIcon;Amiga Workbench Icon;info;image/x-amiga-icon;;Lossless
 APNG;;;I;Png;Animated Portable Network Graphic;apng png pns;image/apng;http://www.w3.org/TR/png/;Lossless
-Arri Raw;;;I;ArriRaw;;ari;;;
+Arri Raw;;;I;Arri Raw;;ari;;;
 ARW;;;I;Tiff;Sony Alpha RAW;arw;image/x-sony-arw;http://www.sony.com/;
 Bitmap;;;I;Bmp;;bmp bms;image/bmp;;Lossless
 BPG;;;I;Bpg;Better Portable Graphics;bpg;image/bpg;http://bellard.org/bpg/;
@@ -149,7 +149,7 @@ LZ77;;;I;;;;;;
 MNG;;;I;Mng;Multiple-Image Network Graphic;mng;;;Lossless
 NEF;;;I;Tiff;Nikon Electronic Format;nef;image/x-nikon-nef;http://www.nikon.com/;
 NRW;;;I;Tiff;Nikon RAW;nrw;image/x-nikon-nrw;http://www.nikon.com/;
-PCX;;;I;pcx;Personal Computer eXchange;pcx;image/pcx;;Lossless
+PCX;;;I;PCX;Personal Computer eXchange;pcx;image/pcx;;Lossless
 PNG;;;I;Png;Portable Network Graphic;png pns;image/png;http://www.w3.org/TR/png/;Lossless
 PSD;;;I;Psd;Photoshop File Format;psd;image/psd;http://www.adobe.com/;Lossless
 RIFF Palette;;;I;Riff;RIFF Palette;;;;
@@ -174,8 +174,8 @@ Captions Inc;;;T;Other;;txt;;;Lossless
 CPC Captioning;;;T;Other;;txt;;http://www.cpcweb.com/Captioning/cap_software.htm;Lossless
 Cheeta;;;T;Other;;asc;;;Lossless
 N19;;;T;N19;;stl;;;Lossless
-PAC;;;T;Pac;;pac fpc;;;
-PDF;;;T;Pdf;;pdf;;;
+PAC;;;T;PAC;;pac fpc;;;
+PDF;;;T;PDF;;pdf;;;
 SAMI;;;T;Sami;;smi sami;;;Lossless
 SCC;;;T;SCC;;scc sc2;;;Lossless
 SubRip;;;T;SubRip;;srt;;http://ffdshow.sourceforge.net/tikiwiki/tiki-index.php?page=Getting+ffdshow;Lossless
