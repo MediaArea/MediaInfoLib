@@ -340,6 +340,77 @@ jobs:
           done
           exit ${Status}
 
+  # Functions of the UWP API (WinRT for the files, which works without package except FutureAccessList), not in a solution: files of the UWP
+  # projects of zlib, ZenLib and MediaInfoLib (MSVC2022) compiled with and without Unicode, test program run with Unicode (C API)
+  UWP:
+    name: UWP (x64)
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Line endings
+        run: git config --global core.autocrlf false # Test scripts with LF line endings
+      - name: Checkout zlib
+        uses: actions/checkout@v6
+        with:
+          repository: MediaArea/zlib
+          path: zlib
+      - name: Checkout MediaInfoLib
+        uses: actions/checkout@v6
+        with:
+          path: MediaInfoLib
+      - name: Clone ZenLib
+        run: sh MediaInfoLib/.github/clone_branch.sh ZenLib ZenLib
+      - name: Compile
+        shell: cmd
+        run: |
+          for /f "usebackq delims=" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do call "%%i\VC\Auxiliary\Build\vcvarsall.bat" x64
+          rem Files of the UWP projects with the definitions of MediaInfoLib_UWP.vcxproj, static libraries as for an application (only the objects used)
+          set Flags=/DWINAPI_FAMILY=WINAPI_FAMILY_APP /D__WRL_NO_DEFAULT_LIB__ /DWINDOWS_UWP /DMEDIAINFO_MPEGTS_DUPLICATE_NO /DMEDIAINFO_LIBCURL_DLL_RUNTIME /DMEDIAINFO_GRAPHVIZ_DLL_RUNTIME /DFMT_UNICODE=0 /D_CRT_SECURE_NO_WARNINGS
+          set Source=%CD%\MediaInfoLib\Source
+          set Includes=/I%Source% /I%Source%\ThirdParty\aes-gladman /I%Source%\ThirdParty\hmac-gladman /I%Source%\ThirdParty\sha1-gladman /I%Source%\ThirdParty\sha2-gladman /I%Source%\ThirdParty\md5 /I%Source%\ThirdParty\base64 /I%Source%\ThirdParty /I%CD%\ZenLib\Source /I%CD%\zlib
+          set Test=MediaInfoLib\Project\GNU\Library\test
+          for %%u in (yes no) do (
+            for %%p in (zlib\contrib\vstudio\vc17\zlibuwp ZenLib\Project\MSVC2022\Library\ZenLib_UWP MediaInfoLib\Project\MSVC2022\Library\MediaInfoLib_UWP) do (
+              mkdir build_uwp_%%u\%%~np
+              powershell -NoProfile -Command "([xml](Get-Content '%%p.vcxproj')).Project.ItemGroup.ClCompile.Include | ForEach-Object { Join-Path (Split-Path '%%p.vcxproj') $_ }" > build_uwp_%%u\%%~np.txt || exit /b 1
+              if "%%u"=="yes" (
+                cl /nologo /c /MP /EHsc /O1 %Flags% /DUNICODE /D_UNICODE %Includes% /Fobuild_uwp_%%u\%%~np\ @build_uwp_%%u\%%~np.txt || exit /b 1
+              ) else (
+                cl /nologo /c /MP /EHsc /O1 %Flags% %Includes% /Fobuild_uwp_%%u\%%~np\ @build_uwp_%%u\%%~np.txt || exit /b 1
+              )
+              lib /nologo /out:build_uwp_%%u\%%~np.lib build_uwp_%%u\%%~np\*.obj || exit /b 1
+            )
+          )
+          rem Test program for the code page of the system (cp1252) and with the code page of its manifest, which initializes WinRT as an application
+          rem does it: with Unicode with the C API of MediaInfoDLL.cpp, without Unicode only linked (C++ classes, the names given as the bytes of
+          rem the code page which are also UTF-8 text are read as UTF-8 with UWP, not as the existing name)
+          cl /nologo /EHsc /O1 %Flags% /DUNICODE /D_UNICODE %Includes% /Fobuild_uwp_yes\ /Febuild_uwp_yes\mil_filename_1252.exe %Test%\Source\filename.cpp %Source%\MediaInfoDLL\MediaInfoDLL.cpp build_uwp_yes\MediaInfoLib_UWP.lib build_uwp_yes\ZenLib_UWP.lib build_uwp_yes\zlibuwp.lib runtimeobject.lib || exit /b 1
+          cl /nologo /EHsc /O1 %Flags% %Includes% /Fobuild_uwp_no\ /Febuild_uwp_no\mil_filename.exe %Test%\Source\filename.cpp build_uwp_no\MediaInfoLib_UWP.lib build_uwp_no\ZenLib_UWP.lib build_uwp_no\zlibuwp.lib runtimeobject.lib || exit /b 1
+          for %%c in (65001 932) do (
+            copy /y build_uwp_yes\mil_filename_1252.exe build_uwp_yes\mil_filename_%%c.exe >nul
+            mt -nologo -manifest %Test%\codepage_%%c.manifest -outputresource:build_uwp_yes\mil_filename_%%c.exe;1 || exit /b 1
+          )
+      - name: Check
+        working-directory: MediaInfoLib/Project/GNU/Library/test
+        run: |
+          # Test of make check (no make in Git Bash), with each program (without MediaInfo.dll, so without pymediainfo)
+          Status=0
+          for CodePage in 1252 65001 932 ; do
+            cp ../../../../../build_uwp_yes/mil_filename_${CodePage}.exe mil_filename.exe
+            # Code page set by the manifest only if this version of Windows supports it for this code page
+            Output=$(./mil_filename.exe 0 0 "$(cygpath -m "$(mktemp -d)")" || true)
+            if [[ "${Output}" != *"OK: code page ${CodePage}"* ]] ; then
+              echo "SKIP: code page ${CodePage} not supported by the manifest"
+              continue
+            fi
+            echo "::group::Code page ${CodePage}"
+            bash filename.sh 9>&1 || Status=1
+            echo "::endgroup::"
+          done
+          exit ${Status}
+
   check-line-endings:
     name: Consistent Line Endings
     runs-on: ubuntu-slim
