@@ -2668,12 +2668,13 @@ void File__Analyze::TestContinuousFileNames(size_t CountOfFiles, Ztring FileExte
         if (!Config->File_IgnoreSequenceFileSize_Get() || Config->File_Names.size()<=1)
     #endif //MEDIAINFO_ADVANCED
     {
-        for (; Pos<Config->File_Names.size(); Pos++)
+        vector<int64u> Sizes=File::Sizes_Get(vector<Ztring>(Config->File_Names.begin()+Pos, Config->File_Names.end())); //Quicker than one by one
+        for (size_t i=0; i<Sizes.size(); i++)
         {
-            int64u Size=File::Size_Get(Config->File_Names[Pos]);
-            Config->File_Sizes.push_back(Size);
-            Config->File_Size+=Size;
+            Config->File_Sizes.push_back(Sizes[i]);
+            Config->File_Size+=Sizes[i];
         }
+        Pos=Config->File_Names.size();
     }
     #if MEDIAINFO_ADVANCED
         else
