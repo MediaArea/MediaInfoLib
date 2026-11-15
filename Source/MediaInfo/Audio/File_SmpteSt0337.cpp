@@ -577,6 +577,23 @@ bool File_SmpteSt0337::Synchronize()
     {
         const uint8_t* p = reinterpret_cast<const uint8_t*>(Buffer + Buffer_Offset);
 
+        // Quick test, each sync word has 0xF8 or 0x87 in its first 4 bytes
+        if (p[0] != 0xF8 && p[0] != 0x87 && p[1] != 0xF8 && p[1] != 0x87 && p[2] != 0xF8 && p[2] != 0x87 && p[3] != 0xF8 && p[3] != 0x87)
+        {
+            if (BitDepth >= 4 && Aligned)
+                Buffer_Offset += BitDepth / 4;
+            else
+            {
+                // Next position having 0xF8 or 0x87 in its first 4 bytes, else first position after the last one tested
+                const uint8_t* q = p + 4;
+                const uint8_t* q_End = reinterpret_cast<const uint8_t*>(Buffer + Buffer_Size - 12);
+                while (q < q_End && *q != 0xF8 && *q != 0x87)
+                    q++;
+                Buffer_Offset = (q - reinterpret_cast<const uint8_t*>(Buffer)) - 3;
+            }
+            continue;
+        }
+
         if ((BitDepth == 0 || BitDepth == 16) && (!Aligned || ((Buffer_TotalBytes + Buffer_Offset) % 4) == 0))
         {
             if (memcmp(p, Sync16_BE, 4) == 0) // 16-bit, BE
