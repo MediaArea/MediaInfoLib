@@ -1703,6 +1703,29 @@ size_t File_Mk::Read_Buffer_Seek(size_t Method, int64u Value, int64u ID)
 #endif //MEDIAINFO_SEEK
 
 //***************************************************************************
+// Buffer - File header
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+bool File_Mk::FileHeader_Begin()
+{
+    //False positives detection: junk bytes are accepted before the EBML header, but not a PDF file (e.g. with a Matroska file as attachment)
+    if (!IsSub)
+    {
+        if (Buffer_Size<4)
+            return false; //Must wait for more data
+        if (CC4(Buffer)==0x25504446) //PDF
+        {
+            Reject("Matroska");
+            return false;
+        }
+    }
+
+    //All should be OK...
+    return true;
+}
+
+//***************************************************************************
 // Buffer - Synchro
 //***************************************************************************
 

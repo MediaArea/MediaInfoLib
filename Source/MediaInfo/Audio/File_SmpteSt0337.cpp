@@ -521,6 +521,28 @@ size_t File_SmpteSt0337::Read_Buffer_Seek (size_t Method, int64u Value, int64u I
 #endif // MEDIAINFO_SEEK
 
 //***************************************************************************
+// Buffer - File header
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+bool File_SmpteSt0337::FileHeader_Begin()
+{
+    //False positives detection: Matroska and PDF files, the synchronization may find bursts in an attachment
+    if (!IsSub)
+    {
+        if (Buffer_Size<4)
+            return false; //Must wait for more data
+        if (CC4(Buffer)==0x1A45DFA3 || CC4(Buffer)==0x25504446)
+        {
+            Reject();
+            return false;
+        }
+    }
+
+    return true;
+}
+
+//***************************************************************************
 // Buffer - Synchro
 //***************************************************************************
 

@@ -407,6 +407,9 @@ private :
     void Streams_Fill();
     void Streams_Finish();
 
+    //Buffer - File header
+    bool FileHeader_Begin();
+
     //Buffer - Synchro
     bool Synchronize();
     void Synched_Init();
