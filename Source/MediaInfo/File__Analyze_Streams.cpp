@@ -4698,6 +4698,21 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, bool Erase)
 }
 
 //---------------------------------------------------------------------------
+extern Ztring HighestFormat(stream_t StreamKind, size_t Parameter, const ZtringList& Info, bool &ShouldReturn);
+static bool Audio_Format_HasExtension(const ZtringList& Info)
+{
+    //Additional features as shown (e.g. "XLL X" for DTS), without the profile of the base format (e.g. "LC" for AAC)
+    bool ShouldReturn=false;
+    ZtringList AdditionalFeatures;
+    AdditionalFeatures.Separator_Set(0, __T(" "));
+    AdditionalFeatures.Write(HighestFormat(Stream_Audio, Audio_Format_AdditionalFeatures, Info, ShouldReturn));
+    for (const auto& AdditionalFeature : AdditionalFeatures)
+        if (!AdditionalFeature.empty() && AdditionalFeature!=__T("LC") && AdditionalFeature!=__T("LTP") && AdditionalFeature!=__T("Main") && AdditionalFeature!=__T("SSR"))
+            return true;
+    return false;
+}
+
+//---------------------------------------------------------------------------
 size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t StreamPos_From, size_t StreamPos_To, bool Erase)
 {
     //Integrity
@@ -4921,54 +4936,49 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
     }
     if (StreamKind==Stream_Audio)
     {
-        const Ztring& StreamChannelLayout=ToAdd.Retrieve_Const(Stream_Audio, StreamPos_From, Audio_ChannelLayout);
-        if (ToAdd.Retrieve_Const(Stream_Audio, StreamPos_From, Audio_Format)==__T("DTS") && StreamChannelLayout.find(__T(" Tfl Tfr Tbl Tbr"))!=string::npos)
-        {
-            Fill(Stream_Audio, StreamPos_To, Audio_Channel_s_, ToAdd.Retrieve_Const(Stream_Audio, StreamPos_From, Audio_Channel_s_), true);
-            Fill(Stream_Audio, StreamPos_To, Audio_ChannelLayout, StreamChannelLayout, true);
-            Fill(Stream_Audio, StreamPos_To, Audio_ChannelPositions, ToAdd.Retrieve_Const(Stream_Audio, StreamPos_From, Audio_ChannelPositions), true);
-            Fill(Stream_Audio, StreamPos_To, Audio_ChannelPositions_String2, ToAdd.Retrieve_Const(Stream_Audio, StreamPos_From, Audio_ChannelPositions_String2), true);
-        }
-        else
-        {
-            bool IsOkGlobal=true;
-            static audio AudioField[4]={ Audio_Channel_s_, Audio_ChannelLayout, Audio_ChannelPositions, Audio_ChannelPositions_String2 };
-            for (size_t i=0; i<4; i++)
-                if (!Channels_Temp[i].empty())
+        bool IsOkGlobal=true;
+        static audio AudioField[4]={ Audio_Channel_s_, Audio_ChannelLayout, Audio_ChannelPositions, Audio_ChannelPositions_String2 };
+        for (size_t i=0; i<4; i++)
+            if (!Channels_Temp[i].empty())
+            {
+                //Test with legacy streams information
+                bool IsOk=(Channels_Temp[i]==Retrieve(Stream_Audio, StreamPos_To, AudioField[i]));
+                if (!IsOk)
                 {
-                    //Test with legacy streams information
-                    bool IsOk=(Channels_Temp[i]==Retrieve(Stream_Audio, StreamPos_To, AudioField[i]));
-                    if (!IsOk)
-                    {
-                        ZtringList Temp; Temp.Separator_Set(0, __T(" / "));
-                        Temp.Write(Retrieve(Stream_Audio, StreamPos_To, AudioField[i]));
-                        for (size_t Pos=0; Pos<Temp.size(); Pos++)
-                            if (Channels_Temp[i]==Temp[Pos])
-                                IsOk=true;
-                    }
-
-                    //Special case with AES3: wrong container information is accepted
-                    if (!IsOk && Retrieve(Stream_Audio, StreamPos_To, Audio_MuxingMode).find(__T("SMPTE ST 337"))!=string::npos)
-                        IsOk=true;
-
-                    if (!IsOk)
-                        IsOkGlobal=false;
+                    ZtringList Temp; Temp.Separator_Set(0, __T(" / "));
+                    Temp.Write(Retrieve(Stream_Audio, StreamPos_To, AudioField[i]));
+                    for (size_t Pos=0; Pos<Temp.size(); Pos++)
+                        if (Channels_Temp[i]==Temp[Pos])
+                            IsOk=true;
                 }
 
-            if (!IsOkGlobal)
-                for (size_t i=0; i<4; i++)
-                    if (Channels_Temp[i]!=(*Stream)[Stream_Audio][StreamPos_To][AudioField[i]])
-                    {
-                        string Original=Retrieve_Const(Stream_Audio, StreamPos_To, AudioField[i], Info_Name).To_UTF8();
-                        size_t Original_Insert=Original.find('/');
-                        if (Original_Insert==(size_t)-1)
-                            Original_Insert=Original.size();
-                        Original.insert(Original_Insert, "_Original");
-                        Fill(Stream_Audio, StreamPos_To, Original.c_str(), (*Stream)[Stream_Audio][StreamPos_To][AudioField[i]], true);
-                        Fill_SetOptions(Stream_Audio, StreamPos_To, Original.c_str(), Retrieve_Const(Stream_Audio, StreamPos_To, AudioField[i], Info_Options).To_UTF8().c_str());
-                        Fill(Stream_Audio, StreamPos_To, AudioField[i], Channels_Temp[i], true);
-                    }
-        }
+                //Special case with AES3: wrong container information is accepted
+                if (!IsOk && Retrieve(Stream_Audio, StreamPos_To, Audio_MuxingMode).find(__T("SMPTE ST 337"))!=string::npos)
+                    IsOk=true;
+
+                if (!IsOk)
+                    IsOkGlobal=false;
+            }
+
+        //Special case with an extension of the format: the container may not see the channels added by the extension (e.g. the channels of DTS:X after the bed, the ones of XLL or XXCH after the core of DTS, the one of PS for AAC), more channels in the stream are accepted
+        if (!IsOkGlobal && !Channels_Temp[0].empty()
+         && Retrieve_Const(Stream_Audio, StreamPos_To, Audio_Channel_s_).To_int64u()>Channels_Temp[0].To_int64u()
+         && Audio_Format_HasExtension((*ToAdd.Stream)[Stream_Audio][StreamPos_From]))
+            IsOkGlobal=true;
+
+        if (!IsOkGlobal)
+            for (size_t i=0; i<4; i++)
+                if (Channels_Temp[i]!=(*Stream)[Stream_Audio][StreamPos_To][AudioField[i]])
+                {
+                    string Original=Retrieve_Const(Stream_Audio, StreamPos_To, AudioField[i], Info_Name).To_UTF8();
+                    size_t Original_Insert=Original.find('/');
+                    if (Original_Insert==(size_t)-1)
+                        Original_Insert=Original.size();
+                    Original.insert(Original_Insert, "_Original");
+                    Fill(Stream_Audio, StreamPos_To, Original.c_str(), (*Stream)[Stream_Audio][StreamPos_To][AudioField[i]], true);
+                    Fill_SetOptions(Stream_Audio, StreamPos_To, Original.c_str(), Retrieve_Const(Stream_Audio, StreamPos_To, AudioField[i], Info_Options).To_UTF8().c_str());
+                    Fill(Stream_Audio, StreamPos_To, AudioField[i], Channels_Temp[i], true);
+                }
     }
     if (StreamKind==Stream_Text)
     {
