@@ -5391,7 +5391,7 @@ static Ztring Tags_Genre(const Ztring& Value)
 //---------------------------------------------------------------------------
 static Ztring Tags_Comparable(const string& Name, const Ztring& Value)
 {
-    //Same content in another form: list of values in another order or with a value several times, name of the genre in upper or lower case, number without leading zeros
+    //Same content in another form: list of values in another order or with a value several times, name of the genre or text in upper or lower case, number without leading zeros
     if (Name=="Performer" && Value.find(__T("; "))!=string::npos)
     {
         //List of the artists of Exif, e.g. "Camera owner, John Smith; Photographer, Michael Brown"
@@ -5421,7 +5421,9 @@ static Ztring Tags_Comparable(const string& Name, const Ztring& Value)
         Zeros++;
     if (Zeros && Value.find_first_not_of(__T("0123456789"))==string::npos)
         return Value.substr(Zeros);
-    return Value;
+    Ztring Text=Value;
+    Text.MakeLowerCase();
+    return Text;
 }
 
 //---------------------------------------------------------------------------
