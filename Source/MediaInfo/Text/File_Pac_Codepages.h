@@ -40,12 +40,12 @@ lang_map Pac_LangMap[] = {
 
 //---------------------------------------------------------------------------
 struct metadata_map {
-    const Char Separator;
-    const Char* Lang;
+    const wchar_t Separator;
+    const wchar_t* Lang;
 };
 metadata_map Pac_MetadataMap[] = {
-    { __T(':'), __T("LANG")},
-    { __T('\x25'), __T("\xB7\x41\xB9\xB0")},
+    { L':', L"LANG"},
+    { L'\x25', L"\xB7\x41\xB9\xB0"},
 };
 size_t Pac_MetadataMap_Size = sizeof(Pac_MetadataMap) / sizeof(*Pac_MetadataMap);
 
