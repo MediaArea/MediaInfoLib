@@ -108,6 +108,32 @@ void File__Analyze::BS_Begin()
 }
 
 //---------------------------------------------------------------------------
+void File__Analyze::BS_Begin_EmulationPrevention()
+{
+    if (!Unescapes.empty()) //Parsing a copy without emulation_prevention_three_byte
+    {
+        BS_Begin();
+        return;
+    }
+
+    size_t BS_Size;
+    if (Element_Offset>=Element_Size)
+        BS_Size=0;
+    else if (Buffer_Offset+Element_Size<=Buffer_Size)
+        BS_Size=(size_t)(Element_Size-Element_Offset);
+    else if (Buffer_Offset+Element_Offset<=Buffer_Size)
+        BS_Size=Buffer_Size-(size_t)(Buffer_Offset+Element_Offset);
+    else
+        BS_Size=0;
+
+    //0x00 bytes of the element right before the position, for an emulation_prevention_three_byte at the first two offsets
+    int8u ZerosBefore=0;
+    if (BS_Size && Element_Offset && !Buffer[Buffer_Offset+(size_t)Element_Offset-1])
+        ZerosBefore=(Element_Offset>=2 && !Buffer[Buffer_Offset+(size_t)Element_Offset-2])?2:1;
+    BS->Attach_EmulationPrevention(Buffer+Buffer_Offset+(size_t)Element_Offset, BS_Size, 0, ZerosBefore);
+}
+
+//---------------------------------------------------------------------------
 void File__Analyze::BS_Begin_LE()
 {
     size_t BS_Size;
@@ -124,7 +150,16 @@ void File__Analyze::BS_Begin_LE()
 //---------------------------------------------------------------------------
 void File__Analyze::BS_End()
 {
-    BS->Byte_Align();
+    if (BS->EmulationPrevention_Get())
+    {
+        BS->Sync(); //Emulation prevention bytes a skip went over: a skip beyond the readable bits underruns here
+        BS->Byte_Align();
+        BS->Sync(); //The one at the position
+        if (BS->BufferUnderRun()) //The size checks count the emulation_prevention_three_byte, an underrun is the truncation
+            Trusted_IsNot("Size is wrong");
+    }
+    else
+        BS->Byte_Align();
     Element_Offset+=BS->Offset_Get();
     BS->Attach(NULL, 0);
 }

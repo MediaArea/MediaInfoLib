@@ -234,6 +234,12 @@ protected :
     //***************************************************************************
 
     void BS_Begin();
+    void BS_Begin_EmulationPrevention(); //Same, the reads skip the emulation_prevention_three_byte (0x03 after 0x0000)
+    //Emulation prevention, raw bytes from a byte-aligned Element_Offset
+    void   Skip_EmulationPrevention(); //Skips an emulation_prevention_three_byte at Element_Offset
+    int64u EmulationPrevention_RawSize(int64u RbspSize, int64u &Count); //Raw size of RbspSize bytes of RBSP, a following emulation_prevention_three_byte excluded, (int64u)-1 if the element is too short; Count: count of emulation_prevention_three_byte in it
+    void   Element_Unescape_Begin(int64u RawSize, int64u MinSize=0); //The next RawSize raw bytes are parsed from a copy without emulation_prevention_three_byte (completed with 0x00 bytes up to MinSize bytes), until Element_Unescape_End()
+    void   Element_Unescape_End(); //Back to the raw bytes, after the RawSize ones
     void BS_Begin_LE(); //Little Endian version
     void BS_End();
     void BS_End_LE(); //Little Endian version
@@ -288,11 +294,12 @@ protected :
     //Data - Get info
     size_t Data_Remain ()                                                       {return (size_t)(Element_Size-(Element_Offset+BS->Offset_Get()));};
     size_t Data_BS_Remain ()                                                    {return (size_t)BS->Remain();};
+    size_t Data_BS_Remain_Exact ()                                              {return (size_t)BS->Remain_Exact();}; //BS_Begin_EmulationPrevention(): Data_BS_Remain() counts the emulation_prevention_three_byte
 
     //Data - Bitstream bookmark: parsing limited to a part of known size, then position after this part whatever its parsing did, errors in it make only this part not valid
     struct bs_bookmark
     {
-        BitStream_Fast              BS_Save;
+        BitStream_Fast_Mixed        BS_Save;
         int64u                      Element_Offset;
         int64u                      Element_Size;
         size_t                      Trusted;
@@ -310,7 +317,7 @@ protected :
     void Loop_CheckValue(int64u& Value, int64u RemainingSize, int64u MinBlockSize, const char* Name);
     template<typename T> void Loop_CheckValue(T& Value, int64u RemainingSize, int64u MinBlockSize, const char* Name) {int64u Value2=Value; Loop_CheckValue(Value2, RemainingSize, MinBlockSize, Name); Value=(T)Value2;}
     template<typename T> void Loop_CheckValue(T& Value, int64u MinBlockSize, const char* Name) {Loop_CheckValue(Value, Element_Size>Element_Offset?(Element_Size-Element_Offset):0, MinBlockSize, Name);}
-    template<typename T> void Loop_CheckValue_BS(T& Value, int64u MinBlockSize, const char* Name) {Loop_CheckValue(Value, Data_BS_Remain(), MinBlockSize, Name);}
+    template<typename T> void Loop_CheckValue_BS(T& Value, int64u MinBlockSize, const char* Name) {Loop_CheckValue(Value, Data_BS_Remain_Exact(), MinBlockSize, Name);}
 
     //Data - Detect EOF
     virtual void Detect_EOF ()                                                  {};
@@ -1549,8 +1556,19 @@ private :
 
     //Element
 public: //TO CHANGE
-    BitStream_Fast* BS;             //For conversion from bytes to bitstream
+    BitStream_Fast_Mixed* BS;       //For conversion from bytes to bitstream
     BitStream*      BT;             //For conversion from bytes to bitstream (Little Endian)
+    //Emulation prevention, see Element_Unescape_Begin(): the data before each copy, a copy without emulation_prevention_three_byte is parsed if not empty
+    struct unescape
+    {
+        const int8u*    Buffer;
+        size_t          Buffer_Offset;
+        size_t          Buffer_Size;
+        int64u          File_Offset;
+        int64u          Element_Size;
+        int64u          Element_Offset_End; //Element_Offset after the copy
+    };
+    std::vector<unescape> Unescapes;
     int64u Header_Size;             //Size of the header of the current element
 private :
 

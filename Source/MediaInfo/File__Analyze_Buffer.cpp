@@ -136,6 +136,37 @@ void File__Analyze::BS_Begin()
 }
 
 //---------------------------------------------------------------------------
+void File__Analyze::BS_Begin_EmulationPrevention()
+{
+    if (!Unescapes.empty()) //Parsing a copy without emulation_prevention_three_byte
+    {
+        BS_Begin();
+        return;
+    }
+
+    #if !MEDIAINFO_TRACE
+        size_t BS_Size;
+    #endif
+    if (Element_Offset>=Element_Size)
+        BS_Size=0;
+    else if (Buffer_Offset+Element_Size<=Buffer_Size)
+        BS_Size=(size_t)(Element_Size-Element_Offset);
+    else if (Buffer_Offset+Element_Offset<=Buffer_Size)
+        BS_Size=Buffer_Size-(size_t)(Buffer_Offset+Element_Offset);
+    else
+        BS_Size=0;
+
+    //0x00 bytes of the element right before the position, for an emulation_prevention_three_byte at the first two offsets
+    int8u ZerosBefore=0;
+    if (BS_Size && Element_Offset && !Buffer[Buffer_Offset+(size_t)Element_Offset-1])
+        ZerosBefore=(Element_Offset>=2 && !Buffer[Buffer_Offset+(size_t)Element_Offset-2])?2:1;
+    BS->Attach_EmulationPrevention(Buffer+Buffer_Offset+(size_t)(BS_Size?Element_Offset:0), (size_t)BS_Size, 0, ZerosBefore);
+    #if MEDIAINFO_TRACE
+        BS_Size<<=3; //In bits
+    #endif
+}
+
+//---------------------------------------------------------------------------
 void File__Analyze::BS_Begin_LE()
 {
     #if !MEDIAINFO_TRACE
@@ -157,7 +188,16 @@ void File__Analyze::BS_Begin_LE()
 //---------------------------------------------------------------------------
 void File__Analyze::BS_End()
 {
-    BS->Byte_Align();
+    if (BS->EmulationPrevention_Get())
+    {
+        BS->Sync(); //Emulation prevention bytes a skip went over: a skip beyond the readable bits underruns here
+        BS->Byte_Align();
+        BS->Sync(); //The one at the position
+        if (BS->BufferUnderRun()) //The size checks count the emulation_prevention_three_byte, an underrun is the truncation
+            Trusted_IsNot("Size is wrong");
+    }
+    else
+        BS->Byte_Align();
     Element_Offset+=BS->Offset_Get();
     BS->Attach(NULL, 0);
     #if MEDIAINFO_TRACE
@@ -1325,54 +1365,62 @@ void File__Analyze::Skip_VS(const char* Name)
 // BitStream_Fast::GetUE()/GetSE() read the whole code at once; on a code with more than
 // 31 leading zero bits or a truncated code they return 0 and set BufferUnderRun().
 // BufferUnderRun() can not be already set here: it implies Remain()==0.
-// Trace size is kept as before: 2*LeadingZeroBits.
+// Trace size is kept as before: 2*LeadingZeroBits, from the code number (in emulation prevention mode, the Remain()
+// difference also counts the emulation_prevention_three_byte passed).
+static int8u ExpGolomb_TraceSize(int64u CodeNum)
+{
+    int8u Size=0;
+    for (CodeNum++; CodeNum>1; CodeNum>>=1)
+        Size+=2;
+    return Size;
+}
+static int8u ExpGolomb_TraceSize(int32s Info)
+{
+    return ExpGolomb_TraceSize(Info>0?((int64u)Info*2-1):((int64u)-(int64s)Info*2));
+}
 
 //---------------------------------------------------------------------------
 void File__Analyze::Get_SE(int32s &Info, const char* Name)
 {
     INTEGRITY_SIZE_ATLEAST_BUFFER();
-    const size_t Remain_Before=BS->Remain();
     Info=BS->GetSE();
     INTEGRITY_INT(!BS->BufferUnderRun(), "(Problem)", 0)
 
     if (Trace_Activated)
-        Param(Name, Info, (int8u)(Remain_Before-BS->Remain()-1));
+        Param(Name, Info, ExpGolomb_TraceSize(Info));
 }
 
 //---------------------------------------------------------------------------
 void File__Analyze::Skip_SE(const char* Name)
 {
     INTEGRITY(BS->Remain(), "Size is wrong", 0)
-    const size_t Remain_Before=BS->Remain();
     const int32s Info=BS->GetSE();
     INTEGRITY(!BS->BufferUnderRun(), "(Problem)", 0)
 
     if (Trace_Activated)
-        Param(Name, Info, (int8u)(Remain_Before-BS->Remain()-1));
+        Param(Name, Info, ExpGolomb_TraceSize(Info));
 }
 
 //---------------------------------------------------------------------------
 void File__Analyze::Get_UE(int32u &Info, const char* Name)
 {
     INTEGRITY_SIZE_ATLEAST_BUFFER();
-    const size_t Remain_Before=BS->Remain();
     Info=BS->GetUE();
     INTEGRITY_INT(!BS->BufferUnderRun(), "(Problem)", 0)
 
     if (Trace_Activated)
-        Param(Name, Info, (int8u)(Remain_Before-BS->Remain()-1));
+        Param(Name, Info, ExpGolomb_TraceSize((int64u)Info));
 }
 
 //---------------------------------------------------------------------------
 void File__Analyze::Skip_UE(const char* Name)
 {
     INTEGRITY(BS->Remain(), "Size is wrong", 0)
-    const size_t Remain_Before=BS->Remain();
     const int32u Info=BS->GetUE();
     INTEGRITY(!BS->BufferUnderRun(), "(Problem)", 0)
 
     if (Trace_Activated)
-        Param(Name, Info, (int8u)(Remain_Before-BS->Remain()-1));
+        Param(Name, Info, ExpGolomb_TraceSize((int64u)Info));
 }
 
 //***************************************************************************
@@ -2375,8 +2423,19 @@ void File__Analyze::Skip_BS(size_t Bits, const char* Name)
     {
         if (Bits<=64) //TODO: in BitStream.h, handle >64 bit gets
         {
-            Param(Name, BS->Get8((int8u)Bits), Bits);
-            Param_Info_Bits(Bits);
+            const BitStream_Fast_Mixed BS_Save(*BS);
+            const int64u Value=BS->Get8((int8u)Bits);
+            if (BS->BufferUnderRun() && !BS_Save.BufferUnderRun()) //Emulation prevention mode: Bits includes 0x03 bytes
+            {
+                *BS=BS_Save;
+                Param(Name, "(Data)");
+                BS->Skip(Bits);
+            }
+            else
+            {
+                Param(Name, Value, Bits);
+                Param_Info_Bits(Bits);
+            }
         }
         else
         {
