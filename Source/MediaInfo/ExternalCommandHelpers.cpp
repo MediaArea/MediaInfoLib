@@ -54,16 +54,18 @@ Ztring External_Command_Exists(const ZtringList& PossibleNames)
     #ifdef WINDOWS
     Ztring ExeDirectory;
 
-    DWORD EnvPathLen=GetEnvironmentVariableW(L"PATH", nullptr, 0);
-    if (EnvPathLen)
+    DWORD EnvPathSize=GetEnvironmentVariableW(L"PATH", nullptr, 0);
+    while (EnvPathSize)
     {
-        wchar_t* EnvPath=new wchar_t[EnvPathLen+1];
-        EnvPathLen=GetEnvironmentVariableW(L"PATH", EnvPath, EnvPathLen+1);
-
-        if (EnvPathLen>0 && EnvPathLen<EnvPathLen+1)
+        std::wstring EnvPath(EnvPathSize, L'\0');
+        DWORD EnvPathLen=GetEnvironmentVariableW(L"PATH", &EnvPath[0], EnvPathSize);
+        if (EnvPathLen<EnvPathSize)
+        {
+            EnvPath.resize(EnvPathLen);
             Path.From_Unicode(EnvPath);
-
-        delete[] EnvPath;
+            break;
+        }
+        EnvPathSize=EnvPathLen; //PATH was made longer in the meantime, this is the size it needs now
     }
 
     wchar_t* ExePath=new wchar_t[MAX_PATH+1];
@@ -80,7 +82,9 @@ Ztring External_Command_Exists(const ZtringList& PossibleNames)
     const Ztring EnvSep = __T(";");
     const Ztring PathSep = __T("\\");
     #else
-    Path=FileName_From_Native(getenv("PATH"));
+    const char* EnvPath=getenv("PATH");
+    if (EnvPath)
+        Path=FileName_From_Native(EnvPath);
     const Ztring EnvSep=__T(":");
     const Ztring PathSep=__T("/");
     #endif //WINDOWS
@@ -98,13 +102,22 @@ Ztring External_Command_Exists(const ZtringList& PossibleNames)
         #endif //WINDOWS
 
         size_t Start=0;
-        while (Start<Path.size())
+        while (!Path.empty() && Start<=Path.size()) //PATH not set or empty: no search (implementation-defined for POSIX)
         {
             size_t End=Path.find(EnvSep, Start);
             if (End==string::npos)
-                End=Path.size()-1;
+            {
+                #ifdef WINDOWS
+                if (Start==Path.size())
+                    break; //Separator at the end, not an entry for SearchPath()
+                #endif //WINDOWS
+                End=Path.size();
+            }
+            Ztring Directory=Path.substr(Start, End-Start);
+            if (Directory.empty())
+                Directory=__T("."); //Empty entry, the current directory as for POSIX shells and SearchPath()
 
-            Ztring FullPath=Path.substr(Start, End-Start)+PathSep+Command;
+            Ztring FullPath=Directory+PathSep+Command;
 
             #ifdef WINDOWS
             struct _stat64 Buf;

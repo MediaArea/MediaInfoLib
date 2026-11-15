@@ -10,6 +10,7 @@ TESTS = \
     xml.sh \
     mixml.sh \
     ebucore.sh \
+    ffmpeg.sh \
     unicode.sh \
     filename.sh
 
