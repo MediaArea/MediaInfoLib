@@ -4072,7 +4072,21 @@ void File__Analyze::Finish ()
     if (!ShouldContinueParsing && !Status[IsFilled])
         Fill();
 
-    if (ShouldContinueParsing || Config->ParseSpeed>=1)
+    bool MustContinue=ShouldContinueParsing || Config->ParseSpeed>=1;
+
+    //Frame count: Frame_Count_NotParsedIncluded is the count of frames before the position, the ones not parsed included
+    //(e.g. after a jump), so the count of frames of the file only at its end. The parsing continues up to the end if the
+    //file is less than 4 times the position, else this count is unknown. The count of a sub-parser is managed by its
+    //container (e.g. the count of frames of the track).
+    if (!MustContinue && !IsSub && Frame_Count_NotParsedIncluded!=(int64u)-1)
+    {
+        if (File_Size!=(int64u)-1 && File_Offset+Buffer_Offset>File_Size/4)
+            MustContinue=true;
+        else
+            Frame_Count_NotParsedIncluded=(int64u)-1;
+    }
+
+    if (MustContinue)
     {
         #if MEDIAINFO_TRACE
         if (!ParserName.empty())
