@@ -306,6 +306,13 @@ void conformance::Clear_Conformance()
 #if MEDIAINFO_CONFORMANCE
 void conformance::Merge_Conformance(bool FromConfig)
 {
+    size_t Level_First = 0;
+    while (Level_First < Conformance_Max && ConformanceErrors[Level_First].empty()) {
+        Level_First++;
+    }
+    if (Level_First == Conformance_Max) {
+        return; //Nothing to merge, as after most elements (no lock of the configuration for the limit)
+    }
     auto Limit = MediaInfoLib::Config.Conformance_Limit_Get();
     if (!Limit) {
         return;
