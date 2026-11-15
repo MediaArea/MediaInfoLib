@@ -9,7 +9,7 @@ fi
 
 # FFmpeg run with the FFmpeg option for the images and videos: ffmpeg-ma, else ffmpeg, of the first entry of PATH which
 # has it, an empty entry being the current directory, here programs which write their name in a file "run" next to them,
-# in "bin" and in the current directory "cwd"
+# in "bin" and in the current directory "cwd" (Windows: also in "bin;quoted")
 # Windows (Git Bash, which changes the PATH of the programs it starts): PATH set by mil_ffmpeg of the MSBuild job, whose
 # copies are the FFmpeg programs, entries separated by ";"
 
@@ -29,6 +29,9 @@ case "$(uname -s)" in
         ;;
 esac
 dirs="bin cwd"
+if test -n "$windows" ; then
+    dirs="$dirs bin;quoted" # name with the separator, for the entries in quotes
+fi
 for dir in $dirs ; do
     mkdir "$temp/$dir" || exit 99
     if test -n "$windows" ; then
@@ -82,3 +85,11 @@ else
 fi
 check "" none # PATH empty or not set
 check unset none
+
+# Windows: entries in quotes, as for cmd.exe (separators between quotes in the entry, quotes removed)
+if test -n "$windows" ; then
+    check "$temp/none;\"$temp/bin\"" bin
+    check "$temp/none;\"$temp/bin;quoted\";$temp/none" "bin;quoted"
+    check "$temp/none;$temp/\"bin;quoted\"" "bin;quoted" # part of an entry
+    check "$temp/none;\"$temp/bin" bin # quote not closed
+fi
