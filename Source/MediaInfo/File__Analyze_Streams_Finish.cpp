@@ -3079,6 +3079,14 @@ void File__Analyze::Streams_Finish_StreamOnly_General(size_t StreamPos)
             Fill(Stream_General, StreamPos, General_Audio_Channels_Total, Channels_Total);
     }
 
+    //Positions of the part and of the track: zeros before the number are not useful (e.g. "01" written by some tools)
+    for (const size_t Parameter : { General_Part_Position, General_Part_Position_Total, General_Track_Position, General_Track_Position_Total })
+    {
+        const auto& Value = Retrieve_Const(Stream_General, StreamPos, Parameter);
+        if (Value.size() > 1 && Value[0] == __T('0') && Value.find_first_not_of(__T("0123456789")) == string::npos)
+            Fill(Stream_General, StreamPos, Parameter, Ztring(Value.substr(min(Value.find_first_not_of(__T('0')), Value.size() - 1))), true);
+    }
+
     //Exceptions (empiric)
     {
         const auto& Application_Name=Retrieve_Const(Stream_General, StreamPos, General_Encoded_Application_Name);
