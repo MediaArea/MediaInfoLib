@@ -335,7 +335,7 @@ void File_Iim::ObjectName()
 //---------------------------------------------------------------------------
 void File_Iim::Keywords()
 {
-    FillString(General_Subject);
+    FillString(General_Keywords);
 }
 
 //---------------------------------------------------------------------------

@@ -438,6 +438,10 @@ bool File_Xmp::FileHeader_Begin()
         Fill(Stream_General, 0, General_Recorded_Date, UseDateTimeOriginal ? DateTimeOriginal : DateCreated, true, true);
     }
 
+    //Keywords: dc:subject is a list of keywords, the same keywords as pdf:Keywords when it is there, whatever the order of the elements
+    if (!Subject.empty() && Retrieve_Const(Stream_General, 0, General_Keywords).empty())
+        Fill(Stream_General, 0, General_Keywords, Subject);
+
     //Leaf: the model is followed by the serial number and the camera, e.g. "Leaf Aptus 75(LI400146   )/Large Format"
     {
         Ztring Model = Retrieve_Const(Stream_General, 0, General_Encoded_Hardware_Model);
@@ -494,8 +498,11 @@ void File_Xmp::dc(const string& name, const string& value)
         parameter = General_Title;
     if (name == "dc:description")
         parameter = General_Description;
-    if (name == "dc:subject")
-        parameter = General_Subject;
+    if (name == "dc:subject") {
+        if (!Subject.empty())
+            Subject += " / ";
+        Subject += value; //See after the parsing
+    }
     if (name == "dc:creator")
         parameter = General_Performer;
     if (name == "dc:rights")

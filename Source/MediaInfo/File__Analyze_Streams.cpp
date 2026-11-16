@@ -5399,6 +5399,27 @@ static Ztring Tags_Comparable(const string& Name, const Ztring& Value)
         List.FindAndReplace(__T("; "), __T(" / "), 0, Ztring_Recursive);
         return Tags_Comparable(Name, List);
     }
+    if (Name=="Keywords" && Value.find_first_of(__T(",;"))!=string::npos)
+    {
+        //Keywords separated by a comma or a semicolon (e.g. "a;b" written by Windows in Exif)
+        Ztring List;
+        for (size_t Begin=0;;)
+        {
+            const size_t End=Value.find_first_of(__T(",;"), Begin);
+            Ztring Item=Value.substr(Begin, End==string::npos?string::npos:(End-Begin));
+            Item.Trim(__T(' '));
+            if (!Item.empty())
+            {
+                if (!List.empty())
+                    List+=__T(" / ");
+                List+=Item;
+            }
+            if (End==string::npos)
+                break;
+            Begin=End+1;
+        }
+        return Tags_Comparable(Name, List);
+    }
     if (Value.find(__T(" / "))!=string::npos)
     {
         ZtringList List;

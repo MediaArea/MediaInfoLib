@@ -96,6 +96,7 @@ private :
     string gimp_version, pdfaid, pdfaid_part, pdfaid_conformance;
     string History_SoftwareAgent; //Of the last event of the history having one, so the last tool which wrote the file
     string DateCreated, DateTimeOriginal; //photoshop:DateCreated (without the time 00:00) and exif:DateTimeOriginal, for the date of the original
+    string Subject; //Items of dc:subject, which is a list of keywords
 };
 
 } //NameSpace
