@@ -83,6 +83,7 @@ class Private
 public:
     stream          Streams[2];
     int64s          AudioDelay=0;
+    int64u          SyncLost_Offset=(int64u)-1;
     bool            IsMajorSynched=false;
     bool            Header_IsValid=false;
 };
@@ -432,15 +433,60 @@ static bool Nsv_SyncFrame_IsTrusted(const int8u* Buffer, size_t Buffer_Size, siz
 }
 
 //---------------------------------------------------------------------------
+// A non sync frame which is not followed by another frame is trusted when, once a sync frame is parsed, it begins a few bytes after the place
+// where the synchronization was lost (e.g. junk after the previous frame) and its sizes are in the limits of the specification
+static const int64u Nsv_Junk_MaxSize=0x1000; //Arbitrary
+static bool Nsv_NonSyncFrame_IsTrusted(const int8u* Frame, int32u aux_plus_video_len, int16u audio_len, int64u Frame_Offset, const Private* P)
+{
+    if (!P || !P->IsMajorSynched || P->SyncLost_Offset==(int64u)-1 || Frame_Offset<=P->SyncLost_Offset || Frame_Offset-P->SyncLost_Offset>Nsv_Junk_MaxSize)
+        return false;
+    const int32u num_aux=aux_plus_video_len&0xF;
+    const int32u video_len=aux_plus_video_len>>4;
+    if (video_len>0x80000+num_aux*(0x8000+6) || audio_len>0x8000)
+        return false;
+
+    //Auxiliary chunks, at the beginning of the video part
+    const int8u* Aux=Frame+7;
+    int32u Aux_Size=0;
+    for (int32u Pos=0; Pos<num_aux; Pos++)
+    {
+        if (Aux_Size+6>video_len)
+            return false;
+        const int16u aux_chunk_len=LittleEndian2int16u(Aux+Aux_Size);
+        if (aux_chunk_len>0x8000)
+            return false;
+        Aux_Size+=6+aux_chunk_len;
+    }
+    return Aux_Size<=video_len;
+}
+
+//---------------------------------------------------------------------------
 bool File_Nsv::Synchronize()
 {
+    //Place where the synchronization is lost
+    if (P && P->SyncLost_Offset==(int64u)-1)
+        P->SyncLost_Offset=File_Offset+Buffer_Offset;
+
     //Synchronizing
     if (Buffer_Size-Buffer_Offset<4)
         return false;
     const bool Accepted=Status[IsAccepted];
     const auto Buffer_Size_m4=Buffer_Size-4;
+    int64u Trusted_Offset=(int64u)-1, Trusted_End=0; //Non sync frame trusted from its sizes only, used if no other frame begins before its end
+    const auto WaitForMoreData=[&]() -> bool
+    {
+        if (Trusted_Offset!=(int64u)-1)
+            Buffer_Offset=(size_t)(Trusted_Offset-File_Offset); //Searching again from it with more data
+        return false;
+    };
     for (;;)
     {
+        if (Trusted_Offset!=(int64u)-1 && File_Offset+Buffer_Offset>=Trusted_End)
+        {
+            Buffer_Offset=(size_t)(Trusted_Offset-File_Offset);
+            break;
+        }
+
         auto sync_hdr0 = BigEndian2int32u(Buffer + Buffer_Offset);
 
         // Check sync
@@ -450,7 +496,7 @@ bool File_Nsv::Synchronize()
             size_t HeaderBeginSize=IsMainSync?19:2;
             size_t HeaderSize=HeaderBeginSize+5;
             if (Buffer_Size-Buffer_Offset<HeaderSize)
-                return false;
+                return WaitForMoreData();
             auto Buffer_Temp=Buffer+Buffer_Offset+HeaderBeginSize;
             auto aux_plus_video_len=LittleEndian2int24u(Buffer_Temp);
             Buffer_Temp+=3;
@@ -464,12 +510,17 @@ bool File_Nsv::Synchronize()
             if (Remain>=Size+4) //Else the frame and the header of the next one are not in the file, this is not a frame
             {
                 if (Buffer_Size_m4-Buffer_Offset<Size)
-                    return false;
+                    return WaitForMoreData();
                 auto sync_hdr1=BigEndian2int32u(Buffer+Buffer_Offset+Size);
                 if (sync_hdr1==Elements::NSVs || (sync_hdr1>>16)==0xEFBE)
                     break;
                 if (IsMainSync && Nsv_SyncFrame_IsTrusted(Buffer, Buffer_Size, Buffer_Offset, P && P->IsMajorSynched?P->Streams:nullptr))
                     break;
+                if (!IsMainSync && Trusted_Offset==(int64u)-1 && Nsv_NonSyncFrame_IsTrusted(Buffer+Buffer_Offset, aux_plus_video_len, audio_len, File_Offset+Buffer_Offset, P))
+                {
+                    Trusted_Offset=File_Offset+Buffer_Offset;
+                    Trusted_End=Trusted_Offset+Size;
+                }
             }
         }
 
@@ -505,10 +556,12 @@ bool File_Nsv::Synchronize()
             }
         }
 
-        return false;
+        return WaitForMoreData();
     }
 
     //Synched is OK
+    if (P)
+        P->SyncLost_Offset=(int64u)-1;
     Buffer_TotalBytes_LastSynched=Buffer_Offset;
     return true;
 }
