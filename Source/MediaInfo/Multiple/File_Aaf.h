@@ -119,6 +119,11 @@ private :
         {
         }
 
+        ~stream()
+        {
+            delete[] Buffer;
+        }
+
     private:
         stream &operator=(const stream &v);
         stream(const stream&);

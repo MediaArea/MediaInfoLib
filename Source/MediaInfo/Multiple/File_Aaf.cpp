@@ -541,7 +541,8 @@ void File_Aaf::StreamElement_Parse()
         File_Offset=Save_File_Offset;
         Buffer_Offset=Save_Buffer_Offset;
         Buffer_Size=Save_Buffer_Size;
-        delete[] Buffer; Buffer=Save_Buffer;
+        Buffer=Save_Buffer;
+        delete[] Streams[Streams_Pos]->Buffer; Streams[Streams_Pos]->Buffer=NULL;
         Element_Offset=Element_Size;
     }
 }
