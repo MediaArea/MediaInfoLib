@@ -126,6 +126,9 @@ static jint JNI_OpenFd(JNIEnv* _env, jobject _this, jint fd, jstring name)
 
     int8u* buffer = new int8u[BUFFER_SIZE];
 
+    // From the start of the file, as given to Open_Buffer_Init(), whatever the offset of the descriptor (if seekable)
+    lseek64(fd, 0, SEEK_SET);
+
     // As with Open(), not opened if the descriptor can not be read, e.g. if it is invalid
     bool opened = false;
     while (1) {
