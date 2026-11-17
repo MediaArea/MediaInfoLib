@@ -321,10 +321,12 @@ jobs:
             mt -nologo -manifest %Test%\codepage_%%c.manifest -outputresource:%Test%\mil_filename_%%c.exe;1 || exit /b 1
           )
           copy %Output%\MediaInfo.dll %Test%\
+          rem Test program for the search of FFmpeg, whose copies are the FFmpeg programs (MediaInfo.dll loaded when used, static run-time library)
+          cl /nologo /EHsc /O1 /MT /DUNICODE /D_UNICODE /ISource /Fo%Test%\mil_ffmpeg.obj /Fe%Test%\mil_ffmpeg.exe %Test%\Source\ffmpeg.cpp || exit /b 1
       - name: Check
         working-directory: MediaInfoLib/Project/GNU/Library/test
         run: |
-          # Test of make check (no make in Git Bash), with each program
+          # Tests of make check (no make in Git Bash): file names with each program, search of FFmpeg
           Status=0
           for CodePage in 1252 65001 932 ; do
             cp mil_filename_${CodePage}.exe mil_filename.exe
@@ -338,6 +340,9 @@ jobs:
             bash filename.sh 9>&1 || Status=1
             echo "::endgroup::"
           done
+          echo "::group::Search of FFmpeg"
+          bash ffmpeg.sh 9>&1 || Status=1
+          echo "::endgroup::"
           exit ${Status}
 
   # Functions of the UWP API (WinRT for the files, which works without package except FutureAccessList), not in a solution: files of the UWP
