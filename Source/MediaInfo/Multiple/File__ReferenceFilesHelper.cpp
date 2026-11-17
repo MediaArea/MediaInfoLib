@@ -567,6 +567,7 @@ void File__ReferenceFilesHelper::ParseReferences()
             if (MI->Config->Config_PerPackage==NULL)
             {
                 MI->Config->Config_PerPackage=new MediaInfo_Config_PerPackage;
+                MI->Config->Config_PerPackage_IsOwned=true;
                 MI->Config->Config_PerPackage->CountOfPackages=Sequences.size();
             }
         #endif //MEDIAINFO_EVENTS

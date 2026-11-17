@@ -292,6 +292,7 @@ MediaInfo_Config_MediaInfo::MediaInfo_Config_MediaInfo()
     IsFinishing=false;
     #if MEDIAINFO_EVENTS
         Config_PerPackage=NULL;
+        Config_PerPackage_IsOwned=false;
         Events_TimestampShift_Disabled=false;
     #endif //MEDIAINFO_EVENTS
     #if MEDIAINFO_DEMUX
