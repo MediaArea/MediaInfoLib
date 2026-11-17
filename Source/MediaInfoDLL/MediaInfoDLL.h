@@ -139,7 +139,11 @@
     #endif /* __cplusplus */
 #else
     #ifndef MEDIAINFODLL_NAME
-        #define MEDIAINFODLL_NAME "libmediainfo.so.0"
+        #ifdef __ANDROID__
+            #define MEDIAINFODLL_NAME "libmediainfo.so" /* Android libraries have no versioned name */
+        #else //__ANDROID__
+            #define MEDIAINFODLL_NAME "libmediainfo.so.0"
+        #endif //__ANDROID__
     #endif //MEDIAINFODLL_NAME
     #define __stdcall
 #endif //!defined(_WIN32) || defined(WIN32)
