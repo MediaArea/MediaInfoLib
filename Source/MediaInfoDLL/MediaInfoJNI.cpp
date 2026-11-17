@@ -342,11 +342,10 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void*)
     cls = env->FindClass("MediaInfo");
 #endif
 
-    if (cls == NULL)
-        return JNI_ERR;
-
-    if ((env->RegisterNatives(cls, methods, sizeof(methods) / sizeof(methods[0]))) < 0)
-        return JNI_ERR;
+    // Also called for a JNI library linked with this one and without JNI_OnLoad of its own (dlsym() searches the dependencies),
+    // e.g. using only the C API, so the loading must not fail without the class: only its native methods are not available then
+    if (cls == NULL || env->RegisterNatives(cls, methods, sizeof(methods) / sizeof(methods[0])) < 0)
+        env->ExceptionClear();
 
     return JNI_VERSION_1_4;
 }
