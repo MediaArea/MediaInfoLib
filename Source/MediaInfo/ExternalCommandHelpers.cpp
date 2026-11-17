@@ -105,6 +105,21 @@ Ztring External_Command_Exists(const ZtringList& PossibleNames)
         while (!Path.empty() && Start<=Path.size()) //PATH not set or empty: no search (implementation-defined for POSIX)
         {
             size_t End=Path.find(EnvSep, Start);
+            #ifdef WINDOWS
+            size_t Quote=Path.find(__T('"'), Start);
+            while (Quote<End) //Separators between quotes are in the entry, as for cmd.exe (e.g. "C:\a;b")
+            {
+                size_t Quote_End=Path.find(__T('"'), Quote+1);
+                if (Quote_End==string::npos)
+                {
+                    End=string::npos;
+                    break;
+                }
+                if (Quote_End>End)
+                    End=Path.find(EnvSep, Quote_End);
+                Quote=Path.find(__T('"'), Quote_End+1);
+            }
+            #endif //WINDOWS
             if (End==string::npos)
             {
                 #ifdef WINDOWS
@@ -114,6 +129,9 @@ Ztring External_Command_Exists(const ZtringList& PossibleNames)
                 End=Path.size();
             }
             Ztring Directory=Path.substr(Start, End-Start);
+            #ifdef WINDOWS
+            Directory.FindAndReplace(__T("\""), Ztring(), 0, Ztring_Recursive); //Quotes are not in the names, as for cmd.exe
+            #endif //WINDOWS
             if (Directory.empty())
                 Directory=__T("."); //Empty entry, the current directory as for POSIX shells and SearchPath()
 
