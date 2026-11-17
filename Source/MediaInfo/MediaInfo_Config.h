@@ -385,7 +385,8 @@ public :
     #endif //defined(MEDIAINFO_GRAPH_YES)
 
     #if MEDIAINFO_CONFORMANCE
-          string        AdmProfile (const Ztring& Value);
+          string        Profile(const Ztring& Value); //Comma separated list of profiles of any format, case, hyphens and underscores are ignored, added to the profiles already requested, an empty value clears them
+          string        Profile_List();
           struct adm_profile
           {
               bool Auto;
@@ -399,17 +400,9 @@ public :
               {}
           };
           adm_profile   AdmProfile();
-          string        AdmProfile_List();
-          string        Mp4Profile(const Ztring& Value);
           string        Mp4Profile();
-          string        Mp4Profile_List();
-          string        MxfProfile(const Ztring& Value);
           string        MxfProfile();
-          string        MxfProfile_List();
-          string        UsacProfile(const Ztring& Value);
           int8u         UsacProfile();
-          string        UsacProfile_List();
-          string        Profile_List();
           void          WarningError(bool Value);
           bool          WarningError();
     #endif
@@ -455,11 +448,6 @@ public :
     #endif //MEDIAINFO_FIXITY
 
 private :
-    #if MEDIAINFO_CONFORMANCE
-        static string ProfileList_Set(const Ztring& Value, const char* const* Names, size_t Names_Size, const char* Kind, string& Result); //Comma separated list of names, case and hyphens are ignored, Result is the list of the names as provided in Names
-        string        ProfileList_Get(const char* const* Names, size_t Names_Size); //One name per line
-    #endif //MEDIAINFO_CONFORMANCE
-
     int64u          FormatDetection_MaximumOffset;
     #if MEDIAINFO_ADVANCED
         int64u      VariableGopDetection_Occurences;
