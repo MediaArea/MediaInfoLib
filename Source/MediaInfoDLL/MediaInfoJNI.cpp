@@ -106,11 +106,15 @@ static jint JNI_Open(JNIEnv* _env, jobject _this, jstring name)
 
 //------------------------------------------------------------------------------
 #ifdef __ANDROID__
+// The descriptor is owned by this function, which closes it
 static jint JNI_OpenFd(JNIEnv* _env, jobject _this, jint fd, jstring name)
 {
     MediaInfo_Internal* mi = GetMiObj(_env, _this);
     if (mi == NULL)
+    {
+        close(fd);
         return 0;
+    }
 
     int64u size = (int64u)-1;
 
