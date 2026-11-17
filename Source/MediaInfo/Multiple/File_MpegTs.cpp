@@ -2645,6 +2645,7 @@ void File_MpegTs::Header_Parse()
             Element_Offset=min<int64u>(TS_Size-TSP_Size, Element_Size); //Junk
 
         //Filling
+        Header_Fill_Code(pid); //The name is for the trace only
         /*Element[1].Next=File_Offset+Buffer_Offset+TS_Size;  //*/Header_Fill_Size(TS_Size);
         //Element[1].IsComplete=true;                         //Header_Fill_Size(TS_Size);
 
