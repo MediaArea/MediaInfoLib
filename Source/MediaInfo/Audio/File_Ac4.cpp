@@ -1153,6 +1153,9 @@ File_Ac4::File_Ac4()
     //In
     Frame_Count_Valid=0;
     MustParse_dac4=false;
+
+    //Temp
+    frame_rate_factor=1; //Also when there is no presentation info
 }
 
 //---------------------------------------------------------------------------
