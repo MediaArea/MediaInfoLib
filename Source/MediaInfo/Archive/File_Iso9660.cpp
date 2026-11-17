@@ -144,7 +144,7 @@ void File_Iso9660::Streams_Finish()
 void File_Iso9660::FileHeader_Parse()
 {
     //Element_Size
-    if (Buffer_Size<0x8000+6)
+    if (Buffer_Size<0x8000+8)
     {
         Element_WaitForMoreData();
         return;
