@@ -1823,7 +1823,7 @@ void File_Usac::Streams_Finish_Conformance_Profile(usac_config& CurrentConf)
     if (ProfileLevel.profile == UnknownAudio)
     {
         auto AudioProfileLevelIndication = MediaInfoLib::Config.UsacProfile();
-        if (!AudioProfileLevelIndication)
+        if (AudioProfileLevelIndication != (int8u)-1)
             SetProfileLevel(AudioProfileLevelIndication);
         else if (!IsSub)
             ConformanceFlags.set(xHEAAC); // TODO: remove this check (initially done for LATM without the profile option)
