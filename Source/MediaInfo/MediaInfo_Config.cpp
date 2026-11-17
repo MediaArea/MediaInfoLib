@@ -1633,75 +1633,24 @@ Ztring MediaInfo_Config::Option (const String &Option, const String &Value_Raw)
         #endif // defined(MEDIAINFO_GRAPHVIZ_YES)
     }
 
-    if (Option_Lower==__T("admprofile"))
+    if (Option_Lower==__T("profile")
+     || Option_Lower==__T("admprofile") //Previous names of the option
+     || Option_Lower==__T("mp4profile")
+     || Option_Lower==__T("mxfprofile")
+     || Option_Lower==__T("usacprofile"))
     {
         #if MEDIAINFO_CONFORMANCE
-            return Ztring().From_UTF8(AdmProfile(Value));
+            return Ztring().From_UTF8(Profile(Value));
         #else // MEDIAINFO_CONFORMANCE
             return __T("conformance features are disabled due to compilation options");
         #endif // MEDIAINFO_CONFORMANCE
     }
-    if (Option_Lower==__T("admprofile_list"))
-    {
-        #if MEDIAINFO_CONFORMANCE
-            return Ztring().From_UTF8(AdmProfile_List());
-        #else // MEDIAINFO_CONFORMANCE
-            return Ztring();
-        #endif // MEDIAINFO_CONFORMANCE
-    }
-
-    if (Option_Lower==__T("mp4profile"))
-    {
-        #if MEDIAINFO_CONFORMANCE
-            return Ztring().From_UTF8(Mp4Profile(Value));
-        #else // MEDIAINFO_CONFORMANCE
-            return __T("conformance features are disabled due to compilation options");
-        #endif // MEDIAINFO_CONFORMANCE
-    }
-    if (Option_Lower==__T("mp4profile_list"))
-    {
-        #if MEDIAINFO_CONFORMANCE
-            return Ztring().From_UTF8(Mp4Profile_List());
-        #else // MEDIAINFO_CONFORMANCE
-            return Ztring();
-        #endif // MEDIAINFO_CONFORMANCE
-    }
-
-    if (Option_Lower==__T("mxfprofile"))
-    {
-        #if MEDIAINFO_CONFORMANCE
-            return Ztring().From_UTF8(MxfProfile(Value));
-        #else // MEDIAINFO_CONFORMANCE
-            return __T("conformance features are disabled due to compilation options");
-        #endif // MEDIAINFO_CONFORMANCE
-    }
-    if (Option_Lower==__T("mxfprofile_list"))
-    {
-        #if MEDIAINFO_CONFORMANCE
-            return Ztring().From_UTF8(MxfProfile_List());
-        #else // MEDIAINFO_CONFORMANCE
-            return Ztring();
-        #endif // MEDIAINFO_CONFORMANCE
-    }
-
-    if (Option_Lower==__T("usacprofile"))
-    {
-        #if MEDIAINFO_CONFORMANCE
-            return Ztring().From_UTF8(UsacProfile(Value));
-        #else // MEDIAINFO_CONFORMANCE
-            return __T("conformance features are disabled due to compilation options");
-        #endif // MEDIAINFO_CONFORMANCE
-    }
-    if (Option_Lower==__T("usacprofile_list"))
-    {
-        #if MEDIAINFO_CONFORMANCE
-            return Ztring().From_UTF8(UsacProfile_List());
-        #else // MEDIAINFO_CONFORMANCE
-            return Ztring();
-        #endif // MEDIAINFO_CONFORMANCE
-    }
-
-    if (Option_Lower==__T("profile_list"))
+    if (Option_Lower==__T("profiles")
+     || Option_Lower==__T("profile_list") //Previous names of the option
+     || Option_Lower==__T("admprofile_list")
+     || Option_Lower==__T("mp4profile_list")
+     || Option_Lower==__T("mxfprofile_list")
+     || Option_Lower==__T("usacprofile_list"))
     {
         #if MEDIAINFO_CONFORMANCE
             return Ztring().From_UTF8(Profile_List());
@@ -3957,150 +3906,20 @@ bool MediaInfo_Config::GraphSvgPluginState()
 //***************************************************************************
 
 #if MEDIAINFO_CONFORMANCE
-string MediaInfo_Config::AdmProfile(const Ztring& Value2)
+//---------------------------------------------------------------------------
+// Profiles of all formats, accepted together by the Profile option
+static const char* const AdmProfile_Names[]=
 {
-    Ztring Value(Value2);
-    transform(Value.begin(), Value.end(), Value.begin(), ToLower_ASCII);
-    ZtringList List;
-    List.Separator_Set(0, __T(","));
-    List.Write(Value);
-    adm_profile Result;
-    for (const auto& ItemZ : List)
-    {
-        const auto Item = ItemZ.To_UTF8();
-        if (Item == "auto")
-            Result.Auto = true;
-        else if (Item == "itu-r_bs.2076-0")
-            Result.BS2076 = 0;
-        else if (Item == "itu-r_bs.2076-1")
-            Result.BS2076 = 1;
-        else if (Item == "itu-r_bs.2076-2")
-            Result.BS2076 = 2;
-        else if (Item.rfind("urn:ebu:tech:3392:1.0:", 0) == 0)
-        {
-            if (Item.size() > 22 && Item[22] >= '1' && Item[22] <= '4')
-                Result.Ebu3392 = Item[22] - '0';
-            else
-                return "Unknown ADM profile " + Item;
-        }
-        else
-            return "Unknown ADM profile " + Item;
-    }
-
-    CriticalSectionLocker CSL(CS);
-    Adm_Profile = Result;
-    return {};
-}
-#endif //MEDIAINFO_CONFORMANCE
-
-#if MEDIAINFO_CONFORMANCE
-string MediaInfo_Config::AdmProfile_List()
+    "urn:ebu:tech:3392:1.0:1",
+    "urn:ebu:tech:3392:1.0:2",
+    "urn:ebu:tech:3392:1.0:3",
+    "urn:ebu:tech:3392:1.0:4",
+};
+static const char* const Mp4Profile_Names[]=
 {
-    string Result;
-    string LineSep = LineSeparator_Get().To_UTF8();
-    for (int8u i = 1; i <= 4; i++)
-    {
-        Result += "urn:ebu:tech:3392:1.0:" + to_string(i);
-        Result += LineSep;
-    }
-    Result.erase(Result.size() - LineSep.size());
-    return Result;
-}
-#endif //MEDIAINFO_CONFORMANCE
-
-#if MEDIAINFO_CONFORMANCE
-MediaInfo_Config::adm_profile MediaInfo_Config::AdmProfile()
-{
-    CriticalSectionLocker CSL(CS);
-    return Adm_Profile;
-}
-#endif //MEDIAINFO_CONFORMANCE
-
-#if MEDIAINFO_CONFORMANCE
-string MediaInfo_Config::Mp4Profile(const Ztring& Value)
-{
-    ZtringList List;
-    List.Separator_Set(0, __T(","));
-    List.Write(Value);
-    string Temp;
-    for (const auto& ItemZ : List)
-    {
-        const auto Item = ItemZ.To_UTF8();
-        if (false)
-            ;
-        else if (Item == "cmfc" || Item == "cmff" || Item == "cmfl" || Item == "cmfs" || Item == "cmaf")
-            Temp += "cmfc";
-        else
-            return "Unknown MP4 profile " + Item;
-    }
-
-    CriticalSectionLocker CSL(CS);
-    Mp4_Profile = Temp;
-    return {};
-}
-#endif //MEDIAINFO_CONFORMANCE
-
-#if MEDIAINFO_CONFORMANCE
-string MediaInfo_Config::Mp4Profile()
-{
-    CriticalSectionLocker CSL(CS);
-    return Mp4_Profile;
-}
-#endif //MEDIAINFO_ADVANCED
-
-#if MEDIAINFO_CONFORMANCE
-string MediaInfo_Config::Mp4Profile_List()
-{
-    return "CMAF";
-}
-#endif //MEDIAINFO_CONFORMANCE
-
-#if MEDIAINFO_CONFORMANCE
-string MediaInfo_Config::ProfileList_Set(const Ztring& Value, const char* const* Names, size_t Names_Size, const char* Kind, string& Result)
-{
-    const auto Normalize = [](string Name) { //Case, hyphens and underscores are ignored
-        transform(Name.begin(), Name.end(), Name.begin(), [](unsigned char c) { return toupper(c); });
-        Name.erase(remove_if(Name.begin(), Name.end(), [](char c) { return c == '-' || c == '_'; }), Name.end());
-        return Name;
-    };
-    ZtringList List;
-    List.Separator_Set(0, __T(","));
-    List.Write(Value);
-    Result.clear();
-    for (const auto& ItemZ : List)
-    {
-        const auto Item = Normalize(ItemZ.To_UTF8());
-        const char* Name = nullptr;
-        for (size_t i = 0; i < Names_Size; i++)
-            if (Item == Normalize(Names[i]))
-                Name = Names[i];
-        if (!Name)
-            return string("Unknown ") + Kind + ' ' + ItemZ.To_UTF8();
-        if (!Result.empty())
-            Result += ',';
-        Result += Name;
-    }
-    return {};
-}
-#endif //MEDIAINFO_CONFORMANCE
-
-#if MEDIAINFO_CONFORMANCE
-string MediaInfo_Config::ProfileList_Get(const char* const* Names, size_t Names_Size)
-{
-    string Result;
-    const auto LineSep = LineSeparator_Get().To_UTF8();
-    for (size_t i = 0; i < Names_Size; i++)
-    {
-        if (!Result.empty())
-            Result += LineSep;
-        Result += Names[i];
-    }
-    return Result;
-}
-#endif //MEDIAINFO_CONFORMANCE
-
-#if MEDIAINFO_CONFORMANCE
-static const char* const MxfProfile_Names[] =
+    "CMAF", //CMAF brands are also accepted
+};
+static const char* const MxfProfile_Names[]=
 {
     "ARD_ZDF", //ARD/ZDF profile matching the kind of content
     "ARD_ZDF_HDF-01a",
@@ -4121,20 +3940,141 @@ static const char* const MxfProfile_Names[] =
     "SMPTE_ST_337_2016",
     "SMPTE_ST_337_2019",
 };
-string MediaInfo_Config::MxfProfile(const Ztring& Value)
+extern string Mpeg4_Descriptors_AudioProfileLevelString(int8u AudioProfileLevelIndication);
+static string UsacProfile_Name(int8u AudioProfileLevelIndication)
 {
-    string Temp;
-    const auto Error = ProfileList_Set(Value, MxfProfile_Names, sizeof(MxfProfile_Names)/sizeof(*MxfProfile_Names), "MXF profile", Temp);
-    if (!Error.empty())
-        return Error;
-    if (Temp.find("SMPTE_ST_337_") != Temp.rfind("SMPTE_ST_337_"))
+    switch (AudioProfileLevelIndication)
+    {
+        case 0x00 : return "No Profile";
+        case 0xFE : return "Unspecified";
+        case 0xFF : return {}; //"No Audio", same value as no USAC profile requested
+        default   : return Mpeg4_Descriptors_AudioProfileLevelString(AudioProfileLevelIndication);
+    }
+}
+static string Profile_Normalize(string Name) //Case, hyphens and underscores are ignored
+{
+    transform(Name.begin(), Name.end(), Name.begin(), [](unsigned char c) { return toupper(c); });
+    Name.erase(remove_if(Name.begin(), Name.end(), [](char c) { return c == '-' || c == '_'; }), Name.end());
+    return Name;
+}
+template<size_t Size>
+static size_t Profile_Find(const string& Item, const char* const (&Names)[Size])
+{
+    for (size_t i=0; i<Size; i++)
+        if (Item==Profile_Normalize(Names[i]))
+            return i;
+    return (size_t)-1;
+}
+#endif //MEDIAINFO_CONFORMANCE
+
+#if MEDIAINFO_CONFORMANCE
+string MediaInfo_Config::Profile(const Ztring& Value)
+{
+    CriticalSectionLocker CSL(CS);
+    if (Value.empty())
+    {
+        Adm_Profile=adm_profile();
+        Mp4_Profile.clear();
+        Mxf_Profile.clear();
+        Usac_Profile=(int8u)-1;
+        return {};
+    }
+    auto Adm=Adm_Profile;
+    auto Mp4=Mp4_Profile;
+    auto Mxf=Mxf_Profile;
+    auto Usac=Usac_Profile;
+    ZtringList List;
+    List.Separator_Set(0, __T(","));
+    List.Write(Value);
+    for (const auto& ItemZ : List)
+    {
+        const auto Item=Profile_Normalize(ItemZ.To_UTF8());
+        size_t Pos;
+        if ((Pos=Profile_Find(Item, AdmProfile_Names))!=(size_t)-1)
+            Adm.Ebu3392=(int8u)(Pos+1);
+        else if (Item=="AUTO") //ADM, not listed
+            Adm.Auto=true;
+        else if (Item.size()==12 && !Item.compare(0, 11, "ITURBS.2076") && Item[11]>='0' && Item[11]<='2') //ADM ITU-R_BS.2076-0 to 2, not listed
+            Adm.BS2076=(int8u)(Item[11]-'0');
+        else if (Profile_Find(Item, Mp4Profile_Names)!=(size_t)-1 || Item=="CMFC" || Item=="CMFF" || Item=="CMFL" || Item=="CMFS")
+            Mp4="cmfc";
+        else if ((Pos=Profile_Find(Item, MxfProfile_Names))!=(size_t)-1)
+        {
+            if ((','+Mxf+',').find(string(",")+MxfProfile_Names[Pos]+',')!=string::npos)
+                continue;
+            if (!Mxf.empty())
+                Mxf+=',';
+            Mxf+=MxfProfile_Names[Pos];
+        }
+        else
+        {
+            int8u AudioProfileLevelIndication=0;
+            for (; AudioProfileLevelIndication<0xFF; AudioProfileLevelIndication++)
+            {
+                const auto Name=UsacProfile_Name(AudioProfileLevelIndication);
+                if (!Name.empty() && Item==Profile_Normalize(Name))
+                    break;
+            }
+            if (AudioProfileLevelIndication==0xFF)
+                return "Unknown profile "+ItemZ.To_UTF8();
+            if (Usac!=(int8u)-1 && Usac!=AudioProfileLevelIndication)
+                return "Only one USAC profile can be requested";
+            Usac=AudioProfileLevelIndication;
+        }
+    }
+    if (Mxf.find("SMPTE_ST_337_")!=Mxf.rfind("SMPTE_ST_337_"))
         return "Only one SMPTE ST 337 edition can be requested";
 
-    CriticalSectionLocker CSL(CS);
-    Mxf_Profile = Temp;
+    Adm_Profile=Adm;
+    Mp4_Profile=Mp4;
+    Mxf_Profile=Mxf;
+    Usac_Profile=Usac;
     return {};
 }
 #endif //MEDIAINFO_CONFORMANCE
+
+#if MEDIAINFO_CONFORMANCE
+string MediaInfo_Config::Profile_List()
+{
+    string Result;
+    const auto LineSep=LineSeparator_Get().To_UTF8();
+    const auto Add=[&](const string& Name)
+    {
+        if (!Result.empty())
+            Result+=LineSep;
+        Result+=Name;
+    };
+    for (const auto Name : AdmProfile_Names)
+        Add(Name);
+    for (const auto Name : Mp4Profile_Names)
+        Add(Name);
+    for (const auto Name : MxfProfile_Names)
+        Add(Name);
+    for (int8u AudioProfileLevelIndication=0; AudioProfileLevelIndication<0xFF; AudioProfileLevelIndication++)
+    {
+        const auto Name=UsacProfile_Name(AudioProfileLevelIndication);
+        if (!Name.empty())
+            Add(Name);
+    }
+    return Result;
+}
+#endif //MEDIAINFO_CONFORMANCE
+
+#if MEDIAINFO_CONFORMANCE
+MediaInfo_Config::adm_profile MediaInfo_Config::AdmProfile()
+{
+    CriticalSectionLocker CSL(CS);
+    return Adm_Profile;
+}
+#endif //MEDIAINFO_CONFORMANCE
+
+#if MEDIAINFO_CONFORMANCE
+string MediaInfo_Config::Mp4Profile()
+{
+    CriticalSectionLocker CSL(CS);
+    return Mp4_Profile;
+}
+#endif //MEDIAINFO_ADVANCED
 
 #if MEDIAINFO_CONFORMANCE
 string MediaInfo_Config::MxfProfile()
@@ -4145,84 +4085,10 @@ string MediaInfo_Config::MxfProfile()
 #endif //MEDIAINFO_CONFORMANCE
 
 #if MEDIAINFO_CONFORMANCE
-string MediaInfo_Config::MxfProfile_List()
-{
-    return ProfileList_Get(MxfProfile_Names, sizeof(MxfProfile_Names)/sizeof(*MxfProfile_Names));
-}
-#endif //MEDIAINFO_CONFORMANCE
-
-#if MEDIAINFO_CONFORMANCE
-extern string Mpeg4_Descriptors_AudioProfileLevelString(int8u AudioProfileLevelIndication);
-string MediaInfo_Config::UsacProfile(const Ztring& ValueZ)
-{
-    auto Value = ValueZ.To_UTF8();
-    if (Value.empty())
-    {
-        CriticalSectionLocker CSL(CS);
-        Usac_Profile = (int8u)-1;
-        return {};
-    }
-    transform(Value.begin(), Value.end(), Value.begin(), [](unsigned char c) { return tolower(c); });
-
-    for (int8u AudioProfileLevelIndication = 0; AudioProfileLevelIndication < 0xFF; AudioProfileLevelIndication++)
-    {
-        string Test;
-        switch (AudioProfileLevelIndication)
-        {
-            case 0x00 : Test = "No Profile"; break;
-            case 0xFE : Test = "Unspecified"; break;
-            case 0xFF : Test = "No Audio"; break;
-            default   : Test = Mpeg4_Descriptors_AudioProfileLevelString(AudioProfileLevelIndication);
-        }
-        transform(Test.begin(), Test.end(), Test.begin(), [](unsigned char c) { return tolower(c); });
-        if (Test == Value)
-        {
-            CriticalSectionLocker CSL(CS);
-            Usac_Profile = AudioProfileLevelIndication;
-            return {};
-        }
-    }
-
-    return "Unknown USAC profile " + Value;
-}
-#endif //MEDIAINFO_ADVANCED
-
-#if MEDIAINFO_CONFORMANCE
 int8u MediaInfo_Config::UsacProfile()
 {
     CriticalSectionLocker CSL(CS);
     return Usac_Profile;
-}
-#endif //MEDIAINFO_CONFORMANCE
-
-#if MEDIAINFO_CONFORMANCE
-string MediaInfo_Config::UsacProfile_List()
-{
-    string LineSep = LineSeparator_Get().To_UTF8();
-    string Result;
-    Result += "No Profile";
-    Result += LineSep;
-    for (int8u AudioProfileLevelIndication = 1; AudioProfileLevelIndication < 0xFE; AudioProfileLevelIndication++)
-    {
-        auto Temp = Mpeg4_Descriptors_AudioProfileLevelString(AudioProfileLevelIndication);
-        if (!Temp.empty())
-        {
-            Result += LineSep;
-            Result += Temp;
-        }
-    }
-    Result += "Unspecified";
-    Result += LineSep;
-    Result += "No Audio";
-    return Result;
-}
-#endif //MEDIAINFO_CONFORMANCE
-
-#if MEDIAINFO_CONFORMANCE
-string MediaInfo_Config::Profile_List()
-{
-    auto LineSep = LineSeparator_Get().To_UTF8();
-    return "ADM" + LineSep + "MP4" + LineSep + "USAC";
 }
 #endif //MEDIAINFO_CONFORMANCE
 

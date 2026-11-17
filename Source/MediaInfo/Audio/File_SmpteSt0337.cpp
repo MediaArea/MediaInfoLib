@@ -149,7 +149,7 @@ static const char* Smpte_St0337_Adm_format_type[2]=
 
 #if MEDIAINFO_CONFORMANCE
 //---------------------------------------------------------------------------
-// Editions of SMPTE ST 337 and associated standards, as in the MxfProfile option
+// Editions of SMPTE ST 337 and associated standards, as in the Profile option
 static const char* const Smpte_St0337_Generation_Names[]=
 {
     "SMPTE_ST_337_2008", // SMPTE ST 337:2008 (same requirements as SMPTE 337M-2000), SMPTE ST 338:2010, SMPTE ST 340:2008
