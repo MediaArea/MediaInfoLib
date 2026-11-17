@@ -713,7 +713,7 @@ void File_Xmp::photoshop(const string& name, const string& value)
         Fill(Stream_General, 0, "Category", value);
     if (name == "photoshop:SupplementalCategories")
         Fill(Stream_General, 0, "SupplementalCategories", value);
-    if (name == "photoshop:Urgency")
+    if (name == "photoshop:Urgency" && value != "0") //Not an urgency (1 is the most urgent, 8 the least), written by some cameras when there is none
         Fill(Stream_General, 0, "Urgency", value);
     if (name == "photoshop:Instructions")
         Fill(Stream_General, 0, "Instructions", value);

@@ -257,7 +257,7 @@ void File_Iim::Data_Parse()
     ELEMENT_FILL(  2,   4, "ObjectAttributeReference")
     ELEMENT_CASE(  2,   5, ObjectName)
     ELEMENT_FILL(  2,   7, "EditStatus")
-    ELEMENT_FILL(  2,  10, "Urgency")
+    ELEMENT_CASE(  2,  10, Urgency)
     ELEMENT_FILL(  2,  12, "SubjectReference")
     ELEMENT_FILL(  2,  15, "Category")
     ELEMENT_FILL(  2,  20, "SupplementalCategories")
@@ -330,6 +330,15 @@ void File_Iim::RecordVersion()
 void File_Iim::ObjectName()
 {
     FillString(General_Title);
+}
+
+//---------------------------------------------------------------------------
+void File_Iim::Urgency()
+{
+    Ztring Value;
+    GetString(Value);
+    if (Value!=__T("0")) //Not an urgency (1 is the most urgent, 8 the least), written by some cameras when there is none
+        Fill(Stream_General, 0, "Urgency", Value);
 }
 
 //---------------------------------------------------------------------------
