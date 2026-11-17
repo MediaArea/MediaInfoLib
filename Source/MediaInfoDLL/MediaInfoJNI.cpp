@@ -13,6 +13,7 @@
 //---------------------------------------------------------------------------
 
 #ifdef __ANDROID__
+#include <cerrno>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -136,7 +137,11 @@ static jint JNI_OpenFd(JNIEnv* _env, jobject _this, jint fd, jstring name)
         ssize_t count = read(fd, (void*)buffer, BUFFER_SIZE);
 
         if (count < 0)
+        {
+            if (errno == EINTR)
+                continue; // interrupted by a signal before reading anything
             break; // error
+        }
 
         if (!opened)
         {
