@@ -32,6 +32,7 @@ private :
 
     //Temp
     int8u  Coding=0;
+    int32u Header_Size=0;
     int32u SamplingRate=0;
     int32u Channels=0;
 };

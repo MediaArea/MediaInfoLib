@@ -86,6 +86,8 @@ void File_Ps2Audio::SSbd()
     Element_End0();
 
     FILLING_BEGIN();
+        if (!IsSub && Header_Size==0x20 && Size<0x80000000 && (int64u)Size*2==File_Size-0x18)
+            Size=Size*2-0x10; //Header size 32 and body size of (data size + 16) / 2 are found together
         if (!IsSub && Data_Begin+Size>File_Size)
         {
             //The file ends before the end of the body
@@ -118,7 +120,7 @@ void File_Ps2Audio::SShd()
         int32u Size, Format_Header, SamplingRate_Header, Channels_Header;
         Skip_C4(                                                "ID");
         Get_L4 (Size,                                           "Size");
-        if (Size!=0x18)
+        if (Size!=0x18 && Size!=0x20 && (IsSub || Size!=File_Size-8)) //0x20 and the file size minus 8 are also found, the header has the same content
         {
             Trusted_IsNot("Bad size");
             Element_End0();
@@ -127,14 +129,15 @@ void File_Ps2Audio::SShd()
         Get_L4 (Format_Header,                                  "Format");
         Get_L4 (SamplingRate_Header,                            "Sampling rate");
         Get_L4 (Channels_Header,                                "Channels");
-        Skip_L4(                                                "Bytes per channel");
-        Skip_L4(                                                "Reserved");
-        Skip_L4(                                                "Reserved");
+        Skip_L4(                                                "Interleave");
+        Skip_L4(                                                "Loop start");
+        Skip_L4(                                                "Loop end");
     Element_End0();
 
     FILLING_BEGIN();
         if (Status[IsAccepted])
             return; //Only the first header is used
+        Header_Size=Size;
         SamplingRate=SamplingRate_Header;
         Channels=Channels_Header;
 
@@ -146,7 +149,9 @@ void File_Ps2Audio::SShd()
         float64 BitsPerSample=0;
         switch(Format_Header)
         {
-            case 0x00000001 : Coding=Coding_Pcm; FormatS=__T("PCM"); BitsPerSample=16; break;
+            case 0x00000001 :
+            case 0x80000001 : Coding=Coding_Pcm; FormatS=__T("PCM"); BitsPerSample=16; break;
+            case 0x00000002 :
             case 0x00000010 : Coding=Coding_Adpcm; FormatS=__T("ADPCM"); BitsPerSample=16*8/28.0; break;
             default         : ;
         }
