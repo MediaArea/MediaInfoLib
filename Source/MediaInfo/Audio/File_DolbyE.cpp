@@ -3020,8 +3020,8 @@ void File_DolbyE::mgi_payload()
         if (desc_packet_idx==num_desc_packets_m1 && !description_packet_data.empty())
         {
             Presets_More.clear();
-            BitStream_Fast* BS_Save=BS;
-            BS=new BitStream_Fast(&*description_packet_data.begin(), description_packet_data.size()); //In bytes, we can not provide a precise count of bits
+            BitStream_Fast_Mixed* BS_Save=BS;
+            BS=new BitStream_Fast_Mixed(&*description_packet_data.begin(), description_packet_data.size()); //In bytes, we can not provide a precise count of bits
             Element_Begin1("packet_description");
             int8u preset_description_id_bits;
             Get_S1(3, preset_description_id_bits,           "preset_description_id_bits");

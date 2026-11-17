@@ -728,7 +728,7 @@ File__Analyze::File__Analyze ()
     #endif //MEDIAINFO_TRACE
 
     //BitStream
-    BS=new BitStream_Fast;
+    BS=new BitStream_Fast_Mixed;
     BT=new BitStream_LE;
     #if MEDIAINFO_TRACE
         BS_Size=0;
@@ -3866,6 +3866,118 @@ void File__Analyze::Trusted_IsNot ()
 }
 
 //***************************************************************************
+// Emulation prevention
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+void File__Analyze::Skip_EmulationPrevention()
+{
+    if (!Unescapes.empty() || Element_Offset<2 || Element_Offset>=Element_Size)
+        return; //A copy has no emulation_prevention_three_byte
+    const int8u* Begin=Buffer+Buffer_Offset+(size_t)Element_Offset;
+    if (Begin[0]==0x03 && !Begin[-1] && !Begin[-2])
+        Skip_B1(                                                "emulation_prevention_three_byte");
+}
+
+//---------------------------------------------------------------------------
+int64u File__Analyze::EmulationPrevention_RawSize(int64u RbspSize, int64u &Count)
+{
+    const int8u* Begin=Buffer+Buffer_Offset+(size_t)Element_Offset;
+    const int64u Max=Element_Size-Element_Offset;
+    Count=0;
+    if (!Unescapes.empty()) //A copy has no emulation_prevention_three_byte
+        return RbspSize<=Max?RbspSize:(int64u)-1;
+    int Zeros=0; //0x00 bytes before
+    if (Element_Offset && !Begin[-1])
+        Zeros=(Element_Offset>=2 && !Begin[-2])?2:1;
+    int64u Raw=0;
+    for (int64u Rbsp=0; Rbsp<RbspSize; Raw++)
+    {
+        if (Raw>=Max)
+            return (int64u)-1;
+        const int8u Byte=Begin[(size_t)Raw];
+        if (Zeros>=2 && Byte==0x03)
+        {
+            Count++;
+            Zeros=0;
+            continue;
+        }
+        Zeros=Byte?0:(Zeros+1);
+        Rbsp++;
+    }
+    return Raw;
+}
+
+//---------------------------------------------------------------------------
+void File__Analyze::Element_Unescape_Begin(int64u RawSize, int64u MinSize)
+{
+    unescape Raw;
+    Raw.Buffer=Buffer;
+    Raw.Buffer_Offset=Buffer_Offset;
+    Raw.Buffer_Size=Buffer_Size;
+    Raw.File_Offset=File_Offset;
+    Raw.Element_Size=Element_Size;
+
+    //Copy without emulation_prevention_three_byte (none in a copy), completed with 0x00 bytes up to MinSize bytes
+    const int8u* Begin=Buffer+Buffer_Offset+(size_t)Element_Offset;
+    int8u* Copy=new int8u[(size_t)(RawSize>MinSize?RawSize:MinSize)];
+    size_t Size=0;
+    if (!Unescapes.empty())
+    {
+        std::memcpy(Copy, Begin, (size_t)RawSize);
+        Size=(size_t)RawSize;
+    }
+    else
+    {
+        int Zeros=0; //0x00 bytes before
+        if (Element_Offset && !Begin[-1])
+            Zeros=(Element_Offset>=2 && !Begin[-2])?2:1;
+        for (size_t i=0; i<(size_t)RawSize; i++)
+        {
+            const int8u Byte=Begin[i];
+            if (Zeros>=2 && Byte==0x03)
+            {
+                Zeros=0;
+                continue;
+            }
+            Zeros=Byte?0:(Zeros+1);
+            Copy[Size++]=Byte;
+        }
+    }
+    int64u Padding=0;
+    if (Size<MinSize)
+    {
+        Padding=MinSize-Size;
+        std::memset(Copy+Size, 0x00, (size_t)Padding);
+        Size=(size_t)MinSize;
+    }
+    Raw.Element_Offset_End=Element_Offset+RawSize+Padding; //After the 0x00 bytes added, beyond the element if any
+    Unescapes.push_back(Raw);
+    File_Offset+=Buffer_Offset+Element_Offset;
+    Buffer=Copy;
+    Buffer_Offset=0;
+    Buffer_Size=Size;
+    Element_Offset=0;
+    Element_Size=Size;
+}
+
+//---------------------------------------------------------------------------
+void File__Analyze::Element_Unescape_End()
+{
+    if (Unescapes.empty())
+        return;
+    const unescape& Raw=Unescapes.back();
+    delete[] Buffer;
+    Buffer=Raw.Buffer;
+    Buffer_Offset=Raw.Buffer_Offset;
+    Buffer_Size=Raw.Buffer_Size;
+    File_Offset=Raw.File_Offset;
+    Element_Offset=Raw.Element_Offset_End;
+    Element_Size=Raw.Element_Size;
+    Unescapes.pop_back();
+}
+
+//***************************************************************************
 // Bitstream bookmark
 //***************************************************************************
 
@@ -4589,6 +4701,14 @@ void File__Analyze::Trace_Layers_Update(size_t Layer)
 //---------------------------------------------------------------------------
 bool File__Analyze::Element_IsOK ()
 {
+    if (BS && BS->EmulationPrevention_Get())
+    {
+        BS->Sync(); //Emulation prevention bytes a skip went over: a skip beyond the readable bits underruns here
+        #if MEDIAINFO_TRACE
+            if (BS->BufferUnderRun()) //The size checks count the emulation_prevention_three_byte, a read may underrun after them
+                Trusted_IsNot("Size is wrong");
+        #endif //MEDIAINFO_TRACE
+    }
     #if !MEDIAINFO_TRACE
         if (BS && BS->BufferUnderRun())
             Trusted_IsNot();

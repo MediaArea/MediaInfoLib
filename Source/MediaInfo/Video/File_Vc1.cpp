@@ -791,7 +791,10 @@ void File_Vc1::FrameHeader()
         Frame_Count_NotParsedIncluded++;
 
     //Parsing
-    BS_Begin();
+    if (From_WMV3)
+        BS_Begin();
+    else
+        BS_Begin_EmulationPrevention(); //Emulation prevention bytes (SMPTE 421M Annex E)
     int8u ptype=(int8u)-1;
     if (profile==3) //Advanced
     {
@@ -993,7 +996,7 @@ void File_Vc1::EntryPointHeader()
 
     //Parsing
     bool extended_mv;
-    BS_Begin();
+    BS_Begin_EmulationPrevention(); //Emulation prevention bytes (SMPTE 421M Annex E)
     Skip_SB(                                                    "broken_link");
     Skip_SB(                                                    "closed_entry");
     Get_SB (    panscan_flag,                                   "panscan_flag");
@@ -1078,7 +1081,10 @@ void File_Vc1::SequenceHeader()
     Element_Name("SequenceHeader");
 
     //Parsing
-    BS_Begin();
+    if (From_WMV3)
+        BS_Begin(); //STRUCT_C, not encapsulated
+    else
+        BS_Begin_EmulationPrevention(); //Emulation prevention bytes (SMPTE 421M Annex E)
     Get_S1 ( 2, profile,                                        "profile"); Param_Info1(Vc1_Profile[profile]);
     if (profile==0 || profile==1) //Simple or Main
     {

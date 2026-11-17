@@ -718,7 +718,6 @@ File_Avc::File_Avc()
 
     //Temp
     preferred_transfer_characteristics=2;
-    Buffer_Size_Original=0;
 
     //ITU-T T.35
     #if defined(MEDIAINFO_T35_YES)
@@ -2052,7 +2051,7 @@ void File_Avc::Data_Parse()
     bool svc_extension_flag=false;
     if (Element_Code==0x0E || Element_Code==0x14)
     {
-        BS_Begin();
+        BS_Begin(); //Part of the NAL unit header, without emulation_prevention_three_byte
         Get_SB (svc_extension_flag,                             "svc_extension_flag");
         if (svc_extension_flag)
             nal_unit_header_svc_extension();
@@ -2061,48 +2060,8 @@ void File_Avc::Data_Parse()
         BS_End();
     }
 
-    //Searching emulation_prevention_three_byte
-    int8u* Buffer_3Bytes=NULL;
-    const int8u* Save_Buffer=Buffer;
-    int64u Save_File_Offset=File_Offset;
-    size_t Save_Buffer_Offset=Buffer_Offset;
-    size_t Save_Buffer_Size=Buffer_Size;
-    int64u Save_Element_Size=Element_Size;
-    Buffer_Size_Original=Buffer_Size;
-    size_t Element_Offset_3Bytes=(size_t)Element_Offset;
-    std::vector<size_t> ThreeByte_List;
-    while (Element_Offset_3Bytes+3<=Element_Size)
-    {
-        if (CC3(Buffer+Buffer_Offset+(size_t)Element_Offset_3Bytes)==0x000003)
-            ThreeByte_List.push_back(Element_Offset_3Bytes+2);
-        Element_Offset_3Bytes+=2;
-        while(Element_Offset_3Bytes<Element_Size && Buffer[Buffer_Offset+(size_t)Element_Offset_3Bytes]!=0x00)
-            Element_Offset_3Bytes+=2;
-        if (Element_Offset_3Bytes>=Element_Size || Buffer[Buffer_Offset+(size_t)Element_Offset_3Bytes-1]==0x00)
-            Element_Offset_3Bytes--;
-    }
-
-    if (!ThreeByte_List.empty())
-    {
-        //We must change the buffer for keeping out
-        Element_Size=Save_Element_Size-ThreeByte_List.size();
-        File_Offset+=Buffer_Offset;
-        Buffer_Offset=0;
-        Buffer_Size=(size_t)Element_Size; //The bytes after the end of the copy are not readable
-        Buffer_3Bytes=new int8u[(size_t)Element_Size];
-        for (size_t Pos=0; Pos<=ThreeByte_List.size(); Pos++)
-        {
-            size_t Pos0=(Pos==ThreeByte_List.size())?(size_t)Save_Element_Size:(ThreeByte_List[Pos]);
-            size_t Pos1=(Pos==0)?0:(ThreeByte_List[Pos-1]+1);
-            size_t Buffer_3bytes_Begin=Pos1-Pos;
-            size_t Save_Buffer_Begin  =Pos1;
-            size_t Size=               Pos0-Pos1;
-            std::memcpy(Buffer_3Bytes+Buffer_3bytes_Begin, Save_Buffer+Save_Buffer_Offset+Save_Buffer_Begin, Size);
-        }
-        Buffer=Buffer_3Bytes;
-    }
-
-    //Parsing
+    //Parsing: the emulation_prevention_three_byte are skipped by the bitstream reader (BS_Begin_EmulationPrevention()),
+    //and removed from a copy only for the parts read as bytes (SEI payloads)
     switch (Element_Code)
     {
         case 0x00 : Element_Name("unspecified"); Skip_XX(Element_Size-Element_Offset, "Data"); break;
@@ -2129,18 +2088,6 @@ void File_Avc::Data_Parse()
             else
                 Element_Name("unspecified");
             Skip_XX(Element_Size-Element_Offset, "Data");
-    }
-
-    if (!ThreeByte_List.empty())
-    {
-        //We must change the buffer for keeping out
-        Element_Size=Save_Element_Size;
-        File_Offset=Save_File_Offset;
-        Buffer_Offset=Save_Buffer_Offset;
-        Buffer_Size=Save_Buffer_Size;
-        delete[] Buffer; Buffer=Save_Buffer;
-        Buffer_3Bytes=NULL; //Same as Buffer...
-        Element_Offset+=ThreeByte_List.size();
     }
 
     //Duplicate
@@ -2197,7 +2144,7 @@ void File_Avc::slice_layer_without_partitioning_non_IDR()
     Element_Name("slice_layer_without_partitioning (non-IDR)");
 
     //Parsing
-    BS_Begin();
+    BS_Begin_EmulationPrevention();
     slice_header();
     slice_data(true);
     BS_End();
@@ -2210,7 +2157,7 @@ void File_Avc::slice_layer_without_partitioning_IDR()
     Element_Name("slice_layer_without_partitioning (IDR)");
 
     //Parsing
-    BS_Begin();
+    BS_Begin_EmulationPrevention();
     slice_header();
     slice_data(true);
     BS_End();
@@ -2912,7 +2859,7 @@ void File_Avc::slice_header()
                     Finish("AVC");
             }
             if (FrameIsAlwaysComplete && !first_mb_in_slice && FrameSizes.size()<=1)
-                FrameSizes[Buffer_Size_Original]++;
+                FrameSizes[Buffer_Size]++;
         }
     FILLING_END();
 }
@@ -3013,9 +2960,9 @@ void File_Avc::Picture_End()
 //---------------------------------------------------------------------------
 void File_Avc::ParameterSet_Compare(bool IsPps, int32u Id)
 {
-    //Content without trailing zeros, they are padding
+    //Content without trailing zeros, they are padding (also with an emulation_prevention_three_byte)
     size_t Size=(size_t)Element_Size;
-    while (Size && !Buffer[Buffer_Offset+Size-1])
+    while (Size && (!Buffer[Buffer_Offset+Size-1] || (Size>=3 && Buffer[Buffer_Offset+Size-1]==0x03 && !Buffer[Buffer_Offset+Size-2] && !Buffer[Buffer_Offset+Size-3])))
         Size--;
     std::string Content((const char*)Buffer+Buffer_Offset, Size);
 
@@ -3182,8 +3129,11 @@ void File_Avc::sei()
 
     //Parsing
     int32u seq_parameter_set_id=(int32u)-1;
-    while(Element_Offset+1<Element_Size)
+    for (;;)
     {
+        Skip_EmulationPrevention(); //Not counted in the RBSP bytes, e.g. after the last payload
+        if (Element_Offset+1>=Element_Size)
+            break;
         Element_Begin1("sei message");
             sei_message(seq_parameter_set_id);
         Element_End0();
@@ -3202,25 +3152,30 @@ void File_Avc::sei_message(int32u &seq_parameter_set_id)
     Element_Begin1("sei message header");
         do
         {
+            Skip_EmulationPrevention();
             Get_B1 (payload_type_byte,                          "payload_type_byte");
             payloadType+=payload_type_byte;
         }
         while(payload_type_byte==0xFF);
         do
         {
+            Skip_EmulationPrevention();
             Get_B1 (payload_size_byte,                          "payload_size_byte");
             payloadSize+=payload_size_byte;
         }
         while(payload_size_byte==0xFF);
     Element_End0();
 
-    int64u Element_Offset_Save=Element_Offset+payloadSize;
-    if (Element_Offset_Save>Element_Size)
+    //Payload in the raw bytes, emulation_prevention_three_byte included
+    int64u EmulationPrevention_Count;
+    int64u RawSize=EmulationPrevention_RawSize(payloadSize, EmulationPrevention_Count);
+    if (RawSize==(int64u)-1)
     {
         Trusted_IsNot("Wrong size");
         Skip_XX(Element_Size-Element_Offset,                    "unknown");
         return;
     }
+    int64u Element_Offset_Save=Element_Offset+RawSize;
     int64u Element_Size_Save=Element_Size;
     Element_Size=Element_Offset_Save;
     switch (payloadType)
@@ -3230,6 +3185,21 @@ void File_Avc::sei_message(int32u &seq_parameter_set_id)
         case  6 :   Picture_Flags_Pending|=Picture_RecoveryPoint; break;
         default :   ;
     }
+    //Payloads read as bytes (and given to other parsers) are parsed from a copy without emulation_prevention_three_byte, if they contain some
+    bool Unescape=false;
+    if (EmulationPrevention_Count)
+        switch (payloadType)
+        {
+            case  4 :
+            case  5 :
+            case 32 :
+            case 137:
+            case 144:
+            case 147:   Unescape=true; break;
+            default :   ; //Read with BS_Begin_EmulationPrevention(), or skipped
+        }
+    if (Unescape)
+        Element_Unescape_Begin(RawSize);
     switch (payloadType)
     {
         case  0 :   sei_message_buffering_period(seq_parameter_set_id); break;
@@ -3243,8 +3213,10 @@ void File_Avc::sei_message(int32u &seq_parameter_set_id)
         case 144:   sei_message_light_level(); break;
         default :
                     Element_Info1("unknown");
-                    Skip_XX(payloadSize,                        "data");
+                    Skip_XX(RawSize,                            "data");
     }
+    if (Unescape)
+        Element_Unescape_End();
     Element_Offset=Element_Offset_Save; //Positionning in the right place.
     Element_Size=Element_Size_Save; //Positionning in the right place.
 }
@@ -3258,7 +3230,7 @@ void File_Avc::sei_message_buffering_period(int32u &seq_parameter_set_id)
     //Parsing
     if (Element_Offset==Element_Size)
         return; //Nothing to do
-    BS_Begin();
+    BS_Begin_EmulationPrevention();
     Get_UE (seq_parameter_set_id,                               "seq_parameter_set_id");
     std::vector<seq_parameter_set_struct*>::iterator seq_parameter_set_Item;
     if (seq_parameter_set_id>=seq_parameter_sets.size() || (*(seq_parameter_set_Item=seq_parameter_sets.begin()+seq_parameter_set_id))==NULL)
@@ -3307,7 +3279,7 @@ void File_Avc::sei_message_pic_timing(int32u /*payloadSize*/, int32u seq_paramet
 
     //Parsing
     int8u   pic_struct=(int8u)-1;
-    BS_Begin();
+    BS_Begin_EmulationPrevention();
     if ((*seq_parameter_set_Item)->CpbDpbDelaysPresentFlag())
     {
         int8u cpb_removal_delay_length_minus1=(*seq_parameter_set_Item)->vui_parameters->NAL?(*seq_parameter_set_Item)->vui_parameters->NAL->cpb_removal_delay_length_minus1:(*seq_parameter_set_Item)->vui_parameters->VCL->cpb_removal_delay_length_minus1; //Spec is not precise, I am not sure
@@ -3937,7 +3909,7 @@ void File_Avc::sei_message_recovery_point()
     Element_Info1("recovery_point");
 
     //Parsing
-    BS_Begin();
+    BS_Begin_EmulationPrevention();
     Skip_UE(                                                    "recovery_frame_cnt");
     Skip_SB(                                                    "exact_match_flag");
     Skip_SB(                                                    "broken_link_flag");
@@ -4019,6 +3991,9 @@ void File_Avc::seq_parameter_set()
     //NULL bytes
     while (Element_Offset<Element_Size)
     {
+        Skip_EmulationPrevention();
+        if (Element_Offset>=Element_Size)
+            break;
         int8u Null;
         Get_B1 (Null,                                           "NULL byte");
         if (Null)
@@ -4094,7 +4069,7 @@ void File_Avc::pic_parameter_set()
     int32u  pic_parameter_set_id, seq_parameter_set_id, num_slice_groups_minus1, num_ref_idx_l0_default_active_minus1, num_ref_idx_l1_default_active_minus1, slice_group_map_type=0;
     int8u   weighted_bipred_idc=0;
     bool    entropy_coding_mode_flag,bottom_field_pic_order_in_frame_present_flag, redundant_pic_cnt_present_flag, weighted_pred_flag, deblocking_filter_control_present_flag, transform_8x8_mode_flag=false;
-    BS_Begin();
+    BS_Begin_EmulationPrevention();
     Get_UE (pic_parameter_set_id,                               "pic_parameter_set_id");
     Get_UE (seq_parameter_set_id,                               "seq_parameter_set_id");
     std::vector<seq_parameter_set_struct*>::iterator seq_parameter_set_Item;
@@ -4171,7 +4146,7 @@ void File_Avc::pic_parameter_set()
     if (Element_Size)
     {
         int64u Offset=Element_Size-1;
-        while (Offset && Buffer[Buffer_Offset+(size_t)Offset]==0x00) //Searching if there are NULL bytes at the end of the data
+        while (Offset && (Buffer[Buffer_Offset+(size_t)Offset]==0x00 || (Offset>=2 && Buffer[Buffer_Offset+(size_t)Offset]==0x03 && !Buffer[Buffer_Offset+(size_t)Offset-1] && !Buffer[Buffer_Offset+(size_t)Offset-2]))) //Searching if there are NULL bytes at the end of the data (an emulation_prevention_three_byte may be between them)
             Offset--;
         size_t Bit_Pos=7;
         while (Bit_Pos && !(Buffer[Buffer_Offset+(size_t)Offset]&(1<<(7-Bit_Pos))))
@@ -4197,6 +4172,9 @@ void File_Avc::pic_parameter_set()
 
     while (Element_Offset<Element_Size) //Not always removed from the stream, ie in MPEG-4
     {
+        Skip_EmulationPrevention();
+        if (Element_Offset>=Element_Size)
+            break;
         int8u Padding;
         Peek_B1(Padding);
         if (!Padding)
@@ -4279,7 +4257,7 @@ void File_Avc::access_unit_delimiter()
     Picture_Aud_Offset=File_Offset+Buffer_Offset-Header_Size;
 
     int8u primary_pic_type;
-    BS_Begin();
+    BS_Begin_EmulationPrevention();
     Get_S1 ( 3, primary_pic_type,                               "primary_pic_type"); Param_Info1(Avc_primary_pic_type[primary_pic_type]);
     Mark_1_NoTrustError(                                        ); //Found 1 file without this bit
     BS_End();
@@ -4398,7 +4376,7 @@ void File_Avc::slice_layer_extension(bool svc_extension_flag)
     }
     else
     {
-        BS_Begin();
+        BS_Begin_EmulationPrevention();
         slice_header();
         slice_data(true);
         BS_End();
@@ -4428,7 +4406,7 @@ File_Avc::seq_parameter_set_struct* File_Avc::seq_parameter_set_data(int32u &Dat
         Skip_Flags(constraint_set_flags, 1,                     "constraint_sett6_flag");
         Skip_Flags(constraint_set_flags, 0,                     "constraint_sett7_flag");
     Get_B1 (level_idc,                                          "level_idc");
-    BS_Begin();
+    BS_Begin_EmulationPrevention();
     Get_UE (    Data_id,                                        "seq_parameter_set_id");
     switch (profile_idc)
     {

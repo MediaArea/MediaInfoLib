@@ -1446,7 +1446,10 @@ void File_Hevc::Data_Parse()
     int64u Save_Element_Size=Element_Size;
     size_t Element_Offset_3Bytes=(size_t)Element_Offset;
     std::vector<size_t> ThreeByte_List;
-    while (Element_Offset_3Bytes+3<=Element_Size)
+    //They are skipped by the bitstream reader (BS_Begin_EmulationPrevention()), and removed from a copy only for the parts read
+    //as bytes (SEI payloads, see sei_message()) and for the Dolby Vision RPU (its CRC is computed on the RBSP)
+    const bool EmulationPrevention_Copy=Element_Code==62;
+    while (EmulationPrevention_Copy && Element_Offset_3Bytes+3<=Element_Size)
     {
         if (CC3(Buffer+Buffer_Offset+(size_t)Element_Offset_3Bytes)==0x000003)
             ThreeByte_List.push_back(Element_Offset_3Bytes+2);
@@ -1619,7 +1622,7 @@ void File_Hevc::slice_segment_layer()
 
     //Parsing
     RapPicFlag=Element_Code>=16 && Element_Code<=23;
-    BS_Begin();
+    BS_Begin_EmulationPrevention();
     slice_segment_header();
     BS_End();
     pic_struct_Pending=(int8u)-1; //Belongs to this access unit only
@@ -1712,7 +1715,7 @@ void File_Hevc::video_parameter_set()
     int32u  vps_num_layer_sets_minus1;
     int8u   vps_video_parameter_set_id, vps_max_sub_layers_minus1, vps_max_layers_minus1, vps_max_layer_id;
     bool    vps_base_layer_internal_flag, vps_temporal_id_nesting_flag, vps_sub_layer_ordering_info_present_flag;
-    BS_Begin();
+    BS_Begin_EmulationPrevention();
     Get_S1 (4,  vps_video_parameter_set_id,                     "vps_video_parameter_set_id");
     if (MustParse_VPS_SPS_PPS_FromFlv)
     {
@@ -2087,7 +2090,7 @@ void File_Hevc::seq_parameter_set()
     int32u  conf_win_left_offset=0, conf_win_right_offset=0, conf_win_top_offset=0, conf_win_bottom_offset=0, sps_max_num_reorder_pics=0;
     int8u   video_parameter_set_id, max_sub_layers_minus1, sps_ext_or_max_sub_layers_minus1;
     bool    separate_colour_plane_flag=false, sps_sub_layer_ordering_info_present_flag;
-    BS_Begin();
+    BS_Begin_EmulationPrevention();
     Get_S1 (4, video_parameter_set_id,                          "sps_video_parameter_set_id");
     std::vector<video_parameter_set_struct*>::iterator video_parameter_set_Item;
     if (video_parameter_set_id >= video_parameter_sets.size() || (*(video_parameter_set_Item = video_parameter_sets.begin() + video_parameter_set_id)) == NULL)
@@ -2442,7 +2445,7 @@ void File_Hevc::pic_parameter_set()
     int32u  pps_pic_parameter_set_id, pps_seq_parameter_set_id, num_ref_idx_l0_default_active_minus1, num_ref_idx_l1_default_active_minus1;
     int8u   num_extra_slice_header_bits;
     bool    tiles_enabled_flag, dependent_slice_segments_enabled_flag, output_flag_present_flag;
-    BS_Begin();
+    BS_Begin_EmulationPrevention();
     Get_UE (    pps_pic_parameter_set_id,                       "pps_pic_parameter_set_id");
     if (pps_pic_parameter_set_id>=64)
     {
@@ -2636,7 +2639,7 @@ void File_Hevc::access_unit_delimiter()
     Element_Name("access_unit_delimiter");
 
     //Parsing
-    BS_Begin();
+    BS_Begin_EmulationPrevention();
     Info_S1( 3, pic_type,                                   "pic_type"); Param_Info1(Hevc_pic_type[pic_type]);
     Mark_1();
     BS_End();
@@ -2680,14 +2683,17 @@ void File_Hevc::sei()
 
     //Parsing
     int32u seq_parameter_set_id=(int32u)-1;
-    while(Element_Offset+1<Element_Size)
+    for (;;)
     {
+        Skip_EmulationPrevention(); //Not counted in the RBSP bytes, e.g. after the last payload
+        if (Element_Offset+1>=Element_Size)
+            break;
         Element_Begin1("sei message");
             sei_message(seq_parameter_set_id);
         Element_End0();
     }
-    BS_Begin();
-    if (!Data_BS_Remain() || !Peek_SB())
+    BS_Begin_EmulationPrevention();
+    if (!Data_BS_Remain_Exact() || !Peek_SB())
     {
         Fill(Stream_Video, 0, "SEI_rbsp_stop_one_bit", "Missing", Unlimited, true, true);
         RiskCalculationN++;
@@ -2713,46 +2719,46 @@ void File_Hevc::sei_message(int32u &seq_parameter_set_id)
     Element_Begin1("sei message header");
         do
         {
+            Skip_EmulationPrevention();
             Get_B1 (payload_type_byte,                          "payload_type_byte");
             payloadType+=payload_type_byte;
         }
         while(payload_type_byte==0xFF);
         do
         {
+            Skip_EmulationPrevention();
             Get_B1 (payload_size_byte,                          "payload_size_byte");
             payloadSize+=payload_size_byte;
         }
         while(payload_size_byte==0xFF);
     Element_End0();
 
-    //Manage buggy files not having final bit stop
-    const int8u* Buffer_Buggy;
-    int64u Buffer_Offset_Buggy, Element_Size_Buggy;
-    size_t Buffer_Size_Buggy=Buffer_Size;
-    if (Element_Offset+payloadSize>Element_Size)
-    {
-        Buffer_Buggy=Buffer;
-        Buffer_Offset_Buggy=Buffer_Offset;
-        Element_Size_Buggy=Element_Size;
-        Element_Size=Element_Offset+payloadSize;
-        Buffer=new int8u[(size_t)Element_Size];
-        Buffer_Offset=0;
-        Buffer_Size=(size_t)Element_Size; //The bytes after the end of the copy are not readable
-        memcpy((void*)Buffer, Buffer_Buggy+(size_t)Buffer_Offset_Buggy, (size_t)Element_Size_Buggy);
-        memset((void*)(Buffer+(size_t)Element_Size_Buggy), 0x00, (size_t)(Element_Size-Element_Size_Buggy)); //Last 0x00 bytes are discarded, we recreate them
-    }
-    else
-        Buffer_Buggy=NULL;
-
-    int64u Element_Offset_Save=Element_Offset+payloadSize;
-    if (Element_Offset_Save>Element_Size)
-    {
-        Trusted_IsNot("Wrong size");
-        Skip_XX(Element_Size-Element_Offset,                    "unknown");
-        return;
-    }
+    //Payload in the raw bytes, emulation_prevention_three_byte included
+    int64u EmulationPrevention_Count=0;
+    int64u RawSize=EmulationPrevention_RawSize(payloadSize, EmulationPrevention_Count);
+    const bool Buggy=RawSize==(int64u)-1;
+    if (Buggy)
+        RawSize=Element_Size-Element_Offset; //Manage buggy files not having final bit stop: last 0x00 bytes are discarded, they are recreated in a copy
+    int64u Element_Offset_Save=Element_Offset+RawSize;
     int64u Element_Size_Save=Element_Size;
     Element_Size=Element_Offset_Save;
+
+    //Payloads read as bytes (and given to other parsers) are parsed from a copy without emulation_prevention_three_byte, if they contain some
+    bool Unescape=Buggy;
+    if (EmulationPrevention_Count)
+        switch (payloadType)
+        {
+            case   4 :
+            case   5 :
+            case 132 :
+            case 137 :
+            case 144 :
+            case 147 :
+            case 148 :   Unescape=true; break;
+            default  :   ; //Read with BS_Begin_EmulationPrevention(), or skipped
+        }
+    if (Unescape)
+        Element_Unescape_Begin(RawSize, payloadSize);
     switch (payloadType)
     {
         case   0 :   sei_message_buffering_period(seq_parameter_set_id, payloadSize); break;
@@ -2771,20 +2777,13 @@ void File_Hevc::sei_message(int32u &seq_parameter_set_id)
         case 176 :   three_dimensional_reference_displays_info(payloadSize); break;
         default :
                     Element_Info1("unknown");
-                    Skip_XX(payloadSize,                        "data");
+                    Skip_XX(Element_Size-Element_Offset,        "data");
     }
-    Element_Offset=Element_Offset_Save; //Positionning in the right place.
+    if (Unescape)
+        Element_Unescape_End(); //Positionning after the payload, beyond the element if 0x00 bytes were recreated
+    else
+        Element_Offset=Element_Offset_Save; //Positionning in the right place.
     Element_Size=Element_Size_Save; //Positionning in the right place.
-
-    //Manage buggy files not having final bit stop
-    if (Buffer_Buggy)
-    {
-        delete[] Buffer;
-        Buffer=Buffer_Buggy;
-        Buffer_Offset=Buffer_Offset_Buggy;
-        Buffer_Size=Buffer_Size_Buggy;
-        Element_Size=Element_Size_Buggy;
-    }
 }
 
 //---------------------------------------------------------------------------
@@ -2796,7 +2795,7 @@ void File_Hevc::sei_message_buffering_period(int32u &seq_parameter_set_id, int32
     //Parsing
     if (Element_Offset==Element_Size)
         return; //Nothing to do
-    BS_Begin();
+    BS_Begin_EmulationPrevention();
     Get_UE (seq_parameter_set_id,                               "seq_parameter_set_id");
     std::vector<seq_parameter_set_struct*>::iterator seq_parameter_set_Item;
     if (seq_parameter_set_id>=seq_parameter_sets.size() || (*(seq_parameter_set_Item=seq_parameter_sets.begin()+seq_parameter_set_id))==NULL)
@@ -2868,7 +2867,7 @@ void File_Hevc::sei_message_pic_timing(int32u &seq_parameter_set_id, int32u payl
     }
 
     //Parsing
-    BS_Begin();
+    BS_Begin_EmulationPrevention();
     if ((*seq_parameter_set_Item)->vui_parameters?(*seq_parameter_set_Item)->vui_parameters->flags[frame_field_info_present_flag]:((*seq_parameter_set_Item)->profile_tier_level_info.general_progressive_source_flag && (*seq_parameter_set_Item)->profile_tier_level_info.general_interlaced_source_flag))
     {
         int8u pic_struct, source_scan_type;
@@ -3238,7 +3237,7 @@ void File_Hevc::sei_message_recovery_point()
     Element_Info1("recovery_point");
 
     //Parsing
-    BS_Begin();
+    BS_Begin_EmulationPrevention();
     Skip_SE(                                                    "recovery_poc_cnt");
     Skip_SB(                                                    "exact_match_flag");
     Skip_SB(                                                    "broken_link_flag");
@@ -3252,7 +3251,7 @@ void File_Hevc::sei_message_active_parameter_sets()
 
     //Parsing
     int32u num_sps_ids_minus1;
-    BS_Begin();
+    BS_Begin_EmulationPrevention();
     Skip_S1(4,                                                  "active_video_parameter_set_id");
     Skip_SB(                                                    "self_contained_cvs_flag");
     Skip_SB(                                                    "no_parameter_set_update_flag");
@@ -3272,7 +3271,7 @@ void File_Hevc::sei_time_code()
 
     //Parsing
     int8u num_clock_ts;
-    BS_Begin();
+    BS_Begin_EmulationPrevention();
     Get_S1 (2, num_clock_ts,                                    "num_clock_ts");
     for (int32u i=0; i<num_clock_ts; i++)
     {
@@ -3409,8 +3408,8 @@ void File_Hevc::three_dimensional_reference_displays_info(int32u payloadSize)
     Element_Info1("three_dimensional_reference_displays_info");
 
     //Parsing
-    BS_Begin();
-    auto End=Data_BS_Remain()-payloadSize*8;
+    BS_Begin_EmulationPrevention();
+    auto End=Data_BS_Remain_Exact()-payloadSize*8;
     int32u prec_ref_display_width, prec_ref_viewing_dist=0, num_ref_displays_minus1;
     int32u left_view_id0, right_view_id0;
     bool ref_viewing_distance_flag;
@@ -3505,7 +3504,7 @@ void File_Hevc::three_dimensional_reference_displays_info(int32u payloadSize)
         Element_End0();
     }
     TEST_SB_SKIP(                                               "three_dimensional_reference_displays_extension_flag");
-        Skip_BS(Data_BS_Remain()-End,                           "(Not parsed)");
+        Skip_BS(Data_BS_Remain_Exact()-End,                     "(Not parsed)");
     TEST_SB_END();
     BS_End();
     FILLING_BEGIN_PRECISE();
@@ -4611,7 +4610,7 @@ void File_Hevc::EndOfxPS(const char* FlagName, const char* DataName)
 void File_Hevc::rbsp_trailing_bits()
 {
     size_t IsRisky;
-    size_t Remain=Data_BS_Remain();
+    size_t Remain=Data_BS_Remain_Exact();
     if (!Remain)
         IsRisky=1; //rbsp_stop_one_bit is missing 
     else if (Remain>8)
@@ -4626,7 +4625,7 @@ void File_Hevc::rbsp_trailing_bits()
             // Conform to specs
             IsRisky=0;
             Mark_1();
-            while (Data_BS_Remain())
+            while (Data_BS_Remain_Exact())
                 Mark_0();
         }
         else

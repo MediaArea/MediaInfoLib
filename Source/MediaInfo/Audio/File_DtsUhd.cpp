@@ -671,7 +671,7 @@ int File_DtsUhd::ExtractMultiFrameDistribStaticMD(MD01* MD01)
                 size_t Save_Buffer_Size=0;
                 int64u Save_Element_Offset=0;
                 int64u Save_Element_Size=0;
-                BitStream_Fast Save_BS;
+                BitStream_Fast_Mixed Save_BS;
                 #if MEDIAINFO_TRACE
                     size_t Save_BS_Size=0;
                 #endif
