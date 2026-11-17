@@ -849,7 +849,7 @@ void File_Png::iCCP()
 void File_Png::mDCV()
 {
     Ztring MasteringDisplay_ColorPrimaries, MasteringDisplay_Luminance;
-    Get_MasteringDisplayColorVolume(MasteringDisplay_ColorPrimaries, MasteringDisplay_Luminance);
+    Get_MasteringDisplayColorVolume(MasteringDisplay_ColorPrimaries, MasteringDisplay_Luminance, MdcvFormat_Png);
 
     FILLING_BEGIN();
         Fill_HDR_Format(StreamKind_Last, StreamPos_Last, {{"HDR_Format", __T("SMPTE ST 2086")}, {"HDR_Format_Compatibility", __T("HDR10")}}, false); //After the dynamic metadata

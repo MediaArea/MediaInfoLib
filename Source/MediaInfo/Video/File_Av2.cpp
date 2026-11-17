@@ -1304,7 +1304,7 @@ void File_Av2::metadata_hdr_mdcv()
         HDR_Format = __T("SMPTE ST 2086");
         HDR[Video_HDR_Format_Compatibility][HdrFormat_SmpteSt2086] = "HDR10";
     }
-    Get_MasteringDisplayColorVolume(HDR[Video_MasteringDisplay_ColorPrimaries][HdrFormat_SmpteSt2086], HDR[Video_MasteringDisplay_Luminance][HdrFormat_SmpteSt2086]);
+    Get_MasteringDisplayColorVolume(HDR[Video_MasteringDisplay_ColorPrimaries][HdrFormat_SmpteSt2086], HDR[Video_MasteringDisplay_Luminance][HdrFormat_SmpteSt2086], MdcvFormat_Av2);
     
     Element_End0();
 }

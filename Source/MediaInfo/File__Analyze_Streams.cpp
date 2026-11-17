@@ -637,23 +637,28 @@ static Ztring DisplayAspectRatio_String(float DAR)
 
 //---------------------------------------------------------------------------
 #if defined(MEDIAINFO_APV_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AV2_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_PNG_YES)
-void File__Analyze::Get_MasteringDisplayColorVolume(Ztring &MasteringDisplay_ColorPrimaries, Ztring &MasteringDisplay_Luminance, bool FromAV1)
+void File__Analyze::Get_MasteringDisplayColorVolume(Ztring &MasteringDisplay_ColorPrimaries, Ztring &MasteringDisplay_Luminance, mdcv_format MdcvFormat)
 {
     //Parsing
+    #if MEDIAINFO_TRACE
+        bool HasAv1Names=MdcvFormat==MdcvFormat_Av1 || MdcvFormat==MdcvFormat_Av2 || MdcvFormat==MdcvFormat_Apv;
+    #endif //MEDIAINFO_TRACE
+    bool IsRGB=MdcvFormat==MdcvFormat_Av1 || MdcvFormat==MdcvFormat_Apv || MdcvFormat==MdcvFormat_Png;
     mastering_metadata_2086 Meta;
     for (size_t c = 0; c < 3; c++)
     {
-        Get_B2(Meta.Primaries[c*2  ],                           "display_primaries_x");
-        Get_B2(Meta.Primaries[c*2+1],                           "display_primaries_y");
+        size_t i=IsRGB?((c+2)%3):c; // R, G, B to G, B, R
+        Get_B2(Meta.Primaries[i*2  ],                           HasAv1Names?"primary_chromaticity_x":"display_primaries_x");
+        Get_B2(Meta.Primaries[i*2+1],                           HasAv1Names?"primary_chromaticity_y":"display_primaries_y");
     }
-    Get_B2(Meta.Primaries[3*2  ],                               "white_point_x");
-    Get_B2(Meta.Primaries[3*2+1],                               "white_point_y");
-    Get_B4(Meta.Luminance[1],                                   "max_display_mastering_luminance");
-    Get_B4(Meta.Luminance[0],                                   "min_display_mastering_luminance");
+    Get_B2(Meta.Primaries[3*2  ],                               HasAv1Names?"white_point_chromaticity_x":"white_point_x");
+    Get_B2(Meta.Primaries[3*2+1],                               HasAv1Names?"white_point_chromaticity_y":"white_point_y");
+    Get_B4(Meta.Luminance[1],                                   MdcvFormat==MdcvFormat_Apv?"max_mastering_luminance":(HasAv1Names?"luminance_max":"max_display_mastering_luminance"));
+    Get_B4(Meta.Luminance[0],                                   MdcvFormat==MdcvFormat_Apv?"min_mastering_luminance":(HasAv1Names?"luminance_min":"min_display_mastering_luminance"));
 
     FILLING_BEGIN();
         if (MasteringDisplay_ColorPrimaries.empty())
-            Get_MasteringDisplayColorVolume(MasteringDisplay_ColorPrimaries, MasteringDisplay_Luminance, Meta, FromAV1);
+            Get_MasteringDisplayColorVolume(MasteringDisplay_ColorPrimaries, MasteringDisplay_Luminance, Meta, MdcvFormat==MdcvFormat_Av1 || MdcvFormat==MdcvFormat_Apv);
     FILLING_END();
 }
 #endif
@@ -688,7 +693,7 @@ Ztring MasteringDisplayColorVolume_Values_Compute(int16u Values[8])
     }
     if ((R|B|G)>=4)
     {
-        //Order not automaticly detected, betting on GBR order
+        //Order not automaticly detected, using the order of the values (G, B, R)
         G=0;
         B=1;
         R=2;
@@ -741,10 +746,10 @@ void File__Analyze::Get_MasteringDisplayColorVolume(Ztring &MasteringDisplay_Col
 
     if (Meta.Luminance[0]!=(int32u)-1 && Meta.Luminance[1]!=(int32u)-1)
     {
-        float32 Luminance_Min_Ratio=static_cast<float32>(FromAV1?16384:10000); // 18.14 fixed-point, MPEG values are x10000
-        float32 Luminance_Max_Ratio=static_cast<float32>(FromAV1?256:10000); // 24.8 fixed-point, MPEG values are x10000
+        int32u Luminance_Min_Ratio=FromAV1?16384:10000; // 18.14 fixed-point, MPEG values are x10000
+        int32u Luminance_Max_Ratio=FromAV1?256:10000; // 24.8 fixed-point, MPEG values are x10000
         MasteringDisplay_Luminance=        __T("min: ")+Ztring::ToZtring(((float64)Meta.Luminance[0])/Luminance_Min_Ratio, 4)
-                                  +__T(" cd/m2, max: ")+Ztring::ToZtring(((float64)Meta.Luminance[1])/Luminance_Max_Ratio, ((float64)Meta.Luminance[1]/Luminance_Max_Ratio-Meta.Luminance[1]/Luminance_Max_Ratio==0)?0:4)
+                                  +__T(" cd/m2, max: ")+Ztring::ToZtring(((float64)Meta.Luminance[1])/Luminance_Max_Ratio, (Meta.Luminance[1]%Luminance_Max_Ratio)?4:0)
                                   +__T(" cd/m2");
     }
 }
@@ -2099,9 +2104,10 @@ static Ztring DV_Primaries_String(const File__Analyze::DV_RPU::l9& L9)
     if (L9.Explicit)
     {
         int16u Values[8]; // MPEG units
+        static const int8u Order[8]={2, 3, 4, 5, 0, 1, 6, 7}; // Red, green, blue, white to green, blue, red, white
         for (int8u i=0; i<8; i++)
         {
-            int32s Value=(int16s)L9.Primaries[i];
+            int32s Value=(int16s)L9.Primaries[Order[i]];
             if (Value<0)
                 Value=0;
             Values[i]=(int16u)((Value*50000+16383)/32767);

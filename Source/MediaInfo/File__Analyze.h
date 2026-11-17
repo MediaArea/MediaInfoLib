@@ -983,13 +983,22 @@ public :
 
     void Attachment(const char* MuxingMode, const Ztring& Description = {}, const Ztring& Type = {}, const Ztring& MimeType = {}, bool IsCover = {});
     #if defined(MEDIAINFO_APV_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AV2_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_PNG_YES)
-    void Get_MasteringDisplayColorVolume(Ztring& MasteringDisplay_ColorPrimaries, Ztring& MasteringDisplay_Luminance, bool FromAV1=false);
+    // Mastering display color volume as stored by each format: order of the primaries, units, names of the values in the trace
+    enum mdcv_format
+    {
+        MdcvFormat_Hevc,    // G, B, R primaries (suggested order) in 0.00002 units, luminance in 0.0001 cd/m2, trace names of H.265 (H.264, H.265, MPEG-4 mdcv box...)
+        MdcvFormat_Av1,     // R, G, B primaries in 0.16 fixed-point, maximum luminance in 24.8 fixed-point, minimum luminance in 18.14 fixed-point, trace names of AV1
+        MdcvFormat_Av2,     // Units and suggested order of H.265, trace names of AV1
+        MdcvFormat_Apv,     // Units and order of AV1, trace names of AV1 except for the luminance values
+        MdcvFormat_Png,     // R, G, B primaries, units and trace names of H.265
+    };
+    void Get_MasteringDisplayColorVolume(Ztring& MasteringDisplay_ColorPrimaries, Ztring& MasteringDisplay_Luminance, mdcv_format MdcvFormat=MdcvFormat_Hevc);
     void Get_LightLevel(Ztring &MaxCLL, Ztring &MaxFALL, int32u Divisor=1);
     #endif
     #if defined(MEDIAINFO_APV_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_AV2_YES) || defined(MEDIAINFO_AVC_YES) || defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MK_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_MXF_YES) || defined(MEDIAINFO_PNG_YES) || defined(MEDIAINFO_T35_YES)
     struct mastering_metadata_2086
     {
-        int16u Primaries[8];
+        int16u Primaries[8]; // G, B, R, white point (x then y)
         int32u Luminance[2];
     };
     void Get_MasteringDisplayColorVolume(Ztring &MasteringDisplay_ColorPrimaries, Ztring &MasteringDisplay_Luminance, mastering_metadata_2086 &Meta, bool FromAV1=false);
