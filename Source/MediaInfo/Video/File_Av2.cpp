@@ -304,22 +304,30 @@ void File_Av2::Streams_Finish()
 void File_Av2::Read_Buffer_OutOfBand()
 {
     //Parsing
-    bool initial_presentation_delay_present;
-    BS_Begin();
-    Mark_1 ();
-    Skip_S1(7,                                                  "version");
-    Skip_S1(3,                                                  "seq_profile");
-    Skip_S1(5,                                                  "seq_level_idx_0");
-    Skip_SB(                                                    "seq_tier_0");
-    Skip_S1(2,                                                  "bitdepth_idx");
-    Skip_SB(                                                    "monochrome");
-    Skip_SB(                                                    "chroma_subsampling_x");
-    Skip_SB(                                                    "chroma_subsampling_y");
-    Skip_S1(3,                                                  "chroma_sample_position");
-    Skip_S1(2,                                                  "reserved");
-    Get_SB (   initial_presentation_delay_present,              "initial_presentation_delay_present");
-    Skip_S1(4,                                                  initial_presentation_delay_present?"initial_presentation_delay_minus_one":"reserved");
-    BS_End();
+    if (Element_Offset<Element_Size && !(Buffer[Buffer_Offset+(size_t)Element_Offset]&0x80)) //Without marker bit, OutOfBandAV2CodecConfigurationBox from the AV2 ISOBMFF binding
+    {
+        Skip_B1(                                                "reserved1");
+        Skip_B1(                                                "config_obus_count_minus1");
+    }
+    else
+    {
+        bool initial_presentation_delay_present;
+        BS_Begin();
+        Mark_1 ();
+        Skip_S1(7,                                              "version");
+        Skip_S1(3,                                              "seq_profile");
+        Skip_S1(5,                                              "seq_level_idx_0");
+        Skip_SB(                                                "seq_tier_0");
+        Skip_S1(2,                                              "bitdepth_idx");
+        Skip_SB(                                                "monochrome");
+        Skip_SB(                                                "chroma_subsampling_x");
+        Skip_SB(                                                "chroma_subsampling_y");
+        Skip_S1(3,                                              "chroma_sample_position");
+        Skip_S1(2,                                              "reserved");
+        Get_SB (   initial_presentation_delay_present,          "initial_presentation_delay_present");
+        Skip_S1(4,                                              initial_presentation_delay_present?"initial_presentation_delay_minus_one":"reserved");
+        BS_End();
+    }
 
     Open_Buffer_Continue(Buffer, Buffer_Size);
 }

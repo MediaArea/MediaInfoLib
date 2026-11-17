@@ -1052,6 +1052,7 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_AORD=0x414F5244;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_av1C=0x61763143;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_av2C=0x61763243;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_av2c=0x61763263;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_avcC=0x61766343;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_avcE=0x61766345;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_bitr=0x62697472;
@@ -1517,6 +1518,7 @@ void File_Mpeg4::Data_Parse()
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_AORD)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_av1C)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_av2C)
+                                ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_av2c)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_avcC)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_avcE)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_bitr)
@@ -8043,6 +8045,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
                 {
                     File_Av2* Parser=new File_Av2;
                     Parser->FrameIsAlwaysComplete=true;
+                    Parser->IsAnnexB=true;
                     Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
                 }
             #endif
@@ -8621,7 +8624,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_av1C()
 //---------------------------------------------------------------------------
 void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_av2C()
 {
-    Element_Name("AV2CodecConfigurationRecord");
+    Element_Name(Element_Offset<Element_Size && !(Buffer[Buffer_Offset+(size_t)Element_Offset]&0x80)?"OutOfBandAV2CodecConfigurationBox":"AV2CodecConfigurationRecord"); //Without marker bit, from the AV2 ISOBMFF binding
     AddCodecConfigurationBoxInfo();
     if (moov_trak_mdia_minf_stbl_stsd_Pos>1)
     {
@@ -8650,6 +8653,22 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_av2C()
     #else
         Skip_XX(Element_Size,                                   "AV2 Data");
     #endif
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_av2c()
+{
+    Element_Name("InBandAV2CodecConfigurationBox");
+    AddCodecConfigurationBoxInfo();
+
+    //Parsing
+    BS_Begin();
+    Skip_S1(3,                                                  "reserved1");
+    Skip_S1(2,                                                  "max_num_streams_minus1");
+    Skip_S1(5,                                                  "max_profile_idc");
+    Skip_S1(5,                                                  "max_level_idx");
+    Skip_SB(                                                    "max_tier");
+    BS_End();
 }
 
 //---------------------------------------------------------------------------

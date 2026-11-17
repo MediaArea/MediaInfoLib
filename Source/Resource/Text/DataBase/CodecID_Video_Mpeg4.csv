@@ -39,6 +39,8 @@ AV01;AV1;;;;;;
 av01;AV1;;;;;;
 av02;AV2;;;;;;
 AV1x;YUV;;;;;;YUV;4:2:2
+av2E;AV2;;;;;;
+av2e;AV2;;;;;;
 avc1;AVC;;Advanced Video Coding;;;;;
 avc2;AVC;;Advanced Video Coding;;;;;
 avc3;AVC;;Advanced Video Coding;;;;;
