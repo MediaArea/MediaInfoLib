@@ -87,9 +87,11 @@ size_t MediaInfoList_Internal::Open(const String &File_Name, const fileoptions_t
     //Get all filenames
     ZtringList List;
     #if defined(MEDIAINFO_DIRECTORY_YES)
+    ZtringList Listed;
     if (Dir::Exists(File_Name))
     {
         List=Dir::GetAllFileNames(File_Name, (Options&FileOption_NoRecursive)?Dir::Include_Files:((Dir::dirlist_t)(Dir::Include_Files|Dir::Parse_SubDirs)));
+        Listed=List; //Also the names which are not parsed, e.g. the files of a directory which is parsed as a whole
         sort(List.begin(), List.end());
 
         #if MEDIAINFO_ADVANCED
@@ -126,6 +128,9 @@ size_t MediaInfoList_Internal::Open(const String &File_Name, const fileoptions_t
     for (ZtringList::iterator L=List.begin(); L!=List.end(); ++L)
         ToParse.push(*L);
     ToParse_Total+=List.size();
+    #if defined(MEDIAINFO_DIRECTORY_YES)
+        ToParse_Listed+=Listed;
+    #endif //defined(MEDIAINFO_DIRECTORY_YES)
     if (ToParse_Total)
         State=ToParse_AlreadyDone*10000/ToParse_Total;
     else
@@ -178,7 +183,14 @@ static size_t RemoveFilesFromList(std::queue<String>& ToParse, Ztring CompleteNa
 void MediaInfoList_Internal::Entry()
 {
     if (ToParse_Total==0)
+    {
+        #if defined(MEDIAINFO_DIRECTORY_YES)
+            CriticalSectionLocker CSL(CS);
+            Dir::ReleaseFileNames(ToParse_Listed); //No file to parse, e.g. a directory without file of a known extension
+            ToParse_Listed.clear();
+        #endif //defined(MEDIAINFO_DIRECTORY_YES)
         return;
+    }
 
     for (;;)
     {
@@ -290,6 +302,10 @@ void MediaInfoList_Internal::Entry()
         //    printf("%f done (%i/%i %s)\n", ((float)State)/100, (int)ToParse_AlreadyDone, (int)ToParse_Total, Ztring(ToParse.front()).To_UTF8().c_str());
         if (IsTerminating() || State==10000)
         {
+            #if defined(MEDIAINFO_DIRECTORY_YES)
+                Dir::ReleaseFileNames(ToParse_Listed); //All the files are parsed
+                ToParse_Listed.clear();
+            #endif //defined(MEDIAINFO_DIRECTORY_YES)
             CS.Leave();
             break;
         }
@@ -375,6 +391,10 @@ void MediaInfoList_Internal::Close(size_t FilePos)
     ToParse = {};
     ToParse_AlreadyDone=0;
     ToParse_Total=0;
+    #if defined(MEDIAINFO_DIRECTORY_YES)
+        Dir::ReleaseFileNames(ToParse_Listed);
+        ToParse_Listed.clear();
+    #endif //defined(MEDIAINFO_DIRECTORY_YES)
 }
 
 //***************************************************************************

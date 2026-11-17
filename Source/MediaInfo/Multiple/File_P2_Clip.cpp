@@ -191,6 +191,7 @@ bool File_P2_Clip::FileHeader_Begin()
                                             Exists=true;
                                             break;
                                         }
+                                    Dir::ReleaseFileNames(Dirs); //Only their names are used
                                     if (!Exists)
                                         MXF_File+=__T("AUDIO");
 
@@ -253,6 +254,7 @@ bool File_P2_Clip::FileHeader_Begin()
                                             Exists=true;
                                             break;
                                         }
+                                    Dir::ReleaseFileNames(Dirs); //Only their names are used
                                     if (!Exists)
                                         MXF_File+=__T("AUDIO");
 

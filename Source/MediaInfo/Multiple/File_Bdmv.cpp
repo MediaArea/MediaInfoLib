@@ -680,8 +680,13 @@ void File_Bdmv::BDMV()
      || Dir::Exists(File_Name+PathSeparator+__T("SLYVM"))
      || Dir::Exists(File_Name+PathSeparator+__T("ANYVM")))
         Fill(Stream_General, 0, General_Format_Profile, "BD+");
-    if (Dir::Exists(File_Name+PathSeparator+__T("BDJO")) && !Dir::GetAllFileNames(File_Name+PathSeparator+__T("BDJO")).empty())
-        Fill(Stream_General, 0, General_Format_Profile, "BD-Java");
+    if (Dir::Exists(File_Name+PathSeparator+__T("BDJO")))
+    {
+        ZtringList BDJO_Files=Dir::GetAllFileNames(File_Name+PathSeparator+__T("BDJO"));
+        Dir::ReleaseFileNames(BDJO_Files); //Only their count is used
+        if (!BDJO_Files.empty())
+            Fill(Stream_General, 0, General_Format_Profile, "BD-Java");
+    }
     #endif //defined(MEDIAINFO_DIRECTORY_YES)
 
     //Filling
