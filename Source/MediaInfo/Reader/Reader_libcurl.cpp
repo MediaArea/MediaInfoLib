@@ -38,11 +38,14 @@
 #endif
 #include <ctime>
 #include <algorithm> //For Url
-#if !defined(MEDIAINFO_LIBCURL_DLL_RUNTIME) && defined(__linux__) && LIBCURL_VERSION_NUM>=0x074600 //7.70.0, curl_version_info_data::cainfo
+#if !defined(MEDIAINFO_LIBCURL_DLL_RUNTIME) && defined(__linux__) && !defined(__ANDROID__) && LIBCURL_VERSION_NUM>=0x074600 //7.70.0, curl_version_info_data::cainfo
     #define MEDIAINFO_LIBCURL_CAINFO_FALLBACK 1
     #include <cerrno>
     #include <cstring>
     #include <unistd.h> //For access()
+#endif
+#if defined(__ANDROID__)
+    #include <sys/stat.h> //For stat()
 #endif
 #if defined(MEDIAINFO_LIBCURL_DLL_RUNTIME) || LIBCURL_VERSION_NUM>=0x073400 //7.52.0, settings of HTTPS proxies
     #define MEDIAINFO_LIBCURL_HTTPS_PROXY 1
@@ -480,6 +483,22 @@ static void Reader_libcurl_CertificateAuthorityFallback(CURL* Curl)
         }
 }
 #endif //MEDIAINFO_LIBCURL_CAINFO_FALLBACK
+
+//---------------------------------------------------------------------------
+#if defined(__ANDROID__)
+//Android 14+ updates the CA certificates of the system with the Conscrypt module, in its own directory: the one in the system partition, the usual default of libcurl builds for Android, is no longer updated
+static void Reader_libcurl_CertificateAuthorityAndroid(CURL* Curl)
+{
+    static const char Path[]="/apex/com.android.conscrypt/cacerts";
+    struct stat Stat;
+    if (stat(Path, &Stat) || !S_ISDIR(Stat.st_mode))
+        return;
+    curl_easy_setopt(Curl, CURLOPT_CAPATH, Path);
+    #if MEDIAINFO_LIBCURL_HTTPS_PROXY
+        curl_easy_setopt(Curl, CURLOPT_PROXY_CAPATH, Path);
+    #endif //MEDIAINFO_LIBCURL_HTTPS_PROXY
+}
+#endif //defined(__ANDROID__)
 
 //---------------------------------------------------------------------------
 struct Reader_libcurl_curl_data_getregion
@@ -1156,10 +1175,13 @@ size_t Reader_libcurl::Format_Test_PerParser(MediaInfo_Internal* MI, const Strin
     Curl_Data->Curl=curl_easy_init();
     if (Curl_Data->Curl==NULL)
         return 0;
-    #if MEDIAINFO_LIBCURL_CAINFO_FALLBACK
+    #if defined(__ANDROID__)
+        if (Curl_Data->Ssl_CertificateAuthorityFileName.empty() && Curl_Data->Ssl_CertificateAuthorityPath.empty() && !Curl_Data->Ssl_IgnoreSecurity)
+            Reader_libcurl_CertificateAuthorityAndroid(Curl_Data->Curl);
+    #elif MEDIAINFO_LIBCURL_CAINFO_FALLBACK
         if (Curl_Data->Ssl_CertificateAuthorityFileName.empty() && Curl_Data->Ssl_CertificateAuthorityPath.empty() && !Curl_Data->Ssl_IgnoreSecurity)
             Reader_libcurl_CertificateAuthorityFallback(Curl_Data->Curl);
-    #endif //MEDIAINFO_LIBCURL_CAINFO_FALLBACK
+    #endif
     #if MEDIAINFO_NEXTPACKET
         if (MI->Config.NextPacket_Get())
         {
