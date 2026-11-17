@@ -31,7 +31,9 @@ private :
     void SShd();
 
     //Temp
-    int32u BitRate;
+    int8u  Coding=0;
+    int32u SamplingRate=0;
+    int32u Channels=0;
 };
 
 } //NameSpace
