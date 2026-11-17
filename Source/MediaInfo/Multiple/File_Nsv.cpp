@@ -84,6 +84,7 @@ public:
     stream          Streams[2];
     int64s          AudioDelay=0;
     bool            IsMajorSynched=false;
+    bool            Header_IsValid=false;
 };
 
 //***************************************************************************
@@ -537,6 +538,9 @@ bool File_Nsv::Synched_Test()
 //---------------------------------------------------------------------------
 void File_Nsv::Header_Parse()
 {
+    if (P)
+        P->Header_IsValid=false;
+
     //Parsing
     int32u sync_hdr;
     Peek_B4(sync_hdr);
@@ -640,12 +644,19 @@ void File_Nsv::Header_Parse()
         }
         Header_Fill_Code(0, "Frame");
         Header_Fill_Size(Element_Offset+video_len+audio_len);
+        P->Header_IsValid=true;
     FILLING_END();
 }
 
 //---------------------------------------------------------------------------
 void File_Nsv::Data_Parse()
 {
+    if (!P->Header_IsValid)
+    {
+        Skip_XX(Element_Size,                                   "Data");
+        return; //Not a frame, the sizes are from the previous frame
+    }
+
     Element_Info1C(P->IsMajorSynched, Frame_Count);
     Element_Info1C(FrameInfo.PTS!=(int64u)-1, FrameInfo.PTS/1000000000.0);
 
