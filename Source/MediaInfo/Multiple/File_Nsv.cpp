@@ -457,15 +457,19 @@ bool File_Nsv::Synchronize()
             auto audio_len=LittleEndian2int16u(Buffer_Temp);
             Buffer_Temp+=2;
             auto Size=HeaderSize+video_len+audio_len;
-            if (File_Size-(File_Offset+Buffer_Offset)==Size)
+            const auto Remain=File_Size-(File_Offset+Buffer_Offset);
+            if (Remain==Size)
                 break;
-            if (Buffer_Size_m4-Buffer_Offset<Size)
-                return false;
-            auto sync_hdr1=BigEndian2int32u(Buffer+Buffer_Offset+Size);
-            if (sync_hdr1==Elements::NSVs || (sync_hdr1>>16)==0xEFBE)
-                break;
-            if (IsMainSync && Nsv_SyncFrame_IsTrusted(Buffer, Buffer_Size, Buffer_Offset, P && P->IsMajorSynched?P->Streams:nullptr))
-                break;
+            if (Remain>=Size+4) //Else the frame and the header of the next one are not in the file, this is not a frame
+            {
+                if (Buffer_Size_m4-Buffer_Offset<Size)
+                    return false;
+                auto sync_hdr1=BigEndian2int32u(Buffer+Buffer_Offset+Size);
+                if (sync_hdr1==Elements::NSVs || (sync_hdr1>>16)==0xEFBE)
+                    break;
+                if (IsMainSync && Nsv_SyncFrame_IsTrusted(Buffer, Buffer_Size, Buffer_Offset, P && P->IsMajorSynched?P->Streams:nullptr))
+                    break;
+            }
         }
 
         // Next byte
