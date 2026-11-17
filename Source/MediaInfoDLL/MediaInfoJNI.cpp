@@ -99,7 +99,7 @@ static jint JNI_Open(JNIEnv* _env, jobject _this, jstring name)
 {
     MediaInfo_Internal* mi = GetMiObj(_env, _this);
     if (mi == NULL)
-        return 1;
+        return 0;
 
     return (jint)mi->Open(Jstring2Ztring(_env, name));
 }
@@ -110,7 +110,7 @@ static jint JNI_OpenFd(JNIEnv* _env, jobject _this, jint fd, jstring name)
 {
     MediaInfo_Internal* mi = GetMiObj(_env, _this);
     if (mi == NULL)
-        return 1;
+        return 0;
 
     int64u size = (int64u)-1;
 
@@ -122,13 +122,20 @@ static jint JNI_OpenFd(JNIEnv* _env, jobject _this, jint fd, jstring name)
 
     int8u* buffer = new int8u[BUFFER_SIZE];
 
-    mi->Open_Buffer_Init(size, 0);
+    // As with Open(), not opened if the descriptor can not be read, e.g. if it is invalid
+    bool opened = false;
     while (1) {
 
         ssize_t count = read(fd, (void*)buffer, BUFFER_SIZE);
 
         if (count < 0)
             break; // error
+
+        if (!opened)
+        {
+            mi->Open_Buffer_Init(size, 0);
+            opened = true;
+        }
 
         std::bitset<32> state = mi->Open_Buffer_Continue(buffer, (size_t)count);
 
@@ -151,12 +158,13 @@ static jint JNI_OpenFd(JNIEnv* _env, jobject _this, jint fd, jstring name)
         if (count == 0)
             break;
     }
-    mi->Open_Buffer_Finalize();
+    if (opened)
+        mi->Open_Buffer_Finalize();
 
     delete[] buffer;
     close(fd);
 
-    return 0;
+    return opened ? 1 : 0;
 }
 #endif //__ANDROID__
 
