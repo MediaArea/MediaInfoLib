@@ -37,11 +37,11 @@
     #include "curl/curl.h"
 #endif
 #include <ctime>
+#include <cstring>
 #include <algorithm> //For Url
 #if !defined(MEDIAINFO_LIBCURL_DLL_RUNTIME) && defined(__linux__) && !defined(__ANDROID__) && LIBCURL_VERSION_NUM>=0x074600 //7.70.0, curl_version_info_data::cainfo
     #define MEDIAINFO_LIBCURL_CAINFO_FALLBACK 1
     #include <cerrno>
-    #include <cstring>
     #include <unistd.h> //For access()
 #endif
 #if defined(__ANDROID__)
@@ -499,6 +499,77 @@ static void Reader_libcurl_CertificateAuthorityAndroid(CURL* Curl)
     #endif //MEDIAINFO_LIBCURL_HTTPS_PROXY
 }
 #endif //defined(__ANDROID__)
+
+//---------------------------------------------------------------------------
+//Protocols of the URLs MediaInfoLib supports, else libcurl uses any protocol it supports (local files, mail servers...)
+//Redirections only to the first ones, the SSH options being set only for an SFTP or SCP URL
+static const struct
+{
+    const char*         Name;
+    long                Mask; //For libcurl before 7.85.0
+} Reader_libcurl_Protocols[]=
+{
+    { "http",   CURLPROTO_HTTP  },
+    { "https",  CURLPROTO_HTTPS },
+    { "ftp",    CURLPROTO_FTP   },
+    { "ftps",   CURLPROTO_FTPS  },
+    { "sftp",   CURLPROTO_SFTP  },
+    { "scp",    CURLPROTO_SCP   },
+};
+static const size_t Reader_libcurl_Protocols_Size=sizeof(Reader_libcurl_Protocols)/sizeof(Reader_libcurl_Protocols[0]);
+static const size_t Reader_libcurl_Protocols_Redirection_Size=4;
+
+static CURLcode Reader_libcurl_Protocols_Set(CURL* Curl)
+{
+    #if defined(MEDIAINFO_LIBCURL_DLL_RUNTIME) || LIBCURL_VERSION_NUM>=0x075500 //7.85.0, CURLOPT_PROTOCOLS_STR
+    {
+        //libcurl refuses the whole list if a protocol is not supported (e.g. SFTP and SCP without SSH library), so only the supported ones are listed
+        string Protocols, Protocols_Redirection;
+        const curl_version_info_data* Info=curl_version_info(CURLVERSION_NOW);
+        for (size_t i=0; i<Reader_libcurl_Protocols_Size; i++)
+            for (size_t j=0; Info && Info->protocols && Info->protocols[j]; j++)
+                if (!strcmp(Info->protocols[j], Reader_libcurl_Protocols[i].Name))
+                {
+                    if (!Protocols.empty())
+                        Protocols+=',';
+                    Protocols+=Reader_libcurl_Protocols[i].Name;
+                    if (i<Reader_libcurl_Protocols_Redirection_Size)
+                    {
+                        if (!Protocols_Redirection.empty())
+                            Protocols_Redirection+=',';
+                        Protocols_Redirection+=Reader_libcurl_Protocols[i].Name;
+                    }
+                    break;
+                }
+        if (Protocols.empty())
+            return CURLE_UNSUPPORTED_PROTOCOL;
+        CURLcode Result=curl_easy_setopt(Curl, CURLOPT_PROTOCOLS_STR, Protocols.c_str());
+        if (!Result && !Protocols_Redirection.empty())
+            Result=curl_easy_setopt(Curl, CURLOPT_REDIR_PROTOCOLS_STR, Protocols_Redirection.c_str());
+        #if defined(MEDIAINFO_LIBCURL_DLL_RUNTIME)
+        if (Result!=CURLE_UNKNOWN_OPTION) //Else libcurl before 7.85.0
+        #endif //defined(MEDIAINFO_LIBCURL_DLL_RUNTIME)
+            return Result;
+    }
+    #endif //defined(MEDIAINFO_LIBCURL_DLL_RUNTIME) || LIBCURL_VERSION_NUM>=0x075500
+    #if defined(MEDIAINFO_LIBCURL_DLL_RUNTIME) || (LIBCURL_VERSION_NUM>=0x071304 && LIBCURL_VERSION_NUM<0x075500) //7.19.4, CURLOPT_PROTOCOLS
+    {
+        long Protocols=0, Protocols_Redirection=0;
+        for (size_t i=0; i<Reader_libcurl_Protocols_Size; i++)
+        {
+            Protocols|=Reader_libcurl_Protocols[i].Mask;
+            if (i<Reader_libcurl_Protocols_Redirection_Size)
+                Protocols_Redirection|=Reader_libcurl_Protocols[i].Mask;
+        }
+        CURLcode Result=curl_easy_setopt(Curl, CURLOPT_PROTOCOLS, Protocols);
+        if (!Result)
+            Result=curl_easy_setopt(Curl, CURLOPT_REDIR_PROTOCOLS, Protocols_Redirection);
+        if (Result!=CURLE_UNKNOWN_OPTION) //Else libcurl before 7.19.4, without restriction
+            return Result;
+    }
+    #endif //defined(MEDIAINFO_LIBCURL_DLL_RUNTIME) || (LIBCURL_VERSION_NUM>=0x071304 && LIBCURL_VERSION_NUM<0x075500)
+    return CURLE_OK;
+}
 
 //---------------------------------------------------------------------------
 struct Reader_libcurl_curl_data_getregion
@@ -1196,6 +1267,14 @@ size_t Reader_libcurl::Format_Test_PerParser(MediaInfo_Internal* MI, const Strin
     #endif //MEDIAINFO_NEXTPACKET
     Curl_Data->MI=MI;
     Curl_Data->File_Name=File_Name;
+    {
+        CURLcode Result=Reader_libcurl_Protocols_Set(Curl_Data->Curl);
+        if (Result)
+        {
+            Curl_Log(Result);
+            return 0;
+        }
+    }
     if (MI->Config.File_TimeToLive_Get())
         Curl_Data->Time_Max=time(0)+(time_t)MI->Config.File_TimeToLive_Get();
     if (!MI->Config.File_Curl_Get(__T("UserAgent")).empty())
