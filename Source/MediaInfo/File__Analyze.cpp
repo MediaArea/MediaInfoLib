@@ -2220,6 +2220,56 @@ bool File__Analyze::Synchronize_0x000001(bool NeedFour)
 }
 
 //---------------------------------------------------------------------------
+// Next 0x000001 at Pos or after with at least MinSize (>=3) bytes from its beginning, e.g. end of the current NAL unit
+// Same steps as testing 0x000001 at each 0x00 byte found 2 bytes at a time, so the same position is returned also when there is
+// none (position from where the search continues when more data is available), but 0x00 bytes are searched with memchr() and
+// zero runs (e.g. padding) are skipped
+size_t File__Analyze::Search_0x000001(size_t Pos, size_t MinSize)
+{
+    while (Pos+MinSize<=Buffer_Size && CC3(Buffer+Pos)!=0x000001)
+    {
+        if (!Buffer[Pos] && !Buffer[Pos+1] && !Buffer[Pos+2])
+        {
+            // Zero run, positions are tested one by one up to 2 bytes before its end
+            size_t Run_End=Pos+3;
+            while (Run_End<Buffer_Size && !Buffer[Run_End])
+                Run_End++;
+            size_t Pos_Max=Buffer_Size-MinSize+1; //First position without MinSize bytes from it
+            if (Run_End-2>=Pos_Max)
+                return Pos_Max;
+            Pos=Run_End-2;
+            continue;
+        }
+
+        // Next 0x00 at Pos+2 or after, 2 bytes at a time (some steps directly before each memchr(), as 0x00 may be frequent)
+        Pos+=2;
+        for (;;)
+        {
+            for (int Step=0; Step<8 && Pos<Buffer_Size && Buffer[Pos]; Step++)
+                Pos+=2;
+            if (Pos>=Buffer_Size || !Buffer[Pos])
+                break;
+            const int8u* Zero=(const int8u*)memchr(Buffer+Pos, 0x00, Buffer_Size-Pos);
+            if (!Zero)
+            {
+                Pos+=(Buffer_Size-Pos+1)&~((size_t)1);
+                break;
+            }
+            size_t Zero_Pos=(size_t)(Zero-Buffer);
+            if (!((Zero_Pos-Pos)&1))
+            {
+                Pos=Zero_Pos;
+                break;
+            }
+            Pos=Zero_Pos+1;
+        }
+        if (Pos>=Buffer_Size || !Buffer[Pos-1])
+            Pos--;
+    }
+    return Pos;
+}
+
+//---------------------------------------------------------------------------
 bool File__Analyze::FileHeader_Begin_0x000001()
 {
     // No need to check if inside a container

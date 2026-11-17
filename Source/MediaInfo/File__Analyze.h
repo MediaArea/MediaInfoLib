@@ -1678,6 +1678,7 @@ protected :
     bool FileHeader_Begin_XML(tinyxml2::XMLDocument &Document, bool Reject_IfMalformed=true);
     size_t FileHeader_Begin_XML_Start();
     bool Synchronize_0x000001(bool NeedFour = false);
+    size_t Search_0x000001(size_t Pos, size_t MinSize); //Next start code with at least MinSize bytes from its beginning, else where the search continues when more data is available
 public:
     #if defined(MEDIAINFO_FILE_YES)
     void TestContinuousFileNames(size_t CountOfFiles=24, Ztring FileExtension=Ztring(), bool SkipComputeDelay=false);

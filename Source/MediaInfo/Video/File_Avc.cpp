@@ -1942,15 +1942,7 @@ bool File_Avc::Header_Parser_Fill_Size()
     //Look for next Sync word
     if (Buffer_Offset_Temp==0) //Buffer_Offset_Temp is not 0 if Header_Parse_Fill_Size() has already parsed first frames
         Buffer_Offset_Temp=Buffer_Offset+4;
-    while (Buffer_Offset_Temp+5<=Buffer_Size
-        && CC3(Buffer+Buffer_Offset_Temp)!=0x000001)
-    {
-        Buffer_Offset_Temp+=2;
-        while(Buffer_Offset_Temp<Buffer_Size && Buffer[Buffer_Offset_Temp]!=0x00)
-            Buffer_Offset_Temp+=2;
-        if (Buffer_Offset_Temp>=Buffer_Size || Buffer[Buffer_Offset_Temp-1]==0x00)
-            Buffer_Offset_Temp--;
-    }
+    Buffer_Offset_Temp=Search_0x000001(Buffer_Offset_Temp, 5);
 
     //Must wait more data?
     if (Buffer_Offset_Temp+5>Buffer_Size)
