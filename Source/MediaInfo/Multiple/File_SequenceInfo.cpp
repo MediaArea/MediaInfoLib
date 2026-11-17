@@ -190,9 +190,13 @@ bool File_SequenceInfo::FileHeader_Begin()
                     while (DirNumber<1000000000);
 
                     if (!Sequence->FileNames.empty())
+                    {
                         ReferenceFiles->AddSequence(Sequence);
+                        Sequence=NULL;
+                    }
                 }
             }
+            delete Sequence; //Not used
             #endif //defined(MEDIAINFO_REFERENCES_YES) && defined(MEDIAINFO_FILE_YES) && defined(MEDIAINFO_DIRECTORY_YES)
         }
         else
