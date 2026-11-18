@@ -403,6 +403,7 @@ public :
           string        Mp4Profile();
           string        MxfProfile();
           int8u         UsacProfile();
+          bool          DolbyVisionProfile(); //Dolby Vision RPU and XML metadata checks
           void          WarningError(bool Value);
           bool          WarningError();
     #endif
@@ -570,6 +571,7 @@ private :
     string          Mp4_Profile;
     string          Mxf_Profile;
     int8u           Usac_Profile;
+    bool            DolbyVision_Profile;
     bool            Warning_Error;
     #endif
 
