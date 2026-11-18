@@ -477,7 +477,7 @@ void File_Jpeg::GainMap_Merge(size_t StreamPos)
                 if (Value.empty() || Other_Value.empty() || IsSame(Value, Other_Value))
                     continue;
                 const auto Name = string(Field + 8); // Without "GainMap_"
-                Fill_Conformance(("Crosscheck GainMap " + Name).c_str(), Other_Format.To_UTF8() + " gain map " + Name + ' ' + Other_Value.To_UTF8() + " does not match " + Reference_Format.To_UTF8() + " gain map " + Name + ' ' + Value.To_UTF8(), {}, Conformance_Error, StreamKind, StreamPos);
+                Fill_Conformance(("Crosscheck GainMap " + Name).c_str(), Other_Format.To_UTF8() + " gain map " + Name + " does not match " + Reference_Format.To_UTF8() + " gain map " + Name + " (actual " + Other_Value.To_UTF8() + ", expected " + Value.To_UTF8() + ')', {}, Conformance_Error, StreamKind, StreamPos);
             }
         }
     }

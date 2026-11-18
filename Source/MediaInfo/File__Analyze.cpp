@@ -1918,7 +1918,9 @@ void File__Analyze::Open_Buffer_Finalize (File__Analyze* Sub)
     //Finalize
     if (!Sub->Config)
         Open_Buffer_Init(Sub); //Only if not done before, else the sizes and offsets given at initialization would be overwritten
+    const bool IsFinishing=Config->IsFinishing;
     Sub->Open_Buffer_Finalize();
+    Config->IsFinishing=IsFinishing; //The end of the data of a sub-parser is not the end of the file, the other parsers must not handle their next data as the last one
 
     #if MEDIAINFO_TRACE
         //Elements ended by the sub-parser during its finalization, in the element in which the sub-parser was last fed if it is still in the trace

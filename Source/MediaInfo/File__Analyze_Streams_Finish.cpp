@@ -307,6 +307,7 @@ static const char* CompanyNames_Replace =
     "CAMERA;\n"
     "CONCORD;Jenoptik\n"
     "CREATIVE;Creative Labs\n"
+    "CREO/LEAF;Leaf\n"
     "DEFAULT;\n"
     "DOCOMO;DoCoMo\n"
     "EASTMAN KODAK;KODAK\n"
@@ -2102,7 +2103,12 @@ static const char* Model_Name_Xiaomi =
     "XIG07;14T\n"
 ;
 
+static const char* Model_Name_DS_Global =
+    "POLSP01;Polaroid Snap\n"
+;
+
 static const FindReplaceCompany_struct Model_Name[] = {
+    { "DS GLOBAL", Model_Name_DS_Global, nullptr },
     { "Sony", Model_Name_Sony, "Xperia " },
     { "Sony Ericsson", Model_Name_Sony_Ericsson, "Xperia " },
     { "Samsung", Model_Name_Samsung, "Galaxy " },
@@ -3073,6 +3079,14 @@ void File__Analyze::Streams_Finish_StreamOnly_General(size_t StreamPos)
             Fill(Stream_General, StreamPos, General_Audio_Channels_Total, Channels_Total);
     }
 
+    //Positions of the part and of the track: zeros before the number are not useful (e.g. "01" written by some tools)
+    for (const size_t Parameter : { General_Part_Position, General_Part_Position_Total, General_Track_Position, General_Track_Position_Total })
+    {
+        const auto& Value = Retrieve_Const(Stream_General, StreamPos, Parameter);
+        if (Value.size() > 1 && Value[0] == __T('0') && Value.find_first_not_of(__T("0123456789")) == string::npos)
+            Fill(Stream_General, StreamPos, Parameter, Ztring(Value.substr(min(Value.find_first_not_of(__T('0')), Value.size() - 1))), true);
+    }
+
     //Exceptions (empiric)
     {
         const auto& Application_Name=Retrieve_Const(Stream_General, StreamPos, General_Encoded_Application_Name);
@@ -3118,27 +3132,56 @@ void File__Analyze::Streams_Finish_StreamOnly_General(size_t StreamPos)
         }
     }
     {
-        if (Retrieve_Const(Stream_General, StreamPos, General_Encoded_OperatingSystem_Name).empty()) {
-            auto Application = Retrieve_Const(Stream_General, StreamPos, General_Encoded_Application).To_UTF8();
-            auto pos = Application.rfind(" (Android)");
-            if (Application.length() >= 12) {
-            if (pos == Application.length() - 10) {
-                Application.erase(pos, 10);
-                Fill(Stream_General, 0, General_Encoded_OperatingSystem_Name, "Android");
+        // Operating system at the end of the name of the first application with one, the first application being the last tool which wrote the file (e.g. "Adobe Photoshop 23.5 (Macintosh)", or "Adobe Photoshop CS5 Windows" and "Adobe After Effects CS5.5 10.5 Macintosh 64" for the old names of Adobe), removed from the name of each application with this operating system
+        const auto Applications = Retrieve_Const(Stream_General, StreamPos, General_Encoded_Application).To_UTF8();
+        if (!Applications.empty()) {
+            struct operating_system { const char* Suffix; const char* Name; bool IsAdobeOnly; };
+            static const operating_system OperatingSystems[] = { { " (Android)", "Android", false }, { " (Macintosh)", "macOS", false }, { " (Windows)", "Windows", false }, { " Macintosh", "macOS", true }, { " Macintosh 64", "macOS", true }, { " Windows", "Windows", true }, { " Windows 64", "Windows", true } };
+            auto OperatingSystem_Find = [&](const string& Application) -> const operating_system* {
+                for (const auto& OperatingSystem : OperatingSystems) {
+                    const auto Suffix_Size = strlen(OperatingSystem.Suffix);
+                    if (Application.size() > Suffix_Size && !Application.compare(Application.size() - Suffix_Size, Suffix_Size, OperatingSystem.Suffix) && (!OperatingSystem.IsAdobeOnly || !Application.rfind("Adobe ", 0))) {
+                        return &OperatingSystem;
+                    }
+                }
+                return nullptr;
+            };
+            vector<string> Values;
+            for (size_t Begin = 0;;) {
+                const auto End = Applications.find(" / ", Begin);
+                Values.push_back(Applications.substr(Begin, End == string::npos ? string::npos : (End - Begin)));
+                if (End == string::npos) {
+                    break;
+                }
+                Begin = End + 3;
             }
-            pos = Application.rfind(" (Macintosh)");
-            if (pos == Application.length() - 12) {
-                Application.erase(pos, 12);
-                Fill(Stream_General, 0, General_Encoded_OperatingSystem_Name, "macOS");
+            auto OperatingSystem_Name = Retrieve_Const(Stream_General, StreamPos, General_Encoded_OperatingSystem_Name).To_UTF8();
+            if (OperatingSystem_Name.empty()) {
+                for (const auto& Value : Values) {
+                    if (const auto OperatingSystem = OperatingSystem_Find(Value)) {
+                        OperatingSystem_Name = OperatingSystem->Name;
+                        Fill(Stream_General, 0, General_Encoded_OperatingSystem_Name, OperatingSystem_Name);
+                        break;
+                    }
+                }
             }
-            pos = Application.rfind(" (Windows)");
-            if (pos == Application.length() - 10) {
-                Application.erase(pos, 10);
-                Fill(Stream_General, 0, General_Encoded_OperatingSystem_Name, "Windows");
+            if (!OperatingSystem_Name.empty()) {
+                string Applications_New;
+                for (size_t i = 0; i < Values.size(); i++) {
+                    auto& Value = Values[i];
+                    const auto OperatingSystem = OperatingSystem_Find(Value);
+                    if (OperatingSystem && OperatingSystem_Name == OperatingSystem->Name) { // Else kept, the operating system of the file is another one
+                        Value.erase(Value.find_last_not_of(' ', Value.size() - strlen(OperatingSystem->Suffix) - 1) + 1);
+                    }
+                    if (i) {
+                        Applications_New += " / ";
+                    }
+                    Applications_New += Value;
+                }
+                if (Applications_New != Applications) {
+                    Fill(Stream_General, 0, General_Encoded_Application, Applications_New, true, true);
+                }
             }
-            }
-            if (Application != Retrieve_Const(Stream_General, 0, General_Encoded_Application).To_UTF8())
-                Fill(Stream_General, 0, General_Encoded_Application, Application, true, true);
         }
         if (Retrieve_Const(Stream_General, StreamPos, General_Encoded_OperatingSystem_CompanyName).empty()) {
             const auto OperatingSystem = Retrieve_Const(Stream_General, StreamPos, General_Encoded_OperatingSystem_Name).To_UTF8();
@@ -3249,6 +3292,80 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
     if (Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_CompanyName) == Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Model)) {
         Clear(Stream_General, StreamPos, General_Encoded_Hardware_CompanyName);
     }
+
+    // The hardware given as performer, e.g. the make written as artist of Exif by some phones ("LG Electronics Inc.", or "Mobile SAGEM" for "SAGEM"): it is not a performer
+    // (not for the writing application: the make or the model of some files is the software written by a tool, e.g. "FinePixViewer Ver.4.2", or a build number of the firmware)
+    {
+        auto CompanyWords = [](const Ztring& Value) {
+            // Words in upper case without the legal suffixes and the other generic words of the company names, with the other name of the company if any
+            const auto ValueU = Ztring(Value).MakeUpperCase().To_UTF8();
+            string Result;
+            for (size_t Begin = 0; Begin < ValueU.size();) {
+                const auto End = min(ValueU.find_first_of(" ,", Begin), ValueU.size());
+                const auto Word = ValueU.substr(Begin, End - Begin);
+                auto IsGeneric = Word.empty();
+                for (const auto& CompanySuffix : NewlineRange(CompanySuffixes)) {
+                    if (!IsGeneric && !Word.compare(0, string::npos, CompanySuffix.data(), CompanySuffix.size())) {
+                        IsGeneric = true;
+                    }
+                }
+                if (!IsGeneric) {
+                    if (!Result.empty()) {
+                        Result += ' ';
+                    }
+                    Result += Word;
+                }
+                Begin = End + 1;
+            }
+            const auto Replacement = Find_Replacement(CompanyNames_Replace, Result);
+            if (Replacement.data()) {
+                Result.assign(Replacement.data(), Replacement.size());
+            }
+            return Ztring().From_UTF8(Result).MakeUpperCase();
+        };
+        const auto CompanyName = CompanyWords(Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_CompanyName));
+        auto ModelU = Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Model);
+        ModelU.Trim(__T(' '));
+        ModelU.MakeUpperCase();
+        auto NameU = Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Name);
+        NameU.MakeUpperCase();
+        auto IsHardware = [&](const Ztring& Value) {
+            const auto ValueU = CompanyWords(Value);
+            return !ValueU.empty() && ((!CompanyName.empty() && (ValueU == CompanyName || ValueU == CompanyName + __T(' ') + ModelU)) || ValueU == ModelU || ValueU == NameU);
+        };
+        const auto Parameter = General_Performer;
+        const auto Value = Retrieve_Const(Stream_General, StreamPos, Parameter);
+        if (!Value.empty() && (!CompanyName.empty() || !ModelU.empty())) {
+            Ztring Kept;
+            auto IsModified = false;
+            for (size_t Begin = 0;;) {
+                const auto End = Value.find(__T(" / "), Begin);
+                const auto Item = Value.substr(Begin, End == string::npos ? string::npos : (End - Begin));
+                if (IsHardware(Item)) {
+                    IsModified = true;
+                }
+                else {
+                    if (!Kept.empty()) {
+                        Kept += __T(" / ");
+                    }
+                    Kept += Item;
+                }
+                if (End == string::npos) {
+                    break;
+                }
+                Begin = End + 3;
+            }
+            if (IsModified) {
+                if (Kept.empty()) {
+                    Clear(Stream_General, StreamPos, Parameter);
+                }
+                else {
+                    Fill(Stream_General, StreamPos, Parameter, Kept, true);
+                }
+            }
+        }
+    }
+
     auto RemoveContainedValues = [&](size_t Parameter) {
         // Values from several sources: a value made of whole words of another value (e.g. the TIFF software "Ver.1.20" with the XMP creator tool "NIKON D4S Ver.1.20") or the same as a previous value is redundant
         const auto& Value = Retrieve_Const(Stream_General, StreamPos, Parameter);
@@ -3300,6 +3417,176 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
     };
     RemoveContainedValues(General_Encoded_Application);
     RemoveContainedValues(General_Encoded_Library);
+
+    // Firmware of the camera with the tool which wrote the file after the camera (e.g. the software of Exif not changed by an editor writing only XMP): the firmware is the version of the hardware
+    {
+        const Ztring Application = Retrieve_Const(Stream_General, StreamPos, General_Encoded_Application);
+        Ztring ModelU = Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Model);
+        ModelU.MakeUpperCase();
+        if (Application.find(__T(" / ")) != string::npos && !ModelU.empty() && Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Version).empty()) {
+            const Ztring CompanyName = Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_CompanyName);
+            Ztring CompanyNameU = CompanyName;
+            CompanyNameU.MakeUpperCase();
+            const auto Space = ModelU.find(__T(' '));
+            const Ztring ModelU_WithoutCompany = Space == string::npos ? Ztring() : ModelU.substr(Space + 1);
+            Ztring NameU = Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Name); // Or from the model, filled below, e.g. "Polaroid Snap" for "POLSP01"
+            if (NameU.empty()) {
+                const auto Model = Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Model).To_UTF8();
+                for (const auto& ToSearch : Model_Name) {
+                    if (CompanyNameU == Ztring().From_UTF8(ToSearch.CompanyName).MakeUpperCase()) {
+                        const auto Result = Find_Replacement(ToSearch.Find, Model);
+                        if (Result.data()) {
+                            NameU.From_UTF8((ToSearch.Prefix ? string(ToSearch.Prefix) : string()) + string(Result.data(), Result.size()));
+                        }
+                        break;
+                    }
+                }
+            }
+            NameU.MakeUpperCase();
+            auto IsFirmware = [&](const Ztring& Value, Ztring& Version) {
+                // Only a version, or the model then a version, e.g. "Ver.1.00", "V 04.52", "Digital Camera FinePix AX550 Ver1.00", "NIKON D7500 Ver.1.00", "COOLPIX B500V1.0", "BKL-L09 8.0.0.124(C432)"
+                Version.clear();
+                Ztring ValueU(Value);
+                ValueU.MakeUpperCase();
+                {
+                    // Firmware after "FW:", e.g. "EXIF Version 2.2,FW:PDC5080_007J", sometimes with the model before its version
+                    const auto FW = ValueU.find(__T("FW:"));
+                    if (FW != string::npos && (!FW || ValueU[FW - 1] == __T(',') || ValueU[FW - 1] == __T(' '))) {
+                        Version = Value.substr(FW + 3);
+                        Version.Trim(__T(' '));
+                        if (!ModelU.empty() && Version.size() > ModelU.size() + 1 && !Ztring(Version).MakeUpperCase().compare(0, ModelU.size(), ModelU) && (Version[ModelU.size()] == __T('_') || Version[ModelU.size()] == __T(' '))) {
+                            Version.erase(0, ModelU.size() + 1);
+                        }
+                        if (!Version.empty()) {
+                            return true;
+                        }
+                    }
+                    // Revision then program of the firmware of the phones of Sony Ericsson, e.g. "R1FA035     prg1212-2395_GENERIC_KT 00.00"
+                    const auto Space = ValueU.find(__T(' '));
+                    const auto Program = Space == string::npos ? string::npos : ValueU.find_first_not_of(__T(' '), Space);
+                    if (Program != string::npos && Space >= 6 && !ValueU.compare(Program, 3, __T("PRG")) && ValueU.find_first_not_of(__T("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")) == Space) {
+                        Version = Value.substr(0, Space);
+                        return true;
+                    }
+                }
+                auto Pos = ValueU.find_first_not_of(__T(' '));
+                auto StartsWith = [&](const Ztring& Prefix) {
+                    return Pos < ValueU.size() && !Prefix.empty() && !ValueU.compare(Pos, Prefix.size(), Prefix);
+                };
+                static const char* const Prefixes[] = { "DIGITAL CAMERA ", "FIRMWARE ", "VERSION " };
+                for (const auto Prefix : Prefixes) {
+                    const auto PrefixU = Ztring().From_UTF8(Prefix);
+                    if (StartsWith(PrefixU)) {
+                        Pos += PrefixU.size();
+                        break;
+                    }
+                }
+                if (!CompanyNameU.empty() && StartsWith(CompanyNameU + __T(' '))) {
+                    Pos += CompanyNameU.size() + 1;
+                }
+                const auto Name_Pos = Pos;
+                auto IsModel = false;
+                for (const auto& Model : { ModelU, ModelU_WithoutCompany, NameU }) {
+                    const auto Model_End = Pos + Model.size();
+                    if (StartsWith(Model) && (Model_End == ValueU.size() || ValueU[Model_End] == __T(' ') || ValueU[Model_End] == __T('V'))) {
+                        Pos = Model_End;
+                        IsModel = true;
+                        break;
+                    }
+                }
+                Pos = ValueU.find_first_not_of(__T(' '), Pos);
+                if (IsModel && (Pos == string::npos || !ValueU.compare(Pos, string::npos, __T("FIRMWARE")))) {
+                    return true; // The model without version, e.g. "G800 Firmware"
+                }
+                if (StartsWith(__T("VER"))) {
+                    Pos += 3;
+                    if (Pos < ValueU.size() && ValueU[Pos] == __T('.')) {
+                        Pos++;
+                    }
+                }
+                else if (StartsWith(__T("V"))) {
+                    Pos++;
+                }
+                Pos = ValueU.find_first_not_of(__T(' '), Pos);
+                auto IsVersion = [](const Ztring& Candidate) {
+                    // Only digits and dots, or a build number with a dot (e.g. "17.1.A.2.55_9_f300")
+                    return !Candidate.empty() && Candidate[0] >= __T('0') && Candidate[0] <= __T('9') && Candidate.find(__T(' ')) == string::npos && (Candidate.find_first_not_of(__T("0123456789.")) == string::npos || Candidate.find(__T('.')) != string::npos);
+                };
+                if (Pos != string::npos) {
+                    Version = Value.substr(Pos);
+                    Version.Trim(__T(' '));
+                    if (IsVersion(Version)) {
+                        return true;
+                    }
+                }
+                // Another model of the same series then a version, e.g. "MAR-L21A 9.0.1.120(C431E6R2P3)" with the model "MAR-LX1A"
+                const auto Space = ValueU.find(__T(' '), Name_Pos);
+                const auto Dash = ValueU.find(__T('-'), Name_Pos);
+                const auto Model_Dash = ModelU.find(__T('-'));
+                if (Space != string::npos && Dash < Space && Model_Dash != string::npos && Dash - Name_Pos == Model_Dash && !ValueU.compare(Name_Pos, Model_Dash + 1, ModelU, 0, Model_Dash + 1)) {
+                    Version = Value.substr(Space);
+                    Version.Trim(__T(' '));
+                    if (IsVersion(Version)) {
+                        return true;
+                    }
+                }
+                // Build number of the firmware, e.g. "G960FXXU1ARC5", "00WW_1_060"
+                Version = Value;
+                Version.Trim(__T(' '));
+                if (Version.size() >= 8 && Version.find_first_not_of(__T("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.()")) == string::npos && Version.find_first_of(__T("0123456789")) != string::npos && Version.find_first_of(__T("ABCDEFGHIJKLMNOPQRSTUVWXYZ")) != string::npos) {
+                    return true;
+                }
+                Version.clear();
+                return false;
+            };
+            auto IsNotApplication = [](const Ztring& Value) {
+                // Nothing, a date or a copyright notice, e.g. "06-10-09" and "(c) Sony Ericsson" with the firmware of some phones
+                Ztring ValueU(Value);
+                ValueU.Trim(__T(' '));
+                ValueU.MakeUpperCase();
+                return ValueU.empty()
+                    || (ValueU.find_first_not_of(__T("0123456789-/:")) == string::npos && ValueU.find_first_of(__T("-/:")) != string::npos)
+                    || !ValueU.compare(0, 4, __T("(C) "))
+                    || !ValueU.compare(0, 9, __T("COPYRIGHT"));
+            };
+            const auto IsIPhone = ModelU.rfind(__T("IPHONE "), 0) == 0;
+            auto IsModified = false;
+            Ztring Version;
+            Ztring Others;
+            for (size_t Begin = 0;;) {
+                const auto End = Application.find(__T(" / "), Begin);
+                Ztring Value = Application.substr(Begin, End == string::npos ? string::npos : (End - Begin));
+                if (IsIPhone && !Value.empty() && Value.find_first_not_of(__T("0123456789.")) == string::npos) {
+                    // Version of iOS, as for an application with only a version below
+                    Value.insert(0, CompanyName.empty() ? Ztring(__T("iOS ")) : (CompanyName + __T(" iOS ")));
+                    IsModified = true;
+                }
+                Ztring Value_Version;
+                if (!IsIPhone && IsFirmware(Value, Value_Version)) {
+                    if (Version.empty()) {
+                        Version = Value_Version;
+                    }
+                    IsModified = true;
+                }
+                else if (!IsNotApplication(Value)) { // Else removed when the list is modified
+                    if (!Others.empty()) {
+                        Others += __T(" / ");
+                    }
+                    Others += Value;
+                }
+                if (End == string::npos) {
+                    break;
+                }
+                Begin = End + 3;
+            }
+            if (!Version.empty() && !Others.empty()) {
+                Fill(Stream_General, StreamPos, General_Encoded_Hardware_Version, Version);
+            }
+            if (IsModified && !Others.empty()) {
+                Fill(Stream_General, StreamPos, General_Encoded_Application, Others, true);
+            }
+        }
+    }
 
     // Remove useless characters
     auto RemoveUseless = [&](size_t Parameter) {
@@ -3739,6 +4026,16 @@ void File__Analyze::Streams_Finish_StreamOnly_General_Curate(size_t StreamPos)
         }
     };
     FillModelName(General_Encoded_Hardware_CompanyName, General_Encoded_Hardware_Model, General_Encoded_Hardware_Name);
+
+    // Brand of a product of a licensee, e.g. "Polaroid" for "DS GLOBAL"
+    {
+        const auto CompanyName = Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_CompanyName).To_UTF8();
+        const auto Name = Retrieve_Const(Stream_General, StreamPos, General_Encoded_Hardware_Name).To_UTF8();
+        if (CompanyName == "DS GLOBAL" && Name.rfind("Polaroid ", 0) == 0) {
+            Fill(Stream_General, StreamPos, General_Encoded_Hardware_CompanyName, Name.substr(0, 8), true, true);
+            Fill(Stream_General, StreamPos, General_Encoded_Hardware_Name, Name.substr(9), true, true);
+        }
+    }
 
     // Attempt to derive Samsung Galaxy model number
     auto DetermineModel = [&](size_t Parameter_CompanyName, size_t Parameter_Name, size_t Parameter_Application, size_t Parameter_Model) {

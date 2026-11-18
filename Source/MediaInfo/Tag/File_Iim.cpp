@@ -180,6 +180,8 @@ static Ztring Iim_DateTime(const Ztring& Date, const Ztring& Time)
     if (Date.size()!=8 || Date.find_first_not_of(__T("0123456789"))!=string::npos)
         return Ztring();
     Ztring Value=Date.substr(0, 4)+__T('-')+Date.substr(4, 2)+__T('-')+Date.substr(6, 2);
+    if (Time==__T("000000+0000"))
+        return Value; //Written by some tools when there is only a date (e.g. Photoshop for photoshop:DateCreated of XMP without time)
     if (Time.size()==11 && Time.find_first_not_of(__T("0123456789"))==6 && (Time[6]==__T('+') || Time[6]==__T('-')) && Time.find_first_not_of(__T("0123456789"), 7)==string::npos)
         Value+=__T(' ')+Time.substr(0, 2)+__T(':')+Time.substr(2, 2)+__T(':')+Time.substr(4, 2)+Time.substr(6, 3)+__T(':')+Time.substr(9, 2);
     else if (Time.size()==6 && Time.find_first_not_of(__T("0123456789"))==string::npos)
@@ -196,6 +198,14 @@ void File_Iim::Streams_Finish()
     Fill(Stream_General, 0, "ExpirationDate", Iim_DateTime(Date_Expiration, Time_Expiration));
     if (!Program.empty())
         Fill(Stream_General, 0, General_Encoded_Application, ProgramVersion.empty()?Program:(Program+__T(' ')+ProgramVersion));
+    if (IsPicasa) {
+        // Picasa writes its name as by-line, it is the tool and not the creator of the content
+        const Ztring Byline = Retrieve_Const(Stream_General, 0, General_Performer);
+        if (!Byline.rfind(__T("Picasa"), 0)) {
+            Clear(Stream_General, 0, General_Performer);
+            Fill(Stream_General, 0, General_Encoded_Application, Byline);
+        }
+    }
 }
 
 //***************************************************************************
@@ -247,7 +257,7 @@ void File_Iim::Data_Parse()
     ELEMENT_FILL(  2,   4, "ObjectAttributeReference")
     ELEMENT_CASE(  2,   5, ObjectName)
     ELEMENT_FILL(  2,   7, "EditStatus")
-    ELEMENT_FILL(  2,  10, "Urgency")
+    ELEMENT_CASE(  2,  10, Urgency)
     ELEMENT_FILL(  2,  12, "SubjectReference")
     ELEMENT_FILL(  2,  15, "Category")
     ELEMENT_FILL(  2,  20, "SupplementalCategories")
@@ -276,10 +286,10 @@ void File_Iim::Data_Parse()
     ELEMENT_CASE(  2, 101, CountryName)
     ELEMENT_FILL(  2, 103, "JobId")
     ELEMENT_CASE(  2, 105, Headline)
-    ELEMENT_CASE(  2, 110, Credit)
+    ELEMENT_FILL(  2, 110, "Credit")
     ELEMENT_FILL(  2, 115, "Source")
     ELEMENT_CASE(  2, 116, CopyrightNotice)
-    ELEMENT_FILL(  2, 118, "Contact")
+    ELEMENT_CASE(  2, 118, Contact)
     ELEMENT_CASE(  2, 120, CaptionAbstract)
     ELEMENT_FILL(  2, 122, "DescriptionWriter")
     ELEMENT_CASE(  2, 221, PhotoMechanicPrefs)
@@ -323,9 +333,18 @@ void File_Iim::ObjectName()
 }
 
 //---------------------------------------------------------------------------
+void File_Iim::Urgency()
+{
+    Ztring Value;
+    GetString(Value);
+    if (Value!=__T("0")) //Not an urgency (1 is the most urgent, 8 the least), written by some cameras when there is none
+        Fill(Stream_General, 0, "Urgency", Value);
+}
+
+//---------------------------------------------------------------------------
 void File_Iim::Keywords()
 {
-    FillString(General_Subject);
+    FillString(General_Keywords);
 }
 
 //---------------------------------------------------------------------------
@@ -377,15 +396,21 @@ void File_Iim::Headline()
 }
 
 //---------------------------------------------------------------------------
-void File_Iim::Credit()
+void File_Iim::CopyrightNotice()
 {
     FillString(General_Copyright);
 }
 
 //---------------------------------------------------------------------------
-void File_Iim::CopyrightNotice()
+void File_Iim::Contact()
 {
-    FillString(General_Copyright);
+    Ztring Value;
+    GetString(Value);
+    if (Value == __T("<picasastamp/>")) {
+        IsPicasa = true; // Marker of Picasa, not a contact
+        return;
+    }
+    Fill(Stream_General, 0, "Contact", Value);
 }
 
 //---------------------------------------------------------------------------
@@ -430,6 +455,10 @@ void File_Iim::GetString(Ztring& Value)
         Skip_XX(Element_Size,                                   "Data");
         break;
     }
+
+    // Some tools write a null character or a line end after the text
+    while (!Value.empty() && (Value.back() == __T('\0') || Value.back() == __T('\n') || Value.back() == __T('\r') || Value.back() == __T(' ')))
+        Value.pop_back();
 }
 
 //---------------------------------------------------------------------------

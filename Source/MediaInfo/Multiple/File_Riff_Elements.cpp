@@ -2442,6 +2442,17 @@ void File_Riff::AVI__INFO_xxxx()
     Element_Name(MediaInfoLib::Config.Info_Get(StreamKind, Parameter, Info_Name));
     Element_Info1(Value);
 
+    //Value already there, e.g. the same INFO list several times in the file
+    if (Parameter!=(size_t)-1 && !Value.empty())
+    {
+        ZtringList Values;
+        Values.Separator_Set(0, __T(" / "));
+        Values.Write(Retrieve_Const(StreamKind, StreamPos, Parameter));
+        for (const Ztring& Item : Values)
+            if (Item==Value)
+                return;
+    }
+
     switch (Element_Code)
     {
         case Elements::AVI__INFO_ISMP : INFO_ISMP=Value;

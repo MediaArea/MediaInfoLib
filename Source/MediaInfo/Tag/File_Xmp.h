@@ -62,6 +62,7 @@ private :
     void HDRToneMap(const string& name, const string& value, const int count = 0);
     void pdf(const string& name, const string& value);
     void photoshop(const string& name, const string& value);
+    void tiff(const string& name, const string& value);
     void xmp(const string& name, const string& value);
     void Iptc4xmpCore(const string& name, const string& value);
     void Iptc4xmpExt(const string& name, const string& value);
@@ -93,6 +94,9 @@ private :
     //Temp
     Ztring ModifyDate, CreateDate;
     string gimp_version, pdfaid, pdfaid_part, pdfaid_conformance;
+    string History_SoftwareAgent; //Of the last event of the history having one, so the last tool which wrote the file
+    string DateCreated, DateTimeOriginal; //photoshop:DateCreated (without the time 00:00) and exif:DateTimeOriginal, for the date of the original
+    string Subject; //Items of dc:subject, which is a list of keywords
 };
 
 } //NameSpace

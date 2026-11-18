@@ -786,7 +786,9 @@ static Ztring Pdf_Date(const Ztring& Value)
     //"D:YYYYMMDDHHmmSS" then "Z" or the offset from UTC as +HH'mm', everything after the year may be missing
     const string Date=Value.To_UTF8();
     size_t Pos=Date.compare(0, 2, "D:")?0:2;
-    const size_t Digits=min(Date.find_first_not_of("0123456789", Pos), Date.size())-Pos;
+    size_t Digits=min(Date.find_first_not_of("0123456789", Pos), Date.size())-Pos;
+    if (Digits==16 && Pos+16<Date.size() && Date[Pos+16]=='\'')
+        Digits=14; //Offset from UTC without its sign (e.g. "D:2010052812143202'00'"), which is then not known
     if (Digits<4 || Digits>14 || Digits%2)
         return Value;
     static const char Separators[]="-- ::";
@@ -910,6 +912,8 @@ void File_Pdf::Object_Info_Fill(const string &Key, const string &Raw)
 {
     const size_t Parameter=Pdf_Info_Parameter(Key);
     const Ztring Text=Pdf_String(Raw);
+    if (Parameter==General_Keywords && Text.find_first_not_of(__T(" ,;"))==string::npos)
+        return; //Only separators, e.g. ", " written by some tools for no keyword
     if (Parameter!=General_Encoded_Date)
         Fill(Stream_General, 0, Parameter, Text);
     else if (Key=="ModDate")

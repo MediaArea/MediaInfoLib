@@ -1386,17 +1386,17 @@ public :
     size_t Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t StreamPos_From, size_t StreamPos_To, bool Erase=true); //Merge 2 streams
     void Merge_HDR(size_t StreamPos_To, const Ztring* Container, const Ztring* ToAdd, const Ztring& ToAdd_colour_range, const Ztring& ToAdd_matrix_coefficients); //Merge HDR formats of a container and of a stream, from Video_HDR_Format to Video_HDR_Format_Compatibility
 
-    //Tags in a format which is not the one of the container, by date of the first specification of their format
+    //Tags in a format which is not the one of the container, in the order of their priority: audio formats then image formats, the formats with the most limits (size of the fields, no character encoding, no fraction of second) are the last ones
     enum tags_format
     {
-        Tags_Iim,       //1991
-        Tags_Photoshop, //1994
-        Tags_Exif,      //1995
-        Tags_Id3v2,     //1996 for ID3v1, ID3v2 is the same format without the limits of its first version
+        Tags_Id3v2,
+        Tags_ApeTag,
+        Tags_Lyrics3,
         Tags_Id3v1,
-        Tags_Lyrics3,   //1997
-        Tags_ApeTag,    //2000
-        Tags_Xmp,       //2001
+        Tags_Xmp,
+        Tags_Exif,
+        Tags_Iim,
+        Tags_Photoshop,
         Tags_Max
     };
     void Merge_Tags(File__Analyze &ToAdd, tags_format Format); //General part only, merged when the parsing is finished: the tags of the container have priority, then the formats in the order above, a content which is not the same in 2 of them is a conformance error

@@ -43,6 +43,7 @@ private :
     void CodedCharacterSet();
     void RecordVersion();
     void ObjectName();
+    void Urgency();
     void Keywords();
     void DateCreated();
     void TimeCreated();
@@ -52,8 +53,8 @@ private :
     void ProvinceState();
     void CountryName();
     void Headline();
-    void Credit();
     void CopyrightNotice();
+    void Contact();
     void CaptionAbstract();
     void PhotoMechanicPrefs();
 
@@ -75,6 +76,7 @@ private :
     Ztring Time_Expiration;
     Ztring Program;
     Ztring ProgramVersion;
+    bool IsPicasa = false;
 };
 
 } //NameSpace

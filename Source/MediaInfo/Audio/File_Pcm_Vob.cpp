@@ -143,9 +143,10 @@ void File_Pcm_Vob::Streams_Fill()
     Fill(Stream_Audio, 0, Audio_BitDepth, Pcm_VOB_BitDepth[BitDepth]);
     Fill(Stream_Audio, 0, Audio_SamplingRate, Pcm_VOB_Frequency[Frequency]);
     Fill(Stream_Audio, 0, Audio_Channel_s_, NumberOfChannelsMinusOne+1);
-    Fill(Stream_Audio, 0, Audio_ChannelPositions, Pcm_VOB_ChannelsPositions(NumberOfChannelsMinusOne+1));
-    Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, Pcm_VOB_ChannelsPositions2(NumberOfChannelsMinusOne+1));
-    Fill(Stream_Audio, 0, Audio_ChannelLayout, Pcm_VOB_ChannelLayout(NumberOfChannelsMinusOne+1));
+    const int8u channel_assignment=NumberOfChannelsMinusOne==0?1:(NumberOfChannelsMinusOne==1?3:0); //No channel assignment in the stream, only the count of channels: the channels are known for mono and stereo only
+    Fill(Stream_Audio, 0, Audio_ChannelPositions, Pcm_VOB_ChannelsPositions(channel_assignment));
+    Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, Pcm_VOB_ChannelsPositions2(channel_assignment));
+    Fill(Stream_Audio, 0, Audio_ChannelLayout, Pcm_VOB_ChannelLayout(channel_assignment));
     Fill(Stream_Audio, 0, Audio_BitRate, Pcm_VOB_Frequency[Frequency]*(NumberOfChannelsMinusOne+1)*16);
 
     //PCM Signed 16 bits Big Endian, Interleavement is for 2 samples*2 channels L0-1/L0-0/R0-1/R0-0/L1-1/L1-0/R1-1/R1-0/L0-2/R0-2/L1-2/R1-2, http://wiki.multimedia.cx/index.php?title=PCM

@@ -4941,10 +4941,10 @@ void File_Avc::SPS_PPS()
                  && !(Profile==66 && (constraint_set_flags&0x80))  //constraint_set0_flag, the stream obeys the Baseline constraints
                  && !(Profile==77 && (constraint_set_flags&0x40))  //constraint_set1_flag, the stream obeys the Main constraints
                  && !(Profile==88 && (constraint_set_flags&0x20))) //constraint_set2_flag, the stream obeys the Extended constraints
-                    Fill_Conformance("Crosscheck AVCDecoderConfigurationRecord AVCProfileIndication", "MP4 AVCDecoderConfigurationRecord AVCProfileIndication "+to_string(Profile)+" does not match AVC SPS profile_idc "+to_string(profile_idc)+" (actual "+to_string(Profile)+", expected "+to_string(profile_idc)+')');
+                    Fill_Conformance("Crosscheck AVCDecoderConfigurationRecord AVCProfileIndication", "MP4 AVCDecoderConfigurationRecord AVCProfileIndication does not match AVC SPS profile_idc (actual "+to_string(Profile)+", expected "+to_string(profile_idc)+')');
                 const auto level_idc=seq_parameter_set_Item->level_idc;
                 if (Level_Rank(Level)<Level_Rank(level_idc))
-                    Fill_Conformance("Crosscheck AVCDecoderConfigurationRecord AVCLevelIndication", "MP4 AVCDecoderConfigurationRecord AVCLevelIndication "+to_string(Level)+" is less than AVC SPS level_idc "+to_string(level_idc)+" (actual "+to_string(Level)+", expected >="+to_string(level_idc)+')');
+                    Fill_Conformance("Crosscheck AVCDecoderConfigurationRecord AVCLevelIndication", "MP4 AVCDecoderConfigurationRecord AVCLevelIndication is less than AVC SPS level_idc (actual "+to_string(Level)+", expected >="+to_string(level_idc)+')');
             }
             Merge_Conformance(true);
         #endif //MEDIAINFO_CONFORMANCE

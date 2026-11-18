@@ -241,6 +241,7 @@ bool File_Xmp::FileHeader_Begin()
             XML_ATTRIBUTE_NAMESPACE(HDRToneMap)
             XML_ATTRIBUTE_NAMESPACE(pdf)
             XML_ATTRIBUTE_NAMESPACE(photoshop)
+            XML_ATTRIBUTE_NAMESPACE(tiff)
             XML_ATTRIBUTE_NAMESPACE(xmp)
             XML_ATTRIBUTE_NAMESPACE(Iptc4xmpCore)
             XML_ATTRIBUTE_NAMESPACE(Iptc4xmpExt)
@@ -388,6 +389,22 @@ bool File_Xmp::FileHeader_Begin()
             XML_ELEMENT_NAMESPACE(hdrgm)
             XML_ELEMENT_NAMESPACE(HDRGainMap)
             XML_ELEMENT_NAMESPACE(HDRToneMap)
+            XML_ELEMENT("xmpMM:History")
+                XML_ELEMENT_START
+                XML_ELEMENT_LIST("rdf:Seq")
+                    XML_ATTRIBUTE_START
+                    XML_ATTRIBUTE("stEvt:softwareAgent")
+                        if (v.len)
+                            History_SoftwareAgent = tfsxml_decode(v);
+                    XML_ATTRIBUTE_END
+                    XML_ELEMENT_START
+                    XML_ELEMENT("stEvt:softwareAgent")
+                        XML_VALUE
+                        if (v.len)
+                            History_SoftwareAgent = tfsxml_decode(v);
+                    XML_ELEMENT_END
+                XML_ELEMENT_LIST_END
+                XML_ELEMENT_END
             XML_ELEMENT("pdfaid:part")
                 XML_VALUE
                 pdfaid_part = tfsxml_decode(v);
@@ -398,6 +415,7 @@ bool File_Xmp::FileHeader_Begin()
             XML_ELEMENT_NAMESPACE(GIMP)
             XML_ELEMENT_NAMESPACE(pdf)
             XML_ELEMENT_NAMESPACE(photoshop)
+            XML_ELEMENT_NAMESPACE(tiff)
             XML_ELEMENT_NAMESPACE(xmp)
             XML_ELEMENT_NAMESPACE(Iptc4xmpCore)
             XML_ELEMENT_NAMESPACE(Iptc4xmpExt)
@@ -411,6 +429,42 @@ bool File_Xmp::FileHeader_Begin()
     if (application == "GIMP" && !gimp_version.empty()) {
         application += " " + gimp_version;
         Fill(Stream_General, 0, General_Encoded_Application, application, true, true);
+    }
+
+    //Date of the original: photoshop:DateCreated, the date of the content (e.g. of the photo when the file is a scan of it), whatever the order of the elements
+    //exif:DateTimeOriginal, a copy of the date of Exif, is used for its time when it is the same day as photoshop:DateCreated without time, or without photoshop:DateCreated
+    if (!DateCreated.empty() || !DateTimeOriginal.empty()) {
+        const auto UseDateTimeOriginal = DateCreated.empty() || (DateCreated.size() == 10 && !DateTimeOriginal.compare(0, 10, DateCreated));
+        Fill(Stream_General, 0, General_Recorded_Date, UseDateTimeOriginal ? DateTimeOriginal : DateCreated, true, true);
+    }
+
+    //Keywords: dc:subject is a list of keywords, the same keywords as pdf:Keywords when it is there, whatever the order of the elements
+    if (!Subject.empty() && Retrieve_Const(Stream_General, 0, General_Keywords).empty())
+        Fill(Stream_General, 0, General_Keywords, Subject);
+
+    //Leaf: the model is followed by the serial number and the camera, e.g. "Leaf Aptus 75(LI400146   )/Large Format"
+    {
+        Ztring Model = Retrieve_Const(Stream_General, 0, General_Encoded_Hardware_Model);
+        const auto Serial = Model.find(__T('('));
+        if (!Model.rfind(__T("Leaf "), 0) && Serial != string::npos) {
+            Model.resize(Serial);
+            Model.Trim(__T(' '));
+            Fill(Stream_General, 0, General_Encoded_Hardware_Model, Model, true);
+        }
+    }
+
+    //The creator tool is the first known tool, the last tool which wrote the file is in the history: merged with the creator tool and with the application of the container and of the other tag formats, see Streams_Finish_Tags()
+    if (!History_SoftwareAgent.empty()) {
+        //Name of the company twice, e.g. "Adobe Adobe Media Encoder CC (Macintosh)"
+        const auto FirstWord_Size = History_SoftwareAgent.find(' ') + 1;
+        if (FirstWord_Size && !History_SoftwareAgent.compare(FirstWord_Size, FirstWord_Size, History_SoftwareAgent, 0, FirstWord_Size)) {
+            History_SoftwareAgent.erase(0, FirstWord_Size);
+        }
+        tags_item Item;
+        Item.Format = Tags_Xmp;
+        Item.Name = "Encoded_Application_Last";
+        Item.Value.From_UTF8(History_SoftwareAgent);
+        Tags_ToMerge.push_back(Item);
     }
 
     if (!pdfaid.empty()) {
@@ -444,8 +498,11 @@ void File_Xmp::dc(const string& name, const string& value)
         parameter = General_Title;
     if (name == "dc:description")
         parameter = General_Description;
-    if (name == "dc:subject")
-        parameter = General_Subject;
+    if (name == "dc:subject") {
+        if (!Subject.empty())
+            Subject += " / ";
+        Subject += value; //See after the parsing
+    }
     if (name == "dc:creator")
         parameter = General_Performer;
     if (name == "dc:rights")
@@ -457,10 +514,20 @@ void File_Xmp::dc(const string& name, const string& value)
 //---------------------------------------------------------------------------
 void File_Xmp::exif(const string& name, const string& value)
 {
-    if (name == "exif:DateTimeOriginal" && Retrieve_Const(Stream_General, 0, General_Recorded_Date).empty())
-        Fill(Stream_General, 0, General_Recorded_Date, value);
+    if (name == "exif:DateTimeOriginal" && DateTimeOriginal.empty())
+        DateTimeOriginal = value; //See after the parsing
     if (name == "exif:DateTimeDigitized")
         Fill(Stream_General, 0, General_Mastered_Date, value);
+}
+
+//---------------------------------------------------------------------------
+void File_Xmp::tiff(const string& name, const string& value)
+{
+    //Copy of the TIFF tags, e.g. the camera when the TIFF tags have it not (Leaf camera backs)
+    if (name == "tiff:Make")
+        Fill(Stream_General, 0, General_Encoded_Hardware_CompanyName, value);
+    if (name == "tiff:Model")
+        Fill(Stream_General, 0, General_Encoded_Hardware_Model, value);
 }
 
 //---------------------------------------------------------------------------
@@ -623,7 +690,7 @@ void File_Xmp::pdf(const string& name, const string& value)
 {
     if (name == "pdf:Description" && Retrieve_Const(Stream_General, 0, General_Description).empty())
         Fill(Stream_General, 0, General_Description, value);
-    if (name == "pdf:Keywords" && Retrieve_Const(Stream_General, 0, General_Keywords).empty())
+    if (name == "pdf:Keywords" && Retrieve_Const(Stream_General, 0, General_Keywords).empty() && value.find_first_not_of(" ,;") != string::npos) //Not only separators, e.g. ", " written by some tools for no keyword
         Fill(Stream_General, 0, General_Keywords, value);
     if (name == "pdf:Producer" && Retrieve_Const(Stream_General, 0, General_Encoded_Library).empty())
         Fill(Stream_General, 0, General_Encoded_Library, value);
@@ -633,7 +700,7 @@ void File_Xmp::pdf(const string& name, const string& value)
 void File_Xmp::photoshop(const string& name, const string& value)
 {
     if (name == "photoshop:Credit")
-        Fill(Stream_General, 0, General_Copyright, value);
+        Fill(Stream_General, 0, "Credit", value); //Provider of the content, not the copyright notice
     if (name == "photoshop:Country")
         Fill(Stream_General, 0, General_Country, value);
     if (name == "photoshop:City")
@@ -646,7 +713,7 @@ void File_Xmp::photoshop(const string& name, const string& value)
         Fill(Stream_General, 0, "Category", value);
     if (name == "photoshop:SupplementalCategories")
         Fill(Stream_General, 0, "SupplementalCategories", value);
-    if (name == "photoshop:Urgency")
+    if (name == "photoshop:Urgency" && value != "0") //Not an urgency (1 is the most urgent, 8 the least), written by some cameras when there is none
         Fill(Stream_General, 0, "Urgency", value);
     if (name == "photoshop:Instructions")
         Fill(Stream_General, 0, "Instructions", value);
@@ -658,20 +725,25 @@ void File_Xmp::photoshop(const string& name, const string& value)
         Fill(Stream_General, 0, "Source", value);
     if (name == "photoshop:CaptionWriter")
         Fill(Stream_General, 0, "DescriptionWriter", value);
-    if (name == "photoshop:DateCreated" && Retrieve_Const(Stream_General, 0, General_Recorded_Date).empty())
-        Fill(Stream_General, 0, General_Recorded_Date, value); //Date of creation of the content, as exif:DateTimeOriginal and the IPTC date created
+    if (name == "photoshop:DateCreated" && DateCreated.empty()) {
+        //Date of creation of the content, as the IPTC date created, see after the parsing. Some tools write the time 00:00 (without seconds) when there is only a date
+        DateCreated = value;
+        if (DateCreated.size() >= 16 && !DateCreated.compare(10, 6, "T00:00") && (DateCreated.size() == 16 || DateCreated[16] == '+' || DateCreated[16] == '-' || DateCreated[16] == 'Z'))
+            DateCreated.resize(10);
+    }
 }
 
 //---------------------------------------------------------------------------
 void File_Xmp::xmp(const string& name, const string& value)
 {
-    if (name == "xmp:CreateDate") {
+    const bool IsNotSet = !value.compare(0, 10, "1970-01-01"); //Some tools write this date (0 as Unix time) when the date is not known
+    if (name == "xmp:CreateDate" && !IsNotSet) {
         Ztring CreateDateT = Ztring().From_UTF8(value);
         if (CreateDateT > CreateDate) CreateDate = CreateDateT;
         if (CreateDate > ModifyDate)
             Fill(Stream_General, 0, General_Encoded_Date, CreateDate, true);
     }
-    if (name == "xmp:ModifyDate") {
+    if (name == "xmp:ModifyDate" && !IsNotSet) {
         ModifyDate = Ztring().From_UTF8(value);
         if (ModifyDate > CreateDate)
             Fill(Stream_General, 0, General_Encoded_Date, ModifyDate, true);

@@ -409,6 +409,8 @@ bool DateTime_Adapt(string& Value_)
         return DateTime_Adapt_Finalize(Value_, Value, IsUtc);
 
     // Month
+    if (Value.size() >= 6 && (Value[4] == '-' || Value[4] == ':') && Value[5] >= '0' && Value[5] <= '9' && (Value.size() == 6 || Value[6] == Value[4]))
+        Value.insert(5, 1, '0'); // Month on 1 digit, e.g. "2017-2-23"
     if (Value.size() <= 6)
         return false;
     if ((Value[4] != '-' && Value[4] != ':')
@@ -422,6 +424,8 @@ bool DateTime_Adapt(string& Value_)
         return DateTime_Adapt_Finalize(Value_, Value, IsUtc);
 
     // Day
+    if (Value.size() >= 9 && (Value[7] == '-' || Value[7] == ':') && Value[8] >= '0' && Value[8] <= '9' && (Value.size() == 9 || Value[9] == ' ' || Value[9] == 'T'))
+        Value.insert(8, 1, '0'); // Day on 1 digit
     if (Value.size() <= 9)
         return false;
     if ((Value[7] != '-' && Value[7] != ':')
@@ -437,7 +441,7 @@ bool DateTime_Adapt(string& Value_)
     // Separator
     if (Value.size() <= 11)
         return false;
-    if (Value[10] == 'T')
+    if (Value[10] == 'T' || Value[10] == ':') // ':' e.g. "2011:06:06:17:31:57" in Exif
         Value[10] = ' ';
     if (Value[10] == ',' && Value[11] == ' ')
         Value.erase(10, 1);
@@ -481,6 +485,8 @@ bool DateTime_Adapt(string& Value_)
         Value.pop_back();
         return DateTime_Adapt_Finalize(Value_, Value, true);
     }
+    if (Value.size() == i + 5 && (Value[i] == '+' || Value[i] == '-') && Value[i + 1] >= '0' && Value[i + 1] <= '9' && Value[i + 2] == ':')
+        Value.insert(i + 1, 1, '0'); // Hours on 1 digit, e.g. "+1:00"
     if (Value.size() <= i + 2)
         return false;
     if ((Value[i] != '+' && Value[i] != '-')
@@ -581,7 +587,6 @@ void File__Analyze::Attachment(const char* MuxingMode, const Ztring& Description
         Fill(Stream_General, 0, General_Cover, "Yes");
         Fill(Stream_General, 0, General_Cover_Description, Description);
         Fill(Stream_General, 0, General_Cover_Type, Type_String2);
-        Fill(Stream_General, 0, General_Cover_Mime, MimeType);
         #if MEDIAINFO_ADVANCED
             if (MediaInfoLib::Config.Flags1_Get(Flags_Cover_Data_base64)) {
                 std::string Data_Raw((const char*)(Buffer + (size_t)(Buffer_Offset + Element_Offset)), Data_Size);
@@ -596,13 +601,24 @@ void File__Analyze::Attachment(const char* MuxingMode, const Ztring& Description
     Open_Buffer_Continue(&MI);
     Open_Buffer_Finalize(&MI);
     Element_Show(); //TODO: why is it needed?
+
+    // MIME type without sub-type (e.g. "image/" in ID3v2), the one of the detected format is used
+    Ztring MimeType2(MimeType);
+    if (!MimeType2.empty() && MimeType2.back() == __T('/')) {
+        const Ztring& Detected = MediaInfoLib::Config.Format_Get(MI.Retrieve_Const(Stream_General, 0, General_Format), InfoFormat_InternetMediaType);
+        if (!Detected.compare(0, MimeType2.size(), MimeType2))
+            MimeType2 = Detected;
+    }
+    if (IsCover)
+        Fill(Stream_General, 0, General_Cover_Mime, MimeType2);
+
     auto ImageCount = MI.Count_Get(Stream_Image);
     if (IsCover || ImageCount) {
         Stream_Prepare(Stream_Image);
         Fill(Stream_Image, StreamPos_Last, Image_Type, ModifiedType);
         Fill(Stream_Image, StreamPos_Last, Image_Title, Description);
         Fill(Stream_Image, StreamPos_Last, Image_MuxingMode, MuxingMode);
-        Fill(Stream_Image, StreamPos_Last, Image_InternetMediaType, MimeType);
+        Fill(Stream_Image, StreamPos_Last, Image_InternetMediaType, MimeType2);
         Fill(Stream_Image, StreamPos_Last, Image_StreamSize, Data_Size);
         if (ImageCount) {
             Merge(MI, Stream_Image, 0, StreamPos_Last); // We ignore thumbnails in thumbnails/covers on purpose (not the goal of the cover)
@@ -3320,6 +3336,7 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
         switch (Parameter)
         {
         case General_Title:
+        case General_Performer:
         case General_Encoded_Application:
         case General_Encoded_Application_CompanyName:
         case General_Encoded_Application_Name:
@@ -4687,6 +4704,21 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, bool Erase)
 }
 
 //---------------------------------------------------------------------------
+extern Ztring HighestFormat(stream_t StreamKind, size_t Parameter, const ZtringList& Info, bool &ShouldReturn);
+static bool Audio_Format_HasExtension(const ZtringList& Info)
+{
+    //Additional features as shown (e.g. "XLL X" for DTS), without the profile of the base format (e.g. "LC" for AAC)
+    bool ShouldReturn=false;
+    ZtringList AdditionalFeatures;
+    AdditionalFeatures.Separator_Set(0, __T(" "));
+    AdditionalFeatures.Write(HighestFormat(Stream_Audio, Audio_Format_AdditionalFeatures, Info, ShouldReturn));
+    for (const auto& AdditionalFeature : AdditionalFeatures)
+        if (!AdditionalFeature.empty() && AdditionalFeature!=__T("LC") && AdditionalFeature!=__T("LTP") && AdditionalFeature!=__T("Main") && AdditionalFeature!=__T("SSR"))
+            return true;
+    return false;
+}
+
+//---------------------------------------------------------------------------
 size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t StreamPos_From, size_t StreamPos_To, bool Erase)
 {
     //Integrity
@@ -4910,54 +4942,49 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
     }
     if (StreamKind==Stream_Audio)
     {
-        const Ztring& StreamChannelLayout=ToAdd.Retrieve_Const(Stream_Audio, StreamPos_From, Audio_ChannelLayout);
-        if (ToAdd.Retrieve_Const(Stream_Audio, StreamPos_From, Audio_Format)==__T("DTS") && StreamChannelLayout.find(__T(" Tfl Tfr Tbl Tbr"))!=string::npos)
-        {
-            Fill(Stream_Audio, StreamPos_To, Audio_Channel_s_, ToAdd.Retrieve_Const(Stream_Audio, StreamPos_From, Audio_Channel_s_), true);
-            Fill(Stream_Audio, StreamPos_To, Audio_ChannelLayout, StreamChannelLayout, true);
-            Fill(Stream_Audio, StreamPos_To, Audio_ChannelPositions, ToAdd.Retrieve_Const(Stream_Audio, StreamPos_From, Audio_ChannelPositions), true);
-            Fill(Stream_Audio, StreamPos_To, Audio_ChannelPositions_String2, ToAdd.Retrieve_Const(Stream_Audio, StreamPos_From, Audio_ChannelPositions_String2), true);
-        }
-        else
-        {
-            bool IsOkGlobal=true;
-            static audio AudioField[4]={ Audio_Channel_s_, Audio_ChannelLayout, Audio_ChannelPositions, Audio_ChannelPositions_String2 };
-            for (size_t i=0; i<4; i++)
-                if (!Channels_Temp[i].empty())
+        bool IsOkGlobal=true;
+        static audio AudioField[4]={ Audio_Channel_s_, Audio_ChannelLayout, Audio_ChannelPositions, Audio_ChannelPositions_String2 };
+        for (size_t i=0; i<4; i++)
+            if (!Channels_Temp[i].empty())
+            {
+                //Test with legacy streams information
+                bool IsOk=(Channels_Temp[i]==Retrieve(Stream_Audio, StreamPos_To, AudioField[i]));
+                if (!IsOk)
                 {
-                    //Test with legacy streams information
-                    bool IsOk=(Channels_Temp[i]==Retrieve(Stream_Audio, StreamPos_To, AudioField[i]));
-                    if (!IsOk)
-                    {
-                        ZtringList Temp; Temp.Separator_Set(0, __T(" / "));
-                        Temp.Write(Retrieve(Stream_Audio, StreamPos_To, AudioField[i]));
-                        for (size_t Pos=0; Pos<Temp.size(); Pos++)
-                            if (Channels_Temp[i]==Temp[Pos])
-                                IsOk=true;
-                    }
-
-                    //Special case with AES3: wrong container information is accepted
-                    if (!IsOk && Retrieve(Stream_Audio, StreamPos_To, Audio_MuxingMode).find(__T("SMPTE ST 337"))!=string::npos)
-                        IsOk=true;
-
-                    if (!IsOk)
-                        IsOkGlobal=false;
+                    ZtringList Temp; Temp.Separator_Set(0, __T(" / "));
+                    Temp.Write(Retrieve(Stream_Audio, StreamPos_To, AudioField[i]));
+                    for (size_t Pos=0; Pos<Temp.size(); Pos++)
+                        if (Channels_Temp[i]==Temp[Pos])
+                            IsOk=true;
                 }
 
-            if (!IsOkGlobal)
-                for (size_t i=0; i<4; i++)
-                    if (Channels_Temp[i]!=(*Stream)[Stream_Audio][StreamPos_To][AudioField[i]])
-                    {
-                        string Original=Retrieve_Const(Stream_Audio, StreamPos_To, AudioField[i], Info_Name).To_UTF8();
-                        size_t Original_Insert=Original.find('/');
-                        if (Original_Insert==(size_t)-1)
-                            Original_Insert=Original.size();
-                        Original.insert(Original_Insert, "_Original");
-                        Fill(Stream_Audio, StreamPos_To, Original.c_str(), (*Stream)[Stream_Audio][StreamPos_To][AudioField[i]], true);
-                        Fill_SetOptions(Stream_Audio, StreamPos_To, Original.c_str(), Retrieve_Const(Stream_Audio, StreamPos_To, AudioField[i], Info_Options).To_UTF8().c_str());
-                        Fill(Stream_Audio, StreamPos_To, AudioField[i], Channels_Temp[i], true);
-                    }
-        }
+                //Special case with AES3: wrong container information is accepted
+                if (!IsOk && Retrieve(Stream_Audio, StreamPos_To, Audio_MuxingMode).find(__T("SMPTE ST 337"))!=string::npos)
+                    IsOk=true;
+
+                if (!IsOk)
+                    IsOkGlobal=false;
+            }
+
+        //Special case with an extension of the format: the container may not see the channels added by the extension (e.g. the channels of DTS:X after the bed, the ones of XLL or XXCH after the core of DTS, the one of PS for AAC), more channels in the stream are accepted
+        if (!IsOkGlobal && !Channels_Temp[0].empty()
+         && Retrieve_Const(Stream_Audio, StreamPos_To, Audio_Channel_s_).To_int64u()>Channels_Temp[0].To_int64u()
+         && Audio_Format_HasExtension((*ToAdd.Stream)[Stream_Audio][StreamPos_From]))
+            IsOkGlobal=true;
+
+        if (!IsOkGlobal)
+            for (size_t i=0; i<4; i++)
+                if (Channels_Temp[i]!=(*Stream)[Stream_Audio][StreamPos_To][AudioField[i]])
+                {
+                    string Original=Retrieve_Const(Stream_Audio, StreamPos_To, AudioField[i], Info_Name).To_UTF8();
+                    size_t Original_Insert=Original.find('/');
+                    if (Original_Insert==(size_t)-1)
+                        Original_Insert=Original.size();
+                    Original.insert(Original_Insert, "_Original");
+                    Fill(Stream_Audio, StreamPos_To, Original.c_str(), (*Stream)[Stream_Audio][StreamPos_To][AudioField[i]], true);
+                    Fill_SetOptions(Stream_Audio, StreamPos_To, Original.c_str(), Retrieve_Const(Stream_Audio, StreamPos_To, AudioField[i], Info_Options).To_UTF8().c_str());
+                    Fill(Stream_Audio, StreamPos_To, AudioField[i], Channels_Temp[i], true);
+                }
     }
     if (StreamKind==Stream_Text)
     {
@@ -5098,11 +5125,11 @@ void File__Analyze::Merge_HDR(size_t StreamPos_To, const Ztring* Container, cons
                     default:;
                 }
                 if (!Container_Profile_RPU.empty() && !Stream_Profile.empty() && Container_Profile_RPU!=Stream_Profile)
-                    Fill_Conformance("Crosscheck DolbyVisionConfiguration dv_profile", ("Dolby Vision configuration dv_profile " + Container_Profile.To_UTF8() + " does not match Dolby Vision RPU profile " + Stream_Profile.To_UTF8()).c_str(), {}, Conformance_Error, Stream_Video, StreamPos_To);
+                    Fill_Conformance("Crosscheck DolbyVisionConfiguration dv_profile", ("Dolby Vision configuration dv_profile does not match Dolby Vision RPU profile (actual " + Container_Profile.To_UTF8() + ", expected " + Stream_Profile.To_UTF8() + ')').c_str(), {}, Conformance_Error, Stream_Video, StreamPos_To);
                 const auto& Container_Layers=Container_Values[Video_HDR_Format_Settings-Video_HDR_Format][Container_DolbyVision];
                 const auto& Stream_Layers=Stream_Values[Video_HDR_Format_Settings-Video_HDR_Format][Stream_DolbyVision];
                 if (!Container_Layers.empty() && !Stream_Layers.empty() && Layers_HasEL(Container_Layers)!=Layers_HasEL(Stream_Layers))
-                    Fill_Conformance("Crosscheck DolbyVisionConfiguration el_present_flag", (string("Dolby Vision configuration el_present_flag ") + (Layers_HasEL(Container_Layers)?'1':'0') + " does not match Dolby Vision RPU " + (Layers_HasEL(Stream_Layers)?"with":"without") + " enhancement layer").c_str(), {}, Conformance_Error, Stream_Video, StreamPos_To);
+                    Fill_Conformance("Crosscheck DolbyVisionConfiguration el_present_flag", (string("Dolby Vision configuration el_present_flag does not match the enhancement layer of Dolby Vision RPU (actual ") + (Layers_HasEL(Container_Layers)?'1':'0') + ", expected " + (Layers_HasEL(Stream_Layers)?'1':'0') + ')').c_str(), {}, Conformance_Error, Stream_Video, StreamPos_To);
             #endif //MEDIAINFO_CONFORMANCE
 
             for (size_t i=Video_HDR_Format; i<=Video_HDR_Format_Compatibility; i++)
@@ -5161,9 +5188,9 @@ void File__Analyze::Merge_HDR(size_t StreamPos_To, const Ztring* Container, cons
             {
                 //Profile 5 VUI is either 1,2,2,2,0 or 1,9,16,15,0 (video_full_range_flag, colour_primaries, transfer_characteristics, matrix_coeffs, chroma_sample_loc_type)
                 if (ToAdd_colour_range==__T("Limited"))
-                    Fill_Conformance("Crosscheck DolbyVisionConfiguration dv_profile", "Dolby Vision configuration dv_profile 5 does not permit HEVC VUI video_full_range_flag 0", {}, Conformance_Error, Stream_Video, StreamPos_To);
+                    Fill_Conformance("Crosscheck DolbyVisionConfiguration dv_profile", "Dolby Vision configuration dv_profile 5 does not permit HEVC VUI video_full_range_flag (actual 0, expected 1)", {}, Conformance_Error, Stream_Video, StreamPos_To);
                 if (!ToAdd_matrix_coefficients.empty() && ToAdd_matrix_coefficients!=__T("IPT-PQ-C2"))
-                    Fill_Conformance("Crosscheck DolbyVisionConfiguration dv_profile", ("Dolby Vision configuration dv_profile 5 does not permit HEVC VUI matrix_coeffs " + ToAdd_matrix_coefficients.To_UTF8()).c_str(), {}, Conformance_Error, Stream_Video, StreamPos_To);
+                    Fill_Conformance("Crosscheck DolbyVisionConfiguration dv_profile", ("Dolby Vision configuration dv_profile 5 does not permit HEVC VUI matrix_coeffs (actual " + ToAdd_matrix_coefficients.To_UTF8() + ", expected IPT-PQ-C2)").c_str(), {}, Conformance_Error, Stream_Video, StreamPos_To);
             }
         }
     #endif //MEDIAINFO_CONFORMANCE
@@ -5344,14 +5371,14 @@ void File__Analyze::Audio_BitRate_Rounding(size_t Pos, audio Parameter)
 //---------------------------------------------------------------------------
 static const char* const Tags_Format_Names[]=
 {
+    "ID3v2",
+    "APE",
+    "Lyrics3",
+    "ID3v1",
+    "XMP",
+    "Exif",
     "IPTC",
     "Photoshop",
-    "Exif",
-    "ID3v2",
-    "ID3v1",
-    "Lyrics3",
-    "APE",
-    "XMP",
 };
 static_assert(sizeof(Tags_Format_Names)/sizeof(*Tags_Format_Names)==File__Analyze::Tags_Max, "");
 
@@ -5370,23 +5397,69 @@ static Ztring Tags_Genre(const Ztring& Value)
 //---------------------------------------------------------------------------
 static Ztring Tags_Comparable(const string& Name, const Ztring& Value)
 {
-    //Same content in another form: name of the genre, number without leading zeros, list of values in another order
-    if (Name=="Genre")
-        return Tags_Genre(Value);
-    size_t Zeros=0;
-    while (Zeros+1<Value.size() && Value[Zeros]==__T('0'))
-        Zeros++;
-    if (Zeros && Value.find_first_not_of(__T("0123456789"))==string::npos)
-        return Value.substr(Zeros);
+    //Same content in another form: list of values in another order or with a value several times, name of the genre or text in upper or lower case, number without leading zeros
+    if (Name=="Performer" && Value.find(__T("; "))!=string::npos)
+    {
+        //List of the artists of Exif, e.g. "Camera owner, John Smith; Photographer, Michael Brown"
+        Ztring List(Value);
+        List.FindAndReplace(__T("; "), __T(" / "), 0, Ztring_Recursive);
+        return Tags_Comparable(Name, List);
+    }
+    if (Name=="Keywords" && Value.find_first_of(__T(",;"))!=string::npos)
+    {
+        //Keywords separated by a comma or a semicolon (e.g. "a;b" written by Windows in Exif)
+        Ztring List;
+        for (size_t Begin=0;;)
+        {
+            const size_t End=Value.find_first_of(__T(",;"), Begin);
+            Ztring Item=Value.substr(Begin, End==string::npos?string::npos:(End-Begin));
+            Item.Trim(__T(' '));
+            if (!Item.empty())
+            {
+                if (!List.empty())
+                    List+=__T(" / ");
+                List+=Item;
+            }
+            if (End==string::npos)
+                break;
+            Begin=End+1;
+        }
+        return Tags_Comparable(Name, List);
+    }
     if (Value.find(__T(" / "))!=string::npos)
     {
         ZtringList List;
         List.Separator_Set(0, __T(" / "));
         List.Write(Value);
+        for (Ztring& Item : List)
+            Item=Tags_Comparable(Name, Item);
         sort(List.begin(), List.end());
+        List.erase(unique(List.begin(), List.end()), List.end());
         return List.Read();
     }
-    return Value;
+    if (Name=="Genre")
+    {
+        Ztring Genre=Tags_Genre(Value);
+        Genre.MakeLowerCase();
+        return Genre;
+    }
+    size_t Zeros=0;
+    while (Zeros+1<Value.size() && Value[Zeros]==__T('0'))
+        Zeros++;
+    if (Zeros && Value.find_first_not_of(__T("0123456789"))==string::npos)
+        return Value.substr(Zeros);
+    Ztring Text=Value;
+    Text.MakeLowerCase();
+    return Text;
+}
+
+//---------------------------------------------------------------------------
+static bool Tags_HasCharacterAbove(const Ztring& Value, wchar_t Max)
+{
+    for (const wchar_t Character : Value.To_Unicode())
+        if (Character>Max)
+            return true;
+    return false;
 }
 
 //---------------------------------------------------------------------------
@@ -5399,7 +5472,7 @@ static size_t Tags_Size_Max(File__Analyze::tags_format Format, const string& Nam
         case File__Analyze::Tags_Id3v1 :
             return 28;
         case File__Analyze::Tags_Iim :
-            if (Name=="Performer" || Name=="City" || Name=="Sublocation" || Name=="State" || Name=="CreatorJobTitle" || Name=="JobId" || Name=="Source" || Name=="DescriptionWriter")
+            if (Name=="Performer" || Name=="City" || Name=="Sublocation" || Name=="State" || Name=="CreatorJobTitle" || Name=="JobId" || Name=="Credit" || Name=="Source" || Name=="DescriptionWriter")
                 return 29;
             if (Name=="Title" || Name=="Country")
                 return 61;
@@ -5414,43 +5487,271 @@ static size_t Tags_Size_Max(File__Analyze::tags_format Format, const string& Nam
 }
 
 //---------------------------------------------------------------------------
-static bool Tags_Date_Utc(const string& Date, int64s& Seconds, string& Fraction)
+static bool Tags_Fraction_IsRounded(const Ztring& Long, size_t Long_Pos, const Ztring& Short, size_t Short_Pos, size_t Digits)
 {
-    //"YYYY-MM-DD hh:mm", seconds and fraction of second if any, then " UTC" or an offset as "+hh:mm"
-    static const char Mask[]="dddd-dd-dd dd:dd";
-    if (Date.size()<sizeof(Mask))
+    //The digits of the short fraction of second are the ones of the long one rounded, e.g. "663" for "662983"
+    if (!Digits || Long_Pos+Digits>=Long.size() || Long[Long_Pos+Digits]<__T('0') || Long[Long_Pos+Digits]>__T('9'))
         return false;
-    for (size_t Pos=0; Pos<sizeof(Mask)-1; Pos++)
-        if (Mask[Pos]=='d'?(Date[Pos]<'0' || Date[Pos]>'9'):(Date[Pos]!=Mask[Pos]))
-            return false;
-    const auto Number=[&Date](size_t Pos) { return (int64s)(Date[Pos]-'0')*10+(Date[Pos+1]-'0'); };
-    const int64s Month=Number(5);
-    const int64s Year=Number(0)*100+Number(2)-(Month<=2);
-    const int64s Era=(Year>=0?Year:Year-399)/400;
-    const int64s YearOfEra=Year-Era*400;
-    const int64s Days=Era*146097+YearOfEra*365+YearOfEra/4-YearOfEra/100+(153*(Month+(Month>2?-3:9))+2)/5+Number(8); //In the Gregorian calendar, the day 0 does not matter
-    Seconds=((Days*24+Number(11))*60+Number(14))*60;
-
-    size_t Pos=sizeof(Mask)-1;
-    Fraction.clear();
-    if (Date[Pos]==':' && Date.find_first_not_of("0123456789", Pos+1)==Pos+3)
+    Ztring Rounded=Long.substr(Long_Pos, Digits);
+    if (Long[Long_Pos+Digits]>=__T('5'))
     {
-        Seconds+=Number(Pos+1);
-        Pos+=3;
-        if (Date[Pos]=='.')
+        size_t Pos=Digits;
+        while (Pos && Rounded[Pos-1]==__T('9'))
+            Rounded[--Pos]=__T('0');
+        if (!Pos)
+            return false; //Up to the next second, not handled
+        Rounded[Pos-1]++;
+    }
+    return !Short.compare(Short_Pos, Digits, Rounded);
+}
+
+//---------------------------------------------------------------------------
+static bool Tags_Date_FractionAsMilliseconds(const Ztring& Xmp, const Ztring& Exif)
+{
+    //Same date and time up to the seconds, and the 3 digits of the fraction of second of XMP are the digits of the one of Exif without their trailing zeros
+    //read as a count of milliseconds, e.g. ".066" for ".66" or ".001" for ".10", an error of some tools converting Exif to XMP
+    if (Xmp.size()<23 || Exif.size()<21 || Xmp.compare(0, 19, Exif, 0, 19) || Xmp[19]!=__T('.') || Exif[19]!=__T('.'))
+        return false;
+    const size_t Xmp_End=min(Xmp.find_first_not_of(__T("0123456789"), 20), Xmp.size());
+    const size_t Exif_End=min(Exif.find_first_not_of(__T("0123456789"), 20), Exif.size());
+    if (Xmp_End!=23 || Exif_End==20)
+        return false;
+    Ztring Digits=Exif.substr(20, Exif_End-20);
+    while (Digits.size()>1 && Digits.back()==__T('0'))
+        Digits.pop_back();
+    if (Digits.size()>3)
+        return false;
+    Ztring AsMilliseconds;
+    AsMilliseconds.append(3-Digits.size(), __T('0'));
+    AsMilliseconds+=Digits;
+    Ztring AsFraction=Exif.substr(20, Exif_End-20);
+    AsFraction.append(3, __T('0'));
+    AsFraction.resize(3);
+    if (Xmp.compare(20, 3, AsMilliseconds) || AsMilliseconds==AsFraction)
+        return false; //Not this error, or the right fraction too
+    const Ztring Xmp_Zone=Xmp.substr(23);
+    const Ztring Exif_Zone=Exif.substr(Exif_End);
+    return Xmp_Zone.empty() || Exif_Zone.empty() || Xmp_Zone==Exif_Zone;
+}
+
+//---------------------------------------------------------------------------
+static bool Tags_Date_Merge(const Ztring& Date1, const Ztring& Date2, Ztring& Merged, Ztring* Zone_Guessed=nullptr)
+{
+    //"YYYY", "YYYY-MM", "YYYY-MM-DD", "YYYY-MM-DD hh:mm" or "YYYY-MM-DD hh:mm:ss", then the fraction of second if any, then " UTC" or an offset as "+hh:mm" if any.
+    //2 dates are the same date when what is in both is the same (the same instant when both have a time zone), what is only in one of them is a detail: time, seconds, more digits in the fraction of second (cut or rounded in the other one), time zone.
+    //Merged is then the first date, so in its time zone, with the details of the second date
+    //A date in UTC is also the same date as a date without time zone shifted by a time zone (up to 1 second), a copy of it converted to UTC by a tool with the time zone of the computer: Merged is then the date without time zone, with this time zone, which is deduced (in Zone_Guessed)
+    struct date
+    {
+        size_t Base_Size=0; //Date and time, up to the seconds
+        size_t Fraction_Size=0; //With the dot
+        bool HasZone=false;
+        bool IsUtc=false;
+        int64s Minutes=0; //UTC with a time zone, else as if the date is in UTC, only with a time
+    };
+    const auto Parse=[](const Ztring& Date, date& Parsed)
+    {
+        const auto Number=[&Date](size_t Pos) { return (int64s)(Date[Pos]-__T('0'))*10+(Date[Pos+1]-__T('0')); };
+        static const char Mask[]="dddd-dd-dd dd:dd:dd";
+        size_t Pos=0;
+        while (Pos<sizeof(Mask)-1 && Pos<Date.size() && (Mask[Pos]=='d'?(Date[Pos]>=__T('0') && Date[Pos]<=__T('9')):(Date[Pos]==(Char)Mask[Pos])))
+            Pos++;
+        if (Pos!=4 && Pos!=7 && Pos!=10 && Pos!=16 && Pos!=19)
+            return false;
+        Parsed.Base_Size=Pos;
+        if (Pos==19 && Pos<Date.size() && Date[Pos]==__T('.'))
         {
-            const size_t End=min(Date.find_first_not_of("0123456789", Pos+1), Date.size());
-            Fraction.assign(Date, Pos+1, End-Pos-1);
+            const size_t End=min(Date.find_first_not_of(__T("0123456789"), Pos+1), Date.size());
+            if (End==Pos+1)
+                return false;
+            Parsed.Fraction_Size=End-Pos;
             Pos=End;
         }
-    }
-    if (!Date.compare(Pos, string::npos, " UTC"))
+        if (Parsed.Base_Size<16)
+            return Pos==Date.size();
+        int64s Offset=0;
+        if (Pos<Date.size())
+        {
+            if (Date.compare(Pos, string::npos, __T(" UTC")))
+            {
+                if (Date.size()!=Pos+6 || (Date[Pos]!=__T('+') && Date[Pos]!=__T('-')) || Date[Pos+3]!=__T(':') || Date.find_first_not_of(__T("0123456789"), Pos+1)!=Pos+3 || Date.find_first_not_of(__T("0123456789"), Pos+4)!=string::npos)
+                    return false;
+                Offset=Number(Pos+1)*60+Number(Pos+4);
+                if (Date[Pos]==__T('-'))
+                    Offset=-Offset;
+            }
+            Parsed.HasZone=true;
+            Parsed.IsUtc=!Offset;
+        }
+        const int64s Month=Number(5);
+        const int64s Year=Number(0)*100+Number(2)-(Month<=2);
+        const int64s Era=(Year>=0?Year:Year-399)/400;
+        const int64s YearOfEra=Year-Era*400;
+        const int64s Days=Era*146097+YearOfEra*365+YearOfEra/4-YearOfEra/100+(153*(Month+(Month>2?-3:9))+2)/5+Number(8); //In the Gregorian calendar, the day 0 does not matter
+        Parsed.Minutes=(Days*24+Number(11))*60+Number(14)-Offset;
         return true;
-    if (Date.size()!=Pos+6 || (Date[Pos]!='+' && Date[Pos]!='-') || Date[Pos+3]!=':' || Date.find_first_not_of("0123456789", Pos+1)!=Pos+3 || Date.find_first_not_of("0123456789", Pos+4)!=string::npos)
+    };
+    date Parsed1, Parsed2;
+    if (!Parse(Date1, Parsed1) || !Parse(Date2, Parsed2))
         return false;
-    const int64s Offset=(Number(Pos+1)*60+Number(Pos+4))*60;
-    Seconds+=Date[Pos]=='+'?-Offset:Offset;
+
+    //Date and time, the seconds are compared as they are because the offset of a time zone is in minutes
+    const size_t Base_Size=min(Parsed1.Base_Size, Parsed2.Base_Size);
+    int64s Shift=0; //Of the date without time zone from the date in UTC
+    bool Seconds_AreNotSame=false;
+    if (Parsed1.HasZone && Parsed2.HasZone)
+    {
+        if (Parsed1.Minutes!=Parsed2.Minutes || (Base_Size==19 && Date1.compare(16, 3, Date2, 16, 3)))
+            return false;
+    }
+    else if (Date1.compare(0, Base_Size, Date2, 0, Base_Size))
+    {
+        //A date without time zone and a date in UTC, both with seconds: the same date when the difference is a time zone (a multiple of 15 minutes, from -12:00 to +14:00), up to 1 second (2 dates written one after the other by the same tool)
+        const date& Utc=Parsed1.HasZone?Parsed1:Parsed2;
+        const date& Local=Parsed1.HasZone?Parsed2:Parsed1;
+        if (!Utc.IsUtc || Utc.Base_Size!=19 || Local.Base_Size!=19)
+            return false;
+        const auto Seconds=[](const Ztring& Date) { return (int64s)(Date[17]-__T('0'))*10+(Date[18]-__T('0')); };
+        const int64s Difference=(Local.Minutes-Utc.Minutes)*60+Seconds(Parsed1.HasZone?Date2:Date1)-Seconds(Parsed1.HasZone?Date1:Date2);
+        Shift=(Difference+(Difference<0?-450:450))/900*15; //Nearest multiple of 15 minutes
+        if (!Shift || Shift<-12*60 || Shift>14*60 || Difference-Shift*60<-1 || Difference-Shift*60>1)
+            return false;
+        Seconds_AreNotSame=Difference!=Shift*60;
+    }
+
+    //Fraction of second, not comparable when the seconds are not the same
+    const size_t Fraction_Size=min(Parsed1.Fraction_Size, Parsed2.Fraction_Size);
+    if (!Seconds_AreNotSame && Date1.compare(Parsed1.Base_Size, Fraction_Size, Date2, Parsed2.Base_Size, Fraction_Size))
+    {
+        const bool Date1_IsLong=Parsed1.Fraction_Size>Parsed2.Fraction_Size;
+        if (Fraction_Size<2 || !(Date1_IsLong?Tags_Fraction_IsRounded(Date1, Parsed1.Base_Size+1, Date2, Parsed2.Base_Size+1, Fraction_Size-1):Tags_Fraction_IsRounded(Date2, Parsed2.Base_Size+1, Date1, Parsed1.Base_Size+1, Fraction_Size-1)))
+            return false;
+    }
+
+    if (Shift)
+    {
+        //The date without time zone, with the time zone
+        Merged.assign(Parsed1.HasZone?Date2:Date1, 0, 19);
+        if (Seconds_AreNotSame)
+            Merged.append(Parsed1.HasZone?Date2:Date1, 19, (Parsed1.HasZone?Parsed2:Parsed1).Fraction_Size);
+        else if (Parsed1.Fraction_Size<Parsed2.Fraction_Size)
+            Merged.append(Date2, Parsed2.Base_Size, Parsed2.Fraction_Size);
+        else
+            Merged.append(Date1, Parsed1.Base_Size, Parsed1.Fraction_Size);
+        const int64s Shift_Abs=Shift<0?-Shift:Shift;
+        const int64s Hours=Shift_Abs/60;
+        const int64s Minutes=Shift_Abs%60;
+        const Char Zone[]={Shift<0?__T('-'):__T('+'), (Char)(__T('0')+Hours/10), (Char)(__T('0')+Hours%10), __T(':'), (Char)(__T('0')+Minutes/10), (Char)(__T('0')+Minutes%10), __T('\0')};
+        Merged+=Zone;
+        if (Zone_Guessed)
+            *Zone_Guessed=Zone;
+        return true;
+    }
+
+    Merged.assign(Date1, 0, Parsed1.Base_Size);
+    if (Parsed1.Base_Size<Parsed2.Base_Size)
+        Merged.append(Date2, Parsed1.Base_Size, Parsed2.Base_Size-Parsed1.Base_Size);
+    if (Parsed1.Fraction_Size<Parsed2.Fraction_Size)
+        Merged.append(Date2, Parsed2.Base_Size, Parsed2.Fraction_Size);
+    else
+        Merged.append(Date1, Parsed1.Base_Size, Parsed1.Fraction_Size);
+    if (Parsed1.HasZone)
+        Merged.append(Date1, Parsed1.Base_Size+Parsed1.Fraction_Size, string::npos);
+    else
+        Merged.append(Date2, Parsed2.Base_Size+Parsed2.Fraction_Size, string::npos);
     return true;
+}
+
+//---------------------------------------------------------------------------
+static int64s Tags_Date_Days(const Ztring& Date)
+{
+    //Count of days of a date ("YYYY", "YYYY-MM" or "YYYY-MM-DD", then anything), up to the end of the year or of the month when the day is not known, -1 if it is not a date
+    const auto IsNumber=[&Date](size_t Pos, size_t Size) { return Date.size()>=Pos+Size && Date.find_first_not_of(__T("0123456789"), Pos)>=Pos+Size; };
+    const auto Number=[&Date](size_t Pos, size_t Size) { int64s Value=0; for (size_t i=Pos; i<Pos+Size; i++) Value=Value*10+(Date[i]-__T('0')); return Value; };
+    if (!IsNumber(0, 4) || (Date.size()>4 && (Date[4]!=__T('-') || !IsNumber(5, 2) || (Date.size()>7 && (Date[7]!=__T('-') || !IsNumber(8, 2))))))
+        return -1;
+    const int64s Month=Date.size()>4?Number(5, 2):12;
+    const int64s Day=Date.size()>7?Number(8, 2):31;
+    if (!Month || Month>12)
+        return -1;
+    const int64s Year=Number(0, 4)-(Month<=2);
+    const int64s Era=(Year>=0?Year:Year-399)/400;
+    const int64s YearOfEra=Year-Era*400;
+    return Era*146097+YearOfEra*365+YearOfEra/4-YearOfEra/100+(153*(Month+(Month>2?-3:9))+2)/5+Day; //In the Gregorian calendar, the day 0 does not matter
+}
+
+//---------------------------------------------------------------------------
+static bool Tags_Date_IsMoreRecent(const Ztring& Date1, const Ztring& Date2)
+{
+    //Date and time "YYYY-MM-DD hh:mm:ss" up to what is in both, compared as they are because a date has not always a time zone (a time zone which is not the same is often a wrong offset written by a tool for the same time);
+    //when only one has a time zone (e.g. the date in UTC of PNG and the date in local time of Exif), only when the difference is more than the one of 2 time zones (from -12:00 to +14:00); not more recent when what is in both is the same
+    const int64s Days1=Tags_Date_Days(Date1);
+    const int64s Days2=Tags_Date_Days(Date2);
+    if (Days1<0 || Days2<0)
+        return false;
+    static const char Mask[]="dddd-dd-dd dd:dd:dd";
+    size_t Size=0;
+    while (Size<sizeof(Mask)-1 && Size<Date1.size() && Size<Date2.size() && (Mask[Size]=='d'?(Date1[Size]>=__T('0') && Date1[Size]<=__T('9') && Date2[Size]>=__T('0') && Date2[Size]<=__T('9')):(Date1[Size]==(Char)Mask[Size] && Date2[Size]==(Char)Mask[Size])))
+        Size++;
+    const auto HasZone=[](const Ztring& Date)
+    {
+        if (Date.size()>=20 && !Date.compare(Date.size()-4, 4, __T(" UTC")))
+            return true;
+        const size_t Pos=Date.size()-6;
+        return Date.size()>=22 && (Date[Pos]==__T('+') || Date[Pos]==__T('-')) && Date[Pos+3]==__T(':') && Date.find_first_not_of(__T("0123456789"), Pos+1)==Pos+3 && Date.find_first_not_of(__T("0123456789"), Pos+4)==string::npos;
+    };
+    if (HasZone(Date1)!=HasZone(Date2))
+    {
+        const auto Number=[](const Ztring& Date, size_t Pos) { return (int64s)(Date[Pos]-__T('0'))*10+(Date[Pos+1]-__T('0')); };
+        const int64s Difference=Size>=16?(((Days1-Days2)*24+Number(Date1, 11)-Number(Date2, 11))*60+Number(Date1, 14)-Number(Date2, 14)):(Days1-Days2)*24*60; //In minutes
+        if (Difference>=-26*60 && Difference<=26*60)
+            return false;
+    }
+    return Date1.compare(0, Size, Date2, 0, Size)>0;
+}
+
+//---------------------------------------------------------------------------
+static bool Tags_Date_Difference(const Ztring& Date1, const Ztring& Date2, int64s& Difference)
+{
+    //Difference in seconds between 2 dates with a time up to the seconds and a time zone, false if one of them has not them
+    const auto Instant=[](const Ztring& Date, int64s& Seconds)
+    {
+        const int64s Days=Tags_Date_Days(Date);
+        if (Days<0 || Date.size()<19 || Date[10]!=__T(' ') || Date[13]!=__T(':') || Date[16]!=__T(':'))
+            return false;
+        for (const size_t Pos : { 11, 12, 14, 15, 17, 18 })
+            if (Date[Pos]<__T('0') || Date[Pos]>__T('9'))
+                return false;
+        size_t End=19;
+        if (End<Date.size() && Date[End]==__T('.'))
+            End=min(Date.find_first_not_of(__T("0123456789"), End+1), Date.size());
+        int64s Offset;
+        if (!Date.compare(End, string::npos, __T(" UTC")))
+            Offset=0;
+        else if (Date.size()==End+6 && (Date[End]==__T('+') || Date[End]==__T('-')) && Date[End+3]==__T(':') && Date.find_first_not_of(__T("0123456789"), End+1)==End+3 && Date.find_first_not_of(__T("0123456789"), End+4)==string::npos)
+        {
+            Offset=((Date[End+1]-__T('0'))*10+(Date[End+2]-__T('0')))*60+(Date[End+4]-__T('0'))*10+(Date[End+5]-__T('0'));
+            if (Date[End]==__T('-'))
+                Offset=-Offset;
+        }
+        else
+            return false;
+        const auto Number=[&Date](size_t Pos) { return (int64s)(Date[Pos]-__T('0'))*10+(Date[Pos+1]-__T('0')); };
+        Seconds=((Days*24+Number(11))*60+Number(14)-Offset)*60+Number(17);
+        return true;
+    };
+    int64s Seconds1, Seconds2;
+    if (!Instant(Date1, Seconds1) || !Instant(Date2, Seconds2))
+        return false;
+    Difference=Seconds1>Seconds2?Seconds1-Seconds2:Seconds2-Seconds1;
+    return true;
+}
+
+//---------------------------------------------------------------------------
+static bool Tags_IsPicasa(const Ztring& Value)
+{
+    //Name of Picasa, with its version if any (e.g. "Picasa 3.0")
+    return !Value.compare(0, 6, __T("Picasa")) && (Value.size()==6 || (Value.size()>7 && Value[6]==__T(' ') && Value.find_first_not_of(__T("0123456789."), 7)==string::npos));
 }
 
 //---------------------------------------------------------------------------
@@ -5501,6 +5802,148 @@ void File__Analyze::Merge_Tags(File__Analyze &ToAdd, tags_format Format)
 }
 
 //---------------------------------------------------------------------------
+static void Tags_Application_Add(vector<Ztring>& List, const Ztring& Value)
+{
+    //Product of an application, without the operating system at the end: its version (the first word beginning with a digit, or a version in parentheses) and the words of its name (in lower case and sorted, without the details after the version)
+    //e.g. "23.5" and "adobe photoshop" for "Adobe Photoshop 23.5 (20220817.m.1861 1a0a147) (Macintosh)", "10.0" and "adobe classic lightroom photoshop" for "Adobe Photoshop Lightroom 10.0 Classic", "7.0" and "adobe cs5 indesign" for "Adobe InDesign CS5 (7.0)"
+    struct product
+    {
+        Ztring Version;
+        Ztring Version_Prefixed; //Version with a prefix, also after the version (e.g. "01.00" for "NIKON Z 30 Ver.01.00", whose version is "30")
+        vector<Ztring> Names;
+        size_t Size; //Of the application without the operating system
+        bool HasVersionPrefix=false; //e.g. "Ver.1.20"
+    };
+    const auto IsDigit=[](Char Value) {return Value>=__T('0') && Value<=__T('9');};
+    const auto Product=[&IsDigit](const Ztring& Application)
+    {
+        static const Char* const OperatingSystems[]={__T(" (Android)"), __T(" (Macintosh)"), __T(" (Windows)")};
+        product Result;
+        Result.Size=Application.size();
+        for (const Char* OperatingSystem : OperatingSystems)
+        {
+            const size_t OperatingSystem_Size=char_traits<Char>::length(OperatingSystem);
+            if (Application.size()>OperatingSystem_Size && !Application.compare(Application.size()-OperatingSystem_Size, OperatingSystem_Size, OperatingSystem))
+            {
+                Result.Size-=OperatingSystem_Size;
+                break;
+            }
+        }
+        for (size_t Pos=Application.find_first_not_of(__T(' ')); Pos<Result.Size;)
+        {
+            const size_t End=min(Application.find(__T(' '), Pos), Result.Size);
+            Ztring Word=Application.substr(Pos, End-Pos);
+            Pos=Application.find_first_not_of(__T(' '), End);
+
+            //Version with a prefix, e.g. "Ver.1.20", "V1.0", "Ver. 1.00", "Ver.T2.10.gb"
+            size_t Prefix=0;
+            if ((Word[0]==__T('V') || Word[0]==__T('v')) && Word.size()>=3 && (Word[1]==__T('E') || Word[1]==__T('e')) && (Word[2]==__T('R') || Word[2]==__T('r')))
+                Prefix=3;
+            else if (Word[0]==__T('V') || Word[0]==__T('v'))
+                Prefix=1;
+            if (Prefix && Prefix<Word.size() && Word[Prefix]==__T('.'))
+                Prefix++;
+            const bool IsPrefixed=Prefix && (Prefix==Word.size() || IsDigit(Word[Prefix]) || Prefix==4);
+            if (IsPrefixed && Prefix<Word.size())
+                Result.Version_Prefixed=Word.substr(Prefix);
+
+            if (Result.Version.empty())
+            {
+                if (IsPrefixed)
+                {
+                    Result.HasVersionPrefix=true;
+                    if (Prefix<Word.size())
+                        Result.Version=Word.substr(Prefix);
+                    continue;
+                }
+
+                if (IsDigit(Word[0]))
+                {
+                    Result.Version=Word;
+                    continue;
+                }
+                if (Word.size()>2 && Word[0]==__T('(') && IsDigit(Word[1]) && Word[Word.size()-1]==__T(')'))
+                {
+                    Result.Version=Word.substr(1, Word.size()-2);
+                    continue;
+                }
+            }
+            else if (Word[0]==__T('(') || Word.find_first_of(__T("0123456789"))!=Ztring::npos)
+                continue; //Details of the version, e.g. a build number
+            Word.MakeLowerCase();
+            Result.Names.push_back(Word);
+        }
+        sort(Result.Names.begin(), Result.Names.end());
+        return Result;
+    };
+
+    //Same product: same name with the same version or with a version having less details (e.g. "2.10" and "2.10.30"), same version with a name in another form (e.g. "Adobe InDesign CS5 (7.0)" and "Adobe InDesign 7.0"), or a firmware with only its version (e.g. "Ver.1.20" and "NIKON D4S Ver.1.20")
+    const auto IsSameProduct=[](const product& Product1, const product& Product2)
+    {
+        if (Product1.Names.empty() || Product2.Names.empty())
+        {
+            //A firmware with only its version: the same version, also after a number of the name (e.g. "Ver.01.00" and "NIKON Z 30 Ver.01.00")
+            const product& Firmware=Product1.Names.empty()?Product1:Product2;
+            const product& Other=Product1.Names.empty()?Product2:Product1;
+            return Firmware.HasVersionPrefix && !Firmware.Version.empty() && (Firmware.Version==Other.Version || Firmware.Version==Other.Version_Prefixed);
+        }
+        if (Product1.Names!=Product2.Names)
+        {
+            if (Product1.Version.empty() || Product1.Version!=Product2.Version)
+                return false;
+            const auto WithoutDigits=[](const vector<Ztring>& Names)
+            {
+                vector<Ztring> Result;
+                for (const Ztring& Name : Names)
+                    if (Name.find_first_of(__T("0123456789"))==Ztring::npos)
+                        Result.push_back(Name);
+                return Result;
+            };
+            const vector<Ztring> Names1=WithoutDigits(Product1.Names);
+            return !Names1.empty() && Names1==WithoutDigits(Product2.Names);
+        }
+        const bool Version1_IsLonger=Product1.Version.size()>Product2.Version.size();
+        const Ztring& Short=Version1_IsLonger?Product2.Version:Product1.Version;
+        const Ztring& Long=Version1_IsLonger?Product1.Version:Product2.Version;
+        return !Long.compare(0, Short.size(), Short) && (Short.empty() || Long.size()==Short.size() || Long[Short.size()]==__T('.'));
+    };
+
+    Ztring Application(Value);
+    Application.Trim(__T(' '));
+    if (Application.empty())
+        return;
+    const product Application_Product=Product(Application);
+    for (Ztring& Item : List)
+    {
+        if (Item==Application)
+            return;
+
+        //Same product on the same operating system: kept once, with the most details (a firmware with only its version is kept, so it is named from the hardware as when it is alone)
+        const product Item_Product=Product(Item);
+        if (!IsSameProduct(Application_Product, Item_Product))
+            continue;
+        const bool Application_HasOperatingSystem=Application_Product.Size<Application.size();
+        const bool Item_HasOperatingSystem=Item_Product.Size<Item.size();
+        if (Application_HasOperatingSystem && Item_HasOperatingSystem && Application.compare(Application_Product.Size, Ztring::npos, Item, Item_Product.Size, Ztring::npos))
+            continue; //Another operating system
+        if (Item_Product.Names.empty())
+            return;
+        if (Application_Product.Names.empty())
+            Item=Application;
+        else if (Application_Product.Version.size()>Item_Product.Version.size() || (Application_Product.Version.size()==Item_Product.Version.size() && Application_Product.Size>Item_Product.Size))
+        {
+            //More details in this one, with the operating system of the other one if it has none
+            const Ztring OperatingSystem=(!Application_HasOperatingSystem && Item_HasOperatingSystem)?Item.substr(Item_Product.Size):Ztring();
+            Item=Application+OperatingSystem;
+        }
+        else if (Application_HasOperatingSystem && !Item_HasOperatingSystem)
+            Item+=Application.substr(Application_Product.Size);
+        return;
+    }
+    List.push_back(Application);
+}
+
+//---------------------------------------------------------------------------
 void File__Analyze::Streams_Finish_Tags()
 {
     if (Tags_ToMerge.empty())
@@ -5522,11 +5965,88 @@ void File__Analyze::Streams_Finish_Tags()
         return '"'+Text+'"';
     };
 
+    auto Duration_Seconds=[this]()
+    {
+        //Duration of the file, from the streams when the one of the file is not yet known
+        float64 Duration=Retrieve_Const(Stream_General, 0, General_Duration).To_float64();
+        for (const stream_t StreamKind : { Stream_Video, Stream_Audio, Stream_Text, Stream_Other })
+            for (size_t StreamPos=0; StreamPos<Count_Get(StreamKind); StreamPos++)
+                Duration=max(Duration, Retrieve_Const(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Duration)).To_float64());
+        return (int64s)(Duration/1000);
+    };
+
     static const size_t Titles[]={General_Title, General_Title_More, General_Title_Url, General_Movie, General_Movie_More, General_Movie_Url, General_Movie_Country, General_Track, General_Track_More, General_Track_Url};
     const size_t Titles_Size=sizeof(Titles)/sizeof(*Titles);
     map<string, tags_format> Sources; //Format a parameter is filled from, a parameter which is not there is filled from the container
+
+    //Writing application with XMP: the one of the container, the last tool of the history of XMP, the one of Exif, then the creator tool of XMP, which is the first known tool
+    //All are kept, the last tool which wrote the file first, and a tool given several times is kept once (with the most details); a firmware of a camera is handled by the curation
+    bool Applications_AreMerged=false;
+    if (!IsSub) //Else merged by the parser these tags are given to
+    {
+        tags_item* Xmp_Last=nullptr;
+        tags_item* Xmp_Creator=nullptr;
+        tags_item* Exif=nullptr;
+        for (tags_item& Item : Tags_ToMerge)
+        {
+            if (Item.Format==Tags_Xmp && Item.Name=="Encoded_Application_Last")
+                Xmp_Last=&Item;
+            else if (Item.Format==Tags_Xmp && Item.Name=="Encoded_Application")
+                Xmp_Creator=&Item;
+            else if (Item.Format==Tags_Exif && Item.Name=="Encoded_Application")
+                Exif=&Item;
+        }
+        if (Xmp_Last || Xmp_Creator)
+        {
+            vector<Ztring> List;
+            Tags_Application_Add(List, Retrieve_Const(Stream_General, 0, General_Encoded_Application));
+            if (Xmp_Last)
+                Tags_Application_Add(List, Xmp_Last->Value);
+            if (Exif)
+                Tags_Application_Add(List, Exif->Value);
+            if (Xmp_Creator)
+                Tags_Application_Add(List, Xmp_Creator->Value);
+            Ztring Applications;
+            for (const Ztring& Application : List)
+            {
+                if (!Applications.empty())
+                    Applications+=__T(" / ");
+                Applications+=Application;
+            }
+            if (!Applications.empty())
+                Fill(Stream_General, 0, General_Encoded_Application, Applications, true);
+            for (tags_item* Item : { Xmp_Last, Xmp_Creator, Exif })
+                if (Item)
+                    Item->IsFilled=true;
+            Applications_AreMerged=true;
+        }
+    }
+
+    //A scanner writes the date of the scan as the date of the original and as the date of the digitization: when another tag format has an older date of the original
+    //(e.g. the date of the photo in IPTC), the date of the original of these tags is only the date of the digitization
+    vector<const tags_item*> Digitizations;
+    {
+        int64s Original_Days=-1;
+        for (const tags_item& Item : Tags_ToMerge)
+            if (Item.Name=="Recorded_Date")
+            {
+                const int64s Days=Tags_Date_Days(Item.Value);
+                if (Days>=0 && (Original_Days<0 || Days<Original_Days))
+                    Original_Days=Days;
+            }
+        for (const tags_item& Item : Tags_ToMerge)
+            if (Item.Name=="Recorded_Date" && Tags_Date_Days(Item.Value)>Original_Days+1) //More than 1 day, not a difference of time zone
+                for (const tags_item& Digitization : Tags_ToMerge)
+                {
+                    Ztring Merged;
+                    if (Digitization.Format==Item.Format && Digitization.Name=="Mastered_Date" && Tags_Date_Merge(Item.Value, Digitization.Value, Merged))
+                        Digitizations.push_back(&Item);
+                }
+    }
+
     const auto File_Offset_Save=File_Offset;
     File_Offset=(int64u)-1-(Buffer_Offset+Element_Offset); //The conformance errors are about several parts of the file, no offset is provided
+    Ztring Picasa; //Name of Picasa written as author
     for (size_t Format=0; Format<Tags_Max; Format++)
     {
         if (!IsSub)
@@ -5545,6 +6065,8 @@ void File__Analyze::Streams_Finish_Tags()
             if (Item.Format!=Format)
                 continue;
             const char* Name=Item.Name.c_str();
+            if (Item.Name=="Encoded_Application_Last" || (Applications_AreMerged && Item.Name=="Encoded_Application" && (Format==Tags_Xmp || Format==Tags_Exif)))
+                continue; //Already merged
 
             //A parameter about another parameter (e.g. "Rating/5Stars" about "Rating") is from the same tags as this other parameter
             if (!Item.Options.empty())
@@ -5557,6 +6079,16 @@ void File__Analyze::Streams_Finish_Tags()
                     if (!Retrieve_Const(Stream_General, 0, Parent.c_str()).empty() && (Parent_Source==Sources.end() || Parent_Source->second!=Format))
                         continue;
                 }
+            }
+            if (std::find(Digitizations.begin(), Digitizations.end(), &Item)!=Digitizations.end())
+                continue; //Date of the digitization, see above
+            if (Item.Name=="Performer" && Tags_IsPicasa(Item.Value))
+            {
+                //Picasa writes its name as author (by-line of IPTC, artist of Exif, creator of XMP), it is the tool and not the creator of the content, see below
+                if (Picasa.size()<Item.Value.size())
+                    Picasa=Item.Value; //With its version if any
+                Item.IsFilled=true;
+                continue;
             }
 
             const Ztring Current=Retrieve_Const(Stream_General, 0, Name);
@@ -5578,18 +6110,87 @@ void File__Analyze::Streams_Finish_Tags()
             const Ztring& Short=Current_IsShort?Current:Item.Value;
             const Ztring& Long=Current_IsShort?Item.Value:Current;
             const bool IsDate=Item.Name.size()>5 && !Item.Name.compare(Item.Name.size()-5, 5, "_Date");
+            if (IsDate && Format==Tags_Exif && Source!=Sources.end() && Source->second==Tags_Xmp && Tags_Date_FractionAsMilliseconds(Current, Item.Value))
+            {
+                //The fraction of second of XMP is the one of Exif read as a count of milliseconds, an error of the tool converting Exif to XMP: Exif has priority and XMP is not conform
+                if (!IsSub)
+                    Fill_Conformance(("Crosscheck "+BuildConformanceName(Tags_Format_Names[Tags_Xmp], nullptr, Name)).c_str(), string(Tags_Format_Names[Tags_Xmp])+' '+Item.Name+" does not match "+Tags_Format_Names[Tags_Exif]+' '+Item.Name+" (actual "+Quoted(Current)+", expected "+Quoted(Item.Value)+')');
+                Fill(Stream_General, 0, Name, Item.Value, true);
+                Sources[Item.Name]=Item.Format;
+                Item.IsFilled=true;
+                continue;
+            }
+            if (Format==Tags_Exif && Source!=Sources.end() && Source->second==Tags_Xmp && !Item.Name.compare(0, 16, "Encoded_Hardware"))
+            {
+                //The camera is written by itself in the TIFF tags, XMP has a copy of them which is sometimes not the same (e.g. a placeholder or a code name): Exif has priority and XMP is not conform
+                if (!IsSub)
+                    Fill_Conformance(("Crosscheck "+BuildConformanceName(Tags_Format_Names[Tags_Xmp], nullptr, Name)).c_str(), string(Tags_Format_Names[Tags_Xmp])+' '+Item.Name+" does not match "+Tags_Format_Names[Tags_Exif]+' '+Item.Name+" (actual "+Quoted(Current)+", expected "+Quoted(Item.Value)+')');
+                Fill(Stream_General, 0, Name, Item.Value, true);
+                Sources[Item.Name]=Item.Format;
+                Item.IsFilled=true;
+                continue;
+            }
             if (IsDate)
             {
-                //Same instant in another time zone
-                int64s Seconds_Current, Seconds_Item;
-                string Fraction_Current, Fraction_Item;
-                if (Tags_Date_Utc(Current.To_UTF8(), Seconds_Current, Fraction_Current) && Tags_Date_Utc(Item.Value.To_UTF8(), Seconds_Item, Fraction_Item)
-                 && Seconds_Current==Seconds_Item && (Fraction_Current.empty() || Fraction_Item.empty() || Fraction_Current==Fraction_Item))
+                //Same date with other details or in another time zone, the details of both are shown
+                Ztring Merged, Zone_Guessed;
+                if (Tags_Date_Merge(Current, Item.Value, Merged, &Zone_Guessed))
+                {
+                    if (!Zone_Guessed.empty())
+                    {
+                        //A date in UTC in XMP is then a copy of the date without time zone converted to UTC with an assumed time zone (e.g. the one of the computer, which is not always the one of the camera), which XMP does not permit: XMP is not conform, and the time zone is not known
+                        //Else the dates are conform, e.g. the date of the last modification of PNG, which is in UTC, and the one of Exif, which is in local time, written by the same tool
+                        const bool Item_IsUtc=!Merged.compare(0, 19, Current, 0, 19);
+                        const bool Utc_IsXmp=Item_IsUtc?(Format==Tags_Xmp):(Source!=Sources.end() && Source->second==Tags_Xmp);
+                        if (Utc_IsXmp)
+                        {
+                            if (!IsSub)
+                            {
+                                string Other=Item_IsUtc?(Source==Sources.end()?Retrieve_Const(Stream_General, 0, General_Format).To_UTF8():string(Tags_Format_Names[Source->second])):string(Tags_Format_Names[Format]);
+                                if (!Other.empty())
+                                    Other+=' ';
+                                Fill_Conformance(("Crosscheck "+BuildConformanceName(Tags_Format_Names[Tags_Xmp], nullptr, Name)).c_str(), string(Tags_Format_Names[Tags_Xmp])+' '+Item.Name+" is "+Other+Item.Name+" converted to UTC with an assumed time zone (actual "+Quoted(Item_IsUtc?Item.Value:Current)+", expected "+Quoted(Item_IsUtc?Current:Item.Value)+')');
+                            }
+                            Merged.resize(Merged.size()-Zone_Guessed.size());
+                        }
+                    }
+                    if (Merged!=Current)
+                    {
+                        Fill(Stream_General, 0, Name, Merged, true);
+                        if (Merged==Item.Value)
+                        {
+                            Sources[Item.Name]=Item.Format;
+                            Item.IsFilled=true;
+                        }
+                    }
                     continue;
+                }
+
+                //The date of the container and the date of the tags written when the file is finished (e.g. XMP written by the tool which exported the file): the same date when their difference is up to the duration of the file, with a margin of 1 minute as the writing is sometimes slower than real time
+                int64s Difference;
+                if (Source==Sources.end() && Tags_Date_Difference(Current, Item.Value, Difference) && Difference<=Duration_Seconds()+60)
+                    continue;
+
+                //Not the same date
+                //The date of the last modification is sometimes updated by a tool in one tag format only: the most recent one is used
+                //The dates of the original and of the digitization are written by the camera itself in Exif, XMP has a copy of them which is sometimes not the same (e.g. the time of an edit): Exif has priority
+                //The other tag format is not conform
+                const bool IsMoreRecent=Item.Name=="Encoded_Date" && Source!=Sources.end() && Tags_Date_IsMoreRecent(Item.Value, Current);
+                if (IsMoreRecent || (Format==Tags_Exif && Source!=Sources.end() && Source->second==Tags_Xmp && (Item.Name=="Recorded_Date" || Item.Name=="Mastered_Date")))
+                {
+                    if (!IsSub)
+                        Fill_Conformance(("Crosscheck "+BuildConformanceName(Tags_Format_Names[Source->second], nullptr, Name)).c_str(), string(Tags_Format_Names[Source->second])+' '+Item.Name+" does not match "+Tags_Format_Names[Format]+' '+Item.Name+" (actual "+Quoted(Current)+", expected "+Quoted(Item.Value)+')');
+                    Fill(Stream_General, 0, Name, Item.Value, true);
+                    Sources[Item.Name]=Item.Format;
+                    Item.IsFilled=true;
+                    continue;
+                }
             }
-            if (!Long.compare(0, Short.size(), Short))
+            //Also with ".." at the end instead of the end of the content, and for another audio tag format with the maximal size of ID3v1 (a copy of the content of ID3v1, e.g. APE tags made from the ID3v1 tags)
+            const bool Short_IsStart=!Long.compare(0, Short.size(), Short);
+            if (Short_IsStart || (!IsDate && Short.size()>2 && !Short.compare(Short.size()-2, 2, __T("..")) && !Long.compare(0, Short.size()-2, Short, 0, Short.size()-2)))
             {
-                if (IsDate && (Long[Short.size()]<__T('0') || Long[Short.size()]>__T('9')))
+                if (Short_IsStart && IsDate && (Long[Short.size()]<__T('0') || Long[Short.size()]>__T('9')))
                 {
                     if (Current_IsShort)
                     {
@@ -5600,7 +6201,9 @@ void File__Analyze::Streams_Finish_Tags()
                     continue;
                 }
                 const tags_format Short_Format=Current_IsShort?(Source==Sources.end()?Tags_Max:Source->second):(tags_format)Format;
-                const size_t Size_Max=Tags_Size_Max(Short_Format, Item.Name);
+                size_t Size_Max=Tags_Size_Max(Short_Format, Item.Name);
+                if (!Size_Max && Short_Format<Tags_Id3v1 && (Item.Name=="Title" || Item.Name=="Track" || Item.Name=="Performer" || Item.Name=="Album" || Item.Name=="Comment"))
+                    Size_Max=Tags_Size_Max(Tags_Id3v1, Item.Name);
                 if (Size_Max && (Short_Format==Tags_Iim?Short.To_UTF8().size():Short.size())>=Size_Max)
                 {
                     if (Current_IsShort)
@@ -5608,13 +6211,39 @@ void File__Analyze::Streams_Finish_Tags()
                         Fill(Stream_General, 0, Name, Item.Value, true);
                         Sources[Item.Name]=Item.Format;
                         Item.IsFilled=true;
+                        if (Item.Name=="Title")
+                        {
+                            //The name of the track or of the movie made from the title (see Tags()) is the same content
+                            for (const size_t Parameter : {(size_t)General_Track, (size_t)General_Movie})
+                                if (Retrieve_Const(Stream_General, 0, Parameter)==Current)
+                                    Fill(Stream_General, 0, Parameter, Item.Value, true);
+                        }
                     }
                     continue;
                 }
             }
 
+            //ID3v1 has no character encoding: a text with characters which are not in ASCII is in a code page which is not known when the text of the other format has characters which are not in ISO-8859-1, it is not comparable and the text of the other format is used
+            if (Format==Tags_Id3v1)
+            {
+                if (Tags_HasCharacterAbove(Item.Value, 0x7F) && Tags_HasCharacterAbove(Current, 0xFF))
+                    continue;
+                if (Item.Name=="Genre" && Item.Value==__T("12"))
+                    continue; //"Other", for a genre which is not in the list of ID3v1
+            }
+            else if (Source!=Sources.end() && Source->second==Tags_Id3v1 && Tags_HasCharacterAbove(Current, 0x7F) && Tags_HasCharacterAbove(Item.Value, 0xFF))
+            {
+                Fill(Stream_General, 0, Name, Item.Value, true);
+                Sources[Item.Name]=Item.Format;
+                Item.IsFilled=true;
+                continue;
+            }
+
             //Not the same content, which is expected for the tool: each part of the file may be written by another one
             if (!Item.Name.compare(0, 19, "Encoded_Application") || !Item.Name.compare(0, 15, "Encoded_Library"))
+                continue;
+            //Not the same content, which is expected for the user comment of Exif: it is not the comment of the file
+            if (Item.Name=="Comment" && (Format==Tags_Exif || (Source!=Sources.end() && Source->second==Tags_Exif)))
                 continue;
             if (IsSub)
                 continue; //Compared by the parser these tags are given to
@@ -5622,8 +6251,16 @@ void File__Analyze::Streams_Finish_Tags()
             string Other=Source==Sources.end()?Retrieve_Const(Stream_General, 0, General_Format).To_UTF8():string(Tags_Format_Names[Source->second]);
             if (!Other.empty())
                 Other+=' ';
-            Fill_Conformance(("Crosscheck "+BuildConformanceName(Format_Name, nullptr, Name)).c_str(), Format_Name+' '+Item.Name+' '+Quoted(Item.Value)+" does not match "+Other+Item.Name+' '+Quoted(Current));
+            const bool IsGenre=Item.Name=="Genre"; //Shown with its name when it is a number of the list of ID3v1
+            Fill_Conformance(("Crosscheck "+BuildConformanceName(Format_Name, nullptr, Name)).c_str(), Format_Name+' '+Item.Name+" does not match "+Other+Item.Name+" (actual "+Quoted(IsGenre?Tags_Genre(Item.Value):Item.Value)+", expected "+Quoted(IsGenre?Tags_Genre(Current):Current)+')');
         }
+    }
+    if (!Picasa.empty())
+    {
+        //Picasa is a writing application, the last tool which wrote the file
+        const Ztring& Applications=Retrieve_Const(Stream_General, 0, General_Encoded_Application);
+        if (Applications.find(__T("Picasa"))==string::npos)
+            Fill(Stream_General, 0, General_Encoded_Application, Applications.empty()?Picasa:(Picasa+__T(" / ")+Applications), true);
     }
     File_Offset=File_Offset_Save;
     if (!IsSub)

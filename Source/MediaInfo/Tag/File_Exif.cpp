@@ -1564,13 +1564,27 @@ void File_Exif::Streams_Finish()
         Ztring Value = DateTime.Read();
         if (Infos_Exif_It != Infos.end()) {
             const auto& Infos_Exif = Infos_Exif_It->second;
+            // Some cameras write spaces when the content is not known, e.g. "   :  " as offset
             const auto SubSecTime = Infos_Exif.find(SubSecTimeTag);
             if (SubSecTime != Infos_Exif.end()) {
-                Value += __T('.') + SubSecTime->second.Read();
+                Ztring SubSec = SubSecTime->second.Read();
+                SubSec.Trim(__T(' '));
+                if (!SubSec.empty() && SubSec.find_first_not_of(__T("0123456789")) == string::npos) {
+                    Value += __T('.') + SubSec;
+                }
             }
             const auto OffsetTime = Infos_Exif.find(OffsetTimeTag);
             if (OffsetTime != Infos_Exif.end()) {
-                Value += OffsetTime->second.Read();
+                // "+HH:MM" or "-HH:MM" is expected, "Z", "+HHMM" and "+HH" are also adapted
+                Ztring Offset = OffsetTime->second.Read();
+                Offset.Trim(__T(' '));
+                const bool HasSign = !Offset.empty() && (Offset[0] == __T('+') || Offset[0] == __T('-'));
+                const size_t NotDigit = HasSign ? Offset.find_first_not_of(__T("0123456789"), 1) : 0;
+                if (Offset == __T("Z")
+                 || (HasSign && NotDigit == string::npos && (Offset.size() == 3 || Offset.size() == 5))
+                 || (HasSign && NotDigit == 3 && Offset.size() == 6 && Offset[3] == __T(':') && Offset.find_first_not_of(__T("0123456789"), 4) == string::npos)) {
+                    Value += Offset;
+                }
             }
         }
         return Value;
@@ -2700,6 +2714,14 @@ void File_Exif::GetValueOffsetu(ifditem &IfdItem)
         break;
     case Exif_Type::ASCII:                                      /* ASCII */
         {
+            if (currentIFD == Kind_Exif && IfdItem.Tag == IFDExif::UserComment && IfdItem.Count >= 8 && Element_Offset + 8 <= Element_Size) {
+                // Some tools write the type ASCII for the content of the type UNDEFINED, which begins with a character code
+                const int64u CharacterCode = BigEndian2int64u(Buffer + Buffer_Offset + (size_t)Element_Offset);
+                if (CharacterCode == 0x4153434949000000LL || CharacterCode == 0x554E49434F444500LL || CharacterCode == 0x4A49530000000000LL) {
+                    MulticodeString(Info);
+                    break;
+                }
+            }
             string Data;
             Get_String(IfdItem.Count, Data,                     "Data"); Element_Info1(Data.c_str());
             Info.push_back(Ztring().From_UTF8(Data.c_str()));
