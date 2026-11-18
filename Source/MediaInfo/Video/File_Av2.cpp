@@ -204,6 +204,24 @@ static const char* Av2_metadata_type(int8u metadata_type)
     }
 }
 
+//---------------------------------------------------------------------------
+//Position of an OBU in a temporal unit up to the first sequence header (spec 7.3.7 then 7.3.6 for the extended layer), 0 if it can not be there
+static int8u Av2_TemporalUnit_Rank(int8u obu_type, bool IsGlobal)
+{
+    switch (obu_type) {
+    case  1: return IsGlobal ? 0 : 10; // OBU_SEQUENCE_HEADER
+    case  2: return IsGlobal ? 1 :  0; // OBU_TEMPORAL_DELIMITER
+    case  8:
+    case  9: return IsGlobal ? 6 :  0; // OBU_METADATA_SHORT, OBU_METADATA_GROUP
+    case 16: return IsGlobal ? 3 :  7; // OBU_LAYER_CONFIGURATION_RECORD
+    case 17: return IsGlobal ? 5 :  9; // OBU_ATLAS_SEGMENT
+    case 18: return IsGlobal ? 4 :  8; // OBU_OPERATING_POINT_SET
+    case 20: return IsGlobal ? 2 :  0; // OBU_MSDO
+    case 25: return IsGlobal ? 6 :  7; // OBU_PADDING
+    default: return 0;
+    }
+}
+
 //***************************************************************************
 // Math utils
 //***************************************************************************
@@ -297,6 +315,106 @@ void File_Av2::Streams_Finish()
 }
 
 //***************************************************************************
+// Buffer - File header
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+//Size (leb128) read before the parsing of the elements: 1 if read, 0 if the data ends before its end, -1 if it is longer than 8 bytes
+static int Av2_leb128(const int8u* Buffer, size_t Buffer_Size, size_t& Offset, int64u& Value)
+{
+    Value = 0;
+    for (int8u i = 0; i < 8; i++) {
+        if (Offset >= Buffer_Size)
+            return 0;
+        auto leb128_byte = Buffer[Offset++];
+        Value |= static_cast<int64u>(leb128_byte & 0x7F) << (i * 7);
+        if (!(leb128_byte & 0x80))
+            return 1;
+    }
+    return -1;
+}
+
+//---------------------------------------------------------------------------
+bool File_Av2::FileHeader_Begin()
+{
+    if (IsSub || !IsAnnexB)
+        return true; //Elements given by the container
+
+    //A stream starts with a temporal delimiter (a temporal unit starts with it), then come the OBU types permitted before a sequence header in their order,
+    //with layer identifiers equal to 0, no data in the temporal delimiter except trailing bits, and prefix metadata: tested up to the sequence header before
+    //parsing the elements, else the parser waits for an element of a size read in the data of a file in another format
+    size_t Offset = 0;
+    int8u TemporalUnit_Rank = 0;
+    for (;;) {
+        //num_bytes_in_obu
+        auto Begin = Offset;
+        int64u num_bytes_in_obu;
+        auto Result = Av2_leb128(Buffer, Buffer_Size, Offset, num_bytes_in_obu);
+        if (!Result)
+            return false; //Must wait for more data
+        if (Result < 0) {
+            Reject();
+            return false;
+        }
+        auto obu_size = Offset - Begin + num_bytes_in_obu;
+
+        //obu_header
+        if (Offset >= Buffer_Size)
+            return false; //Must wait for more data
+        auto obu_header_extension_flag = Buffer[Offset] >> 7;
+        auto obu_type = (int8u)((Buffer[Offset] >> 2) & 0x1F);
+        auto tlayer_id = (int8u)(Buffer[Offset] & 0x03);
+        int8u mlayer_id = 0;
+        int8u xlayer_id = (obu_type == 20 || obu_type == 2) ? GLOBAL_XLAYER_ID : 0;
+        Offset++;
+        if (obu_header_extension_flag) {
+            if (Offset >= Buffer_Size)
+                return false; //Must wait for more data
+            mlayer_id = Buffer[Offset] >> 5;
+            xlayer_id = Buffer[Offset] & 0x1F;
+            Offset++;
+        }
+        auto Header_Size = Offset - Begin;
+
+        //Testing
+        auto IsGlobal = xlayer_id == GLOBAL_XLAYER_ID;
+        auto Rank = Av2_TemporalUnit_Rank(obu_type, IsGlobal);
+        bool IsOK;
+        switch (obu_type) {
+        case  2: IsOK = !TemporalUnit_Rank; break; // First
+        case 20: IsOK = TemporalUnit_Rank == 1; break; // Zero or one, after the temporal delimiter
+        case 25: IsOK = TemporalUnit_Rank && TemporalUnit_Rank <= (IsGlobal ? 6 : 9); break; // Any position, global only outside the extended layer part
+        default: IsOK = TemporalUnit_Rank && Rank >= TemporalUnit_Rank; // Zero or more, in order
+        }
+        IsOK = IsOK && Rank && !tlayer_id && !mlayer_id
+            && obu_size >= Header_Size && (File_Size == (int64u)-1 || File_Offset + Begin + obu_size <= File_Size);
+        if (IsOK && obu_type != 1) {
+            if (Begin + obu_size > Buffer_Size)
+                return false; //Must wait for more data
+            auto End = (size_t)(Begin + obu_size);
+            switch (obu_type) {
+            case  2: // trailing_bits
+                for (auto i = Offset; i < End; i++)
+                    if (Buffer[i] != (i == Offset ? 0x80 : 0x00))
+                        IsOK = false;
+                break;
+            case  8:
+            case  9: IsOK = Offset < End && !(Buffer[Offset] & 0x80); break; // metadata_is_suffix
+            }
+            if (obu_type != 25 || !IsGlobal) //Global padding does not change the position
+                TemporalUnit_Rank = std::max(TemporalUnit_Rank, Rank);
+            Offset = End;
+        }
+        if (!IsOK) {
+            Reject();
+            return false;
+        }
+        if (obu_type == 1)
+            return true; //Sequence header
+    }
+}
+
+//***************************************************************************
 // Buffer - Global
 //***************************************************************************
 
@@ -372,7 +490,7 @@ void File_Av2::Header_Parse()
     }
     else {
         obu_mlayer_id = 0;
-        obu_xlayer_id = (obu_type == 20) ? GLOBAL_XLAYER_ID : 0;
+        obu_xlayer_id = (obu_type == 20 || obu_type == 2) ? GLOBAL_XLAYER_ID : 0;
     }
     BS_End();
 
@@ -385,14 +503,6 @@ void File_Av2::Header_Parse()
 //---------------------------------------------------------------------------
 void File_Av2::Data_Parse()
 {
-    //Probing mode in case of raw stream //TODO: better reject of bad files
-    if (!IsSub && !Status[IsAccepted]
-        && !sequence_header_Parsed && Element_Code != 1 && Element_Code != 2)
-    {
-        Reject();
-        return;
-    }
-
     //Parsing
     switch (Element_Code)
     {
@@ -930,6 +1040,12 @@ void File_Av2::temporal_delimiter_obu()
     Element_Begin1("temporal_delimiter_obu");
     SeenFrameHeader = false;
     Element_End0();
+
+    if (Element_Size - Element_Offset) {
+        BS_Begin();
+        obu_end();
+        BS_End();
+    }
 
     FILLING_BEGIN_PRECISE();
     FILLING_END();
