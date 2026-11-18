@@ -4190,13 +4190,16 @@ void File__Analyze::Finish ()
 
     //Frame count: Frame_Count_NotParsedIncluded is the count of frames before the position, the ones not parsed included
     //(e.g. after a jump), so the count of frames of the file only at its end. The parsing continues up to the end if the
-    //file is less than 4 times the position, else this count is unknown. The count of a sub-parser is managed by its
-    //container (e.g. the count of frames of the track).
+    //file is less than 4 times the parsed data, else this count is unknown if the position is in the first quarter of the
+    //file. After a jump far from the parsed data (e.g. GXF to the middle of the file, MXF at the end of the file after the
+    //probe of captions in the middle), the parsing up to the end would read a large part of the file, and the count is the
+    //one computed by the parser after the jump. The count of a sub-parser is managed by its container (e.g. the count of
+    //frames of the track).
     if (!MustContinue && !IsSub && Frame_Count_NotParsedIncluded!=(int64u)-1)
     {
-        if (File_Size!=(int64u)-1 && File_Offset+Buffer_Offset>File_Size/4)
+        if (File_Size!=(int64u)-1 && Buffer_TotalBytes+Buffer_Offset>File_Size/4)
             MustContinue=true;
-        else
+        else if (File_Size==(int64u)-1 || File_Offset+Buffer_Offset<=File_Size/4)
             Frame_Count_NotParsedIncluded=(int64u)-1;
     }
 
