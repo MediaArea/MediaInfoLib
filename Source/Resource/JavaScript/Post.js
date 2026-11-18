@@ -1,5 +1,16 @@
-helpers = function() {
-  MediaInfoLib.MediaInfo.prototype.Open = function(file, callback) {
+var getMediaInfoModule = function() {
+  if (typeof MediaInfoLib.MediaInfo !== 'undefined')
+    return MediaInfoLib;
+  if (typeof Module !== 'undefined' && typeof Module.MediaInfo !== 'undefined')
+    return Module;
+};
+
+var helpers = function() {
+  var module = getMediaInfoModule();
+  if (!module)
+    return;
+
+  module.MediaInfo.prototype.Open = function(file, callback) {
     var _this = this, offset = 0, CHUNK_SIZE = 1024 * 1024;
 
     if (file.constructor !== File)
@@ -49,6 +60,12 @@ helpers = function() {
 if (typeof MediaInfoLib.ready !== 'undefined') {
   MediaInfoLib.ready.then(helpers);
 }
-else {
+else if (typeof getMediaInfoModule() !== 'undefined') {
+  helpers();
+}
+else if (typeof addOnPostRun === 'function') {
   addOnPostRun(helpers);
+}
+else {
+  helpers();
 }
