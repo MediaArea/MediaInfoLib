@@ -8,6 +8,8 @@
 //
 
 #include <iostream>
+#include <chrono>
+#include <map>
 #include <vector>
 #include "tchar.h"
 #include "MediaInfoDLL/MediaInfoDLL.h"
@@ -17,7 +19,6 @@
 #include "ZenLib/Dir.h"
 #include "RegressionTest/RegressionTest.h"
 #include "MediaInfo/MediaInfo_Events.h"
-#include "ctime"
 using namespace MediaInfoDLL;
 using namespace ZenLib;
 using namespace std;
@@ -26,7 +27,7 @@ using namespace std;
 /* Events                                                                  */
 /***************************************************************************/
 
-//Parsing times (Basic\Diff\Times.csv): a line per file of the list, with its complete name, an empty column, its size
+//Parsing times (Basic\New\Times.csv): a line per file of the list, with its complete name, an empty column, its size
 //and the seconds of its parsing. A file referenced by another one (e.g. the files of a DCP) is parsed while the file
 //referencing it is parsed, so its time is in the time of this file, and it has no line.
 //The start event of a file has its name. The end events are sent by the parser of the file and by its sub-parsers,
@@ -35,8 +36,8 @@ using namespace std;
 
 struct opened_file
 {
-    time_t Start;
-    time_t End;
+    chrono::steady_clock::time_point Start;
+    chrono::steady_clock::time_point End;
     int64u Size;
     bool   IsEnded;
 };
@@ -56,8 +57,8 @@ static void Basic_Close(struct UserHandle_struct* UserHandle, size_t Count)
         if (UserHandle->Opened.size()==1)
         {
             const opened_file& Opened=UserHandle->Opened[0];
-            time_t Diff=(Opened.IsEnded?Opened.End:time(NULL))-Opened.Start;
-            UserHandle->Time_File.Write(__T(';')+Ztring::ToZtring(Opened.Size)+__T(';')+Ztring::ToZtring(Diff)+EOL);
+            float64 Seconds=chrono::duration<float64>((Opened.IsEnded?Opened.End:chrono::steady_clock::now())-Opened.Start).count();
+            UserHandle->Time_File.Write(__T(';')+Ztring::ToZtring(Opened.Size)+__T(';')+Ztring::ToZtring(Seconds, 3)+EOL);
         }
         UserHandle->Opened.pop_back();
     }
@@ -76,7 +77,7 @@ void Basic_General_Start_0 (struct MediaInfo_Event_General_Start_0* Event, struc
     if (UserHandle->Opened.empty())
         UserHandle->Time_File.Write(Ztring(Event->FileName_Unicode)+__T(';')); //Name written before the parsing, so the file of a crash or of a hang is known
     opened_file Opened;
-    Opened.Start=time(NULL);
+    Opened.Start=chrono::steady_clock::now();
     Opened.Size=Event->Stream_Size;
     Opened.IsEnded=false;
     UserHandle->Opened.push_back(Opened);
@@ -94,7 +95,7 @@ void Basic_General_End_0 (struct MediaInfo_Event_General_End_0* Event, struct Us
     opened_file& Opened=UserHandle->Opened[Depth];
     if (!Opened.IsEnded)
     {
-        Opened.End=time(NULL);
+        Opened.End=chrono::steady_clock::now();
         Opened.IsEnded=true;
     }
     UserHandle->Parser.clear();
@@ -146,6 +147,99 @@ void __stdcall Basic_Event_CallBackFunction(unsigned char* Data_Content, size_t 
                 }
                 break;
         default : ; //ParserID is unknown
+    }
+}
+
+/***************************************************************************/
+/* Times                                                                   */
+/***************************************************************************/
+
+struct time_line
+{
+    Ztring Name;
+    Ztring Size;
+    Ztring Seconds;
+};
+
+static vector<time_line> Basic_Times_Load(const Ztring& FileName)
+{
+    //Lines of a Times.csv file, the fields are read from the end as the complete name may have a ';'
+    vector<time_line> Lines;
+    File F;
+    if (!F.Open(FileName))
+        return Lines;
+    string Data((size_t)F.Size_Get(), '\0');
+    if (!Data.empty())
+        Data.resize(F.Read((int8u*)&Data[0], Data.size()));
+    Ztring Text;
+    Text.From_UTF8(Data.c_str(), 0, Data.size());
+    const size_t EOL_Size=Ztring(EOL).size();
+    for (size_t Begin=0; Begin<Text.size();)
+    {
+        size_t End=Text.find(EOL, Begin);
+        if (End==string::npos)
+            End=Text.size();
+        Ztring Line=Text.substr(Begin, End-Begin);
+        Begin=End+EOL_Size;
+        size_t Seconds_Pos=Line.rfind(__T(';'));
+        size_t Size_Pos=(Seconds_Pos==string::npos || !Seconds_Pos)?string::npos:Line.rfind(__T(';'), Seconds_Pos-1);
+        size_t Name_End=(Size_Pos==string::npos || !Size_Pos)?string::npos:Line.rfind(__T(';'), Size_Pos-1);
+        if (Name_End==string::npos)
+            continue; //Not a line of times, e.g. the name of a file whose parsing did not end
+        time_line Item;
+        Item.Name=Line.substr(0, Name_End);
+        Item.Size=Line.substr(Size_Pos+1, Seconds_Pos-Size_Pos-1);
+        Item.Seconds=Line.substr(Seconds_Pos+1);
+        Lines.push_back(Item);
+    }
+    return Lines;
+}
+
+static void Basic_Times_Diff(const Ztring& DataBaseDirectory)
+{
+    //Basic\Diff\Times.csv: the files whose parsing time is different by more than 1 second from Basic\Ref\Times.csv, or
+    //whose size is different, as "new --- ref", and the files only in one of them
+    Ztring Ref_FileName=DataBaseDirectory+__T("\\Basic\\Ref\\Times.csv");
+    if (!File::Exists(Ref_FileName))
+        return; //No reference times, New\Times.csv may be copied as Ref\Times.csv
+    vector<time_line> New=Basic_Times_Load(DataBaseDirectory+__T("\\Basic\\New\\Times.csv"));
+    vector<time_line> Ref=Basic_Times_Load(Ref_FileName);
+
+    //Lines with the same name taken in the same order, a name may be in several lines
+    map<Ztring, vector<size_t> > Ref_Lines;
+    for (size_t Pos=0; Pos<Ref.size(); Pos++)
+        Ref_Lines[Ref[Pos].Name].push_back(Pos);
+    map<Ztring, size_t> Ref_Lines_Used;
+    vector<bool> Ref_IsUsed(Ref.size());
+
+    Ztring Diff;
+    for (size_t Pos=0; Pos<New.size(); Pos++)
+    {
+        const time_line& N=New[Pos];
+        map<Ztring, vector<size_t> >::iterator Ref_Line=Ref_Lines.find(N.Name);
+        size_t& Used=Ref_Lines_Used[N.Name];
+        if (Ref_Line==Ref_Lines.end() || Used>=Ref_Line->second.size())
+        {
+            Diff+=N.Name+__T(";;")+N.Size+__T(" --- ;")+N.Seconds+__T(" --- ")+EOL;
+            continue;
+        }
+        const time_line& R=Ref[Ref_Line->second[Used]];
+        Ref_IsUsed[Ref_Line->second[Used]]=true;
+        Used++;
+        float64 Seconds_Diff=N.Seconds.To_float64()-R.Seconds.To_float64();
+        bool IsSizeDiff=N.Size!=R.Size;
+        if (Seconds_Diff>1 || Seconds_Diff<-1 || IsSizeDiff) //1 second of tolerance
+            Diff+=N.Name+__T(";;")+(IsSizeDiff?(N.Size+__T(" --- ")+R.Size):N.Size)+__T(';')+N.Seconds+__T(" --- ")+R.Seconds+EOL;
+    }
+    for (size_t Pos=0; Pos<Ref.size(); Pos++)
+        if (!Ref_IsUsed[Pos])
+            Diff+=Ref[Pos].Name+__T(";; --- ")+Ref[Pos].Size+__T("; --- ")+Ref[Pos].Seconds+EOL;
+
+    if (!Diff.empty())
+    {
+        File F;
+        if (F.Create(DataBaseDirectory+__T("\\Basic\\Diff\\Times.csv")))
+            F.Write(Diff);
     }
 }
 
@@ -307,15 +401,21 @@ void RegressionTest_Basic(Ztring Files, Ztring DataBaseDirectory, int32u Scenari
     wostringstream Event_CallBackFunction_Text;
     Event_CallBackFunction_Text<<__T("CallBack=memory://")<<(MediaInfo_int64u)Basic_Event_CallBackFunction<<__T(";UserHandler=memory://")<<(MediaInfo_int64u)&UserHandle;
     MIL.Option(__T("File_Event_CallBackFunction"), Event_CallBackFunction_Text.str());
+    if (!Dir::Exists(DataBaseDirectory+__T("\\Basic\\New")))
+        Dir::Create(DataBaseDirectory+__T("\\Basic\\New"));
     if (!Dir::Exists(DataBaseDirectory+__T("\\Basic\\Diff")))
         Dir::Create(DataBaseDirectory+__T("\\Basic\\Diff"));
-    File::Delete(DataBaseDirectory+__T("\\Basic\\Diff\\Times.csv"));
-    UserHandle.Time_File.Open(DataBaseDirectory+__T("\\Basic\\Diff\\Times.csv"), File::Access_Write_Append);
+    File::Delete(DataBaseDirectory+__T("\\Basic\\New\\Times.csv"));
+    File::Delete(DataBaseDirectory+__T("\\Basic\\Diff\\Times.csv")); //Diff of a previous run
+    UserHandle.Time_File.Open(DataBaseDirectory+__T("\\Basic\\New\\Times.csv"), File::Access_Write_Append);
 
     cout<<" Analyzing"<<endl;
     MIL.Open(Files);
     Basic_Close(&UserHandle, 0); //Time of the last file
     UserHandle.Time_File.Close();
+
+    cout<<" Times diff"<<endl;
+    Basic_Times_Diff(DataBaseDirectory);
 
     for (size_t StreamKind=0; StreamKind<Stream_Max; StreamKind++)
     {
