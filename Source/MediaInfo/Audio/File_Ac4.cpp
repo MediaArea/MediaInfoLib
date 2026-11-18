@@ -2076,6 +2076,8 @@ void File_Ac4::raw_ac4_frame()
     Element_End0();
 
     Frame_Count++;
+    if (Frame_Count_NotParsedIncluded!=(int64u)-1)
+        Frame_Count_NotParsedIncluded++;
     FILLING_BEGIN();
         if (!Status[IsFilled] && Frame_Count>=Frame_Count_Valid)
         {
