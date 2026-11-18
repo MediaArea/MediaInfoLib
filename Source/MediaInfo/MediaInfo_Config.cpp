@@ -497,6 +497,7 @@ void MediaInfo_Config::Init(bool Force)
     #endif //MEDIAINFO_EVENTS
     #if MEDIAINFO_CONFORMANCE
         Usac_Profile=(int8u)-1;
+        DolbyVision_Profile=false;
         Warning_Error=false;
     #endif //MEDIAINFO_CONFORMANCE
     #if defined(MEDIAINFO_LIBCURL_YES)
@@ -3940,6 +3941,10 @@ static const char* const MxfProfile_Names[]=
     "SMPTE_ST_337_2016",
     "SMPTE_ST_337_2019",
 };
+static const char* const DolbyVisionProfile_Names[]=
+{
+    "DolbyVision", //Dolby Vision RPU and XML metadata checks, not done by default for the moment
+};
 extern string Mpeg4_Descriptors_AudioProfileLevelString(int8u AudioProfileLevelIndication);
 static string UsacProfile_Name(int8u AudioProfileLevelIndication)
 {
@@ -3977,12 +3982,14 @@ string MediaInfo_Config::Profile(const Ztring& Value)
         Mp4_Profile.clear();
         Mxf_Profile.clear();
         Usac_Profile=(int8u)-1;
+        DolbyVision_Profile=false;
         return {};
     }
     auto Adm=Adm_Profile;
     auto Mp4=Mp4_Profile;
     auto Mxf=Mxf_Profile;
     auto Usac=Usac_Profile;
+    auto DolbyVision=DolbyVision_Profile;
     ZtringList List;
     List.Separator_Set(0, __T(","));
     List.Write(Value);
@@ -4006,6 +4013,8 @@ string MediaInfo_Config::Profile(const Ztring& Value)
                 Mxf+=',';
             Mxf+=MxfProfile_Names[Pos];
         }
+        else if (Profile_Find(Item, DolbyVisionProfile_Names)!=(size_t)-1)
+            DolbyVision=true;
         else
         {
             int8u AudioProfileLevelIndication=0;
@@ -4029,6 +4038,7 @@ string MediaInfo_Config::Profile(const Ztring& Value)
     Mp4_Profile=Mp4;
     Mxf_Profile=Mxf;
     Usac_Profile=Usac;
+    DolbyVision_Profile=DolbyVision;
     return {};
 }
 #endif //MEDIAINFO_CONFORMANCE
@@ -4049,6 +4059,8 @@ string MediaInfo_Config::Profile_List()
     for (const auto Name : Mp4Profile_Names)
         Add(Name);
     for (const auto Name : MxfProfile_Names)
+        Add(Name);
+    for (const auto Name : DolbyVisionProfile_Names)
         Add(Name);
     for (int8u AudioProfileLevelIndication=0; AudioProfileLevelIndication<0xFF; AudioProfileLevelIndication++)
     {
@@ -4089,6 +4101,14 @@ int8u MediaInfo_Config::UsacProfile()
 {
     CriticalSectionLocker CSL(CS);
     return Usac_Profile;
+}
+#endif //MEDIAINFO_CONFORMANCE
+
+#if MEDIAINFO_CONFORMANCE
+bool MediaInfo_Config::DolbyVisionProfile()
+{
+    CriticalSectionLocker CSL(CS);
+    return DolbyVision_Profile;
 }
 #endif //MEDIAINFO_CONFORMANCE
 

@@ -824,6 +824,18 @@ void File__Analyze::Get_AmbientViewingEnvironment(float64& AmbientViewingEnviron
 #endif
 
 //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+// Dolby Vision RPU and XML metadata checks, only with the DolbyVision profile for the moment
+bool DolbyVision_Conformance()
+{
+    #if MEDIAINFO_CONFORMANCE
+        return MediaInfoLib::Config.DolbyVisionProfile();
+    #else //MEDIAINFO_CONFORMANCE
+        return false;
+    #endif //MEDIAINFO_CONFORMANCE
+}
+
+//---------------------------------------------------------------------------
 const char* DolbyVision_Compatibility[] =
 {
     "",
@@ -1902,7 +1914,8 @@ void File__Analyze::Get_DolbyVision_ReferenceProcessingUnit(DV_RPU& data, size_t
 
     FILLING_BEGIN();
     if (CRC32_Check) {
-        Fill_Conformance("DolbyVision rpu_data_crc32", "CRC-32 mismatch", {}, Conformance_Error, Stream_Video, 0);
+        if (DolbyVision_Conformance())
+            Fill_Conformance("DolbyVision rpu_data_crc32", "CRC-32 mismatch", {}, Conformance_Error, Stream_Video, 0);
         return;
     }
     int8u Profile{};
@@ -2313,12 +2326,15 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source)
         }
 
         // Conformance, same checks as with XML metadata
-        if (Data.Count_CMv40 && !Data.L254_Present)
-            Fill_Conformance("DolbyVision Level254", "Level254 is missing", {}, Conformance_Warning, Stream_Video, 0);
-        if (Source_Max)
-            for (const auto& L6 : Data.L6)
-                if (L6.max_content_light_level>Source_Max)
-                    Fill_Conformance("DolbyVision Level6", ("MaxCLL is more than mastering display peak brightness (actual "+DV_Nits_String(L6.max_content_light_level).To_UTF8()+", expected <= "+DV_Nits_String(Source_Max).To_UTF8()+')').c_str(), {}, Conformance_Warning, Stream_Video, 0);
+        if (DolbyVision_Conformance())
+        {
+            if (Data.Count_CMv40 && !Data.L254_Present)
+                Fill_Conformance("DolbyVision Level254", "Level254 is missing", {}, Conformance_Warning, Stream_Video, 0);
+            if (Source_Max)
+                for (const auto& L6 : Data.L6)
+                    if (L6.max_content_light_level>Source_Max)
+                        Fill_Conformance("DolbyVision Level6", ("MaxCLL is more than mastering display peak brightness (actual "+DV_Nits_String(L6.max_content_light_level).To_UTF8()+", expected <= "+DV_Nits_String(Source_Max).To_UTF8()+')').c_str(), {}, Conformance_Warning, Stream_Video, 0);
+        }
     }
 
     // Details
@@ -5124,11 +5140,11 @@ void File__Analyze::Merge_HDR(size_t StreamPos_To, const Ztring* Container, cons
                     case 20: Container_Profile_RPU=Container_Values[Video_HDR_Format_Compatibility-Video_HDR_Format][Container_DolbyVision].empty()?__T("5"):__T("8"); break; //MV-HEVC, the RPU has the signature of the single view equivalent
                     default:;
                 }
-                if (!Container_Profile_RPU.empty() && !Stream_Profile.empty() && Container_Profile_RPU!=Stream_Profile)
+                if (DolbyVision_Conformance() && !Container_Profile_RPU.empty() && !Stream_Profile.empty() && Container_Profile_RPU!=Stream_Profile)
                     Fill_Conformance("Crosscheck DolbyVisionConfiguration dv_profile", ("Dolby Vision configuration dv_profile does not match Dolby Vision RPU profile (actual " + Container_Profile.To_UTF8() + ", expected " + Stream_Profile.To_UTF8() + ')').c_str(), {}, Conformance_Error, Stream_Video, StreamPos_To);
                 const auto& Container_Layers=Container_Values[Video_HDR_Format_Settings-Video_HDR_Format][Container_DolbyVision];
                 const auto& Stream_Layers=Stream_Values[Video_HDR_Format_Settings-Video_HDR_Format][Stream_DolbyVision];
-                if (!Container_Layers.empty() && !Stream_Layers.empty() && Layers_HasEL(Container_Layers)!=Layers_HasEL(Stream_Layers))
+                if (DolbyVision_Conformance() && !Container_Layers.empty() && !Stream_Layers.empty() && Layers_HasEL(Container_Layers)!=Layers_HasEL(Stream_Layers))
                     Fill_Conformance("Crosscheck DolbyVisionConfiguration el_present_flag", (string("Dolby Vision configuration el_present_flag does not match the enhancement layer of Dolby Vision RPU (actual ") + (Layers_HasEL(Container_Layers)?'1':'0') + ", expected " + (Layers_HasEL(Stream_Layers)?'1':'0') + ')').c_str(), {}, Conformance_Error, Stream_Video, StreamPos_To);
             #endif //MEDIAINFO_CONFORMANCE
 

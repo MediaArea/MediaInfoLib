@@ -38,6 +38,9 @@ using namespace tinyxml2;
 namespace MediaInfoLib
 {
 
+//---------------------------------------------------------------------------
+extern bool DolbyVision_Conformance();
+
 //***************************************************************************
 // Utils
 //***************************************************************************
@@ -183,7 +186,8 @@ bool File_DolbyVisionMetadata::FileHeader_Begin()
         Fill(Stream_Video, 0, Video_HDR_Format, "Dolby Vision Metadata");
         Stream_Prepare(Stream_Other);
         Fill(Stream_Other, 0, Other_Format, "Dolby Vision MDF");
-        Fill_Conformance("DolbyVision XML", "XML is malformed (line " + std::to_string(document.ErrorLineNum()) + ')', {}, Conformance_Error, Stream_Video, 0);
+        if (DolbyVision_Conformance())
+            Fill_Conformance("DolbyVision XML", "XML is malformed (line " + std::to_string(document.ErrorLineNum()) + ')', {}, Conformance_Error, Stream_Video, 0);
         Element_Offset=File_Size;
         return true;
     }
@@ -1229,13 +1233,17 @@ bool File_DolbyVisionMetadata::FileHeader_Begin()
     if (!Structure_Missing)
         DolbyVision_Streams_Fill(DV, DV_Source_XML);
 
-    auto HasSchema = Conformance_Schema(Root, Version);
-    if (MDF_Output || Structure_Missing)
-        Conformance_MDF(Root, MasterElements[1], Version, HasSchema);
-    if (Structure_Missing && Version_IsSupported(Version))
-        Fill_Conformance("DolbyVision Structure", string(Structure_Missing) + " element is missing", {}, Conformance_Error, Stream_Video, 0);
-    if (IsV6)
-        Conformance_V6(Root);
+    // Conformance, only with the DolbyVision profile for the moment
+    if (DolbyVision_Conformance())
+    {
+        auto HasSchema = Conformance_Schema(Root, Version);
+        if (MDF_Output || Structure_Missing)
+            Conformance_MDF(Root, MasterElements[1], Version, HasSchema);
+        if (Structure_Missing && Version_IsSupported(Version))
+            Fill_Conformance("DolbyVision Structure", string(Structure_Missing) + " element is missing", {}, Conformance_Error, Stream_Video, 0);
+        if (IsV6)
+            Conformance_V6(Root);
+    }
 
     //All should be OK...
     Element_Offset=File_Size;
