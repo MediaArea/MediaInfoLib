@@ -254,6 +254,7 @@ private :
     void moov_trak_mdia_minf_stbl_stsd_xxxx_AORD();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_av1C();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_av2C();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_av2c();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_avcC();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_avcE();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_bitr();
