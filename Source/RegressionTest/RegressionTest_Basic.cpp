@@ -8,6 +8,7 @@
 //
 
 #include <iostream>
+#include <vector>
 #include "tchar.h"
 #include "MediaInfoDLL/MediaInfoDLL.h"
 #include "ZenLib/ZtringListListF.h"
@@ -25,46 +26,77 @@ using namespace std;
 /* Events                                                                  */
 /***************************************************************************/
 
+//Parsing times (Basic\Diff\Times.csv): a line per file of the list, with its complete name, an empty column, its size
+//and the seconds of its parsing. A file referenced by another one (e.g. the files of a DCP) is parsed while the file
+//referencing it is parsed, so its time is in the time of this file, and it has no line.
+//The start event of a file has its name. The end events are sent by the parser of the file and by its sub-parsers,
+//with their depth as the count of stream IDs: 1 for the parser of a file of the list, 1 more for a sub-parser and for
+//the parser of a referenced file.
+
+struct opened_file
+{
+    time_t Start;
+    time_t End;
+    int64u Size;
+    bool   IsEnded;
+};
 
 struct UserHandle_struct
 {
-    Ztring Name;
-    int64u Size;
-    File   Time_File;
-    time_t Time_Start;
-    Ztring Parser;
-
-    UserHandle_struct()
-    {
-        Size=(int64u)-1;
-        Time_Start=(time_t)-1;
-    }
+    File                Time_File;
+    vector<opened_file> Opened; //The file of the list, then the files referenced by the previous one
+    Ztring              Parser;
 };
+
+static void Basic_Close(struct UserHandle_struct* UserHandle, size_t Count)
+{
+    //Files after the first Count ones finished, the time of the file of the list written
+    while (UserHandle->Opened.size()>Count)
+    {
+        if (UserHandle->Opened.size()==1)
+        {
+            const opened_file& Opened=UserHandle->Opened[0];
+            time_t Diff=(Opened.IsEnded?Opened.End:time(NULL))-Opened.Start;
+            UserHandle->Time_File.Write(__T(';')+Ztring::ToZtring(Opened.Size)+__T(';')+Ztring::ToZtring(Diff)+EOL);
+        }
+        UserHandle->Opened.pop_back();
+    }
+}
 
 void Basic_General_Start_0 (struct MediaInfo_Event_General_Start_0* Event, struct UserHandle_struct* UserHandle)
 {
-    if (Event->FileName_Unicode)
-    {
-        UserHandle->Name=Event->FileName_Unicode;
-        UserHandle->Time_File.Write(Ztring(Event->FileName_Unicode)+__T(';'));
-    }
-    UserHandle->Size=Event->Stream_Size;
-    UserHandle->Time_Start=time(NULL);
+    if (!Event->FileName_Unicode)
+        return; //Parsing of a buffer, not of a file
+
+    //Files whose parsing is finished
+    while (!UserHandle->Opened.empty() && UserHandle->Opened.back().IsEnded)
+        Basic_Close(UserHandle, UserHandle->Opened.size()-1);
+
+    //A file of the list if no file is opened, else a file referenced by the last opened one
+    if (UserHandle->Opened.empty())
+        UserHandle->Time_File.Write(Ztring(Event->FileName_Unicode)+__T(';')); //Name written before the parsing, so the file of a crash or of a hang is known
+    opened_file Opened;
+    Opened.Start=time(NULL);
+    Opened.Size=Event->Stream_Size;
+    Opened.IsEnded=false;
+    UserHandle->Opened.push_back(Opened);
     UserHandle->Parser.clear();
 }
 
 void Basic_General_End_0 (struct MediaInfo_Event_General_End_0* Event, struct UserHandle_struct* UserHandle)
 {
-    time_t Diff;
-    if (UserHandle->Time_Start!=(time_t)-1)
-        Diff=time(NULL)-UserHandle->Time_Start;
-    else
-        Diff=(time_t)-1;
-
-   if (Diff!=(time_t)-1)
-        UserHandle->Time_File.Write(__T(';')+Ztring::ToZtring(UserHandle->Size)+__T(';')+Ztring::ToZtring(Diff)+EOL);
-
-    UserHandle->Time_Start=(time_t)-1;
+    //End of the parser of an opened file (and of the files it references), the end of a sub-parser of the last opened
+    //file is ignored, as the next ends of the parser of a file (e.g. from its sub-parsers)
+    if (!Event->StreamIDs_Size || Event->StreamIDs_Size>UserHandle->Opened.size())
+        return;
+    size_t Depth=Event->StreamIDs_Size-1;
+    Basic_Close(UserHandle, Depth+1);
+    opened_file& Opened=UserHandle->Opened[Depth];
+    if (!Opened.IsEnded)
+    {
+        Opened.End=time(NULL);
+        Opened.IsEnded=true;
+    }
     UserHandle->Parser.clear();
 }
 
@@ -282,7 +314,8 @@ void RegressionTest_Basic(Ztring Files, Ztring DataBaseDirectory, int32u Scenari
 
     cout<<" Analyzing"<<endl;
     MIL.Open(Files);
-
+    Basic_Close(&UserHandle, 0); //Time of the last file
+    UserHandle.Time_File.Close();
 
     for (size_t StreamKind=0; StreamKind<Stream_Max; StreamKind++)
     {
