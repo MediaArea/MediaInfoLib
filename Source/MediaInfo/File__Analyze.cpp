@@ -3061,7 +3061,7 @@ bool File__Analyze::Data_Manage()
 {
     Element_WantNextLevel=false;
     auto& Elem = Element[Element_Level];
-    if (!Elem.UnTrusted)
+    if (!Elem.UnTrusted && (!Status[IsFinished] || Status[IsAccepted])) //Not for a parser rejected during the parsing of the header
     {
         Element_Code=Elem.Code;
         //size_t Element_Level_Save=Element_Level;
