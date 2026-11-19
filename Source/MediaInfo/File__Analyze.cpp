@@ -2235,8 +2235,8 @@ bool File__Analyze::Synchronize_0x000001(bool NeedFour)
 //---------------------------------------------------------------------------
 // Next 0x000001 at Pos or after with at least MinSize (>=3) bytes from its beginning, e.g. end of the current NAL unit
 // Same steps as testing 0x000001 at each 0x00 byte found 2 bytes at a time, so the same position is returned also when there is
-// none (position from where the search continues when more data is available), but 0x00 bytes are searched with memchr() and
-// zero runs (e.g. padding) are skipped
+// none (position from where the search continues when more data is available), but 0x00 bytes are searched with memchr(),
+// zero runs (e.g. padding) are skipped, and the single 0x00 bytes before the next pair of 0x00 bytes are not tested
 size_t File__Analyze::Search_0x000001(size_t Pos, size_t MinSize)
 {
     while (Pos+MinSize<=Buffer_Size && CC3(Buffer+Pos)!=0x000001)
@@ -2245,6 +2245,12 @@ size_t File__Analyze::Search_0x000001(size_t Pos, size_t MinSize)
         {
             // Zero run, positions are tested one by one up to 2 bytes before its end
             size_t Run_End=Pos+3;
+            for (int64u Word; Run_End+8<=Buffer_Size; Run_End+=8)
+            {
+                memcpy(&Word, Buffer+Run_End, 8);
+                if (Word)
+                    break;
+            }
             while (Run_End<Buffer_Size && !Buffer[Run_End])
                 Run_End++;
             size_t Pos_Max=Buffer_Size-MinSize+1; //First position without MinSize bytes from it
@@ -2252,6 +2258,33 @@ size_t File__Analyze::Search_0x000001(size_t Pos, size_t MinSize)
                 return Pos_Max;
             Pos=Run_End-2;
             continue;
+        }
+
+        // Next pair of 0x00 bytes after Pos, 8 positions at a time: the steps below would only test single 0x00 bytes (they can not
+        // begin a start code) before testing the first byte of this pair, whatever their parity. Without pair in the positions
+        // tested 8 at a time, the steps continue from the last position before them with the parity of Pos
+        {
+            const size_t Pos_Max=Buffer_Size-MinSize+1; //First position without MinSize bytes from it
+            const int64u Low7=0x7F7F7F7F7F7F7F7FULL;
+            size_t Pair=Pos+1;
+            while (Pair+8<=Pos_Max) //Pairs beginning at Pair to Pair+7, with MinSize>=3 the 9 bytes are in the buffer
+            {
+                int64u Word0, Word1;
+                memcpy(&Word0, Buffer+Pair, 8);
+                memcpy(&Word1, Buffer+Pair+1, 8);
+                if (~(((Word0&Low7)+Low7)|Word0|Low7) & ~(((Word1&Low7)+Low7)|Word1|Low7)) //0x80 in each byte which is 0x00 in both words
+                    break;
+                Pair+=8;
+            }
+            if (Pair+8<=Pos_Max)
+            {
+                while (Buffer[Pair] || Buffer[Pair+1])
+                    Pair++;
+                Pos=Pair;
+                continue;
+            }
+            if (Pair>Pos+1)
+                Pos=Pair-2-((Pair-Pos)&1);
         }
 
         // Next 0x00 at Pos+2 or after, 2 bytes at a time (some steps directly before each memchr(), as 0x00 may be frequent)
