@@ -751,6 +751,28 @@ bool File_Flv::Synchronize()
     //Synchronizing
     while (Buffer_Offset+15<=Buffer_Size)
     {
+        //Zero bytes (e.g. zeroed part of the file): at a position followed by 8 zero bytes, the body length is 0 and no tag can
+        //start, only the need of more data is tested, so these positions are skipped with the same result as testing them one by one
+        if (!BigEndian2int64u(Buffer+Buffer_Offset))
+        {
+            size_t Zeroes_End=Buffer_Offset+8;
+            while (Zeroes_End<Buffer_Size && !Buffer[Zeroes_End])
+                Zeroes_End++;
+            size_t Zeroes_Last=Zeroes_End-8; //Last position followed by 8 zero bytes
+            if (Zeroes_Last>Buffer_Size-15)
+                Zeroes_Last=Buffer_Size-15;
+            size_t NeedMoreData=Buffer_Size>=30?(Buffer_Size-29):0; //First position without 30 bytes from it
+            if (NeedMoreData<Buffer_Offset)
+                NeedMoreData=Buffer_Offset;
+            if (NeedMoreData<=Zeroes_Last && File_Offset+NeedMoreData+15<File_Size)
+            {
+                Buffer_Offset=NeedMoreData;
+                return false; //Need more data
+            }
+            Buffer_Offset=Zeroes_Last+1;
+            continue;
+        }
+
         int32u BodyLength=BigEndian2int24u(Buffer+Buffer_Offset+5);
         if ((Buffer[Buffer_Offset  ]
             || Buffer[Buffer_Offset+1]
