@@ -928,7 +928,7 @@ const char* DolbyVision_Compression[] =
 };
 #endif
 #if defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MK_YES)
-void File__Analyze::dvcC(bool has_dependency_pid, std::map<std::string, Ztring>* Infos)
+void File__Analyze::dvcC(bool has_dependency_pid, std::map<std::string, Ztring>* Infos, int16u* dependency_pid)
 {
     Element_Name("Dolby Vision Configuration");
 
@@ -952,8 +952,11 @@ void File__Analyze::dvcC(bool has_dependency_pid, std::map<std::string, Ztring>*
         Get_SB (   bl_present_flag,                             "bl_present_flag");
         if (has_dependency_pid && !bl_present_flag)
         {
-            Skip_S2(13,                                         "dependency_pid");
+            int16u dependency_pid_Temp;
+            Get_S2 (13, dependency_pid_Temp,                    "dependency_pid");
             Skip_S1( 3,                                         "reserved");
+            if (dependency_pid)
+                *dependency_pid=dependency_pid_Temp;
         }
         if (Data_BS_Remain())
         {

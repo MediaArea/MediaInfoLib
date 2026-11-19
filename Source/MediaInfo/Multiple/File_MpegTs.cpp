@@ -425,6 +425,7 @@ void File_MpegTs::Streams_Update_Programs()
                     }
         }
     }
+    Streams_Update_Programs_DolbyVision_Pairs();
     for (std::set<int16u>::iterator StreamID=Complete_Stream->PES_PIDs.begin(); StreamID!=Complete_Stream->PES_PIDs.end(); ++StreamID)
         if (PerStream_AlwaysParse || Complete_Stream->Streams[*StreamID]->IsUpdated_IsRegistered || Complete_Stream->Streams[*StreamID]->IsUpdated_Info) //Not reset, as the streams are filled again at each update
             Streams_Update_Programs_PerStream(*StreamID);
@@ -523,6 +524,8 @@ void File_MpegTs::Streams_Update_Programs()
                 for (size_t Pos=0; Pos<Program->second.elementary_PIDs.size(); Pos++)
                 {
                     int16u elementary_PID=Program->second.elementary_PIDs[Pos];
+                    if (Complete_Stream->Streams[elementary_PID]->DolbyVision_BL_pid)
+                        continue; //Dolby Vision enhancement layer, in the base layer stream
                     if (PerStream_AlwaysParse || Complete_Stream->Streams[elementary_PID]->IsRegistered)
                     {
                         #if defined(MEDIAINFO_TELETEXT_YES)
@@ -778,6 +781,8 @@ void File_MpegTs::Streams_Update_Programs_PerStream(size_t StreamID)
 
     //No direct handling of Sub streams;
     if (Temp->stream_type==0x20 && Temp->SubStream_pid) //Stereoscopic is not alone
+        return;
+    if (Temp->DolbyVision_BL_pid) //Dolby Vision enhancement layer, in the base layer stream
         return;
 
     if (Temp->Parser)
@@ -1095,6 +1100,8 @@ void File_MpegTs::Streams_Update_Programs_PerStream(size_t StreamID)
                 Fill((stream_t)StreamKind, StreamPos, General_ID, StreamID, 10, true);
                 Fill((stream_t)StreamKind, StreamPos, General_ID_String, Decimal_Hexa(StreamID), true);
             }
+            if ((stream_t)StreamKind==Stream_Video && Temp->DolbyVision_EL_pid)
+                Streams_Update_Programs_DolbyVision_EL(StreamID, StreamPos);
             for (size_t Pos=0; Pos<Temp->program_numbers.size(); Pos++)
             {
                 Fill((stream_t)StreamKind, StreamPos, General_MenuID, Temp->program_numbers[Pos], 10, Pos==0);
@@ -1222,6 +1229,156 @@ void File_MpegTs::Streams_Update_Programs_PerStream(size_t StreamID)
     MergeGeneral(Temp, General_Encoded_Application);
     MergeGeneral(Temp, General_Encoded_Application_CompanyName);
     MergeGeneral(Temp, General_Encoded_Application_Name);
+}
+
+//---------------------------------------------------------------------------
+// Dolby Vision layers of a Dolby Vision stream, from the descriptor of the PID or else from the stream, empty if none
+static Ztring MpegTs_DolbyVision_Layers(const complete_stream::stream* Stream)
+{
+    auto Info=Stream->Infos.find("HDR_Format");
+    if (Info!=Stream->Infos.end() && Info->second==__T("Dolby Vision"))
+    {
+        auto Settings=Stream->Infos.find("HDR_Format_Settings");
+        if (Settings!=Stream->Infos.end())
+            return Settings->second;
+    }
+    if (!Stream->Parser || !Stream->Parser->Status[File__Analyze::IsAccepted] || Stream->Parser->Count_Get(Stream_Video)!=1)
+        return Ztring();
+    ZtringList Formats, Settings;
+    Formats.Separator_Set(0, __T(" / "));
+    Settings.Separator_Set(0, __T(" / "));
+    Formats.Write(Stream->Parser->Retrieve_Const(Stream_Video, 0, Video_HDR_Format));
+    Settings.Write(Stream->Parser->Retrieve_Const(Stream_Video, 0, Video_HDR_Format_Settings));
+    auto Pos=Formats.Find(__T("Dolby Vision"));
+    if (Pos==Error || Pos>=Settings.size())
+        return Ztring();
+    return Settings[Pos];
+}
+
+//---------------------------------------------------------------------------
+void File_MpegTs::Streams_Update_Programs_DolbyVision_Pairs()
+{
+    //Dolby Vision enhancement layer with its own PID (dual PID, e.g. UHD Blu-ray): merged in the stream of the base layer PID
+    //The base layer PID is the dependency_pid of the Dolby Vision descriptor of the enhancement layer PID, else the only other video PID of the program
+    for (const auto StreamID : Complete_Stream->PES_PIDs)
+    {
+        Complete_Stream->Streams[StreamID]->DolbyVision_BL_pid=0x0000;
+        Complete_Stream->Streams[StreamID]->DolbyVision_EL_pid=0x0000;
+    }
+    if (!Complete_Stream->transport_stream_id_IsValid)
+        return;
+    auto& Programs=Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs;
+    const auto IsVideo=[&](int16u StreamID) {
+        const auto Stream=Complete_Stream->Streams[StreamID];
+        return Stream->Parser && Stream->Parser->Status[IsAccepted] && Stream->Parser->Count_Get(Stream_Video)==1;
+    };
+    for (const auto StreamID : Complete_Stream->PES_PIDs)
+    {
+        auto EL=Complete_Stream->Streams[StreamID];
+        if (!IsVideo(StreamID))
+            continue;
+        ZtringList Layers;
+        Layers.Separator_Set(0, __T("+"));
+        Layers.Write(MpegTs_DolbyVision_Layers(EL));
+        if (Layers.Find(__T("BL"))!=Error || (Layers.Find(__T("EL"))==Error && Layers.Find(__T("MEL"))==Error && Layers.Find(__T("FEL"))==Error))
+            continue; //Not an enhancement layer alone
+        int16u BL_pid=0x0000;
+        if (EL->DolbyVision_dependency_pid && EL->DolbyVision_dependency_pid!=StreamID && IsVideo(EL->DolbyVision_dependency_pid))
+            BL_pid=EL->DolbyVision_dependency_pid;
+        else
+        {
+            size_t Count=0;
+            for (const auto program_number : EL->program_numbers)
+            {
+                auto Program=Programs.find(program_number);
+                if (Program==Programs.end())
+                    continue;
+                for (const auto elementary_PID : Program->second.elementary_PIDs)
+                    if (elementary_PID!=StreamID && elementary_PID!=BL_pid && IsVideo(elementary_PID))
+                    {
+                        BL_pid=elementary_PID;
+                        Count++;
+                    }
+            }
+            if (Count!=1)
+                continue;
+        }
+        if (Complete_Stream->Streams[BL_pid]->DolbyVision_EL_pid || Complete_Stream->Streams[BL_pid]->DolbyVision_BL_pid || Complete_Stream->Streams[BL_pid]->SubStream_pid)
+            continue;
+        EL->DolbyVision_BL_pid=BL_pid;
+        Complete_Stream->Streams[BL_pid]->DolbyVision_EL_pid=StreamID;
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_MpegTs::Streams_Update_Programs_DolbyVision_EL(size_t StreamID, size_t StreamPos)
+{
+    auto EL_pid=Complete_Stream->Streams[StreamID]->DolbyVision_EL_pid;
+    const auto EL=Complete_Stream->Streams[EL_pid];
+    if (!EL->Parser)
+        return;
+    File__Analyze& EL_Parser=*EL->Parser;
+
+    //HDR format, the Dolby Vision configuration from the descriptor has priority, the RPU adds what is not in the configuration
+    static const char* Names[]={"HDR_Format", "HDR_Format_Version", "HDR_Format_Profile", "HDR_Format_Level", "HDR_Format_Settings", "HDR_Format_Compression", "HDR_Format_Compatibility"};
+    ZtringList Formats;
+    Formats.Separator_Set(0, __T(" / "));
+    Formats.Write(EL_Parser.Retrieve_Const(Stream_Video, 0, Video_HDR_Format));
+    auto Stream_DolbyVision=Formats.Find(__T("Dolby Vision"));
+    auto Info=EL->Infos.find("HDR_Format");
+    auto Container_IsDolbyVision=Info!=EL->Infos.end() && Info->second==__T("Dolby Vision");
+    std::map<std::string, Ztring> HDR;
+    Ztring Stream_Layers;
+    for (const auto Name : Names)
+    {
+        Ztring Stream_Value;
+        if (Stream_DolbyVision!=Error)
+        {
+            ZtringList List;
+            List.Separator_Set(0, __T(" / "));
+            List.Write(EL_Parser.Retrieve_Const(Stream_Video, 0, Name));
+            if (Stream_DolbyVision<List.size())
+                Stream_Value=List[Stream_DolbyVision];
+        }
+        if (!strcmp(Name, "HDR_Format_Settings"))
+            Stream_Layers=Stream_Value;
+        auto Container_Value=EL->Infos.find(Name);
+        HDR[Name]=(Container_IsDolbyVision && Container_Value!=EL->Infos.end() && !Container_Value->second.empty())?Container_Value->second:Stream_Value;
+    }
+    if (HDR["HDR_Format"]!=__T("Dolby Vision"))
+        return;
+
+    //Layers, enhancement layer type from the RPU, with the base layer
+    ZtringList Layers, Layers_RPU;
+    Layers.Separator_Set(0, __T("+"));
+    Layers_RPU.Separator_Set(0, __T("+"));
+    Layers.Write(HDR["HDR_Format_Settings"]);
+    Layers_RPU.Write(Stream_Layers);
+    auto EL_Pos=Layers.Find(__T("EL"));
+    if (EL_Pos!=Error)
+        for (const auto& Layer : Layers_RPU)
+            if (Layer==__T("MEL") || Layer==__T("FEL"))
+                Layers[EL_Pos]=Layer;
+    if (Layers.Find(__T("BL"))==Error)
+        Layers.insert(Layers.begin(), __T("BL"));
+    HDR["HDR_Format_Settings"]=Layers.Read();
+    Fill_HDR_Format(Stream_Video, StreamPos, HDR);
+
+    //Dolby Vision details
+    auto Count=EL_Parser.Count_Get(Stream_Video, 0);
+    for (size_t i=0; i<Count; i++)
+    {
+        const auto& Name=EL_Parser.Retrieve_Const(Stream_Video, 0, i, Info_Name);
+        if (Name!=__T("DolbyVision") && Name.rfind(__T("DolbyVision "), 0))
+            continue;
+        auto Name_UTF8=Name.To_UTF8();
+        Fill(Stream_Video, StreamPos, Name_UTF8.c_str(), EL_Parser.Retrieve_Const(Stream_Video, 0, i), true);
+        Fill_SetOptions(Stream_Video, StreamPos, Name_UTF8.c_str(), EL_Parser.Retrieve_Const(Stream_Video, 0, i, Info_Options).To_UTF8().c_str());
+    }
+
+    //Identifiers of both PIDs
+    Fill(Stream_Video, StreamPos, Video_ID, Ztring::ToZtring(StreamID)+__T(" / ")+Ztring::ToZtring(EL_pid), true);
+    Fill(Stream_Video, StreamPos, Video_ID_String, Decimal_Hexa(StreamID)+__T(" / ")+Decimal_Hexa(EL_pid), true);
 }
 
 //---------------------------------------------------------------------------

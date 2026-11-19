@@ -400,6 +400,9 @@ struct complete_stream
         size_t                                      Scrambled_Count;
         int16u                                      CA_system_ID;
         int16u                                      SubStream_pid;
+        int16u                                      DolbyVision_dependency_pid; //From the Dolby Vision descriptor of an enhancement layer PID, the base layer PID
+        int16u                                      DolbyVision_BL_pid;         //Enhancement layer PID merged with this base layer PID
+        int16u                                      DolbyVision_EL_pid;         //Base layer PID with this enhancement layer PID merged
         #if MEDIAINFO_IBIUSAGE
             int64u                                  Ibi_SynchronizationOffset_BeginOfFrame;
         #endif //MEDIAINFO_IBIUSAGE
@@ -470,6 +473,9 @@ struct complete_stream
             CA_system_ID=0x0000;
             EBP_Marker_Detected=false;
             SubStream_pid=0x0000;
+            DolbyVision_dependency_pid=0x0000;
+            DolbyVision_BL_pid=0x0000;
+            DolbyVision_EL_pid=0x0000;
             #if MEDIAINFO_IBIUSAGE
                 Ibi_SynchronizationOffset_BeginOfFrame=(int64u)-1;
             #endif //MEDIAINFO_IBIUSAGE

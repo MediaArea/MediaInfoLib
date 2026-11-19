@@ -4104,7 +4104,7 @@ void File_Mpeg_Descriptors::Descriptor_B0()
 {
     //Parsing
     std::map<std::string, Ztring>& Infos=Complete_Stream->Streams[elementary_PID]->Infos;
-    dvcC(true, &Infos);
+    dvcC(true, &Infos, &Complete_Stream->Streams[elementary_PID]->DolbyVision_dependency_pid);
 }
 
 //---------------------------------------------------------------------------
