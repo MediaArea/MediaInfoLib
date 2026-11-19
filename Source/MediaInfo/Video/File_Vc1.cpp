@@ -315,8 +315,8 @@ void File_Vc1::Streams_Fill()
     float32 PixelAspectRatio;
     if (AspectRatio!=0x0F && AspectRatio<sizeof(Vc1_PixelAspectRatio)/sizeof(*Vc1_PixelAspectRatio))
         PixelAspectRatio=Vc1_PixelAspectRatio[AspectRatio];
-    else if (AspectRatioY)
-        PixelAspectRatio=((float)AspectRatioX)/((float)AspectRatioY);
+    else if (AspectRatio==0x0F)
+        PixelAspectRatio=((float)AspectRatioX+1)/((float)AspectRatioY+1);
     else
         PixelAspectRatio=1; //Unknown
 
