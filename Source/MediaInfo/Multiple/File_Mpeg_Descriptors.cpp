@@ -495,6 +495,8 @@ const char* Mpeg_Descriptors_dvb_service_type(int8u service_type)
         case 0x04 : return "NVOD reference";
         case 0x05 : return "NVOD time-shifted";
         case 0x06 : return "Mosaic";
+        case 0x07 : return "FM radio";
+        case 0x08 : return "DVB SRM";
         case 0x0A : return "advanced codec digital radio sound";
         case 0x0B : return "advanced codec mosaic service";
         case 0x0C : return "data broadcast";
