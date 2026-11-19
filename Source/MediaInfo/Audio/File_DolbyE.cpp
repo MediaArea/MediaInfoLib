@@ -2416,10 +2416,7 @@ void File_DolbyE::program_assignment()
                         nonstd_bed_channel_assignment_mask=AC3_bed_channel_assignment_mask_2_nonstd(bed_channel_assignment_mask);
                     }
                     else
-                    {
-                        int32u nonstd_bed_channel_assignment_mask;
                         Get_S3 (17, nonstd_bed_channel_assignment_mask, "nonstd_bed_channel_assignment_mask");
-                    }
                     Param_Info1(AC3_nonstd_bed_channel_assignment_mask_ChannelLayout(nonstd_bed_channel_assignment_mask));
                     nonstd_bed_channel_assignment_masks.push_back(nonstd_bed_channel_assignment_mask);
                     size_t BedChannelCount=BedChannelConfiguration_ChannelCount(nonstd_bed_channel_assignment_mask);
