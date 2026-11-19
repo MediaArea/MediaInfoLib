@@ -231,7 +231,7 @@ static const char* N19_LanguageCode(int16u LC)
         case 0x3644 : return "ha";
         case 0x3645 : return "Gurani";
         case 0x3646 : return "Gujurati";
-        case 0x3730 : return "hr";
+        case 0x3730 : return "el";
         case 0x3731 : return "ka";
         case 0x3732 : return "ff";
         case 0x3733 : return "Dari";
