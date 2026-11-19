@@ -345,6 +345,7 @@ void File_Flac::VORBIS_COMMENT()
     #if defined(MEDIAINFO_VORBISCOM_YES)
         File_VorbisCom VorbisCom;
         VorbisCom.StreamKind_Specific=Stream_Audio;
+        VorbisCom.SamplingRate=Retrieve_Const(Stream_Audio, 0, Audio_SamplingRate).To_int32u();
         Open_Buffer_Init(&VorbisCom);
         Open_Buffer_Continue(&VorbisCom);
         File__Analyze::Finish(&VorbisCom);
