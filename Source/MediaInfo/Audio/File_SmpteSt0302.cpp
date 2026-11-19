@@ -119,6 +119,16 @@ void File_SmpteSt0302::Streams_Accept()
 //---------------------------------------------------------------------------
 void File_SmpteSt0302::Streams_Fill()
 {
+    #ifdef MEDIAINFO_PCM_YES
+        if (!Parsers.empty() && !Parsers.back()->Status[IsAccepted]) //No format detected, the last parser is raw PCM
+        {
+            for (size_t Pos=0; Pos+1<Parsers.size(); Pos++)
+                delete Parsers[Pos]; //Parsers[Pos]=NULL;
+            Parsers.erase(Parsers.begin(), Parsers.end()-1);
+            Accept(Parsers[0]);
+        }
+    #endif //MEDIAINFO_PCM_YES
+
     if (Parsers.size()==1 && Parsers[0]->Status[IsAccepted])
     {
         Fill(Parsers[0]);
