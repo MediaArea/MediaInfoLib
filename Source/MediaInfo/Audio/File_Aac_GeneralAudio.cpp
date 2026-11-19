@@ -3427,7 +3427,9 @@ void File_Aac::coupling_channel_element()
     Skip_SB(                                                    "cc_domain");
     Skip_SB(                                                    "gain_element_sign");
     Skip_S1(2,                                                  "gain_element_scale");
+    auto ChannelPos_Temp_Save=ChannelPos_Temp;
     individual_channel_stream(false, false);
+    ChannelPos_Temp=ChannelPos_Temp_Save; //Coupling data, not an output channel
     if (!Element_IsOK())
     {
         Skip_BS(Data_BS_Remain(),                               "(Problem)");
