@@ -1159,7 +1159,7 @@ void File_AribStdB24B37::SS2()
     Skip_B1(                                                    "control_code");
     Element_End0();
 
-    Streams[(size_t)(Element_Code-1)].GL_SS=3;
+    Streams[(size_t)(Element_Code-1)].GL_SS=2;
 }
 
 //---------------------------------------------------------------------------
