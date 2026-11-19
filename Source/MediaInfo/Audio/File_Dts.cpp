@@ -505,7 +505,15 @@ static bool DtsX_AssetHeader(const int8u* Buffer, size_t Size, const dtsx_exss_p
             Source.Skip(16);
     }
     else if (Asset.CodingMode==1)
-        Source.Skip(Exss.SizeFieldBits);
+    {
+        Asset.ComponentSize[9]=Source.Get(Exss.SizeFieldBits)+1;
+        if (Source.Get(1))
+        {
+            Source.Skip(4);
+            int8u DelayBits=(int8u)(Source.Get(5)+1);
+            Source.Skip(DelayBits+Exss.SizeFieldBits);
+        }
+    }
     else
         Source.Skip(14);
 
