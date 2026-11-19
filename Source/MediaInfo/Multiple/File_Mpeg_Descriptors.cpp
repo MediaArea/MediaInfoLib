@@ -2420,6 +2420,28 @@ void File_Mpeg_Descriptors::Descriptor_1D()
 }
 
 //---------------------------------------------------------------------------
+void File_Mpeg_Descriptors::Descriptor_1E()
+{
+    //Parsing
+    int16u ES_ID;
+    Get_B2 (ES_ID,                                              "ES_ID");
+
+    FILLING_BEGIN();
+        switch (table_id)
+        {
+            case 0x02 : //program_map_section
+                        if (elementary_PID_IsValid)
+                        {
+                            Complete_Stream->Streams[elementary_PID]->FMC_ES_ID=ES_ID;
+                            Complete_Stream->Streams[elementary_PID]->FMC_ES_ID_IsValid=true;
+                        }
+                        break;
+            default    : ;
+        }
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
 void File_Mpeg_Descriptors::Descriptor_1F()
 {
     //Parsing

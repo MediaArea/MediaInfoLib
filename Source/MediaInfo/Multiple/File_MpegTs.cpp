@@ -3361,6 +3361,7 @@ void File_MpegTs::PES()
         if (Complete_Stream->transport_stream_id_IsValid
          && Mpeg_Psi_stream_type_StreamKind(Complete_Stream->Streams[pid]->stream_type, Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs[Complete_Stream->Streams[pid]->program_numbers[0]].registration_format_identifier)==Stream_Max
          && Complete_Stream->Streams[pid]->stream_type!=0x06 //Exception for private data
+         && Complete_Stream->Streams[pid]->stream_type!=0x12 //Exception for SL-packetized stream, the format is in the IOD
          && Complete_Stream->Streams[pid]->stream_type<=0x7F //Exception for private data
          && Mpeg_Descriptors_registration_format_identifier_StreamKind(Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs[Complete_Stream->Streams[pid]->program_numbers[0]].registration_format_identifier)==Stream_Max //From Descriptor
          && Config->File_MpegTs_stream_type_Trust_Get())
