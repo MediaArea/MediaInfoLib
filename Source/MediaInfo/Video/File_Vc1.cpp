@@ -817,17 +817,9 @@ void File_Vc1::FrameHeader()
         {
             int8u ptype_;
             Get_S1 ( 3, ptype_,                                 "ptype");
-            if (ptype_<5)
-            {
-                Param_Info1(Vc1_Type[Vc1_FieldTypeTable[ptype_][0]]); Element_Info1(Vc1_Type[Vc1_FieldTypeTable[ptype_][0]]); //First field
-                Param_Info1(Vc1_Type[Vc1_FieldTypeTable[ptype_][1]]); Element_Info1(Vc1_Type[Vc1_FieldTypeTable[ptype_][1]]); //Second field
-                ptype=Vc1_FieldTypeTable[ptype_][0]; //Saving the ptype from the first field
-            }
-            else
-            {
-                Trusted_IsNot("ptype is out of range");
-                ptype=0; //Error
-            }
+            Param_Info1(Vc1_Type[Vc1_FieldTypeTable[ptype_][0]]); Element_Info1(Vc1_Type[Vc1_FieldTypeTable[ptype_][0]]); //First field
+            Param_Info1(Vc1_Type[Vc1_FieldTypeTable[ptype_][1]]); Element_Info1(Vc1_Type[Vc1_FieldTypeTable[ptype_][1]]); //Second field
+            ptype=Vc1_FieldTypeTable[ptype_][0]; //Saving the ptype from the first field
         }
         else
         {
