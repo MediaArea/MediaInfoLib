@@ -1040,6 +1040,7 @@ bool File__ReferenceFilesHelper::ParseReference_Init()
             {
                 MediaInfo_Internal MI2;
                 MI2.Option(__T("File_KeepInfo"), __T("1"));
+                MI2.Option(__T("File_FileNameFormat"), __T("CSV"));
                 Ztring ParseSpeed_Save=MI2.Option(__T("ParseSpeed_Get"), __T("0"));
                 Ztring Demux_Save=MI2.Option(__T("Demux_Get"), __T(""));
                 MI2.Option(__T("ParseSpeed"), __T("0"));
@@ -1396,6 +1397,7 @@ void File__ReferenceFilesHelper::ParseReference_Finalize_PerStream ()
         {
             MediaInfo_Internal MI2;
             MI2.Option(__T("File_KeepInfo"), __T("1"));
+            MI2.Option(__T("File_FileNameFormat"), __T("CSV"));
             MI2.Option(__T("File_DisplayCaptions"), Config->Option(__T("File_DisplayCaptions_Get"), Ztring())); //Same list of streams as the parsing of the sequence
             MI2.Option(__T("File_ProbeCaption"), Config->File_ProbeCaption_Get());
             MI2.Config.File_ProbeCaption_QuickPass=Config->ParseSpeed>0;
