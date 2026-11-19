@@ -2114,8 +2114,10 @@ void File_Avc::Data_Parse()
         case 0x0D : Element_Name("seq_parameter_set_extension"); Skip_XX(Element_Size-Element_Offset, "Data"); break;
         case 0x0E : prefix_nal_unit(svc_extension_flag); break;
         case 0x0F : subset_seq_parameter_set(); break;
+        case 0x10 : Element_Name("depth_parameter_set"); Skip_XX(Element_Size-Element_Offset, "Data"); break;
         case 0x13 : Element_Name("slice_layer_without_partitioning"); Skip_XX(Element_Size-Element_Offset, "Data"); break;
         case 0x14 : slice_layer_extension(svc_extension_flag); break;
+        case 0x15 : Element_Name("slice_layer_extension (depth or 3D-AVC texture view)"); Skip_XX(Element_Size-Element_Offset, "Data"); break;
         default :
             if (Element_Code<0x18)
                 Element_Name("reserved");
