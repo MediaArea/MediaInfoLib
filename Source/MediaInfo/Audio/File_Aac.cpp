@@ -409,12 +409,12 @@ void File_Aac::Read_Buffer_Continue_HEAACWAVEFORMAT()
     Skip_L2(                                                    "wReserved1");
     Skip_L4(                                                    "dwReserved2");
     Element_End0();
-    switch (wPayloadType)
+    switch (wStructType)
     {
         case 0 : Read_Buffer_Continue_AudioSpecificConfig(); break;
         default: Skip_XX(Element_Size-Element_Offset,           "(Unknown)");
     }
-    switch (wStructType)
+    switch (wPayloadType)
     {
         case 0 : Mode=Mode_payload; break;
         case 1 : Mode=Mode_ADTS; break;
