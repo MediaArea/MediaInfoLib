@@ -224,7 +224,7 @@ static const char* N19_LanguageCode(int16u LC)
         case 0x3636 : return "km";
         case 0x3637 : return "kk";
         case 0x3638 : return "kn";
-        case 0x3639 : return "jp";
+        case 0x3639 : return "ja";
         case 0x3641 : return "id";
         case 0x3642 : return "hi";
         case 0x3643 : return "he";
