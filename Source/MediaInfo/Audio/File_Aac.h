@@ -257,7 +257,7 @@ protected :
     void raw_data_block                     (size_t BitsNotIncluded=(size_t)-1);
     void single_channel_element             ();
     void channel_pair_element               ();
-    void ics_info                           ();
+    void ics_info                           (bool common_window);
     void pulse_data                         ();
     void coupling_channel_element           ();
     void lfe_channel_element                ();
@@ -307,9 +307,6 @@ protected :
     void hcod_sf                            (const char* Name);
     void hcod_binary                        (int8u CodeBook, int8s* Values, int8u Values_Count);
     void hcod_2step                         (int8u CodeBook, int8s* Values, int8u Values_Count);
-
-    //Temp - channel_pair_element
-    bool    common_window;
 
     //Temp - ics_info
     int8u   window_sequence;

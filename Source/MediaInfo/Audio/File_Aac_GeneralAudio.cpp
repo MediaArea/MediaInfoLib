@@ -3251,12 +3251,13 @@ void File_Aac::single_channel_element()
 void File_Aac::channel_pair_element()
 {
     //Parsing
+    bool common_window;
     Skip_S1(4,                                                  "element_instance_tag");
     Get_SB (common_window,                                      "common_window");
     if (common_window)
     {
         int8u ms_mask_present;
-        ics_info();
+        ics_info(common_window);
         Get_S1(2, ms_mask_present,                              "ms_mask_present");
         if (ms_mask_present==1)
         {
@@ -3281,7 +3282,7 @@ void File_Aac::channel_pair_element()
 }
 
 //---------------------------------------------------------------------------
-void File_Aac::ics_info()
+void File_Aac::ics_info(bool common_window)
 {
     //Parsing
     Element_Begin1("ics_info");
@@ -3569,7 +3570,7 @@ void File_Aac::individual_channel_stream (bool common_window, bool scale_flag)
     Element_Begin1("individual_channel_stream");
     Skip_S1(8,                                                  "global_gain");
     if (!common_window && !scale_flag)
-        ics_info();
+        ics_info(common_window);
     if (!Element_IsOK())
     {
         Skip_BS(Data_BS_Remain(),                               "(Problem)");
