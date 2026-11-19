@@ -656,7 +656,7 @@ void File_Aac::AudioSpecificConfig (size_t End)
         if (extension_sampling_frequency_index==0xF)
         {
             Get_S3 (24, extension_sampling_frequency,           "extensionSamplingFrequency");
-            sampling_frequency_index=Aac_AudioSpecificConfig_sampling_frequency_index(extension_sampling_frequency);
+            extension_sampling_frequency_index=Aac_AudioSpecificConfig_sampling_frequency_index(extension_sampling_frequency);
         }
         else
             extension_sampling_frequency=Aac_sampling_frequency[extension_sampling_frequency_index];
