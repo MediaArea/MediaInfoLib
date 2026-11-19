@@ -940,7 +940,9 @@ void File_Ffv1::Read_Buffer_Continue()
         while (current_slice<Slice_Max)
         {
             if (current_slice->sample_buffer)
-                SlicesPlaces[current_slice->slice_y*num_h_slices+current_slice->slice_x]++;
+                for (size_t y=current_slice->slice_y; y<current_slice->slice_h; y++)
+                    for (size_t x=current_slice->slice_x; x<current_slice->slice_w; x++)
+                        SlicesPlaces[y*num_h_slices+x]++;
 
             current_slice++;
         }
