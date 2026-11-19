@@ -459,7 +459,8 @@ bool File_DcpCpl::FileHeader_Begin()
     #if MEDIAINFO_ADVANCED
         for (std::map<string, descriptor*>::iterator EssenceDescriptor = EssenceDescriptorList.begin(); EssenceDescriptor != EssenceDescriptorList.end(); ++EssenceDescriptor)
             for (std::vector<descriptor*>::iterator SubDescriptor = EssenceDescriptor->second->SubDescriptors.begin(); SubDescriptor != EssenceDescriptor->second->SubDescriptors.end(); ++SubDescriptor)
-                ReferenceFiles->UpdateMetaDataFromSourceEncoding(EssenceDescriptor->first, "Format_Profile", Jpeg2000_Rsiz((*SubDescriptor)->Jpeg2000_Rsiz));
+                if ((*SubDescriptor)->Jpeg2000_Rsiz!=(int16u)-1)
+                    ReferenceFiles->UpdateMetaDataFromSourceEncoding(EssenceDescriptor->first, "Format_Profile", Jpeg2000_Rsiz((*SubDescriptor)->Jpeg2000_Rsiz));
     #endif //MEDIAINFO_ADVANCED
 
     #endif //MEDIAINFO_REFERENCES_YES
