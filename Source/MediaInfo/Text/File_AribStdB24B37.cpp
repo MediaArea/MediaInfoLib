@@ -514,10 +514,12 @@ void File_AribStdB24B37::Read_Buffer_Continue()
 
     Skip_B1(                                                    "Data_identifier");
     Skip_B1(                                                    "Private_stream_id");
+    int8u PES_data_packet_header_length;
     BS_Begin();
     Skip_S1(4,                                                  "reserved");
-    Skip_S1(4,                                                  "PES_data_packet_header_length");
+    Get_S1 (4, PES_data_packet_header_length,                   "PES_data_packet_header_length");
     BS_End();
+    Skip_XX(PES_data_packet_header_length,                      "PES_data_private_data_byte");
 }
 
 //---------------------------------------------------------------------------
