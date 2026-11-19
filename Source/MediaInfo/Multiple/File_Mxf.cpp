@@ -16751,6 +16751,14 @@ void File_Mxf::HdrVividMetadataTrackSubDescriptor()
     ELEM____UUID_(HdrVividSimplePayloadSID)
     ELEMENT_END()
     GenerationInterchangeObject();
+
+    if (Descriptors[InstanceUID].StreamKind==Stream_Max)
+    {
+        Descriptors[InstanceUID].StreamKind=Stream_Other;
+        if (Streams_Count==(size_t)-1)
+            Streams_Count=0;
+        Streams_Count++;
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -16765,20 +16773,22 @@ void File_Mxf::HdrVividSourceTrackID()
     //Parsing
     #if MEDIAINFO_CONFORMANCE
         auto Offset=File_Offset+Buffer_Offset+Element_Offset;
-        int32u Data;
-        Get_B4 (Data,                                           "Data"); Element_Info1(Data);
+    #endif //MEDIAINFO_CONFORMANCE
+    int32u Data;
+    Get_B4 (Data,                                               "Data"); Element_Info1(Data);
 
-        FILLING_BEGIN();
+    FILLING_BEGIN();
+        if (Descriptors[InstanceUID].LinkedTrackID==(int32u)-1)
+            Descriptors[InstanceUID].LinkedTrackID=Data;
+        #if MEDIAINFO_CONFORMANCE
             if (Descriptors[InstanceUID].SourceTrackID==(int32u)-1)
             {
                 Descriptors[InstanceUID].SourceTrackID=Data;
                 Descriptors[InstanceUID].SourceTrackID_Offset=Offset;
                 Descriptors[InstanceUID].SourceTrackID_Name="HDR Vivid";
             }
-        FILLING_END();
-    #else //MEDIAINFO_CONFORMANCE
-        Info_B4(Data,                                           "Data"); Element_Info1(Data);
-    #endif //MEDIAINFO_CONFORMANCE
+        #endif //MEDIAINFO_CONFORMANCE
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
