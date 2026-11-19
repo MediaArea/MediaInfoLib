@@ -24,6 +24,7 @@
 #include "MediaInfo/Video/File_DolbyVisionMetadata.h"
 #include "ThirdParty/tfsxml/tfsxml_tinyxml2.h"
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <limits>
@@ -104,6 +105,71 @@ static std::vector<float64> Values_Get(const char* Text)
         Text = End;
     }
     return Values;
+}
+
+//---------------------------------------------------------------------------
+// Trims (Level2 after 3 unused values, Level8 L8Trim): lift, gain, gamma, chroma weight, saturation gain, tone detail
+// Each one must fit in its 12-bit RPU field (2048 for 0), with slope and offset computed from lift and gain and power from gamma as Dolby Vision tools do
+struct trim_range
+{
+    int64u Count = 0;
+    int64u First_Frame = 0;
+    int64s First_Value = 0;
+    string First_Trim;
+};
+static const char* Trim_Fields[] = { "trim_slope", "trim_offset", "trim_power", "trim_chroma_weight", "trim_saturation_gain", "ms_weight" };
+static void Trim_Check(const char* Text, size_t Unused, int64u Frame, std::map<string, trim_range>& Ranges)
+{
+    auto Values = Values_Get(Text);
+    if (Values.size() != Unused + 6)
+        return;
+    auto Lift = Values[Unused];
+    auto Gain = Values[Unused + 1];
+    auto Gamma = Values[Unused + 2];
+    float64 RPU_Values[6] =
+    {
+        ((Gain + 2) * (1 - Lift / 2) - 2) * 2048 + 2048,
+        ((Gain + 2) * (Lift / 2)) * 2048 + 2048,
+        1 + Gamma / 2 > 0 ? (2 / (1 + Gamma / 2) - 2) * 2048 + 2048 : 1e9,
+        Values[Unused + 3] * 2048 + 2048,
+        Values[Unused + 4] * 2048 + 2048,
+        Values[Unused + 5] * 2048 + 2048,
+    };
+    for (size_t i = 0; i < 6; i++)
+    {
+        auto Value = round(RPU_Values[i]);
+        if (Value >= 0 && Value <= 4095)
+            continue;
+        auto& Range = Ranges[Trim_Fields[i]];
+        if (!Range.Count)
+        {
+            Range.First_Frame = Frame;
+            Range.First_Value = (int64s)(Value < -1e9 ? -1e9 : (Value > 1e9 ? 1e9 : Value));
+            Range.First_Trim = Text;
+        }
+        Range.Count++;
+    }
+}
+static void Trims_Collect(XMLElement* Element, int64u Frame, std::map<string, trim_range>& Level2, std::map<string, trim_range>& Level8)
+{
+    for (XMLElement* Item = Element->FirstChildElement(); Item; Item = Item->NextSiblingElement())
+    {
+        const char* Level = Item->Attribute("level");
+        if (Is(Item, "Level2") || (Is(Item, "DolbyEDR") && Level && !strcmp(Level, "2")))
+        {
+            if (XMLElement* Trim_Item = Child(Item, "Trim"))
+                if (const char* Text = Trim_Item->GetText())
+                    Trim_Check(Text, 3, Frame, Level2);
+        }
+        else if (Is(Item, "Level8"))
+        {
+            if (XMLElement* Trim_Item = Child(Item, "L8Trim"))
+                if (const char* Text = Trim_Item->GetText())
+                    Trim_Check(Text, 0, Frame, Level8);
+        }
+        else
+            Trims_Collect(Item, Frame, Level2, Level8);
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -2584,6 +2650,7 @@ void File_DolbyVisionMetadata::Conformance_MDF(XMLElement* Root, XMLElement* Tra
     // Shots
     std::set<string> TIDs;
     std::vector<std::pair<int64u, int64u>> Shots;
+    std::map<string, trim_range> Level2_Ranges, Level8_Ranges;
     bool DynamicData_Unexpected_Found = HasSchema;
     for (XMLElement* Shot = Child(Track, "Shot"); Shot; Shot = Next(Shot, "Shot"))
     {
@@ -2607,8 +2674,18 @@ void File_DolbyVisionMetadata::Conformance_MDF(XMLElement* Root, XMLElement* Tra
             continue;
         }
         Shots.emplace_back(Ztring().From_UTF8(In_Text).To_int64u(), Ztring().From_UTF8(Duration_Text).To_int64u());
+        Trims_Collect(Shot, Shots.back().first, Level2_Ranges, Level8_Ranges);
     }
     Conformance_Shots(Shots, StreamPos);
+
+    // Trims must fit in the RPU
+    for (const auto& Level : { std::make_pair("Level2 Trim", &Level2_Ranges), std::make_pair("Level8 L8Trim", &Level8_Ranges) })
+    {
+        string Level_Name(Level.first);
+        auto Space = Level_Name.find(' ');
+        for (const auto& Range : *Level.second)
+            Fill_Conformance(("DolbyVision " + Level_Name.substr(0, Space)).c_str(), Level_Name.substr(Space + 1) + " gives " + Range.first + " out of range " + std::to_string(Range.second.Count) + " time(s), first at frame " + std::to_string(Range.second.First_Frame) + " with \"" + Range.second.First_Trim + "\" (actual " + std::to_string(Range.second.First_Value) + ", expected 0 to 4095)", {}, Conformance_Warning, Stream_Video, StreamPos);
+    }
 
     // Trims must reference a declared target display
     for (const auto& TID : TIDs)
