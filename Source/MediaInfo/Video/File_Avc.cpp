@@ -1886,6 +1886,25 @@ void File_Avc::Header_Parse()
     }
     else
     {
+        //Zeroes (e.g. a sample padded with zeroes): each 0-size NAL unit with nal_unit_type 0 would be an element, they are all in one element (quicker)
+        size_t Zeroes_Unit=(size_t)SizeOfNALU_Minus1+2; //size and NAL unit header
+        if (SizeOfNALU_Minus1<=3 && Element_Size>=Zeroes_Unit*2)
+        {
+            const int8u* Zeroes=Buffer+Buffer_Offset;
+            size_t Zeroes_Max=(size_t)(Element_Size<Buffer_MaximumSize?Element_Size:Buffer_MaximumSize); //Not more than the maximal size of an element
+            Zeroes_Max-=Zeroes_Max%Zeroes_Unit; //Only complete NAL units
+            size_t Zeroes_Size=0;
+            while (Zeroes_Size<Zeroes_Max && !Zeroes[Zeroes_Size])
+                Zeroes_Size++;
+            Zeroes_Size-=Zeroes_Size%Zeroes_Unit;
+            if (Zeroes_Size>=Zeroes_Unit*2)
+            {
+                Header_Fill_Size(Zeroes_Size);
+                Header_Fill_Code2((int64u)-2, "Zero bytes");
+                return;
+            }
+        }
+
         int64u Size;
         switch (SizeOfNALU_Minus1)
         {
@@ -1942,15 +1961,7 @@ bool File_Avc::Header_Parser_Fill_Size()
     //Look for next Sync word
     if (Buffer_Offset_Temp==0) //Buffer_Offset_Temp is not 0 if Header_Parse_Fill_Size() has already parsed first frames
         Buffer_Offset_Temp=Buffer_Offset+4;
-    while (Buffer_Offset_Temp+5<=Buffer_Size
-        && CC3(Buffer+Buffer_Offset_Temp)!=0x000001)
-    {
-        Buffer_Offset_Temp+=2;
-        while(Buffer_Offset_Temp<Buffer_Size && Buffer[Buffer_Offset_Temp]!=0x00)
-            Buffer_Offset_Temp+=2;
-        if (Buffer_Offset_Temp>=Buffer_Size || Buffer[Buffer_Offset_Temp-1]==0x00)
-            Buffer_Offset_Temp--;
-    }
+    Buffer_Offset_Temp=Search_0x000001(Buffer_Offset_Temp, 5);
 
     //Must wait more data?
     if (Buffer_Offset_Temp+5>Buffer_Size)
@@ -2018,6 +2029,14 @@ void File_Avc::Data_Parse()
     if (Element_Code==(int64u)-1)
     {
         SPS_PPS();
+        return;
+    }
+
+    //Zeroes, see Header_Parse()
+    if (Element_Code==(int64u)-2)
+    {
+        Element_Info1C(Trace_Activated, Ztring::ToZtring(Element_Size/(SizeOfNALU_Minus1+2))+__T(" NAL units of size 0"));
+        Skip_XX(Element_Size,                                   "Data");
         return;
     }
 

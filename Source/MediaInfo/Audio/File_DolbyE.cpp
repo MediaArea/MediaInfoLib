@@ -3614,7 +3614,7 @@ void File_DolbyE::ac3_metadata_subsegment(bool xbsi)
         Get_S1 (2, meta[ac3_surmixlev],                     "ac3_surmixlev"); Param_Info2C(meta[ac3_surmixlev]<=2, meta[ac3_surmixlev]==2?string("-inf"):to_string(-3 - (int)meta[ac3_cmixlev] * 3), " dB");
         Get_S1 (2, meta[ac3_dsurmod],                       "ac3_dsurmod"); Param_Info1C(meta[ac3_dsurmod], "Dolby Surround");
         Get_S1 (1, meta[ac3_lfeon],                         "ac3_lfeon"); Param_Info1C(meta[ac3_lfeon], "LFE");
-        Get_S1 (5, meta[ac3_dialnorm],                      "ac3_dialnorm"); Param_Info2(Ztring::ToZtring(meta[ac3_dialnorm]==0?-31:-(int)meta[ac3_dialnorm]).To_UTF8(), " dB");
+        Get_S1 (5, meta[ac3_dialnorm],                      "ac3_dialnorm"); Param_Info2C(Trace_Activated, Ztring::ToZtring(meta[ac3_dialnorm]==0?-31:-(int)meta[ac3_dialnorm]).To_UTF8(), " dB");
         Get_S1 (1, meta[ac3_langcode],                      "ac3_langcode");
         Get_S1 (8, meta[ac3_langcod],                       "ac3_langcod");
         Get_S1 (1, meta[ac3_audprodie],                     "ac3_audprodie");
@@ -3626,10 +3626,10 @@ void File_DolbyE::ac3_metadata_subsegment(bool xbsi)
         {
             Get_S1 (1, meta[ac3_xbsi1e],                    "ac3_xbsi1e");
             Get_S1 (2, meta[ac3_dmixmod],                   "ac3_dmixmod");
-            Get_S1 (3, meta[ac3_ltrtcmixlev],               "ac3_ltrtcmixlev"); Param_Info2C(meta[ac3_xbsi1e], AC3_Level_Value(meta[ac3_ltrtcmixlev], 3, 1.5), " dB");
-            Get_S1 (3, meta[ac3_ltrtsurmixlev],             "ac3_ltrtsurmixlev"); Param_Info2C(meta[ac3_xbsi1e], AC3_Level_Value(meta[ac3_ltrtsurmixlev], 3, 1.5), " dB");
-            Get_S1 (3, meta[ac3_lorocmixlev],               "ac3_lorocmixlev"); Param_Info2C(meta[ac3_xbsi1e], AC3_Level_Value(meta[ac3_lorocmixlev], 3, 1.5), " dB");
-            Get_S1 (3, meta[ac3_lorosurmixlev],             "ac3_lorosurmixlev"); Param_Info2C(meta[ac3_xbsi1e], AC3_Level_Value(meta[ac3_lorosurmixlev], 3, 1.5), " dB");
+            Get_S1 (3, meta[ac3_ltrtcmixlev],               "ac3_ltrtcmixlev"); Param_Info2C(Trace_Activated && meta[ac3_xbsi1e], AC3_Level_Value(meta[ac3_ltrtcmixlev], 3, 1.5), " dB");
+            Get_S1 (3, meta[ac3_ltrtsurmixlev],             "ac3_ltrtsurmixlev"); Param_Info2C(Trace_Activated && meta[ac3_xbsi1e], AC3_Level_Value(meta[ac3_ltrtsurmixlev], 3, 1.5), " dB");
+            Get_S1 (3, meta[ac3_lorocmixlev],               "ac3_lorocmixlev"); Param_Info2C(Trace_Activated && meta[ac3_xbsi1e], AC3_Level_Value(meta[ac3_lorocmixlev], 3, 1.5), " dB");
+            Get_S1 (3, meta[ac3_lorosurmixlev],             "ac3_lorosurmixlev"); Param_Info2C(Trace_Activated && meta[ac3_xbsi1e], AC3_Level_Value(meta[ac3_lorosurmixlev], 3, 1.5), " dB");
             Get_S1 (1, meta[ac3_xbsi2e],                    "ac3_xbsi2e");
             Get_S1 (2, meta[ac3_dsurexmod],                 "ac3_dsurexmod"); Param_Info1C(meta[ac3_dsurexmod]>=2, meta[ac3_dsurexmod]==2?"Dolby Surround EX":"Dolby Pro Logic IIz");
             Get_S1 (2, meta[ac3_dheadphonmod],              "ac3_dheadphonmod"); Param_Info1C(meta[ac3_dheadphonmod], "Dolby Headphone");

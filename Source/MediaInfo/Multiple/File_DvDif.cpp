@@ -719,7 +719,9 @@ bool File_DvDif::FileHeader_Begin()
      || CC4(Buffer+4)==0x6D6F6F76  //moov
      || CC4(Buffer+4)==0x736B6970  //skip
      || CC4(Buffer+4)==0x77696465  //wide
-     || CC4(Buffer)==0x060E2B34) //MXF begin
+     || CC4(Buffer)==0x060E2B34  //MXF begin
+     || (!IsSub && CC4(Buffer)==0x1A45DFA3)  //Matroska
+     || (!IsSub && CC4(Buffer)==0x25504446)) //PDF
     {
         Finish();
         return false;

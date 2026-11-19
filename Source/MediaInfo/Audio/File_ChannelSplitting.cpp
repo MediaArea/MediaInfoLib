@@ -253,6 +253,29 @@ void File_ChannelSplitting::Read_Buffer_Init()
 }
 
 //---------------------------------------------------------------------------
+// Samples of a pair of channels, to each channel and to the pair
+template<size_t BytesPerSample>
+static void ChannelSplitting_Copy(const int8u* Source, size_t Frame_Count, size_t BytesPerFrame, File_ChannelSplitting::common::channel* Channel0, File_ChannelSplitting::common::channel* Channel1, File_ChannelSplitting::common::channel* Pair)
+{
+    int8u* Dest0=Channel0->Buffer+Channel0->Buffer_Size;
+    int8u* Dest1=Channel1->Buffer+Channel1->Buffer_Size;
+    int8u* DestPair=Pair->Buffer+Pair->Buffer_Size;
+    for (size_t f=0; f<Frame_Count; f++)
+    {
+        std::memcpy(Dest0, Source, BytesPerSample);
+        std::memcpy(Dest1, Source+BytesPerSample, BytesPerSample);
+        std::memcpy(DestPair, Source, BytesPerSample*2);
+        Dest0+=BytesPerSample;
+        Dest1+=BytesPerSample;
+        DestPair+=BytesPerSample*2;
+        Source+=BytesPerFrame;
+    }
+    Channel0->Buffer_Size+=Frame_Count*BytesPerSample;
+    Channel1->Buffer_Size+=Frame_Count*BytesPerSample;
+    Pair->Buffer_Size+=Frame_Count*BytesPerSample*2;
+}
+
+//---------------------------------------------------------------------------
 void File_ChannelSplitting::Read_Buffer_Continue()
 {
     //Handling of multiple frames in one block
@@ -285,37 +308,36 @@ void File_ChannelSplitting::Read_Buffer_Continue()
     vector<common::channel*>& SplittedChannels0=Common->SplittedChannels[0];
     vector<common::channel*>& SplittedChannels1=Common->SplittedChannels[1];
 
-    while (BytesToCopy<=Buffer_Size-Buffer_Offset)
+    size_t Frame_Count_ToCopy=Buffer_Size/BytesToCopy;
+    for (size_t i=0; i<PairCount; i++)
     {
-        for (size_t i=0; i<PairCount; i++)
-        {
-            common::channel* SplittedChannel00=SplittedChannels0[i*2];
-            common::channel* SplittedChannel01=SplittedChannels0[i*2+1];
-            common::channel* SplittedChannel1= SplittedChannels1[i];
+        common::channel* SplittedChannel00=SplittedChannels0[i*2];
+        common::channel* SplittedChannel01=SplittedChannels0[i*2+1];
+        common::channel* SplittedChannel1= SplittedChannels1[i];
 
-            // Copy first channel data (interleaved with paired channel)
-            for (size_t b=0; b<BytesPerSample; b++)
-            {
-                SplittedChannel00->Buffer[SplittedChannel00->Buffer_Size++]=Buffer[Buffer_Offset];
-                SplittedChannel1->Buffer[SplittedChannel1->Buffer_Size++]=Buffer[Buffer_Offset++];
-            }
-
-            // Copy second channel data (interleaved with paired channel)
-            for (size_t b=0; b<BytesPerSample; b++)
-            {
-                SplittedChannel01->Buffer[SplittedChannel01->Buffer_Size++]=Buffer[Buffer_Offset];
-                SplittedChannel1->Buffer[SplittedChannel1->Buffer_Size++]=Buffer[Buffer_Offset++];
-            }
-        }
-        if (OddChannelCount)
+        // Copy first channel data, second channel data, and both (interleaved with paired channel)
+        const int8u* Source=Buffer+i*2*BytesPerSample;
+        switch (BytesPerSample)
         {
-            common::channel* SplittedChannel00=SplittedChannels0[Channel_Total-1];
-            for (size_t b=0; b<BytesPerSample; b++)
-            {
-                SplittedChannel00->Buffer[SplittedChannel00->Buffer_Size++]=Buffer[Buffer_Offset++];
-            }
+            case 2 : ChannelSplitting_Copy<2>(Source, Frame_Count_ToCopy, BytesToCopy, SplittedChannel00, SplittedChannel01, SplittedChannel1); break;
+            case 3 : ChannelSplitting_Copy<3>(Source, Frame_Count_ToCopy, BytesToCopy, SplittedChannel00, SplittedChannel01, SplittedChannel1); break;
+            default: ChannelSplitting_Copy<4>(Source, Frame_Count_ToCopy, BytesToCopy, SplittedChannel00, SplittedChannel01, SplittedChannel1); break;
         }
     }
+    if (OddChannelCount)
+    {
+        common::channel* SplittedChannel00=SplittedChannels0[Channel_Total-1];
+        const int8u* Source=Buffer+PairCount*2*BytesPerSample;
+        int8u* Dest=SplittedChannel00->Buffer+SplittedChannel00->Buffer_Size;
+        for (size_t f=0; f<Frame_Count_ToCopy; f++)
+        {
+            std::memcpy(Dest, Source, BytesPerSample);
+            Dest+=BytesPerSample;
+            Source+=BytesToCopy;
+        }
+        SplittedChannel00->Buffer_Size+=Frame_Count_ToCopy*BytesPerSample;
+    }
+    Buffer_Offset=Frame_Count_ToCopy*BytesToCopy;
 
     for (int c=0; c<2; c++)
         for (size_t i=0; i<Common->SplittedChannels[c].size(); i++)

@@ -43,6 +43,9 @@ public :
     ~File_Mk();
 
 private :
+    //Buffer - File header
+    bool FileHeader_Begin();
+
     //Buffer - Synchro
     bool Synchronize();
 

@@ -50,6 +50,9 @@ private :
     size_t Read_Buffer_Seek (size_t Method, int64u Value, int64u ID);
     #endif // MEDIAINFO_SEEK
 
+    // Buffer - File header
+    bool FileHeader_Begin();
+
     // Buffer - Synchro
     bool Synchronize();
     bool Synched_Test();

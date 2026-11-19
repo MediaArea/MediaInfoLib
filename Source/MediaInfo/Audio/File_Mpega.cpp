@@ -653,11 +653,11 @@ bool File_Mpega::FileHeader_Begin()
     if (Buffer_Size<8)
         return File_Size<8; //Must wait for more data
 
-    //Detecting WAV/SWF/FLV/ELF/DPG/WM/MZ/DLG files
+    //Detecting WAV/SWF/FLV/ELF/DPG/WM/MZ/DLG/Matroska/PDF files
     int32u Magic4=CC4(Buffer);
     int32u Magic3=Magic4>>8;
     int16u Magic2=Magic4>>16;
-    if (Magic4==0x52494646 || Magic3==0x465753 || Magic3==0x464C56 || Magic4==0x7F454C46 || Magic4==0x44504730 || Magic4==0x3026B275 || Magic2==0x4D5A || Magic4==0x000001BA || Magic4==0x000001B3 || Magic4==0x00000100 || CC8(Buffer+Buffer_Offset)==0x444C472056312E30LL)
+    if (Magic4==0x52494646 || Magic3==0x465753 || Magic3==0x464C56 || Magic4==0x7F454C46 || Magic4==0x44504730 || Magic4==0x3026B275 || Magic2==0x4D5A || Magic4==0x000001BA || Magic4==0x000001B3 || Magic4==0x00000100 || CC8(Buffer+Buffer_Offset)==0x444C472056312E30LL || (!IsSub && (Magic4==0x1A45DFA3 || Magic4==0x25504446)))
     {
         File__Tags_Helper::Reject("MPEG Audio");
         return false;

@@ -521,6 +521,28 @@ size_t File_SmpteSt0337::Read_Buffer_Seek (size_t Method, int64u Value, int64u I
 #endif // MEDIAINFO_SEEK
 
 //***************************************************************************
+// Buffer - File header
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+bool File_SmpteSt0337::FileHeader_Begin()
+{
+    //False positives detection: Matroska and PDF files, the synchronization may find bursts in an attachment
+    if (!IsSub)
+    {
+        if (Buffer_Size<4)
+            return false; //Must wait for more data
+        if (CC4(Buffer)==0x1A45DFA3 || CC4(Buffer)==0x25504446)
+        {
+            Reject();
+            return false;
+        }
+    }
+
+    return true;
+}
+
+//***************************************************************************
 // Buffer - Synchro
 //***************************************************************************
 
@@ -554,6 +576,23 @@ bool File_SmpteSt0337::Synchronize()
     while (Buffer_Offset + 16 <= Buffer_Size)
     {
         const uint8_t* p = reinterpret_cast<const uint8_t*>(Buffer + Buffer_Offset);
+
+        // Quick test, each sync word has 0xF8 or 0x87 in its first 4 bytes
+        if (p[0] != 0xF8 && p[0] != 0x87 && p[1] != 0xF8 && p[1] != 0x87 && p[2] != 0xF8 && p[2] != 0x87 && p[3] != 0xF8 && p[3] != 0x87)
+        {
+            if (BitDepth >= 4 && Aligned)
+                Buffer_Offset += BitDepth / 4;
+            else
+            {
+                // Next position having 0xF8 or 0x87 in its first 4 bytes, else first position after the last one tested
+                const uint8_t* q = p + 4;
+                const uint8_t* q_End = reinterpret_cast<const uint8_t*>(Buffer + Buffer_Size - 12);
+                while (q < q_End && *q != 0xF8 && *q != 0x87)
+                    q++;
+                Buffer_Offset = (q - reinterpret_cast<const uint8_t*>(Buffer)) - 3;
+            }
+            continue;
+        }
 
         if ((BitDepth == 0 || BitDepth == 16) && (!Aligned || ((Buffer_TotalBytes + Buffer_Offset) % 4) == 0))
         {

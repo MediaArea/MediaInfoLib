@@ -1682,6 +1682,13 @@ bool File_Dts_Common::FileHeader_Begin()
     if (Buffer_Size<12)
         return false; //Must wait for more data
 
+    //False positives detection: Matroska and PDF files, the synchronization may find frames in an attachment
+    if (!IsSub && (CC4(Buffer)==0x1A45DFA3 || CC4(Buffer)==0x25504446))
+    {
+        Finish("DTS");
+        return false;
+    }
+
     //False positives detection: Detect WAV files, the parser can't detect it easily, there is only 70 bytes of beginning for saying WAV
     switch (CC4(Buffer))
     {

@@ -208,6 +208,24 @@ void File_Nsv::Streams_Finish()
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+bool File_Nsv::FileHeader_Begin()
+{
+    //False positives detection: Matroska and PDF files, the synchronization may find frames in an attachment
+    if (!IsSub)
+    {
+        if (Buffer_Size<4)
+            return false; //Must wait for more data
+        if (CC4(Buffer)==0x1A45DFA3 || CC4(Buffer)==0x25504446)
+        {
+            Reject();
+            return false;
+        }
+    }
+
+    return true;
+}
+
+//---------------------------------------------------------------------------
 void File_Nsv::FileHeader_Parse()
 {
     // Configuration

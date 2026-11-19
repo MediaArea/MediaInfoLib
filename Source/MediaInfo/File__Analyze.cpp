@@ -306,6 +306,13 @@ void conformance::Clear_Conformance()
 #if MEDIAINFO_CONFORMANCE
 void conformance::Merge_Conformance(bool FromConfig)
 {
+    size_t Level_First = 0;
+    while (Level_First < Conformance_Max && ConformanceErrors[Level_First].empty()) {
+        Level_First++;
+    }
+    if (Level_First == Conformance_Max) {
+        return; //Nothing to merge, as after most elements (no lock of the configuration for the limit)
+    }
     auto Limit = MediaInfoLib::Config.Conformance_Limit_Get();
     if (!Limit) {
         return;
@@ -2088,10 +2095,14 @@ bool File__Analyze::Buffer_Parse()
     //Synchro
     if (MustSynchronize)
     {
+        size_t Buffer_Offset_Synchro=Buffer_Offset;
         size_t Buffer_Offset_NotSynched=(size_t)-1;
         do
         {
-            if (!Synchro_Manage())
+            bool Synchro_Result=Synchro_Manage();
+            if (Buffer_Offset!=Buffer_Offset_Synchro)
+                Buffer_Offset_Temp=0; //The element waiting for its end (e.g. search of the next start code) is skipped, the search is for another element
+            if (!Synchro_Result)
                 return false; //Wait for more data
             if (!Synched)
             {
@@ -2222,6 +2233,56 @@ bool File__Analyze::Synchronize_0x000001(bool NeedFour)
 }
 
 //---------------------------------------------------------------------------
+// Next 0x000001 at Pos or after with at least MinSize (>=3) bytes from its beginning, e.g. end of the current NAL unit
+// Same steps as testing 0x000001 at each 0x00 byte found 2 bytes at a time, so the same position is returned also when there is
+// none (position from where the search continues when more data is available), but 0x00 bytes are searched with memchr() and
+// zero runs (e.g. padding) are skipped
+size_t File__Analyze::Search_0x000001(size_t Pos, size_t MinSize)
+{
+    while (Pos+MinSize<=Buffer_Size && CC3(Buffer+Pos)!=0x000001)
+    {
+        if (!Buffer[Pos] && !Buffer[Pos+1] && !Buffer[Pos+2])
+        {
+            // Zero run, positions are tested one by one up to 2 bytes before its end
+            size_t Run_End=Pos+3;
+            while (Run_End<Buffer_Size && !Buffer[Run_End])
+                Run_End++;
+            size_t Pos_Max=Buffer_Size-MinSize+1; //First position without MinSize bytes from it
+            if (Run_End-2>=Pos_Max)
+                return Pos_Max;
+            Pos=Run_End-2;
+            continue;
+        }
+
+        // Next 0x00 at Pos+2 or after, 2 bytes at a time (some steps directly before each memchr(), as 0x00 may be frequent)
+        Pos+=2;
+        for (;;)
+        {
+            for (int Step=0; Step<8 && Pos<Buffer_Size && Buffer[Pos]; Step++)
+                Pos+=2;
+            if (Pos>=Buffer_Size || !Buffer[Pos])
+                break;
+            const int8u* Zero=(const int8u*)memchr(Buffer+Pos, 0x00, Buffer_Size-Pos);
+            if (!Zero)
+            {
+                Pos+=(Buffer_Size-Pos+1)&~((size_t)1);
+                break;
+            }
+            size_t Zero_Pos=(size_t)(Zero-Buffer);
+            if (!((Zero_Pos-Pos)&1))
+            {
+                Pos=Zero_Pos;
+                break;
+            }
+            Pos=Zero_Pos+1;
+        }
+        if (Pos>=Buffer_Size || !Buffer[Pos-1])
+            Pos--;
+    }
+    return Pos;
+}
+
+//---------------------------------------------------------------------------
 bool File__Analyze::FileHeader_Begin_0x000001()
 {
     // No need to check if inside a container
@@ -2249,12 +2310,12 @@ bool File__Analyze::FileHeader_Begin_0x000001()
         //Else this is the whole file, the tests are done on what is available
     }
 
-    //Detecting OldDirac/WAV/SWF/FLV/ELF/DPG/WM files
+    //Detecting OldDirac/WAV/SWF/FLV/ELF/DPG/WM/Matroska/PDF files
     int64u Magic8=CC8(Buffer);
     int32u Magic4=Magic8>>32;
     int32u Magic3=Magic4>> 8;
     int16u Magic2=Magic4>>16;
-    if (Magic8==0x4B572D4449524143LL || Magic4==0x52494646 || Magic3==0x465753 || Magic3==0x464C56 || Magic4==0x7F454C46 || Magic4==0x44504730 || Magic4==0x3026B275 || Magic2==0x4D5A || Magic4==0x1A45DFA3)
+    if (Magic8==0x4B572D4449524143LL || Magic4==0x52494646 || Magic3==0x465753 || Magic3==0x464C56 || Magic4==0x7F454C46 || Magic4==0x44504730 || Magic4==0x3026B275 || Magic2==0x4D5A || Magic4==0x1A45DFA3 || Magic4==0x25504446)
     {
         Reject();
         return false;

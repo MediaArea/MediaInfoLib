@@ -40,6 +40,7 @@ private :
     void Streams_Finish();
 
     //Buffer - File header
+    bool FileHeader_Begin();
     void FileHeader_Parse();
 
     //Buffer - Synchro

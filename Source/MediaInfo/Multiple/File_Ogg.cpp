@@ -135,7 +135,9 @@ bool File_Ogg::FileHeader_Begin()
         return false; //Must wait for more data
 
     //False positives detection: Detect AVI files, or the parser can synchronize with OggS stream in a AVI chunk
-    if (CC4(Buffer)==0x52494646) //"RIFF"
+    if (CC4(Buffer)==0x52494646  //"RIFF"
+     || (!IsSub && CC4(Buffer)==0x1A45DFA3)  //Matroska
+     || (!IsSub && CC4(Buffer)==0x25504446)) //PDF
     {
         Finish("OGG");
         return false;
