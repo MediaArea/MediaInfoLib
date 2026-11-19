@@ -139,6 +139,7 @@ File_Riff::File_Riff()
     WAVE_fact_samplesCount=(int64u)-1;
     Buffer_DataToParse_Begin=(int64u)-1;
     Buffer_DataToParse_End=0;
+    Buffer_DataToParse_IsNotParsed=false;
     #if MEDIAINFO_DEMUX
         AvgBytesPerSec=0;
     #endif //!MEDIAINFO_DEMUX
@@ -976,6 +977,7 @@ bool File_Riff::Header_Begin()
                 Alignement_ExtraByte=0;
 
             Buffer_DataToParse_End=0;
+            Buffer_DataToParse_IsNotParsed=false;
         }
 
         // Fake header
@@ -1004,7 +1006,9 @@ bool File_Riff::Header_Begin()
         }
 
         bool ShouldStop=false;
-        if (Kind!=Kind_Axml && Config->ParseSpeed<1.0 && File_Offset+Buffer_Offset+Element_Offset-Buffer_DataToParse_Begin>=256*1024)
+        if (Buffer_DataToParse_IsNotParsed)
+            ShouldStop=true; //The rest of the chunk would be read without being parsed
+        else if (Kind!=Kind_Axml && Config->ParseSpeed<1.0 && File_Offset+Buffer_Offset+Element_Offset-Buffer_DataToParse_Begin>=256*1024)
         {
             ShouldStop=true;
             for (std::map<int32u, stream>::iterator StreamItem=Stream.begin(); StreamItem!=Stream.end(); ++StreamItem)
@@ -1033,6 +1037,7 @@ bool File_Riff::Header_Begin()
         {
             Buffer_DataToParse_Begin=(int64u)-1;
             Buffer_DataToParse_End=0;
+            Buffer_DataToParse_IsNotParsed=false;
             return false;
         }
 
@@ -1255,6 +1260,7 @@ void File_Riff::Header_Parse()
     if (movi_Size && Size_Complete>movi_Size/2 && 8+Size_Complete>1024*1024 && !((Name&0xFFFF0000)==0x69780000 || (Name&0x0000FFFF)==0x00006978) && Element_Level==(rec__Present?(size_t)5:(size_t)4) && Buffer_Offset+8+Size_Complete>Buffer_Size)
     {
         Buffer_DataToParse_End=File_Offset+Buffer_Offset+8+Size_Complete;
+        Buffer_DataToParse_IsNotParsed=Stream.find(Name&0xFFFF0000)==Stream.end(); //e.g. an ID and a size which are garbage in a damaged file
         Size_Complete=Buffer_Size-(Buffer_Offset+8);
     }
     if ((Name==Elements::WAVE_data || Name==Elements::AIFF_SSND || Name==Elements::WAVE_axml))
