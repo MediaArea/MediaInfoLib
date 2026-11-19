@@ -266,11 +266,11 @@ size_t Reader_File::Format_Test_PerParser(MediaInfo_Internal* MI, const String &
             else
         #endif //MEDIAINFO_ADVANCED
             {
-                for (size_t Pos=1; Pos<MI->Config.File_Names.size(); Pos++)
+                vector<int64u> Sizes=File::Sizes_Get(vector<Ztring>(MI->Config.File_Names.begin()+1, MI->Config.File_Names.end())); //Quicker than one by one
+                for (size_t Pos=0; Pos<Sizes.size(); Pos++)
                 {
-                    int64u Size=File::Size_Get(MI->Config.File_Names[Pos]);
-                    MI->Config.File_Sizes.push_back(Size);
-                    MI->Config.File_Size+=Size;
+                    MI->Config.File_Sizes.push_back(Sizes[Pos]);
+                    MI->Config.File_Size+=Sizes[Pos];
                 }
             }
     }
