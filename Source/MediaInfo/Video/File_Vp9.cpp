@@ -79,7 +79,7 @@ static const char* Vp9_ColorRange[] =
 //---------------------------------------------------------------------------
 static const char* Vp9_ChromaSubsampling[] =
 {
-    "",
+    "4:4:4",
     "4:4:0",
     "4:2:2",
     "4:2:0",
