@@ -6786,10 +6786,10 @@ void File_Adm::Streams_Fill()
             else if (dialogue == "1") {
                 const auto& Kind = dialogue_Item.Attributes[dialogue_dialogueContentKind];
                 if (Kind == "1") {
-                    dialogue = "Music";
+                    dialogue = "Storyline Dialogue";
                 }
                 else if (Kind == "2") {
-                    dialogue = "Effect";
+                    dialogue = "Voiceover";
                 }
                 else if (Kind == "3") {
                     dialogue = "Spoken Subtitle";
