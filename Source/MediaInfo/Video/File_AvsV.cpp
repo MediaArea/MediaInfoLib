@@ -301,6 +301,7 @@ void File_AvsV::Synched_Init()
     video_format=5; //Unspecified video format
     progressive_sequence=false;
     low_delay=false;
+    MarkerBitAfterTimeCode=false;
 
     //Default stream values
     Streams.resize(0x100);
@@ -698,6 +699,13 @@ void File_AvsV::picture_start()
             Skip_S1(6,                                          "time_code_seconds");
             Skip_S1(6,                                          "time_code_pictures");
         }
+        //Old streams without marker_bit are progressive, without low_delay, top_field_first and repeat_first_field (kept once detected, as other decoders do)
+        int16u Next11;
+        Peek_S2(11, Next11);
+        if (low_delay || !(Next11&0x4) || (Next11&0x3))
+            MarkerBitAfterTimeCode=true;
+        if (MarkerBitAfterTimeCode)
+            Mark_1();
     }
     if (Element_Code==0xB6) //Only P or B
     {
