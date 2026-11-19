@@ -3723,8 +3723,8 @@ void File_Ac4::ac4_presentation_substream(size_t substream_index, size_t Substre
             TEST_SB_SKIP(                                       "b_length");
                 Get_S1(5, name_length,                          "name_len");
             TEST_SB_END();
+            Skip_BS(name_length*8,                              "presentation_name");
         TEST_SB_END();
-        Skip_BS(name_length*8,                                  "presentation_name");
 
         Get_S1 (2, n_targets,                                   "n_targets_minus1");
         n_targets++;
