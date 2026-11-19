@@ -3117,7 +3117,7 @@ void File_Mxf::Streams_Finish()
         if (TimecodeCache.second.StreamPos == (size_t)-1 || TimecodeCache.second.Values.size() <= 1 || TimecodeCache.second.Values[0].Value == TimecodeCache.second.Values[1].Value)
             continue;
         const auto& TimeCodeInfo = Components.find(TimecodeCache.first);
-        if (TimeCodeInfo == Components.end())
+        if (TimeCodeInfo == Components.end() || !TimeCodeInfo->second.MxfTimeCode.RoundedTimecodeBase)
             continue;
         TimeCode TC0((int64_t)(TimecodeCache.second.Values[0].Value + Config->File_IgnoreEditsBefore), TimeCodeInfo->second.MxfTimeCode.RoundedTimecodeBase - 1, TimeCode::DropFrame(TimeCodeInfo->second.MxfTimeCode.DropFrame).FPS1001(TimeCodeInfo->second.MxfTimeCode.DropFrame));
         TimeCode TC1((int64_t)(TimecodeCache.second.Values[1].Value + Config->File_IgnoreEditsBefore), TimeCodeInfo->second.MxfTimeCode.RoundedTimecodeBase - 1, TimeCode::DropFrame(TimeCodeInfo->second.MxfTimeCode.DropFrame).FPS1001(TimeCodeInfo->second.MxfTimeCode.DropFrame));
@@ -9798,7 +9798,7 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_ArdZdf (size_t Profile_Pos,
                             if (Error("Timecode is missing in System Item"))
                                 return Errors;
                         }
-                        else
+                        else if (MxfTimeCode.RoundedTimecodeBase && MxfTimeCode.RoundedTimecodeBase<0x8000)
                         {
                             const TimeCode StartTimecode((uint64_t)MxfTimeCode.StartTimecode, MxfTimeCode.RoundedTimecodeBase-1, TimeCode::flags().DropFrame(MxfTimeCode.DropFrame));
                             if (!(StartTimecode==SDTI_TimeCode_StartTimecode) && Error("Source Package start timecode is not the System Item one (actual "+StartTimecode.ToString()+", expected "+SDTI_TimeCode_StartTimecode.ToString()+')'))
@@ -10441,14 +10441,14 @@ void File_Mxf::Streams_Finish_Component_ForTimeCode(const int128u ComponentUID, 
         {
             //Note: Origin is not part of the StartTimecode for the first frame in the source package. From specs: "For a Timecode Track with a single Timecode Component and with origin N, where N greater than 0, the timecode value at the Zero Point of the Track equals the start timecode of the Timecode Component incremented by N units."
             const int64u PreCharge=(Origin>0 && (int64u)Origin<Component2->second.Duration)?((int64u)Origin):0;
-            TimeCode TC=Component2->second.MxfTimeCode.RoundedTimecodeBase<0x8000?TimeCode((int64_t)(Component2->second.MxfTimeCode.StartTimecode+PreCharge+Config->File_IgnoreEditsBefore), Component2->second.MxfTimeCode.RoundedTimecodeBase-1, TimeCode::DropFrame(Component2->second.MxfTimeCode.DropFrame).FPS1001(Component2->second.MxfTimeCode.DropFrame)):TimeCode();
+            TimeCode TC=(Component2->second.MxfTimeCode.RoundedTimecodeBase && Component2->second.MxfTimeCode.RoundedTimecodeBase<0x8000)?TimeCode((int64_t)(Component2->second.MxfTimeCode.StartTimecode+PreCharge+Config->File_IgnoreEditsBefore), Component2->second.MxfTimeCode.RoundedTimecodeBase-1, TimeCode::DropFrame(Component2->second.MxfTimeCode.DropFrame).FPS1001(Component2->second.MxfTimeCode.DropFrame)):TimeCode();
             bool IsHybridTimeCode=false;
             if (Component->second.StructuralComponents.size()==2 && !Pos)
             {
                 components::iterator Component_TC2=Components.find(Component->second.StructuralComponents[1]);
                 if (Component_TC2!=Components.end() && Component_TC2->second.MxfTimeCode.StartTimecode!=(int64u)-1)
                 {
-                    TimeCode TC2=Component_TC2->second.MxfTimeCode.RoundedTimecodeBase<0x8000?TimeCode((int64_t)(Component_TC2->second.MxfTimeCode.StartTimecode+PreCharge+Config->File_IgnoreEditsBefore), Component_TC2->second.MxfTimeCode.RoundedTimecodeBase-1, TimeCode::DropFrame(Component2->second.MxfTimeCode.DropFrame).FPS1001(Component2->second.MxfTimeCode.DropFrame)):TimeCode();
+                    TimeCode TC2=(Component_TC2->second.MxfTimeCode.RoundedTimecodeBase && Component_TC2->second.MxfTimeCode.RoundedTimecodeBase<0x8000)?TimeCode((int64_t)(Component_TC2->second.MxfTimeCode.StartTimecode+PreCharge+Config->File_IgnoreEditsBefore), Component_TC2->second.MxfTimeCode.RoundedTimecodeBase-1, TimeCode::DropFrame(Component2->second.MxfTimeCode.DropFrame).FPS1001(Component2->second.MxfTimeCode.DropFrame)):TimeCode();
                     if (TC2.ToFrames()-TC.ToFrames()==2)
                     {
                         ++TC;
@@ -10473,12 +10473,13 @@ void File_Mxf::Streams_Finish_Component_ForTimeCode(const int128u ComponentUID, 
                             TimeCode_Dump.Attributes_First+=+"000/1001";
                         TimeCode_Dump.Attributes_First+='\"';
                         TimeCode_Dump.FrameCount=Component2->second.Duration;
-                        TimeCode_Dump.Attributes_Last+=" start_tc=\""+TimeCode((int64_t)Component2->second.MxfTimeCode.StartTimecode, Component2->second.MxfTimeCode.RoundedTimecodeBase-1, TimeCode::DropFrame(Component2->second.MxfTimeCode.DropFrame).FPS1001(Component2->second.MxfTimeCode.DropFrame)).ToString() + '\"';
+                        if (Component2->second.MxfTimeCode.RoundedTimecodeBase && Component2->second.MxfTimeCode.RoundedTimecodeBase<0x8000)
+                            TimeCode_Dump.Attributes_Last+=" start_tc=\""+TimeCode((int64_t)Component2->second.MxfTimeCode.StartTimecode, Component2->second.MxfTimeCode.RoundedTimecodeBase-1, TimeCode::DropFrame(Component2->second.MxfTimeCode.DropFrame).FPS1001(Component2->second.MxfTimeCode.DropFrame)).ToString() + '\"';
                     }
                 }
             #endif //MEDIAINFO_ADVANCED
 
-            if (Component2->second.MxfTimeCode.RoundedTimecodeBase<=(int8u)-1) // Found files with RoundedTimecodeBase of 0x8000
+            if (Component2->second.MxfTimeCode.RoundedTimecodeBase && Component2->second.MxfTimeCode.RoundedTimecodeBase<=(int8u)-1) // Found files with RoundedTimecodeBase of 0x8000
                 Fill(Stream_Other, StreamPos_Last, Other_FrameRate, Component2->second.MxfTimeCode.RoundedTimecodeBase/(Is1001?1.001:1.000));
             TC.Set1001fps(Is1001);
             Fill(Stream_Other, StreamPos_Last, Other_TimeCode_FirstFrame, TC.ToString().c_str());
@@ -10501,13 +10502,13 @@ void File_Mxf::Streams_Finish_Component_ForTimeCode(const int128u ComponentUID, 
             Fill(Stream_Other, StreamPos_Last, Other_Title, TrackName);
             if (PreCharge)
             {
-                TimeCode TC_Source=Component2->second.MxfTimeCode.RoundedTimecodeBase<0x8000?TimeCode((int64_t)(Component2->second.MxfTimeCode.StartTimecode+Config->File_IgnoreEditsBefore), Component2->second.MxfTimeCode.RoundedTimecodeBase-1, TimeCode::DropFrame(Component2->second.MxfTimeCode.DropFrame).FPS1001(Component2->second.MxfTimeCode.DropFrame)):TimeCode();
+                TimeCode TC_Source=(Component2->second.MxfTimeCode.RoundedTimecodeBase && Component2->second.MxfTimeCode.RoundedTimecodeBase<0x8000)?TimeCode((int64_t)(Component2->second.MxfTimeCode.StartTimecode+Config->File_IgnoreEditsBefore), Component2->second.MxfTimeCode.RoundedTimecodeBase-1, TimeCode::DropFrame(Component2->second.MxfTimeCode.DropFrame).FPS1001(Component2->second.MxfTimeCode.DropFrame)):TimeCode();
                 TC_Source.Set1001fps(Is1001);
                 Fill(Stream_Other, StreamPos_Last, "Source_TimeCode_FirstFrame", TC_Source.ToString().c_str());
                 Fill_PreChargeRollOut(Stream_Other, StreamPos_Last, PreCharge, 0);
             }
 
-            if ((!TimeCodeFromMaterialPackage && IsSourcePackage) || (TimeCodeFromMaterialPackage && !IsSourcePackage))
+            if (Component2->second.MxfTimeCode.RoundedTimecodeBase && ((!TimeCodeFromMaterialPackage && IsSourcePackage) || (TimeCodeFromMaterialPackage && !IsSourcePackage)))
             {
                 MxfTimeCodeForDelay=Component2->second.MxfTimeCode;
                 MxfTimeCodeForDelay_PreCharge=PreCharge;
