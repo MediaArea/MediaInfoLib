@@ -2315,13 +2315,13 @@ void File_Mpeg_Psi::Descriptors()
 void File_Mpeg_Psi::ATSC_multiple_string_structure(Ztring &Value, const char* Name)
 {
     //Parsing
-    Ztring string;
     int8u number_strings, number_segments;
     Element_Begin1(Name);
     Get_B1(number_strings,                                      "number_strings");
     for (int8u string_Pos=0; string_Pos<number_strings; string_Pos++)
     {
         Element_Begin1("String");
+        Ztring string;
         int32u ISO_639_language_code;
         Get_C3(ISO_639_language_code,                           "ISO_639_language_code");
         Get_B1(number_segments,                                 "number_segments");
