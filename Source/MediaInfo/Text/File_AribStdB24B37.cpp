@@ -1531,9 +1531,19 @@ void File_AribStdB24B37::CSI()
 void File_AribStdB24B37::TIME()
 {
     Element_Begin1("TIME - Time");
+    int8u P1;
     Skip_B1(                                                    "control_code");
-    Skip_B1(                                                    "P1");
-    Skip_B1(                                                    "P2");
+    Get_B1 (P1,                                                 "P1");
+    if (P1==0x29)
+    {
+        size_t Pos=0;
+        while (Element_Offset<Element_Size && Pos<Element_Size-Element_Offset && Buffer[Buffer_Offset+(size_t)Element_Offset+Pos]<0x40)
+            Pos++;
+        Skip_Local(Pos,                                         "Values");
+        Skip_B1(                                                "F");
+    }
+    else
+        Skip_B1(                                                "P2");
     Element_End0();
 
     // if P1 is 0x20, there should be a delay
