@@ -118,6 +118,18 @@ static Ztring DashMpd_codecid_CodecID (const char* codecid)
 }
 
 //---------------------------------------------------------------------------
+static void DashMpd_codecs_Fill (const char* codecs, sequence* Sequence)
+{
+    Sequence->Infos["CodecID"]=DashMpd_codecid_CodecID(codecs);
+
+    //MPEG-4 Audio, format depends on the audio object type
+    if (!strcmp(codecs, "mp4a.40.2") || !strcmp(codecs, "mp4a.40.5") || !strcmp(codecs, "mp4a.40.29"))
+        Sequence->Infos["Format"].From_UTF8("AAC");
+    else
+        Sequence->Infos.erase("Format");
+}
+
+//---------------------------------------------------------------------------
 struct template_generic
 {
     sequence* Sequence;
@@ -198,7 +210,7 @@ void template_generic::AdaptationSet_Attributes_Parse (XMLElement* Item)
     //Attributes - codecs
     Attribute=Item->Attribute("codecs");
     if (Attribute)
-        Sequence->Infos["CodecID"]=DashMpd_codecid_CodecID(Attribute);
+        DashMpd_codecs_Fill(Attribute, Sequence);
 
     //Attributes - lang
     Attribute=Item->Attribute("lang");
@@ -315,7 +327,7 @@ void template_generic::Representation_Attributes_Parse (XMLElement* Item)
     //Attributes - codecs
     Attribute=Item->Attribute("codecs");
     if (Attribute)
-        Sequence->Infos["CodecID"]=DashMpd_codecid_CodecID(Attribute);
+        DashMpd_codecs_Fill(Attribute, Sequence);
 
     //Attributes - lang
     Attribute=Item->Attribute("lang");
@@ -660,7 +672,7 @@ bool File_DashMpd::FileHeader_Begin()
                             //Attributes - codecs
                             Attribute=Period_Item->Attribute("codecs");
                             if (Attribute)
-                                Sequence->Infos["CodecID"]=DashMpd_codecid_CodecID(Attribute);
+                                DashMpd_codecs_Fill(Attribute, Sequence);
 
                             //Attributes - lang
                             Attribute=Period_Item->Attribute("lang");
