@@ -684,6 +684,9 @@ void File__ReferenceFilesHelper::ParseReferences()
                 {
                     AbsoluteNames.clear();
                     Names=Sequences[Sequences_Current]->FileNames;
+                    for (size_t Pos=0; Pos<Names.size(); Pos++)
+                        if (Names[Pos].find(__T("file:"))==0)
+                            Names[Pos]=ZenLib::Format::Http::URL_Encoded_Decode(Names[Pos]);
 
                     //Configuring file name (this time, we try to test local files)
                     size_t PathSeparator_Pos=Names.empty()?string::npos:Names[0].find_last_of(__T("\\/"));
@@ -727,6 +730,9 @@ void File__ReferenceFilesHelper::ParseReferences()
                             {
                                 AbsoluteNames.clear();
                                 Names=Sequences[Sequences_Current]->FileNames;
+                                for (size_t Pos=0; Pos<Names.size(); Pos++)
+                                    if (Names[Pos].find(__T("file:"))==0)
+                                        Names[Pos]=ZenLib::Format::Http::URL_Encoded_Decode(Names[Pos]);
 
                                 //Configuring file name (this time, we try to test local files)
                                 size_t PathSeparator_Pos=Names[0].find_last_of(__T("\\/"));
