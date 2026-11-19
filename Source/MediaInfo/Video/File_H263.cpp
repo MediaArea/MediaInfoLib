@@ -80,11 +80,11 @@ static const int16u H263_Source_Format_Height[]=
 static const int8u H263_PAR_W[]=
 {
     0,
+    1,
     12,
     10,
     16,
     40,
-    0,
     0,
     0,
     0,
@@ -100,11 +100,11 @@ static const int8u H263_PAR_W[]=
 static const int8u H263_PAR_H[]=
 {
     0,
+    1,
     11,
     11,
     11,
     33,
-    0,
     0,
     0,
     0,
@@ -417,6 +417,8 @@ void File_H263::Data_Parse()
                 Get_S2 (9, Height,                              "Picture Height Indication");
                 Height<<=2; Param_Info2(Height, " pixels");
             Element_End0();
+            Frame_Width=Width;
+            Frame_Height=Height;
             if (PixelAspectRatioCode==0xF)
             {
                 Element_Begin1("Extended Pixel Aspect Ratio (EPAR)");
