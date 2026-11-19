@@ -214,13 +214,14 @@ bool File_DcpCpl::FileHeader_Begin()
                             const char* EssenceDescriptor_Item_Text=EssenceDescriptor_Item->GetText();
                             if (!EssenceDescriptor_Item_Value)
                                 continue;
+                            const char* EssenceDescriptor_Item_LocalName=LocalName(EssenceDescriptor_Item);
 
                             //Id
                             if (EssenceDescriptor_Item_Text && !strcmp(EssenceDescriptor_Item_Value, "Id"))
                                 Id=EssenceDescriptor_Item_Text;
 
                             //CDCIDescriptor
-                            if (!strcmp(EssenceDescriptor_Item_Value, "m:RGBADescriptor") || !strcmp(EssenceDescriptor_Item_Value, "m:CDCIDescriptor"))
+                            if (!strcmp(EssenceDescriptor_Item_LocalName, "RGBADescriptor") || !strcmp(EssenceDescriptor_Item_LocalName, "CDCIDescriptor"))
                             {
                                 for (XMLElement* Descriptor_Item=EssenceDescriptor_Item->FirstChildElement(); Descriptor_Item; Descriptor_Item=Descriptor_Item->NextSiblingElement())
                                 {
@@ -229,7 +230,7 @@ bool File_DcpCpl::FileHeader_Begin()
                                         continue;
 
                                     //SubDescriptors
-                                    if (!strcmp(Descriptor_Item_Value, "m:SubDescriptors"))
+                                    if (!strcmp(LocalName(Descriptor_Item), "SubDescriptors"))
                                     {
                                         for (XMLElement* SubDescriptors_Item=Descriptor_Item->FirstChildElement(); SubDescriptors_Item; SubDescriptors_Item=SubDescriptors_Item->NextSiblingElement())
                                         {
@@ -240,7 +241,7 @@ bool File_DcpCpl::FileHeader_Begin()
                                             descriptor* SubDescriptor=new descriptor;
 
                                             //JPEG2000PictureSubDescriptor
-                                            if (!strcmp(SubDescriptors_Item_Value, "m:JPEG2000PictureSubDescriptor"))
+                                            if (!strcmp(LocalName(SubDescriptors_Item), "JPEG2000PictureSubDescriptor"))
                                             {
                                                 for (XMLElement* JPEG2000PictureSubDescriptor_Item=SubDescriptors_Item->FirstChildElement(); JPEG2000PictureSubDescriptor_Item; JPEG2000PictureSubDescriptor_Item=JPEG2000PictureSubDescriptor_Item->NextSiblingElement())
                                                 {
@@ -250,7 +251,7 @@ bool File_DcpCpl::FileHeader_Begin()
                                                         continue;
 
                                                     //Xsiz
-                                                    if (!strcmp(JPEG2000PictureSubDescriptor_Item_Value, "m:Rsiz"))
+                                                    if (!strcmp(LocalName(JPEG2000PictureSubDescriptor_Item), "Rsiz"))
                                                     {
                                                         SubDescriptor->Jpeg2000_Rsiz=(int16u)atoi(JPEG2000PictureSubDescriptor_Item_Text);
                                                     }
