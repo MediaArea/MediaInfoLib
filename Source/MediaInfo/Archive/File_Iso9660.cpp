@@ -377,7 +377,6 @@ void File_Iso9660::File()
     {
         Element_Info1(MI_DataFiles.empty()?MI_MasterFileInfos.empty()?Ztring():MI_MasterFileInfos.begin()->first:MI_DataFileInfos.begin()->first);
         MI_Current=new MediaInfo_Internal;
-        MI_Current->Option(__T("FormatDetection_MaximumOffset"), __T("1048576"));
         MI_Current->Option(__T("File_IsReferenced"), __T("1"));
         MI_Current->Open_Buffer_Init(MI_Current_EndOffset-MI_Current_StartOffset);
     }
