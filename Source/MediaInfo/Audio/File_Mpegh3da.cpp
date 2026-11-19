@@ -1538,7 +1538,7 @@ void File_Mpegh3da::mpegh3daConfigExtension()
 void File_Mpegh3da::SignalGroupInformation()
 {
     Element_Begin1("SignalGroupInformation");
-    for (int8u Pos=0; Pos<bsNumSignalGroups+1; Pos++)
+    for (int8u Pos=0; Pos<bsNumSignalGroups; Pos++)
     {
         Skip_S1(3,                                              "groupPriority");
         Skip_SB(                                                "fixedPosition");
