@@ -3124,6 +3124,13 @@ void File_Mxf::Streams_Finish()
         TimeCode TC1_Content=TC1;
         TC1_Content+=(int64_t)TimecodeCache.second.PreCharge;
         Fill(Stream_Other, TimecodeCache.second.StreamPos, Other_TimeCode_FirstFrame, TC1_Content.ToString(), true, true);
+        const auto FrameCount = Retrieve_Const(Stream_Other, TimecodeCache.second.StreamPos, Other_FrameCount).To_int64u();
+        if (FrameCount && TC1_Content.GetFramesMax())
+        {
+            auto TC1_Last = TC1_Content;
+            TC1_Last += (int64_t)(FrameCount - 1);
+            Fill(Stream_Other, TimecodeCache.second.StreamPos, Other_TimeCode_LastFrame, TC1_Last.ToString(), true, true);
+        }
         if (TimecodeCache.second.PreCharge)
             Fill(Stream_Other, TimecodeCache.second.StreamPos, "Source_TimeCode_FirstFrame", TC1.ToString(), true, true);
         Frame_Count = 0;
