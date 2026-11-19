@@ -2896,6 +2896,7 @@ void File_Riff::AVI__movi_StreamJump()
     {
         //Jumping
         Element_Show();
+        const int64u List_End=File_Offset+Buffer_Offset+Element_TotalSize_Get(Element_Level-2); //End of the movi list, from a chunk in it
         if (rec__Present)
             Element_End0();
         Info("movi, Jumping to end of chunk");
@@ -2914,7 +2915,7 @@ void File_Riff::AVI__movi_StreamJump()
             Finish("AVI"); //The rest is already parsed
         }
         else
-            GoTo(File_Offset+Buffer_Offset+Element_TotalSize_Get(), "AVI");
+            GoTo(List_End, "AVI"); //Not only the end of this chunk, the next chunks would be parsed one by one up to the end of the list
     }
     else if (Stream_Structure_Temp!=Stream_Structure.end())
     {
