@@ -687,7 +687,7 @@ void File__ReferenceFilesHelper::ParseReferences()
 
                     //Configuring file name (this time, we try to test local files)
                     size_t PathSeparator_Pos=Names.empty()?string::npos:Names[0].find_last_of(__T("\\/"));
-                    if (PathSeparator_Pos!=string::npos && PathSeparator_Pos)
+                    if (PathSeparator_Pos!=string::npos && PathSeparator_Pos && !Sequences[Sequences_Current]->PathOnly)
                     {
                         Ztring PathToRemove=Names[0].substr(0, PathSeparator_Pos);
                         bool IsOk=true;

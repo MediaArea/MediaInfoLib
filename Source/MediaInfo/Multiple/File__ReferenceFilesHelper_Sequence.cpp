@@ -37,6 +37,7 @@ sequence::sequence()
     MenuPos=(size_t)-1;
     Enabled=true;
     IsMain=false;
+    PathOnly=false;
     Infos_StreamKind=Stream_Max;
     //MenuPos=(size_t)-1;
 

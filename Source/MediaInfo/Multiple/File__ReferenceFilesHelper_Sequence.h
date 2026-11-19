@@ -43,6 +43,7 @@ public:
     size_t                          MenuPos;
     bool                            Enabled;
     bool                            IsMain;
+    bool                            PathOnly; //The file is searched only at its path, not with its name alone next to the referencing file (the same name may be in several folders)
     std::map<std::string, Ztring>   Config;
     std::map<std::string, Ztring>   Infos;
     stream_t                        Infos_StreamKind; //Infos only for the streams of this kind, Stream_Max for all streams

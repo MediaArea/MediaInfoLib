@@ -286,6 +286,7 @@ bool File_Hls::FileHeader_Begin()
             {
                 Rendition_Sequence=new sequence;
                 Rendition_Sequence->AddFileName(URI);
+                Rendition_Sequence->PathOnly=true; //The playlists of the renditions and of the variants often have the same name in their folders
                 Rendition_Sequence->StreamID=ReferenceFiles->Sequences_Size()+1;
                 ReferenceFiles->AddSequence(Rendition_Sequence);
                 #if MEDIAINFO_EVENTS
