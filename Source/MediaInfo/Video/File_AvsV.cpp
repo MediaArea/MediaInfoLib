@@ -720,7 +720,7 @@ void File_AvsV::picture_start()
         Get_SB(    picture_structure,                           "picture_structure");
         if (Element_Code==0xB6) //Only P or B
         {
-            if (picture_structure)
+            if (!picture_structure)
                 Skip_SB(                                        "advanced_pred_mode_disable");
         }
     }
