@@ -1927,7 +1927,7 @@ void File_Exif::Streams_Finish()
                     Value += GPSLongitudeRef->second.at(0) + __T(' ');
                     if (GPSAltitude != Infos_GPS.end()) {
                         if (GPSAltitudeRef != Infos_GPS.end())
-                            if (GPSAltitude->second.Read().To_int8u() == 1 || GPSAltitude->second.Read().To_int8u() == 3)
+                            if (GPSAltitudeRef->second.Read().To_int8u() == 1 || GPSAltitudeRef->second.Read().To_int8u() == 3)
                                 Value += __T("-");
                         Value += GPSAltitude->second.Read() + __T('m');
                     }
