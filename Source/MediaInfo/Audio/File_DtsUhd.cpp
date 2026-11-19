@@ -402,7 +402,7 @@ int File_DtsUhd::NaviFindIndex(int DesiredIndex, int32u* ListIndex)
         if (Navi.Index==DesiredIndex)
         {
             Navi.Present=true;
-            *ListIndex=Navi.Index;
+            *ListIndex=(int32u)(&Navi-Audio_Chunks.data());
             return 0;
         }
     }
@@ -410,7 +410,7 @@ int File_DtsUhd::NaviFindIndex(int DesiredIndex, int32u* ListIndex)
     size_t Index=0;
     for (auto& Navi : Audio_Chunks)
     {
-        if (Navi.Present&&Navi.AudioChunkSize==0)
+        if (!Navi.Present&&Navi.AudioChunkSize==0)
             break;
         Index++;
     }
@@ -422,7 +422,7 @@ int File_DtsUhd::NaviFindIndex(int DesiredIndex, int32u* ListIndex)
     Navi.AudioChunkSize=0;
     Navi.Present=true;
     Navi.AudioChunkID=256;
-    Navi.Index=Index;
+    Navi.Index=DesiredIndex;
     *ListIndex=Index;
 
     return 0;
