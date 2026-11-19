@@ -616,7 +616,7 @@ void File_Png::cICP()
         auto matrix_coefficients=Mpegv_matrix_coefficients(MatrixCoefficients);
         Fill(StreamKind_Last, StreamPos_Last, "matrix_coefficients", (*matrix_coefficients)?matrix_coefficients:std::to_string(MatrixCoefficients).c_str());
         Ztring ColorSpace=Mpegv_matrix_coefficients_ColorSpace(MatrixCoefficients);
-        if (!ColorSpace.empty() && ColorSpace!=Retrieve_Const(StreamKind_Last, StreamPos_Last, "ColorSpace"))
+        if (MatrixCoefficients && !ColorSpace.empty() && ColorSpace!=Retrieve_Const(StreamKind_Last, StreamPos_Last, "ColorSpace")) // 0 (identity) is the value for all PNG images, the colour type tells which components are present
             Fill(StreamKind_Last, StreamPos_Last, "ColorSpace", Mpegv_matrix_coefficients_ColorSpace(MatrixCoefficients));
         Fill(StreamKind_Last, StreamPos_Last, "colour_range", Mk_Video_Colour_Range(VideoFullRangeFlag+1));
     FILLING_END()
