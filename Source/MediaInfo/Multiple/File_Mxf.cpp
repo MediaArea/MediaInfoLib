@@ -11080,7 +11080,7 @@ void File_Mxf::Read_Buffer_AfterParsing()
         Fill();
         Open_Buffer_Unsynch();
         File_Offset=File_Size; //Same position as without caption probe
-        Finish();
+        ForceFinish(); //The parsed data include the probe window, the parsing up to the end for the count of frames would parse the content after it
         return;
     }
 
