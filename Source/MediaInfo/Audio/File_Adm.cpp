@@ -3311,21 +3311,23 @@ static void CheckErrors_formatLabelDefinition(file_adm_private* File_Adm_Private
     const auto List = (Style == (style)-1) ? nullptr : Style_Infos[Style].formatDefinition_List;
     const unsigned long List_Size = (Style == (style)-1) ? 0 : Style_Infos[Style].formatDefinition_Size;
     unsigned long formatLabel_Int = (unsigned long)-1;
+    const string LabelName = item_Infos[item_Type].Attribute_Infos[label_Info.Label_Pos].Name;
+    const string DefinitionName = item_Infos[item_Type].Attribute_Infos[label_Info.Definition_Pos].Name;
 
     if (Label_Present) {
         if (Label.size() != 4 || !IsHexaDigit(Label, 0, 4)) {
-            Item.AddError(Error, item_Type, i, ":formatLabel:formatLabel attribute value \"" + Label + "\" is not a valid form (yyyy form, yyyy being hexadecimal digits)");
+            Item.AddError(Error, item_Type, i, ':' + LabelName + ':' + LabelName + " attribute value \"" + Label + "\" is not a valid form (yyyy form, yyyy being hexadecimal digits)");
         }
         else {
             formatLabel_Int = strtoul(Label.c_str(), nullptr, 16);
             if (formatLabel_Int && formatLabel_Int > List_Size) {
-                Item.AddError(Warning, item_Type, i, ":formatLabel:formatLabel attribute value \"" + Label + "\" is not a known value");
+                Item.AddError(Warning, item_Type, i, ':' + LabelName + ':' + LabelName + " attribute value \"" + Label + "\" is not a known value");
             }
             else if (Definition_Present && List && formatLabel_Int && formatLabel_Int <= List_Size && Definition != List[formatLabel_Int - 1]) {
-                Item.AddError(Error, item_Type, i, ":formatDefinition:formatDefinition attribute value \"" + Definition + "\" shall be \"" + List[formatLabel_Int - 1] + "\" in order to match the term corresponding to formatLabel attribute value \"" + Label + "\"");
+                Item.AddError(Error, item_Type, i, ':' + DefinitionName + ':' + DefinitionName + " attribute value \"" + Definition + "\" shall be \"" + List[formatLabel_Int - 1] + "\" in order to match the term corresponding to " + LabelName + " attribute value \"" + Label + "\"");
             }
             if (IsAtmos && ((Style == Style_Format && formatLabel_Int != 1) || (Style == Style_Type && formatLabel_Int != 1 && formatLabel_Int != 3))) {
-                Item.AddError(Error, item_Type, i, ":formatLabel:formatLabel attribute value \"" + Label + "\" is not permitted, permitted value is \"0001\"", Source_Atmos_1_0);
+                Item.AddError(Error, item_Type, i, ':' + LabelName + ':' + LabelName + " attribute value \"" + Label + "\" is not permitted, permitted value" + (Style == Style_Type ? "s are \"0001\" or \"0003\"" : " is \"0001\""), Source_Atmos_1_0);
             }
         }
     }
@@ -3340,17 +3342,17 @@ static void CheckErrors_formatLabelDefinition(file_adm_private* File_Adm_Private
                     formatLabel_Int = j;
                 }
                 else if (formatLabel_Int != j) {
-                    Item.AddError(Error, item_Type, i, ":formatLabel:formatLabel attribute value \"" + Label + "\" shall be \"" + Hex2String(j, 4) + "\" in order to match the term corresponding to formatDefinition attribute value \"" + Definition + "\"");
+                    Item.AddError(Error, item_Type, i, ':' + LabelName + ':' + LabelName + " attribute value \"" + Label + "\" shall be \"" + Hex2String(j, 4) + "\" in order to match the term corresponding to " + DefinitionName + " attribute value \"" + Definition + "\"");
                 }
                 IsKnown = true;
                 break;
             }
         }
         if (!IsKnown) {
-            Item.AddError(Warning, item_Type, i, ":formatDefinition:formatDefinition attribute value \"" + Definition + "\" is not a known value");
+            Item.AddError(Warning, item_Type, i, ':' + DefinitionName + ':' + DefinitionName + " attribute value \"" + Definition + "\" is not a known value");
         }
         if (IsAtmos && ((Style == Style_Format && Definition != List[0]) || (Style == Style_Type && Definition != List[0] && Definition != List[2]))) {
-            Item.AddError(Error, item_Type, i, ":formatDefinition:formatDefinition attribute value \"" + Definition + "\" is not permitted, permitted value is \"PCM\"", Source_Atmos_1_0);
+            Item.AddError(Error, item_Type, i, ':' + DefinitionName + ':' + DefinitionName + " attribute value \"" + Definition + "\" is not permitted, permitted value" + (Style == Style_Type ? (string("s are \"") + List[0] + "\" or \"" + List[2] + '\"') : (string(" is \"") + List[0] + '\"')), Source_Atmos_1_0);
         }
     }
 
@@ -3359,7 +3361,7 @@ static void CheckErrors_formatLabelDefinition(file_adm_private* File_Adm_Private
         if (item_Infos[item_Type].ID_Flags[item_info::Flags_ID_YX] && !CheckErrors_ID(File_Adm_Private, Item_ID, item_Infos[item_Type])) {
             const auto Item_ID_yyyy = Item_ID.substr(strlen(item_Infos[item_Type].ID_Begin) + 1, 4);
             if ((Label_Present && Item_ID_yyyy != Label) || (Definition_Present && formatLabel_Int != strtoul(Item_ID_yyyy.c_str(), nullptr, 16))) {
-                Item.AddError(Error, item_Type, i, ':' + CraftName(item_Infos[item_Type].Name, true) + "ID:" + CraftName(item_Infos[item_Type].Name, true) + "ID attribute yyyy value \"" + Item_ID_yyyy + "\" does not match " + (Label_Present ? ("formatLabel \"" + Label) : ("formatDefinition \"" + Definition)) + '\"');
+                Item.AddError(Error, item_Type, i, ':' + CraftName(item_Infos[item_Type].Name, true) + "ID:" + CraftName(item_Infos[item_Type].Name, true) + "ID attribute yyyy value \"" + Item_ID_yyyy + "\" does not match " + (Label_Present ? (LabelName + " \"" + Label) : (DefinitionName + " \"" + Definition)) + '\"');
             }
         }
     }
