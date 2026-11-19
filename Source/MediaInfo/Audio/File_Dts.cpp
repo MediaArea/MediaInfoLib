@@ -408,11 +408,13 @@ static bool DtsX_AssetHeader(const int8u* Buffer, size_t Size, const dtsx_exss_p
                 Asset.SpeakerActivityMask=Source.Get(MaskBits);
             }
             int8u RemapSets=(int8u)Source.Get(3);
+            int8u Destinations[8];
+            for (size_t Set=0; Set<RemapSets; ++Set)
+                Destinations[Set]=DtsX_SpeakerCount(Source.Get(MaskBits));
             for (size_t Set=0; Set<RemapSets; ++Set)
             {
-                int8u Destinations=DtsX_SpeakerCount(Source.Get(MaskBits));
                 int8u CoefficientBits=(int8u)(Source.Get(5)+1);
-                for (size_t Destination=0; Destination<Destinations; ++Destination)
+                for (size_t Destination=0; Destination<Destinations[Set]; ++Destination)
                 {
                     int32u CoefficientMask=Source.Get(CoefficientBits);
                     int8u CoefficientCount=0;
