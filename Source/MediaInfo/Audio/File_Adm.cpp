@@ -7307,8 +7307,8 @@ void File_Adm::Streams_Fill()
             if (Level) {
                 static const int8u MaxCounts[][MaxCount_Size] =
                 {
-                    {  0, 16, 12,  4, 15,  0,  0,  0,  0,  0,  0,  8 },
-                    {  0, 28, 24,  8, 27,  0,  0,  0,  0,  0,  0, 16 },
+                    {  0, 16,  0,  4, 15, 12,  0,  0,  0,  0,  0,  8 },
+                    {  0, 28,  0,  8, 27, 24,  0,  0,  0,  0,  0, 16 },
                 };
                 Level--;
                 if (Level < sizeof(MaxCounts) / sizeof(MaxCounts[0])) {
