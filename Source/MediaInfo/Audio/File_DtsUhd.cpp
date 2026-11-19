@@ -1004,12 +1004,12 @@ void File_DtsUhd::UnpackMDFrame_1(int8u MDChunkID)
     BS_End();
 }
 
-/** Parse a single DTS:X Profile 2 frame.
+/** Parse the FTOC of a single DTS:X Profile 2 frame and compute the frame size.
     The frame must start at the first byte of the data buffer, and enough
     of the frame must be present to decode the majority of the FTOC.
     From Table 6-11 p52.  A sync frame must be provided.
 */
-int File_DtsUhd::Frame()
+int File_DtsUhd::FTOC()
 {
     int32u SyncWord;
     Get_B4 (SyncWord,                                           "SyncWord");
@@ -1019,7 +1019,7 @@ int File_DtsUhd::Frame()
     static constexpr int8u Table[4]={5, 8, 10, 12};
     Get_VR (Table, FTOCPayloadinBytes,                          "FTOCPayloadinBytes");
     FTOCPayloadinBytes++;
-    if (FTOCPayloadinBytes<=4 || FTOCPayloadinBytes>=FrameSize)
+    if (FTOCPayloadinBytes<=4 || FTOCPayloadinBytes>FrameSize)
     {
         BS_End();
         return DTSUHD_INCOMPLETE;  //Data buffer does not contain entire FTOC
@@ -1061,6 +1061,15 @@ int File_DtsUhd::Frame()
         return DTSUHD_INCOMPLETE;
     FrameSize=FTOCPayloadinBytes+ChunkBytes;
 
+    return DTSUHD_OK;
+}
+
+/** Parse a single DTS:X Profile 2 frame. */
+int File_DtsUhd::Frame()
+{
+    auto Result=FTOC();
+    if (Result!=DTSUHD_OK)
+        return Result;
     if (UnpackMDFrame())
         return DTSUHD_INVALID_FRAME;
     UpdateDescriptor();
@@ -1498,6 +1507,32 @@ void File_DtsUhd::Read_Buffer_Unsynched()
 //---------------------------------------------------------------------------
 void File_DtsUhd::Header_Parse()
 {
+    if (!IsSub)
+    {
+        //Frame size from the FTOC (Table 6-11), the sync word found by the synchronization may be inside the chunks
+        //The FTOC is parsed again with the frame
+        #if MEDIAINFO_TRACE
+            auto Trace_Activated_Sav=Trace_Activated;
+            Trace_Activated=false;
+        #endif
+        auto FrameSize_Sav=FrameSize;
+        FrameSize=(int32u)Element_Size;
+        auto Result=FTOC();
+        #if MEDIAINFO_TRACE
+            Trace_Activated=Trace_Activated_Sav;
+        #endif
+        Element_Offset=0;
+        if (Result!=DTSUHD_OK)
+        {
+            FrameSize=FrameSize_Sav;
+            if (Result==DTSUHD_INCOMPLETE && File_Offset+Buffer_Size<File_Size)
+            {
+                Element_WaitForMoreData();
+                return;
+            }
+        }
+    }
+
     Header_Fill_Size(FrameSize);
 }
 

@@ -133,6 +133,7 @@ protected :
     int UnpackMDFrame();
     void UnpackMDFrame_1(int8u MDChunkID);
     bool CheckCurrentFrame();
+    int FTOC();
     int Frame();
 
     UHDAudPresParam AudPresParam[256];
