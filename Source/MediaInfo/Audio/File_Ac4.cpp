@@ -262,8 +262,8 @@ enum ch
     Bfc  = 1 << 25,
     Tfc  = 1 << 26,
     Tbc  = 1 << 27,
-    Vhl  = 1 << 26,
-    Vhr  = 1 << 27,
+    Vhl  = Tfl, // Same speaker as Tfl in TS 103 190-2 Table G.1
+    Vhr  = Tfr, // Same speaker as Tfr in TS 103 190-2 Table G.1
     ch_Max = 1 << 31
 };
 
@@ -309,8 +309,8 @@ static int32u Ac4_ch_mode_2_nonstd_Values[16]=
     L | R | C | Ls | Rs | Lb | Rb | LFE,        //7.1 3/4/0
     L | R | C | Ls | Rs | Lw | Rw,              //7.0 5/2/0
     L | R | C | Ls | Rs | Lw | Rw | LFE,        //7.1 5/2/0
-    L | R | C | Ls | Rs | Vhl | Vhl,            //7.0 3/2/2
-    L | R | C | Ls | Rs | Vhl | Vhl | LFE,      //7.1 3/2/2
+    L | R | C | Ls | Rs | Vhl | Vhr,            //7.0 3/2/2
+    L | R | C | Ls | Rs | Vhl | Vhr | LFE,      //7.1 3/2/2
     L | R | C | Ls | Rs | Lb | Rb | Tfl | Tfr | Tbl | Tbr,                      //7.0.4
     L | R | C | Ls | Rs | Lb | Rb | Tfl | Tfr | Tbl | Tbr | LFE,                //7.1.4
     L | R | C | Ls | Rs | Lb | Rb | Tfl | Tfr | Tbl | Tbr | Lscr | Rscr,        //9.0.4
