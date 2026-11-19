@@ -1164,7 +1164,7 @@ void File_Ffv1::Parameters()
                     int32s value;
                     Get_RS (States2[k], value,              "initial_state_delta");
                     if (coder_type)
-                        plane_states[i][j][k] = value;
+                        plane_states[i][j][k] = (int8u)((j ? plane_states[i][j-1][k] : 128) + value);
                 }
                 Element_End0();
             }
