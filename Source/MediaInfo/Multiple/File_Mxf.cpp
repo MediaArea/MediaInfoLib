@@ -23835,6 +23835,13 @@ bool File_Mxf::BookMark_Needed()
                             if (Parser->ParserName=="MPEG Video")
                                 ((File_Mpegv*)Parser)->UserData_Search(); //Else disabled up to the next sequence header after the fill
                 #endif //defined(MEDIAINFO_MPEGV_YES)
+                #if defined(MEDIAINFO_AVC_YES)
+                    if (!ArdZdf_IsRequested && !ArdZdf_FromContent_IsRequested) //Else the pictures are checked with all their slices
+                        for (auto& Essence : Essences)
+                            for (auto Parser : Essence.second.Parsers)
+                                if (Parser->ParserName=="AVC")
+                                    ((File_Avc*)Parser)->PartialFrames=true; //Captions are in SEI messages, before the slices
+                #endif //defined(MEDIAINFO_AVC_YES)
             }
         }
     }

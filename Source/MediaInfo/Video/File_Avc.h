@@ -41,6 +41,7 @@ public :
     int64u Frame_Count_Valid;
     bool   MustParse_SPS_PPS;
     bool   SizedBlocks;
+    bool   PartialFrames; //Complete frames parsed only up to their first slice header if the first frame (parsed with all its slices, for the slice count) has one progressive picture, e.g. by the probe of captions (in SEI messages)
 
     //Constructor/Destructor
     File_Avc();
@@ -581,6 +582,9 @@ private :
     size_t                              Structure_Frame;
     size_t                              Slices_CountInThisFrame;
     size_t                              MaxSlicesCount;
+    int64u                              FirstFrame_Offset; //Offset of the first frame with a parsed slice, if frames are always complete
+    size_t                              FirstFrame_Pictures; //Count of pictures in this frame, e.g. 2 with fields
+    bool                                PartialFrames_IsRest; //Current element is the rest of a frame from its first slice
 
     //Pictures info
     enum picture_flags : int8u
