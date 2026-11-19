@@ -45,6 +45,7 @@ public:
     bool                            IsMain;
     std::map<std::string, Ztring>   Config;
     std::map<std::string, Ztring>   Infos;
+    stream_t                        Infos_StreamKind; //Infos only for the streams of this kind, Stream_Max for all streams
     void                            FrameRate_Set(float64 NewFrameRate);
 
     //Out

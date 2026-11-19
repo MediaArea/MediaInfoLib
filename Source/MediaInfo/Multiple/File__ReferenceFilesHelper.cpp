@@ -1608,9 +1608,10 @@ void File__ReferenceFilesHelper::ParseReference_Finalize_PerStream ()
         }
         MI->Fill(StreamKind_Last, StreamPos_To, "Source", Sequences[Sequences_Current]->Source);
     }
-    for (std::map<string, Ztring>::iterator Info=Sequences[Sequences_Current]->Infos.begin(); Info!=Sequences[Sequences_Current]->Infos.end(); ++Info)
-        if (MI->Retrieve(StreamKind_Last, StreamPos_To, Info->first.c_str()).empty())
-            MI->Fill(StreamKind_Last, StreamPos_To, Info->first.c_str(), Info->second);
+    if (Sequences[Sequences_Current]->Infos_StreamKind==Stream_Max || Sequences[Sequences_Current]->Infos_StreamKind==StreamKind_Last)
+        for (std::map<string, Ztring>::iterator Info=Sequences[Sequences_Current]->Infos.begin(); Info!=Sequences[Sequences_Current]->Infos.end(); ++Info)
+            if (MI->Retrieve(StreamKind_Last, StreamPos_To, Info->first.c_str()).empty())
+                MI->Fill(StreamKind_Last, StreamPos_To, Info->first.c_str(), Info->second);
 
     //Others
     if (!Sequences[Sequences_Current]->IsMain && Sequences[Sequences_Current]->MI->Info && MI->Retrieve(StreamKind_Last, StreamPos_To, Sequences[Sequences_Current]->MI->Info->Fill_Parameter(StreamKind_Last, Generic_Format))!=Sequences[Sequences_Current]->MI->Info->Get(Stream_General, 0, General_Format))

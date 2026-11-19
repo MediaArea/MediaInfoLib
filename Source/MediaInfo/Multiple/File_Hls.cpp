@@ -30,10 +30,77 @@
 #endif //defined(MEDIAINFO_REFERENCES_YES)
 #include "ZenLib/FileName.h"
 #include <map>
+#include <vector>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
 {
+
+//***************************************************************************
+// Utils
+//***************************************************************************
+
+#if defined(MEDIAINFO_REFERENCES_YES)
+//---------------------------------------------------------------------------
+//Attribute list (RFC 8216 section 4.2), a quoted string may contain commas
+static std::map<Ztring, Ztring> Hls_Attributes(const Ztring &List)
+{
+    std::map<Ztring, Ztring> Attributes;
+    size_t Pos=0;
+    while (Pos<List.size())
+    {
+        size_t Name_End=List.find_first_of(__T("=,"), Pos);
+        if (Name_End==string::npos)
+            break;
+        Ztring Name=List.substr(Pos, Name_End-Pos);
+        Name.Trim();
+        Pos=Name_End+1;
+        if (List[Name_End]==__T(','))
+            continue; //No value
+        while (Pos<List.size() && List[Pos]==__T(' '))
+            Pos++;
+        Ztring Value;
+        size_t Value_End;
+        if (Pos<List.size() && List[Pos]==__T('"'))
+        {
+            size_t Quote_End=List.find(__T('"'), Pos+1);
+            if (Quote_End==string::npos)
+                Quote_End=List.size();
+            Value=List.substr(Pos+1, Quote_End-Pos-1);
+            Value_End=List.find(__T(','), Quote_End);
+        }
+        else
+        {
+            Value_End=List.find(__T(','), Pos);
+            Value=List.substr(Pos, Value_End==string::npos?string::npos:(Value_End-Pos));
+            Value.Trim();
+        }
+        if (!Name.empty())
+            Attributes[Name]=Value;
+        if (Value_End==string::npos)
+            break;
+        Pos=Value_End+1;
+    }
+    return Attributes;
+}
+
+//---------------------------------------------------------------------------
+static void Hls_Info(std::map<std::string, Ztring> &Infos, const char* Name, const Ztring &Value)
+{
+    if (!Value.empty() && Infos.find(Name)==Infos.end())
+        Infos[Name]=Value;
+}
+
+//---------------------------------------------------------------------------
+static Ztring Hls_YesNo(const Ztring &Value)
+{
+    if (Value==__T("YES"))
+        return __T("Yes");
+    if (Value==__T("NO"))
+        return __T("No");
+    return Ztring();
+}
+#endif //MEDIAINFO_REFERENCES_YES
 
 //***************************************************************************
 // Constructor/Destructor
@@ -112,6 +179,7 @@ bool File_Hls::FileHeader_Begin()
     bool IsGroup=false;
     Ztring PreviousFile;
     std::map<Ztring, sequence*> Variants; //A variant may be listed several times (e.g. once per group of audio renditions), it is parsed once
+    std::vector<std::map<Ztring, Ztring> > Renditions; //Added after the variants
     for (size_t Line=0; Line<Lines.size(); Line++)
     {
         if (!Lines[Line].empty())
@@ -162,6 +230,10 @@ bool File_Hls::FileHeader_Begin()
             {
                 IsGroup=true;
             }
+            else if (Lines[Line].find(__T("#EXT-X-MEDIA:"))==0)
+            {
+                Renditions.push_back(Hls_Attributes(Lines[Line].substr(13)));
+            }
             else if (Lines[Line][0]==__T('#'))
                 ;
             else
@@ -201,6 +273,44 @@ bool File_Hls::FileHeader_Begin()
     {
         delete Sequence;
         Fill(Stream_General, 0, General_Format_Profile, "Master");
+
+        //Renditions with their own playlist
+        for (size_t Pos=0; Pos<Renditions.size(); Pos++)
+        {
+            std::map<Ztring, Ztring> &Rendition=Renditions[Pos];
+            const Ztring &URI=Rendition[__T("URI")];
+            if (URI.empty())
+                continue; //In the variant streams
+            sequence* &Rendition_Sequence=Variants[URI];
+            if (!Rendition_Sequence)
+            {
+                Rendition_Sequence=new sequence;
+                Rendition_Sequence->AddFileName(URI);
+                Rendition_Sequence->StreamID=ReferenceFiles->Sequences_Size()+1;
+                ReferenceFiles->AddSequence(Rendition_Sequence);
+                #if MEDIAINFO_EVENTS
+                    ParserIDs[0]=MediaInfo_Parser_HlsIndex;
+                    StreamIDs_Width[0]=sizeof(size_t);
+                #endif //MEDIAINFO_EVENTS
+            }
+
+            //Metadata from the first rendition with this playlist, also if it is a variant, for the streams of the type of the rendition
+            if (!Rendition_Sequence->Infos.empty())
+                continue;
+            const Ztring &Type=Rendition[__T("TYPE")];
+            if (Type==__T("AUDIO"))
+                Rendition_Sequence->Infos_StreamKind=Stream_Audio;
+            else if (Type==__T("VIDEO"))
+                Rendition_Sequence->Infos_StreamKind=Stream_Video;
+            else if (Type==__T("SUBTITLES"))
+                Rendition_Sequence->Infos_StreamKind=Stream_Text;
+            else
+                continue;
+            Hls_Info(Rendition_Sequence->Infos, "Language", Rendition[__T("LANGUAGE")]);
+            Hls_Info(Rendition_Sequence->Infos, "Title", Rendition[__T("NAME")]);
+            Hls_Info(Rendition_Sequence->Infos, "Default", Hls_YesNo(Rendition[__T("DEFAULT")]));
+            Hls_Info(Rendition_Sequence->Infos, "Forced", Hls_YesNo(Rendition[__T("FORCED")]));
+        }
     }
     #endif //MEDIAINFO_REFERENCES_YES
 
