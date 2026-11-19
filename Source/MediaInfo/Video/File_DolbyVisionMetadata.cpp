@@ -1406,12 +1406,14 @@ struct xsd_value
     int8u               List_Min;       // 0 if not a list
     int8u               List_Max;
     const char* const*  Enums;          // Null terminated
+    int8u               Fraction_Digits;// Decimal, (int8u)-1 if no limit
+    int8u               Total_Digits;   // Decimal, 0 if no limit
 };
 
 static constexpr float64 Inf = std::numeric_limits<float64>::infinity();
-static constexpr xsd_value XSD_Value(xsd_type Type, float64 Min = -Inf, float64 Max = Inf, int8u List_Min = 0, int8u List_Max = 0, const char* const* Enums = nullptr, bool Min_Exclusive = false)
+static constexpr xsd_value XSD_Value(xsd_type Type, float64 Min = -Inf, float64 Max = Inf, int8u List_Min = 0, int8u List_Max = 0, const char* const* Enums = nullptr, bool Min_Exclusive = false, int8u Fraction_Digits = (int8u)-1, int8u Total_Digits = 0)
 {
-    return { Type, Min, Max, Min_Exclusive, List_Min, List_Max, Enums };
+    return { Type, Min, Max, Min_Exclusive, List_Min, List_Max, Enums, Fraction_Digits, Total_Digits };
 }
 
 struct xsd_attribute
@@ -1471,8 +1473,8 @@ static constexpr xsd_value V_Decimal = XSD_Value(XSD_Decimal);
 static constexpr xsd_value V_DateTime = XSD_Value(XSD_DateTime);
 static constexpr xsd_value V_Uuid = XSD_Value(XSD_Uuid);
 static constexpr xsd_value V_xy = XSD_Value(XSD_Decimal, 0, 1, 2, 2);
-static constexpr xsd_value V_PeakBrightness = XSD_Value(XSD_Decimal, 0, 10000);
-static constexpr xsd_value V_MinimumBrightness = XSD_Value(XSD_Decimal, 0, 9.9999);
+static constexpr xsd_value V_PeakBrightness = XSD_Value(XSD_Decimal, 0, 10000, 0, 0, nullptr, false, 6);
+static constexpr xsd_value V_MinimumBrightness = XSD_Value(XSD_Decimal, 0, 9.9999, 0, 0, nullptr, false, 4);
 static constexpr xsd_value V_Encoding_V4 = XSD_Value(XSD_Enum, -Inf, Inf, 0, 0, Encoding_V4);
 static constexpr xsd_value V_Encoding_V5 = XSD_Value(XSD_Enum, -Inf, Inf, 0, 0, Encoding_V5);
 static constexpr xsd_value V_ColorSpace_V4 = XSD_Value(XSD_Enum, -Inf, Inf, 0, 0, ColorSpace_V4);
@@ -1484,7 +1486,7 @@ static constexpr xsd_value V_Param = XSD_Value(XSD_Float, -1, 1);
 static constexpr xsd_value V_Param_3 = XSD_Value(XSD_Float, -1, 1, 3, 3);
 static constexpr xsd_value V_Param_6 = XSD_Value(XSD_Float, -1, 1, 6, 6);
 static constexpr xsd_value V_Param_9 = XSD_Value(XSD_Float, -1, 1, 9, 9);
-static constexpr xsd_value V_AspectRatios = XSD_Value(XSD_Decimal, 0, Inf, 2, 2, nullptr, true);
+static constexpr xsd_value V_AspectRatios = XSD_Value(XSD_Decimal, 0, Inf, 2, 2, nullptr, true, 6);
 static constexpr xsd_value V_SourceColorModel = XSD_Value(XSD_NonNegativeInteger, 255, 255);
 static constexpr xsd_value V_SourceColorPrimary = XSD_Value(XSD_Decimal, -1, 1, 8, 8);
 static constexpr xsd_value V_DMMode = XSD_Value(XSD_NonNegativeInteger, 0, 1);
@@ -2207,6 +2209,10 @@ static string Value_Expected(const xsd_value& Value)
         Expected += string(Value.Min_Exclusive ? " > " : " >= ") + Number(Value.Min);
     else if (IsMax)
         Expected += " <= " + Number(Value.Max);
+    if (Value.Type == XSD_Decimal && Value.Fraction_Digits != (int8u)-1)
+        Expected += " with up to " + std::to_string(Value.Fraction_Digits) + " fraction digits";
+    if (Value.Type == XSD_Decimal && Value.Total_Digits)
+        Expected += string(Value.Fraction_Digits != (int8u)-1 ? " and " : " with ") + "up to " + std::to_string(Value.Total_Digits) + " digits";
     return Expected;
 }
 
@@ -2248,7 +2254,7 @@ static void Value_Check(const char* Text, const xsd_value& Value, const XMLEleme
                 Messages.Add(Path + " content", Path + " content \"" + Content + "\" is not permitted with name \"" + Name + "\", no content is expected");
             return;
         }
-        Value_Specific = Value_Type == XSD_Gamut ? XSD_Value(XSD_Decimal, -10, 10, 8, 8) : XSD_Value(XSD_Float, 0, std::numeric_limits<float64>::max(), Count, Count);
+        Value_Specific = Value_Type == XSD_Gamut ? XSD_Value(XSD_Decimal, -10, 10, 8, 8, nullptr, false, 5, 7) : XSD_Value(XSD_Float, 0, std::numeric_limits<float64>::max(), Count, Count);
         Value_Ptr = &Value_Specific;
         break;
     }
@@ -2296,6 +2302,18 @@ static void Value_Check(const char* Text, const xsd_value& Value, const XMLEleme
             IsValid = Number_Get(Item, Value_Final.Type, Number)
                 && (Value_Final.Min_Exclusive ? Number > Value_Final.Min : Number >= Value_Final.Min)
                 && Number <= Value_Final.Max;
+            if (IsValid && Value_Final.Type == XSD_Decimal && (Value_Final.Fraction_Digits != (int8u)-1 || Value_Final.Total_Digits))
+            {
+                // Significant digits, without the leading zeros of the integer part and the trailing zeros of the fraction part
+                auto Start = Item.find_first_not_of("+-");
+                auto Dot = Item.find('.');
+                auto Integer = Item.substr(Start, Dot == string::npos ? string::npos : Dot - Start);
+                auto Fraction = Dot == string::npos ? string() : Item.substr(Dot + 1);
+                Integer.erase(0, Integer.find_first_not_of('0'));
+                Fraction.erase(Fraction.find_last_not_of('0') + 1);
+                if (Fraction.size() > Value_Final.Fraction_Digits || (Value_Final.Total_Digits && Integer.size() + Fraction.size() > Value_Final.Total_Digits))
+                    IsValid = false;
+            }
         }
         }
         if (!IsValid)
