@@ -220,7 +220,7 @@ static const char* N19_LanguageCode(int16u LC)
         case 0x3632 : return "mg";
         case 0x3633 : return "mk";
         case 0x3634 : return "Laotian";
-        case 0x3635 : return "kr";
+        case 0x3635 : return "ko";
         case 0x3636 : return "km";
         case 0x3637 : return "kk";
         case 0x3638 : return "kn";
