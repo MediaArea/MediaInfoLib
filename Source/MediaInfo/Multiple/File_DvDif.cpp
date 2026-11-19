@@ -426,6 +426,8 @@ File_DvDif::~File_DvDif()
 void File_DvDif::Streams_Fill()
 {
     Fill(Stream_General, 0, General_Format, "DV", Unlimited, true, true);
+    if (video_source_stype==(int8u)-1 && DSF_IsValid) //No video source pack parsed
+        system=DSF;
 
     Stream_Prepare(Stream_Video);
     Fill(Stream_Video, 0, Video_Format, "DV");
