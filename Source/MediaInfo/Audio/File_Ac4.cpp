@@ -3197,7 +3197,7 @@ void File_Ac4::presentation_config_ext_info(presentation& P)
     TEST_SB_SKIP(                                               "b_more_skip_bytes");
         int32u n_skip_bytes32;
         Get_V4 (2, n_skip_bytes32,                              "n_skip_bytes");
-        n_skip_bytes=(int8u)n_skip_bytes32<<5;
+        n_skip_bytes+=(int16u)(n_skip_bytes32<<5);
     TEST_SB_END();
 
     if (bitstream_version==1 && P.presentation_config==7 && ac4_presentation_v1_info_Depth<4) //Arbitrary limit of nested levels
