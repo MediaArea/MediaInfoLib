@@ -3680,11 +3680,13 @@ void File_Usac::UsacFrame(size_t BitsNotIncluded)
     if (!IsParsingRaw)
         IsParsingRaw++;
 
+    size_t BitsAfterFrame=BitsNotIncluded!=(size_t)-1?BitsNotIncluded:0;
     for (size_t elemIdx=0; elemIdx<C.usacElements.size(); elemIdx++)
     {
         if (!Trusted_Get() || (!C.IFrameParsed && (!usacIndependencyFlag || elemIdx || C.usacElements[0].usacElementType!=((ID_USAC_EXT<<2)|ID_EXT_ELE_AUDIOPREROLL))))
         {
-            Skip_BS(Data_BS_Remain(),                           "Skipped due to error or non support in previous frame");
+            if (Data_BS_Remain()>BitsAfterFrame)
+                Skip_BS(Data_BS_Remain()-BitsAfterFrame,        "Skipped due to error or non support in previous frame");
             break;
         }
         switch (C.usacElements[elemIdx].usacElementType&3)
@@ -3706,7 +3708,8 @@ void File_Usac::UsacFrame(size_t BitsNotIncluded)
         }
         if (!C.IFrameParsed)
         {
-            Skip_BS(Data_BS_Remain(),                           "Skipped due to error or non support in previous frame");
+            if (Data_BS_Remain()>BitsAfterFrame)
+                Skip_BS(Data_BS_Remain()-BitsAfterFrame,        "Skipped due to error or non support in previous frame");
             break;
         }
     }

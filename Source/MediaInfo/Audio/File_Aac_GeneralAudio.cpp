@@ -3139,7 +3139,7 @@ void File_Aac::payload(size_t BitsNotIncluded)
     //Parsing
     switch (audioObjectType)
     {
-        case   2: raw_data_block(); break;
+        case   2: raw_data_block(BitsNotIncluded); break;
         #if MEDIAINFO_TRACE || MEDIAINFO_CONFORMANCE
         case  42: UsacFrame(BitsNotIncluded); break;
         #endif //MEDIAINFO_TRACE || MEDIAINFO_CONFORMANCE
@@ -3150,12 +3150,15 @@ void File_Aac::payload(size_t BitsNotIncluded)
 }
 
 //---------------------------------------------------------------------------
-void File_Aac::raw_data_block()
+void File_Aac::raw_data_block(size_t BitsNotIncluded)
 {
+    if (BitsNotIncluded==(size_t)-1)
+        BitsNotIncluded=0;
     if ((ParseCompletely<1 && Status[IsFilled])
      ||  ParseCompletely<0)
     {
-        Skip_BS(Data_BS_Remain(),                               "raw_data_block");
+        if (Data_BS_Remain()>BitsNotIncluded)
+            Skip_BS(Data_BS_Remain()-BitsNotIncluded,           "raw_data_block");
         return;
     }
 
@@ -3211,11 +3214,13 @@ void File_Aac::raw_data_block()
             break;
         }
     }
-    while(Element_IsOK() && Data_BS_Remain());
+    while(Element_IsOK() && Data_BS_Remain()>BitsNotIncluded);
     if (Element_IsOK() && id_syn_ele!=0x07)
         Trusted_IsNot("Not ending by END element");
-    if (Element_IsOK() && Data_BS_Remain()%8)
-        Skip_S1(Data_BS_Remain()%8,                             "byte_alignment");
+    if (Element_IsOK() && Data_BS_Remain()>BitsNotIncluded && (Data_BS_Remain()-BitsNotIncluded)%8) //Alignment relative to the start of the payload
+        Skip_S1((Data_BS_Remain()-BitsNotIncluded)%8,           "byte_alignment");
+    if (Element_IsOK() && Data_BS_Remain()<BitsNotIncluded)
+        Trusted_IsNot("Too big");
     if ((!HasEnd || (ChannelCount_Temp && ChannelPos_Temp!=ChannelCount_Temp)) && Retrieve_Const(Stream_Audio, 0, "Errors").empty()
      && !Frame_IsCut) //Not for a frame cut by the end of the file, its end is not there
     {

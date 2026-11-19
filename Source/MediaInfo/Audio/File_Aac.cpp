@@ -96,6 +96,7 @@ File_Aac::File_Aac()
     //Temp - Main
     muxConfigPresent=true;
     audioMuxVersionA=false;
+    numSubFrames=0;
     streamCnt=0;
 
     //Temp - General Audio
@@ -851,8 +852,14 @@ void File_Aac::Data_Parse()
         default               : ; //No header
     }
 
-    //An ADTS frame may contain several AAC frames
-    int8u Frames=Mode==Mode_ADTS?(num_raw_data_blocks+1):1;
+    //An ADTS frame or a LATM AudioMuxElement may contain several AAC frames
+    int8u Frames=1;
+    switch (Mode)
+    {
+        case Mode_ADTS        : Frames+=num_raw_data_blocks; break;
+        case Mode_LATM        : Frames+=numSubFrames; break;
+        default               : ;
+    }
     int64u FrameSize=(Header_Size+Element_Size)/Frames;
     if (FrameSize_Min>FrameSize)
         FrameSize_Min=FrameSize;

@@ -1227,14 +1227,29 @@ void File_Aac::PayloadMux()
                 switch(frameLengthType[streamID[prog][lay]])
                 {
                     case 0 :
+                            {
+                            size_t Size=8*(size_t)MuxSlotLengthBytes[streamID[prog][lay]];
+                            if (Size>Data_BS_Remain())
+                            {
+                                Trusted_IsNot("MuxSlotLengthBytes is too big");
+                                Skip_BS(Data_BS_Remain(),       "(Problem)");
+                                break;
+                            }
+                            size_t End=Data_BS_Remain()-Size;
                             if (CA_system_ID_MustSkipSlices)
                             {
                                 //Encryption management
-                                Skip_BS(8*MuxSlotLengthBytes[streamID[prog][lay]], "Encrypted payload[streamID[prog][lay]]");
+                                Skip_BS(Size,                   "Encrypted payload[streamID[prog][lay]]");
                                 Frame_Count_Valid=0;
                             }
                             else
-                                payload(Data_BS_Remain()-8*MuxSlotLengthBytes[streamID[prog][lay]]);
+                                payload(End);
+                            if (Data_BS_Remain()>End)
+                            {
+                                size_t BitsRemaining=Data_BS_Remain()-End;
+                                Skip_BS(BitsRemaining,          BitsRemaining<8?"Padding":"Unknown");
+                            }
+                            }
                             break;
                     case 1 :
                             Skip_BS(8 * (frameLength[streamID[prog][lay]] + 20),"payload[streamID[prog][lay]]");
