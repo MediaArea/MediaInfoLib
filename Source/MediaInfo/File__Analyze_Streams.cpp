@@ -2601,8 +2601,19 @@ void File__Analyze::DolbyVision_Streams_Fill(DV_RPU& Data, dv_source Source, siz
     {
         if (Data.L1_max_PQ)
         {
-            LightLevel_Fill("MaxCLL_Analysis", { DV_PQ12_ToNits(Data.L1_max_PQ, true) });
+            auto Analysis_Max=DV_PQ12_ToNits(Data.L1_max_PQ, true);
+            LightLevel_Fill("MaxCLL_Analysis", { Analysis_Max });
             LightLevel_Fill("MaxFALL_Analysis", { DV_PQ12_ToNits(Data.L1_avg_PQ, true) });
+
+            // Conformance, MaxCLL declared in Level6 compared with the brightest pixels from the analysis (Level1), 1 code away for the rounding of the analysis
+            // No check of MaxFALL, the average from the analysis is an average of PQ values so it is lower than the average of the linear values
+            if (DolbyVision_Conformance())
+            {
+                auto Analysis_Max_Tolerance=DV_PQ_ToNits(((float64)Data.L1_max_PQ+1)/4095);
+                for (const auto& L6 : Data.L6)
+                    if (L6.max_content_light_level>Analysis_Max_Tolerance)
+                        Fill_Conformance("DolbyVision Level6", ("MaxCLL is more than the maximum from the analysis (actual "+DV_Nits_String(L6.max_content_light_level).To_UTF8()+", expected <= "+DV_Nits_String(Analysis_Max).To_UTF8()+')').c_str(), {}, Conformance_Warning, Stream_Video, StreamPos);
+            }
         }
         if (Data.Count_Shot || (IsRPU && Data.Count_CMv29))
             Fill(Stream_Video, StreamPos, "DolbyVision ShotCount", Data.Count_Shot);
