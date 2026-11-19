@@ -3480,6 +3480,7 @@ void File_Mpeg_Descriptors::Descriptor_7B()
 {
     //Parsing
     BS_Begin();
+    Skip_S1(4,                                                  "sample_rate_code");
     Skip_S1(6,                                                  "bit_rate_code");
     Skip_S2(7,                                                  "nblks");
     Skip_S2(14,                                                 "fsize");
