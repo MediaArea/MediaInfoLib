@@ -931,9 +931,9 @@ void File_AribStdB24B37::Character (int16u CharacterSet, int8u G_Value, int8u Fi
                                 case Compute(92,  3): JIS( 35,  44); break;
                                 case Compute(92,  4): JIS( 35,  45); break;
                                 case Compute(93, 79): JIS( 40, 110); break;
-                                case Compute(93, 88): Param_Info1(Ztring().From_UTF8("\xE2\x99\xAB")+__T(" (not exact)")); Add (Ztring().From_UTF8("\xE2\x99\xAB")); break; //Ending music note?
-                                case Compute(93, 89): Param_Info1(Ztring().From_UTF8("\xE2\x99\xAB")+__T(" (not exact)")); Add (Ztring().From_UTF8("\xE2\x99\xAB")); break; //Opening music note?
-                                case Compute(93, 90): Param_Info1(Ztring().From_UTF8("\xE2\x99\xAB")); Add (Ztring().From_UTF8("\xE2\x99\xAB")); break; //Music note
+                                case Compute(93, 88): Param_Info1(Ztring().From_UTF8("\xE2\x9A\x9E")); Add (Ztring().From_UTF8("\xE2\x9A\x9E")); break; //U+269E
+                                case Compute(93, 89): Param_Info1(Ztring().From_UTF8("\xE2\x9A\x9F")); Add (Ztring().From_UTF8("\xE2\x9A\x9F")); break; //U+269F
+                                case Compute(93, 90): Param_Info1(Ztring().From_UTF8("\xE2\x99\xAC")); Add (Ztring().From_UTF8("\xE2\x99\xAC")); break; //U+266C
                                 default: Param_Info1("(Unsupported)"); //empty in spec or not yet mapped
                             }
                         break;
