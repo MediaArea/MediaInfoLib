@@ -537,12 +537,12 @@ void File_Av1::sequence_header()
     if (!reduced_still_picture_header)
     {
         TEST_SB_SKIP(                                           "frame_id_numbers_present_flag");
-            Skip_S1(4,                                          "delta_frame_id_length_minus2");
-            Skip_S1(3,                                          "frame_id_length_minus1");
+            Skip_S1(4,                                          "delta_frame_id_length_minus_2");
+            Skip_S1(3,                                          "additional_frame_id_length_minus_1");
         TEST_SB_END();
     }
     Skip_SB(                                                    "use_128x128_superblock");
-    Skip_SB(                                                    "enable_dual_filter");
+    Skip_SB(                                                    "enable_filter_intra");
     Skip_SB(                                                    "enable_intra_edge_filter");
     if (!reduced_still_picture_header)
     {
