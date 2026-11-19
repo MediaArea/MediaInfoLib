@@ -45,6 +45,7 @@ Ztring AvsV_profile(int8u profile_id)
     switch (profile_id)
     {
         case 0x20 : return "Base";
+        case 0x48 : return "Broadcasting";
         default :
             return Ztring::ToZtring(profile_id);
     }
@@ -688,6 +689,11 @@ void File_AvsV::picture_start()
     bool time_code_flag, progressive_frame, picture_structure=true, top_field_first, repeat_first_field, skip_mode_flag=false, loop_filter_disable;
     Skip_B2(                                                    "bbv_delay");
     BS_Begin();
+    if (profile_id==0x48)
+    {
+        Mark_1();
+        Skip_S1( 7,                                             "bbv_delay_extension");
+    }
     if (Element_Code==0xB3) //Only I
     {
         Get_SB (    time_code_flag,                             "time_code_flag");
@@ -702,7 +708,7 @@ void File_AvsV::picture_start()
         //Old streams without marker_bit are progressive, without low_delay, top_field_first and repeat_first_field (kept once detected, as other decoders do)
         int16u Next11;
         Peek_S2(11, Next11);
-        if (low_delay || !(Next11&0x4) || (Next11&0x3))
+        if (profile_id==0x48 || low_delay || !(Next11&0x4) || (Next11&0x3))
             MarkerBitAfterTimeCode=true;
         if (MarkerBitAfterTimeCode)
             Mark_1();
