@@ -103,8 +103,8 @@ const char* Pcm_VOB_ChannelLayout(int8u channel_assignment)
         case  7 : return "L R Ls Rs";                                   //4 channels
         case  8 : return "L R C Ls Rs";                                 //5 channels
         case  9 : return "L R C Ls Rs LFE";                             //6 channels
-        case 10 : return "L R C Ls Rs Lrs Rrs";                         //7 channels
-        case 11 : return "L R C Ls Rs Lrs Rrs LFE";                     //8 channels
+        case 10 : return "L R C Ls Lrs Rrs Rs";                         //7 channels
+        case 11 : return "L R C Ls Lrs Rrs Rs LFE";                     //8 channels
         default : return "";
     }
 }
