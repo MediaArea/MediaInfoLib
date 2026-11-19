@@ -827,7 +827,8 @@ void File_Avs3V::video_sequence_start()
     BS_End();
 
     //Not sure, but the 3 first official files have this
-    if (Element_Size-Element_Offset)
+    //Zero stuffing bytes may follow a header not ending on a byte boundary, the stuffing bit is then in the last byte of the header
+    if (Element_Size-Element_Offset && Buffer[Buffer_Offset+(size_t)Element_Offset])
     {
         BS_Begin();
         Mark_1();
@@ -1131,7 +1132,8 @@ void File_Avs3V::extension_start()
     }
 
     //Not sure, but the 3 first official files have this
-    if (Element_Size-Element_Offset)
+    //Zero stuffing bytes may follow a header not ending on a byte boundary, the stuffing bit is then in the last byte of the header
+    if (Element_Size-Element_Offset && Buffer[Buffer_Offset+(size_t)Element_Offset])
     {
         BS_Begin();
         Mark_1();
