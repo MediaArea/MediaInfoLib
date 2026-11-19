@@ -1084,7 +1084,7 @@ const char* RepresentationTypeTable[8]=
     "Matrix 2D Channel Mask Based Representation",
     "Matrix 3D Channel Mask Based Representation",
     "Binaurally Processed Audio Representation",
-    "Ambisonic Representation Representation",
+    "Ambisonic Representation",
     "Audio Tracks with Mixing Matrix Representation",
     "3D Object with One 3D Source Per Waveform Representation",
     "Mono 3D Object with Multiple 3D Sources Per Waveform Representation",
