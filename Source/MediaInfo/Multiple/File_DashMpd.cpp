@@ -283,7 +283,9 @@ void template_generic::Representation_Attributes_Parse (XMLElement* Item)
     const char* Attribute=Item->Attribute("id");
     if (Attribute)
     {
-        Sequence->StreamID=Ztring().From_UTF8(Attribute).To_int64u(16);
+        Ztring ID; ID.From_UTF8(Attribute);
+        if (!ID.empty() && ID.find_first_not_of(__T("0123456789"))==string::npos)
+            Sequence->StreamID=ID.To_int64u();
     }
 
     //Attributes - bandwidth
