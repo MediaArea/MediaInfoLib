@@ -1268,7 +1268,7 @@ File_Dts::File_Dts()
     //Temp
     HD_size=0;
     Primary_Frame_Byte_Size=0;
-    HD_SpeakerActivityMask=(int16u)-1;
+    HD_SpeakerActivityMask=0;
     channel_arrangement=(int8u)-1;
     sample_frequency=(int8u)-1;
     bit_rate=(int8u)-1;
@@ -1285,7 +1285,8 @@ File_Dts::File_Dts()
     DtsXSupplementalChannelCount=0;
     DtsXSupplementalMask=0;
     DtsXObjectCountProbeDone=false;
-    Extension_SpeakerActivityMask=(int16u)-1;
+    HD_SpeakerActivityMask_IsSet=false;
+    Extension_SpeakerActivityMask=0;
     AuxiliaryData=false;
     ExtendedCoding=false;
     ES=false;
@@ -1342,8 +1343,8 @@ void File_Dts::Streams_Fill_Extension()
     {
         Data[Channels].push_back(Ztring());
     }
-    Extension_SpeakerActivityMask=(HD_SpeakerActivityMask==(int16u)-1 || !AddCs)?HD_SpeakerActivityMask:(int16u)(HD_SpeakerActivityMask|0x0010);
-    if (HD_SpeakerActivityMask!=(int16u)-1) // && !AddX)
+    Extension_SpeakerActivityMask=AddCs?(int16u)(HD_SpeakerActivityMask|0x0010):HD_SpeakerActivityMask;
+    if (HD_SpeakerActivityMask_IsSet) // && !AddX)
     {
         Data[ChannelPositions].push_back(DTS_HD_SpeakerActivityMask(HD_SpeakerActivityMask, AddCs).c_str()); //AddLrsRrs
         Data[ChannelPositions2].push_back(DTS_HD_SpeakerActivityMask2(HD_SpeakerActivityMask, AddCs).c_str()); //AddLrsRrs
@@ -1496,7 +1497,7 @@ void File_Dts::Streams_Fill()
     {
         Data[Profiles].push_back(__T("X"));
         Streams_Fill_Extension();
-        if (DtsXSupplementalChannelCount && Extension_SpeakerActivityMask!=(int16u)-1 && !Data[ChannelLayout].back().empty() && !Data[Channels].back().empty())
+        if (DtsXSupplementalChannelCount && HD_SpeakerActivityMask_IsSet &&!Data[ChannelLayout].back().empty() && !Data[Channels].back().empty())
         {
             //Supplemental speakers from the stream when known, else the front and rear height pairs, without the speakers of the bed
             int16u SupplementalMask=(DtsXSupplementalMask && !(DtsXSupplementalMask>>16))?(int16u)DtsXSupplementalMask:0x8020; //Lh Rh Lhr Rhr
@@ -2269,6 +2270,7 @@ void File_Dts::Data_Parse()
                         Get_S1 (2, SpeakerActivityMaskBits,     "NumBits4SAMask"); Param_Info2(4+SpeakerActivityMaskBits*4, " bits");
                         SpeakerActivityMaskBits=4+SpeakerActivityMaskBits*4;
                         Get_S2 (SpeakerActivityMaskBits, HD_SpeakerActivityMask, "SpkrActivityMask"); Param_Info1(DTS_HD_SpeakerActivityMask(HD_SpeakerActivityMask).c_str());
+                        HD_SpeakerActivityMask_IsSet=true;
                     TESTELSE_SB_ELSE(                           "SpkrMaskEnabled");
                         SpeakerActivityMaskBits=0;
                     TESTELSE_SB_END();

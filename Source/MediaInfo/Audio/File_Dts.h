@@ -145,6 +145,7 @@ private :
     int32u DtsXSupplementalMask;
     int16u Extension_SpeakerActivityMask;
     bool   DtsXObjectCountProbeDone;
+    bool   HD_SpeakerActivityMask_IsSet;
     bool   AuxiliaryData;
     bool   ExtendedCoding;
     bool   Word;
