@@ -161,7 +161,7 @@ bool File_DcpCpl::FileHeader_Begin()
                 //TimecodeDropFrame
                 if (!strcmp(CtItemName, "TimecodeDropFrame"))
                 {
-                    if (strcmp(Text, "") && strcmp(Text, "0"))
+                    if (!strcmp(Text, "true") || !strcmp(Text, "1"))
                         IsDropFrame=true;
                 }
 
