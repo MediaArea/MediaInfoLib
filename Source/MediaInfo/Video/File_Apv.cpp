@@ -23,7 +23,6 @@
 //---------------------------------------------------------------------------
 #include "MediaInfo/Video/File_Apv.h"
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
-#include <cmath>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -302,7 +301,7 @@ void File_Apv::Header_Parse()
         Get_B4 (tile_size,                                      "tile_size");
         FILLING_BEGIN();
             Header_Fill_Size(Element_Offset + tile_size);
-            Header_Fill_Code(0, PosTiles < frame_info_Current.NumTiles ? "title" : "filler");
+            Header_Fill_Code(0, PosTiles < frame_info_Current.NumTiles ? "tile" : "filler");
             DataMustAlwaysBeComplete = true;
         FILLING_END();
         break;
@@ -453,8 +452,8 @@ void File_Apv::tile_info(FrameInfo& fi)
         Trusted_IsNot("Tile width or height is too small");
         return;
     }
-    int32u FrameWidthInMbsY = static_cast<int32u>(ceil(fi.frame_width / 16));
-    int32u FrameHeightInMbsY = static_cast<int32u>(ceil(fi.frame_height / 16));
+    int32u FrameWidthInMbsY = (fi.frame_width + 15) / 16;
+    int32u FrameHeightInMbsY = (fi.frame_height + 15) / 16;
     int32u tileCols = 0;
     int32u tileRows = 0;
     // Calculate number of columns
