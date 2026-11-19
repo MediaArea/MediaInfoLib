@@ -3639,7 +3639,7 @@ void File_Avc::sei_message_user_data_unregistered_x264(int32u payloadSize)
                 string option;
                 Get_String (Options_Pos-Options_Pos_Before, option, "option");
                 Options_Pos_Before=Options_Pos;
-                do
+                while (Options_Pos_Before!=Data.size())
                 {
                     string Separator;
                     Peek_String(1, Separator);
@@ -3651,7 +3651,6 @@ void File_Avc::sei_message_user_data_unregistered_x264(int32u payloadSize)
                     else
                         break;
                 }
-                while (Options_Pos_Before!=Data.size());
 
                 //Filling
                 if (option!="options:")
