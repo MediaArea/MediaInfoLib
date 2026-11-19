@@ -3910,15 +3910,19 @@ void audioBlockFormat_Check(file_adm_private* File_Adm_Private) {
             auto Start_TC = CheckError_Time(File_Adm_Private, item_audioBlockFormat, Element_Pos);
             if (Start_TC.IsValid() && audioBlockFormat_Count == 1) {
                 const auto& frameFormats = Items[item_frameFormat].Items;
+                auto HasFrameStart = false; // rtime is then the frameFormat start, not 0
                 for (size_t k = 0; k < frameFormats.size(); k++) {
                     const auto& frameFormat = frameFormats[k];
                     TimeCode frameFormat_start_TC = frameFormat.Attributes[frameFormat_start];
-                    if (frameFormat_start_TC.IsValid() && frameFormat_start_TC != Start_TC) {
+                    if (Element_Pos == audioBlockFormat_rtime && frameFormat_start_TC.IsValid()) {
+                        HasFrameStart = true;
+                    }
+                    if (Element_Pos == audioBlockFormat_rtime && frameFormat_start_TC.IsValid() && frameFormat_start_TC != Start_TC) {
                         BlockFormat.AddError(Error, string(1, ':') + item_Infos[item_audioBlockFormat].Attribute_Infos[Element_Pos].Name + ':' + item_Infos[item_audioBlockFormat].Attribute_Infos[Element_Pos].Name + " attribute value does not match the frameFormat start attribute value", Source_AdvSSE_1);
                     }
                 }
                 static const TimeCode Zero_TC(0, 0, 0, 0, 0);
-                if (Start_TC != Zero_TC) {
+                if (!HasFrameStart && Start_TC != Zero_TC) {
                     BlockFormat.AddError(Error, string(1, ':') + item_Infos[item_audioBlockFormat].Attribute_Infos[Element_Pos].Name + ':' + item_Infos[item_audioBlockFormat].Attribute_Infos[Element_Pos].Name + " attribute value is not 0", Source_AdvSSE_1);
                 }
             }
@@ -4703,13 +4707,14 @@ void audioChannelFormat_Check(file_adm_private* File_Adm_Private) {
             if (!LastBlockFormatEnd.IsValid()) {
                 return;
             }
+            const auto IsLocal = Element_Pos == audioBlockFormat_lduration;
             const auto& frameFormats = Items[item_frameFormat].Items;
             for (size_t k = 0; k < frameFormats.size(); k++) {
                 const auto& frameFormat = frameFormats[k];
                 TimeCode frameFormat_start_TC = frameFormat.Attributes[frameFormat_start];
                 TimeCode frameFormat_duration_TC = frameFormat.Attributes[frameFormat_duration];
-                if (frameFormat_start_TC.IsValid() && frameFormat_duration_TC.IsValid() && frameFormat_start_TC + frameFormat_duration_TC != LastBlockFormatEnd) {
-                    BlockFormat.AddError(Error, string(1, ':') + item_Infos[item_audioBlockFormat].Attribute_Infos[Element_Pos].Name + ':' + item_Infos[item_audioBlockFormat].Attribute_Infos[Element_Pos].Name + " attribute value does not match the frameFormat start+duration attribute value", Source_AdvSSE_1);
+                if ((IsLocal || frameFormat_start_TC.IsValid()) && frameFormat_duration_TC.IsValid() && (IsLocal ? frameFormat_duration_TC : (frameFormat_start_TC + frameFormat_duration_TC)) != LastBlockFormatEnd) {
+                    BlockFormat.AddError(Error, string(1, ':') + item_Infos[item_audioBlockFormat].Attribute_Infos[Element_Pos].Name + ':' + item_Infos[item_audioBlockFormat].Attribute_Infos[Element_Pos].Name + " attribute value does not match the frameFormat " + (IsLocal ? "duration" : "start+duration") + " attribute value", Source_AdvSSE_1);
                 }
             }
         };
