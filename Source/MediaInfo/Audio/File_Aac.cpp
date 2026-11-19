@@ -587,6 +587,8 @@ bool File_Aac::Synchronize_ADTS()
                         break; //while()
                 }
             }
+            else if (!IsSub && !Status[IsAccepted] && File_Offset+Buffer_Offset!=File_BeginTagSize) //A single frame up to the end of the file is trusted only at the start of the file
+                Buffer_Offset++;
             else
                 break; //while()
         }
@@ -657,6 +659,8 @@ bool File_Aac::Synchronize_LATM()
                         break; //while()
                 }
             }
+            else if (!IsSub && !Status[IsAccepted] && File_Offset+Buffer_Offset!=File_BeginTagSize) //A single frame up to the end of the file is trusted only at the start of the file
+                Buffer_Offset++;
             else
                 break; //while()
         }
