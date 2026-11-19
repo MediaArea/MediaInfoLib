@@ -60,8 +60,8 @@ const char* Pcm_VOB_ChannelsPositions(int8u channel_assignment)
         case  1 : return "Front: C";                                    //1 channel
         case  3 : return "Front: L R";                                  //2 channels
         case  4 : return "Front: L C R";                                //3 channels
-        case  5 : return "Front: L R, LFE";                             //3 channels
-        case  6 : return "Front: L C R, LFE";                           //4 channels
+        case  5 : return "Front: L R, Back: C";                         //3 channels
+        case  6 : return "Front: L C R, Back: C";                       //4 channels
         case  7 : return "Front: L R, Side: L R";                       //4 channels
         case  8 : return "Front: L C R, Side: L R";                     //5 channels
         case  9 : return "Front: L C R, Side: L R, LFE";                //6 channels
@@ -79,8 +79,8 @@ const char* Pcm_VOB_ChannelsPositions2(int8u channel_assignment)
         case  1 : return "1/0/0";                                       //1 channel
         case  3 : return "2/0/0";                                       //2 channels
         case  4 : return "3/0/0";                                       //3 channels
-        case  5 : return "2/0/0.1";                                     //3 channels
-        case  6 : return "3/0/0.1";                                     //4 channels
+        case  5 : return "2/0/1";                                       //3 channels
+        case  6 : return "3/0/1";                                       //4 channels
         case  7 : return "2/2/0";                                       //4 channels
         case  8 : return "3/2/0";                                       //5 channels
         case  9 : return "3/2/0.1";                                     //6 channels
@@ -98,8 +98,8 @@ const char* Pcm_VOB_ChannelLayout(int8u channel_assignment)
         case  1 : return "M";                                           //1 channel
         case  3 : return "L R";                                         //2 channels
         case  4 : return "L R C";                                       //3 channels
-        case  5 : return "L R LFE";                                     //3 channels
-        case  6 : return "L C R LFE";                                   //4 channels
+        case  5 : return "L R Cs";                                      //3 channels
+        case  6 : return "L R C Cs";                                    //4 channels
         case  7 : return "L R Ls Rs";                                   //4 channels
         case  8 : return "L R C Ls Rs";                                 //5 channels
         case  9 : return "L R C Ls Rs LFE";                             //6 channels
