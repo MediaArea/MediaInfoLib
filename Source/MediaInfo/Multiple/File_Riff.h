@@ -280,6 +280,7 @@ private :
     void AVI__movi_xxxx___dc ();
     void AVI__movi_xxxx___tx ();
     void AVI__movi_xxxx___wb ();
+    bool AVI__movi_xxxx___wb_PcmIsComplete (stream& StreamItem);
     void AVI__movi_rec_ ();
     void AVI__movi_rec__xxxx ();
     void AVI__movi_StreamJump ();

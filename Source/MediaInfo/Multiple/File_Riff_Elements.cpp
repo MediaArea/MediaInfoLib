@@ -2800,11 +2800,64 @@ void File_Riff::AVI__movi_xxxx___wb()
     if (StreamItem.PacketPos>=4 //For having the chunk alignement
      && (StreamItem.Parsers.empty()
       || StreamItem.Parsers[0]->Status[IsFinished]
-      || (StreamItem.PacketPos>=300 && Config->ParseSpeed<1.00)))
+      || (StreamItem.PacketPos>=300 && Config->ParseSpeed<1.00)
+      || AVI__movi_xxxx___wb_PcmIsComplete(StreamItem)))
     {
         StreamItem.SearchingPayload=false;
         stream_Count--;
     }
+}
+
+//---------------------------------------------------------------------------
+// PCM never finishes, so its chunks are parsed up to the 300th, for the alignment of the chunks only once nothing more can be
+// found in their content: the alignment of the next chunks up to the 300th comes from their size in the index, without
+// reading them (e.g. 300 seeks for chunks of 1 s of audio between big video chunks)
+bool File_Riff::AVI__movi_xxxx___wb_PcmIsComplete(stream& StreamItem)
+{
+    #if defined(MEDIAINFO_PCM_YES)
+        if (Config->ParseSpeed>=1.00 || StreamItem.PacketPos>=300 || StreamItem.Parsers.size()!=1 || StreamItem.Parsers[0]->ParserName!="PCM")
+            return false;
+        #if MEDIAINFO_DEMUX
+            if (Config_Demux || Config->Demux_Unpacketize_Get())
+                return false; //All the chunks are demuxed
+        #endif //MEDIAINFO_DEMUX
+        File_Pcm* Parser=(File_Pcm*)StreamItem.Parsers[0];
+        if (!Parser->IsComplete())
+            return false;
+
+        //Next chunks of this stream which would be parsed, from the index, the current chunk being the item of the index in use,
+        //all of them in this movi list (else the jump to the next list may skip some of them) and not in rec lists
+        if (rec__Present || Stream_Structure_Temp==Stream_Structure.end() || Stream_Structure_Temp->first+8!=File_Offset+Buffer_Offset)
+            return false;
+        const int64u List_End=File_Offset+Buffer_Offset+Element_TotalSize_Get(Element_Level-2);
+        bool ChunksAreComplete=StreamItem.ChunksAreComplete;
+        size_t BlockAlign=Parser->BitDepth*Parser->Channels/8; //Size of a sample, the parser keeps the bytes of an incomplete sample for the next chunk
+        int64u Incomplete=Parser->Buffer_Size;
+        size_t PacketPos=StreamItem.PacketPos;
+        std::map<int64u, stream_structure>::iterator Item=Stream_Structure_Temp;
+        for (++Item; PacketPos<300; ++Item)
+        {
+            if (Item==Stream_Structure.end())
+                break; //Last chunk of the index
+            if (Item->first>=List_End)
+                return false; //In another list, the chunks are parsed
+            if (Item->second.Name!=Stream_ID || !Item->second.Size)
+                continue; //Chunk of another stream, or of size 0 in the index which is not parsed
+            if (Item->first+8+Item->second.Size>File_Size)
+                return false; //Truncated, the chunks are parsed
+            PacketPos++;
+            if (BlockAlign)
+            {
+                Incomplete=(Incomplete+Item->second.Size)%BlockAlign;
+                if (Incomplete)
+                    ChunksAreComplete=false;
+            }
+        }
+        StreamItem.ChunksAreComplete=ChunksAreComplete;
+        return true;
+    #else //defined(MEDIAINFO_PCM_YES)
+        return false;
+    #endif //defined(MEDIAINFO_PCM_YES)
 }
 
 //---------------------------------------------------------------------------
