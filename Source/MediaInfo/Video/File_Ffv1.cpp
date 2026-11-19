@@ -878,8 +878,16 @@ void File_Ffv1::Read_Buffer_Continue()
         }
         if (Element_Offset<Element_Size)
         {
-            Skip_XX(Element_Size-Element_Offset,                "Junk");
-            Param_Error("FFV1-SLICE-JUNK:1");
+            if (version<=1)
+            {
+                Skip_XX(Element_Size-Element_Offset,            "reserved");
+                Fill_Conformance("SLICE reserved", "Reserved bytes after the slice content", {}, Conformance_Warning);
+            }
+            else
+            {
+                Skip_XX(Element_Size-Element_Offset,            "Junk");
+                Param_Error("FFV1-SLICE-JUNK:1");
+            }
         }
 
         //SliceFooter
