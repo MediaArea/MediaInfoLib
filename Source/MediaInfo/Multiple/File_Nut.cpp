@@ -179,7 +179,7 @@ void File_Nut::main()
         if(tmp_fields>0)
             Skip_VS(                                            "tmp_pts"); //TODO: signed
         if(tmp_fields>1)
-            Skip_VS(                                            "tmp_mul");
+            Get_VS (tmp_mul,                                    "tmp_mul");
         if(tmp_fields>2)
             Skip_VS(                                            "tmp_stream");
         if(tmp_fields>3)
