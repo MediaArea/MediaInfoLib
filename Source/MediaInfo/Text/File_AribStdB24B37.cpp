@@ -467,6 +467,7 @@ void File_AribStdB24B37::Read_Buffer_Continue()
                     {
                         Parser=new File_MpegTs;
                         ((File_MpegTs*)Parser)->FromAribStdB24B37=true;
+                        ((File_MpegTs*)Parser)->NoPatPmt=true;
                         Open_Buffer_Init(Parser);
                     }
                     if (FrameInfo.PTS==(int64u)-1)
