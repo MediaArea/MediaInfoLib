@@ -184,6 +184,7 @@ bool File_DcpCpl::FileHeader_Begin()
 
             Sequence->StreamID=ReferenceFiles->Sequences_Size()+1;
             ReferenceFiles->AddSequence(Sequence);
+            AssetCountPerReel.push_back(1); //Counts per reel are aligned with the list of sequences
 
             Stream_Prepare(Stream_Other);
             Fill(Stream_Other, StreamPos_Last, Other_ID, Sequence->StreamID);
