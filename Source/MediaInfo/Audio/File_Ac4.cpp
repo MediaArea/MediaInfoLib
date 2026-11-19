@@ -121,7 +121,7 @@ static const variable_size Ac4_channel_mode[]=
 {
     {13, 0}, // Total size
     {1, 0x00}, // 0b0
-    {1, 0x01}, // 0b10
+    {1, 0x02}, // 0b10
     {2, 0x0C}, // 0b1100
     {0, 0x0D}, // 0b1101
     {0, 0x0E}, // 0b1110
