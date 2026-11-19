@@ -169,6 +169,7 @@ private :
     int64u Alignement_ExtraByte; //Padding from the container
     int64u Buffer_DataToParse_Begin;
     int64u Buffer_DataToParse_End;
+    bool   Buffer_DataToParse_IsNotParsed; //Big chunk of a stream which is not declared, no parser gets its content
     int32u AvgBytesPerSec;
     int16u BlockAlign;
     float64 PAR;
