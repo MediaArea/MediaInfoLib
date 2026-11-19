@@ -1104,7 +1104,7 @@ void File_Riff::Header_Parse()
         //Alignment
         if (Name!=Elements::riff && Size_Complete%8)
         {
-            Alignement_ExtraByte=Size_Complete%8;
+            Alignement_ExtraByte=8-Size_Complete%8;
             Size_Complete+=Alignement_ExtraByte; //Always 8-byte aligned
         }
         else
@@ -1126,6 +1126,7 @@ void File_Riff::Header_Parse()
             else
                 Buffer_DataToParse_End=File_Size; //Found one file with 0 as size of data part
             Size_Complete=Element_Offset;
+            Alignement_ExtraByte=0; //The padding is after the data, not after this header
         }
 
         //Filling
