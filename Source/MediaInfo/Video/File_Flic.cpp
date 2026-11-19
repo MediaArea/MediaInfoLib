@@ -106,8 +106,8 @@ void File_Flic::FileHeader_Parse()
             Fill(Stream_Video, 0, Video_Codec, "FLI");
             if (DelayBetweenFrames)
             {
-                Fill(Stream_Video, StreamPos_Last, Video_FrameRate, 1000.0/(DelayBetweenFrames*70)); //multiple of 1/70 per frame
-                Fill(Stream_Video, 0, Video_Duration, Frames*DelayBetweenFrames*70);
+                Fill(Stream_Video, StreamPos_Last, Video_FrameRate, 70.0/DelayBetweenFrames); //multiple of 1/70 per frame
+                Fill(Stream_Video, 0, Video_Duration, Frames*DelayBetweenFrames*1000.0/70);
             }
         }
         else
