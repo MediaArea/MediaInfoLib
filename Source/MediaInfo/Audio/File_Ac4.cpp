@@ -5284,7 +5284,7 @@ void File_Ac4::Get_V4(int8u Bits1, int8u Bits2, int8u Flag_Value, int32u &Info, 
     int8u Count=Bits1;
 
     Peek_S4(Count, Info);
-    if (Info==Flag_Value)
+    if (Info&Flag_Value)
     {
         Count=Bits2;
         Peek_S4(Count, Info);
@@ -5307,7 +5307,7 @@ void File_Ac4::Skip_V4(int8u Bits1, int8u Bits2, int8u Flag_Value, const char* N
     int8u Count=Bits1;
 
     Peek_S4(Count, Info);
-    if (Info==Flag_Value)
+    if (Info&Flag_Value)
     {
         Count=Bits2;
         Peek_S4(Count, Info);
