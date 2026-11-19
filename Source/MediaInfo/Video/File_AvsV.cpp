@@ -196,7 +196,7 @@ void File_AvsV::Streams_Fill()
     Fill(Stream_Video, 0, Video_Codec_Profile, AvsV_profile(profile_id)+AvsV_level(level_id));
     Fill(Stream_Video, StreamPos_Last, Video_Width, horizontal_size);
     Fill(Stream_Video, StreamPos_Last, Video_Height, vertical_size);
-    Fill(Stream_Video, 0, Video_FrameRate, AvsV_frame_rate[frame_rate_code]/(progressive_sequence?1:2));
+    Fill(Stream_Video, 0, Video_FrameRate, AvsV_frame_rate[frame_rate_code]);
     if (aspect_ratio==0)
         ;//Forbidden
     else if (aspect_ratio==1)
