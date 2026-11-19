@@ -347,6 +347,12 @@ File_AribStdB24B37::File_AribStdB24B37()
     //Config
     Caption_conversion_type=(int8u)-1;
 
+    //Temp
+    data_group_link_number=0;
+    last_data_group_link_number=0;
+    Fragments_Code=(int64u)-1;
+    Fragments_Count=0;
+
     //Ancillary
     #if defined(MEDIAINFO_MPEGTS_YES)
         Parser=NULL;
@@ -525,6 +531,8 @@ void File_AribStdB24B37::Read_Buffer_Continue()
 //---------------------------------------------------------------------------
 void File_AribStdB24B37::Read_Buffer_Unsynched()
 {
+    Fragments_Code=(int64u)-1;
+
     #if defined(MEDIAINFO_MPEGTS_YES)
         if (Parser)
             Parser->Open_Buffer_Unsynch();
@@ -546,8 +554,8 @@ void File_AribStdB24B37::Header_Parse()
     Get_S1 (5, data_group_id,                                   "data_group_id"); Param_Info1(AribStdB24B37_data_group_id(data_group_id));
     Skip_S1(2,                                                  "data_group_version");
     BS_End();
-    Skip_B1(                                                    "data_group_link_number");
-    Skip_B1(                                                    "last_data_group_link_number");
+    Get_B1 (data_group_link_number,                             "data_group_link_number");
+    Get_B1 (last_data_group_link_number,                        "last_data_group_link_number");
     Get_B2 (data_group_size,                                    "data_group_size");
 
     //Filling
@@ -575,6 +583,70 @@ void File_AribStdB24B37::Data_Parse()
 
     Element_Size-=2;
 
+    if (last_data_group_link_number)
+        data_group_fragment();
+    else
+        data_group_data();
+
+    Element_Size+=2;
+    Skip_B2(                                                    "CRC_16");
+}
+
+//***************************************************************************
+// Elements
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+void File_AribStdB24B37::data_group_fragment()
+{
+    if (!data_group_link_number)
+    {
+        Fragments.clear();
+        Fragments_Code=Element_Code;
+        Fragments_Count=0;
+    }
+    if (Element_Code!=Fragments_Code || data_group_link_number!=Fragments_Count || data_group_link_number>last_data_group_link_number)
+    {
+        Skip_XX(Element_Size,                                   "data_group_data_byte (previous data groups missing)");
+        Fragments_Code=(int64u)-1;
+        return;
+    }
+    Fragments.insert(Fragments.end(), Buffer+Buffer_Offset, Buffer+Buffer_Offset+(size_t)Element_Size);
+    Fragments_Count++;
+    if (data_group_link_number<last_data_group_link_number)
+    {
+        Skip_XX(Element_Size,                                   "data_group_data_byte (fragment)");
+        return;
+    }
+    Fragments_Code=(int64u)-1;
+
+    //Parsing of the joined data
+    const int8u* Save_Buffer=Buffer;
+    int64u Save_File_Offset=File_Offset;
+    size_t Save_Buffer_Offset=Buffer_Offset;
+    size_t Save_Buffer_Size=Buffer_Size;
+    int64u Save_Element_Size=Element_Size;
+
+    File_Offset=Save_File_Offset+Buffer_Offset; //Offsets in the trace from the start of the data of the last data group
+    Buffer=Fragments.data();
+    Buffer_Offset=0;
+    Buffer_Size=Fragments.size();
+    Element_Offset=0;
+    Element_Size=Buffer_Size;
+
+    data_group_data();
+
+    File_Offset=Save_File_Offset;
+    Buffer=Save_Buffer;
+    Buffer_Offset=Save_Buffer_Offset;
+    Buffer_Size=Save_Buffer_Size;
+    Element_Offset=Save_Element_Size;
+    Element_Size=Save_Element_Size;
+}
+
+//---------------------------------------------------------------------------
+void File_AribStdB24B37::data_group_data()
+{
     switch (Element_Code)
     {
         case 0 :
@@ -605,14 +677,7 @@ void File_AribStdB24B37::Data_Parse()
                 break;
         default: Skip_XX(Element_Size,                          "Unknown");
     }
-
-    Element_Size+=2;
-    Skip_B2(                                                    "CRC_16");
 }
-
-//***************************************************************************
-// Elements
-//***************************************************************************
 
 //---------------------------------------------------------------------------
 void File_AribStdB24B37::caption_management() //caption_management_data()
