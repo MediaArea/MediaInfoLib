@@ -120,6 +120,7 @@ protected :
     void NaviPurge();
     int NaviFindIndex(int DesiredIndex, int32u* ListIndex);
     int ExtractChunkNaviData();
+    void ExtractPBRSmoothParams();
     int ExtractMDChunkObjIDList(MD01*);
     void ExtractLTLMParamSet(MD01*, bool NominalLD_DescriptionFlag);
     int ParseStaticMDParams(MD01*, bool OnlyFirst);
@@ -140,6 +141,7 @@ protected :
     bool IsType1CertifiedContent;
     bool HasLoudness;
     bool SyncFrameFlag;
+    bool VBRSmoothingBufferEnabled;
     int32u ChunkBytes;
     int ClockRateInHz;
     int32u FTOCPayloadinBytes;

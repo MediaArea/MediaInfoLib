@@ -500,6 +500,31 @@ int File_DtsUhd::ExtractChunkNaviData()
     return 0;
 }
 
+/* Table 6-26 */
+void File_DtsUhd::ExtractPBRSmoothParams()
+{
+    if (SyncFrameFlag)
+        Get_SB (VBRSmoothingBufferEnabled,                      "VBRSmoothingBufferEnabled");
+    if (!VBRSmoothingBufferEnabled)
+        return;
+
+    Element_Begin1("ExtractPBRSmoothParams");
+    int8u BitsforCumACPayload;
+    bool ACFirstXLLSyncPresent;
+    Get_S1 (2, BitsforCumACPayload,                             "BitsforCumACPayload");
+    BitsforCumACPayload=9+3*BitsforCumACPayload;
+    Param_Info2(BitsforCumACPayload, " bits");
+    Skip_S3(BitsforCumACPayload,                                "AudioChunksCumulSmoothPayload");
+    Get_SB (ACFirstXLLSyncPresent,                              "ACFirstXLLSyncPresent");
+    if (ACFirstXLLSyncPresent)
+    {
+        Skip_S1(2,                                              "VBRSmoothingBuffSzkB");
+        Skip_S1(8,                                              "InitACXLLDecDlyFrames");
+        Skip_S3(BitsforCumACPayload-2,                          "ACFirstXLLSyncOffsInDWORDS");
+    }
+    Element_End0();
+}
+
 
 /* Table 6-6 */
 int File_DtsUhd::ExtractMDChunkObjIDList(MD01* MD01)
@@ -996,23 +1021,28 @@ int File_DtsUhd::Frame()
         BS_End();
         return DTSUHD_INVALID_FRAME;
     }
-    size_t Remain8=Data_BS_Remain()%8;
-    if (Remain8)
-        Skip_S1(Remain8,                                        "Padding");
-    BS_End();
-    if (SyncFrameFlag || !FullChannelBasedMixFlag)
-        Skip_B2(                                                "CRC16");
-    if (Element_Offset!=FTOCPayloadinBytes)
+    ExtractPBRSmoothParams();
+
+    //Reserved fields and byte alignment (Table 6-27), up to the CRC
+    size_t CRC_Size=(SyncFrameFlag || !FullChannelBasedMixFlag)?2:0;
+    int64u BitPos=Element_Size*8-Data_BS_Remain();
+    int64u BitPos_CRC=((int64u)FTOCPayloadinBytes-CRC_Size)*8;
+    if (BitPos>BitPos_CRC)
+    {
+        BS_End();
         return DTSUHD_INVALID_FRAME;
+    }
+    if (BitPos<BitPos_CRC)
+        Skip_BS((size_t)(BitPos_CRC-BitPos),                    "Reserved/Padding");
+    BS_End();
+    if (CRC_Size)
+        Skip_B2(                                                "CRC16");
 
     //At this point in the parsing, we can calculate the size of the frame.
     if (FrameSize<FTOCPayloadinBytes+ChunkBytes)
         return DTSUHD_INCOMPLETE;
     FrameSize=FTOCPayloadinBytes+ChunkBytes;
 
-    //Skip PBRSmoothParams (Table 6-26) and align to the chunks immediatelyfollowing the FTOC CRC.
-    if (Element_Offset<FTOCPayloadinBytes)
-        Skip_XX(FTOCPayloadinBytes-Element_Offset,              "PBRSmoothParams");
     if (UnpackMDFrame())
         return DTSUHD_INVALID_FRAME;
     UpdateDescriptor();
@@ -1352,6 +1382,7 @@ File_DtsUhd::File_DtsUhd()
         Trace_Layers_Update(8); //Stream
     #endif //MEDIAINFO_TRACE
     IsType1CertifiedContent=false;
+    VBRSmoothingBufferEnabled=false;
     LongTermLoudnessIndex=(int8u)-1;
     MustSynchronize=true;
     Buffer_TotalBytes_FirstSynched_Max=64*1024;
