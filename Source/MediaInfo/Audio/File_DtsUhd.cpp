@@ -885,24 +885,27 @@ int File_DtsUhd::ParseMD01(MD01 *MD01, int AuPresInd)
 {
     if (AudPresParam[AuPresInd].Selectable)
     {
-        Element_Begin1("ExtractPresScalingParams");
-        for (int i = 0; i<4; i++)  /* Table 7-5.  Scaling data. */
+        if (SyncFrameFlag)
         {
-            bool OutScalePresent;
-            Get_SB (OutScalePresent,                            "OutScalePresent");
-            if (OutScalePresent)
-                Skip_S1(5,                                      "OutScale");
+            Element_Begin1("ExtractPresScalingParams");
+            for (int i = 0; i<4; i++)  /* Table 7-5.  Scaling data. */
+            {
+                bool OutScalePresent;
+                Get_SB (OutScalePresent,                        "OutScalePresent");
+                if (OutScalePresent)
+                    Skip_S1(5,                                  "OutScale");
+            }
+            Element_End0();
+            Get_SB (MD01->MFDistrStaticMDPresent,               "MFDistrStaticMDPresent");
         }
-        Element_End0();
-        bool MFDistrStaticMDPresent;
-        Get_SB (MFDistrStaticMDPresent,                         "MFDistrStaticMDPresent");
-        if (MFDistrStaticMDPresent && ExtractMultiFrameDistribStaticMD(MD01))
+        if (MD01->MFDistrStaticMDPresent && ExtractMultiFrameDistribStaticMD(MD01))
             return 1;
     }
+    else
+        MD01->MFDistrStaticMDPresent=false;
 
     /* Table 7-16: Object metadata. */
-    memset(MD01->Object, 0, sizeof(MD01->Object));
-    if (!FullChannelBasedMixFlag)
+    if (SyncFrameFlag && !FullChannelBasedMixFlag)
     {
         bool MixStudioParamsPresent;
         Get_SB (MixStudioParamsPresent,                     "MixStudioParamsPresent");
@@ -938,6 +941,10 @@ int File_DtsUhd::ParseMD01(MD01 *MD01, int AuPresInd)
 int File_DtsUhd::UnpackMDFrame()
 {
     Element_Begin1("UnpackMDFrame");
+    if (SyncFrameFlag) //Table 7-16: the object list is reset only in sync frames
+        for (auto& MD01 : MD01List)
+            for (auto& Object : MD01.Object)
+                Object=MDObject();
     for (auto& MDChunk : MD_Chunks)
     {
         if (!MDChunk.MDChunkSize)

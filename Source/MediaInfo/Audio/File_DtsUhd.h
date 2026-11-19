@@ -64,6 +64,7 @@ protected :
     struct MD01
     {
         MDObject Object[257]; /* object id max value is 256 */
+        bool MFDistrStaticMDPresent=false;
         bool StaticMDParamsExtracted=false;
         bool StaticMetadataUpdtFlag=false;
         int ChunkId=0;
