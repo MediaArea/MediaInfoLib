@@ -224,7 +224,7 @@ bool File_H263::Synched_Test()
      || (Buffer[Buffer_Offset+2]&0xFC)!=0x80
      || (Buffer[Buffer_Offset+3]&0x03)!=0x02
      || (Buffer[Buffer_Offset+4]&0x1C)==0x00
-     || (Buffer_Size>=0x100000 && Header_Parser_GetSize()==(size_t)-1)) //Preventing waiting too much after a false positive sync
+     || (Buffer_Size-Buffer_Offset>=0x100000 && Header_Parser_GetSize()==(size_t)-1)) //Preventing waiting too much after a false positive sync (1 MiB without the next picture start)
     {
         if (Frame_Count==0 && Buffer_TotalBytes>Buffer_TotalBytes_FirstSynched_Max)
             Trusted=0;
@@ -301,7 +301,7 @@ size_t File_H263::Header_Parser_GetSize()
         if (FrameIsAlwaysComplete || Config->IsFinishing)
             Buffer_Offset_Temp=Buffer_Size; //We are sure that the next bytes are a start
         else
-            return false;
+            return (size_t)-1;
     }
 
     //OK, we continue
@@ -319,12 +319,7 @@ void File_H263::Data_Parse()
     BS_Begin();
     Skip_S3(22,                                                 "Picture Start Code (PSC)");
     Get_S1 ( 8, Temporal_Reference_Temp,                        "Temporal Reference (TR)");
-    if (!Temporal_Reference_IsValid)
-    {
-        Temporal_Reference=Temporal_Reference_Temp;
-        Temporal_Reference_IsValid=true;
-    }
-    if (Temporal_Reference_Temp==Temporal_Reference || ((int8u)(Temporal_Reference_Temp-Temporal_Reference)>8 && (int8u)(Temporal_Reference-Temporal_Reference_Temp)>8))
+    if (Temporal_Reference_IsValid && (Temporal_Reference_Temp==Temporal_Reference || ((int8u)(Temporal_Reference_Temp-Temporal_Reference)>8 && (int8u)(Temporal_Reference-Temporal_Reference_Temp)>8)))
     {
         if (Frame_Count==0 && Buffer_TotalBytes>Buffer_TotalBytes_FirstSynched_Max)
             Trusted=0;
@@ -335,6 +330,7 @@ void File_H263::Data_Parse()
         return;
     }
     Temporal_Reference=Temporal_Reference_Temp;
+    Temporal_Reference_IsValid=true;
     Element_Begin1("Type Information (PTYPE)");
         Mark_1();
         Mark_0();
