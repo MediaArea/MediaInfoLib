@@ -119,12 +119,12 @@ void File_Flic::FileHeader_Parse()
                 Fill(Stream_Video, StreamPos_Last, Video_FrameRate, 1000.0/DelayBetweenFrames); //ms per frame
                 Fill(Stream_Video, 0, Video_Duration, Frames*DelayBetweenFrames);
             }
-            if (AspectY>0)
-                Fill(Stream_Video, StreamPos_Last, Video_DisplayAspectRatio, AspectX/AspectY, 3, true);
         }
         Fill(Stream_Video, 0, Video_FrameCount, Frames);
         Fill(Stream_Video, StreamPos_Last, Video_Width, Width);
         Fill(Stream_Video, StreamPos_Last, Video_Height, Height);
+        if (AspectX && AspectY) //FLC only
+            Fill(Stream_Video, StreamPos_Last, Video_PixelAspectRatio, ((float64)AspectY)/AspectX, 3, true); //AspectX by AspectY pixels are a square
         Fill(Stream_Video, 0, Video_BitDepth, (BitsPerPixel%3)?BitsPerPixel:(BitsPerPixel/3), 10, true); //If not a multiple of 3, the total resolution is filled
         //No more need data
         Finish("FLIC");
