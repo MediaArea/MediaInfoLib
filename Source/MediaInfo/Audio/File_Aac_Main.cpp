@@ -1424,12 +1424,14 @@ void File_Aac::adts_frame()
     }
     else
     {
-        Element_Begin1("adts_header_error_check");
-            if (!protection_absent)
+        if (!protection_absent)
+        {
+            Element_Begin1("adts_header_error_check");
                 for (int i=1; i<=num_raw_data_blocks; i++)
                     Skip_S2(16,                                 "raw_data_block_position(i)");
-            Skip_S2(16,                                         "crc_check");
-        Element_End0();
+                Skip_S2(16,                                     "crc_check");
+            Element_End0();
+        }
 
         for(int i=0; i<=num_raw_data_blocks; i++)
         {

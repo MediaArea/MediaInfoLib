@@ -844,17 +844,20 @@ void File_Aac::Header_Parse_LATM()
 //---------------------------------------------------------------------------
 void File_Aac::Data_Parse()
 {
-    if (FrameSize_Min>Header_Size+Element_Size)
-        FrameSize_Min=Header_Size+Element_Size;
-    if (FrameSize_Max<Header_Size+Element_Size)
-        FrameSize_Max=Header_Size+Element_Size;
-
     switch (Mode)
     {
         case Mode_ADTS        : Data_Parse_ADTS(); break;
         case Mode_LATM        : Data_Parse_LATM(); break;
         default               : ; //No header
     }
+
+    //An ADTS frame may contain several AAC frames
+    int8u Frames=Mode==Mode_ADTS?(num_raw_data_blocks+1):1;
+    int64u FrameSize=(Header_Size+Element_Size)/Frames;
+    if (FrameSize_Min>FrameSize)
+        FrameSize_Min=FrameSize;
+    if (FrameSize_Max<FrameSize)
+        FrameSize_Max=FrameSize;
 
     FILLING_BEGIN();
         //Counting
@@ -875,7 +878,8 @@ void File_Aac::Data_Parse()
             File__Analyze::Accept();
 
         //Filling
-        TS_Add(frame_length);
+        for (int8u i=0; i<Frames; i++)
+            TS_Add(frame_length);
         if (Frame_Count>=Frame_Count_Valid && Config->ParseSpeed<1.0)
         {
             //No more need data
