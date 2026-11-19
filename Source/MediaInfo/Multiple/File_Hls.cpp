@@ -29,6 +29,7 @@
 #include "ZenLib/File.h"
 #endif //defined(MEDIAINFO_REFERENCES_YES)
 #include "ZenLib/FileName.h"
+#include <map>
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -110,6 +111,7 @@ bool File_Hls::FileHeader_Begin()
 
     bool IsGroup=false;
     Ztring PreviousFile;
+    std::map<Ztring, sequence*> Variants; //A variant may be listed several times (e.g. once per group of audio renditions), it is parsed once
     for (size_t Line=0; Line<Lines.size(); Line++)
     {
         if (!Lines[Line].empty())
@@ -166,15 +168,20 @@ bool File_Hls::FileHeader_Begin()
             {
                 if (IsGroup)
                 {
-                    Sequence->AddFileName(Lines[Line]);
-                    Sequence->StreamID=ReferenceFiles->Sequences_Size()+1;
-                    ReferenceFiles->AddSequence(Sequence);
                     IsGroup=false;
-                    Sequence=new sequence();
-                    #if MEDIAINFO_EVENTS
-                        ParserIDs[0]=MediaInfo_Parser_HlsIndex;
-                        StreamIDs_Width[0]=sizeof(size_t);
-                    #endif //MEDIAINFO_EVENTS
+                    sequence* &Variant=Variants[Lines[Line]];
+                    if (!Variant)
+                    {
+                        Variant=Sequence;
+                        Sequence->AddFileName(Lines[Line]);
+                        Sequence->StreamID=ReferenceFiles->Sequences_Size()+1;
+                        ReferenceFiles->AddSequence(Sequence);
+                        Sequence=new sequence();
+                        #if MEDIAINFO_EVENTS
+                            ParserIDs[0]=MediaInfo_Parser_HlsIndex;
+                            StreamIDs_Width[0]=sizeof(size_t);
+                        #endif //MEDIAINFO_EVENTS
+                    }
                 }
                 else if (Lines[Line]!=PreviousFile)
                 {
