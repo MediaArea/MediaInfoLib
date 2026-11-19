@@ -3996,7 +3996,17 @@ void File_Aac::dynamic_range_info()
         Skip_S1(4,                                              "pce_ instance_tag");
         Skip_S1(4,                                              "drc_tag_reserved_bits");
     }
-    Skip_SB(                                                    "excluded_chns_present");
+    TEST_SB_SKIP(                                               "excluded_chns_present");
+        Element_Begin1("excluded_channels");
+        bool additional_excluded_chns;
+        do
+        {
+            Skip_S1(7,                                          "exclude_mask");
+            Get_SB (additional_excluded_chns,                   "additional_excluded_chns");
+        }
+        while (additional_excluded_chns);
+        Element_End0();
+    TEST_SB_END();
     Get_SB (present,                                            "drc_bands_present");
     if (present)
     {
