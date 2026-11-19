@@ -301,7 +301,7 @@ void File_CineForm::Read_Buffer_Continue()
     int16u EncodedFormat=0;
     int16u PatternWidth=0;
     int16u PatternHeight=0;
-    int16u InterlacedFlags=0;
+    int16u InterlacedFlags=(int16u)-1;
     int16u PixtureAspectRatioX=0;
     int16u PixtureAspectRatioY=0;
 
@@ -353,6 +353,7 @@ void File_CineForm::Read_Buffer_Continue()
                 case  12: InputFormat.ChannelCount=Value; break;
                 case  20: ImageWidth=Value; break;
                 case  21: if (!ImageHeight) ImageHeight=Value; break; //CroppedHeight has priority
+                case  63: InterlacedFlags=Value; break;
                 case  68: SampleFlags=Value; break;
                 case  65: PixtureAspectRatioX=Value; break;
                 case  66: PixtureAspectRatioY=Value; break;
@@ -435,9 +436,12 @@ void File_CineForm::Read_Buffer_Continue()
             default:;
         }
         Fill(Stream_Video, 0, Video_ChromaSubsampling, ChromaSubsampling);
-        Fill(Stream_Video, 0, Video_ScanType, (InterlacedFlags&0x01)?"Interlaced":"Progressive");
-        if (InterlacedFlags&0x01)
-            Fill(Stream_Video, 0, Video_ScanType, (InterlacedFlags&0x02)?"TFF":"BFF");
+        if (InterlacedFlags!=(int16u)-1)
+        {
+            Fill(Stream_Video, 0, Video_ScanType, (InterlacedFlags&0x01)?"Interlaced":"Progressive", Unlimited, true, true);
+            if (InterlacedFlags&0x01)
+                Fill(Stream_Video, 0, Video_ScanOrder, (InterlacedFlags&0x02)?"TFF":"BFF");
+        }
         //TODO: bit 2 field 1 only, bit 3 field 2 only, bit 4 Dominance (?)
         if (PixtureAspectRatioX && PixtureAspectRatioY)
             Fill(Stream_Video, 0, Video_DisplayAspectRatio, ((float32)PixtureAspectRatioX)/PixtureAspectRatioY);
