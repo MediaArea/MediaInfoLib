@@ -96,6 +96,24 @@ File_Pcm::File_Pcm()
 }
 
 //***************************************************************************
+// Out
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+bool File_Pcm::IsComplete() const
+{
+    if (!Status[IsAccepted])
+        return false;
+    if (BitDepth==24 && Channels && (Endianness=='L' || !Endianness) && !Auro_Detected)
+        return false; //Auro-3D detection not done
+    #if MEDIAINFO_CONFORMANCE
+    if (Config->ParseSpeed>=1 && !IsNotSilence)
+        return false; //Silence detection
+    #endif
+    return true;
+}
+
+//***************************************************************************
 // Streams management
 //***************************************************************************
 

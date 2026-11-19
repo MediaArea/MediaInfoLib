@@ -53,6 +53,9 @@ public :
     int8u           Channels;
     int8u           Sign;
 
+    //Out
+    bool            IsComplete() const; //More data would not change the result, the container may stop giving it
+
     //Buffer - Global
     void Read_Buffer_Continue ();
     #if MEDIAINFO_DEMUX
