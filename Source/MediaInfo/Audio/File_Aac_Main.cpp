@@ -960,6 +960,7 @@ void File_Aac::GetAudioObjectType(int8u &ObjectType, const char* Name)
 void File_Aac::AudioMuxElement()
 {
     Element_Begin1("AudioMuxElement");
+    AudioMuxElement_FrameCount=1; //Default if the content is not parsed
     if (muxConfigPresent)
     {
         bool useSameStreamMux;
@@ -975,6 +976,7 @@ void File_Aac::AudioMuxElement()
     }
     if (audioMuxVersionA==0)
     {
+        AudioMuxElement_FrameCount=0;
         for (int8u i=0; i<=numSubFrames; i++)
         {
             if (!PayloadLengthInfo())
@@ -1050,24 +1052,17 @@ void File_Aac::StreamMuxConfig()
                         AudioSpecificConfig(Data_BS_Remain()-ascLen);
                     }
                 }
+                audioObjectTypes[streamID[prog][lay]]=audioObjectType;
 
                 Get_S1(3,frameLengthType[streamID[prog][lay]],  "frameLengthType[streamID[prog][lay]]");
                 switch(frameLengthType[streamID[prog][lay]])
                 {
                     case 0 :
                             Skip_S1(8,                          "latmBufferFullness[streamID[prog][lay]]");
-                            if(!allStreamsSameTimeFraming)
-                            {
-                                Element_Begin1("(not implemented)");
-                                Skip_BS(Data_BS_Remain(),       "(not implemented)");
-                                Element_End0();
-                            }
-                            //~ if ((!allStreamsSameTimeFraming) &&
-                            //~ (AudioObjectType[lay] == 6 || AudioObjectType[lay] == 20) &&
-                            //~ (AudioObjectType[lay-1] == 8 || AudioObjectType[lay-1] == 24))
-                            //~ {
-                                //~ Skip_S1(6,                          "coreFrameOffset");
-                            //~ }
+                            if (!allStreamsSameTimeFraming && lay
+                             && (audioObjectTypes[streamID[prog][lay]]==6 || audioObjectTypes[streamID[prog][lay]]==20) //AAC scalable
+                             && (audioObjectTypes[streamID[prog][lay-1]]==8 || audioObjectTypes[streamID[prog][lay-1]]==24)) //CELP
+                                Skip_S1(6,                      "coreFrameOffset");
                             break;
                     case 1 :
                             Get_S2(9,frameLength[streamID[prog][lay]],"frameLength[streamID[prog][lay]]");
@@ -1201,7 +1196,7 @@ bool File_Aac::PayloadLengthInfo()
                     MuxSlotLengthBytes[streamID[prog][lay]]+=tmp;
                 }
                 while(tmp==255);
-                Skip_SB(                                        "AuEndFlag[streamID[prog][lay]]");
+                Get_SB (AuEndFlag[streamID[prog][lay]],         "AuEndFlag[streamID[prog][lay]]");
             }
             else if (frameLengthType[streamID[prog][lay]]==3
                   || frameLengthType[streamID[prog][lay]]==5
@@ -1227,29 +1222,7 @@ void File_Aac::PayloadMux()
                 switch(frameLengthType[streamID[prog][lay]])
                 {
                     case 0 :
-                            {
-                            size_t Size=8*(size_t)MuxSlotLengthBytes[streamID[prog][lay]];
-                            if (Size>Data_BS_Remain())
-                            {
-                                Trusted_IsNot("MuxSlotLengthBytes is too big");
-                                Skip_BS(Data_BS_Remain(),       "(Problem)");
-                                break;
-                            }
-                            size_t End=Data_BS_Remain()-Size;
-                            if (CA_system_ID_MustSkipSlices)
-                            {
-                                //Encryption management
-                                Skip_BS(Size,                   "Encrypted payload[streamID[prog][lay]]");
-                                Frame_Count_Valid=0;
-                            }
-                            else
-                                payload(End);
-                            if (Data_BS_Remain()>End)
-                            {
-                                size_t BitsRemaining=Data_BS_Remain()-End;
-                                Skip_BS(BitsRemaining,          BitsRemaining<8?"Padding":"Unknown");
-                            }
-                            }
+                            PayloadMux_Payload(streamID[prog][lay], true);
                             break;
                     case 1 :
                             Skip_BS(8 * (frameLength[streamID[prog][lay]] + 20),"payload[streamID[prog][lay]]");
@@ -1260,28 +1233,65 @@ void File_Aac::PayloadMux()
                             Element_End0();
                 }
             }
+        AudioMuxElement_FrameCount++; //An access unit of each stream
     }
     else
     {
         for (int8u chunkCnt=0; chunkCnt<=numChunk; chunkCnt++)
         {
-            int8u prog=progCIndx[chunkCnt];
-            int8u lay=layCIndx[chunkCnt];
-            switch(frameLengthType[streamID[prog][lay]])
+            int8u Stream=streamID[progCIndx[chunkCnt]][layCIndx[chunkCnt]];
+            bool AuEnd=true;
+            switch(frameLengthType[Stream])
             {
                 case 0 :
-                        payload(); //Skip_BS(MuxSlotLengthBytes[streamID[prog][lay]], "payload[streamID[prog][lay]]");
+                        {
+                        AuEnd=AuEndFlag[Stream];
+                        bool IsWholeAccessUnit=!AuContinued[Stream] && AuEnd; //An access unit split in several chunks is not parsed
+                        AuContinued[Stream]=!AuEnd;
+                        PayloadMux_Payload(Stream, IsWholeAccessUnit);
+                        }
                         break;
                 case 1 :
-                        Skip_BS(8*(frameLength[streamID[prog][lay]]+20), "payload[streamID[prog][lay]]");
+                        Skip_BS(8*(frameLength[Stream]+20),     "payload[streamID[prog][lay]]");
                         break;
                 default:
-                        Element_Begin1("not implemented");
+                        Element_Begin1("(not implemented)");
+                        Skip_BS(Data_BS_Remain(),               "(not implemented)");
                         Element_End0();
             }
+            if (!Stream && AuEnd)
+                AudioMuxElement_FrameCount++; //An access unit of the first stream
         }
     }
     Element_End0();
+}
+
+//---------------------------------------------------------------------------
+void File_Aac::PayloadMux_Payload(int8u Stream, bool Parse)
+{
+    size_t Size=8*(size_t)MuxSlotLengthBytes[Stream];
+    if (Size>Data_BS_Remain())
+    {
+        Trusted_IsNot("MuxSlotLengthBytes is too big");
+        Skip_BS(Data_BS_Remain(),                               "(Problem)");
+        return;
+    }
+    size_t End=Data_BS_Remain()-Size;
+    if (CA_system_ID_MustSkipSlices)
+    {
+        //Encryption management
+        Skip_BS(Size,                                           "Encrypted payload[streamID[prog][lay]]");
+        Frame_Count_Valid=0;
+    }
+    else if (Parse)
+        payload(End);
+    else
+        Skip_BS(Size,                                           "payload[streamID[prog][lay]] (part of an access unit)");
+    if (Data_BS_Remain()>End)
+    {
+        size_t BitsRemaining=Data_BS_Remain()-End;
+        Skip_BS(BitsRemaining,                                  BitsRemaining<8?"Padding":"Unknown");
+    }
 }
 
 //***************************************************************************

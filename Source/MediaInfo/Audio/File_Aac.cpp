@@ -98,6 +98,12 @@ File_Aac::File_Aac()
     audioMuxVersionA=false;
     numSubFrames=0;
     streamCnt=0;
+    for (size_t i=0; i<128; i++)
+    {
+        AuEndFlag[i]=true;
+        AuContinued[i]=false;
+    }
+    AudioMuxElement_FrameCount=1;
 
     //Temp - General Audio
     num_window_groups=0;
@@ -853,18 +859,21 @@ void File_Aac::Data_Parse()
     }
 
     //An ADTS frame or a LATM AudioMuxElement may contain several AAC frames
-    int8u Frames=1;
+    int16u Frames=1;
     switch (Mode)
     {
         case Mode_ADTS        : Frames+=num_raw_data_blocks; break;
-        case Mode_LATM        : Frames+=numSubFrames; break;
+        case Mode_LATM        : Frames=AudioMuxElement_FrameCount; break;
         default               : ;
     }
-    int64u FrameSize=(Header_Size+Element_Size)/Frames;
-    if (FrameSize_Min>FrameSize)
-        FrameSize_Min=FrameSize;
-    if (FrameSize_Max<FrameSize)
-        FrameSize_Max=FrameSize;
+    if (Frames)
+    {
+        int64u FrameSize=(Header_Size+Element_Size)/Frames;
+        if (FrameSize_Min>FrameSize)
+            FrameSize_Min=FrameSize;
+        if (FrameSize_Max<FrameSize)
+            FrameSize_Max=FrameSize;
+    }
 
     FILLING_BEGIN();
         //Counting
@@ -885,7 +894,7 @@ void File_Aac::Data_Parse()
             File__Analyze::Accept();
 
         //Filling
-        for (int8u i=0; i<Frames; i++)
+        for (int16u i=0; i<Frames; i++)
             TS_Add(frame_length);
         if (Frame_Count>=Frame_Count_Valid && Config->ParseSpeed<1.0)
         {

@@ -174,6 +174,7 @@ protected :
     int32u LatmGetValue                     ();
     bool PayloadLengthInfo                  ();
     void PayloadMux                         ();
+    void PayloadMux_Payload                 (int8u Stream, bool Parse);
     bool muxConfigPresent;
 
     //Elements - Error protection
@@ -202,6 +203,10 @@ protected :
     int8u   frameLengthType[128];
     int16u  frameLength[128];
     int32u  MuxSlotLengthBytes[128];
+    int8u   audioObjectTypes[128];
+    bool    AuEndFlag[128];
+    bool    AuContinued[128]; //The current access unit of the stream started in a previous chunk
+    int16u  AudioMuxElement_FrameCount; //Access units of the first stream
     int32u  otherDataLenBits;
     bool    allStreamsSameTimeFraming;
     int8u   audioObjectType;
