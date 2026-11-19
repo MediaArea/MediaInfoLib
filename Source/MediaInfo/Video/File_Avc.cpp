@@ -3381,12 +3381,6 @@ void File_Avc::sei_message_pic_timing(int32u /*payloadSize*/, int32u seq_paramet
                     Get_SB (hours_flag,                         "hours_flag");
                 if (hours_flag)
                     Get_S1 (5, hours_value,                     "hours_value");
-                if ((*seq_parameter_set_Item)->CpbDpbDelaysPresentFlag())
-                {
-                    int8u time_offset_length=(*seq_parameter_set_Item)->vui_parameters->NAL?(*seq_parameter_set_Item)->vui_parameters->NAL->time_offset_length:(*seq_parameter_set_Item)->vui_parameters->VCL->time_offset_length; //Spec is not precise, I am not sure
-                    if (time_offset_length)
-                        Get_S4 (time_offset_length, time_offset,    "time_offset");
-                }
                 FILLING_BEGIN();
                     if (!i && seconds_flag && minutes_flag && hours_flag && IFrame_Count<=1)
                     {
@@ -3407,6 +3401,11 @@ void File_Avc::sei_message_pic_timing(int32u /*payloadSize*/, int32u seq_paramet
                         Element_Info1(TC_Current.ToString());
                     }
                 FILLING_END();
+                int8u time_offset_length=24; //Inferred value when hrd_parameters() is not present (E.2.2)
+                if ((*seq_parameter_set_Item)->CpbDpbDelaysPresentFlag())
+                    time_offset_length=(*seq_parameter_set_Item)->vui_parameters->NAL?(*seq_parameter_set_Item)->vui_parameters->NAL->time_offset_length:(*seq_parameter_set_Item)->vui_parameters->VCL->time_offset_length; //Spec is not precise, I am not sure
+                if (time_offset_length)
+                    Get_S4 (time_offset_length, time_offset,        "time_offset");
             TEST_SB_END();
             Element_End0();
         }
