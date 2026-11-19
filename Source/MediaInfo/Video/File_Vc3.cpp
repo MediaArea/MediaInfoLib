@@ -312,6 +312,7 @@ static const int16u Vc3_SPL_FromCID (int32u CompressionID)
         case 1242 :
         case 1243 :
         case 1253 :
+        case 1256 :
                     return 1920;
         default   : return 0;
     }
