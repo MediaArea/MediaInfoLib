@@ -696,7 +696,7 @@ void File_AribStdB24B37::caption_statement() //caption_data()
     BS_Begin();
     Get_S1 (2, TMD,                                             "TMD"); Param_Info1(AribStdB24B37_TMD(TMD));
     Skip_S1(6,                                                  "Reserved");
-    if (TMD==2)
+    if (TMD==1 || TMD==2)
     {
         Skip_S5(36,                                             "STM"); //Note: start time (HHMMSSmmm in BCD format) is currently not supported (and is applicable only if out of band PTS is not avaialble)
         Skip_S5( 4,                                             "Reserved");
