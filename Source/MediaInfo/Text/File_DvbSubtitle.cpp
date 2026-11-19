@@ -129,7 +129,7 @@ bool File_DvbSubtitle::Synchronize()
             if (Buffer[Buffer_Offset]==0x20
              && Buffer[Buffer_Offset+1]==0x00
              && (Buffer[Buffer_Offset+2]==0x0F
-              || Buffer[Buffer_Offset+1]==0xFF))
+              || Buffer[Buffer_Offset+2]==0xFF))
                 break;
             Buffer_Offset++;
         }
