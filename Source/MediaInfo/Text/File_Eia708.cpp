@@ -387,7 +387,7 @@ void File_Eia708::Service()
                                 case 0x7E : Character_Fill(L'+'     ); break;
                                 case 0x7F : Character_Fill(L'+'     ); break;
                                 //CEA-708-D, Section 7.1.9 (G3)
-                                case 0x80 : Character_Fill(L'_'     ); break; //(CC)
+                                case 0xA0 : Character_Fill(L'_'     ); break; //(CC)
                                 default   :
                                             //CEA-708-D, Section 7.1.10 (C2)
                                             if (cc_data_2>=0x08 && cc_data_2<0x10)
