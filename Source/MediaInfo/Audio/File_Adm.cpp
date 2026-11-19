@@ -2198,7 +2198,7 @@ static const item_infos item_Infos = {
     { nullptr, referenceLayout_Elements, "referenceLayout", nullptr, 0, (int8u)-1, 0},
     { audioContentLabel_Attributes, nullptr, "audioContentLabel", nullptr, 0, (int8u)-1, 0},
     { dialogue_Attributes, nullptr, "dialogue", nullptr, 0, (int8u)-1, 0},
-    { audioObjectLabel_Attributes, nullptr, "dialogue", nullptr, 0, (int8u)-1, 0},
+    { audioObjectLabel_Attributes, nullptr, "audioObjectLabel", nullptr, 0, (int8u)-1, 0},
     { audioComplementaryObjectGroupLabel_Attributes, nullptr, "audioComplementaryObjectGroupLabel", nullptr, 0, (int8u)-1, 0},
     { audioObjectInteraction_Attributes, audioObjectInteraction_Elements, "audioObjectInteraction", nullptr, 0, (int8u)-1, 0},
     { gainInteractionRange_Attributes, nullptr, "gainInteractionRange", nullptr, 0, (int8u)-1, 0},
