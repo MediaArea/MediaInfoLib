@@ -2559,6 +2559,9 @@ bool File_MpegTs::FileHeader_Begin()
 //---------------------------------------------------------------------------
 void File_MpegTs::Header_Parse()
 {
+    //Size, the last packet of a truncated file (e.g. a capture) ends with the file
+    const int64u Packet_Size=(File_Size!=(int64u)-1 && File_Offset+Buffer_Offset+TS_Size>File_Size)?(File_Size-(File_Offset+Buffer_Offset)):TS_Size;
+
     #if MEDIAINFO_TRACE
     if (Trace_Activated)
     {
@@ -2613,7 +2616,7 @@ void File_MpegTs::Header_Parse()
 
         //Filling
         Header_Fill_Code(pid, __T("0x")+Ztring().From_CC2(pid));
-        Header_Fill_Size(TS_Size);
+        Header_Fill_Size(Packet_Size);
 
         Header_Parse_Events();
     }
@@ -2648,7 +2651,7 @@ void File_MpegTs::Header_Parse()
 
         //Filling
         Header_Fill_Code(pid); //The name is for the trace only
-        /*Element[1].Next=File_Offset+Buffer_Offset+TS_Size;  //*/Header_Fill_Size(TS_Size);
+        /*Element[1].Next=File_Offset+Buffer_Offset+TS_Size;  //*/Header_Fill_Size(Packet_Size);
         //Element[1].IsComplete=true;                         //Header_Fill_Size(TS_Size);
 
         Header_Parse_Events();
