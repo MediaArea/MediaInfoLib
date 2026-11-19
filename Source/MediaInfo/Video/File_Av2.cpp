@@ -603,6 +603,7 @@ void File_Av2::sequence_header_obu()
     }
     int32u bit_depth_idc;
     Get_uvlc(chroma_format_idc,                                 "chroma_format_idc"); Param_Info1(chroma_format_idc == 0 ? "4:2:0" : chroma_format_idc == 2 ? "4:4:4" : chroma_format_idc == 3 ? "4:2:2" : "");
+    Monochrome = chroma_format_idc == 1;
     Get_uvlc(bit_depth_idc,                                     "bit_depth_idc"); Param_Info2(bit_depth_idc == 0 ? "10" : (bit_depth_idc == 1 ? "8" : ""), " bits");
     int8u max_tlayer_id, max_mlayer_id;
     if (single_picture_header_flag) {
