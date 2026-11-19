@@ -371,6 +371,27 @@ void File__ReferenceFilesHelper_InfoFromFileName (sequences &Sequences)
     }
 }
 
+//---------------------------------------------------------------------------
+//Sum of the sizes of files, from one listing of their directory (quicker than opening each file)
+static int64u File__ReferenceFilesHelper_FilesSize (const vector<Ztring> &FileNames)
+{
+    vector<int64u> Sizes=File::Sizes_Get(FileNames);
+    int64u FilesSize=0;
+    for (size_t Pos=0; Pos<Sizes.size(); Pos++)
+        FilesSize+=Sizes[Pos];
+    return FilesSize;
+}
+
+//---------------------------------------------------------------------------
+//Sum of the sizes of the files of the resources of a sequence, from a resource
+static int64u File__ReferenceFilesHelper_FilesSize (const sequence* Sequence, size_t Resources_Pos)
+{
+    vector<Ztring> FileNames;
+    for (size_t Pos=Resources_Pos; Pos<Sequence->Resources.size(); Pos++)
+        FileNames.insert(FileNames.end(), Sequence->Resources[Pos]->FileNames.begin(), Sequence->Resources[Pos]->FileNames.end());
+    return File__ReferenceFilesHelper_FilesSize(FileNames);
+}
+
 //***************************************************************************
 // In
 //***************************************************************************
@@ -1250,12 +1271,7 @@ void File__ReferenceFilesHelper::ParseReference()
             if (Sequences[Sequences_Current]->Resources.empty())
                 Sequences[Sequences_Current]->FileSize=Sequences[Sequences_Current]->MI->Config.File_Size;
             else if (Sequences[Sequences_Current]->FileSize==(int64u)-1)
-            {
-                Sequences[Sequences_Current]->FileSize=0;
-                for (size_t Pos=0; Pos<Sequences[Sequences_Current]->Resources.size(); Pos++)
-                    for (size_t Resource_FileNames_Pos=0; Resource_FileNames_Pos<Sequences[Sequences_Current]->Resources[Pos]->FileNames.size(); Resource_FileNames_Pos++)
-                        Sequences[Sequences_Current]->FileSize+=File::Size_Get(Sequences[Sequences_Current]->Resources[Pos]->FileNames[Resource_FileNames_Pos]);
-            }
+                Sequences[Sequences_Current]->FileSize=File__ReferenceFilesHelper_FilesSize(Sequences[Sequences_Current], 0);
             delete Sequences[Sequences_Current]->MI; Sequences[Sequences_Current]->MI=NULL;
         }
     }
@@ -2187,12 +2203,7 @@ void File__ReferenceFilesHelper::FileSize_Compute ()
             #if MEDIAINFO_ADVANCED
                 if (!Config->File_IgnoreSequenceFileSize_Get())
             #endif //MEDIAINFO_ADVANCED
-                {
-                    if (!Sequences[Sequences_Pos]->Resources.empty())
-                        for (size_t Pos=1; Pos<Sequences[Sequences_Pos]->Resources.size(); Pos++)
-                            for (size_t Resource_FileNames_Pos=0; Resource_FileNames_Pos<Sequences[Sequences_Pos]->Resources[Pos]->FileNames.size(); Resource_FileNames_Pos++)
-                                MI->Config->File_Size+=File::Size_Get(Sequences[Sequences_Pos]->Resources[Pos]->FileNames[Resource_FileNames_Pos]);
-                }
+                    MI->Config->File_Size+=File__ReferenceFilesHelper_FilesSize(Sequences[Sequences_Pos], 1); //Size of the first resource is in the size from the parser
         }
         else
         {
@@ -2201,12 +2212,9 @@ void File__ReferenceFilesHelper::FileSize_Compute ()
             #endif //MEDIAINFO_ADVANCED
                 {
                     if (Sequences[Sequences_Pos]->Resources.empty())
-                        for (size_t Pos=0; Pos<Sequences[Sequences_Pos]->FileNames.size(); Pos++)
-                            MI->Config->File_Size+=File::Size_Get(Sequences[Sequences_Pos]->FileNames[Pos]);
+                        MI->Config->File_Size+=File__ReferenceFilesHelper_FilesSize(Sequences[Sequences_Pos]->FileNames);
                     else
-                        for (size_t Pos=0; Pos<Sequences[Sequences_Pos]->Resources.size(); Pos++)
-                            for (size_t Resource_FileNames_Pos=0; Resource_FileNames_Pos<Sequences[Sequences_Pos]->Resources[Pos]->FileNames.size(); Resource_FileNames_Pos++)
-                                MI->Config->File_Size+=File::Size_Get(Sequences[Sequences_Pos]->Resources[Pos]->FileNames[Resource_FileNames_Pos]);
+                        MI->Config->File_Size+=File__ReferenceFilesHelper_FilesSize(Sequences[Sequences_Pos], 0);
                 }
         }
     }

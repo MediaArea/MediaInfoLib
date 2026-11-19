@@ -22,6 +22,7 @@
 #include "ZenLib/File.h"
 #include "ZenLib/Thread.h"
 #include "ZenLib/CriticalSection.h"
+#include <vector>
 #if MEDIAINFO_READTHREAD
     #ifdef WINDOWS
         #undef __TEXT
@@ -65,6 +66,8 @@ public :
     int64u          Partial_Begin;
     int64u          Partial_End;
     size_t          CountOfSeconds;
+    std::vector<Ztring> FileNames_Others; //Files of the list after the first one
+    std::vector<int64u> FileSizes_Others; //Sizes of these files, got once for all the parsers tested
 
     //Thread
     #if MEDIAINFO_READTHREAD

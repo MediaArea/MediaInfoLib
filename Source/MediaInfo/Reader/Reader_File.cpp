@@ -27,6 +27,7 @@
 #include "MediaInfo/File__Analyze.h"
 #include "ZenLib/FileName.h"
 #include "ZenLib/OS_Utils.h"
+#include <algorithm>
 #ifdef WINDOWS
     #undef __TEXT
     #include <windows.h>
@@ -266,11 +267,17 @@ size_t Reader_File::Format_Test_PerParser(MediaInfo_Internal* MI, const String &
             else
         #endif //MEDIAINFO_ADVANCED
             {
-                for (size_t Pos=1; Pos<MI->Config.File_Names.size(); Pos++)
+                //Sizes got once for all the parsers tested with the same list
+                const vector<Ztring>& Names=MI->Config.File_Names;
+                if (FileNames_Others.size()+1!=Names.size() || !std::equal(FileNames_Others.begin(), FileNames_Others.end(), Names.begin()+1))
                 {
-                    int64u Size=File::Size_Get(MI->Config.File_Names[Pos]);
-                    MI->Config.File_Sizes.push_back(Size);
-                    MI->Config.File_Size+=Size;
+                    FileNames_Others.assign(Names.begin()+1, Names.end());
+                    FileSizes_Others=File::Sizes_Get(FileNames_Others); //Quicker than one by one
+                }
+                for (size_t Pos=0; Pos<FileSizes_Others.size(); Pos++)
+                {
+                    MI->Config.File_Sizes.push_back(FileSizes_Others[Pos]);
+                    MI->Config.File_Size+=FileSizes_Others[Pos];
                 }
             }
     }
