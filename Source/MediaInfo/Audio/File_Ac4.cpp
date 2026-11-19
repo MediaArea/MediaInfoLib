@@ -1335,7 +1335,7 @@ void File_Ac4::Streams_Fill()
             if (MainPos!=string::npos)
                 InsertPoint=MainPos+4;
             else if (DialoguePos!=string::npos)
-                InsertPoint=MainPos+8;
+                InsertPoint=DialoguePos+8;
             else
                 InsertPoint=Summary.size();
             Summary.insert(InsertPoint, LanguageString);
