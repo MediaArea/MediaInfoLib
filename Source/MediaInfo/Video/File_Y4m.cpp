@@ -197,8 +197,8 @@ void File_Y4m::FileHeader_Parse()
                                 switch (List[Pos][1])
                                 {
                                     case 'p' : Fill(Stream_Video, 0, Video_ScanType, "Progressive"); break;
-                                    case 't' : Fill(Stream_Video, 0, Video_ScanType, "Progressive"); Fill(Stream_Video, 0, Video_ScanOrder, "TFF"); break;
-                                    case 'b' : Fill(Stream_Video, 0, Video_ScanType, "Progressive"); Fill(Stream_Video, 0, Video_ScanOrder, "BFF"); break;
+                                    case 't' : Fill(Stream_Video, 0, Video_ScanType, "Interlaced"); Fill(Stream_Video, 0, Video_ScanOrder, "TFF"); break;
+                                    case 'b' : Fill(Stream_Video, 0, Video_ScanType, "Interlaced"); Fill(Stream_Video, 0, Video_ScanOrder, "BFF"); break;
                                     case 'm' : Fill(Stream_Video, 0, Video_ScanType, "Mixed"); break;
                                     default  : ;
                                 }
