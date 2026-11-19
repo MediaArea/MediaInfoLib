@@ -163,6 +163,15 @@ void Reader_File::Destroy_Thread(MediaInfo_Internal* MI)
 size_t Reader_File::Format_Test(MediaInfo_Internal* MI, String File_Name)
 {
     //std::cout<<Ztring(File_Name).To_Local().c_str()<<std::endl;
+
+    //File which can not be opened (e.g. without read permission), not tried again by each parser, and without start
+    //event as its parsing does not begin (each start event has an end event)
+    if (!File().Open(File_Name))
+    {
+        MediaInfoLib::Config.Log_Send(0xC0, 0xFF, 0, __T("File can not be opened: ")+File_Name);
+        return 0;
+    }
+
     #if MEDIAINFO_EVENTS
         {
             string File_Name_Local=FileName_To_Native(File_Name);
@@ -178,13 +187,6 @@ size_t Reader_File::Format_Test(MediaInfo_Internal* MI, String File_Name)
             MI->Config.Event_Send(NULL, (const int8u*)&Event, sizeof(MediaInfo_Event_General_Start_0));
         }
     #endif //MEDIAINFO_EVENTS
-
-    //File which can not be opened (e.g. without read permission), not tried again by each parser
-    if (!File().Open(File_Name))
-    {
-        MediaInfoLib::Config.Log_Send(0xC0, 0xFF, 0, __T("File can not be opened: ")+File_Name);
-        return 0;
-    }
 
     //With Parser MultipleParsing
     /*
