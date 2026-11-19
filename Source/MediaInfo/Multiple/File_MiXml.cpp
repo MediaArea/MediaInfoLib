@@ -501,10 +501,10 @@ bool File_MiXml::FileHeader_Begin()
         Fill(Stream_General, 0, General_UniversalAdID_String, UniversalAdID_Value + __T(" (") + UniversalAdID_Registry + __T(")"), true);
     }
     Ztring MajorBrand=Retrieve(Stream_General, 0, General_CodecID);
-    if (!UniversalAdID_Value.empty() && !UniversalAdID_Registry.empty())
+    if (!MajorBrand.empty())
     {
         Ztring CodecID_String=MajorBrand;
-        Ztring Compatible=Retrieve(Stream_General, 0, General_CodecID);
+        Ztring Compatible=Retrieve(Stream_General, 0, General_CodecID_Compatible);
         if (MajorBrand == __T("qt  "))
         {
             CodecID_String += __T(' ');
