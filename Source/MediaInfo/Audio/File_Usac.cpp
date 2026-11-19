@@ -2988,7 +2988,7 @@ void File_Usac::drcCoefficientsUniDrc(bool V1)
         }
         bool drcCharacteristicRightPresent;
         Get_SB (   drcCharacteristicRightPresent,               "drcCharacteristicRightPresent");
-        if (drcCharacteristicLeftPresent)
+        if (drcCharacteristicRightPresent)
         {
             int8u characteristicRightCount;
             Get_S1 (4, characteristicRightCount,                "characteristicRightCount");
@@ -2998,10 +2998,10 @@ void File_Usac::drcCoefficientsUniDrc(bool V1)
                 Get_SB (   characteristicFormat,                "characteristicFormat");
                 if (!characteristicFormat)
                 {
-                    Skip_S1(6,                                  "bsGainLeft");
-                    Skip_S1(4,                                  "bsIoRatioLeft");
-                    Skip_S1(4,                                  "bsExpLeft");
-                    Skip_SB(                                    "flipSignLeft");
+                    Skip_S1(6,                                  "bsGainRight");
+                    Skip_S1(4,                                  "bsIoRatioRight");
+                    Skip_S1(4,                                  "bsExpRight");
+                    Skip_SB(                                    "flipSignRight");
                 }
                 else
                 {
