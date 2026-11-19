@@ -1055,7 +1055,7 @@ void MediaInfo_Config_DefaultLanguage (Translation &Info)
     "MaxCLL;Maximum Content Light Level\n"
     "MaxCLL_Analysis;Maximum Content Light Level (analysis)\n"
     "MaxFALL;Maximum Frame-Average Light Level\n"
-    "MaxFALL_Analysis;Maximum Frame-Average Light Level (analysis)\n"
+    "MaxFALL_Analysis;Max. Frame-Avg. Light Level (analysis)\n"
     "MaxGain;Max gain\n"
     "MaximumMomentaryLoudness;Maximum momentary loudness\n"
     "MaxTruePeak;Max true peak\n"

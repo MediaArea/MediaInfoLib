@@ -126,6 +126,8 @@ private :
     void Streams_Update_Programs();
     void Streams_Update_Programs_Reset();
     void Streams_Update_Programs_PerStream(size_t StreamID);
+    void Streams_Update_Programs_DolbyVision_Pairs();
+    void Streams_Update_Programs_DolbyVision_EL(size_t StreamID, size_t StreamPos);
     void Streams_Update_EPG();
     void Streams_Update_EPG_PerProgram(complete_stream::transport_stream::programs::iterator Program);
     #ifdef MEDIAINFO_MPEGTS_PCR_YES

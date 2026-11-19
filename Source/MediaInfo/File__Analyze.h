@@ -1033,7 +1033,7 @@ public :
     void Get_SMPTE_ST_2094_40(int8u& application_version, bool& IsHDRplus, bool& tone_mapping_flag);
     #endif
     #if defined(MEDIAINFO_MPEGPS_YES) || defined(MEDIAINFO_MPEGTS_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MK_YES)
-    void dvcC(bool has_dependency_pid=false, std::map<std::string, Ztring>* Infos=NULL);
+    void dvcC(bool has_dependency_pid=false, std::map<std::string, Ztring>* Infos=NULL, int16u* dependency_pid=NULL);
     #endif
     #if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MXF_YES) || defined(MEDIAINFO_T35_YES)
     // Dolby Vision metadata, from the RPU or from Dolby Vision XML metadata

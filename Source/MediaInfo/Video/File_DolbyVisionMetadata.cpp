@@ -24,6 +24,7 @@
 #include "MediaInfo/Video/File_DolbyVisionMetadata.h"
 #include "ThirdParty/tfsxml/tfsxml_tinyxml2.h"
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <limits>
@@ -104,6 +105,71 @@ static std::vector<float64> Values_Get(const char* Text)
         Text = End;
     }
     return Values;
+}
+
+//---------------------------------------------------------------------------
+// Trims (Level2 after 3 unused values, Level8 L8Trim): lift, gain, gamma, chroma weight, saturation gain, tone detail
+// Each one must fit in its 12-bit RPU field (2048 for 0), with slope and offset computed from lift and gain and power from gamma as Dolby Vision tools do
+struct trim_range
+{
+    int64u Count = 0;
+    int64u First_Frame = 0;
+    int64s First_Value = 0;
+    string First_Trim;
+};
+static const char* Trim_Fields[] = { "trim_slope", "trim_offset", "trim_power", "trim_chroma_weight", "trim_saturation_gain", "ms_weight" };
+static void Trim_Check(const char* Text, size_t Unused, int64u Frame, std::map<string, trim_range>& Ranges)
+{
+    auto Values = Values_Get(Text);
+    if (Values.size() != Unused + 6)
+        return;
+    auto Lift = Values[Unused];
+    auto Gain = Values[Unused + 1];
+    auto Gamma = Values[Unused + 2];
+    float64 RPU_Values[6] =
+    {
+        ((Gain + 2) * (1 - Lift / 2) - 2) * 2048 + 2048,
+        ((Gain + 2) * (Lift / 2)) * 2048 + 2048,
+        1 + Gamma / 2 > 0 ? (2 / (1 + Gamma / 2) - 2) * 2048 + 2048 : 1e9,
+        Values[Unused + 3] * 2048 + 2048,
+        Values[Unused + 4] * 2048 + 2048,
+        Values[Unused + 5] * 2048 + 2048,
+    };
+    for (size_t i = 0; i < 6; i++)
+    {
+        auto Value = round(RPU_Values[i]);
+        if (Value >= 0 && Value <= 4095)
+            continue;
+        auto& Range = Ranges[Trim_Fields[i]];
+        if (!Range.Count)
+        {
+            Range.First_Frame = Frame;
+            Range.First_Value = (int64s)(Value < -1e9 ? -1e9 : (Value > 1e9 ? 1e9 : Value));
+            Range.First_Trim = Text;
+        }
+        Range.Count++;
+    }
+}
+static void Trims_Collect(XMLElement* Element, int64u Frame, std::map<string, trim_range>& Level2, std::map<string, trim_range>& Level8)
+{
+    for (XMLElement* Item = Element->FirstChildElement(); Item; Item = Item->NextSiblingElement())
+    {
+        const char* Level = Item->Attribute("level");
+        if (Is(Item, "Level2") || (Is(Item, "DolbyEDR") && Level && !strcmp(Level, "2")))
+        {
+            if (XMLElement* Trim_Item = Child(Item, "Trim"))
+                if (const char* Text = Trim_Item->GetText())
+                    Trim_Check(Text, 3, Frame, Level2);
+        }
+        else if (Is(Item, "Level8"))
+        {
+            if (XMLElement* Trim_Item = Child(Item, "L8Trim"))
+                if (const char* Text = Trim_Item->GetText())
+                    Trim_Check(Text, 0, Frame, Level8);
+        }
+        else
+            Trims_Collect(Item, Frame, Level2, Level8);
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -1340,12 +1406,14 @@ struct xsd_value
     int8u               List_Min;       // 0 if not a list
     int8u               List_Max;
     const char* const*  Enums;          // Null terminated
+    int8u               Fraction_Digits;// Decimal, (int8u)-1 if no limit
+    int8u               Total_Digits;   // Decimal, 0 if no limit
 };
 
 static constexpr float64 Inf = std::numeric_limits<float64>::infinity();
-static constexpr xsd_value XSD_Value(xsd_type Type, float64 Min = -Inf, float64 Max = Inf, int8u List_Min = 0, int8u List_Max = 0, const char* const* Enums = nullptr, bool Min_Exclusive = false)
+static constexpr xsd_value XSD_Value(xsd_type Type, float64 Min = -Inf, float64 Max = Inf, int8u List_Min = 0, int8u List_Max = 0, const char* const* Enums = nullptr, bool Min_Exclusive = false, int8u Fraction_Digits = (int8u)-1, int8u Total_Digits = 0)
 {
-    return { Type, Min, Max, Min_Exclusive, List_Min, List_Max, Enums };
+    return { Type, Min, Max, Min_Exclusive, List_Min, List_Max, Enums, Fraction_Digits, Total_Digits };
 }
 
 struct xsd_attribute
@@ -1405,8 +1473,8 @@ static constexpr xsd_value V_Decimal = XSD_Value(XSD_Decimal);
 static constexpr xsd_value V_DateTime = XSD_Value(XSD_DateTime);
 static constexpr xsd_value V_Uuid = XSD_Value(XSD_Uuid);
 static constexpr xsd_value V_xy = XSD_Value(XSD_Decimal, 0, 1, 2, 2);
-static constexpr xsd_value V_PeakBrightness = XSD_Value(XSD_Decimal, 0, 10000);
-static constexpr xsd_value V_MinimumBrightness = XSD_Value(XSD_Decimal, 0, 9.9999);
+static constexpr xsd_value V_PeakBrightness = XSD_Value(XSD_Decimal, 0, 10000, 0, 0, nullptr, false, 6);
+static constexpr xsd_value V_MinimumBrightness = XSD_Value(XSD_Decimal, 0, 9.9999, 0, 0, nullptr, false, 4);
 static constexpr xsd_value V_Encoding_V4 = XSD_Value(XSD_Enum, -Inf, Inf, 0, 0, Encoding_V4);
 static constexpr xsd_value V_Encoding_V5 = XSD_Value(XSD_Enum, -Inf, Inf, 0, 0, Encoding_V5);
 static constexpr xsd_value V_ColorSpace_V4 = XSD_Value(XSD_Enum, -Inf, Inf, 0, 0, ColorSpace_V4);
@@ -1418,7 +1486,7 @@ static constexpr xsd_value V_Param = XSD_Value(XSD_Float, -1, 1);
 static constexpr xsd_value V_Param_3 = XSD_Value(XSD_Float, -1, 1, 3, 3);
 static constexpr xsd_value V_Param_6 = XSD_Value(XSD_Float, -1, 1, 6, 6);
 static constexpr xsd_value V_Param_9 = XSD_Value(XSD_Float, -1, 1, 9, 9);
-static constexpr xsd_value V_AspectRatios = XSD_Value(XSD_Decimal, 0, Inf, 2, 2, nullptr, true);
+static constexpr xsd_value V_AspectRatios = XSD_Value(XSD_Decimal, 0, Inf, 2, 2, nullptr, true, 6);
 static constexpr xsd_value V_SourceColorModel = XSD_Value(XSD_NonNegativeInteger, 255, 255);
 static constexpr xsd_value V_SourceColorPrimary = XSD_Value(XSD_Decimal, -1, 1, 8, 8);
 static constexpr xsd_value V_DMMode = XSD_Value(XSD_NonNegativeInteger, 0, 1);
@@ -2141,6 +2209,10 @@ static string Value_Expected(const xsd_value& Value)
         Expected += string(Value.Min_Exclusive ? " > " : " >= ") + Number(Value.Min);
     else if (IsMax)
         Expected += " <= " + Number(Value.Max);
+    if (Value.Type == XSD_Decimal && Value.Fraction_Digits != (int8u)-1)
+        Expected += " with up to " + std::to_string(Value.Fraction_Digits) + " fraction digits";
+    if (Value.Type == XSD_Decimal && Value.Total_Digits)
+        Expected += string(Value.Fraction_Digits != (int8u)-1 ? " and " : " with ") + "up to " + std::to_string(Value.Total_Digits) + " digits";
     return Expected;
 }
 
@@ -2182,7 +2254,7 @@ static void Value_Check(const char* Text, const xsd_value& Value, const XMLEleme
                 Messages.Add(Path + " content", Path + " content \"" + Content + "\" is not permitted with name \"" + Name + "\", no content is expected");
             return;
         }
-        Value_Specific = Value_Type == XSD_Gamut ? XSD_Value(XSD_Decimal, -10, 10, 8, 8) : XSD_Value(XSD_Float, 0, std::numeric_limits<float64>::max(), Count, Count);
+        Value_Specific = Value_Type == XSD_Gamut ? XSD_Value(XSD_Decimal, -10, 10, 8, 8, nullptr, false, 5, 7) : XSD_Value(XSD_Float, 0, std::numeric_limits<float64>::max(), Count, Count);
         Value_Ptr = &Value_Specific;
         break;
     }
@@ -2230,6 +2302,18 @@ static void Value_Check(const char* Text, const xsd_value& Value, const XMLEleme
             IsValid = Number_Get(Item, Value_Final.Type, Number)
                 && (Value_Final.Min_Exclusive ? Number > Value_Final.Min : Number >= Value_Final.Min)
                 && Number <= Value_Final.Max;
+            if (IsValid && Value_Final.Type == XSD_Decimal && (Value_Final.Fraction_Digits != (int8u)-1 || Value_Final.Total_Digits))
+            {
+                // Significant digits, without the leading zeros of the integer part and the trailing zeros of the fraction part
+                auto Start = Item.find_first_not_of("+-");
+                auto Dot = Item.find('.');
+                auto Integer = Item.substr(Start, Dot == string::npos ? string::npos : Dot - Start);
+                auto Fraction = Dot == string::npos ? string() : Item.substr(Dot + 1);
+                Integer.erase(0, Integer.find_first_not_of('0'));
+                Fraction.erase(Fraction.find_last_not_of('0') + 1);
+                if (Fraction.size() > Value_Final.Fraction_Digits || (Value_Final.Total_Digits && Integer.size() + Fraction.size() > Value_Final.Total_Digits))
+                    IsValid = false;
+            }
         }
         }
         if (!IsValid)
@@ -2584,6 +2668,7 @@ void File_DolbyVisionMetadata::Conformance_MDF(XMLElement* Root, XMLElement* Tra
     // Shots
     std::set<string> TIDs;
     std::vector<std::pair<int64u, int64u>> Shots;
+    std::map<string, trim_range> Level2_Ranges, Level8_Ranges;
     bool DynamicData_Unexpected_Found = HasSchema;
     for (XMLElement* Shot = Child(Track, "Shot"); Shot; Shot = Next(Shot, "Shot"))
     {
@@ -2607,8 +2692,18 @@ void File_DolbyVisionMetadata::Conformance_MDF(XMLElement* Root, XMLElement* Tra
             continue;
         }
         Shots.emplace_back(Ztring().From_UTF8(In_Text).To_int64u(), Ztring().From_UTF8(Duration_Text).To_int64u());
+        Trims_Collect(Shot, Shots.back().first, Level2_Ranges, Level8_Ranges);
     }
     Conformance_Shots(Shots, StreamPos);
+
+    // Trims must fit in the RPU
+    for (const auto& Level : { std::make_pair("Level2 Trim", &Level2_Ranges), std::make_pair("Level8 L8Trim", &Level8_Ranges) })
+    {
+        string Level_Name(Level.first);
+        auto Space = Level_Name.find(' ');
+        for (const auto& Range : *Level.second)
+            Fill_Conformance(("DolbyVision " + Level_Name.substr(0, Space)).c_str(), Level_Name.substr(Space + 1) + " gives " + Range.first + " out of range " + std::to_string(Range.second.Count) + " time(s), first at frame " + std::to_string(Range.second.First_Frame) + " with \"" + Range.second.First_Trim + "\" (actual " + std::to_string(Range.second.First_Value) + ", expected 0 to 4095)", {}, Conformance_Warning, Stream_Video, StreamPos);
+    }
 
     // Trims must reference a declared target display
     for (const auto& TID : TIDs)
