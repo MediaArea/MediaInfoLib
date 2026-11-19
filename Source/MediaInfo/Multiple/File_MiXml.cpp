@@ -441,7 +441,7 @@ bool File_MiXml::FileHeader_Begin()
                                                     for (int8u i=0; i<9; i++)
                                                         if (!strcmp(ServiceKind, AC3_Mode[i]))
                                                         {
-                                                            Fill(Stream_Audio, 0, (LastNested->Name + "ServiceKind/String").c_str(), AC3_Mode_String[i]);
+                                                            Fill(StreamKind_Last, StreamPos_Last, (LastNested->Name + "ServiceKind/String").c_str(), AC3_Mode_String[i]);
                                                             break;
                                                         }
                                                 }
