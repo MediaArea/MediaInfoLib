@@ -10654,7 +10654,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_vexu_must()
 //---------------------------------------------------------------------------
 void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_vpcC()
 {
-    NAME_VERSION_FLAG("VPCodecConfigurationBox", 0);
+    NAME_VERSION_FLAG("VPCodecConfigurationBox", 1);
     AddCodecConfigurationBoxInfo();
     
     //Parsing
