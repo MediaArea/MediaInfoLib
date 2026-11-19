@@ -1913,7 +1913,7 @@ void File_Exif::Streams_Finish()
                     if (GPSLatitude->second.at(1) != __T("0") || GPSLatitude->second.at(0).find(__T('.')) == string::npos) {
                         Value += GPSLatitude->second.at(1) + __T('\'');
                     }
-                    if (GPSLatitude->second.at(2) != __T("0") || GPSLatitude->second.at(1).find(__T('.')) == string::npos) {
+                    if (GPSLatitude->second.at(2) != __T("0") || (GPSLatitude->second.at(0).find(__T('.')) == string::npos && GPSLatitude->second.at(1).find(__T('.')) == string::npos)) {
                         Value += GPSLatitude->second.at(2) + __T('\"');
                     }
                     Value += GPSLatitudeRef->second.at(0) + __T(' ');
@@ -1921,7 +1921,7 @@ void File_Exif::Streams_Finish()
                     if (GPSLongitude->second.at(1) != __T("0") || GPSLongitude->second.at(0).find(__T('.')) == string::npos) {
                         Value += GPSLongitude->second.at(1) + __T('\'');
                     }
-                    if (GPSLongitude->second.at(2) != __T("0") || GPSLongitude->second.at(1).find(__T('.')) == string::npos) {
+                    if (GPSLongitude->second.at(2) != __T("0") || (GPSLongitude->second.at(0).find(__T('.')) == string::npos && GPSLongitude->second.at(1).find(__T('.')) == string::npos)) {
                         Value += GPSLongitude->second.at(2) + __T('\"');;
                     }
                     Value += GPSLongitudeRef->second.at(0) + __T(' ');
