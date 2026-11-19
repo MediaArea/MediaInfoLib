@@ -351,12 +351,14 @@ void template_generic::Decode()
             Index_StringSize++;
         }
         int8u Index_Size=1;
+        size_t Index_Length=1+Index_StringSize+1;
         if (Index_Pos!=string::npos)
         {
             size_t Index_Pos_End=media.find(__T('$'), Index_Pos+1+Index_StringSize);
             if (Index_Pos_End!=string::npos && Index_Pos+1+Index_StringSize+2<Index_Pos_End && media[Index_Pos+1+Index_StringSize]=='%' && media[Index_Pos+1+Index_StringSize+1]=='0')
             {
                 Index_Size=Ztring(media.substr(Index_Pos+1+Index_StringSize+2, Index_Pos_End-(Index_Pos+1+Index_StringSize+2))).To_int8u();
+                Index_Length=Index_Pos_End-Index_Pos+1;
             }
             else if (Index_Pos_End==string::npos || Index_Pos+1+Index_StringSize!=Index_Pos_End)
                 Index_Pos=string::npos;
@@ -367,9 +369,9 @@ void template_generic::Decode()
             Ztring Media_Name(media);
             if (Index_Pos!=string::npos)
             {
-                Media_Name.erase(Index_Pos, 1+Index_StringSize+1);
+                Media_Name.erase(Index_Pos, Index_Length);
                 if (Time_Pos!=string::npos && Time_Pos>Index_Pos)
-                    Time_Pos-=1+Index_StringSize+1;
+                    Time_Pos-=Index_Length;
             }
             if (Time_Pos!=string::npos)
             {
