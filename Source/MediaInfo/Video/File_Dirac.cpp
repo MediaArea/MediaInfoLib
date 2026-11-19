@@ -170,7 +170,7 @@ void Dirac_base_video_format(int32u   base_video_format,
                     chroma_format=2;
                     source_sampling=0;
                     clean_width=176;
-                    clean_height=144;
+                    clean_height=120;
                     clean_left_offset=0;
                     clean_top_offset=0;
                     frame_rate=Dirac_frame_rate(9);
@@ -655,7 +655,8 @@ void File_Dirac::Sequence_header()
         Dirac_base_video_format(base_video_format, frame_width, frame_height, chroma_format, source_sampling,
                                 clean_width, clean_height, clean_left_offset, clean_top_offset,
                                 frame_rate, pixel_aspect_ratio);
-        TEST_SB_SKIP(                                           "custom dimensions flag");
+        bool custom_dimensions_flag;
+        TEST_SB_GET (custom_dimensions_flag,                    "custom dimensions flag");
             Get_UI (frame_width,                                "frame width");
             Get_UI (frame_height,                               "frame height");
         TEST_SB_END();
@@ -697,8 +698,12 @@ void File_Dirac::Sequence_header()
             Get_UI (clean_left_offset,                          "clean left offset");
             Get_UI (clean_top_offset,                           "clean top offset");
         TESTELSE_SB_ELSE(                                       "custom clean area flag");
-            clean_width=frame_width;
-            clean_height=frame_height;
+            //The clean area of the base video format is kept, except with custom dimensions which it does not fit (some encoders write custom dimensions only)
+            if (custom_dimensions_flag)
+            {
+                clean_width=frame_width;
+                clean_height=frame_height;
+            }
         TESTELSE_SB_END();
         TEST_SB_SKIP(                                           "custom signal range flag");
             int32u custom_signal_range_index;
