@@ -132,6 +132,7 @@ void File_Y4m::FileHeader_Parse()
     List.Write(Header);
     int64u Width=0, Height=0, Multiplier=0, Divisor=1;
     float64 FrameRate=0;
+    bool ColorSpace_IsPresent=false;
     for (size_t Pos=1; Pos<List.size(); Pos++)
     {
         if (!List[Pos].empty())
@@ -152,21 +153,57 @@ void File_Y4m::FileHeader_Parse()
                             }
                             break;
                 case 'C' :  //Color space
-                            if (List[Pos]==__T("C420jpeg") || List[Pos]==__T("C420paldv") || List[Pos]==__T("C420"))
+                            {
+                            ColorSpace_IsPresent=true;
+                            Ztring Value=List[Pos].substr(1);
+                            int64u BytesPerSample=1;
+                            size_t Digits_Pos=Value.find_last_not_of(__T("0123456789"));
+                            if (Digits_Pos!=Ztring::npos && Digits_Pos+1<Value.size()) //High bit depth, e.g. 420p10 or mono16
+                            {
+                                Ztring Base=Value.substr(0, Value[Digits_Pos]==__T('p')?Digits_Pos:(Digits_Pos+1));
+                                if (Base==__T("420") || Base==__T("422") || Base==__T("444") || Base==__T("mono"))
+                                {
+                                    int64u BitDepth=Ztring(Value.substr(Digits_Pos+1)).To_int64u();
+                                    if (BitDepth>8 && BitDepth<=16)
+                                    {
+                                        Fill(Stream_Video, 0, Video_BitDepth, BitDepth);
+                                        BytesPerSample=2;
+                                        Value=Base;
+                                    }
+                                    else
+                                        Value.clear(); //Unknown
+                                }
+                            }
+                            if (Value==__T("420jpeg") || Value==__T("420paldv") || Value==__T("420mpeg2") || Value==__T("420"))
                             {
                                 Fill(Stream_Video, 0, Video_ChromaSubsampling, "4:2:0");
                                 Multiplier=3;
                                 Divisor=2;
                             }
-                            if (List[Pos]==__T("C422"))
+                            if (Value==__T("411"))
+                            {
+                                Fill(Stream_Video, 0, Video_ChromaSubsampling, "4:1:1");
+                                Multiplier=3;
+                                Divisor=2;
+                            }
+                            if (Value==__T("422"))
                             {
                                 Fill(Stream_Video, 0, Video_ChromaSubsampling, "4:2:2");
                                 Multiplier=2;
                             }
-                            if (List[Pos]==__T("C444"))
+                            if (Value==__T("444"))
                             {
                                 Fill(Stream_Video, 0, Video_ChromaSubsampling, "4:4:4");
                                 Multiplier=3;
+                            }
+                            if (Value==__T("444alpha"))
+                            {
+                                Fill(Stream_Video, 0, Video_ChromaSubsampling, "4:4:4");
+                                Multiplier=4;
+                            }
+                            if (Value==__T("mono"))
+                                Multiplier=1;
+                            Multiplier*=BytesPerSample;
                             }
                             break;
                 case 'F' :  //Frame rate
@@ -213,6 +250,12 @@ void File_Y4m::FileHeader_Parse()
                 default  : ;
             }
         }
+    }
+    if (!ColorSpace_IsPresent) //420jpeg by default
+    {
+        Fill(Stream_Video, 0, Video_ChromaSubsampling, "4:2:0");
+        Multiplier=3;
+        Divisor=2;
     }
 
     //Duration (we expect no meta per frame)
