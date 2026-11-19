@@ -52,6 +52,8 @@ const char* Dirac_base_video_format(intu base_video_format)
         case  18 : return "4K-50";
         case  19 : return "8K-60";
         case  20 : return "8K-50";
+        case  21 : return "1080p24";
+        case  22 : return "Pro486";
         default  : return "";
     }
 }
@@ -382,6 +384,28 @@ void Dirac_base_video_format(int32u   base_video_format,
                     clean_top_offset=0;
                     frame_rate=Dirac_frame_rate(6);
                     pixel_aspect_ratio=Dirac_pixel_aspect_ratio(1);
+                    return;
+        case  21 :  frame_width=1920;
+                    frame_height=1080;
+                    chroma_format=1;
+                    source_sampling=0;
+                    clean_width=1920;
+                    clean_height=1080;
+                    clean_left_offset=0;
+                    clean_top_offset=0;
+                    frame_rate=Dirac_frame_rate(1);
+                    pixel_aspect_ratio=Dirac_pixel_aspect_ratio(1);
+                    return;
+        case  22 :  frame_width=720;
+                    frame_height=486;
+                    chroma_format=1;
+                    source_sampling=1;
+                    clean_width=720;
+                    clean_height=486;
+                    clean_left_offset=0;
+                    clean_top_offset=0;
+                    frame_rate=Dirac_frame_rate(4);
+                    pixel_aspect_ratio=Dirac_pixel_aspect_ratio(2);
                     return;
         default  :  frame_width=0;
                     frame_height=0;
