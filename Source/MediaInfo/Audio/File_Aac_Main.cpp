@@ -1394,10 +1394,12 @@ void File_Aac::adif_header()
     Get_SB (    bitstream_type,                                 "bitstream_type"); Param_Info1(bitstream_type?"VBR":"CBR");
     Get_S3 (23, bitrate,                                        "bitrate");
     Get_S1 ( 4, num_program_config_elements,                    "num_program_config_elements");
-    if (!bitstream_type)
-        Skip_S3(20,                                             "adif_buffer_fullness");
     for (int8u Pos=0; Pos<num_program_config_elements+1; Pos++)
+    {
+        if (!bitstream_type)
+            Skip_S3(20,                                         "adif_buffer_fullness");
         program_config_element();
+    }
     BS_End();
 
     FILLING_BEGIN();
