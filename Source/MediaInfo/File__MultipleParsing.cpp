@@ -936,6 +936,24 @@ void File__MultipleParsing::Read_Buffer_Init()
             Parser[Pos]->Init(Config, Stream, Stream_More);
         #endif //MEDIAINFO_TRACE
         Parser[Pos]->IsSub=IsSub;
+        #if MEDIAINFO_EVENTS
+            //A candidate parser takes the place of this parser, so its events have the stream IDs of this parser, with
+            //its own parser ID (as a top level parser, it gets them from the configuration as this parser does)
+            if (IsSub && StreamIDs_Size)
+            {
+                const int8u ParserID=Parser[Pos]->ParserIDs[0];
+                const int8u StreamIDs_Width0=Parser[Pos]->StreamIDs_Width[0];
+                for (size_t Level=0; Level<StreamIDs_Size; Level++)
+                {
+                    Parser[Pos]->StreamIDs[Level]=StreamIDs[Level];
+                    Parser[Pos]->StreamIDs_Width[Level]=StreamIDs_Width[Level];
+                    Parser[Pos]->ParserIDs[Level]=ParserIDs[Level];
+                }
+                Parser[Pos]->StreamIDs_Width[StreamIDs_Size-1]=StreamIDs_Width0;
+                Parser[Pos]->ParserIDs[StreamIDs_Size-1]=ParserID;
+                Parser[Pos]->StreamIDs_Size=StreamIDs_Size;
+            }
+        #endif //MEDIAINFO_EVENTS
         Parser[Pos]->File_Name=File_Name;
         Parser[Pos]->Open_Buffer_Init(File_Size);
     }
