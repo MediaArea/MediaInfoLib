@@ -174,7 +174,7 @@ void File_Vp9::Read_Buffer_OutOfBand()
         Fill(Stream_Video, 0, Video_BitDepth, bitDepth);
         Fill(Stream_Video, 0, Video_ChromaSubsampling, Vp9_ChromaSubsampling[Vp9_ChromaSubsampling_OutOfBand[chromaSubsampling]]);
         if (chromaSubsampling < 2)
-            Fill(Stream_Video, 0, Video_ChromaSubsampling_Position, "Type " + std::to_string(chromaSubsampling));
+            Fill(Stream_Video, 0, Video_ChromaSubsampling_Position, "Type " + std::to_string(chromaSubsampling?2:0)); //Colocated with luma (0,0) is H.273 chroma sample location type 2
         Fill(Stream_Video, 0, Video_colour_range, Vp9_ColorRange[videoFullRangeFlag]);
         Fill(Stream_Video, 0, Video_colour_primaries, Mpegv_colour_primaries(colourPrimaries));
         Fill(Stream_Video, 0, Video_transfer_characteristics, Mpegv_transfer_characteristics(transferCharacteristics));
@@ -206,7 +206,7 @@ void File_Vp9::Read_Buffer_OutOfBand()
                         {
                             Fill(Stream_Video, 0, Video_ChromaSubsampling, Vp9_ChromaSubsampling[Vp9_ChromaSubsampling_OutOfBand[Value]]);
                             if (Value<2)
-                                Fill(Stream_Video, 0, Video_ChromaSubsampling_Position, "Type "+std::to_string(Value));
+                                Fill(Stream_Video, 0, Video_ChromaSubsampling_Position, "Type "+std::to_string(Value?2:0)); //Colocated with luma (0,0) is H.273 chroma sample location type 2
                         }
                         break;
             }
