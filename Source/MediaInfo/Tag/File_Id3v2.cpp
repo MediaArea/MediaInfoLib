@@ -436,6 +436,7 @@ void File_Id3v2::Header_Parse()
 {
     Unsynchronisation_Frame=false;
     DataLengthIndicator=false;
+    CompressionOrEncryption=false;
 
     if (Id3v2_Size<10) //first 10 is minimum size of a tag, Second 10 is ID3v2 header size
     {
@@ -503,6 +504,7 @@ void File_Id3v2::Header_Parse()
             Skip_Flags(Flags,  2,                               "Encryption");
             Get_Flags (Flags,  1, Unsynchronisation_Frame,      "Unsynchronisation");
             Get_Flags (Flags,  0, DataLengthIndicator,          "Data length indicator");
+            CompressionOrEncryption=(Flags&0x000C)!=0;
         }
     }
 
@@ -575,17 +577,9 @@ void File_Id3v2::Data_Parse()
     size_t Save_Buffer_Offset=Buffer_Offset;
     size_t Save_Buffer_Size=Buffer_Size;
     int64u Save_Element_Size=Element_Size;
-    if (DataLength!=(int32u)-1)
-    {
-        int64u TotalLength=4+(int64u)DataLength;
-        if (TotalLength==Element_Size-Unsynch_List.size())
-        {
-            Element_Size=TotalLength;
-            Param_Info1("Incoherent");
-        }
-    }
-    else
-        Element_Size-=Unsynch_List.size();
+    Element_Size-=Unsynch_List.size();
+    if (DataLength!=(int32u)-1 && !CompressionOrEncryption && 4+(int64u)DataLength!=Element_Size) //Data length is the size after decompression and decryption
+        Param_Info1("Incoherent");
     {
         if (!Unsynch_List.empty())
         {

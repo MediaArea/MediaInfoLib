@@ -227,6 +227,7 @@ private :
     bool   Unsynchronisation_Global;
     bool   Unsynchronisation_Frame;
     bool   DataLengthIndicator;
+    bool   CompressionOrEncryption;
     std::vector<size_t> Unsynch_List;
 
     //Helpers
