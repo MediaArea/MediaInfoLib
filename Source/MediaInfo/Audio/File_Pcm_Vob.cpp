@@ -147,7 +147,7 @@ void File_Pcm_Vob::Streams_Fill()
     Fill(Stream_Audio, 0, Audio_ChannelPositions, Pcm_VOB_ChannelsPositions(channel_assignment));
     Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, Pcm_VOB_ChannelsPositions2(channel_assignment));
     Fill(Stream_Audio, 0, Audio_ChannelLayout, Pcm_VOB_ChannelLayout(channel_assignment));
-    Fill(Stream_Audio, 0, Audio_BitRate, Pcm_VOB_Frequency[Frequency]*(NumberOfChannelsMinusOne+1)*16);
+    Fill(Stream_Audio, 0, Audio_BitRate, Pcm_VOB_Frequency[Frequency]*(NumberOfChannelsMinusOne+1)*Pcm_VOB_BitDepth[BitDepth]);
 
     //PCM Signed 16 bits Big Endian, Interleavement is for 2 samples*2 channels L0-1/L0-0/R0-1/R0-0/L1-1/L1-0/R1-1/R1-0/L0-2/R0-2/L1-2/R1-2, http://wiki.multimedia.cx/index.php?title=PCM
     Fill(Stream_Audio, 0, Audio_Format_Settings, "Big");
