@@ -385,8 +385,8 @@ void File_DvbSubtitle::region_composition_segment()
         {
             case 0x01 :
             case 0x02 :
-                        Skip_B2(                                 "foreground_pixel_code");
-                        Skip_B2(                                 "background_pixel_code");
+                        Skip_B1(                                 "foreground_pixel_code");
+                        Skip_B1(                                 "background_pixel_code");
                         break;
             default   : ;
         }
