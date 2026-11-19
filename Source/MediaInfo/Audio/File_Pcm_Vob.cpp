@@ -47,7 +47,7 @@ static int32u Pcm_VOB_BitDepth[]=
 static int32u Pcm_VOB_Frequency[]=
 {
     48000,
-    32000,
+    96000,
         0,
         0,
 };
