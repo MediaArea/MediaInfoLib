@@ -1444,9 +1444,6 @@ void File_AribStdB24B37::CSI()
             Get_B1(Value,                                       "Delimiter");
             switch (Value)
             {
-                case 0x3B:
-                            Element_Info1("SRC - Raster Colour Designation");
-                            break;
                 case 0x42:
                             Element_Info1("GSM - Character deformation");
                             break;
@@ -1479,8 +1476,11 @@ void File_AribStdB24B37::CSI()
                 case 0x5D:
                             Element_Info1("GAA - Colouring block");
                             break;
+                case 0x5E:
+                            Element_Info1("SRC - Raster Colour Designation");
+                            break;
                 case 0x5F:
-                            Element_Info1("SDF - Set Display Position");
+                            Element_Info1("SDP - Set Display Position");
                             break;
                 case 0x61:
                             Element_Info1("ACPS - Active Coordinate Position Set");
@@ -1509,6 +1509,9 @@ void File_AribStdB24B37::CSI()
                             break;
                 case 0x69:
                             Element_Info1("ACS - Alternative Character Set");
+                            break;
+                case 0x6A:
+                            Element_Info1("UED - Invisible data embedded control");
                             break;
                 case 0x6E:
                             Element_Info1("RCS - Raster Colour command");
