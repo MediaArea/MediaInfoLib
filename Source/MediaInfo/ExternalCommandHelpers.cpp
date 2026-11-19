@@ -14,13 +14,13 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/ExternalCommandHelpers.h"
+#include "ZenLib/OS_Utils.h"
 
 #ifdef WINDOWS
 #include <windows.h>
 #include <process.h>
 #include <wchar.h>
 #else
-#include "ZenLib/OS_Utils.h"
 #include <sys/wait.h>
 #include <unistd.h>
 #include <cstring>
@@ -68,16 +68,23 @@ Ztring External_Command_Exists(const ZtringList& PossibleNames)
         EnvPathSize=EnvPathLen; //PATH was made longer in the meantime, this is the size it needs now
     }
 
-    wchar_t* ExePath=new wchar_t[MAX_PATH+1];
-    DWORD ExePathLen=GetModuleFileNameW(NULL, ExePath, MAX_PATH+1);
-    if (ExePathLen>0 && ExePathLen<MAX_PATH+1)
+    std::wstring ExePath(256, L'\0'); //Path of any length, the buffer is extended while the name is truncated
+    for (;;)
     {
-        ExeDirectory=Ztring().From_Unicode(ExePath);
-        size_t Pos=ExeDirectory.find_last_of(__T("\\"));
-        if (Pos!=string::npos)
-            ExeDirectory=ExeDirectory.substr(0, Pos);
+        DWORD ExePathLen=GetModuleFileNameW(NULL, &ExePath[0], (DWORD)ExePath.size());
+        if (ExePathLen>0 && ExePathLen<ExePath.size())
+        {
+            ExePath.resize(ExePathLen);
+            ExeDirectory=Ztring().From_Unicode(ExePath);
+            size_t Pos=ExeDirectory.find_last_of(__T("\\"));
+            if (Pos!=string::npos)
+                ExeDirectory=ExeDirectory.substr(0, Pos);
+            break;
+        }
+        if (!ExePathLen || ExePath.size()>=0x10000)
+            break;
+        ExePath.resize(ExePath.size()*2);
     }
-    delete[] ExePath;
 
     const Ztring EnvSep = __T(";");
     const Ztring PathSep = __T("\\");
@@ -96,7 +103,7 @@ Ztring External_Command_Exists(const ZtringList& PossibleNames)
         {
             Ztring FullPath=ExeDirectory+PathSep+Command;
             struct _stat64 Buf;
-            if (_wstat64(FullPath.To_Unicode().c_str(), &Buf)==0 && Buf.st_mode&S_IFREG && Buf.st_mode&S_IEXEC)
+            if (_wstat64(FileName_To_Wide(FullPath).c_str(), &Buf)==0 && Buf.st_mode&S_IFREG && Buf.st_mode&S_IEXEC)
                 return FullPath;
         }
         #endif //WINDOWS
@@ -139,7 +146,7 @@ Ztring External_Command_Exists(const ZtringList& PossibleNames)
 
             #ifdef WINDOWS
             struct _stat64 Buf;
-            if (_wstat64(FullPath.To_Unicode().c_str(), &Buf)==0 && Buf.st_mode&S_IFREG && Buf.st_mode&S_IEXEC)
+            if (_wstat64(FileName_To_Wide(FullPath).c_str(), &Buf)==0 && Buf.st_mode&S_IFREG && Buf.st_mode&S_IEXEC)
             #else
             struct stat Buf;
             if (stat(FileName_To_Native(FullPath).c_str(), &Buf)==0 && Buf.st_mode&S_IFREG && Buf.st_mode&S_IXUSR)
@@ -249,7 +256,8 @@ int External_Command_Run(const Ztring& Command, const ZtringList& Arguments, Ztr
     PROCESS_INFORMATION ProcessInfo;
     ZeroMemory(&ProcessInfo, sizeof(PROCESS_INFORMATION));
 
-    if (!CreateProcessW(nullptr, &CommandLine_Unicode[0], nullptr, nullptr, TRUE, CREATE_NO_WINDOW, nullptr, nullptr, &StartupInfo, &ProcessInfo))
+    std::wstring Command_Unicode=FileName_To_Wide(Command); //The program found, also with a long path (the name of the module in the command line is limited to MAX_PATH)
+    if (!CreateProcessW(Command_Unicode.c_str(), &CommandLine_Unicode[0], nullptr, nullptr, TRUE, CREATE_NO_WINDOW, nullptr, nullptr, &StartupInfo, &ProcessInfo))
     {
         if (StdOutWrite) CloseHandle(StdOutWrite);
         if (StdOutRead)  CloseHandle(StdOutRead);
