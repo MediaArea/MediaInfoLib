@@ -4684,6 +4684,7 @@ void File_Ac4::drc_data(drc_info& DrcInfo)
                 drc_gainset_size+=(int16u)drc_gainset_size32<<6;
             TEST_SB_END();
             Get_S1 (2, drc_version,                             "drc_version");
+            used_bits=0;
 
             if (drc_version<=1)
             {
