@@ -356,7 +356,7 @@ void File_H263::Data_Parse()
     if (Source_Format==7) // Extended PTYPE
     {
         Element_Begin1("Plus PTYPE (PLUSPTYPE)");
-            int8u Ufep, PixelAspectRatioCode=0, Width=0, Height=0;
+            int8u Ufep;
             Get_S1 ( 3, Ufep,                                   "Update Full Extended PTYPE (UFEP)");
             switch (Ufep)
             {
@@ -367,6 +367,8 @@ void File_H263::Data_Parse()
                             Get_S1 (3, Source_Format,           "Source Format"); Param_Info1C(H263_Source_Format[Source_Format], H263_Source_Format[Source_Format]);
                             Frame_Width=H263_Source_Format_Width[Source_Format];
                             Frame_Height=H263_Source_Format_Height[Source_Format];
+                            PAR_W=12;
+                            PAR_H=11;
                             Skip_SB(                            "Custom PCF");
                             Skip_SB(                            "Unrestricted Motion Vector (UMV) mode");
                             Skip_SB(                            "Syntax-based Arithmetic Coding (SAC) mode");
@@ -399,27 +401,34 @@ void File_H263::Data_Parse()
                 Mark_1();
             Element_End0();
         Element_End0();
-        Skip_SB(                                                "CPM");
-        Skip_S1(2,                                              "PSBI");
-        Element_Begin1("Custom Picture Format (CPFMT)");
-            Get_S1 (4, PixelAspectRatioCode,                    "Pixel Aspect Ratio Code");
-            Get_S1 (4, Width,                                   "Picture Width Indication");
-            Width++; Width<<=2; Param_Info2(Width, " pixels");
-            Mark_1();
-            Get_S1 (4, Height,                                  "Picture Height Indication");
-            Height<<=2; Param_Info2(Height, " pixels");
-        Element_End0();
-        if (PixelAspectRatioCode==0xF)
+        bool CPM;
+        Get_SB (   CPM,                                         "CPM");
+        if (CPM)
+            Skip_S1(2,                                          "PSBI");
+        if (Ufep==1 && Source_Format==6)
         {
-            Element_Begin1("Extended Pixel Aspect Ratio (EPAR)");
-            Get_S1 (8, PAR_W,                                   "PAR Width");
-            Get_S1 (8, PAR_H,                                   "PAR Height");
+            int16u Width, Height;
+            int8u PixelAspectRatioCode;
+            Element_Begin1("Custom Picture Format (CPFMT)");
+                Get_S1 (4, PixelAspectRatioCode,                "Pixel Aspect Ratio Code");
+                Get_S2 (9, Width,                               "Picture Width Indication");
+                Width++; Width<<=2; Param_Info2(Width, " pixels");
+                Mark_1();
+                Get_S2 (9, Height,                              "Picture Height Indication");
+                Height<<=2; Param_Info2(Height, " pixels");
             Element_End0();
-        }
-        else
-        {
-            PAR_W=H263_PAR_W[PixelAspectRatioCode];
-            PAR_H=H263_PAR_H[PixelAspectRatioCode];
+            if (PixelAspectRatioCode==0xF)
+            {
+                Element_Begin1("Extended Pixel Aspect Ratio (EPAR)");
+                Get_S1 (8, PAR_W,                               "PAR Width");
+                Get_S1 (8, PAR_H,                               "PAR Height");
+                Element_End0();
+            }
+            else
+            {
+                PAR_W=H263_PAR_W[PixelAspectRatioCode];
+                PAR_H=H263_PAR_H[PixelAspectRatioCode];
+            }
         }
     }
     BS_End();
