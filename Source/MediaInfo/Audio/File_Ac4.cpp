@@ -3868,8 +3868,27 @@ void File_Ac4::metadata(audio_substream& AudioSubstream, size_t Substream_Index)
     const content_info& ContentInfo=Groups[Group_Pos].ContentInfo;
     const group_substream& GroupInfo=Groups[Group_Pos].Substreams[SubStream_Pos];
 
-    bool b_associated=ContentInfo.content_classifier!=(int8u)-1 && ContentInfo.content_classifier>1; //TODO: from presentation_config if content_classifier not present
-    AudioSubstream.b_dialog=ContentInfo.content_classifier==4; //TODO: from presentation_config if content_classifier not present
+    //Role of the substream in the presentation_config of its presentation
+    int8u presentation_config=(int8u)-1, Role=(int8u)-1;
+    for (size_t p=0; p<Presentations.size() && Role==(int8u)-1; p++)
+    {
+        const presentation& P=Presentations[p];
+        if (P.presentation_config>4)
+            continue;
+        const vector<size_t>& Specifiers=P.substream_group_info_specifiers;
+        size_t Roles_Count=Ac4_presentation_config_split[P.presentation_config][2]==(int8u)-1?2:3;
+        for (size_t g=0; g<Specifiers.size(); g++)
+            if (Specifiers[g]==Group_Pos)
+            {
+                presentation_config=P.presentation_config;
+                Role=Ac4_presentation_config_split[presentation_config][g*Roles_Count/Specifiers.size()]; //Several groups per role if frame_rate_factor>1
+                break;
+            }
+    }
+
+    int8u content_classifier=ContentInfo.content_classifier;
+    bool b_associated=content_classifier==VI || content_classifier==HI || content_classifier==Co || ((presentation_config==2 || presentation_config==4) && Role==A);
+    AudioSubstream.b_dialog=content_classifier==D || ((presentation_config==0 || presentation_config==3) && Role==D);
 
     Element_Begin1("metadata");
     basic_metadata(AudioSubstream.LoudnessInfo, AudioSubstream.Preprocessing, GroupInfo.ch_mode, GroupInfo.sus_ver);
