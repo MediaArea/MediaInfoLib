@@ -926,11 +926,11 @@ void File_AribStdB24B37::Character (int16u CharacterSet, int8u G_Value, int8u Fi
                         else
                             switch (Value)
                             {
-                                case Compute(92,  1): JIS( 35,  42); break;
-                                case Compute(92,  2): JIS( 35,  43); break;
-                                case Compute(92,  3): JIS( 35,  44); break;
-                                case Compute(92,  4): JIS( 35,  45); break;
-                                case Compute(93, 79): JIS( 40, 110); break;
+                                case Compute(92,  1): Param_Info1(Ztring().From_UTF8("\xE2\x9E\xA1")); Add (Ztring().From_UTF8("\xE2\x9E\xA1")); break; //U+27A1
+                                case Compute(92,  2): Param_Info1(Ztring().From_UTF8("\xE2\xAC\x85")); Add (Ztring().From_UTF8("\xE2\xAC\x85")); break; //U+2B05
+                                case Compute(92,  3): Param_Info1(Ztring().From_UTF8("\xE2\xAC\x86")); Add (Ztring().From_UTF8("\xE2\xAC\x86")); break; //U+2B06
+                                case Compute(92,  4): Param_Info1(Ztring().From_UTF8("\xE2\xAC\x87")); Add (Ztring().From_UTF8("\xE2\xAC\x87")); break; //U+2B07
+                                case Compute(93, 79): Param_Info1(Ztring().From_UTF8("\xE2\x81\x89")); Add (Ztring().From_UTF8("\xE2\x81\x89")); break; //U+2049
                                 case Compute(93, 88): Param_Info1(Ztring().From_UTF8("\xE2\x9A\x9E")); Add (Ztring().From_UTF8("\xE2\x9A\x9E")); break; //U+269E
                                 case Compute(93, 89): Param_Info1(Ztring().From_UTF8("\xE2\x9A\x9F")); Add (Ztring().From_UTF8("\xE2\x9A\x9F")); break; //U+269F
                                 case Compute(93, 90): Param_Info1(Ztring().From_UTF8("\xE2\x99\xAC")); Add (Ztring().From_UTF8("\xE2\x99\xAC")); break; //U+266C
@@ -963,10 +963,10 @@ void File_AribStdB24B37::Character (int16u CharacterSet, int8u G_Value, int8u Fi
                         Skip_C1(                                "Character");
                         switch (FirstByte)
                         {
-                            case 0x77: JIS( 33,  41); break;
-                            case 0x78: JIS( 33,  42); break;
-                            case 0x79: JIS( 33,  51); break;
-                            case 0x7A: JIS( 33,  33); break;
+                            case 0x77: JIS( 33,  51); break;
+                            case 0x78: JIS( 33,  52); break;
+                            case 0x79: JIS( 33,  60); break;
+                            case 0x7A: JIS( 33,  35); break;
                             case 0x7B: JIS( 33,  86); break;
                             case 0x7C: JIS( 33,  87); break;
                             case 0x7D: JIS( 33,  34); break;
