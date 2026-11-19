@@ -153,14 +153,14 @@ static const char* AribStdB24B37_format(int8u format)
         case  2 : return "Horizontal writing in high density";
         case  3 : return "Vertical writing in high density";
         case  4 : return "Horizontal writing of Western language";
-        case  5 : return "Horizontal writing in 1920 x 1080";
-        case  6 : return "Vertical writing in 1920 x 1080";
-        case  7 : return "Horizontal writing in 960 x 540";
-        case  8 : return "Vertical writing in 960 x 540";
-        case  9 : return "Horizontal writing in 1280 x 720";
-        case 10 : return "Vertical writing in 1280 x 720";
-        case 11 : return "Horizontal writing in 720 x 480";
-        case 12 : return "Vertical writing in 720 x 480";
+        case  6 : return "Horizontal writing in 1920 x 1080";
+        case  7 : return "Vertical writing in 1920 x 1080";
+        case  8 : return "Horizontal writing in 960 x 540";
+        case  9 : return "Vertical writing in 960 x 540";
+        case 10 : return "Horizontal writing in 720 x 480";
+        case 11 : return "Vertical writing in 720 x 480";
+        case 12 : return "Horizontal writing in 1280 x 720";
+        case 13 : return "Vertical writing in 1280 x 720";
         default : return "";
     }
 }
