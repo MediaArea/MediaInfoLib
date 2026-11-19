@@ -599,7 +599,7 @@ void File_Av1::sequence_header()
         TESTELSE_SB_END();
         if (mono_chrome)
         {
-            color_range=true;
+            Get_SB(color_range,                                 "color_range"); Param_Info1(Avc_video_full_range[color_range]);
             subsampling_x=true;
             subsampling_y=true;
         }
@@ -640,7 +640,8 @@ void File_Av1::sequence_header()
             if (subsampling_x && subsampling_y)
                 Get_S1 ( 2, chroma_sample_position,             "chroma_sample_position");
         }
-        Skip_SB(                                                "separate_uv_delta_q");
+        if (!mono_chrome)
+            Skip_SB(                                            "separate_uv_delta_q");
     Element_End0();
     Get_SB (film_grain_params_present,                          "film_grain_params_present");
     trailing_bits();
