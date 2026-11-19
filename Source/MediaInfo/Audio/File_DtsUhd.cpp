@@ -906,7 +906,7 @@ int File_DtsUhd::UnpackMDFrame()
     {
         if (!MDChunk.MDChunkSize)
             continue;
-        if (MDChunk.MDChunkCRCFlag && CheckCRC(Buffer+Buffer_Offset, MDChunk.MDChunkSize))
+        if (MDChunk.MDChunkCRCFlag && (Element_Offset+MDChunk.MDChunkSize>Element_Size || CheckCRC(Buffer+Buffer_Offset+(size_t)Element_Offset, MDChunk.MDChunkSize)))
         {
             Element_End0();
             return 1;
