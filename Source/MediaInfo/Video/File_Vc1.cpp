@@ -1189,7 +1189,7 @@ void File_Vc1::SequenceHeader()
         if (framerate_present)
         {
             if (framerate_form)
-                FrameRate=((float64)(framerateexp+1))/(float32)64;
+                FrameRate=((float64)(framerateexp+1))/32;
             else if (const int16u rate_dr = Vc1_FrameRate_dr(frameratecode_dr))
                 FrameRate=((float64)Vc1_FrameRate_enr(frameratecode_enr))/rate_dr;
         }
