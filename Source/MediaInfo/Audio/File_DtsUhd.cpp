@@ -490,7 +490,10 @@ int File_DtsUhd::ExtractChunkNaviData()
             Get_SB (ACIDsPresentFlag,                           "ACIDsPresentFlag");
         if (ACIDsPresentFlag)
             Get_VR (Table2468, Audio_Chunks[AudioChunkIndex].AudioChunkID, "AudioChunkID");
-        Get_VR(TableAudioChunkSizes, Audio_Chunks[AudioChunkIndex].AudioChunkSize, "AudioChunkSize");
+        if (Audio_Chunks[AudioChunkIndex].AudioChunkID)
+            Get_VR(TableAudioChunkSizes, Audio_Chunks[AudioChunkIndex].AudioChunkSize, "AudioChunkSize");
+        else
+            Audio_Chunks[AudioChunkIndex].AudioChunkSize=0; //NULL chunk
         ChunkBytes+=Audio_Chunks[AudioChunkIndex].AudioChunkSize;
     }
 
