@@ -509,6 +509,22 @@ bool File_Aac::Synchronize_ADTS()
                 continue;
             }
             int16u aac_frame_length=(CC3(Buffer+Buffer_Offset+3)>>5)&0x1FFF;
+            if (!IsSub && !(Buffer[Buffer_Offset+1]&0x01)) //protection_absent is 0, the header has the position of each raw data block after the first one, which is in the frame (only for a raw stream, e.g. VLB in NSV has something else there)
+            {
+                if (Buffer_Offset+7>Buffer_Size)
+                    return false; //Need more data
+                int8u number_of_raw_data_blocks_in_frame=Buffer[Buffer_Offset+6]&0x03;
+                if (Buffer_Offset+7+number_of_raw_data_blocks_in_frame*2>Buffer_Size)
+                    return false; //Need more data
+                int8u i=0;
+                while (i<number_of_raw_data_blocks_in_frame && CC2(Buffer+Buffer_Offset+7+i*2)<aac_frame_length)
+                    i++;
+                if (i<number_of_raw_data_blocks_in_frame)
+                {
+                    Buffer_Offset++;
+                    continue;
+                }
+            }
             if (IsSub && Buffer_Offset+aac_frame_length==Buffer_Size)
                 break;
             if (File_Offset+Buffer_Offset+aac_frame_length!=File_Size-File_EndTagSize)
