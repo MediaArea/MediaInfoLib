@@ -260,7 +260,7 @@ void File_Aac::Streams_Finish()
         if (Retrieve_Const(Stream_Audio, 0, "ConformanceErrors").empty() && Retrieve_Const(Stream_Audio, 0, "ConformanceWarnings").empty() && Retrieve_Const(Stream_Audio, 0, "ConformanceInfos").empty()) { //TODO: check why called twice in some cases
         if (ProfileLevel.profile != UnknownAudio && ProfileLevel.profile != UnspecifiedAudio
             && ((audioObjectType == 42 && !ConformanceFlags[BaselineUsac] && !ConformanceFlags[xHEAAC])
-             || (audioObjectType != 42 && (ConformanceFlags[BaselineUsac] || ConformanceFlags[xHEAAC])))) {
+             || (audioObjectType != 42 && (ConformanceFlags[BaselineUsac] || (ConformanceFlags[xHEAAC] && audioObjectType != 2 && audioObjectType != 5 && audioObjectType != 29))))) {
             string ProfileLevelString = Mpeg4_Descriptors_AudioProfileLevelIndicationString(ProfileLevel);
             auto audioObjectTypeString = to_string(audioObjectType);
             auto audioObjectTypeTemp = Aac_audioObjectType(audioObjectType);
