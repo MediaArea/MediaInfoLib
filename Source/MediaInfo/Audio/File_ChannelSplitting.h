@@ -108,6 +108,7 @@ private :
     bool AllFinished;
     size_t SplittedChannels_c;
     size_t SplittedChannels_i;
+    int64u Samples_Count; //Of each channel
 };
 
 #endif // MEDIAINFO_SMPTEST0337_YES

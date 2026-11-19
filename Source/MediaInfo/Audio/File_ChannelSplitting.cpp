@@ -64,6 +64,9 @@ File_ChannelSplitting::File_ChannelSplitting()
     Aligned=false;
     Common=NULL;
     Channel_Total=1;
+
+    //Temp
+    Samples_Count=0;
 }
 
 File_ChannelSplitting::~File_ChannelSplitting()
@@ -309,6 +312,7 @@ void File_ChannelSplitting::Read_Buffer_Continue()
     vector<common::channel*>& SplittedChannels1=Common->SplittedChannels[1];
 
     size_t Frame_Count_ToCopy=Buffer_Size/BytesToCopy;
+    Samples_Count+=Frame_Count_ToCopy;
     for (size_t i=0; i<PairCount; i++)
     {
         common::channel* SplittedChannel00=SplittedChannels0[i*2];
@@ -416,6 +420,11 @@ void File_ChannelSplitting::Read_Buffer_Continue_Parse()
             }
             if (!Status[IsAccepted] && !SplittedChannel->IsPcm && SplittedChannel->Parsers.size()==1 && SplittedChannel->Parsers[0]->Status[IsAccepted])
                 Accept();
+
+            //Once data bursts are found in some channels, the other channels are PCM if there is no sync after 1 s (the first
+            //sync of the data bursts is at most 0.5 s after the start in the known files), else they are parsed up to the end
+            if (Status[IsAccepted] && Config->ParseSpeed<1.0 && !SplittedChannel->IsPcm && SplittedChannel->Parsers.size()==1 && !SplittedChannel->Parsers[0]->Status[IsAccepted] && !SplittedChannel->Parsers[0]->Status[IsFinished] && !SplittedChannel->Parsers[0]->Synched && Samples_Count>=(SamplingRate?SamplingRate:48000))
+                Reject(SplittedChannel->Parsers[0]);
             if (SplittedChannel->IsPcm || SplittedChannel->Parsers.size()!=1 || (!SplittedChannel->Parsers[0]->Status[IsFinished] && !SplittedChannel->Parsers[0]->Status[IsFilled]))
                 AllFilled=false;
             if (SplittedChannel->IsPcm || SplittedChannel->Parsers.size()!=1 || !SplittedChannel->Parsers[0]->Status[IsFinished])
