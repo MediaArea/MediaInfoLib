@@ -269,6 +269,7 @@ void File_Ibi::Data_Parse()
             ATOM(SourceInfo_SourceSize)
         ATOM_END_MK
     ATOM(InformData)
+    ATOM(Void)
     DATA_END_DEFAULT
 }
 
