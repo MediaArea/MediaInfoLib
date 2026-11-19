@@ -4942,8 +4942,9 @@ void File_Ac4::dac4()
     if (byte_align)
         Skip_S1(byte_align,                                     "byte_align");
     BS_End();
+    Loop_CheckValue(n_presentations, 2, "n_presentations"); //presentation_version and pres_bytes
     Presentations_dac4.resize(n_presentations);
-    for (int8u p=0; p<n_presentations; p++)
+    for (int16u p=0; p<n_presentations; p++)
     {
         Element_Begin1("presentation");
         presentation& P=Presentations_dac4[p];
@@ -4993,11 +4994,13 @@ void File_Ac4::alternative_info()
     int8u n_targets;
     Element_Begin1("alternative_info");
     Get_S2 (16, name_len,                                       "name_len");
-    for (int8u Pos=0; Pos<name_len; Pos++)
+    Loop_CheckValue_BS(name_len, 8, "name_len");
+    for (int16u Pos=0; Pos<name_len; Pos++)
         Skip_S1(8,                                              "presentation_name");
 
     Get_S1 (5, n_targets,                                       "n_targets");
-    for (int8u Pos=0; Pos<name_len; Pos++)
+    Loop_CheckValue_BS(n_targets, 11, "n_targets");
+    for (int8u Pos=0; Pos<n_targets; Pos++)
     {
         Skip_S1(3,                                              "target_md_compat");
         Skip_S1(8,                                              "target_device_category");
