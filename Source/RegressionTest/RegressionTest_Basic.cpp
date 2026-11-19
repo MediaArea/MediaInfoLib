@@ -33,6 +33,8 @@ using namespace std;
 //The start event of a file has its name. The end events are sent by the parser of the file and by its sub-parsers,
 //with their depth as the count of stream IDs: 1 for the parser of a file of the list, 1 more for a sub-parser and for
 //the parser of a referenced file.
+//The log events of the library are stored as they are, each on its own line, after the line of the file being parsed
+//if any. E.g. a file which can not be opened or which is not found has no start event, its name is in its log event.
 
 struct opened_file
 {
@@ -47,6 +49,7 @@ struct UserHandle_struct
     File                Time_File;
     vector<opened_file> Opened; //The file of the list, then the files referenced by the previous one
     Ztring              Parser;
+    Ztring              Logs; //Log events during the parsing of the file of the list, written after its line
 };
 
 static void Basic_Close(struct UserHandle_struct* UserHandle, size_t Count)
@@ -58,7 +61,8 @@ static void Basic_Close(struct UserHandle_struct* UserHandle, size_t Count)
         {
             const opened_file& Opened=UserHandle->Opened[0];
             float64 Seconds=chrono::duration<float64>((Opened.IsEnded?Opened.End:chrono::steady_clock::now())-Opened.Start).count();
-            UserHandle->Time_File.Write(__T(';')+Ztring::ToZtring(Opened.Size)+__T(';')+Ztring::ToZtring(Seconds, 3)+EOL);
+            UserHandle->Time_File.Write(__T(';')+Ztring::ToZtring(Opened.Size)+__T(';')+Ztring::ToZtring(Seconds, 3)+EOL+UserHandle->Logs);
+            UserHandle->Logs.clear();
         }
         UserHandle->Opened.pop_back();
     }
@@ -109,6 +113,24 @@ void Basic_General_Parser_Selected_0 (struct MediaInfo_Event_General_Parser_Sele
         UserHandle->Parser.clear();
 }
 
+void Basic_Log_0 (struct MediaInfo_Event_Log_0* Event, struct UserHandle_struct* UserHandle)
+{
+    if (!Event->MessageStringU)
+        return;
+    Ztring Message;
+    Message.From_Unicode(Event->MessageStringU);
+
+    //Files whose parsing is finished
+    while (!UserHandle->Opened.empty() && UserHandle->Opened.back().IsEnded)
+        Basic_Close(UserHandle, UserHandle->Opened.size()-1);
+
+    //Between the lines of the files of the list, else after the line of the file being parsed
+    if (UserHandle->Opened.empty())
+        UserHandle->Time_File.Write(Message+EOL);
+    else
+        UserHandle->Logs+=Message+EOL;
+}
+
 /***************************************************************************/
 /* The callback function                                                   */
 /***************************************************************************/
@@ -143,6 +165,7 @@ void __stdcall Basic_Event_CallBackFunction(unsigned char* Data_Content, size_t 
                     case MediaInfo_Event_General_Start                                          : if (EventVersion==0 && Data_Size>=sizeof(struct MediaInfo_Event_General_Start_0)) Basic_General_Start_0((struct MediaInfo_Event_General_Start_0*)Data_Content, UserHandle); break;
                     case MediaInfo_Event_General_End                                            : if (EventVersion==0 && Data_Size>=sizeof(struct MediaInfo_Event_General_End_0)) Basic_General_End_0((struct MediaInfo_Event_General_End_0*)Data_Content, UserHandle); break;
                     case MediaInfo_Event_General_Parser_Selected                                : if (EventVersion==0 && Data_Size>=sizeof(struct MediaInfo_Event_General_Parser_Selected_0)) Basic_General_Parser_Selected_0((struct MediaInfo_Event_General_Parser_Selected_0*)Data_Content, UserHandle); break;
+                    case MediaInfo_Event_Log                                                    : if (EventVersion==0 && Data_Size>=sizeof(struct MediaInfo_Event_Log_0)) Basic_Log_0((struct MediaInfo_Event_Log_0*)Data_Content, UserHandle); break;
                     default                                                                     : ;
                 }
                 break;
@@ -184,8 +207,8 @@ static vector<time_line> Basic_Times_Load(const Ztring& FileName)
         size_t Seconds_Pos=Line.rfind(__T(';'));
         size_t Size_Pos=(Seconds_Pos==string::npos || !Seconds_Pos)?string::npos:Line.rfind(__T(';'), Seconds_Pos-1);
         size_t Name_End=(Size_Pos==string::npos || !Size_Pos)?string::npos:Line.rfind(__T(';'), Size_Pos-1);
-        if (Name_End==string::npos)
-            continue; //Not a line of times, e.g. the name of a file whose parsing did not end
+        if (Name_End==string::npos || Name_End+1!=Size_Pos)
+            continue; //Not a line of times with its empty column, e.g. the name of a file whose parsing did not end or a log
         time_line Item;
         Item.Name=Line.substr(0, Name_End);
         Item.Size=Line.substr(Size_Pos+1, Seconds_Pos-Size_Pos-1);
@@ -401,6 +424,7 @@ void RegressionTest_Basic(Ztring Files, Ztring DataBaseDirectory, int32u Scenari
     wostringstream Event_CallBackFunction_Text;
     Event_CallBackFunction_Text<<__T("CallBack=memory://")<<(MediaInfo_int64u)Basic_Event_CallBackFunction<<__T(";UserHandler=memory://")<<(MediaInfo_int64u)&UserHandle;
     MIL.Option(__T("File_Event_CallBackFunction"), Event_CallBackFunction_Text.str());
+    MIL.Option(__T("Event_CallBackFunction"), Event_CallBackFunction_Text.str()); //Log events of the library, global
     if (!Dir::Exists(DataBaseDirectory+__T("\\Basic\\New")))
         Dir::Create(DataBaseDirectory+__T("\\Basic\\New"));
     if (!Dir::Exists(DataBaseDirectory+__T("\\Basic\\Diff")))
@@ -411,6 +435,7 @@ void RegressionTest_Basic(Ztring Files, Ztring DataBaseDirectory, int32u Scenari
 
     cout<<" Analyzing"<<endl;
     MIL.Open(Files);
+    MIL.Option(__T("Event_CallBackFunction")); //Removed, the user handle is local
     Basic_Close(&UserHandle, 0); //Time of the last file
     UserHandle.Time_File.Close();
 
