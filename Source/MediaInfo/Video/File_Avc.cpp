@@ -702,6 +702,10 @@ File_Avc::File_Avc()
     FrameIsAlwaysComplete=false;
     MustParse_SPS_PPS=false;
     SizedBlocks=false;
+    PartialFrames=false;
+    FirstFrame_Offset=(int64u)-1;
+    FirstFrame_Pictures=0;
+    PartialFrames_IsRest=false;
 
     //Temporal references
     TemporalReferences_DelayedElement=NULL;
@@ -1878,7 +1882,18 @@ void File_Avc::Header_Parse()
         Get_S1 ( 2, nal_ref_idc,                                "nal_ref_idc");
         Get_S1 ( 5, nal_unit_type,                              "nal_unit_type");
         BS_End();
-        if (!Header_Parser_Fill_Size())
+        PartialFrames_IsRest=false;
+        if (PartialFrames && FrameIsAlwaysComplete && (nal_unit_type==1 || nal_unit_type==5) && FirstFrame_Offset!=File_Offset && FirstFrame_Pictures==1) //After the first frame, if it has one picture
+        {
+            //Only progressive pictures, not fields
+            PartialFrames_IsRest=true;
+            for (const auto Item : seq_parameter_sets)
+                if (Item && !Item->frame_mbs_only_flag)
+                    PartialFrames_IsRest=false;
+        }
+        if (PartialFrames_IsRest)
+            Header_Fill_Size(Buffer_Size-Buffer_Offset); //The rest of the frame from its first slice, without search of the next slices
+        else if (!Header_Parser_Fill_Size())
         {
             Element_WaitForMoreData();
             return;
@@ -2377,8 +2392,22 @@ void File_Avc::slice_header()
         if (first_mb_in_slice==0 && Element_Code!=20 && (slice_type==2 || slice_type==7)) //Not slice_layer_extension, I-Frame
             IFrame_Count++;
 
-        //Pictures info
-        if (Element_Code!=20) //Not slice_layer_extension
+        //Count of pictures in the first frame with a parsed slice, it is parsed with all its slices (frames after it may be partially parsed)
+        if (FrameIsAlwaysComplete && !first_mb_in_slice)
+        {
+            if (FirstFrame_Offset==(int64u)-1 && Element_Code!=20) //Not slice_layer_extension
+                FirstFrame_Offset=File_Offset;
+            if (FirstFrame_Offset==File_Offset)
+                FirstFrame_Pictures++;
+        }
+
+        //Pictures info, from complete pictures only
+        if (PartialFrames_IsRest) //The other slices of the picture are not parsed
+        {
+            Picture_End();
+            Picture_Flags_Pending=0;
+        }
+        else if (Element_Code!=20) //Not slice_layer_extension
             Picture_Slice(!first_mb_in_slice, slice_type, Element_Code==5);
         if (!first_mb_in_slice && Slices_CountInThisFrame)
         {
