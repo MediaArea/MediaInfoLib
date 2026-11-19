@@ -909,7 +909,7 @@ string Angles2String(angles Angles)
         case -90:   ToReturn+='X'; break; //No standard for that
         default :   ToReturn+=(Angles.Elevation>0?'U':'B');
                     //if (Angles.phi!=35 && Angles.phi!=-15)
-                        ToReturn+=ToAngle3Digits(Angles.Elevation);
+                        ToReturn+=ToAngle3Digits(Angles.Elevation<0?-Angles.Elevation:Angles.Elevation);
     }
 
     ToReturn+='_';
