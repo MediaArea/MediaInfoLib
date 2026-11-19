@@ -3955,7 +3955,7 @@ void File_Ac4::metadata(audio_substream& AudioSubstream, size_t Substream_Index)
                 Skip_V4(2,                                      "groupid");
             TEST_SB_END();
             TEST_SB_SKIP(                                       "b_codecdata");
-                Skip_V4(8,                                      "b_codecdata");
+                Skip_S1(8,                                      "codecdata");
             TEST_SB_END();
             Get_SB (b_discard_unknown_payload,                  "b_discard_unknown_payload");
             if (!b_discard_unknown_payload)
