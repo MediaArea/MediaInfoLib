@@ -4259,7 +4259,7 @@ void File_Ac4::dialog_enhancement_data(de_info& Info, bool b_iframe, bool b_de_s
         {
 
             if (de_nr_channels==2 && (Info.Config.de_method==0 || Info.Config.de_method==2))
-                Skip_SB(                                        "de_ms_proc_flag");
+                Get_SB (de_ms_proc_flag,                        "de_ms_proc_flag");
 
             for (int8u ch=0; ch<de_nr_channels-de_ms_proc_flag; ch++)
             {
