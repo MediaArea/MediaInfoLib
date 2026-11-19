@@ -1101,14 +1101,14 @@ void File_Ffv1::Parameters()
     if (version>1)
     {
         Get_RU (States, num_h_slices,                           "num_h_slices_minus1");
-        if (num_h_slices>=Width)
+        if (Width && num_h_slices>=Width)
         {
             Param_Error("FFV1-HEADER-num_h_slices:1");
             Element_End0();
             return;
         }
         Get_RU (States, num_v_slices,                           "num_v_slices_minus1");
-        if (num_v_slices>=Height)
+        if (Height && num_v_slices>=Height)
         {
             Param_Error("FFV1-HEADER-num_v_slices:1");
             Element_End0();
@@ -1116,7 +1116,7 @@ void File_Ffv1::Parameters()
         }
         num_h_slices++;
         num_v_slices++;
-        if (num_v_slices && num_h_slices>((size_t)-1)/num_v_slices)
+        if (!num_h_slices || !num_v_slices || ((!Width || !Height) && (int64u)num_h_slices*num_v_slices>1024) || num_h_slices>((size_t)-1)/num_v_slices) //Frame size not yet known: limit of 1024 slices, as FFmpeg
         {
             Param_Error("FFV1-HEADER-slices:1");
             Element_End0();
