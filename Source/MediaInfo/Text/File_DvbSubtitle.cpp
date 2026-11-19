@@ -267,7 +267,7 @@ void File_DvbSubtitle::Header_Parse()
                     MustFindDvbHeader=true;
 
                     //Filling
-                    Header_Fill_Code(0xFF, "end of PES data field marker");
+                    Header_Fill_Code(0x100, "end of PES data field marker"); //0xFF is the stuffing segment_type
                     Header_Fill_Size(1);
                     return;
         default   : ; //Normal (0x0F)
@@ -297,7 +297,8 @@ void File_DvbSubtitle::Data_Parse()
         case 0x15 : disparity_signalling_segment(); break;
         case 0x16 : alternative_CLUT_segment(); break;
         case 0x80 : end_of_display_set_segment(); break;
-        case 0xFF : end_of_PES_data_field_marker(); return;
+        case 0xFF : stuffing(); break;
+        case 0x100: end_of_PES_data_field_marker(); return;
         default   :
                     if (Element_Code>=0x17 && Element_Code<=0x7F)
                         reserved_for_future_use();
@@ -464,6 +465,14 @@ void File_DvbSubtitle::end_of_display_set_segment()
 void File_DvbSubtitle::private_data()
 {
     Element_Name("private data");
+
+    Skip_XX(Element_Size,                                       "Data");
+}
+
+//---------------------------------------------------------------------------
+void File_DvbSubtitle::stuffing()
+{
+    Element_Name("stuffing");
 
     Skip_XX(Element_Size,                                       "Data");
 }

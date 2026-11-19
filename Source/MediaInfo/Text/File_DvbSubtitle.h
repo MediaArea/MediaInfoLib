@@ -66,6 +66,7 @@ private :
     void reserved_for_future_use();
     void end_of_display_set_segment();
     void private_data();
+    void stuffing();
     void end_of_PES_data_field_marker();
 
     //Temp
