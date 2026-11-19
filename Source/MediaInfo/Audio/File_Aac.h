@@ -254,7 +254,7 @@ protected :
 
     //Elements - GA bitstream
     void payload                            (size_t BitsNotIncluded=(size_t)-1);
-    void raw_data_block                     ();
+    void raw_data_block                     (size_t BitsNotIncluded=(size_t)-1);
     void single_channel_element             ();
     void channel_pair_element               ();
     void ics_info                           ();
