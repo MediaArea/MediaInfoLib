@@ -1103,7 +1103,7 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
             {
                 delete AES; AES=new AESdecrypt;
                 AES->key128((const unsigned char*)Config->Encryption_Key_Get().c_str());
-                AES_IV=new int8u[16];
+                delete[] AES_IV; AES_IV=new int8u[16];
                 int128u2BigEndian(AES_IV, int128u((int64u)Config->File_Names_Pos-1));
             }
             if (AES)

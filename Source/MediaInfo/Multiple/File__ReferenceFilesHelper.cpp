@@ -154,9 +154,16 @@ File__ReferenceFilesHelper::File__ReferenceFilesHelper(File__Analyze* MI_, Media
 //---------------------------------------------------------------------------
 File__ReferenceFilesHelper::~File__ReferenceFilesHelper()
 {
+    Clear();
+}
+
+//---------------------------------------------------------------------------
+void File__ReferenceFilesHelper::Clear()
+{
     size_t Sequences_Size=Sequences.size();
     for (size_t Sequences_Pos=0; Sequences_Pos<Sequences_Size; ++Sequences_Pos)
         delete Sequences[Sequences_Pos];
+    Sequences.clear();
 }
 
 //***************************************************************************
@@ -567,6 +574,7 @@ void File__ReferenceFilesHelper::ParseReferences()
             if (MI->Config->Config_PerPackage==NULL)
             {
                 MI->Config->Config_PerPackage=new MediaInfo_Config_PerPackage;
+                MI->Config->Config_PerPackage_IsOwned=true;
                 MI->Config->Config_PerPackage->CountOfPackages=Sequences.size();
             }
         #endif //MEDIAINFO_EVENTS
@@ -2093,7 +2101,7 @@ size_t File__ReferenceFilesHelper::Seek (size_t Method, int64u Value, int64u ID)
                             else
                             {
                                 //There was a problem, removing Sequence
-                                Sequences.clear();
+                                Clear();
                                 return Seek(Method, Value, ID);
                             }
                             Sequences[Sequences_Current]->Status.reset();

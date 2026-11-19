@@ -28,6 +28,18 @@ namespace MediaInfoLib
 {
 
 //***************************************************************************
+// Infos
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+enum ps2audio_coding
+{
+    Coding_Unknown,
+    Coding_Pcm, //16-bit, little endian
+    Coding_Adpcm, //Frames of 16 bytes for 28 samples
+};
+
+//***************************************************************************
 // Buffer - Global
 //***************************************************************************
 
@@ -74,6 +86,8 @@ void File_Ps2Audio::SSbd()
     Element_End0();
 
     FILLING_BEGIN();
+        if (!IsSub && Header_Size==0x20 && Size<0x80000000 && (int64u)Size*2==File_Size-0x18)
+            Size=Size*2-0x10; //Header size 32 and body size of (data size + 16) / 2 are found together
         if (!IsSub && Data_Begin+Size>File_Size)
         {
             //The file ends before the end of the body
@@ -81,8 +95,18 @@ void File_Ps2Audio::SSbd()
             Size=(int32u)(File_Size-Data_Begin);
         }
         Fill(Stream_Audio, 0, Audio_StreamSize, Size);
-        if (BitRate)
-            Fill(Stream_Audio, 0, Audio_Duration, ((int64u)Size)*1000*8/BitRate);
+        if (SamplingRate && Channels)
+        {
+            int64u Samples=(int64u)-1;
+            switch (Coding)
+            {
+                case Coding_Pcm   : Samples=Size/Channels/2; break;
+                case Coding_Adpcm : Samples=(int64u)(Size/Channels/16)*28; break;
+                default           : ;
+            }
+            if (Samples!=(int64u)-1)
+                Fill(Stream_Audio, 0, Audio_Duration, Samples*1000/SamplingRate);
+        }
 
         Finish("PS2 Audio");
     FILLING_END();
@@ -93,41 +117,45 @@ void File_Ps2Audio::SShd()
 {
     Element_Begin1("SShd (Header)");
         //Parsing
-        int32u Size, Format, SamplingRate, Channels;
+        int32u Size, Format_Header, SamplingRate_Header, Channels_Header;
         Skip_C4(                                                "ID");
         Get_L4 (Size,                                           "Size");
-        if (Size!=0x18)
+        if (Size!=0x18 && Size!=0x20 && (IsSub || Size!=File_Size-8)) //0x20 and the file size minus 8 are also found, the header has the same content
         {
             Trusted_IsNot("Bad size");
             Element_End0();
             return;
         }
-        Get_L4 (Format,                                         "Format");
-        Get_L4 (SamplingRate,                                   "Sampling rate");
-        Get_L4 (Channels,                                       "Channels");
-        Skip_L4(                                                "Bytes per channel");
-        Skip_L4(                                                "Reserved");
-        Skip_L4(                                                "Reserved");
+        Get_L4 (Format_Header,                                  "Format");
+        Get_L4 (SamplingRate_Header,                            "Sampling rate");
+        Get_L4 (Channels_Header,                                "Channels");
+        Skip_L4(                                                "Interleave");
+        Skip_L4(                                                "Loop start");
+        Skip_L4(                                                "Loop end");
     Element_End0();
 
     FILLING_BEGIN();
         if (Status[IsAccepted])
             return; //Only the first header is used
+        Header_Size=Size;
+        SamplingRate=SamplingRate_Header;
+        Channels=Channels_Header;
 
         Accept("PS2 Audio");
         Fill(Stream_General, 0, General_Format, "PS2 Audio");
 
-        const int64u BitRate64=((int64u)SamplingRate)*Channels*16; //Always 16 bits
-        BitRate=BitRate64>(int32u)-1?0:(int32u)BitRate64;
-
         Stream_Prepare(Stream_Audio);
         Ztring FormatS;
-        switch(Format)
+        float64 BitsPerSample=0;
+        switch(Format_Header)
         {
-            case 0x00000001 : FormatS=__T("PCM"); break;
-            case 0x00000010 : FormatS=__T("ADPCM"); break;
+            case 0x00000001 :
+            case 0x80000001 : Coding=Coding_Pcm; FormatS=__T("PCM"); BitsPerSample=16; break;
+            case 0x00000002 :
+            case 0x00000010 : Coding=Coding_Adpcm; FormatS=__T("ADPCM"); BitsPerSample=16*8/28.0; break;
             default         : ;
         }
+        const float64 BitRate=SamplingRate*BitsPerSample*Channels;
         Fill(Stream_Audio, 0, Audio_Format, FormatS);
         Fill(Stream_Audio, 0, Audio_Codec,  FormatS);
         Fill(Stream_Audio, 0, Audio_MuxingMode, "PS2");
@@ -135,8 +163,10 @@ void File_Ps2Audio::SShd()
             Fill(Stream_Audio, 0, Audio_SamplingRate, SamplingRate);
         if (Channels)
             Fill(Stream_Audio, 0, Audio_Channel_s_, Channels);
-        if (BitRate)
-            Fill(Stream_Audio, 0, Audio_BitRate, BitRate);
+        if (BitRate && BitRate<=(int32u)-1)
+            Fill(Stream_Audio, 0, Audio_BitRate, BitRate, 0);
+        else
+            Coding=Coding_Unknown; //No duration from values out of range
     FILLING_END();
 }
 

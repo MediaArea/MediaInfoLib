@@ -227,7 +227,7 @@ void File_Aaf::Header_Parse()
                                   Header_Fill_Size(((int64u)1) << SectorShift);
                                   break;
         case Step_Stream        : Header_Fill_Code(0, "Stream");
-                                  Header_Fill_Size(((int64u)1) << (!Streams.empty() && Streams[0]->Size<MiniSectorCutoff ? MiniSectorShift : SectorShift));
+                                  Header_Fill_Size(((int64u)1) << (Streams_Pos<Streams.size() && Streams[Streams_Pos]->Size<MiniSectorCutoff ? MiniSectorShift : SectorShift));
                                   break;
         default                 : ;
     }
@@ -541,7 +541,8 @@ void File_Aaf::StreamElement_Parse()
         File_Offset=Save_File_Offset;
         Buffer_Offset=Save_Buffer_Offset;
         Buffer_Size=Save_Buffer_Size;
-        delete[] Buffer; Buffer=Save_Buffer;
+        Buffer=Save_Buffer;
+        delete[] Streams[Streams_Pos]->Buffer; Streams[Streams_Pos]->Buffer=NULL;
         Element_Offset=Element_Size;
     }
 }

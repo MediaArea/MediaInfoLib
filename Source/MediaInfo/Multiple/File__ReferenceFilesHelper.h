@@ -50,7 +50,7 @@ private :
 
 public:
     size_t                          Sequences_Size() {return Sequences.size();}
-    void                            Clear() {Sequences.clear();}
+    void                            Clear();
     bool                            FilesForStorage;
     bool                            HasMainFile;
     bool                            HasMainFile_Filled;

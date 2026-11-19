@@ -1153,6 +1153,9 @@ File_Ac4::File_Ac4()
     //In
     Frame_Count_Valid=0;
     MustParse_dac4=false;
+
+    //Temp
+    frame_rate_factor=1; //Also when there is no presentation info
 }
 
 //---------------------------------------------------------------------------
@@ -2375,8 +2378,13 @@ void File_Ac4::ac4_toc()
                 Fill(Stream_Audio, 0, Audio_UniqueID, short_program_id);
             }
             TEST_SB_SKIP(                                       "b_program_uuid_present");
+                int64u program_uuid_hi, program_uuid_lo;
+                Get_S8 (64, program_uuid_hi,                    "program_uuid (part 1)");
+                Get_S8 (64, program_uuid_lo,                    "program_uuid (part 2)");
                 int128u program_uuid;
-                Get_UUID (program_uuid,                         "program_uuid");
+                program_uuid.hi=program_uuid_hi;
+                program_uuid.lo=program_uuid_lo;
+                Param_Info1(Ztring().From_UUID(program_uuid));
                 if (FillID)
                 {
                     Fill(Stream_General, 0, General_UniqueID, Ztring().From_UUID(program_uuid));
@@ -5041,7 +5049,7 @@ void File_Ac4::ac4_presentation_v1_dsi(presentation& P)
             int8u n_filter_bytes;
             Get_S1 (8, n_filter_bytes,                          "n_filter_bytes");
             if (n_filter_bytes)
-                Skip_XX(n_filter_bytes*8,                       "filter_data");
+                Skip_BS(n_filter_bytes*8,                       "filter_data");
         TEST_SB_END();
 
         if (P.presentation_config==(int8u)-1)
@@ -5077,7 +5085,7 @@ void File_Ac4::ac4_presentation_v1_dsi(presentation& P)
                 int8u n_skip_bytes;
                 Get_S1 (7, n_skip_bytes,                        "n_skip_bytes");
                 if (n_skip_bytes)
-                    Skip_XX(n_skip_bytes*8,                     "skip_data");
+                    Skip_BS(n_skip_bytes*8,                     "skip_data");
             }
         }
 

@@ -292,6 +292,7 @@ MediaInfo_Config_MediaInfo::MediaInfo_Config_MediaInfo()
     IsFinishing=false;
     #if MEDIAINFO_EVENTS
         Config_PerPackage=NULL;
+        Config_PerPackage_IsOwned=false;
         Events_TimestampShift_Disabled=false;
     #endif //MEDIAINFO_EVENTS
     #if MEDIAINFO_DEMUX
@@ -358,6 +359,31 @@ static void Event_Delayed_Free(int8u* Data_Content, size_t Data_Size)
         delete[] New->MoreData; New->MoreData=NULL;
     }
 }
+
+//---------------------------------------------------------------------------
+// Free the buffers copied in Event_Send() for events waiting for the time stamp of the reference stream, conditions must be same as the ones used for copying
+static void Event_TimestampShift_Delayed_Free(int8u* Data_Content, size_t Data_Size)
+{
+    int32u EventCode;
+    std::memcpy(&EventCode, Data_Content, sizeof(EventCode));
+    if ((EventCode&0x00FFFFFF)==(MediaInfo_Event_Global_SimpleText<<8) && Data_Size==sizeof(MediaInfo_Event_Global_SimpleText_0))
+    {
+        MediaInfo_Event_Global_SimpleText_0* New=(MediaInfo_Event_Global_SimpleText_0*)Data_Content;
+        delete[] New->Content; New->Content=NULL;
+        if (New->Row_Values)
+        {
+            for (size_t Row_Pos=0; Row_Pos<New->Row_Max; Row_Pos++)
+                delete[] New->Row_Values[Row_Pos];
+            delete[] New->Row_Values; New->Row_Values=NULL;
+        }
+        if (New->Row_Attributes)
+        {
+            for (size_t Row_Pos=0; Row_Pos<New->Row_Max; Row_Pos++)
+                delete[] New->Row_Attributes[Row_Pos];
+            delete[] New->Row_Attributes; New->Row_Attributes=NULL;
+        }
+    }
+}
 #endif //MEDIAINFO_EVENTS
 
 //---------------------------------------------------------------------------
@@ -373,6 +399,12 @@ MediaInfo_Config_MediaInfo::~MediaInfo_Config_MediaInfo()
                 if (Event->second[Pos])
                     Event_Delayed_Free(Event->second[Pos]->Data_Content, Event->second[Pos]->Data_Size);
                 delete Event->second[Pos]; //Event->second[Pos]=NULL;
+            }
+        for (size_t Pos=0; Pos<Events_TimestampShift_Delayed.size(); Pos++)
+            if (Events_TimestampShift_Delayed[Pos])
+            {
+                Event_TimestampShift_Delayed_Free(Events_TimestampShift_Delayed[Pos]->Data_Content, Events_TimestampShift_Delayed[Pos]->Data_Size);
+                delete Events_TimestampShift_Delayed[Pos]; //Events_TimestampShift_Delayed[Pos]=NULL;
             }
     #endif //MEDIAINFO_EVENTS
     #if MEDIAINFO_ADVANCED
@@ -3090,25 +3122,7 @@ void MediaInfo_Config_MediaInfo::Event_Send (File__Analyze* Source, const int8u*
                         Event_Send(NULL, Events_TimestampShift_Delayed[Pos]->Data_Content, Events_TimestampShift_Delayed[Pos]->Data_Size, Events_TimestampShift_Delayed[Pos]->File_Name);
                         CS.Enter();
 
-                        int32u EventCode=*((int32u*)Events_TimestampShift_Delayed[Pos]->Data_Content);
-                        bool IsSimpleText=(EventCode&0x00FFFF00)==(MediaInfo_Event_Global_SimpleText<<8);
-                        if (IsSimpleText)
-                        {
-                            MediaInfo_Event_Global_SimpleText_0* Old=(MediaInfo_Event_Global_SimpleText_0*)Events_TimestampShift_Delayed[Pos]->Data_Content;
-                            delete[] Old->Content; //Old->Content=NULL;
-                            if (Old->Row_Values)
-                            {
-                                for (size_t Row_Pos=0; Row_Pos<Old->Row_Max; Row_Pos++)
-                                    delete[] Old->Row_Values[Row_Pos]; // Row_Values[Row_Pos]=NULL;
-                                delete[] Old->Row_Values; //Old->Row_Values=NULL;
-                            }
-                            if (Old->Row_Attributes)
-                            {
-                                for (size_t Row_Pos=0; Row_Pos<Old->Row_Max; Row_Pos++)
-                                    delete[] Old->Row_Attributes[Row_Pos]; // Row_Attributes[Row_Pos]=NULL;
-                                delete[] Old->Row_Attributes; //Old->Row_Attributes=NULL;
-                            }
-                        }
+                        Event_TimestampShift_Delayed_Free(Events_TimestampShift_Delayed[Pos]->Data_Content, Events_TimestampShift_Delayed[Pos]->Data_Size);
 
                         delete Events_TimestampShift_Delayed[Pos]; //Events_TimestampShift_Delayed[Pos]=NULL;
                     }
