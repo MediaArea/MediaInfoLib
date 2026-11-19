@@ -2326,6 +2326,7 @@ void File_DolbyE::evo_protection()
 void File_DolbyE::object_audio_metadata_payload()
 {
     nonstd_bed_channel_assignment_masks.clear();
+    b_object_in_bed_or_isf.clear();
     ObjectElements.clear();
 
     Element_Begin1("object_audio_metadata_payload");
