@@ -1674,7 +1674,7 @@ void File__ReferenceFilesHelper::List_Compute()
                             if (Pos_Path!=Ztring::npos)
                                 SourcePath=SourceName.substr(0, Pos_Path);
                         }
-                        size_t SourcePath_Size=SourcePath.size()+1; //Path size + path separator size
+                        size_t SourcePath_Size=SourcePath.empty()?0:(SourcePath.size()+1); //Path size + path separator size
                         Ztring Temp=Sequences[Sequences_Current]->MI->Config.File_Names[0];
                         if (!Config->File_IsReferenced_Get())
                             Temp.erase(0, SourcePath_Size);
@@ -1714,7 +1714,7 @@ void File__ReferenceFilesHelper::List_Compute()
                 if (Pos_Path!=Ztring::npos)
                     SourcePath=SourceName.substr(0, Pos_Path);
             }
-            size_t SourcePath_Size=SourcePath.size()+1; //Path size + path separator size
+            size_t SourcePath_Size=SourcePath.empty()?0:(SourcePath.size()+1); //Path size + path separator size
             for (size_t Pos=0; Pos<Sequences[Sequences_Current]->FileNames.size(); Pos++)
             {
                 Ztring Temp=Sequences[Sequences_Current]->FileNames[Pos];
