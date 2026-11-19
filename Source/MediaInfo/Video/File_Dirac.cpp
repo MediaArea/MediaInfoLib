@@ -341,7 +341,7 @@ void Dirac_base_video_format(int32u   base_video_format,
                     return;
         case  17 :  frame_width=3840;
                     frame_height=2160;
-                    chroma_format=0;
+                    chroma_format=1;
                     source_sampling=0;
                     clean_width=3840;
                     clean_height=2160;
@@ -352,7 +352,7 @@ void Dirac_base_video_format(int32u   base_video_format,
                     return;
         case  18 :  frame_width=3840;
                     frame_height=2160;
-                    chroma_format=0;
+                    chroma_format=1;
                     source_sampling=0;
                     clean_width=3840;
                     clean_height=2160;
@@ -363,7 +363,7 @@ void Dirac_base_video_format(int32u   base_video_format,
                     return;
         case  19 :  frame_width=7680;
                     frame_height=4320;
-                    chroma_format=0;
+                    chroma_format=1;
                     source_sampling=0;
                     clean_width=7680;
                     clean_height=4320;
@@ -374,7 +374,7 @@ void Dirac_base_video_format(int32u   base_video_format,
                     return;
         case  20 :  frame_width=7680;
                     frame_height=4320;
-                    chroma_format=0;
+                    chroma_format=1;
                     source_sampling=0;
                     clean_width=7680;
                     clean_height=4320;
