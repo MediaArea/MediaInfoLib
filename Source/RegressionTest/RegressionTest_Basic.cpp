@@ -431,6 +431,8 @@ void RegressionTest_Basic(Ztring Files, Ztring DataBaseDirectory, int32u Scenari
         Dir::Create(DataBaseDirectory+__T("\\Basic\\Diff"));
     File::Delete(DataBaseDirectory+__T("\\Basic\\New\\Times.csv"));
     File::Delete(DataBaseDirectory+__T("\\Basic\\Diff\\Times.csv")); //Diff of a previous run
+    for (size_t StreamKind=0; StreamKind<Stream_Max; StreamKind++)
+        File::Delete(DataBaseDirectory+__T("\\Basic\\Diff\\")+Ztring::ToZtring(StreamKind)+__T(".csv")); //Diff of a previous run, stale during this run and if this run does not finish
     UserHandle.Time_File.Open(DataBaseDirectory+__T("\\Basic\\New\\Times.csv"), File::Access_Write_Append);
 
     cout<<" Analyzing"<<endl;
@@ -554,7 +556,5 @@ void RegressionTest_Basic(Ztring Files, Ztring DataBaseDirectory, int32u Scenari
                 Dir::Create(DataBaseDirectory+__T("\\Basic\\Diff"));
             Diff.Save(DataBaseDirectory+__T("\\Basic\\Diff\\")+Ztring::ToZtring(StreamKind)+__T(".csv"));
         }
-        else
-            File::Delete(DataBaseDirectory+__T("\\Basic\\Diff\\")+Ztring::ToZtring(StreamKind)+__T(".csv")); //No difference, the file of a previous run would be stale
     }
 }
