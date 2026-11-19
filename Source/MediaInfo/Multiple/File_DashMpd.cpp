@@ -170,6 +170,7 @@ struct template_generic
         startNumber=ToCopy.startNumber;
         duration_Max=ToCopy.duration_Max;
         startNumber_Max=ToCopy.startNumber_Max;
+        SegmentTimeLines=ToCopy.SegmentTimeLines;
     }
 
     ~template_generic()
@@ -247,7 +248,7 @@ void template_generic::SegmentTimeline_Attributes_Parse (XMLElement* Item)
         SegmentTimeLine.t=Ztring().From_UTF8(Attribute).To_int64u();
     }
     else
-        SegmentTimeLine.t=startNumber;
+        SegmentTimeLine.t=(int64u)-1; //Continuation of the previous segment
 
     //Attributes - d (duration per segment)
     Attribute=Item->Attribute("d");
@@ -262,12 +263,18 @@ void template_generic::SegmentTimeline_Attributes_Parse (XMLElement* Item)
     Attribute=Item->Attribute("r");
     if (Attribute)
     {
-        SegmentTimeLine.r=Ztring().From_UTF8(Attribute).To_int64u();
+        if (*Attribute=='-')
+            SegmentTimeLine.r=(int64u)-1; //Negative value: repeated until the next S element, resolved by Decode()
+        else
+            SegmentTimeLine.r=Ztring().From_UTF8(Attribute).To_int64u();
     }
 
     SegmentTimeLines.push_back(SegmentTimeLine);
-    duration_Max+=SegmentTimeLine.d*(SegmentTimeLine.r+1);
-    startNumber_Max+=SegmentTimeLine.r+1;
+    if (SegmentTimeLine.r!=(int64u)-1)
+    {
+        duration_Max+=SegmentTimeLine.d*(SegmentTimeLine.r+1);
+        startNumber_Max+=SegmentTimeLine.r+1;
+    }
 }
 
 void template_generic::Representation_Attributes_Parse (XMLElement* Item)
@@ -400,9 +407,32 @@ void template_generic::Decode()
             {
                 int64u SegmentTimeLines_duration=0;
                 int64u SegmentTimeLines_startNumber=startNumber;
-                for (size_t SegmentTimeLines_Pos=0; SegmentTimeLines_Pos<SegmentTimeLines.size(); SegmentTimeLines_Pos++)
+                int64u Names_Remaining=0x10000; //Limit against malformed repeat counts
+                for (size_t SegmentTimeLines_Pos=0; SegmentTimeLines_Pos<SegmentTimeLines.size() && Names_Remaining; SegmentTimeLines_Pos++)
                 {
-                    for (int64u Pos=0; Pos<=SegmentTimeLines[SegmentTimeLines_Pos].r; Pos++)
+                    const segmenttimeline& SegmentTimeLine=SegmentTimeLines[SegmentTimeLines_Pos];
+                    if (SegmentTimeLine.t!=(int64u)-1)
+                        SegmentTimeLines_duration=SegmentTimeLine.t;
+                    int64u r=SegmentTimeLine.r;
+                    if (r==(int64u)-1)
+                    {
+                        //Repeated until the start time of the next S element, else the end of the period is not known (only 1 segment)
+                        r=0;
+                        if (SegmentTimeLines_Pos+1<SegmentTimeLines.size())
+                        {
+                            int64u t_Next=SegmentTimeLines[SegmentTimeLines_Pos+1].t;
+                            if (t_Next!=(int64u)-1 && SegmentTimeLine.d && t_Next>SegmentTimeLines_duration)
+                            {
+                                r=(t_Next-SegmentTimeLines_duration+SegmentTimeLine.d-1)/SegmentTimeLine.d;
+                                if (r)
+                                    r--;
+                            }
+                        }
+                    }
+                    if (r>=Names_Remaining)
+                        r=Names_Remaining-1;
+                    Names_Remaining-=r+1;
+                    for (int64u Pos=0; Pos<=r; Pos++)
                     {
                         Ztring Media_Name_Temp(Media_Name);
                         size_t Time_Pos_Temp=Time_Pos;
