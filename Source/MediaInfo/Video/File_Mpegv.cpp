@@ -3440,6 +3440,7 @@ void File_Mpegv::user_data_start_3()
         buffer_data* BufferData=new buffer_data(Buffer+Buffer_Offset+(size_t)Element_Offset,(size_t)(Element_Size-Element_Offset));
         Ref->Scte.push_back(BufferData);
         Ref->Scte_Parsed.push_back(false);
+        Ref->Scte_picture_structure.push_back(Ref->picture_structure);
         if (Ref->Scte_Parsed.size()>=2 && Ref->Scte_Parsed[Ref->Scte_Parsed.size()-2] && Scte_TemporalReference_Offset==TemporalReference_Offset+temporal_reference+1)
             Scte_TemporalReference_Offset--;
 
@@ -3477,7 +3478,6 @@ void File_Mpegv::user_data_start_3()
                     Open_Buffer_Init(Scte_Parser);
                 }
                 //((File_Scte20*)Scte_Parser)->AspectRatio=MPEG_Version==1?Mpegv_aspect_ratio1[aspect_ratio_information]:Mpegv_aspect_ratio2[aspect_ratio_information];
-                ((File_Scte20*)Scte_Parser)->picture_structure=TemporalReference[Scte20_Pos]->picture_structure;
                 ((File_Scte20*)Scte_Parser)->progressive_sequence=progressive_sequence;
                 ((File_Scte20*)Scte_Parser)->progressive_frame=TemporalReference[Scte20_Pos]->progressive_frame;
                 ((File_Scte20*)Scte_Parser)->top_field_first=TemporalReference[Scte20_Pos]->top_field_first;
@@ -3485,6 +3485,7 @@ void File_Mpegv::user_data_start_3()
                 for (size_t Pos=0; Pos<TemporalReference[Scte20_Pos]->Scte.size(); Pos++)
                     if (!TemporalReference[Scte20_Pos]->Scte_Parsed[Pos])
                     {
+                        ((File_Scte20*)Scte_Parser)->picture_structure=TemporalReference[Scte20_Pos]->Scte_picture_structure[Pos];
                         if (Scte_Parser->PTS_DTS_Needed)
                         {
                             Scte_Parser->FrameInfo.PCR=FrameInfo.PCR;
@@ -4017,6 +4018,7 @@ void File_Mpegv::extension_start()
                             }
                             FirstFieldFound=!FirstFieldFound;
                             PictureStructure_Field++;
+                            GetTemporalReference()->picture_structure=picture_structure;
                         }
                     }
                     else
