@@ -281,7 +281,7 @@ struct LineCharCounter
 
                 // Advance by the UTF-8 sequence length
                 text += utf8Len;
-                while ((*text & 0x80) == 0x80)
+                while ((*text & 0xC0) == 0x80)
                     ++text;
             }
         }
