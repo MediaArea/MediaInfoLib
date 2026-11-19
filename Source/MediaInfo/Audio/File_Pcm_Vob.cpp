@@ -184,7 +184,7 @@ void File_Pcm_Vob::Read_Buffer_Continue()
     Skip_SB(                                                    "Unknown");
     Get_S1 (3, NumberOfChannelsMinusOne,                        "Number of channels (minus 1)");
     BS_End();
-    Skip_B1(                                                    "Start code");
+    Skip_B1(                                                    "Dynamic range control");
 
     #if MEDIAINFO_DEMUX
         if (Config->Demux_PCM_20bitTo16bit_Get() && BitDepth==1) //20-bit
