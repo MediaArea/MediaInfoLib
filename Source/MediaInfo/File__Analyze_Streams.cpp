@@ -5211,13 +5211,28 @@ void File__Analyze::Merge_HDR(size_t StreamPos_To, const Ztring* Container, cons
             Container_Profiles.Write(Container[Video_HDR_Format_Profile-Video_HDR_Format]);
             Container_Profiles.resize(Container_Formats.size());
             const auto& Container_Profile=Container_Profiles[Container_DolbyVision];
-            if (Container_Profile.size()>=3 && !Container_Profile.compare(Container_Profile.size()-3, 3, __T(".05")))
+            const auto Container_Profile_Is=[&](const Char* Suffix) {
+                return Container_Profile.size()>=3 && !Container_Profile.compare(Container_Profile.size()-3, 3, Suffix);
+            };
+            const char* Profile_NoCompatibility=Container_Profile_Is(__T(".05"))?"5":(Container_Profile_Is(__T(".20"))?"20":nullptr);
+            if (Profile_NoCompatibility)
             {
-                //Profile 5 VUI is either 1,2,2,2,0 or 1,9,16,15,0 (video_full_range_flag, colour_primaries, transfer_characteristics, matrix_coeffs, chroma_sample_loc_type)
+                //Profile 5 VUI is either 1,2,2,2,0 or 1,9,16,15,0, profile 20 VUI is 1,9,16,15,2 with matrix_coeffs 2 tolerated (video_full_range_flag, colour_primaries, transfer_characteristics, matrix_coeffs, chroma_sample_loc_type)
                 if (ToAdd_colour_range==__T("Limited"))
-                    Fill_Conformance("Crosscheck DolbyVisionConfiguration dv_profile", "Dolby Vision configuration dv_profile 5 does not permit HEVC VUI video_full_range_flag (actual 0, expected 1)", {}, Conformance_Error, Stream_Video, StreamPos_To);
+                    Fill_Conformance("Crosscheck DolbyVisionConfiguration dv_profile", (string("Dolby Vision configuration dv_profile ") + Profile_NoCompatibility + " does not permit HEVC VUI video_full_range_flag (actual 0, expected 1)").c_str(), {}, Conformance_Error, Stream_Video, StreamPos_To);
                 if (!ToAdd_matrix_coefficients.empty() && ToAdd_matrix_coefficients!=__T("IPT-PQ-C2"))
-                    Fill_Conformance("Crosscheck DolbyVisionConfiguration dv_profile", ("Dolby Vision configuration dv_profile 5 does not permit HEVC VUI matrix_coeffs (actual " + ToAdd_matrix_coefficients.To_UTF8() + ", expected IPT-PQ-C2)").c_str(), {}, Conformance_Error, Stream_Video, StreamPos_To);
+                    Fill_Conformance("Crosscheck DolbyVisionConfiguration dv_profile", (string("Dolby Vision configuration dv_profile ") + Profile_NoCompatibility + " does not permit HEVC VUI matrix_coeffs (actual " + ToAdd_matrix_coefficients.To_UTF8() + ", expected IPT-PQ-C2)").c_str(), {}, Conformance_Error, Stream_Video, StreamPos_To);
+            }
+            if (Container_Profile_Is(__T(".20")))
+            {
+                //Profile 20 has no cross-compatible base layer (Dolby Vision Profiles and Levels v1.4)
+                ZtringList Container_Compatibilities;
+                Container_Compatibilities.Separator_Set(0, __T(" / "));
+                Container_Compatibilities.Write(Container[Video_HDR_Format_Compatibility-Video_HDR_Format]);
+                Container_Compatibilities.resize(Container_Formats.size());
+                const auto& Container_Compatibility=Container_Compatibilities[Container_DolbyVision];
+                if (!Container_Compatibility.empty())
+                    Fill_Conformance("DolbyVisionConfiguration dv_bl_signal_compatibility_id", ("Dolby Vision configuration dv_profile 20 does not permit a cross-compatible base layer (actual " + Container_Compatibility.To_UTF8() + ", expected none)").c_str(), {}, Conformance_Error, Stream_Video, StreamPos_To);
             }
         }
     #endif //MEDIAINFO_CONFORMANCE
