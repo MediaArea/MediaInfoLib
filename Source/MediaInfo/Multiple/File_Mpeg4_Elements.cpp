@@ -7308,6 +7308,8 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx()
         case Elements::moov_trak_mdia_minf_stbl_stsd_mett:
         {
             Element_Name("Metadata");
+            Skip_B6(                                            "Reserved");
+            Skip_B2(                                            "Data reference index");
             Skip_String(SizeUpTo0(),                            "content_encoding");
             Skip_B1(                                            "zero");
             Get_String(SizeUpTo0(), CodecIDAddition,            "mime_format");
