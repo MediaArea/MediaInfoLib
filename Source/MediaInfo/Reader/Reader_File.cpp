@@ -765,7 +765,7 @@ size_t Reader_File::Format_Test_PerParser_Continue (MediaInfo_Internal* MI)
 
             if (!MI->Config.File_Buffer_Size
              && (MI->Config.File_Current_Offset + F.Position_Get()>=MI->Config.File_Size
-              || (MI->Config.File_Size==(int64u)-1 && MI->Config.File_Names_Pos>=MI->Config.File_Names.size() && F.Position_Get()>=F.Size_Get())))
+              || ((MI->Config.File_Size==(int64u)-1 || MI->Config.File_Names.size()>1) && MI->Config.File_Names_Pos>=MI->Config.File_Names.size() && F.Position_Get()>=F.Size_Get()))) //With a list of files, File_Current_Offset may count less than the file sizes (e.g. without the AES padding of the previous files)
                 break; //Finished, and no other data
 
             #ifdef MEDIAINFO_DEBUG
