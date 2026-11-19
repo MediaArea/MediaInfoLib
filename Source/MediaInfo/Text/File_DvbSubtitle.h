@@ -61,6 +61,8 @@ private :
     void CLUT_definition_segment();
     void object_data_segment();
     void display_definition_segment();
+    void disparity_signalling_segment();
+    void alternative_CLUT_segment();
     void reserved_for_future_use();
     void end_of_display_set_segment();
     void private_data();

@@ -294,10 +294,12 @@ void File_DvbSubtitle::Data_Parse()
         case 0x12 : CLUT_definition_segment(); break;
         case 0x13 : object_data_segment(); break;
         case 0x14 : display_definition_segment(); break;
+        case 0x15 : disparity_signalling_segment(); break;
+        case 0x16 : alternative_CLUT_segment(); break;
         case 0x80 : end_of_display_set_segment(); break;
         case 0xFF : end_of_PES_data_field_marker(); return;
         default   :
-                    if (Element_Code>=0x40 && Element_Code<=0x7F)
+                    if (Element_Code>=0x17 && Element_Code<=0x7F)
                         reserved_for_future_use();
                     else if (Element_Code>=0x81 && Element_Code<=0xEF)
                         private_data();
@@ -422,6 +424,22 @@ void File_DvbSubtitle::object_data_segment()
 void File_DvbSubtitle::display_definition_segment()
 {
     Element_Name("display definition segment");
+
+    Skip_XX(Element_Size,                                       "Data");
+}
+
+//---------------------------------------------------------------------------
+void File_DvbSubtitle::disparity_signalling_segment()
+{
+    Element_Name("disparity signalling segment");
+
+    Skip_XX(Element_Size,                                       "Data");
+}
+
+//---------------------------------------------------------------------------
+void File_DvbSubtitle::alternative_CLUT_segment()
+{
+    Element_Name("alternative CLUT segment");
 
     Skip_XX(Element_Size,                                       "Data");
 }
