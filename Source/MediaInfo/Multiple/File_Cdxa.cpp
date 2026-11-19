@@ -155,7 +155,6 @@ void File_Cdxa::FileHeader_Parse()
     FILLING_BEGIN();
         Accept("CDXA");
         MI=new MediaInfo_Internal;
-        MI->Option(__T("FormatDetection_MaximumOffset"), __T("1048576"));
         MI->Option(__T("File_IsReferenced"), __T("1"));
         MI->Option(__T("File_DisplayCaptions"), Config->Option(__T("File_DisplayCaptions_Get"), Ztring()));
         //MI->Option(__T("File_IsSub"), __T("1"));
