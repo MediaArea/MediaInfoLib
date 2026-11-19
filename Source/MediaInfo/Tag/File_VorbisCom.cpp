@@ -344,7 +344,7 @@ void File_VorbisCom::Data_Parse()
             {
                 Value.clear();
                 for (const auto& V : UMID)
-                    Value+=Ztring().From_CC2(V.To_int64s());
+                    Value+=Ztring().From_CC1((int8u)V.To_int64u());
                 if (Value.find_first_not_of(__T('0'))!=string::npos)
                     Fill(StreamKind_Common, 0, "UMID", __T("0x")+Value);
             }
