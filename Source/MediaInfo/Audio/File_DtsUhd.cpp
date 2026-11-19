@@ -763,16 +763,24 @@ bool File_DtsUhd::CheckIfMDIsSuitableforImplObjRenderer(MD01* MD01, int ObjectId
     Element_Begin1("CheckIfMDIsSuitableforImplObjRenderer");
     bool MDUsedByAllRenderersFlag;
     Get_SB (MDUsedByAllRenderersFlag,                           "MDUsedByAllRenderersFlag");
+    if (MDUsedByAllRenderersFlag)
+    {
+        Element_End0();
+        return true;
+    }
+
+    int32u NumBits2Skip;
+    constexpr int8u Table[4] = {8, 10, 12, 14};
+    bool RequiredRendererType;
+    Get_SB (RequiredRendererType,                               "RequiredRendererType"); Param_Info1(RequiredRendererType?"Extended":"Basic");
+    Get_VR (Table, NumBits2Skip,                                "NumBits2Skip");
+    if (!RequiredRendererType) //Metadata for the basic renderer
     {
         Element_End0();
         return true;
     }
 
     /*  Reject the render and skip the render data. */
-    int32u NumBits2Skip;
-    constexpr int8u Table[4] = {8, 10, 12, 14};
-    Skip_SB(                                                    "RequiredRendererType");
-    Get_VR (Table, NumBits2Skip,                                "NumBits2Skip");
     Skip_BS (1+NumBits2Skip,                                    "data");
     Element_End0();
     return false;
