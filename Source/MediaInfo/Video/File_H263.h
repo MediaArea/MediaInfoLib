@@ -59,7 +59,8 @@ private :
 
     //Temp
     int8u Temporal_Reference;
-    int8u Source_Format;
+    int16u Frame_Width;
+    int16u Frame_Height;
     int8u PAR_W;
     int8u PAR_H;
     bool  Temporal_Reference_IsValid;

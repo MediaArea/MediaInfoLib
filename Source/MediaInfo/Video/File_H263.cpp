@@ -36,6 +36,7 @@ namespace MediaInfoLib
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+#if MEDIAINFO_TRACE
 static const char* H263_Source_Format[]=
 {
     nullptr,
@@ -47,6 +48,7 @@ static const char* H263_Source_Format[]=
     nullptr,
     nullptr,
 };
+#endif //MEDIAINFO_TRACE
 
 //---------------------------------------------------------------------------
 static const int16u H263_Source_Format_Width[]=
@@ -165,10 +167,10 @@ void File_H263::Streams_Fill()
     Fill(Stream_Video, 0, Video_Format, "H.263");
     Fill(Stream_Video, 0, Video_Codec, "H.263");
 
-    if (H263_Source_Format_Width[Source_Format])
-        Fill(Stream_Video, 0, Video_Width, H263_Source_Format_Width[Source_Format]);
-    if (H263_Source_Format_Height[Source_Format])
-        Fill(Stream_Video, 0, Video_Height, H263_Source_Format_Height[Source_Format]);
+    if (Frame_Width)
+        Fill(Stream_Video, 0, Video_Width, Frame_Width);
+    if (Frame_Height)
+        Fill(Stream_Video, 0, Video_Height, Frame_Height);
     Fill(Stream_Video, 0, Video_ColorSpace, "YUV");
     Fill(Stream_Video, 0, Video_ChromaSubsampling, "4:2:0");
     Fill(Stream_Video, 0, Video_BitDepth, 8);
@@ -245,6 +247,8 @@ void File_H263::Synched_Init()
         Frame_Count_Valid=Config->ParseSpeed>=0.3?8:(IsSub?1:2);
 
     //Temp
+    Frame_Width=0;
+    Frame_Height=0;
     PAR_W=12;
     PAR_H=11;
     Temporal_Reference_IsValid=false;
@@ -311,7 +315,7 @@ size_t File_H263::Header_Parser_GetSize()
 void File_H263::Data_Parse()
 {
     //Parsing
-    int8u Temporal_Reference_Temp;
+    int8u Temporal_Reference_Temp, Source_Format;
     BS_Begin();
     Skip_S3(22,                                                 "Picture Start Code (PSC)");
     Get_S1 ( 8, Temporal_Reference_Temp,                        "Temporal Reference (TR)");
@@ -340,6 +344,8 @@ void File_H263::Data_Parse()
         Get_S1 (3, Source_Format,                               "Source Format"); Param_Info1C(H263_Source_Format[Source_Format], H263_Source_Format[Source_Format]);
         if (Source_Format!=7)
         {
+            Frame_Width=H263_Source_Format_Width[Source_Format];
+            Frame_Height=H263_Source_Format_Height[Source_Format];
             Skip_SB(                                            "Picture Coding Type");
             Skip_SB(                                            "Unrestricted Motion Vector mode");
             Skip_SB(                                            "Syntax-based Arithmetic Coding mode");
@@ -359,6 +365,8 @@ void File_H263::Data_Parse()
                 case 1  :
                             Element_Begin1("Optional Part of PLUSPTYPE (OPPTYPE)");
                             Get_S1 (3, Source_Format,           "Source Format"); Param_Info1C(H263_Source_Format[Source_Format], H263_Source_Format[Source_Format]);
+                            Frame_Width=H263_Source_Format_Width[Source_Format];
+                            Frame_Height=H263_Source_Format_Height[Source_Format];
                             Skip_SB(                            "Custom PCF");
                             Skip_SB(                            "Unrestricted Motion Vector (UMV) mode");
                             Skip_SB(                            "Syntax-based Arithmetic Coding (SAC) mode");
@@ -418,7 +426,7 @@ void File_H263::Data_Parse()
     Skip_XX(Element_Size-Element_Offset,                        "Other data");
 
     FILLING_BEGIN();
-        if (!H263_Source_Format[Source_Format])
+        if (!Frame_Width || !Frame_Height)
         {
             if (Frame_Count==0 && Buffer_TotalBytes>Buffer_TotalBytes_FirstSynched_Max)
                 Trusted=0;
