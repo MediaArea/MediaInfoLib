@@ -3124,7 +3124,7 @@ void File_Usac::drcInstructionsBasic()
     TEST_SB_SKIP(                                               "additionalDownmixIdPresent");
         int8u additionalDownmixIdCount;
         Get_S1 (3, additionalDownmixIdCount,                    "additionalDownmixIdCount");
-        for (int8u i=1; i <additionalDownmixIdCount; i++)
+        for (int8u i=0; i<additionalDownmixIdCount; i++)
             Skip_S1(7,                                          "additionalDownmixId");
     TEST_SB_END();
     Get_S2 (16, drcSetEffect,                                   "drcSetEffect");
