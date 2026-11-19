@@ -119,7 +119,8 @@ void File_Pmp::FileHeader_Parse()
             Fill(Stream_Video, 0, Video_FrameCount, nb_frames);
             Fill(Stream_Video, 0, Video_Width, video_width);
             Fill(Stream_Video, 0, Video_Height, video_height);
-            Fill(Stream_Video, 0, Video_FrameRate, (float)time_base_den / 100);
+            if (time_base_num)
+                Fill(Stream_Video, 0, Video_FrameRate, (float64)time_base_den/time_base_num);
             for (int16u i=0; i<audio_count; i++)
             {
                 Stream_Prepare(Stream_Audio);
