@@ -242,7 +242,7 @@ bool File_MiXml::FileHeader_Begin()
         if (Root)
         {
             const char* Attribute = Root->Attribute("xmlns");
-            if (Attribute == NULL || Ztring().From_UTF8(Attribute) != __T("https://mediaarea.net/mediainfo"))
+            if (Attribute == NULL || (strcmp(Attribute, "https://mediaarea.net/mediainfo") && strcmp(Attribute, "http://mediaarea.net/mediainfo")))
             {
                 Reject("MiXml");
                 return false;
