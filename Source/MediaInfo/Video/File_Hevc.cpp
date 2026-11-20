@@ -609,6 +609,8 @@ void File_Hevc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator se
     Fill(Stream_Video, 0, Video_ChromaSubsampling, Hevc_chroma_format_idc(seq_parameter_set_Item->chroma_format_idc));
     if (seq_parameter_set_Item->bit_depth_luma_minus8==seq_parameter_set_Item->bit_depth_chroma_minus8)
         Fill(Stream_Video, 0, Video_BitDepth, seq_parameter_set_Item->bit_depth_luma_minus8+8);
+    if (MaxSlicesCount>1)
+        Fill(Stream_Video, 0, Video_Format_Settings_SliceCount, MaxSlicesCount);
 
     if (preferred_transfer_characteristics!=2)
         Fill(Stream_Video, 0, Video_transfer_characteristics, Mpegv_transfer_characteristics(preferred_transfer_characteristics));
@@ -1180,6 +1182,7 @@ void File_Hevc::Read_Buffer_Unsynched()
 
     //Temp
     pic_struct_Pending=(int8u)-1;
+    Slices_CountInThisFrame=0;
 
     //Temporal references
     Clean_Temp_References();
@@ -1623,6 +1626,18 @@ void File_Hevc::slice_segment_layer()
     FILLING_BEGIN();
         if (slice_pic_parameter_set_id==(int32u)-1)
             return;
+
+        //Count of slices, from the independent slice segments of the base layer
+        if (!nuh_layer_id && !dependent_slice_segment_flag)
+        {
+            if (first_slice_segment_in_pic_flag && Slices_CountInThisFrame)
+            {
+                if (MaxSlicesCount<Slices_CountInThisFrame)
+                    MaxSlicesCount=Slices_CountInThisFrame;
+                Slices_CountInThisFrame=0;
+            }
+            Slices_CountInThisFrame++;
+        }
 
         //Count of I-Frames
         if (first_slice_segment_in_pic_flag && (Element_Code==19 || Element_Code==20))
@@ -3634,7 +3649,7 @@ void File_Hevc::slice_segment_header()
     Element_Begin1("slice_segment_header");
 
     //Parsing
-    bool    dependent_slice_segment_flag=false;
+    dependent_slice_segment_flag=false;
     int32u  slice_pic_order_cnt_lsb=0;
     Get_SB (   first_slice_segment_in_pic_flag,                 "first_slice_segment_in_pic_flag");
     if (RapPicFlag)

@@ -539,6 +539,8 @@ private :
 
     //File specific
     size_t                              IFrame_Count{};
+    size_t                              Slices_CountInThisFrame{}; //Slices of the base layer, not counting dependent slice segments
+    size_t                              MaxSlicesCount{};
 
     //Temp
     Ztring                              Encoded_Library;
@@ -564,6 +566,7 @@ private :
     Ztring  ambient_viewing_environment_chromaticity;
     bool    RapPicFlag{};
     bool    first_slice_segment_in_pic_flag{};
+    bool    dependent_slice_segment_flag{};
     int8u   pic_struct_Pending{(int8u)-1}; //pic_struct of the pic_timing SEI of the access unit being parsed, kept until the slice header tells whether the picture is an IRAP; (int8u)-1 if none
 };
 
