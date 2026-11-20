@@ -949,9 +949,25 @@ int32u File_Avc::AVC_Intra_CodecID_FromMeta(int32u Width, int32u Height, int32u 
 //---------------------------------------------------------------------------
 void File_Avc::Streams_Fill()
 {
-    for (std::vector<seq_parameter_set_struct*>::iterator seq_parameter_set_Item=seq_parameter_sets.begin(); seq_parameter_set_Item!=seq_parameter_sets.end(); ++seq_parameter_set_Item)
-        if ((*seq_parameter_set_Item))
-            Streams_Fill(seq_parameter_set_Item);
+    //Sequence parameter sets, the first one fills the values of the stream, a value of the next ones only repeating the value before it is not added
+    if (!Count_Get(Stream_Video) || Retrieve_Const(Stream_Video, 0, Video_Format).empty()) //Else already filled
+    {
+        auto IsFirst=true;
+        for (std::vector<seq_parameter_set_struct*>::iterator seq_parameter_set_Item=seq_parameter_sets.begin(); seq_parameter_set_Item!=seq_parameter_sets.end(); ++seq_parameter_set_Item)
+            if ((*seq_parameter_set_Item))
+            {
+                if (IsFirst)
+                {
+                    Streams_Fill(seq_parameter_set_Item);
+                    IsFirst=false;
+                    continue;
+                }
+                const auto Video_Before=(*Stream)[Stream_Video];
+                const auto Video_More_Before=(*Stream_More)[Stream_Video];
+                Streams_Fill(seq_parameter_set_Item, false);
+                Streams_RemoveRepetitions(Video_Before, Video_More_Before, (*Stream)[Stream_Video], (*Stream_More)[Stream_Video]);
+            }
+    }
     for (std::vector<seq_parameter_set_struct*>::iterator subset_seq_parameter_set_Item=subset_seq_parameter_sets.begin(); subset_seq_parameter_set_Item!=subset_seq_parameter_sets.end(); ++subset_seq_parameter_set_Item)
         if ((*subset_seq_parameter_set_Item))
         {
@@ -971,16 +987,19 @@ void File_Avc::Streams_Fill()
 }
 
 //---------------------------------------------------------------------------
-void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq_parameter_set_Item_)
+void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq_parameter_set_Item_, bool IsFirst)
 {
     auto seq_parameter_set_Item = *seq_parameter_set_Item_;
 
-    if (Count_Get(Stream_Video) && !Retrieve_Const(Stream_Video, 0, Video_Format).empty())
-        return;
-    if (!Count_Get(Stream_Video))
-        Stream_Prepare(Stream_Video);
-    Fill(Stream_Video, 0, Video_Format, "AVC");
-    Fill(Stream_Video, 0, Video_Codec, "AVC");
+    if (IsFirst)
+    {
+        if (Count_Get(Stream_Video) && !Retrieve_Const(Stream_Video, 0, Video_Format).empty())
+            return;
+        if (!Count_Get(Stream_Video))
+            Stream_Prepare(Stream_Video);
+        Fill(Stream_Video, 0, Video_Format, "AVC");
+        Fill(Stream_Video, 0, Video_Codec, "AVC");
+    }
 
     //Calculating - Pixels
     int32u Width =(seq_parameter_set_Item->pic_width_in_mbs_minus1       +1)*16;
@@ -1025,7 +1044,7 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
         }
 
         //Colour description
-        if (preferred_transfer_characteristics!=2)
+        if (IsFirst && preferred_transfer_characteristics!=2) //From an SEI message, for the stream
             Fill(Stream_Video, 0, Video_transfer_characteristics, Mpegv_transfer_characteristics(preferred_transfer_characteristics));
         if (vui_parameters->flags[video_signal_type_present_flag])
         {
@@ -1095,12 +1114,12 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
         Fill(Stream_Video, StreamPos_Last, Video_Stored_Width, (seq_parameter_set_Item->pic_width_in_mbs_minus1       +1)*16);
     if (seq_parameter_set_Item->frame_crop_top_offset || seq_parameter_set_Item->frame_crop_bottom_offset)
         Fill(Stream_Video, StreamPos_Last, Video_Stored_Height, (seq_parameter_set_Item->pic_height_in_map_units_minus1+1)*16*(2-seq_parameter_set_Item->frame_mbs_only_flag));
-    if (FrameRate_Divider==2)
+    if (IsFirst && FrameRate_Divider==2)
     {
         Fill(Stream_Video, StreamPos_Last, Video_Format_Settings_FrameMode, "Frame doubling");
         Fill(Stream_Video, StreamPos_Last, Video_Format_Settings, "Frame doubling");
     }
-    if (FrameRate_Divider==3)
+    if (IsFirst && FrameRate_Divider==3)
     {
         Fill(Stream_Video, StreamPos_Last, Video_Format_Settings_FrameMode, "Frame tripling");
         Fill(Stream_Video, StreamPos_Last, Video_Format_Settings, "Frame tripling");
@@ -1138,112 +1157,118 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
         Fill(Stream_Video, 0, Video_ScanType, "Interlaced");
         Fill(Stream_Video, 0, Video_Interlacement, "Interlaced");
     }
-    std::string ScanOrders, PictureTypes(PictureTypes_PreviousFrames);
-    ScanOrders.reserve(TemporalReferences.size());
-    const auto TemporalReferences_End=std::find_if(TemporalReferences.rbegin(), TemporalReferences.rend(), [](temporal_reference* i) { return i; });
-    const auto TemporalReferences_Size=std::distance(TemporalReferences_End, TemporalReferences.rend());
-    PictureTypes.reserve(TemporalReferences_Size);
-    //TODO: check specs for catching when even reference numbers are used in progressive streams
-    auto HasOddNumbers=false;
-    for (size_t Pos=1; Pos<(size_t)TemporalReferences_Size; Pos+=2)
-        if (TemporalReferences[Pos])
-            HasOddNumbers=true;
-    size_t IsBeforeI_Next=0;
-    auto IsBeforeI=false;
-    for (size_t Pos=0; Pos<(size_t)TemporalReferences_Size; Pos++)
-        if (TemporalReferences[Pos])
-        {
-            ScanOrders+=TemporalReferences[Pos]->IsTop?'T':'B';
-            if ((HasOddNumbers && seq_parameter_set_Item->frame_mbs_only_flag) || (Pos%2)==0)
-                PictureTypes+=Avc_slice_type[TemporalReferences[Pos]->slice_type];
-        }
-        else if (!PictureTypes.empty()) //Only if stream already started
-        {
-            if (Pos>=IsBeforeI_Next) //Same result for all missing pictures before the next present picture
+    if (IsFirst) //Values of the stream, from the temporal references, the frame sizes, the encoder and the container
+    {
+        std::string ScanOrders, PictureTypes(PictureTypes_PreviousFrames);
+        ScanOrders.reserve(TemporalReferences.size());
+        const auto TemporalReferences_End=std::find_if(TemporalReferences.rbegin(), TemporalReferences.rend(), [](temporal_reference* i) { return i; });
+        const auto TemporalReferences_Size=std::distance(TemporalReferences_End, TemporalReferences.rend());
+        PictureTypes.reserve(TemporalReferences_Size);
+        //TODO: check specs for catching when even reference numbers are used in progressive streams
+        auto HasOddNumbers=false;
+        for (size_t Pos=1; Pos<(size_t)TemporalReferences_Size; Pos+=2)
+            if (TemporalReferences[Pos])
+                HasOddNumbers=true;
+        size_t IsBeforeI_Next=0;
+        auto IsBeforeI=false;
+        for (size_t Pos=0; Pos<(size_t)TemporalReferences_Size; Pos++)
+            if (TemporalReferences[Pos])
             {
-                IsBeforeI=false;
-                IsBeforeI_Next=(size_t)TemporalReferences_Size;
-                for (size_t Pos2=Pos; Pos2<(size_t)TemporalReferences_Size; Pos2++)
+                ScanOrders+=TemporalReferences[Pos]->IsTop?'T':'B';
+                if ((HasOddNumbers && seq_parameter_set_Item->frame_mbs_only_flag) || (Pos%2)==0)
+                    PictureTypes+=Avc_slice_type[TemporalReferences[Pos]->slice_type];
+            }
+            else if (!PictureTypes.empty()) //Only if stream already started
+            {
+                if (Pos>=IsBeforeI_Next) //Same result for all missing pictures before the next present picture
                 {
-                    auto TemporalReference=TemporalReferences[Pos2];
-                    if (TemporalReference)
+                    IsBeforeI=false;
+                    IsBeforeI_Next=(size_t)TemporalReferences_Size;
+                    for (size_t Pos2=Pos; Pos2<(size_t)TemporalReferences_Size; Pos2++)
                     {
-                        IsBeforeI_Next=Pos2;
-                        for (; Pos2<(size_t)TemporalReferences_Size; Pos2++)
+                        auto TemporalReference=TemporalReferences[Pos2];
+                        if (TemporalReference)
                         {
-                            TemporalReference=TemporalReferences[Pos2];
-                            if (!TemporalReference || (TemporalReference->slice_type!=1 && TemporalReference->slice_type!=6))
-                                break;
+                            IsBeforeI_Next=Pos2;
+                            for (; Pos2<(size_t)TemporalReferences_Size; Pos2++)
+                            {
+                                TemporalReference=TemporalReferences[Pos2];
+                                if (!TemporalReference || (TemporalReference->slice_type!=1 && TemporalReference->slice_type!=6))
+                                    break;
+                            }
+                            IsBeforeI=TemporalReference && (TemporalReference->slice_type==2 || TemporalReference->slice_type==7);
+                            break;
                         }
-                        IsBeforeI=TemporalReference && (TemporalReference->slice_type==2 || TemporalReference->slice_type==7);
-                        break;
                     }
                 }
+                if (!IsBeforeI)
+                {
+                    ScanOrders+=' ';
+                    if ((HasOddNumbers && seq_parameter_set_Item->frame_mbs_only_flag) || (Pos%2)==0)
+                        PictureTypes+=' ';
+                }
             }
-            if (!IsBeforeI)
+        Fill(Stream_Video, 0, Video_ScanOrder, ScanOrder_Detect(ScanOrders));
+        { //Legacy
+            string Result=ScanOrder_Detect(ScanOrders);
+            if (!Result.empty())
             {
-                ScanOrders+=' ';
-                if ((HasOddNumbers && seq_parameter_set_Item->frame_mbs_only_flag) || (Pos%2)==0)
-                    PictureTypes+=' ';
+                Fill(Stream_Video, 0, Video_Interlacement, Result, true, true);
+                Fill(Stream_Video, 0, Video_ScanType_StoreMethod, "SeparatedFields", Unlimited, true, true);
             }
-        }
-    Fill(Stream_Video, 0, Video_ScanOrder, ScanOrder_Detect(ScanOrders));
-    { //Legacy
-        string Result=ScanOrder_Detect(ScanOrders);
-        if (!Result.empty())
-        {
-            Fill(Stream_Video, 0, Video_Interlacement, Result, true, true);
-            Fill(Stream_Video, 0, Video_ScanType_StoreMethod, "SeparatedFields", Unlimited, true, true);
-        }
-        else
-        {
-            switch (seq_parameter_set_Item->pic_struct_FirstDetected)
+            else
             {
-                case  1 :
-                            Fill(Stream_Video, 0, Video_ScanOrder, (string) "TFF");
-                            Fill(Stream_Video, 0, Video_ScanType_StoreMethod, "SeparatedFields", Unlimited, true, true);
-                            break;
-                case  2 :
-                            Fill(Stream_Video, 0, Video_ScanOrder, (string) "BFF");
-                            Fill(Stream_Video, 0, Video_ScanType_StoreMethod, "SeparatedFields", Unlimited, true, true);
-                            break;
-                case  3 :
-                            Fill(Stream_Video, 0, Video_ScanOrder, (string) "TFF");
-                            Fill(Stream_Video, 0, Video_ScanType_StoreMethod, "InterleavedFields", Unlimited, true, true);
-                            break;
-                case  4 :
-                            Fill(Stream_Video, 0, Video_ScanOrder, (string) "BFF");
-                            Fill(Stream_Video, 0, Video_ScanType_StoreMethod, "InterleavedFields", Unlimited, true, true);
-                            break;
-                default : ;
+                switch (seq_parameter_set_Item->pic_struct_FirstDetected)
+                {
+                    case  1 :
+                                Fill(Stream_Video, 0, Video_ScanOrder, (string) "TFF");
+                                Fill(Stream_Video, 0, Video_ScanType_StoreMethod, "SeparatedFields", Unlimited, true, true);
+                                break;
+                    case  2 :
+                                Fill(Stream_Video, 0, Video_ScanOrder, (string) "BFF");
+                                Fill(Stream_Video, 0, Video_ScanType_StoreMethod, "SeparatedFields", Unlimited, true, true);
+                                break;
+                    case  3 :
+                                Fill(Stream_Video, 0, Video_ScanOrder, (string) "TFF");
+                                Fill(Stream_Video, 0, Video_ScanType_StoreMethod, "InterleavedFields", Unlimited, true, true);
+                                break;
+                    case  4 :
+                                Fill(Stream_Video, 0, Video_ScanOrder, (string) "BFF");
+                                Fill(Stream_Video, 0, Video_ScanType_StoreMethod, "InterleavedFields", Unlimited, true, true);
+                                break;
+                    default : ;
+                }
             }
         }
-    }
-    Fill(Stream_Video, 0, Video_Format_Settings_GOP, GOP_Detect(PictureTypes));
-    if (Retrieve_Const(Stream_Video, 0, Video_BitRate).empty() && Retrieve_Const(Stream_Video, 0, Video_Format_Settings_GOP)==__T("N=1") && FrameRate && FrameSizes.size()==1)
-    {
-        Fill(Stream_Video, 0, Video_BitRate, FrameSizes.begin()->first*FrameRate*8, 0);
-        Fill(Stream_Video, 0, Video_BitRate_Mode, "CBR");
-    }
+        Fill(Stream_Video, 0, Video_Format_Settings_GOP, GOP_Detect(PictureTypes));
+        if (Retrieve_Const(Stream_Video, 0, Video_BitRate).empty() && Retrieve_Const(Stream_Video, 0, Video_Format_Settings_GOP)==__T("N=1") && FrameRate && FrameSizes.size()==1)
+        {
+            Fill(Stream_Video, 0, Video_BitRate, FrameSizes.begin()->first*FrameRate*8, 0);
+            Fill(Stream_Video, 0, Video_BitRate_Mode, "CBR");
+        }
 
-    Fill(Stream_General, 0, General_Encoded_Library, Encoded_Library);
-    Fill(Stream_General, 0, General_Encoded_Library_Name, Encoded_Library_Name);
-    Fill(Stream_General, 0, General_Encoded_Library_Version, Encoded_Library_Version);
-    Fill(Stream_General, 0, General_Encoded_Library_Settings, Encoded_Library_Settings);
-    Fill(Stream_Video, 0, Video_Encoded_Library, Encoded_Library);
-    Fill(Stream_Video, 0, Video_Encoded_Library_Name, Encoded_Library_Name);
-    Fill(Stream_Video, 0, Video_Encoded_Library_Version, Encoded_Library_Version);
-    Fill(Stream_Video, 0, Video_Encoded_Library_Settings, Encoded_Library_Settings);
-    if (Retrieve_Const(Stream_Video, 0, Video_BitRate_Nominal).empty()) // SPS has priority over other metadata
-        Fill(Stream_Video, 0, Video_BitRate_Nominal, BitRate_Nominal);
+        Fill(Stream_General, 0, General_Encoded_Library, Encoded_Library);
+        Fill(Stream_General, 0, General_Encoded_Library_Name, Encoded_Library_Name);
+        Fill(Stream_General, 0, General_Encoded_Library_Version, Encoded_Library_Version);
+        Fill(Stream_General, 0, General_Encoded_Library_Settings, Encoded_Library_Settings);
+        Fill(Stream_Video, 0, Video_Encoded_Library, Encoded_Library);
+        Fill(Stream_Video, 0, Video_Encoded_Library_Name, Encoded_Library_Name);
+        Fill(Stream_Video, 0, Video_Encoded_Library_Version, Encoded_Library_Version);
+        Fill(Stream_Video, 0, Video_Encoded_Library_Settings, Encoded_Library_Settings);
+        if (Retrieve_Const(Stream_Video, 0, Video_BitRate_Nominal).empty()) // SPS has priority over other metadata
+            Fill(Stream_Video, 0, Video_BitRate_Nominal, BitRate_Nominal);
+    }
     for (std::vector<pic_parameter_set_struct*>::iterator pic_parameter_set_Item=pic_parameter_sets.begin(); pic_parameter_set_Item!=pic_parameter_sets.end(); ++pic_parameter_set_Item)
         if (*pic_parameter_set_Item && (*pic_parameter_set_Item)->seq_parameter_set_id==seq_parameter_set_Item_-(seq_parameter_sets.empty()?subset_seq_parameter_sets.begin():seq_parameter_sets.begin()))
         {
             if ((*pic_parameter_set_Item)->entropy_coding_mode_flag)
             {
-                Fill(Stream_Video, 0, Video_Format_Settings, "CABAC");
+                if (IsFirst) //Summary of the settings, from the first sequence parameter set
+                {
+                    Fill(Stream_Video, 0, Video_Format_Settings, "CABAC");
+                    Fill(Stream_Video, 0, Video_Codec_Settings, "CABAC");
+                }
                 Fill(Stream_Video, 0, Video_Format_Settings_CABAC, "Yes");
-                Fill(Stream_Video, 0, Video_Codec_Settings, "CABAC");
                 Fill(Stream_Video, 0, Video_Codec_Settings_CABAC, "Yes");
             }
             else
@@ -1255,8 +1280,11 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
         }
     if (seq_parameter_set_Item->max_num_ref_frames>0)
     {
-        Fill(Stream_Video, 0, Video_Format_Settings, Ztring::ToZtring(seq_parameter_set_Item->max_num_ref_frames)+__T(" Ref Frames"));
-        Fill(Stream_Video, 0, Video_Codec_Settings, Ztring::ToZtring(seq_parameter_set_Item->max_num_ref_frames)+__T(" Ref Frames"));
+        if (IsFirst) //Summary of the settings, from the first sequence parameter set
+        {
+            Fill(Stream_Video, 0, Video_Format_Settings, Ztring::ToZtring(seq_parameter_set_Item->max_num_ref_frames)+__T(" Ref Frames"));
+            Fill(Stream_Video, 0, Video_Codec_Settings, Ztring::ToZtring(seq_parameter_set_Item->max_num_ref_frames)+__T(" Ref Frames"));
+        }
         Fill(Stream_Video, 0, Video_Format_Settings_RefFrames, seq_parameter_set_Item->max_num_ref_frames);
         Fill(Stream_Video, 0, Video_Codec_Settings_RefFrames, seq_parameter_set_Item->max_num_ref_frames);
     }
@@ -1265,6 +1293,10 @@ void File_Avc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator seq
     Fill(Stream_Video, 0, Video_ChromaSubsampling, Avc_ChromaSubsampling_format_idc(seq_parameter_set_Item->chroma_format_idc));
     if (seq_parameter_set_Item->bit_depth_luma_minus8==seq_parameter_set_Item->bit_depth_chroma_minus8)
         Fill(Stream_Video, 0, Video_BitDepth, seq_parameter_set_Item->bit_depth_luma_minus8+8);
+    if (!IsFirst)
+        return;
+
+    //Values of the stream
     if (MaxSlicesCount>1)
         Fill(Stream_Video, 0, Video_Format_Settings_SliceCount, MaxSlicesCount);
 

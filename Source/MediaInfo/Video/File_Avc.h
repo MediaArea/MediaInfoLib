@@ -392,7 +392,7 @@ private :
 
     //Streams management
     void Streams_Fill();
-    void Streams_Fill(vector<seq_parameter_set_struct*>::iterator seq_parameter_set_Item);
+    void Streams_Fill(vector<seq_parameter_set_struct*>::iterator seq_parameter_set_Item, bool IsFirst=true); //The values of the stream are filled only with the first sequence parameter set
     void Streams_Fill_subset(vector<seq_parameter_set_struct*>::iterator seq_parameter_set_Item);
     void Streams_Finish();
 
