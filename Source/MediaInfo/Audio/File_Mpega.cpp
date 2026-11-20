@@ -737,10 +737,13 @@ bool File_Mpega::Synchronize()
 
             //Tags
             bool Tag_Found_Synchro;
+            size_t Buffer_Offset_BeforeTags=Buffer_Offset;
             if (!File__Tags_Helper::Synchronize(Tag_Found_Synchro))
                 return false;
             if (Tag_Found_Synchro)
                 return true;
+            if (Buffer_Offset!=Buffer_Offset_BeforeTags)
+                continue; //Tags were parsed, the byte after them is not tested yet
 
             //Better detect MPEG-PS
             if (Frame_Count==0
