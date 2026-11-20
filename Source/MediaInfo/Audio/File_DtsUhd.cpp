@@ -226,7 +226,7 @@ void File_DtsUhd::UpdateDescriptor()
     FrameDescriptor.BaseSampleFreqCode=SampleRate==48000;
     FrameDescriptor.ChannelCount=CountBits(FrameDescriptor.ChannelMask);
     FrameDescriptor.DecoderProfileCode=StreamMajorVerNum-2;
-    FrameDescriptor.MaxPayloadCode=0+(StreamMajorVerNum>=2);
+    FrameDescriptor.MaxPayloadCode=0+(StreamMajorVerNum>2);
     FrameDescriptor.NumPresCode=NumAudioPres-1;
     FrameDescriptor.SampleCount=(FrameDuration*SampleRate)/(ClockRateInHz*Fraction);
 }
@@ -1428,7 +1428,7 @@ void File_DtsUhd::Streams_Fill()
     if (FrameDuration && Retrieve_Const(Stream_Audio, 0, Audio_BitRate_Maximum).empty()) // Only if not provided by header
     {
         int32u MaxPayload=2048<<FrameDescriptor.MaxPayloadCode;
-        BitRate_Max = 8.0f * MaxPayload * SampleRate / FrameDuration;
+        BitRate_Max = 8.0f * MaxPayload * ClockRateInHz / FrameDuration; //FrameDuration is in periods of the clock rate
     }
     std::string AudioCodec="dtsx", CommercialString="DTS:X P2";
     AudioCodec.back()+=FrameDescriptor.DecoderProfileCode > 0;

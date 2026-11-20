@@ -10565,7 +10565,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_udts()
     int32u MaxPayload = 2048 << MaxPayloadCode;
     DTSUHD_ChannelMaskInfo ChannelMaskInfo = DTSUHD_DecodeChannelMask(ChannelMask);
     int32u SampleRate = FrequencyCodeTable[BaseSamplingFrequencyCode] << SampleRateMod;
-    float32 BitRate_Max = (float32)MaxPayload * 8 * SampleRate / FrameDuration;
+    float32 BitRate_Max = (float32)MaxPayload * 8 * FrequencyCodeTable[BaseSamplingFrequencyCode] / FrameDuration; //FrameDuration is in periods of the base sampling frequency
     #endif
 
     FILLING_BEGIN();
