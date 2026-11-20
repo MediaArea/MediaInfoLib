@@ -22,6 +22,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Video/File_Dirac.h"
+#include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -582,7 +583,48 @@ void File_Dirac::Header_Parse()
 
     //Filling
     Header_Fill_Code(Parse_Code, Ztring().From_CC1(Parse_Code));
+    if (!Next_Parse_Offset && (Parse_Code&0x08) && !Element_IsWaitingForMoreData()) //Picture from a real-time encoder which does not know its size
+    {
+        if (!Header_Parser_Fill_Size())
+            Element_WaitForMoreData();
+        return;
+    }
     Header_Fill_Size((Parse_Code==0x10 && Next_Parse_Offset==0)?13:Next_Parse_Offset); //Speacial case if this is the End Of Sequence
+}
+
+//---------------------------------------------------------------------------
+bool File_Dirac::Header_Parser_Fill_Size()
+{
+    //Look for the next parse info prefix
+    if (Buffer_Offset_Temp==0) //Buffer_Offset_Temp is not 0 if the previous bytes were already searched
+        Buffer_Offset_Temp=Buffer_Offset+13;
+    while (Buffer_Offset_Temp+4<=Buffer_Size)
+    {
+        const int8u* Prefix=(const int8u*)memchr(Buffer+Buffer_Offset_Temp, 'B', Buffer_Size-3-Buffer_Offset_Temp);
+        if (!Prefix)
+        {
+            Buffer_Offset_Temp=Buffer_Size-3;
+            break;
+        }
+        Buffer_Offset_Temp=(size_t)(Prefix-Buffer);
+        if (CC4(Prefix)==0x42424344) //"BBCD"
+            break;
+        Buffer_Offset_Temp++;
+    }
+
+    //Must wait more data?
+    if (Buffer_Offset_Temp+4>Buffer_Size)
+    {
+        if (FrameIsAlwaysComplete || Config->IsFinishing || File_Offset+Buffer_Size==File_Size)
+            Buffer_Offset_Temp=Buffer_Size; //No other parse info header
+        else
+            return false;
+    }
+
+    //OK, we continue
+    Header_Fill_Size(Buffer_Offset_Temp-Buffer_Offset);
+    Buffer_Offset_Temp=0;
+    return true;
 }
 
 //---------------------------------------------------------------------------
