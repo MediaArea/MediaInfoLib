@@ -84,6 +84,7 @@ public:
     stream          Streams[2];
     int64s          AudioDelay=0;
     int64u          SyncLost_Offset=(int64u)-1;
+    float64         PixelAspectRatio=0;
     bool            IsMajorSynched=false;
     bool            Header_IsValid=false;
 };
@@ -195,13 +196,14 @@ void File_Nsv::Streams_Finish()
     }
 
     float64 DisplayAspectRatio=Retrieve_Const(Stream_Video, 0, Video_DisplayAspectRatio).To_float64();
-    if (!DisplayAspectRatio)
+    if (!DisplayAspectRatio && P->PixelAspectRatio)
     {
         float64 Width=Retrieve_Const(Stream_Video, 0, Video_Width).To_float64();
         float64 Height=Retrieve_Const(Stream_Video, 0, Video_Height).To_float64();
-        float64 PixelAspectRatio=Retrieve_Const(Stream_Video, 0, Video_PixelAspectRatio).To_float64();
-        if (Width && Height && PixelAspectRatio)
-            Fill(Stream_Video, 0, Video_DisplayAspectRatio, Width/Height/PixelAspectRatio);
+        if (Width && Height)
+            Fill(Stream_Video, 0, Video_DisplayAspectRatio, Width/Height*P->PixelAspectRatio);
+        else
+            Fill(Stream_Video, 0, Video_PixelAspectRatio, P->PixelAspectRatio, 3, true);
     }
 }
 
@@ -385,17 +387,14 @@ void File_Nsv::FileHeader_Parse()
                                 };
                                 string Name2(Name);
                                 transform(Name2.begin(), Name2.end(), Name2.begin(), asciitolower);
-                                stream_t StreamKind=Stream_General;
-                                if (Name2=="title")
-                                    Name2="Title";
-                                else if (Name2=="aspect")
+                                if (Name2=="aspect")
                                 {
-                                    Name2="PixelAspectRatio";
-                                    StreamKind=Stream_Video;
+                                    auto Aspect=Ztring().From_UTF8(Value).To_float64(); //Relative height of the pixels
+                                    if (Aspect>0 && !P->PixelAspectRatio)
+                                        P->PixelAspectRatio=1/Aspect;
                                 }
                                 else
-                                    Name2=Name;
-                                Fill(StreamKind, 0, Name2.c_str(), Value);
+                                    Fill(Stream_General, 0, Name2=="title"?"Title":Name.c_str(), Value);
                                 Element_Offset++;
                                 break;
                             }
