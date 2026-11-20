@@ -30,6 +30,9 @@ public :
     //In
     int64u  Frame_Count_Valid{};
     bool    IsAnnexB{};
+    int8u   InBand_max_profile_idc{ (int8u)-1 }; //From the in-band configuration of the container, (int8u)-1 if none
+    int8u   InBand_max_level_idx{};
+    bool    InBand_max_tier{};
 
     //Constructor/Destructor
     File_Av2();

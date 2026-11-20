@@ -611,6 +611,7 @@ private :
         #endif //MEDIAINFO_DVDIF_ANALYZE_YES
         bool                    IsHevc; //The first parser is an HEVC one
         bool                    IsJpeg; //The first parser is a JPEG one
+        bool                    IsAv2; //The first parser is an AV2 one
         bool                    IsPriorityStream;
         bool                    IsFilled;
         bool                    IsChapter;
@@ -721,6 +722,7 @@ private :
             #endif //MEDIAINFO_DVDIF_ANALYZE_YES
             IsHevc=false;
             IsJpeg=false;
+            IsAv2=false;
             IsPriorityStream=false;
             IsFilled=false;
             IsChapter=false;
@@ -778,6 +780,7 @@ private :
             #endif //MEDIAINFO_DVDIF_ANALYZE_YES
             IsHevc=false;
             IsJpeg=false;
+            IsAv2=false;
         }
 
         void Parsers_Erase(size_t Pos)
@@ -790,6 +793,7 @@ private :
             #endif //MEDIAINFO_DVDIF_ANALYZE_YES
             IsHevc=false;
             IsJpeg=false;
+            IsAv2=false;
         }
     };
     typedef std::map<int32u, stream> streams;
