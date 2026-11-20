@@ -69,7 +69,8 @@ File_Aac::File_Aac()
     FrameIsAlwaysComplete=false;
     Mode=Mode_Unknown;
     FromIamf=false;
-    
+    objectTypeIndication=0;
+
     //Conformance
     #if MEDIAINFO_CONFORMANCE
         SamplingRate=0;
@@ -161,6 +162,36 @@ void File_Aac::Streams_Fill()
     for (std::map<std::string, Ztring>::iterator Info_AudioSpecificConfig=Infos_AudioSpecificConfig.begin(); Info_AudioSpecificConfig!=Infos_AudioSpecificConfig.end(); ++Info_AudioSpecificConfig)
         if (Infos.find(Info_AudioSpecificConfig->first)==Infos.end())
             Infos[Info_AudioSpecificConfig->first]=Info_AudioSpecificConfig->second; // Use AudioSpecificConfig info if info not present in stream itself
+    if (objectTypeIndication>=0x66 && objectTypeIndication<=0x68) //MPEG-2 AAC Main, LC, SSR: only one audio object type is permitted
+    {
+        auto CodecID=Infos.find("CodecID");
+        if (CodecID!=Infos.end())
+        {
+            int8u audioObjectType_Expected=objectTypeIndication-0x65;
+            int8u audioObjectType_Actual=CodecID->second.To_int8u();
+            if (audioObjectType_Actual==audioObjectType_Expected)
+                Infos.erase(CodecID);
+            #if MEDIAINFO_CONFORMANCE
+            else
+            {
+                auto audioObjectTypeString=[](int8u Value) {
+                    auto Result=to_string(Value);
+                    auto Name=Aac_audioObjectType(Value);
+                    if (Name && *Name)
+                    {
+                        Result+=" (";
+                        Result+=Name;
+                        Result+=')';
+                    }
+                    return Result;
+                };
+                char objectTypeIndicationString[5];
+                snprintf(objectTypeIndicationString, sizeof(objectTypeIndicationString), "0x%02X", objectTypeIndication);
+                Fill_Conformance("Crosscheck DecoderConfigDescriptor objectTypeIndication", string("MP4 DecoderConfigDescriptor objectTypeIndication ")+objectTypeIndicationString+" does not permit MP4 DecoderSpecificInfo audio object type (actual "+audioObjectTypeString(audioObjectType_Actual)+", expected "+audioObjectTypeString(audioObjectType_Expected)+')');
+            }
+            #endif
+        }
+    }
     for (std::map<std::string, Ztring>::iterator Info=Infos.begin(); Info!=Infos.end(); ++Info)
         Fill(Stream_Audio, StreamPos_Last, Info->first.c_str(), Info->second);
 
