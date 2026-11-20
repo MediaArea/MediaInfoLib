@@ -271,6 +271,8 @@ void File_Nsv::FileHeader_Parse()
     } NotValid{};
     if (header_size<28)
         NotValid={"NSV header_size", 4, header_size, "header_size is less than the minimal size", ">=", 28};
+    else if (header_size==(int32u)-1)
+        NotValid={"NSV header_size", 4, header_size, "header_size is not permitted", nullptr, 0};
     else if (file_size<header_size)
         NotValid={"NSV file_size", 8, file_size, "file_size is less than header_size", ">=", header_size};
     else if (metadata_len>header_size-28)
@@ -296,9 +298,12 @@ void File_Nsv::FileHeader_Parse()
                 string Message(NotValid.Problem);
                 Message+=" (actual ";
                 Message+=to_string(NotValid.Value);
-                Message+=", expected ";
-                Message+=NotValid.Expected_Prefix;
-                Message+=to_string(NotValid.Expected);
+                if (NotValid.Expected_Prefix)
+                {
+                    Message+=", expected ";
+                    Message+=NotValid.Expected_Prefix;
+                    Message+=to_string(NotValid.Expected);
+                }
                 Message+=')';
                 Fill_Conformance(NotValid.Field, Message);
                 Merge_Conformance();
