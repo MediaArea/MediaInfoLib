@@ -81,6 +81,8 @@ private :
 
     //Temp
     int32u version_major;
+    bool   IsVc2;
+    bool   HasDiracOnlyPicture;
     int32u frame_width;
     int32u frame_height;
     int32u chroma_format;

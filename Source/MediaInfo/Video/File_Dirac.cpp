@@ -452,8 +452,8 @@ File_Dirac::File_Dirac()
 void File_Dirac::Streams_Fill()
 {
     Stream_Prepare(Stream_Video);
-    Fill(Stream_Video, 0, Video_Format, "Dirac");
-    Fill(Stream_Video, 0, Video_Codec, "Dirac");
+    Fill(Stream_Video, 0, Video_Format, (IsVc2 && !HasDiracOnlyPicture)?"VC-2":"Dirac");
+    Fill(Stream_Video, 0, Video_Codec, (IsVc2 && !HasDiracOnlyPicture)?"VC-2":"Dirac");
 
     if (clean_width)
         Fill(Stream_Video, StreamPos_Last, Video_Width, clean_width);
@@ -557,6 +557,8 @@ void File_Dirac::Synched_Init()
 {
     //Temp
     version_major=0;
+    IsVc2=false;
+    HasDiracOnlyPicture=false;
     Dirac_base_video_format((int32u)-1, frame_width, frame_height, chroma_format, source_sampling,
                             clean_width, clean_height, clean_left_offset, clean_top_offset,
                             frame_rate, pixel_aspect_ratio);
@@ -799,6 +801,10 @@ void File_Dirac::Sequence_header()
     }
 
     FILLING_BEGIN();
+        //Version 1 of Dirac is VC-2, version 3 and the high quality profile exist only in VC-2
+        if (version_major==1 || version_major>=3 || profile==3)
+            IsVc2=true;
+
         //Autorisation of other streams
         Streams[0x10].Searching_Payload=true; //End_of_Sequence
         Streams[0x20].Searching_Payload=true; //Auxiliary_data
@@ -858,6 +864,7 @@ void File_Dirac::Padding_data()
 void File_Dirac::Intra_Reference_Picture()
 {
     Element_Name("Intra Reference Picture");
+    HasDiracOnlyPicture=true;
 
     //Parsing
     picture();
@@ -878,6 +885,7 @@ void File_Dirac::Intra_Non_Reference_Picture()
 void File_Dirac::Intra_Reference_Picture_No()
 {
     Element_Name("Intra Reference Picture (no arithmetic coding)");
+    HasDiracOnlyPicture=true;
 
     //Parsing
     picture();
@@ -898,6 +906,7 @@ void File_Dirac::Intra_Non_Reference_Picture_No()
 void File_Dirac::Inter_Reference_Picture_1()
 {
     Element_Name("Inter Reference Picture (1 picture)");
+    HasDiracOnlyPicture=true;
 
     //Parsing
     picture();
@@ -908,6 +917,7 @@ void File_Dirac::Inter_Reference_Picture_1()
 void File_Dirac::Inter_Reference_Picture_2()
 {
     Element_Name("Inter Reference Picture (2 pictures)");
+    HasDiracOnlyPicture=true;
 
     //Parsing
     picture();
@@ -918,6 +928,7 @@ void File_Dirac::Inter_Reference_Picture_2()
 void File_Dirac::Inter_Non_Reference_Picture_1()
 {
     Element_Name("Inter Non Reference Picture (1 picture)");
+    HasDiracOnlyPicture=true;
 
     //Parsing
     picture();
@@ -928,6 +939,7 @@ void File_Dirac::Inter_Non_Reference_Picture_1()
 void File_Dirac::Inter_Non_Reference_Picture_2()
 {
     Element_Name("Inter Non Reference Picture (2 pictures)");
+    HasDiracOnlyPicture=true;
 
     //Parsing
     picture();
@@ -938,6 +950,7 @@ void File_Dirac::Inter_Non_Reference_Picture_2()
 void File_Dirac::Reference_Picture_Low()
 {
     Element_Name("Reference Picture (low-delay)");
+    HasDiracOnlyPicture=true;
 
     //Parsing
     picture();
@@ -968,6 +981,7 @@ void File_Dirac::Intra_Non_Reference_Picture_Low()
 void File_Dirac::High_Quality_Picture()
 {
     Element_Name("High Quality Picture");
+    IsVc2=true;
 
     //Parsing
     picture();
@@ -978,6 +992,7 @@ void File_Dirac::High_Quality_Picture()
 void File_Dirac::High_Quality_Picture_Fragment()
 {
     Element_Name("High Quality Picture Fragment");
+    IsVc2=true;
 
     //Parsing
     picture_fragment();
