@@ -98,12 +98,9 @@ protected :
 
     struct UHDFrameDescriptor
     {
-        int BaseSampleFreqCode;
-        int ChannelCount;
         int ChannelMask;
         int DecoderProfileCode;
         int MaxPayloadCode;
-        int NumPresCode;
         int SampleCount;
         int RepType;
     };

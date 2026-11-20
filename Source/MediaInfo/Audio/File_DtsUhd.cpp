@@ -75,14 +75,6 @@ static constexpr float LongTermLoudnessMeasure[] =
      -7.00,  -6.00,  -5.00,  -4.00,  -3.00,  -2.00,  -1.00,   0.00,
 };
 
-static int CountBits(int32u Mask)
-{
-    int Count=0;
-    for (; Mask; Mask>>=1)
-        Count+=Mask&1;
-    return Count;
-}
-
 /** Read a variable number of bits from a buffer.
     In the ETSI TS 103 491 V1.2.1 specification, the pseudo code defaults
     the 'add' parameter to true.  Table 7-30 shows passing an explicit false,
@@ -195,13 +187,10 @@ void File_DtsUhd::ExtractObjectInfo(MDObject* Object)
         if (ActivityMap[i].ActivityMask & Object->ChActivityMask)
             FrameDescriptor.ChannelMask |= ActivityMap[i].ChannelMask;
 
-    FrameDescriptor.ChannelCount = CountBits(FrameDescriptor.ChannelMask);
     FrameDescriptor.RepType = Object->RepType;
 }
 
-/* Assemble information for MP4 Sample Entry box.  Sample Size is always
-   16 bits.  The coding name is the name of the SampleEntry sub-box and is
-   'dtsx' unless the version of the bitstream is > 2.
+/* Assemble the stream information.
    If DecoderProfile == 2, then MaxPayloadCode will be zero.
 */
 void File_DtsUhd::UpdateDescriptor()
@@ -223,11 +212,8 @@ void File_DtsUhd::UpdateDescriptor()
         }
     }
 
-    FrameDescriptor.BaseSampleFreqCode=SampleRate==48000;
-    FrameDescriptor.ChannelCount=CountBits(FrameDescriptor.ChannelMask);
     FrameDescriptor.DecoderProfileCode=StreamMajorVerNum-2;
     FrameDescriptor.MaxPayloadCode=0+(StreamMajorVerNum>2);
-    FrameDescriptor.NumPresCode=NumAudioPres-1;
     FrameDescriptor.SampleCount=(FrameDuration*SampleRate)/(ClockRateInHz*Fraction);
 }
 
