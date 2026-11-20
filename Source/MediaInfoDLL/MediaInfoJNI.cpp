@@ -13,6 +13,7 @@
 //---------------------------------------------------------------------------
 
 #ifdef __ANDROID__
+#include <cerrno>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -99,18 +100,22 @@ static jint JNI_Open(JNIEnv* _env, jobject _this, jstring name)
 {
     MediaInfo_Internal* mi = GetMiObj(_env, _this);
     if (mi == NULL)
-        return 1;
+        return 0;
 
     return (jint)mi->Open(Jstring2Ztring(_env, name));
 }
 
 //------------------------------------------------------------------------------
 #ifdef __ANDROID__
+// The descriptor is owned by this function, which closes it
 static jint JNI_OpenFd(JNIEnv* _env, jobject _this, jint fd, jstring name)
 {
     MediaInfo_Internal* mi = GetMiObj(_env, _this);
     if (mi == NULL)
-        return 1;
+    {
+        close(fd);
+        return 0;
+    }
 
     int64u size = (int64u)-1;
 
@@ -122,13 +127,27 @@ static jint JNI_OpenFd(JNIEnv* _env, jobject _this, jint fd, jstring name)
 
     int8u* buffer = new int8u[BUFFER_SIZE];
 
-    mi->Open_Buffer_Init(size, 0);
+    // From the start of the file, as given to Open_Buffer_Init(), whatever the offset of the descriptor (if seekable)
+    lseek64(fd, 0, SEEK_SET);
+
+    // As with Open(), not opened if the descriptor can not be read, e.g. if it is invalid
+    bool opened = false;
     while (1) {
 
         ssize_t count = read(fd, (void*)buffer, BUFFER_SIZE);
 
         if (count < 0)
+        {
+            if (errno == EINTR)
+                continue; // interrupted by a signal before reading anything
             break; // error
+        }
+
+        if (!opened)
+        {
+            mi->Open_Buffer_Init(size, 0);
+            opened = true;
+        }
 
         std::bitset<32> state = mi->Open_Buffer_Continue(buffer, (size_t)count);
 
@@ -151,12 +170,13 @@ static jint JNI_OpenFd(JNIEnv* _env, jobject _this, jint fd, jstring name)
         if (count == 0)
             break;
     }
-    mi->Open_Buffer_Finalize();
+    if (opened)
+        mi->Open_Buffer_Finalize();
 
     delete[] buffer;
     close(fd);
 
-    return 0;
+    return opened ? 1 : 0;
 }
 #endif //__ANDROID__
 
@@ -322,11 +342,10 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void*)
     cls = env->FindClass("MediaInfo");
 #endif
 
-    if (cls == NULL)
-        return JNI_ERR;
-
-    if ((env->RegisterNatives(cls, methods, sizeof(methods) / sizeof(methods[0]))) < 0)
-        return JNI_ERR;
+    // Also called for a JNI library linked with this one and without JNI_OnLoad of its own (dlsym() searches the dependencies),
+    // e.g. using only the C API, so the loading must not fail without the class: only its native methods are not available then
+    if (cls == NULL || env->RegisterNatives(cls, methods, sizeof(methods) / sizeof(methods[0])) < 0)
+        env->ExceptionClear();
 
     return JNI_VERSION_1_4;
 }
