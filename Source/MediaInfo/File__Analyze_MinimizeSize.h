@@ -1724,6 +1724,8 @@ public :
         void                Merge_Conformance(bool FromConfig = false);
         void                Merge_Conformance(File__Analyze& Sub); //Items found by a sub-parser parsing a part of the current element
         void                Streams_Finish_Conformance(stream_t StreamKind = Stream_Max, size_t StreamPos = (size_t)-1);
+        void                Conformance_Stream_Move(stream_t StreamKind, size_t StreamPos, size_t StreamPos_Target); //Items about a stream moved to another stream (e.g. merged streams)
+        void                Conformance_Stream_Erase(stream_t StreamKind, size_t StreamPos); //Positions of the items about the next streams after the stream is erased
         virtual string      CreateElementName();
         string              BuildConformanceName(const string& ParserName, const char* Prefix, const char* Suffix);
         void                IsTruncated(int64u ExpectedSize = (int64u)-1, bool MoreThan = false, const char* Prefix = nullptr);
@@ -1738,6 +1740,8 @@ public :
         void                Merge_Conformance(bool FromConfig = false) {}
         void                Merge_Conformance(File__Analyze&) {}
         void                Streams_Finish_Conformance(stream_t = Stream_Max, size_t = (size_t)-1) {}
+        void                Conformance_Stream_Move(stream_t, size_t, size_t) {}
+        void                Conformance_Stream_Erase(stream_t, size_t) {}
         string              CreateElementName() { return {}; }
         string              BuildConformanceName(const string& ParserName, const char* Prefix, const char* Suffix) { return {}; }
         void                IsTruncated(int64u ExpectedSize = (int64u)-1, bool MoreThan = false, const char* = nullptr) {}

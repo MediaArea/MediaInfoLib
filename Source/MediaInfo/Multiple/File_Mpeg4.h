@@ -599,6 +599,7 @@ private :
         int32u                  mvex_trex_default_sample_duration;
         int32u                  mvex_trex_default_sample_size;
         int32u                  TimeCode_TrackID;
+        int32u                  vdep_TrackID; //Dolby Vision enhancement layer track, the base layer track
         int32u                  HasAtomStyle;
         bool                    TimeCode_IsVisual;
         bool                    IsPcm;
@@ -708,6 +709,7 @@ private :
             mvex_trex_default_sample_duration=0;
             mvex_trex_default_sample_size=0;
             TimeCode_TrackID=(int32u)-1;
+            vdep_TrackID=(int32u)-1;
             HasAtomStyle=0;
             TimeCode_IsVisual=false;
             IsPcm=false;

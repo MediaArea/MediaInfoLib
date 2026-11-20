@@ -11615,7 +11615,12 @@ void File_Mpeg4::moov_trak_tref_vdep()
     Element_Name("Video Dependancy"); //Dolby Vision
 
     //Parsing
-    Skip_B4(                                                    "track-ID");
+    int32u TrackID;
+    Get_B4(TrackID,                                             "track-ID");
+
+    FILLING_BEGIN();
+        Streams[moov_trak_tkhd_TrackID].vdep_TrackID=TrackID;
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------

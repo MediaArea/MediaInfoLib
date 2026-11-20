@@ -1569,12 +1569,44 @@ void File_Mpeg4::Streams_Finish()
 
         ++Temp;
     }
+
+    //Dolby Vision enhancement layer in its own track (dual track), merged in the stream of the base layer track
+    for (const auto& EL : Streams)
+    {
+        if (EL.second.vdep_TrackID==(int32u)-1 || EL.second.StreamKind!=Stream_Video || EL.second.StreamPos==(size_t)-1)
+            continue;
+        auto BL=Streams.find(EL.second.vdep_TrackID);
+        if (BL==Streams.end() || BL==Streams.find(EL.first) || BL->second.StreamKind!=Stream_Video || BL->second.StreamPos==(size_t)-1 || BL->second.vdep_TrackID!=(int32u)-1)
+            continue;
+        auto EL_Pos=EL.second.StreamPos;
+        auto BL_Pos=BL->second.StreamPos;
+        if (find(ToDelete_StreamPos.begin(), ToDelete_StreamPos.end(), EL_Pos)!=ToDelete_StreamPos.end() || find(ToDelete_StreamPos.begin(), ToDelete_StreamPos.end(), BL_Pos)!=ToDelete_StreamPos.end() || !DolbyVision_EL_IsAlone(*this, EL_Pos))
+            continue;
+        DolbyVision_EL_Merge(*this, EL_Pos, nullptr, BL_Pos);
+        Fill(Stream_Video, BL_Pos, Video_ID, Retrieve_Const(Stream_Video, BL_Pos, Video_ID)+__T(" / ")+Retrieve_Const(Stream_Video, EL_Pos, Video_ID), true);
+        for (const auto Parameter : { Video_StreamSize, Video_BitRate, Video_BitRate_Minimum, Video_BitRate_Nominal, Video_BitRate_Maximum })
+        {
+            //Sizes and bit rates of both tracks, unknown if not known for both
+            auto BL_Value=Retrieve_Const(Stream_Video, BL_Pos, Parameter).To_int64u();
+            auto EL_Value=Retrieve_Const(Stream_Video, EL_Pos, Parameter).To_int64u();
+            if (BL_Value && EL_Value)
+                Fill(Stream_Video, BL_Pos, Parameter, BL_Value+EL_Value, 10, true);
+            else if (BL_Value)
+                Clear(Stream_Video, BL_Pos, Parameter);
+        }
+        Conformance_Stream_Move(Stream_Video, EL_Pos, BL_Pos);
+        ToDelete_StreamPos.push_back(EL_Pos);
+    }
+
     size_t ToDelete_StreamPos_Size=ToDelete_StreamPos.size();
     if (ToDelete_StreamPos_Size)
     {
         sort(ToDelete_StreamPos.begin(), ToDelete_StreamPos.end());
         for (size_t i=ToDelete_StreamPos.size()-1; i!=(size_t)-1; i--)
+        {
             Stream_Erase(Stream_Video, ToDelete_StreamPos[i]);
+            Conformance_Stream_Erase(Stream_Video, ToDelete_StreamPos[i]);
+        }
     }
     Streams_Finish_Grid(Image_StreamPos, Grids);
     if (Vendor!=0x00000000 && Vendor!=0xFFFFFFFF)
