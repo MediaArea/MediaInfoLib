@@ -1656,7 +1656,7 @@ void File_Mpeg4v::vop_start()
         Frame_Count_NotParsedIncluded++;
 
     //Parsing
-    int32u vop_time_increment;
+    int32u vop_time_increment=0;
     int8u vop_coding_type;
     bool  vop_coded;
     int8u modulo_time_base=0;
@@ -1938,7 +1938,7 @@ void File_Mpeg4v::vop_start()
             Accept("MPEG-4 Visual");
 
         //Duration
-        if (!Mpeg4v_visual_object_type[visual_object_type][0] && vop_time_increment_resolution)
+        if (vop_time_increment_resolution)
         {
             int16u Time=modulo_time_base*1000+(int16u)vop_time_increment*1000/vop_time_increment_resolution;
             while (Time_End_MilliSeconds!=(int16u)-1 && Time+500<Time_End_MilliSeconds)

@@ -3427,7 +3427,9 @@ void File_Aac::coupling_channel_element()
     Skip_SB(                                                    "cc_domain");
     Skip_SB(                                                    "gain_element_sign");
     Skip_S1(2,                                                  "gain_element_scale");
+    auto ChannelPos_Temp_Save=ChannelPos_Temp;
     individual_channel_stream(false, false);
+    ChannelPos_Temp=ChannelPos_Temp_Save; //Coupling data, not an output channel
     if (!Element_IsOK())
     {
         Skip_BS(Data_BS_Remain(),                               "(Problem)");
@@ -3994,7 +3996,17 @@ void File_Aac::dynamic_range_info()
         Skip_S1(4,                                              "pce_ instance_tag");
         Skip_S1(4,                                              "drc_tag_reserved_bits");
     }
-    Skip_SB(                                                    "excluded_chns_present");
+    TEST_SB_SKIP(                                               "excluded_chns_present");
+        Element_Begin1("excluded_channels");
+        bool additional_excluded_chns;
+        do
+        {
+            Skip_S1(7,                                          "exclude_mask");
+            Get_SB (additional_excluded_chns,                   "additional_excluded_chns");
+        }
+        while (additional_excluded_chns);
+        Element_End0();
+    TEST_SB_END();
     Get_SB (present,                                            "drc_bands_present");
     if (present)
     {

@@ -119,12 +119,13 @@ void File_ChannelSplitting::Streams_Fill()
         size_t Pos=Count_Get(Stream_Audio);
         Merge(Parser);
 
-        for (size_t i=0; i<Common->SplittedChannels[0].size(); i++)
-        {
-            std::vector<File__Analyze*>& Parsers=Common->SplittedChannels[0][i]->Parsers;
+        for (int c=0; c<2; c++)
+            for (size_t i=0; i<Common->SplittedChannels[c].size(); i++)
+            {
+                std::vector<File__Analyze*>& Parsers=Common->SplittedChannels[c][i]->Parsers;
 
-            Merge(*Parsers[0], Stream_Audio, 0, 0);
-        }
+                Merge(*Parsers[0], Stream_Audio, 0, 0);
+            }
         return;
     }
 

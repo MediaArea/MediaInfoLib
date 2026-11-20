@@ -107,9 +107,9 @@ bool File_SphericalVideo::FileHeader_Begin()
                 if (Result < 0) {
                     p = p_sav;
                     XML_VALUE
-                    if (!tfsxml_strncmp_charp(b, "GSpherical:", 11)) {
-                        b.buf += 11;
-                        b.len -= 11;
+                    if (const auto Colon = (const char*)memchr(b.buf, ':', b.len)) { // Prefix bound to the spherical namespace, GSpherical in the specification examples
+                        b.len -= (unsigned)(Colon + 1 - b.buf);
+                        b.buf = Colon + 1;
                     }
                     auto Value = tfsxml_decode(v);
                     if (!tfsxml_strcmp_charp(b, "StereoMode")) {

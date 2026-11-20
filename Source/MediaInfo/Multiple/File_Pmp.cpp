@@ -85,7 +85,8 @@ bool File_Pmp::FileHeader_Begin()
 void File_Pmp::FileHeader_Parse()
 {
      //Parsing
-    int32u version, video_format=0, nb_frames=0, video_width=0, video_height=0, time_base_num=0, time_base_den=0, audio_format=0, sample_rate=0, channels=0;
+    int32u version, video_format=0, nb_frames=0, video_width=0, video_height=0, time_base_num=0, time_base_den=0, audio_format=0, sample_rate=0, channels_minus1=0;
+    int16u audio_count=0;
 
     Skip_C4(                                                    "Signature");
     Get_L4 (version,                                            "Version");
@@ -97,11 +98,13 @@ void File_Pmp::FileHeader_Parse()
         Get_L4 (video_height,                                   "video_height");
         Get_L4 (time_base_num,                                  "time_base_num");
         Get_L4 (time_base_den,                                  "time_base_den");
-        Skip_L4(                                                "number of audio streams");
         Get_L4 (audio_format,                                   "audio_format");
-        Get_L4 (channels,                                       "channels");
-        Skip_L4(                                                "unknown");
+        Get_L2 (audio_count,                                    "number of audio streams");
+        Skip_XX(10,                                             "unknown");
         Get_L4 (sample_rate,                                    "sample_rate");
+        Get_L4 (channels_minus1,                                "channels minus 1");
+        int64u Remaining=File_Offset+Buffer_Offset+Element_Offset<File_Size?(File_Size-(File_Offset+Buffer_Offset+Element_Offset)):0;
+        Loop_CheckValue(audio_count, Remaining, 1, "number of audio streams");
     }
 
     FILLING_BEGIN();
@@ -116,11 +119,15 @@ void File_Pmp::FileHeader_Parse()
             Fill(Stream_Video, 0, Video_FrameCount, nb_frames);
             Fill(Stream_Video, 0, Video_Width, video_width);
             Fill(Stream_Video, 0, Video_Height, video_height);
-            Fill(Stream_Video, 0, Video_FrameRate, (float)time_base_den / 100);
-            Stream_Prepare(Stream_Audio);
-            Fill(Stream_Audio, 0, Audio_Format, Pmp_audio_format(audio_format));
-            Fill(Stream_Audio, 0, Audio_Channel_s_, channels);
-            Fill(Stream_Audio, 0, Audio_SamplingRate, sample_rate);
+            if (time_base_num)
+                Fill(Stream_Video, 0, Video_FrameRate, (float64)time_base_den/time_base_num);
+            for (int16u i=0; i<audio_count; i++)
+            {
+                Stream_Prepare(Stream_Audio);
+                Fill(Stream_Audio, StreamPos_Last, Audio_Format, Pmp_audio_format(audio_format));
+                Fill(Stream_Audio, StreamPos_Last, Audio_Channel_s_, (int64u)channels_minus1+1);
+                Fill(Stream_Audio, StreamPos_Last, Audio_SamplingRate, sample_rate);
+            }
         }
 
         //No more need data

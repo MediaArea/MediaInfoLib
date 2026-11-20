@@ -54,7 +54,7 @@ private:
     void ia_audio_element();
     void ia_mix_presentation();
     void ia_sequence_header();
-    void ParamDefinition(int64u param_definition_type);
+    int64u ParamDefinition(int64u param_definition_type);
     void RenderingConfig();
     void ia_parameter_block();
     void ia_temporal_delimiter();
@@ -74,11 +74,10 @@ private:
         int64u duration{};
         int64u constant_subblock_duration{};
         int64u num_subblocks{};
+        std::vector<bool> recon_gain_is_present_flags; // Layers of the audio element of this recon gain parameter
     };
     std::map<int64u, ParamDefinitionData> param_definitions; // parameter_id -> ParamDefinitionData
-    int8u num_layers{};
     int8u codec_config_count{};
-    std::vector<bool> recon_gain_is_present_flag_Vec;
     std::map<int64u, int32u> codecs;            // codec_config_id  -> codec_id
     std::map<int64u, int64u> substreams;        // audio_substream_id -> codec_config_id
     std::map<int64u, int64u> mixpresentations;  // mix_presentation_id -> num_sub_mixes

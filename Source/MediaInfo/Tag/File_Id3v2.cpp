@@ -135,7 +135,7 @@ const char* Id3v2_RGAD_Originator_code[]=
 
 namespace Elements
 {
-    const int32u AENC=0x41454E47;
+    const int32u AENC=0x41454E43;
     const int32u APIC=0x41504943;
     const int32u ASPI=0x41535049;
     const int32u COMM=0x434F4D4D;
@@ -151,7 +151,7 @@ namespace Elements
     const int32u MCDI=0x4D434449;
     const int32u MLLT=0x4D4C4C54;
     const int32u OWNE=0x4F574E45;
-    const int32u PCNT=0x50434E58;
+    const int32u PCNT=0x50434E54;
     const int32u POPM=0x504F504D;
     const int32u POSS=0x504F5353;
     const int32u PRIV=0x50524956;
@@ -234,7 +234,7 @@ namespace Elements
     const int32u XRVA=0x58525641;
     const int32u XOLY=0x584F4C59;
     const int32u BUF=0x425546;
-    const int32u CNT=0x434E56;
+    const int32u CNT=0x434E54;
     const int32u COM=0x434F4D;
     const int32u CRA=0x435241;
     const int32u CRM=0x43524D;
@@ -436,6 +436,7 @@ void File_Id3v2::Header_Parse()
 {
     Unsynchronisation_Frame=false;
     DataLengthIndicator=false;
+    CompressionOrEncryption=false;
 
     if (Id3v2_Size<10) //first 10 is minimum size of a tag, Second 10 is ID3v2 header size
     {
@@ -503,6 +504,7 @@ void File_Id3v2::Header_Parse()
             Skip_Flags(Flags,  2,                               "Encryption");
             Get_Flags (Flags,  1, Unsynchronisation_Frame,      "Unsynchronisation");
             Get_Flags (Flags,  0, DataLengthIndicator,          "Data length indicator");
+            CompressionOrEncryption=(Flags&0x000C)!=0;
         }
     }
 
@@ -575,17 +577,9 @@ void File_Id3v2::Data_Parse()
     size_t Save_Buffer_Offset=Buffer_Offset;
     size_t Save_Buffer_Size=Buffer_Size;
     int64u Save_Element_Size=Element_Size;
-    if (DataLength!=(int32u)-1)
-    {
-        int64u TotalLength=4+(int64u)DataLength;
-        if (TotalLength==Element_Size-Unsynch_List.size())
-        {
-            Element_Size=TotalLength;
-            Param_Info1("Incoherent");
-        }
-    }
-    else
-        Element_Size-=Unsynch_List.size();
+    Element_Size-=Unsynch_List.size();
+    if (DataLength!=(int32u)-1 && !CompressionOrEncryption && 4+(int64u)DataLength!=Element_Size) //Data length is the size after decompression and decryption
+        Param_Info1("Incoherent");
     {
         if (!Unsynch_List.empty())
         {

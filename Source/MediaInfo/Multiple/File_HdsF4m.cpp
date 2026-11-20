@@ -66,7 +66,9 @@ bool File_HdsF4m::FileHeader_Begin()
         if (Root)
         {
             const char* Attribute=Root->Attribute("xmlns");
-            if (Attribute==NULL || Ztring().From_UTF8(Attribute)!=__T("http://ns.adobe.com/f4m/1.0"))
+            if (Attribute==NULL
+             || (Ztring().From_UTF8(Attribute)!=__T("http://ns.adobe.com/f4m/1.0")
+              && Ztring().From_UTF8(Attribute)!=__T("http://ns.adobe.com/f4m/2.0")))
             {
                 Reject("HdsF4m");
                 return false;
@@ -96,8 +98,11 @@ bool File_HdsF4m::FileHeader_Begin()
                 {
                     sequence* Sequence=new sequence;
                     //Attributes - mineType
+                    const char* Href=Root_Item->Attribute("href"); //Stream-level manifest
                     const char* Attribute=Root_Item->Attribute("url");
-                    if (Attribute)
+                    if (Href)
+                        Sequence->AddFileName(Ztring().From_UTF8(Href));
+                    else if (Attribute)
                         Sequence->AddFileName(Ztring().From_UTF8(Attribute)+__T("Seg1.f4f"));
 
                     Sequence->StreamID=ReferenceFiles->Sequences_Size()+1;

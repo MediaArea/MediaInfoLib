@@ -45,6 +45,7 @@ Ztring AvsV_profile(int8u profile_id)
     switch (profile_id)
     {
         case 0x20 : return "Base";
+        case 0x48 : return "Broadcasting";
         default :
             return Ztring::ToZtring(profile_id);
     }
@@ -196,7 +197,7 @@ void File_AvsV::Streams_Fill()
     Fill(Stream_Video, 0, Video_Codec_Profile, AvsV_profile(profile_id)+AvsV_level(level_id));
     Fill(Stream_Video, StreamPos_Last, Video_Width, horizontal_size);
     Fill(Stream_Video, StreamPos_Last, Video_Height, vertical_size);
-    Fill(Stream_Video, 0, Video_FrameRate, AvsV_frame_rate[frame_rate_code]/(progressive_sequence?1:2));
+    Fill(Stream_Video, 0, Video_FrameRate, AvsV_frame_rate[frame_rate_code]);
     if (aspect_ratio==0)
         ;//Forbidden
     else if (aspect_ratio==1)
@@ -301,6 +302,7 @@ void File_AvsV::Synched_Init()
     video_format=5; //Unspecified video format
     progressive_sequence=false;
     low_delay=false;
+    MarkerBitAfterTimeCode=false;
 
     //Default stream values
     Streams.resize(0x100);
@@ -687,6 +689,11 @@ void File_AvsV::picture_start()
     bool time_code_flag, progressive_frame, picture_structure=true, top_field_first, repeat_first_field, skip_mode_flag=false, loop_filter_disable;
     Skip_B2(                                                    "bbv_delay");
     BS_Begin();
+    if (profile_id==0x48)
+    {
+        Mark_1();
+        Skip_S1( 7,                                             "bbv_delay_extension");
+    }
     if (Element_Code==0xB3) //Only I
     {
         Get_SB (    time_code_flag,                             "time_code_flag");
@@ -698,6 +705,13 @@ void File_AvsV::picture_start()
             Skip_S1(6,                                          "time_code_seconds");
             Skip_S1(6,                                          "time_code_pictures");
         }
+        //Old streams without marker_bit are progressive, without low_delay, top_field_first and repeat_first_field (kept once detected, as other decoders do)
+        int16u Next11;
+        Peek_S2(11, Next11);
+        if (profile_id==0x48 || low_delay || !(Next11&0x4) || (Next11&0x3))
+            MarkerBitAfterTimeCode=true;
+        if (MarkerBitAfterTimeCode)
+            Mark_1();
     }
     if (Element_Code==0xB6) //Only P or B
     {
@@ -712,7 +726,7 @@ void File_AvsV::picture_start()
         Get_SB(    picture_structure,                           "picture_structure");
         if (Element_Code==0xB6) //Only P or B
         {
-            if (picture_structure)
+            if (!picture_structure)
                 Skip_SB(                                        "advanced_pred_mode_disable");
         }
     }

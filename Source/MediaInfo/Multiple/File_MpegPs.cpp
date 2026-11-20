@@ -2939,7 +2939,8 @@ bool File_MpegPs::private_stream_1_Choose_DVD_ID()
         private_stream_1_Offset=4;
     }
     //PCM
-    else if (CodecID>=0xA0 && CodecID<=0xAF && Element_Size>=7 && Buffer[Buffer_Offset+6]==0x80)
+    else if (CodecID>=0xA0 && CodecID<=0xAF && Element_Size>=7 && 3+(int64u)CC2(Buffer+Buffer_Offset+2)<=Element_Size //First access unit pointer in the packet
+          && (Buffer[Buffer_Offset+5]&0xC0)!=0xC0 && (Buffer[Buffer_Offset+5]&0x28)==0x00) //Quantization not reserved, 48 or 96 kHz, reserved bit 0
     {
         private_stream_1_IsDvdVideo=true;
         private_stream_1_Offset=1;

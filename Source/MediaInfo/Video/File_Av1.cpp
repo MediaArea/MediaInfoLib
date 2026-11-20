@@ -537,12 +537,12 @@ void File_Av1::sequence_header()
     if (!reduced_still_picture_header)
     {
         TEST_SB_SKIP(                                           "frame_id_numbers_present_flag");
-            Skip_S1(4,                                          "delta_frame_id_length_minus2");
-            Skip_S1(3,                                          "frame_id_length_minus1");
+            Skip_S1(4,                                          "delta_frame_id_length_minus_2");
+            Skip_S1(3,                                          "additional_frame_id_length_minus_1");
         TEST_SB_END();
     }
     Skip_SB(                                                    "use_128x128_superblock");
-    Skip_SB(                                                    "enable_dual_filter");
+    Skip_SB(                                                    "enable_filter_intra");
     Skip_SB(                                                    "enable_intra_edge_filter");
     if (!reduced_still_picture_header)
     {
@@ -599,7 +599,7 @@ void File_Av1::sequence_header()
         TESTELSE_SB_END();
         if (mono_chrome)
         {
-            color_range=true;
+            Get_SB(color_range,                                 "color_range"); Param_Info1(Avc_video_full_range[color_range]);
             subsampling_x=true;
             subsampling_y=true;
         }
@@ -640,7 +640,8 @@ void File_Av1::sequence_header()
             if (subsampling_x && subsampling_y)
                 Get_S1 ( 2, chroma_sample_position,             "chroma_sample_position");
         }
-        Skip_SB(                                                "separate_uv_delta_q");
+        if (!mono_chrome)
+            Skip_SB(                                            "separate_uv_delta_q");
     Element_End0();
     Get_SB (film_grain_params_present,                          "film_grain_params_present");
     trailing_bits();

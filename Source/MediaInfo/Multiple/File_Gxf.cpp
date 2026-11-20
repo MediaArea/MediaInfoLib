@@ -364,6 +364,10 @@ void File_Gxf::Streams_Finish_PerStream(size_t StreamID, stream &Temp)
     if (Temp.MediaType==(int8u)-1)
         return;
 
+    //When there are few frames, difficult to detect PCM
+    if (Temp.IsChannelGrouping && Temp.Parsers.size()==1 && !Temp.Parsers[0]->Status[IsAccepted] && !Temp.Parsers[0]->Status[IsFinished])
+        Temp.Parsers[0]->Accept();
+
     //By the parser
     if (Temp.Parsers.size()==1 && Temp.Parsers[0]->Status[IsAccepted])
     {

@@ -80,6 +80,8 @@ private :
     void Data_Parse();
 
     //Elements
+    void data_group_data();
+    void data_group_fragment();
     void caption_management();
     void caption_statement();
     void data_unit_data(int64u End);
@@ -161,6 +163,11 @@ private :
 
     //Temp
     void JIS (int8u Row, int8u Column);
+    int8u  data_group_link_number;
+    int8u  last_data_group_link_number;
+    std::vector<int8u> Fragments; //Data of the data groups of a caption data fragmented in several data groups
+    int64u Fragments_Code;
+    size_t Fragments_Count;
 
     //Config
     int8u Caption_conversion_type;

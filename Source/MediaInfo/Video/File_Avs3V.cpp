@@ -296,7 +296,7 @@ void File_Avs3V::Streams_Fill()
     Fill(Stream_Video, 0, Video_Codec_Profile, Avs3V_profile(profile_id)+__T('@')+Avs3V_level(level_id));
     Fill(Stream_Video, StreamPos_Last, Video_Width, horizontal_size);
     Fill(Stream_Video, StreamPos_Last, Video_Height, vertical_size);
-    Fill(Stream_Video, 0, Video_FrameRate, Avs3V_frame_rate[frame_rate_code]/(progressive_sequence?1:2));
+    Fill(Stream_Video, 0, Video_FrameRate, Avs3V_frame_rate[frame_rate_code]);
     if (aspect_ratio==0)
         ;//Forbidden
     else if (aspect_ratio==1)
@@ -827,7 +827,8 @@ void File_Avs3V::video_sequence_start()
     BS_End();
 
     //Not sure, but the 3 first official files have this
-    if (Element_Size-Element_Offset)
+    //Zero stuffing bytes may follow a header not ending on a byte boundary, the stuffing bit is then in the last byte of the header
+    if (Element_Size-Element_Offset && Buffer[Buffer_Offset+(size_t)Element_Offset])
     {
         BS_Begin();
         Mark_1();
@@ -1131,7 +1132,8 @@ void File_Avs3V::extension_start()
     }
 
     //Not sure, but the 3 first official files have this
-    if (Element_Size-Element_Offset)
+    //Zero stuffing bytes may follow a header not ending on a byte boundary, the stuffing bit is then in the last byte of the header
+    if (Element_Size-Element_Offset && Buffer[Buffer_Offset+(size_t)Element_Offset])
     {
         BS_Begin();
         Mark_1();

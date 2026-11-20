@@ -121,7 +121,7 @@ static const variable_size Ac4_channel_mode[]=
 {
     {13, 0}, // Total size
     {1, 0x00}, // 0b0
-    {1, 0x01}, // 0b10
+    {1, 0x02}, // 0b10
     {2, 0x0C}, // 0b1100
     {0, 0x0D}, // 0b1101
     {0, 0x0E}, // 0b1110
@@ -262,8 +262,8 @@ enum ch
     Bfc  = 1 << 25,
     Tfc  = 1 << 26,
     Tbc  = 1 << 27,
-    Vhl  = 1 << 26,
-    Vhr  = 1 << 27,
+    Vhl  = Tfl, // Same speaker as Tfl in TS 103 190-2 Table G.1
+    Vhr  = Tfr, // Same speaker as Tfr in TS 103 190-2 Table G.1
     ch_Max = 1 << 31
 };
 
@@ -309,8 +309,8 @@ static int32u Ac4_ch_mode_2_nonstd_Values[16]=
     L | R | C | Ls | Rs | Lb | Rb | LFE,        //7.1 3/4/0
     L | R | C | Ls | Rs | Lw | Rw,              //7.0 5/2/0
     L | R | C | Ls | Rs | Lw | Rw | LFE,        //7.1 5/2/0
-    L | R | C | Ls | Rs | Vhl | Vhl,            //7.0 3/2/2
-    L | R | C | Ls | Rs | Vhl | Vhl | LFE,      //7.1 3/2/2
+    L | R | C | Ls | Rs | Vhl | Vhr,            //7.0 3/2/2
+    L | R | C | Ls | Rs | Vhl | Vhr | LFE,      //7.1 3/2/2
     L | R | C | Ls | Rs | Lb | Rb | Tfl | Tfr | Tbl | Tbr,                      //7.0.4
     L | R | C | Ls | Rs | Lb | Rb | Tfl | Tfr | Tbl | Tbr | LFE,                //7.1.4
     L | R | C | Ls | Rs | Lb | Rb | Tfl | Tfr | Tbl | Tbr | Lscr | Rscr,        //9.0.4
@@ -1335,7 +1335,7 @@ void File_Ac4::Streams_Fill()
             if (MainPos!=string::npos)
                 InsertPoint=MainPos+4;
             else if (DialoguePos!=string::npos)
-                InsertPoint=MainPos+8;
+                InsertPoint=DialoguePos+8;
             else
                 InsertPoint=Summary.size();
             Summary.insert(InsertPoint, LanguageString);
@@ -3197,7 +3197,7 @@ void File_Ac4::presentation_config_ext_info(presentation& P)
     TEST_SB_SKIP(                                               "b_more_skip_bytes");
         int32u n_skip_bytes32;
         Get_V4 (2, n_skip_bytes32,                              "n_skip_bytes");
-        n_skip_bytes=(int8u)n_skip_bytes32<<5;
+        n_skip_bytes+=(int16u)(n_skip_bytes32<<5);
     TEST_SB_END();
 
     if (bitstream_version==1 && P.presentation_config==7 && ac4_presentation_v1_info_Depth<4) //Arbitrary limit of nested levels
@@ -3723,8 +3723,8 @@ void File_Ac4::ac4_presentation_substream(size_t substream_index, size_t Substre
             TEST_SB_SKIP(                                       "b_length");
                 Get_S1(5, name_length,                          "name_len");
             TEST_SB_END();
+            Skip_BS(name_length*8,                              "presentation_name");
         TEST_SB_END();
-        Skip_BS(name_length*8,                                  "presentation_name");
 
         Get_S1 (2, n_targets,                                   "n_targets_minus1");
         n_targets++;
@@ -3868,8 +3868,27 @@ void File_Ac4::metadata(audio_substream& AudioSubstream, size_t Substream_Index)
     const content_info& ContentInfo=Groups[Group_Pos].ContentInfo;
     const group_substream& GroupInfo=Groups[Group_Pos].Substreams[SubStream_Pos];
 
-    bool b_associated=ContentInfo.content_classifier!=(int8u)-1 && ContentInfo.content_classifier>1; //TODO: from presentation_config if content_classifier not present
-    AudioSubstream.b_dialog=ContentInfo.content_classifier==4; //TODO: from presentation_config if content_classifier not present
+    //Role of the substream in the presentation_config of its presentation
+    int8u presentation_config=(int8u)-1, Role=(int8u)-1;
+    for (size_t p=0; p<Presentations.size() && Role==(int8u)-1; p++)
+    {
+        const presentation& P=Presentations[p];
+        if (P.presentation_config>4)
+            continue;
+        const vector<size_t>& Specifiers=P.substream_group_info_specifiers;
+        size_t Roles_Count=Ac4_presentation_config_split[P.presentation_config][2]==(int8u)-1?2:3;
+        for (size_t g=0; g<Specifiers.size(); g++)
+            if (Specifiers[g]==Group_Pos)
+            {
+                presentation_config=P.presentation_config;
+                Role=Ac4_presentation_config_split[presentation_config][g*Roles_Count/Specifiers.size()]; //Several groups per role if frame_rate_factor>1
+                break;
+            }
+    }
+
+    int8u content_classifier=ContentInfo.content_classifier;
+    bool b_associated=content_classifier==VI || content_classifier==HI || content_classifier==Co || ((presentation_config==2 || presentation_config==4) && Role==A);
+    AudioSubstream.b_dialog=content_classifier==D || ((presentation_config==0 || presentation_config==3) && Role==D);
 
     Element_Begin1("metadata");
     basic_metadata(AudioSubstream.LoudnessInfo, AudioSubstream.Preprocessing, GroupInfo.ch_mode, GroupInfo.sus_ver);
@@ -3936,7 +3955,7 @@ void File_Ac4::metadata(audio_substream& AudioSubstream, size_t Substream_Index)
                 Skip_V4(2,                                      "groupid");
             TEST_SB_END();
             TEST_SB_SKIP(                                       "b_codecdata");
-                Skip_V4(8,                                      "b_codecdata");
+                Skip_S1(8,                                      "codecdata");
             TEST_SB_END();
             Get_SB (b_discard_unknown_payload,                  "b_discard_unknown_payload");
             if (!b_discard_unknown_payload)
@@ -4240,7 +4259,7 @@ void File_Ac4::dialog_enhancement_data(de_info& Info, bool b_iframe, bool b_de_s
         {
 
             if (de_nr_channels==2 && (Info.Config.de_method==0 || Info.Config.de_method==2))
-                Skip_SB(                                        "de_ms_proc_flag");
+                Get_SB (de_ms_proc_flag,                        "de_ms_proc_flag");
 
             for (int8u ch=0; ch<de_nr_channels-de_ms_proc_flag; ch++)
             {
@@ -4665,6 +4684,7 @@ void File_Ac4::drc_data(drc_info& DrcInfo)
                 drc_gainset_size+=(int16u)drc_gainset_size32<<6;
             TEST_SB_END();
             Get_S1 (2, drc_version,                             "drc_version");
+            used_bits=0;
 
             if (drc_version<=1)
             {
@@ -4922,8 +4942,9 @@ void File_Ac4::dac4()
     if (byte_align)
         Skip_S1(byte_align,                                     "byte_align");
     BS_End();
+    Loop_CheckValue(n_presentations, 2, "n_presentations"); //presentation_version and pres_bytes
     Presentations_dac4.resize(n_presentations);
-    for (int8u p=0; p<n_presentations; p++)
+    for (int16u p=0; p<n_presentations; p++)
     {
         Element_Begin1("presentation");
         presentation& P=Presentations_dac4[p];
@@ -4973,11 +4994,13 @@ void File_Ac4::alternative_info()
     int8u n_targets;
     Element_Begin1("alternative_info");
     Get_S2 (16, name_len,                                       "name_len");
-    for (int8u Pos=0; Pos<name_len; Pos++)
+    Loop_CheckValue_BS(name_len, 8, "name_len");
+    for (int16u Pos=0; Pos<name_len; Pos++)
         Skip_S1(8,                                              "presentation_name");
 
     Get_S1 (5, n_targets,                                       "n_targets");
-    for (int8u Pos=0; Pos<name_len; Pos++)
+    Loop_CheckValue_BS(n_targets, 11, "n_targets");
+    for (int8u Pos=0; Pos<n_targets; Pos++)
     {
         Skip_S1(3,                                              "target_md_compat");
         Skip_S1(8,                                              "target_device_category");
@@ -5284,7 +5307,7 @@ void File_Ac4::Get_V4(int8u Bits1, int8u Bits2, int8u Flag_Value, int32u &Info, 
     int8u Count=Bits1;
 
     Peek_S4(Count, Info);
-    if (Info==Flag_Value)
+    if (Info&Flag_Value)
     {
         Count=Bits2;
         Peek_S4(Count, Info);
@@ -5307,7 +5330,7 @@ void File_Ac4::Skip_V4(int8u Bits1, int8u Bits2, int8u Flag_Value, const char* N
     int8u Count=Bits1;
 
     Peek_S4(Count, Info);
-    if (Info==Flag_Value)
+    if (Info&Flag_Value)
     {
         Count=Bits2;
         Peek_S4(Count, Info);

@@ -129,7 +129,7 @@ bool File_DvbSubtitle::Synchronize()
             if (Buffer[Buffer_Offset]==0x20
              && Buffer[Buffer_Offset+1]==0x00
              && (Buffer[Buffer_Offset+2]==0x0F
-              || Buffer[Buffer_Offset+1]==0xFF))
+              || Buffer[Buffer_Offset+2]==0xFF))
                 break;
             Buffer_Offset++;
         }
@@ -267,7 +267,7 @@ void File_DvbSubtitle::Header_Parse()
                     MustFindDvbHeader=true;
 
                     //Filling
-                    Header_Fill_Code(0xFF, "end of PES data field marker");
+                    Header_Fill_Code(0x100, "end of PES data field marker"); //0xFF is the stuffing segment_type
                     Header_Fill_Size(1);
                     return;
         default   : ; //Normal (0x0F)
@@ -294,10 +294,13 @@ void File_DvbSubtitle::Data_Parse()
         case 0x12 : CLUT_definition_segment(); break;
         case 0x13 : object_data_segment(); break;
         case 0x14 : display_definition_segment(); break;
+        case 0x15 : disparity_signalling_segment(); break;
+        case 0x16 : alternative_CLUT_segment(); break;
         case 0x80 : end_of_display_set_segment(); break;
-        case 0xFF : end_of_PES_data_field_marker(); return;
+        case 0xFF : stuffing(); break;
+        case 0x100: end_of_PES_data_field_marker(); return;
         default   :
-                    if (Element_Code>=0x40 && Element_Code<=0x7F)
+                    if (Element_Code>=0x17 && Element_Code<=0x7F)
                         reserved_for_future_use();
                     else if (Element_Code>=0x81 && Element_Code<=0xEF)
                         private_data();
@@ -385,8 +388,8 @@ void File_DvbSubtitle::region_composition_segment()
         {
             case 0x01 :
             case 0x02 :
-                        Skip_B2(                                 "foreground_pixel_code");
-                        Skip_B2(                                 "background_pixel_code");
+                        Skip_B1(                                 "foreground_pixel_code");
+                        Skip_B1(                                 "background_pixel_code");
                         break;
             default   : ;
         }
@@ -427,6 +430,22 @@ void File_DvbSubtitle::display_definition_segment()
 }
 
 //---------------------------------------------------------------------------
+void File_DvbSubtitle::disparity_signalling_segment()
+{
+    Element_Name("disparity signalling segment");
+
+    Skip_XX(Element_Size,                                       "Data");
+}
+
+//---------------------------------------------------------------------------
+void File_DvbSubtitle::alternative_CLUT_segment()
+{
+    Element_Name("alternative CLUT segment");
+
+    Skip_XX(Element_Size,                                       "Data");
+}
+
+//---------------------------------------------------------------------------
 void File_DvbSubtitle::reserved_for_future_use()
 {
     Element_Name("reserved for future use");
@@ -446,6 +465,14 @@ void File_DvbSubtitle::end_of_display_set_segment()
 void File_DvbSubtitle::private_data()
 {
     Element_Name("private data");
+
+    Skip_XX(Element_Size,                                       "Data");
+}
+
+//---------------------------------------------------------------------------
+void File_DvbSubtitle::stuffing()
+{
+    Element_Name("stuffing");
 
     Skip_XX(Element_Size,                                       "Data");
 }

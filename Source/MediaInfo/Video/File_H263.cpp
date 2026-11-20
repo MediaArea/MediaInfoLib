@@ -36,6 +36,7 @@ namespace MediaInfoLib
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+#if MEDIAINFO_TRACE
 static const char* H263_Source_Format[]=
 {
     nullptr,
@@ -47,6 +48,7 @@ static const char* H263_Source_Format[]=
     nullptr,
     nullptr,
 };
+#endif //MEDIAINFO_TRACE
 
 //---------------------------------------------------------------------------
 static const int16u H263_Source_Format_Width[]=
@@ -78,11 +80,11 @@ static const int16u H263_Source_Format_Height[]=
 static const int8u H263_PAR_W[]=
 {
     0,
+    1,
     12,
     10,
     16,
     40,
-    0,
     0,
     0,
     0,
@@ -98,11 +100,11 @@ static const int8u H263_PAR_W[]=
 static const int8u H263_PAR_H[]=
 {
     0,
+    1,
     11,
     11,
     11,
     33,
-    0,
     0,
     0,
     0,
@@ -165,10 +167,10 @@ void File_H263::Streams_Fill()
     Fill(Stream_Video, 0, Video_Format, "H.263");
     Fill(Stream_Video, 0, Video_Codec, "H.263");
 
-    if (H263_Source_Format_Width[Source_Format])
-        Fill(Stream_Video, 0, Video_Width, H263_Source_Format_Width[Source_Format]);
-    if (H263_Source_Format_Height[Source_Format])
-        Fill(Stream_Video, 0, Video_Height, H263_Source_Format_Height[Source_Format]);
+    if (Frame_Width)
+        Fill(Stream_Video, 0, Video_Width, Frame_Width);
+    if (Frame_Height)
+        Fill(Stream_Video, 0, Video_Height, Frame_Height);
     Fill(Stream_Video, 0, Video_ColorSpace, "YUV");
     Fill(Stream_Video, 0, Video_ChromaSubsampling, "4:2:0");
     Fill(Stream_Video, 0, Video_BitDepth, 8);
@@ -222,7 +224,7 @@ bool File_H263::Synched_Test()
      || (Buffer[Buffer_Offset+2]&0xFC)!=0x80
      || (Buffer[Buffer_Offset+3]&0x03)!=0x02
      || (Buffer[Buffer_Offset+4]&0x1C)==0x00
-     || (Buffer_Size>=0x100000 && Header_Parser_GetSize()==(size_t)-1)) //Preventing waiting too much after a false positive sync
+     || (Buffer_Size-Buffer_Offset>=0x100000 && Header_Parser_GetSize()==(size_t)-1)) //Preventing waiting too much after a false positive sync (1 MiB without the next picture start)
     {
         if (Frame_Count==0 && Buffer_TotalBytes>Buffer_TotalBytes_FirstSynched_Max)
             Trusted=0;
@@ -245,6 +247,8 @@ void File_H263::Synched_Init()
         Frame_Count_Valid=Config->ParseSpeed>=0.3?8:(IsSub?1:2);
 
     //Temp
+    Frame_Width=0;
+    Frame_Height=0;
     PAR_W=12;
     PAR_H=11;
     Temporal_Reference_IsValid=false;
@@ -297,7 +301,7 @@ size_t File_H263::Header_Parser_GetSize()
         if (FrameIsAlwaysComplete || Config->IsFinishing)
             Buffer_Offset_Temp=Buffer_Size; //We are sure that the next bytes are a start
         else
-            return false;
+            return (size_t)-1;
     }
 
     //OK, we continue
@@ -311,16 +315,11 @@ size_t File_H263::Header_Parser_GetSize()
 void File_H263::Data_Parse()
 {
     //Parsing
-    int8u Temporal_Reference_Temp;
+    int8u Temporal_Reference_Temp, Source_Format;
     BS_Begin();
     Skip_S3(22,                                                 "Picture Start Code (PSC)");
     Get_S1 ( 8, Temporal_Reference_Temp,                        "Temporal Reference (TR)");
-    if (!Temporal_Reference_IsValid)
-    {
-        Temporal_Reference=Temporal_Reference_Temp;
-        Temporal_Reference_IsValid=true;
-    }
-    if (Temporal_Reference_Temp==Temporal_Reference || ((int8u)(Temporal_Reference_Temp-Temporal_Reference)>8 && (int8u)(Temporal_Reference-Temporal_Reference_Temp)>8))
+    if (Temporal_Reference_IsValid && (Temporal_Reference_Temp==Temporal_Reference || ((int8u)(Temporal_Reference_Temp-Temporal_Reference)>8 && (int8u)(Temporal_Reference-Temporal_Reference_Temp)>8)))
     {
         if (Frame_Count==0 && Buffer_TotalBytes>Buffer_TotalBytes_FirstSynched_Max)
             Trusted=0;
@@ -331,6 +330,7 @@ void File_H263::Data_Parse()
         return;
     }
     Temporal_Reference=Temporal_Reference_Temp;
+    Temporal_Reference_IsValid=true;
     Element_Begin1("Type Information (PTYPE)");
         Mark_1();
         Mark_0();
@@ -340,6 +340,8 @@ void File_H263::Data_Parse()
         Get_S1 (3, Source_Format,                               "Source Format"); Param_Info1C(H263_Source_Format[Source_Format], H263_Source_Format[Source_Format]);
         if (Source_Format!=7)
         {
+            Frame_Width=H263_Source_Format_Width[Source_Format];
+            Frame_Height=H263_Source_Format_Height[Source_Format];
             Skip_SB(                                            "Picture Coding Type");
             Skip_SB(                                            "Unrestricted Motion Vector mode");
             Skip_SB(                                            "Syntax-based Arithmetic Coding mode");
@@ -350,7 +352,7 @@ void File_H263::Data_Parse()
     if (Source_Format==7) // Extended PTYPE
     {
         Element_Begin1("Plus PTYPE (PLUSPTYPE)");
-            int8u Ufep, PixelAspectRatioCode=0, Width=0, Height=0;
+            int8u Ufep;
             Get_S1 ( 3, Ufep,                                   "Update Full Extended PTYPE (UFEP)");
             switch (Ufep)
             {
@@ -359,6 +361,10 @@ void File_H263::Data_Parse()
                 case 1  :
                             Element_Begin1("Optional Part of PLUSPTYPE (OPPTYPE)");
                             Get_S1 (3, Source_Format,           "Source Format"); Param_Info1C(H263_Source_Format[Source_Format], H263_Source_Format[Source_Format]);
+                            Frame_Width=H263_Source_Format_Width[Source_Format];
+                            Frame_Height=H263_Source_Format_Height[Source_Format];
+                            PAR_W=12;
+                            PAR_H=11;
                             Skip_SB(                            "Custom PCF");
                             Skip_SB(                            "Unrestricted Motion Vector (UMV) mode");
                             Skip_SB(                            "Syntax-based Arithmetic Coding (SAC) mode");
@@ -391,34 +397,43 @@ void File_H263::Data_Parse()
                 Mark_1();
             Element_End0();
         Element_End0();
-        Skip_SB(                                                "CPM");
-        Skip_S1(2,                                              "PSBI");
-        Element_Begin1("Custom Picture Format (CPFMT)");
-            Get_S1 (4, PixelAspectRatioCode,                    "Pixel Aspect Ratio Code");
-            Get_S1 (4, Width,                                   "Picture Width Indication");
-            Width++; Width<<=2; Param_Info2(Width, " pixels");
-            Mark_1();
-            Get_S1 (4, Height,                                  "Picture Height Indication");
-            Height<<=2; Param_Info2(Height, " pixels");
-        Element_End0();
-        if (PixelAspectRatioCode==0xF)
+        bool CPM;
+        Get_SB (   CPM,                                         "CPM");
+        if (CPM)
+            Skip_S1(2,                                          "PSBI");
+        if (Ufep==1 && Source_Format==6)
         {
-            Element_Begin1("Extended Pixel Aspect Ratio (EPAR)");
-            Get_S1 (8, PAR_W,                                   "PAR Width");
-            Get_S1 (8, PAR_H,                                   "PAR Height");
+            int16u Width, Height;
+            int8u PixelAspectRatioCode;
+            Element_Begin1("Custom Picture Format (CPFMT)");
+                Get_S1 (4, PixelAspectRatioCode,                "Pixel Aspect Ratio Code");
+                Get_S2 (9, Width,                               "Picture Width Indication");
+                Width++; Width<<=2; Param_Info2(Width, " pixels");
+                Mark_1();
+                Get_S2 (9, Height,                              "Picture Height Indication");
+                Height<<=2; Param_Info2(Height, " pixels");
             Element_End0();
-        }
-        else
-        {
-            PAR_W=H263_PAR_W[PixelAspectRatioCode];
-            PAR_H=H263_PAR_H[PixelAspectRatioCode];
+            Frame_Width=Width;
+            Frame_Height=Height;
+            if (PixelAspectRatioCode==0xF)
+            {
+                Element_Begin1("Extended Pixel Aspect Ratio (EPAR)");
+                Get_S1 (8, PAR_W,                               "PAR Width");
+                Get_S1 (8, PAR_H,                               "PAR Height");
+                Element_End0();
+            }
+            else
+            {
+                PAR_W=H263_PAR_W[PixelAspectRatioCode];
+                PAR_H=H263_PAR_H[PixelAspectRatioCode];
+            }
         }
     }
     BS_End();
     Skip_XX(Element_Size-Element_Offset,                        "Other data");
 
     FILLING_BEGIN();
-        if (!H263_Source_Format[Source_Format])
+        if (!Frame_Width || !Frame_Height)
         {
             if (Frame_Count==0 && Buffer_TotalBytes>Buffer_TotalBytes_FirstSynched_Max)
                 Trusted=0;

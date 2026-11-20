@@ -387,7 +387,7 @@ void File_Eia708::Service()
                                 case 0x7E : Character_Fill(L'+'     ); break;
                                 case 0x7F : Character_Fill(L'+'     ); break;
                                 //CEA-708-D, Section 7.1.9 (G3)
-                                case 0x80 : Character_Fill(L'_'     ); break; //(CC)
+                                case 0xA0 : Character_Fill(L'_'     ); break; //(CC)
                                 default   :
                                             //CEA-708-D, Section 7.1.10 (C2)
                                             if (cc_data_2>=0x08 && cc_data_2<0x10)
@@ -580,7 +580,7 @@ void File_Eia708::Service()
             case 0x90 : SPA(); Pos+=2; break; //SetPenAttributes
             case 0x91 : SPC(); Pos+=3; break; //SetPenColor
             case 0x92 : SPL(); Pos+=2; break; //SetPenLocation
-            case 0x97 : SWA(); Pos+=5; break; //SetWindowAttributes
+            case 0x97 : SWA(); Pos+=4; break; //SetWindowAttributes
             case 0x98 : //DF0
             case 0x99 : //DF1
             case 0x9A : //DF2
@@ -1335,11 +1335,6 @@ void File_Eia708::SWA()
     Skip_S1(4,                                                  "effect speed");
     Skip_S1(2,                                                  "effect direction");
     Skip_S1(2,                                                  "display effect");
-    Mark_0_NoTrustError();
-    Mark_0_NoTrustError();
-    Skip_S1(2,                                                  "edge red");
-    Skip_S1(2,                                                  "edge green");
-    Skip_S1(2,                                                  "edge blue");
     BS_End();
     Element_End0();
 }

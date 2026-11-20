@@ -495,6 +495,8 @@ const char* Mpeg_Descriptors_dvb_service_type(int8u service_type)
         case 0x04 : return "NVOD reference";
         case 0x05 : return "NVOD time-shifted";
         case 0x06 : return "Mosaic";
+        case 0x07 : return "FM radio";
+        case 0x08 : return "DVB SRM";
         case 0x0A : return "advanced codec digital radio sound";
         case 0x0B : return "advanced codec mosaic service";
         case 0x0C : return "data broadcast";
@@ -2418,6 +2420,28 @@ void File_Mpeg_Descriptors::Descriptor_1D()
 }
 
 //---------------------------------------------------------------------------
+void File_Mpeg_Descriptors::Descriptor_1E()
+{
+    //Parsing
+    int16u ES_ID;
+    Get_B2 (ES_ID,                                              "ES_ID");
+
+    FILLING_BEGIN();
+        switch (table_id)
+        {
+            case 0x02 : //program_map_section
+                        if (elementary_PID_IsValid)
+                        {
+                            Complete_Stream->Streams[elementary_PID]->FMC_ES_ID=ES_ID;
+                            Complete_Stream->Streams[elementary_PID]->FMC_ES_ID_IsValid=true;
+                        }
+                        break;
+            default    : ;
+        }
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
 void File_Mpeg_Descriptors::Descriptor_1F()
 {
     //Parsing
@@ -3478,6 +3502,7 @@ void File_Mpeg_Descriptors::Descriptor_7B()
 {
     //Parsing
     BS_Begin();
+    Skip_S1(4,                                                  "sample_rate_code");
     Skip_S1(6,                                                  "bit_rate_code");
     Skip_S2(7,                                                  "nblks");
     Skip_S2(14,                                                 "fsize");
@@ -4351,13 +4376,13 @@ void File_Mpeg_Descriptors::CUEI_02()
 void File_Mpeg_Descriptors::ATSC_multiple_string_structure(Ztring &Value, const char* Name)
 {
     //Parsing
-    Ztring string;
     int8u number_strings, number_segments;
     Element_Begin1(Name);
     Get_B1(number_strings,                                      "number_strings");
     for (int8u string_Pos=0; string_Pos<number_strings; string_Pos++)
     {
         Element_Begin1("String");
+        Ztring string;
         int32u ISO_639_language_code;
         Get_C3(ISO_639_language_code,                           "ISO_639_language_code");
         Get_B1(number_segments,                                 "number_segments");

@@ -656,7 +656,7 @@ void File_Aac::AudioSpecificConfig (size_t End)
         if (extension_sampling_frequency_index==0xF)
         {
             Get_S3 (24, extension_sampling_frequency,           "extensionSamplingFrequency");
-            sampling_frequency_index=Aac_AudioSpecificConfig_sampling_frequency_index(extension_sampling_frequency);
+            extension_sampling_frequency_index=Aac_AudioSpecificConfig_sampling_frequency_index(extension_sampling_frequency);
         }
         else
             extension_sampling_frequency=Aac_sampling_frequency[extension_sampling_frequency_index];
@@ -1394,10 +1394,12 @@ void File_Aac::adif_header()
     Get_SB (    bitstream_type,                                 "bitstream_type"); Param_Info1(bitstream_type?"VBR":"CBR");
     Get_S3 (23, bitrate,                                        "bitrate");
     Get_S1 ( 4, num_program_config_elements,                    "num_program_config_elements");
-    if (!bitstream_type)
-        Skip_S3(20,                                             "adif_buffer_fullness");
     for (int8u Pos=0; Pos<num_program_config_elements+1; Pos++)
+    {
+        if (!bitstream_type)
+            Skip_S3(20,                                         "adif_buffer_fullness");
         program_config_element();
+    }
     BS_End();
 
     FILLING_BEGIN();

@@ -402,7 +402,7 @@ int File_DtsUhd::NaviFindIndex(int DesiredIndex, int32u* ListIndex)
         if (Navi.Index==DesiredIndex)
         {
             Navi.Present=true;
-            *ListIndex=Navi.Index;
+            *ListIndex=(int32u)(&Navi-Audio_Chunks.data());
             return 0;
         }
     }
@@ -410,7 +410,7 @@ int File_DtsUhd::NaviFindIndex(int DesiredIndex, int32u* ListIndex)
     size_t Index=0;
     for (auto& Navi : Audio_Chunks)
     {
-        if (Navi.Present&&Navi.AudioChunkSize==0)
+        if (!Navi.Present&&Navi.AudioChunkSize==0)
             break;
         Index++;
     }
@@ -422,7 +422,7 @@ int File_DtsUhd::NaviFindIndex(int DesiredIndex, int32u* ListIndex)
     Navi.AudioChunkSize=0;
     Navi.Present=true;
     Navi.AudioChunkID=256;
-    Navi.Index=Index;
+    Navi.Index=DesiredIndex;
     *ListIndex=Index;
 
     return 0;
@@ -490,7 +490,10 @@ int File_DtsUhd::ExtractChunkNaviData()
             Get_SB (ACIDsPresentFlag,                           "ACIDsPresentFlag");
         if (ACIDsPresentFlag)
             Get_VR (Table2468, Audio_Chunks[AudioChunkIndex].AudioChunkID, "AudioChunkID");
-        Get_VR(TableAudioChunkSizes, Audio_Chunks[AudioChunkIndex].AudioChunkSize, "AudioChunkSize");
+        if (Audio_Chunks[AudioChunkIndex].AudioChunkID)
+            Get_VR(TableAudioChunkSizes, Audio_Chunks[AudioChunkIndex].AudioChunkSize, "AudioChunkSize");
+        else
+            Audio_Chunks[AudioChunkIndex].AudioChunkSize=0; //NULL chunk
         ChunkBytes+=Audio_Chunks[AudioChunkIndex].AudioChunkSize;
     }
 
@@ -498,6 +501,31 @@ int File_DtsUhd::ExtractChunkNaviData()
 
     Element_End0();
     return 0;
+}
+
+/* Table 6-26 */
+void File_DtsUhd::ExtractPBRSmoothParams()
+{
+    if (SyncFrameFlag)
+        Get_SB (VBRSmoothingBufferEnabled,                      "VBRSmoothingBufferEnabled");
+    if (!VBRSmoothingBufferEnabled)
+        return;
+
+    Element_Begin1("ExtractPBRSmoothParams");
+    int8u BitsforCumACPayload;
+    bool ACFirstXLLSyncPresent;
+    Get_S1 (2, BitsforCumACPayload,                             "BitsforCumACPayload");
+    BitsforCumACPayload=9+3*BitsforCumACPayload;
+    Param_Info2(BitsforCumACPayload, " bits");
+    Skip_S3(BitsforCumACPayload,                                "AudioChunksCumulSmoothPayload");
+    Get_SB (ACFirstXLLSyncPresent,                              "ACFirstXLLSyncPresent");
+    if (ACFirstXLLSyncPresent)
+    {
+        Skip_S1(2,                                              "VBRSmoothingBuffSzkB");
+        Skip_S1(8,                                              "InitACXLLDecDlyFrames");
+        Skip_S3(BitsforCumACPayload-2,                          "ACFirstXLLSyncOffsInDWORDS");
+    }
+    Element_End0();
 }
 
 
@@ -514,6 +542,7 @@ int File_DtsUhd::ExtractMDChunkObjIDList(MD01* MD01)
     {
         constexpr int8u Table[4] = {3, 4, 6, 8};
         Get_VR (Table, MD01->NumObjects,                        "NumObjects");
+        MD01->NumObjects++;
         if (MD01->NumObjects>sizeof(MD01->ObjectList)/sizeof(*MD01->ObjectList))
         {
             Param_Error("NumObjects");
@@ -734,16 +763,24 @@ bool File_DtsUhd::CheckIfMDIsSuitableforImplObjRenderer(MD01* MD01, int ObjectId
     Element_Begin1("CheckIfMDIsSuitableforImplObjRenderer");
     bool MDUsedByAllRenderersFlag;
     Get_SB (MDUsedByAllRenderersFlag,                           "MDUsedByAllRenderersFlag");
+    if (MDUsedByAllRenderersFlag)
+    {
+        Element_End0();
+        return true;
+    }
+
+    int32u NumBits2Skip;
+    constexpr int8u Table[4] = {8, 10, 12, 14};
+    bool RequiredRendererType;
+    Get_SB (RequiredRendererType,                               "RequiredRendererType"); Param_Info1(RequiredRendererType?"Extended":"Basic");
+    Get_VR (Table, NumBits2Skip,                                "NumBits2Skip");
+    if (!RequiredRendererType) //Metadata for the basic renderer
     {
         Element_End0();
         return true;
     }
 
     /*  Reject the render and skip the render data. */
-    int32u NumBits2Skip;
-    constexpr int8u Table[4] = {8, 10, 12, 14};
-    Skip_SB(                                                    "RequiredRendererType");
-    Get_VR (Table, NumBits2Skip,                                "NumBits2Skip");
     Skip_BS (1+NumBits2Skip,                                    "data");
     Element_End0();
     return false;
@@ -848,24 +885,27 @@ int File_DtsUhd::ParseMD01(MD01 *MD01, int AuPresInd)
 {
     if (AudPresParam[AuPresInd].Selectable)
     {
-        Element_Begin1("ExtractPresScalingParams");
-        for (int i = 0; i<4; i++)  /* Table 7-5.  Scaling data. */
+        if (SyncFrameFlag)
         {
-            bool OutScalePresent;
-            Get_SB (OutScalePresent,                            "OutScalePresent");
-            if (OutScalePresent)
-                Skip_S1(5,                                      "OutScale");
+            Element_Begin1("ExtractPresScalingParams");
+            for (int i = 0; i<4; i++)  /* Table 7-5.  Scaling data. */
+            {
+                bool OutScalePresent;
+                Get_SB (OutScalePresent,                        "OutScalePresent");
+                if (OutScalePresent)
+                    Skip_S1(5,                                  "OutScale");
+            }
+            Element_End0();
+            Get_SB (MD01->MFDistrStaticMDPresent,               "MFDistrStaticMDPresent");
         }
-        Element_End0();
-        bool MFDistrStaticMDPresent;
-        Get_SB (MFDistrStaticMDPresent,                         "MFDistrStaticMDPresent");
-        if (MFDistrStaticMDPresent && ExtractMultiFrameDistribStaticMD(MD01))
+        if (MD01->MFDistrStaticMDPresent && ExtractMultiFrameDistribStaticMD(MD01))
             return 1;
     }
+    else
+        MD01->MFDistrStaticMDPresent=false;
 
     /* Table 7-16: Object metadata. */
-    memset(MD01->Object, 0, sizeof(MD01->Object));
-    if (!FullChannelBasedMixFlag)
+    if (SyncFrameFlag && !FullChannelBasedMixFlag)
     {
         bool MixStudioParamsPresent;
         Get_SB (MixStudioParamsPresent,                     "MixStudioParamsPresent");
@@ -901,11 +941,15 @@ int File_DtsUhd::ParseMD01(MD01 *MD01, int AuPresInd)
 int File_DtsUhd::UnpackMDFrame()
 {
     Element_Begin1("UnpackMDFrame");
+    if (SyncFrameFlag) //Table 7-16: the object list is reset only in sync frames
+        for (auto& MD01 : MD01List)
+            for (auto& Object : MD01.Object)
+                Object=MDObject();
     for (auto& MDChunk : MD_Chunks)
     {
         if (!MDChunk.MDChunkSize)
             continue;
-        if (MDChunk.MDChunkCRCFlag && CheckCRC(Buffer+Buffer_Offset, MDChunk.MDChunkSize))
+        if (MDChunk.MDChunkCRCFlag && (Element_Offset+MDChunk.MDChunkSize>Element_Size || CheckCRC(Buffer+Buffer_Offset+(size_t)Element_Offset, MDChunk.MDChunkSize)))
         {
             Element_End0();
             return 1;
@@ -960,12 +1004,12 @@ void File_DtsUhd::UnpackMDFrame_1(int8u MDChunkID)
     BS_End();
 }
 
-/** Parse a single DTS:X Profile 2 frame.
+/** Parse the FTOC of a single DTS:X Profile 2 frame and compute the frame size.
     The frame must start at the first byte of the data buffer, and enough
     of the frame must be present to decode the majority of the FTOC.
     From Table 6-11 p52.  A sync frame must be provided.
 */
-int File_DtsUhd::Frame()
+int File_DtsUhd::FTOC()
 {
     int32u SyncWord;
     Get_B4 (SyncWord,                                           "SyncWord");
@@ -975,7 +1019,7 @@ int File_DtsUhd::Frame()
     static constexpr int8u Table[4]={5, 8, 10, 12};
     Get_VR (Table, FTOCPayloadinBytes,                          "FTOCPayloadinBytes");
     FTOCPayloadinBytes++;
-    if (FTOCPayloadinBytes<=4 || FTOCPayloadinBytes>=FrameSize)
+    if (FTOCPayloadinBytes<=4 || FTOCPayloadinBytes>FrameSize)
     {
         BS_End();
         return DTSUHD_INCOMPLETE;  //Data buffer does not contain entire FTOC
@@ -995,23 +1039,37 @@ int File_DtsUhd::Frame()
         BS_End();
         return DTSUHD_INVALID_FRAME;
     }
-    size_t Remain8=Data_BS_Remain()%8;
-    if (Remain8)
-        Skip_S1(Remain8,                                        "Padding");
-    BS_End();
-    if (SyncFrameFlag || !FullChannelBasedMixFlag)
-        Skip_B2(                                                "CRC16");
-    if (Element_Offset!=FTOCPayloadinBytes)
+    ExtractPBRSmoothParams();
+
+    //Reserved fields and byte alignment (Table 6-27), up to the CRC
+    size_t CRC_Size=(SyncFrameFlag || !FullChannelBasedMixFlag)?2:0;
+    int64u BitPos=Element_Size*8-Data_BS_Remain();
+    int64u BitPos_CRC=((int64u)FTOCPayloadinBytes-CRC_Size)*8;
+    if (BitPos>BitPos_CRC)
+    {
+        BS_End();
         return DTSUHD_INVALID_FRAME;
+    }
+    if (BitPos<BitPos_CRC)
+        Skip_BS((size_t)(BitPos_CRC-BitPos),                    "Reserved/Padding");
+    BS_End();
+    if (CRC_Size)
+        Skip_B2(                                                "CRC16");
 
     //At this point in the parsing, we can calculate the size of the frame.
     if (FrameSize<FTOCPayloadinBytes+ChunkBytes)
         return DTSUHD_INCOMPLETE;
     FrameSize=FTOCPayloadinBytes+ChunkBytes;
 
-    //Skip PBRSmoothParams (Table 6-26) and align to the chunks immediatelyfollowing the FTOC CRC.
-    if (Element_Offset<FTOCPayloadinBytes)
-        Skip_XX(FTOCPayloadinBytes-Element_Offset,              "PBRSmoothParams");
+    return DTSUHD_OK;
+}
+
+/** Parse a single DTS:X Profile 2 frame. */
+int File_DtsUhd::Frame()
+{
+    auto Result=FTOC();
+    if (Result!=DTSUHD_OK)
+        return Result;
     if (UnpackMDFrame())
         return DTSUHD_INVALID_FRAME;
     UpdateDescriptor();
@@ -1026,7 +1084,7 @@ const char* RepresentationTypeTable[8]=
     "Matrix 2D Channel Mask Based Representation",
     "Matrix 3D Channel Mask Based Representation",
     "Binaurally Processed Audio Representation",
-    "Ambisonic Representation Representation",
+    "Ambisonic Representation",
     "Audio Tracks with Mixing Matrix Representation",
     "3D Object with One 3D Source Per Waveform Representation",
     "Mono 3D Object with Multiple 3D Sources Per Waveform Representation",
@@ -1351,6 +1409,7 @@ File_DtsUhd::File_DtsUhd()
         Trace_Layers_Update(8); //Stream
     #endif //MEDIAINFO_TRACE
     IsType1CertifiedContent=false;
+    VBRSmoothingBufferEnabled=false;
     LongTermLoudnessIndex=(int8u)-1;
     MustSynchronize=true;
     Buffer_TotalBytes_FirstSynched_Max=64*1024;
@@ -1448,6 +1507,32 @@ void File_DtsUhd::Read_Buffer_Unsynched()
 //---------------------------------------------------------------------------
 void File_DtsUhd::Header_Parse()
 {
+    if (!IsSub)
+    {
+        //Frame size from the FTOC (Table 6-11), the sync word found by the synchronization may be inside the chunks
+        //The FTOC is parsed again with the frame
+        #if MEDIAINFO_TRACE
+            auto Trace_Activated_Sav=Trace_Activated;
+            Trace_Activated=false;
+        #endif
+        auto FrameSize_Sav=FrameSize;
+        FrameSize=(int32u)Element_Size;
+        auto Result=FTOC();
+        #if MEDIAINFO_TRACE
+            Trace_Activated=Trace_Activated_Sav;
+        #endif
+        Element_Offset=0;
+        if (Result!=DTSUHD_OK)
+        {
+            FrameSize=FrameSize_Sav;
+            if (Result==DTSUHD_INCOMPLETE && File_Offset+Buffer_Size<File_Size)
+            {
+                Element_WaitForMoreData();
+                return;
+            }
+        }
+    }
+
     Header_Fill_Size(FrameSize);
 }
 

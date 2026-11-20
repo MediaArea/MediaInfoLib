@@ -153,14 +153,14 @@ static const char* AribStdB24B37_format(int8u format)
         case  2 : return "Horizontal writing in high density";
         case  3 : return "Vertical writing in high density";
         case  4 : return "Horizontal writing of Western language";
-        case  5 : return "Horizontal writing in 1920 x 1080";
-        case  6 : return "Vertical writing in 1920 x 1080";
-        case  7 : return "Horizontal writing in 960 x 540";
-        case  8 : return "Vertical writing in 960 x 540";
-        case  9 : return "Horizontal writing in 1280 x 720";
-        case 10 : return "Vertical writing in 1280 x 720";
-        case 11 : return "Horizontal writing in 720 x 480";
-        case 12 : return "Vertical writing in 720 x 480";
+        case  6 : return "Horizontal writing in 1920 x 1080";
+        case  7 : return "Vertical writing in 1920 x 1080";
+        case  8 : return "Horizontal writing in 960 x 540";
+        case  9 : return "Vertical writing in 960 x 540";
+        case 10 : return "Horizontal writing in 720 x 480";
+        case 11 : return "Vertical writing in 720 x 480";
+        case 12 : return "Horizontal writing in 1280 x 720";
+        case 13 : return "Vertical writing in 1280 x 720";
         default : return "";
     }
 }
@@ -347,6 +347,12 @@ File_AribStdB24B37::File_AribStdB24B37()
     //Config
     Caption_conversion_type=(int8u)-1;
 
+    //Temp
+    data_group_link_number=0;
+    last_data_group_link_number=0;
+    Fragments_Code=(int64u)-1;
+    Fragments_Count=0;
+
     //Ancillary
     #if defined(MEDIAINFO_MPEGTS_YES)
         Parser=NULL;
@@ -461,6 +467,7 @@ void File_AribStdB24B37::Read_Buffer_Continue()
                     {
                         Parser=new File_MpegTs;
                         ((File_MpegTs*)Parser)->FromAribStdB24B37=true;
+                        ((File_MpegTs*)Parser)->NoPatPmt=true;
                         Open_Buffer_Init(Parser);
                     }
                     if (FrameInfo.PTS==(int64u)-1)
@@ -514,15 +521,19 @@ void File_AribStdB24B37::Read_Buffer_Continue()
 
     Skip_B1(                                                    "Data_identifier");
     Skip_B1(                                                    "Private_stream_id");
+    int8u PES_data_packet_header_length;
     BS_Begin();
     Skip_S1(4,                                                  "reserved");
-    Skip_S1(4,                                                  "PES_data_packet_header_length");
+    Get_S1 (4, PES_data_packet_header_length,                   "PES_data_packet_header_length");
     BS_End();
+    Skip_XX(PES_data_packet_header_length,                      "PES_data_private_data_byte");
 }
 
 //---------------------------------------------------------------------------
 void File_AribStdB24B37::Read_Buffer_Unsynched()
 {
+    Fragments_Code=(int64u)-1;
+
     #if defined(MEDIAINFO_MPEGTS_YES)
         if (Parser)
             Parser->Open_Buffer_Unsynch();
@@ -544,8 +555,8 @@ void File_AribStdB24B37::Header_Parse()
     Get_S1 (5, data_group_id,                                   "data_group_id"); Param_Info1(AribStdB24B37_data_group_id(data_group_id));
     Skip_S1(2,                                                  "data_group_version");
     BS_End();
-    Skip_B1(                                                    "data_group_link_number");
-    Skip_B1(                                                    "last_data_group_link_number");
+    Get_B1 (data_group_link_number,                             "data_group_link_number");
+    Get_B1 (last_data_group_link_number,                        "last_data_group_link_number");
     Get_B2 (data_group_size,                                    "data_group_size");
 
     //Filling
@@ -573,6 +584,70 @@ void File_AribStdB24B37::Data_Parse()
 
     Element_Size-=2;
 
+    if (last_data_group_link_number)
+        data_group_fragment();
+    else
+        data_group_data();
+
+    Element_Size+=2;
+    Skip_B2(                                                    "CRC_16");
+}
+
+//***************************************************************************
+// Elements
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+void File_AribStdB24B37::data_group_fragment()
+{
+    if (!data_group_link_number)
+    {
+        Fragments.clear();
+        Fragments_Code=Element_Code;
+        Fragments_Count=0;
+    }
+    if (Element_Code!=Fragments_Code || data_group_link_number!=Fragments_Count || data_group_link_number>last_data_group_link_number)
+    {
+        Skip_XX(Element_Size,                                   "data_group_data_byte (previous data groups missing)");
+        Fragments_Code=(int64u)-1;
+        return;
+    }
+    Fragments.insert(Fragments.end(), Buffer+Buffer_Offset, Buffer+Buffer_Offset+(size_t)Element_Size);
+    Fragments_Count++;
+    if (data_group_link_number<last_data_group_link_number)
+    {
+        Skip_XX(Element_Size,                                   "data_group_data_byte (fragment)");
+        return;
+    }
+    Fragments_Code=(int64u)-1;
+
+    //Parsing of the joined data
+    const int8u* Save_Buffer=Buffer;
+    int64u Save_File_Offset=File_Offset;
+    size_t Save_Buffer_Offset=Buffer_Offset;
+    size_t Save_Buffer_Size=Buffer_Size;
+    int64u Save_Element_Size=Element_Size;
+
+    File_Offset=Save_File_Offset+Buffer_Offset; //Offsets in the trace from the start of the data of the last data group
+    Buffer=Fragments.data();
+    Buffer_Offset=0;
+    Buffer_Size=Fragments.size();
+    Element_Offset=0;
+    Element_Size=Buffer_Size;
+
+    data_group_data();
+
+    File_Offset=Save_File_Offset;
+    Buffer=Save_Buffer;
+    Buffer_Offset=Save_Buffer_Offset;
+    Buffer_Size=Save_Buffer_Size;
+    Element_Offset=Save_Element_Size;
+    Element_Size=Save_Element_Size;
+}
+
+//---------------------------------------------------------------------------
+void File_AribStdB24B37::data_group_data()
+{
     switch (Element_Code)
     {
         case 0 :
@@ -603,14 +678,7 @@ void File_AribStdB24B37::Data_Parse()
                 break;
         default: Skip_XX(Element_Size,                          "Unknown");
     }
-
-    Element_Size+=2;
-    Skip_B2(                                                    "CRC_16");
 }
-
-//***************************************************************************
-// Elements
-//***************************************************************************
 
 //---------------------------------------------------------------------------
 void File_AribStdB24B37::caption_management() //caption_management_data()
@@ -696,7 +764,7 @@ void File_AribStdB24B37::caption_statement() //caption_data()
     BS_Begin();
     Get_S1 (2, TMD,                                             "TMD"); Param_Info1(AribStdB24B37_TMD(TMD));
     Skip_S1(6,                                                  "Reserved");
-    if (TMD==2)
+    if (TMD==1 || TMD==2)
     {
         Skip_S5(36,                                             "STM"); //Note: start time (HHMMSSmmm in BCD format) is currently not supported (and is applicable only if out of band PTS is not avaialble)
         Skip_S5( 4,                                             "Reserved");
@@ -924,14 +992,14 @@ void File_AribStdB24B37::Character (int16u CharacterSet, int8u G_Value, int8u Fi
                         else
                             switch (Value)
                             {
-                                case Compute(92,  1): JIS( 35,  42); break;
-                                case Compute(92,  2): JIS( 35,  43); break;
-                                case Compute(92,  3): JIS( 35,  44); break;
-                                case Compute(92,  4): JIS( 35,  45); break;
-                                case Compute(93, 79): JIS( 40, 110); break;
-                                case Compute(93, 88): Param_Info1(Ztring().From_UTF8("\xE2\x99\xAB")+__T(" (not exact)")); Add (Ztring().From_UTF8("\xE2\x99\xAB")); break; //Ending music note?
-                                case Compute(93, 89): Param_Info1(Ztring().From_UTF8("\xE2\x99\xAB")+__T(" (not exact)")); Add (Ztring().From_UTF8("\xE2\x99\xAB")); break; //Opening music note?
-                                case Compute(93, 90): Param_Info1(Ztring().From_UTF8("\xE2\x99\xAB")); Add (Ztring().From_UTF8("\xE2\x99\xAB")); break; //Music note
+                                case Compute(92,  1): Param_Info1(Ztring().From_UTF8("\xE2\x9E\xA1")); Add (Ztring().From_UTF8("\xE2\x9E\xA1")); break; //U+27A1
+                                case Compute(92,  2): Param_Info1(Ztring().From_UTF8("\xE2\xAC\x85")); Add (Ztring().From_UTF8("\xE2\xAC\x85")); break; //U+2B05
+                                case Compute(92,  3): Param_Info1(Ztring().From_UTF8("\xE2\xAC\x86")); Add (Ztring().From_UTF8("\xE2\xAC\x86")); break; //U+2B06
+                                case Compute(92,  4): Param_Info1(Ztring().From_UTF8("\xE2\xAC\x87")); Add (Ztring().From_UTF8("\xE2\xAC\x87")); break; //U+2B07
+                                case Compute(93, 79): Param_Info1(Ztring().From_UTF8("\xE2\x81\x89")); Add (Ztring().From_UTF8("\xE2\x81\x89")); break; //U+2049
+                                case Compute(93, 88): Param_Info1(Ztring().From_UTF8("\xE2\x9A\x9E")); Add (Ztring().From_UTF8("\xE2\x9A\x9E")); break; //U+269E
+                                case Compute(93, 89): Param_Info1(Ztring().From_UTF8("\xE2\x9A\x9F")); Add (Ztring().From_UTF8("\xE2\x9A\x9F")); break; //U+269F
+                                case Compute(93, 90): Param_Info1(Ztring().From_UTF8("\xE2\x99\xAC")); Add (Ztring().From_UTF8("\xE2\x99\xAC")); break; //U+266C
                                 default: Param_Info1("(Unsupported)"); //empty in spec or not yet mapped
                             }
                         break;
@@ -961,10 +1029,10 @@ void File_AribStdB24B37::Character (int16u CharacterSet, int8u G_Value, int8u Fi
                         Skip_C1(                                "Character");
                         switch (FirstByte)
                         {
-                            case 0x77: JIS( 33,  41); break;
-                            case 0x78: JIS( 33,  42); break;
-                            case 0x79: JIS( 33,  51); break;
-                            case 0x7A: JIS( 33,  33); break;
+                            case 0x77: JIS( 33,  51); break;
+                            case 0x78: JIS( 33,  52); break;
+                            case 0x79: JIS( 33,  60); break;
+                            case 0x7A: JIS( 33,  35); break;
                             case 0x7B: JIS( 33,  86); break;
                             case 0x7C: JIS( 33,  87); break;
                             case 0x7D: JIS( 33,  34); break;
@@ -1159,7 +1227,7 @@ void File_AribStdB24B37::SS2()
     Skip_B1(                                                    "control_code");
     Element_End0();
 
-    Streams[(size_t)(Element_Code-1)].GL_SS=3;
+    Streams[(size_t)(Element_Code-1)].GL_SS=2;
 }
 
 //---------------------------------------------------------------------------
@@ -1442,9 +1510,6 @@ void File_AribStdB24B37::CSI()
             Get_B1(Value,                                       "Delimiter");
             switch (Value)
             {
-                case 0x3B:
-                            Element_Info1("SRC - Raster Colour Designation");
-                            break;
                 case 0x42:
                             Element_Info1("GSM - Character deformation");
                             break;
@@ -1477,8 +1542,11 @@ void File_AribStdB24B37::CSI()
                 case 0x5D:
                             Element_Info1("GAA - Colouring block");
                             break;
+                case 0x5E:
+                            Element_Info1("SRC - Raster Colour Designation");
+                            break;
                 case 0x5F:
-                            Element_Info1("SDF - Set Display Position");
+                            Element_Info1("SDP - Set Display Position");
                             break;
                 case 0x61:
                             Element_Info1("ACPS - Active Coordinate Position Set");
@@ -1508,6 +1576,9 @@ void File_AribStdB24B37::CSI()
                 case 0x69:
                             Element_Info1("ACS - Alternative Character Set");
                             break;
+                case 0x6A:
+                            Element_Info1("UED - Invisible data embedded control");
+                            break;
                 case 0x6E:
                             Element_Info1("RCS - Raster Colour command");
                             break;
@@ -1526,9 +1597,19 @@ void File_AribStdB24B37::CSI()
 void File_AribStdB24B37::TIME()
 {
     Element_Begin1("TIME - Time");
+    int8u P1;
     Skip_B1(                                                    "control_code");
-    Skip_B1(                                                    "P1");
-    Skip_B1(                                                    "P2");
+    Get_B1 (P1,                                                 "P1");
+    if (P1==0x29)
+    {
+        size_t Pos=0;
+        while (Element_Offset<Element_Size && Pos<Element_Size-Element_Offset && Buffer[Buffer_Offset+(size_t)Element_Offset+Pos]<0x40)
+            Pos++;
+        Skip_Local(Pos,                                         "Values");
+        Skip_B1(                                                "F");
+    }
+    else
+        Skip_B1(                                                "P2");
     Element_End0();
 
     // if P1 is 0x20, there should be a delay

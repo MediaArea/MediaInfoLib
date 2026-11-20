@@ -70,6 +70,7 @@ File_VorbisCom::File_VorbisCom()
     StreamKind_Specific=Stream_General;
     StreamKind_Multiple=Stream_General;
     StreamKind_Common  =Stream_General;
+    SamplingRate=0;
 }
 
 //***************************************************************************
@@ -101,6 +102,16 @@ void File_VorbisCom::Streams_Fill()
     {
         AlbumArtists.Separator_Set(0, __T(" / "));
         Fill(StreamKind_Common,   0, (Performers==Artists || Performers.empty())?"Album/Performer":"Album/Composer", AlbumArtists.Read());
+    }
+
+    if (!Encoded_Date.empty() && !Encoded_Time.empty())
+        Fill(StreamKind_Common, 0, "Encoded_Date", Encoded_Date+__T(' ')+Encoded_Time);
+
+    if (SamplingRate && !TimeReference_High.empty() && !TimeReference_Low.empty())
+    {
+        int64u TimeReference=TimeReference_High.To_int64u()*0x100000000LL+TimeReference_Low.To_int64u();
+        Fill(StreamKind_Specific, 0, "Delay", (float64)TimeReference*1000/SamplingRate, 6);
+        Fill(StreamKind_Specific, 0, "Delay_Source", "Container (bext)");
     }
 }
 
@@ -231,7 +242,6 @@ void File_VorbisCom::Data_Parse()
         Ztring Key=comment.SubString(__T(""), __T("="));
         Key.MakeUpperCase();
         Ztring Value=comment.SubString(__T("="), __T(""));
-        Ztring Encoded_Date, Encoded_Time, TimeReference_High, TimeReference_Low;
 
              if (Key==__T("ADDED_TIMESTAMP"))        Fill(StreamKind_Common,   0, "Added_Date", Ztring().Date_From_Milliseconds_1601(Value.To_int64u()/1000));
         else if (Key==__T("ALBUM ARTIST"))           AlbumArtists.push_back(Value);
@@ -257,13 +267,7 @@ void File_VorbisCom::Data_Parse()
         else if (Key==__T("CONTACT"))                Fill(StreamKind_Common,   0, "Publisher", Value);
         else if (Key==__T("COPYRIGHT"))              Fill(StreamKind_Common,   0, "Copyright", Value);
         else if (Key==__T("DATE"))                   Fill(StreamKind_Common,   0, "Recorded_Date", Value, true);
-        else if (Key==__T("DATE-EXT"))               // bext
-        {
-            if (Encoded_Time.empty())
-                Encoded_Date=Value;
-            else
-                Fill(StreamKind_Common, 0, "Encoded_Date", Encoded_Date+__T(' ')+Encoded_Time);
-        }
+        else if (Key==__T("DATE-EXT"))               Encoded_Date=Value; // bext
         else if (Key==__T("DESCRIPTION"))            Fill(StreamKind_Common,   0, "Description", Value);
         else if (Key==__T("DISC"))
         {
@@ -323,33 +327,9 @@ void File_VorbisCom::Data_Parse()
         else if (Key==__T("REPLAYGAIN_TRACK_PEAK"))  Fill(StreamKind_Specific, 0, "ReplayGain_Peak",       Value.To_float64(), 6);
         else if (Key==__T("REFERENCE"))              Fill(StreamKind_Common,   0, "Producer_Reference", Value);
         else if (Key==__T("TITLE"))                  Fill(StreamKind_Common,   0, "Title", Value);
-        else if (Key==__T("TIME"))                   // bext
-        {
-            if (Encoded_Date.empty())
-                Encoded_Time=Value;
-            else
-                Fill(StreamKind_Common, 0, "Encoded_Date", Encoded_Date+__T(' ')+Encoded_Time);
-        }
-        else if (Key==__T("TIMEREFHIGH"))            // bext
-        {
-            if (TimeReference_Low.empty())
-                TimeReference_High=Value;
-            else
-            {
-                Fill(StreamKind_Specific, 0, "Delay", TimeReference_High.To_int64u()*0x100000000LL+TimeReference_High.To_int64u());
-                Fill(StreamKind_Specific, 0, "Delay_Source", "Container (bext)");
-            }
-        }
-        else if (Key==__T("TIMEREFLOW"))             // bext
-        {
-            if (TimeReference_High.empty())
-                TimeReference_Low=Value;
-            else
-            {
-                Fill(StreamKind_Specific, 0, "Delay", TimeReference_High.To_int64u()*0x100000000LL+TimeReference_High.To_int64u());
-                Fill(StreamKind_Specific, 0, "Delay_Source", "Container (bext)");
-            }
-        }
+        else if (Key==__T("TIME"))                   Encoded_Time=Value; // bext
+        else if (Key==__T("TIMEREFHIGH"))            TimeReference_High=Value; // bext
+        else if (Key==__T("TIMEREFLOW"))             TimeReference_Low=Value; // bext
         else if (Key==__T("TOTALTRACKS"))            {if (Value!=Retrieve(StreamKind_Common, 0, "Track/Position_Total")) Fill(StreamKind_Common,   0, "Track/Position_Total", Value);}
         else if (Key==__T("TOTALDISCS"))             {if (Value!=Retrieve(StreamKind_Common, 0, General_Part_Position_Total)) Fill(StreamKind_Common,   0, General_Part_Position_Total, Value);}
         else if (Key==__T("TRACK_COMMENT"))          Fill(StreamKind_Multiple, 0, "Comment", Value);
@@ -364,7 +344,7 @@ void File_VorbisCom::Data_Parse()
             {
                 Value.clear();
                 for (const auto& V : UMID)
-                    Value+=Ztring().From_CC2(V.To_int64s());
+                    Value+=Ztring().From_CC1((int8u)V.To_int64u());
                 if (Value.find_first_not_of(__T('0'))!=string::npos)
                     Fill(StreamKind_Common, 0, "UMID", __T("0x")+Value);
             }

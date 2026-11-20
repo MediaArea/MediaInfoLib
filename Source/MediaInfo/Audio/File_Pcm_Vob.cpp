@@ -47,7 +47,7 @@ static int32u Pcm_VOB_BitDepth[]=
 static int32u Pcm_VOB_Frequency[]=
 {
     48000,
-    32000,
+    96000,
         0,
         0,
 };
@@ -60,8 +60,8 @@ const char* Pcm_VOB_ChannelsPositions(int8u channel_assignment)
         case  1 : return "Front: C";                                    //1 channel
         case  3 : return "Front: L R";                                  //2 channels
         case  4 : return "Front: L C R";                                //3 channels
-        case  5 : return "Front: L R, LFE";                             //3 channels
-        case  6 : return "Front: L C R, LFE";                           //4 channels
+        case  5 : return "Front: L R, Back: C";                         //3 channels
+        case  6 : return "Front: L C R, Back: C";                       //4 channels
         case  7 : return "Front: L R, Side: L R";                       //4 channels
         case  8 : return "Front: L C R, Side: L R";                     //5 channels
         case  9 : return "Front: L C R, Side: L R, LFE";                //6 channels
@@ -79,8 +79,8 @@ const char* Pcm_VOB_ChannelsPositions2(int8u channel_assignment)
         case  1 : return "1/0/0";                                       //1 channel
         case  3 : return "2/0/0";                                       //2 channels
         case  4 : return "3/0/0";                                       //3 channels
-        case  5 : return "2/0/0.1";                                     //3 channels
-        case  6 : return "3/0/0.1";                                     //4 channels
+        case  5 : return "2/0/1";                                       //3 channels
+        case  6 : return "3/0/1";                                       //4 channels
         case  7 : return "2/2/0";                                       //4 channels
         case  8 : return "3/2/0";                                       //5 channels
         case  9 : return "3/2/0.1";                                     //6 channels
@@ -98,13 +98,13 @@ const char* Pcm_VOB_ChannelLayout(int8u channel_assignment)
         case  1 : return "M";                                           //1 channel
         case  3 : return "L R";                                         //2 channels
         case  4 : return "L R C";                                       //3 channels
-        case  5 : return "L R LFE";                                     //3 channels
-        case  6 : return "L C R LFE";                                   //4 channels
+        case  5 : return "L R Cs";                                      //3 channels
+        case  6 : return "L R C Cs";                                    //4 channels
         case  7 : return "L R Ls Rs";                                   //4 channels
         case  8 : return "L R C Ls Rs";                                 //5 channels
         case  9 : return "L R C Ls Rs LFE";                             //6 channels
-        case 10 : return "L R C Ls Rs Lrs Rrs";                         //7 channels
-        case 11 : return "L R C Ls Rs Lrs Rrs LFE";                     //8 channels
+        case 10 : return "L R C Ls Lrs Rrs Rs";                         //7 channels
+        case 11 : return "L R C Ls Lrs Rrs Rs LFE";                     //8 channels
         default : return "";
     }
 }
@@ -147,7 +147,7 @@ void File_Pcm_Vob::Streams_Fill()
     Fill(Stream_Audio, 0, Audio_ChannelPositions, Pcm_VOB_ChannelsPositions(channel_assignment));
     Fill(Stream_Audio, 0, Audio_ChannelPositions_String2, Pcm_VOB_ChannelsPositions2(channel_assignment));
     Fill(Stream_Audio, 0, Audio_ChannelLayout, Pcm_VOB_ChannelLayout(channel_assignment));
-    Fill(Stream_Audio, 0, Audio_BitRate, Pcm_VOB_Frequency[Frequency]*(NumberOfChannelsMinusOne+1)*16);
+    Fill(Stream_Audio, 0, Audio_BitRate, Pcm_VOB_Frequency[Frequency]*(NumberOfChannelsMinusOne+1)*Pcm_VOB_BitDepth[BitDepth]);
 
     //PCM Signed 16 bits Big Endian, Interleavement is for 2 samples*2 channels L0-1/L0-0/R0-1/R0-0/L1-1/L1-0/R1-1/R1-0/L0-2/R0-2/L1-2/R1-2, http://wiki.multimedia.cx/index.php?title=PCM
     Fill(Stream_Audio, 0, Audio_Format_Settings, "Big");
@@ -184,7 +184,7 @@ void File_Pcm_Vob::Read_Buffer_Continue()
     Skip_SB(                                                    "Unknown");
     Get_S1 (3, NumberOfChannelsMinusOne,                        "Number of channels (minus 1)");
     BS_End();
-    Skip_B1(                                                    "Start code");
+    Skip_B1(                                                    "Dynamic range control");
 
     #if MEDIAINFO_DEMUX
         if (Config->Demux_PCM_20bitTo16bit_Get() && BitDepth==1) //20-bit

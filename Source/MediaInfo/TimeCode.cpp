@@ -341,12 +341,15 @@ int TimeCode::FromString(const string_view& V, bool Ignore1001FromDropFrame)
                     S += c;
                     i++;
                 }
+                const size_t Digits_End = i;
+                while (i < Length && Value[i] >= '0' && Value[i] <= '9')
+                    i++; //Precision after 1 ns dropped
                 if (i == Length)
-                    SetFramesMax(PowersOf10[i - 10] - 1);
+                    SetFramesMax(PowersOf10[Digits_End - 10] - 1);
                 else
                 {
                     c = (unsigned char)Value[i];
-                    if (c != 'S' && c != '/')
+                    if (i != Digits_End || (c != 'S' && c != '/'))
                     {
                         *this = TimeCode();
                         return 1;

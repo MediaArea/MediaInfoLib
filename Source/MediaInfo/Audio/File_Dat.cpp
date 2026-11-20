@@ -288,15 +288,24 @@ void File_Dat::Streams_Accept()
     Fill(Stream_General, 0, General_Format, "DAT");
     Stream_Prepare(Stream_Audio);
     Fill(Stream_Audio, 0, Audio_Format, "PCM");
-    Fill(Stream_Audio, 0, Audio_BitRate, float32_int64s(1536000 * 441 / 480));
-    if (File_Size != (int64u)-1) {
-        Fill(Stream_Audio, 0, Audio_StreamSize, float32_int64s((((float)File_Size / 5822) * 5760) * 441 / 480), 0);
-    }
     Conditional_Char(Audio_Format_Settings_Emphasis, item_emphasis, Dat_emphasis);
     Conditional_Int16(Audio_SamplingRate, item_samples, Dat_samples);
     Conditional_Int8(Audio_Channel_s_, item_numchans, Dat_numchans);
     Conditional_Int8(Audio_BitDepth, item_quantization, Dat_quantization);
     Conditional_Int8(Audio_FrameRate, item_trackpitch, Dat_samples_mul);
+    auto BitRate = Retrieve_Const(Stream_Audio, 0, Audio_SamplingRate).To_int64u() * Retrieve_Const(Stream_Audio, 0, Audio_Channel_s_).To_int64u() * Retrieve_Const(Stream_Audio, 0, Audio_BitDepth).To_int64u();
+    if (BitRate) {
+        Fill(Stream_Audio, 0, Audio_BitRate, BitRate);
+    }
+    if (File_Size != (int64u)-1) {
+        auto FrameCount = (float64)File_Size / 5822;
+        auto IsLongPlay = Retrieve_Const(Stream_Audio, 0, Audio_BitDepth).To_int64u() == 12 && Retrieve_Const(Stream_Audio, 0, Audio_Channel_s_).To_int64u() == 2;
+        auto FrameDuration = IsLongPlay ? 60 : 30; // 1 frame per 30 ms, 60 ms in LP mode (half drum speed)
+        Fill(Stream_Audio, 0, Audio_Duration, FrameCount * FrameDuration, 0);
+        if (BitRate) {
+            Fill(Stream_Audio, 0, Audio_StreamSize, float64_int64s(FrameCount * FrameDuration * BitRate / 8000));
+        }
+    }
     for (int i = 0; i < 7; i++) {
         Conditional_TimeCode(i);
     }

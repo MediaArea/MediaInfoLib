@@ -64,6 +64,7 @@ protected :
     struct MD01
     {
         MDObject Object[257]; /* object id max value is 256 */
+        bool MFDistrStaticMDPresent=false;
         bool StaticMDParamsExtracted=false;
         bool StaticMetadataUpdtFlag=false;
         int ChunkId=0;
@@ -120,6 +121,7 @@ protected :
     void NaviPurge();
     int NaviFindIndex(int DesiredIndex, int32u* ListIndex);
     int ExtractChunkNaviData();
+    void ExtractPBRSmoothParams();
     int ExtractMDChunkObjIDList(MD01*);
     void ExtractLTLMParamSet(MD01*, bool NominalLD_DescriptionFlag);
     int ParseStaticMDParams(MD01*, bool OnlyFirst);
@@ -131,6 +133,7 @@ protected :
     int UnpackMDFrame();
     void UnpackMDFrame_1(int8u MDChunkID);
     bool CheckCurrentFrame();
+    int FTOC();
     int Frame();
 
     UHDAudPresParam AudPresParam[256];
@@ -140,6 +143,7 @@ protected :
     bool IsType1CertifiedContent;
     bool HasLoudness;
     bool SyncFrameFlag;
+    bool VBRSmoothingBufferEnabled;
     int32u ChunkBytes;
     int ClockRateInHz;
     int32u FTOCPayloadinBytes;

@@ -193,7 +193,7 @@ bool File_P2_Clip::FileHeader_Begin()
                                         }
                                     Dir::ReleaseFileNames(Dirs); //Only their names are used
                                     if (!Exists)
-                                        MXF_File+=__T("AUDIO");
+                                        MXF_File+=__T("VIDEO");
 
                                     MXF_File+=PathSeparator;
                                     MXF_File+=file;

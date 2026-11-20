@@ -342,7 +342,7 @@ void File_Ancillary::Streams_Finish()
             {
                 Merge(*AribStdB34B37_Parser, Stream_Text, StreamPos, StreamPos_Base+StreamPos);
                 Ztring MuxingMode=AribStdB34B37_Parser->Retrieve(Stream_Text, StreamPos, "MuxingMode");
-                Fill(Stream_Text,StreamPos_Last, "MuxingMode", __T("Ancillary data / ")+MuxingMode, true);
+                Fill(Stream_Text,StreamPos_Last, "MuxingMode", MuxingMode.empty()?Ztring(__T("Ancillary data")):(__T("Ancillary data / ")+MuxingMode), true);
             }
         }
     #endif //defined(MEDIAINFO_ARIBSTDB24B37_YES)

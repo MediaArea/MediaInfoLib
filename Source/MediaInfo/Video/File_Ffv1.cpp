@@ -878,8 +878,16 @@ void File_Ffv1::Read_Buffer_Continue()
         }
         if (Element_Offset<Element_Size)
         {
-            Skip_XX(Element_Size-Element_Offset,                "Junk");
-            Param_Error("FFV1-SLICE-JUNK:1");
+            if (version<=1)
+            {
+                Skip_XX(Element_Size-Element_Offset,            "reserved");
+                Fill_Conformance("SLICE reserved", "Reserved bytes after the slice content", {}, Conformance_Warning);
+            }
+            else
+            {
+                Skip_XX(Element_Size-Element_Offset,            "Junk");
+                Param_Error("FFV1-SLICE-JUNK:1");
+            }
         }
 
         //SliceFooter
@@ -940,7 +948,9 @@ void File_Ffv1::Read_Buffer_Continue()
         while (current_slice<Slice_Max)
         {
             if (current_slice->sample_buffer)
-                SlicesPlaces[current_slice->slice_y*num_h_slices+current_slice->slice_x]++;
+                for (size_t y=current_slice->slice_y; y<current_slice->slice_h; y++)
+                    for (size_t x=current_slice->slice_x; x<current_slice->slice_w; x++)
+                        SlicesPlaces[y*num_h_slices+x]++;
 
             current_slice++;
         }
@@ -1091,14 +1101,14 @@ void File_Ffv1::Parameters()
     if (version>1)
     {
         Get_RU (States, num_h_slices,                           "num_h_slices_minus1");
-        if (num_h_slices>=Width)
+        if (Width && num_h_slices>=Width)
         {
             Param_Error("FFV1-HEADER-num_h_slices:1");
             Element_End0();
             return;
         }
         Get_RU (States, num_v_slices,                           "num_v_slices_minus1");
-        if (num_v_slices>=Height)
+        if (Height && num_v_slices>=Height)
         {
             Param_Error("FFV1-HEADER-num_v_slices:1");
             Element_End0();
@@ -1106,7 +1116,7 @@ void File_Ffv1::Parameters()
         }
         num_h_slices++;
         num_v_slices++;
-        if (num_v_slices && num_h_slices>((size_t)-1)/num_v_slices)
+        if (!num_h_slices || !num_v_slices || ((!Width || !Height) && (int64u)num_h_slices*num_v_slices>1024) || num_h_slices>((size_t)-1)/num_v_slices) //Frame size not yet known: limit of 1024 slices, as FFmpeg
         {
             Param_Error("FFV1-HEADER-slices:1");
             Element_End0();
@@ -1164,7 +1174,7 @@ void File_Ffv1::Parameters()
                     int32s value;
                     Get_RS (States2[k], value,              "initial_state_delta");
                     if (coder_type)
-                        plane_states[i][j][k] = value;
+                        plane_states[i][j][k] = (int8u)((j ? plane_states[i][j-1][k] : 128) + value);
                 }
                 Element_End0();
             }

@@ -7308,6 +7308,8 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx()
         case Elements::moov_trak_mdia_minf_stbl_stsd_mett:
         {
             Element_Name("Metadata");
+            Skip_B6(                                            "Reserved");
+            Skip_B2(                                            "Data reference index");
             Skip_String(SizeUpTo0(),                            "content_encoding");
             Skip_B1(                                            "zero");
             Get_String(SizeUpTo0(), CodecIDAddition,            "mime_format");
@@ -10654,7 +10656,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_vexu_must()
 //---------------------------------------------------------------------------
 void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_vpcC()
 {
-    NAME_VERSION_FLAG("VPCodecConfigurationBox", 0);
+    NAME_VERSION_FLAG("VPCodecConfigurationBox", 1);
     AddCodecConfigurationBoxInfo();
     
     //Parsing
@@ -11007,17 +11009,15 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsz()
             */
 
             //Faster
-            if (Element_Offset+4>Element_Size)
-                break; //Problem
             switch(FieldSize)
             {
-                case  4 : if (Sample_Count%2)
-                            Size=Buffer[Buffer_Offset+(size_t)Element_Offset]&0x0F;
-                          else
+                case  4 : if (Pos%2)
                           {
-                            Size=Buffer[Buffer_Offset+(size_t)Element_Offset]>>4;
+                            Size=Buffer[Buffer_Offset+(size_t)Element_Offset]&0x0F;
                             Element_Offset++;
                           }
+                          else
+                            Size=Buffer[Buffer_Offset+(size_t)Element_Offset]>>4;
                           break;
                 case  8 : Size=BigEndian2int8u (Buffer+Buffer_Offset+(size_t)Element_Offset); Element_Offset++; break;
                 case 16 : Size=BigEndian2int16u(Buffer+Buffer_Offset+(size_t)Element_Offset); Element_Offset+=2; break;

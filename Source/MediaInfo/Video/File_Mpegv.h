@@ -121,6 +121,7 @@ private :
         #if defined(MEDIAINFO_SCTE20_YES)
             std::vector<buffer_data*> Scte;
             std::vector<bool> Scte_Parsed;
+            std::vector<int8u> Scte_picture_structure; //Per user data, the 2 field pictures of a frame share the temporal reference
         #endif //MEDIAINFO_SCTE20_YES
 
         int8u  picture_coding_type;

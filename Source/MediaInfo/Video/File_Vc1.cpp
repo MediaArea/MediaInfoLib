@@ -315,8 +315,8 @@ void File_Vc1::Streams_Fill()
     float32 PixelAspectRatio;
     if (AspectRatio!=0x0F && AspectRatio<sizeof(Vc1_PixelAspectRatio)/sizeof(*Vc1_PixelAspectRatio))
         PixelAspectRatio=Vc1_PixelAspectRatio[AspectRatio];
-    else if (AspectRatioY)
-        PixelAspectRatio=((float)AspectRatioX)/((float)AspectRatioY);
+    else if (AspectRatio==0x0F)
+        PixelAspectRatio=((float)AspectRatioX+1)/((float)AspectRatioY+1);
     else
         PixelAspectRatio=1; //Unknown
 
@@ -817,17 +817,9 @@ void File_Vc1::FrameHeader()
         {
             int8u ptype_;
             Get_S1 ( 3, ptype_,                                 "ptype");
-            if (ptype_<5)
-            {
-                Param_Info1(Vc1_Type[Vc1_FieldTypeTable[ptype_][0]]); Element_Info1(Vc1_Type[Vc1_FieldTypeTable[ptype_][0]]); //First field
-                Param_Info1(Vc1_Type[Vc1_FieldTypeTable[ptype_][1]]); Element_Info1(Vc1_Type[Vc1_FieldTypeTable[ptype_][1]]); //Second field
-                ptype=Vc1_FieldTypeTable[ptype_][0]; //Saving the ptype from the first field
-            }
-            else
-            {
-                Trusted_IsNot("ptype is out of range");
-                ptype=0; //Error
-            }
+            Param_Info1(Vc1_Type[Vc1_FieldTypeTable[ptype_][0]]); Element_Info1(Vc1_Type[Vc1_FieldTypeTable[ptype_][0]]); //First field
+            Param_Info1(Vc1_Type[Vc1_FieldTypeTable[ptype_][1]]); Element_Info1(Vc1_Type[Vc1_FieldTypeTable[ptype_][1]]); //Second field
+            ptype=Vc1_FieldTypeTable[ptype_][0]; //Saving the ptype from the first field
         }
         else
         {
@@ -1189,7 +1181,7 @@ void File_Vc1::SequenceHeader()
         if (framerate_present)
         {
             if (framerate_form)
-                FrameRate=((float64)(framerateexp+1))/(float32)64;
+                FrameRate=((float64)(framerateexp+1))/32;
             else if (const int16u rate_dr = Vc1_FrameRate_dr(frameratecode_dr))
                 FrameRate=((float64)Vc1_FrameRate_enr(frameratecode_enr))/rate_dr;
         }

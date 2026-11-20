@@ -260,7 +260,7 @@ void File_Aac::Streams_Finish()
         if (Retrieve_Const(Stream_Audio, 0, "ConformanceErrors").empty() && Retrieve_Const(Stream_Audio, 0, "ConformanceWarnings").empty() && Retrieve_Const(Stream_Audio, 0, "ConformanceInfos").empty()) { //TODO: check why called twice in some cases
         if (ProfileLevel.profile != UnknownAudio && ProfileLevel.profile != UnspecifiedAudio
             && ((audioObjectType == 42 && !ConformanceFlags[BaselineUsac] && !ConformanceFlags[xHEAAC])
-             || (audioObjectType != 42 && (ConformanceFlags[BaselineUsac] || ConformanceFlags[xHEAAC])))) {
+             || (audioObjectType != 42 && (ConformanceFlags[BaselineUsac] || (ConformanceFlags[xHEAAC] && audioObjectType != 2 && audioObjectType != 5 && audioObjectType != 29))))) {
             string ProfileLevelString = Mpeg4_Descriptors_AudioProfileLevelIndicationString(ProfileLevel);
             auto audioObjectTypeString = to_string(audioObjectType);
             auto audioObjectTypeTemp = Aac_audioObjectType(audioObjectType);
@@ -409,12 +409,12 @@ void File_Aac::Read_Buffer_Continue_HEAACWAVEFORMAT()
     Skip_L2(                                                    "wReserved1");
     Skip_L4(                                                    "dwReserved2");
     Element_End0();
-    switch (wPayloadType)
+    switch (wStructType)
     {
         case 0 : Read_Buffer_Continue_AudioSpecificConfig(); break;
         default: Skip_XX(Element_Size-Element_Offset,           "(Unknown)");
     }
-    switch (wStructType)
+    switch (wPayloadType)
     {
         case 0 : Mode=Mode_payload; break;
         case 1 : Mode=Mode_ADTS; break;

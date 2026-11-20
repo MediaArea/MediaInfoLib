@@ -1329,6 +1329,26 @@ void File_Mpeg4::Streams_Finish()
                     StreamKind_Last=Temp->second.StreamKind;
                     StreamPos_Last=Temp->second.StreamPos;
                 }
+
+                //Special case: pair of PCM tracks carrying data without audio (e.g. SMPTE ST 337 data bursts of KLV or captioning), the PCM tracks are kept
+                if (StreamKind_Last==Stream_Audio && Temp->second.Parsers[0]->Retrieve(Stream_General, 0, General_Format)==__T("ChannelGrouping") && !Temp->second.Parsers[0]->Count_Get(Stream_Audio))
+                {
+                    for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
+                    {
+                        if (StreamKind==Stream_Audio)
+                            continue;
+                        for (size_t Parser_StreamPos=0; Parser_StreamPos<Temp->second.Parsers[0]->Count_Get((stream_t)StreamKind); Parser_StreamPos++)
+                        {
+                            Ztring ID=Retrieve(Stream_Audio, Temp->second.StreamPos-1, Audio_ID)+__T(" / ")+Retrieve(Stream_Audio, Temp->second.StreamPos, Audio_ID);
+                            Merge(*Temp->second.Parsers[0], (stream_t)StreamKind, Parser_StreamPos, Count_Get((stream_t)StreamKind));
+                            Ztring Parser_ID=Retrieve(StreamKind_Last, StreamPos_Last, General_ID);
+                            Fill(StreamKind_Last, StreamPos_Last, General_ID, ID+(Parser_ID.empty()?Ztring():(__T("-")+Parser_ID)), true);
+                        }
+                    }
+
+                    StreamKind_Last=Temp->second.StreamKind;
+                    StreamPos_Last=Temp->second.StreamPos;
+                }
             }
         }
 

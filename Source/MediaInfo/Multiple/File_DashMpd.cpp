@@ -118,6 +118,18 @@ static Ztring DashMpd_codecid_CodecID (const char* codecid)
 }
 
 //---------------------------------------------------------------------------
+static void DashMpd_codecs_Fill (const char* codecs, sequence* Sequence)
+{
+    Sequence->Infos["CodecID"]=DashMpd_codecid_CodecID(codecs);
+
+    //MPEG-4 Audio, format depends on the audio object type
+    if (!strcmp(codecs, "mp4a.40.2") || !strcmp(codecs, "mp4a.40.5") || !strcmp(codecs, "mp4a.40.29"))
+        Sequence->Infos["Format"].From_UTF8("AAC");
+    else
+        Sequence->Infos.erase("Format");
+}
+
+//---------------------------------------------------------------------------
 struct template_generic
 {
     sequence* Sequence;
@@ -170,6 +182,7 @@ struct template_generic
         startNumber=ToCopy.startNumber;
         duration_Max=ToCopy.duration_Max;
         startNumber_Max=ToCopy.startNumber_Max;
+        SegmentTimeLines=ToCopy.SegmentTimeLines;
     }
 
     ~template_generic()
@@ -197,7 +210,7 @@ void template_generic::AdaptationSet_Attributes_Parse (XMLElement* Item)
     //Attributes - codecs
     Attribute=Item->Attribute("codecs");
     if (Attribute)
-        Sequence->Infos["CodecID"]=DashMpd_codecid_CodecID(Attribute);
+        DashMpd_codecs_Fill(Attribute, Sequence);
 
     //Attributes - lang
     Attribute=Item->Attribute("lang");
@@ -247,7 +260,7 @@ void template_generic::SegmentTimeline_Attributes_Parse (XMLElement* Item)
         SegmentTimeLine.t=Ztring().From_UTF8(Attribute).To_int64u();
     }
     else
-        SegmentTimeLine.t=startNumber;
+        SegmentTimeLine.t=(int64u)-1; //Continuation of the previous segment
 
     //Attributes - d (duration per segment)
     Attribute=Item->Attribute("d");
@@ -262,12 +275,18 @@ void template_generic::SegmentTimeline_Attributes_Parse (XMLElement* Item)
     Attribute=Item->Attribute("r");
     if (Attribute)
     {
-        SegmentTimeLine.r=Ztring().From_UTF8(Attribute).To_int64u();
+        if (*Attribute=='-')
+            SegmentTimeLine.r=(int64u)-1; //Negative value: repeated until the next S element, resolved by Decode()
+        else
+            SegmentTimeLine.r=Ztring().From_UTF8(Attribute).To_int64u();
     }
 
     SegmentTimeLines.push_back(SegmentTimeLine);
-    duration_Max+=SegmentTimeLine.d*(SegmentTimeLine.r+1);
-    startNumber_Max+=SegmentTimeLine.r+1;
+    if (SegmentTimeLine.r!=(int64u)-1)
+    {
+        duration_Max+=SegmentTimeLine.d*(SegmentTimeLine.r+1);
+        startNumber_Max+=SegmentTimeLine.r+1;
+    }
 }
 
 void template_generic::Representation_Attributes_Parse (XMLElement* Item)
@@ -276,7 +295,9 @@ void template_generic::Representation_Attributes_Parse (XMLElement* Item)
     const char* Attribute=Item->Attribute("id");
     if (Attribute)
     {
-        Sequence->StreamID=Ztring().From_UTF8(Attribute).To_int64u(16);
+        Ztring ID; ID.From_UTF8(Attribute);
+        if (!ID.empty() && ID.find_first_not_of(__T("0123456789"))==string::npos)
+            Sequence->StreamID=ID.To_int64u();
     }
 
     //Attributes - bandwidth
@@ -306,7 +327,7 @@ void template_generic::Representation_Attributes_Parse (XMLElement* Item)
     //Attributes - codecs
     Attribute=Item->Attribute("codecs");
     if (Attribute)
-        Sequence->Infos["CodecID"]=DashMpd_codecid_CodecID(Attribute);
+        DashMpd_codecs_Fill(Attribute, Sequence);
 
     //Attributes - lang
     Attribute=Item->Attribute("lang");
@@ -344,12 +365,14 @@ void template_generic::Decode()
             Index_StringSize++;
         }
         int8u Index_Size=1;
+        size_t Index_Length=1+Index_StringSize+1;
         if (Index_Pos!=string::npos)
         {
             size_t Index_Pos_End=media.find(__T('$'), Index_Pos+1+Index_StringSize);
             if (Index_Pos_End!=string::npos && Index_Pos+1+Index_StringSize+2<Index_Pos_End && media[Index_Pos+1+Index_StringSize]=='%' && media[Index_Pos+1+Index_StringSize+1]=='0')
             {
                 Index_Size=Ztring(media.substr(Index_Pos+1+Index_StringSize+2, Index_Pos_End-(Index_Pos+1+Index_StringSize+2))).To_int8u();
+                Index_Length=Index_Pos_End-Index_Pos+1;
             }
             else if (Index_Pos_End==string::npos || Index_Pos+1+Index_StringSize!=Index_Pos_End)
                 Index_Pos=string::npos;
@@ -360,9 +383,9 @@ void template_generic::Decode()
             Ztring Media_Name(media);
             if (Index_Pos!=string::npos)
             {
-                Media_Name.erase(Index_Pos, 1+Index_StringSize+1);
+                Media_Name.erase(Index_Pos, Index_Length);
                 if (Time_Pos!=string::npos && Time_Pos>Index_Pos)
-                    Time_Pos-=1+Index_StringSize+1;
+                    Time_Pos-=Index_Length;
             }
             if (Time_Pos!=string::npos)
             {
@@ -400,9 +423,32 @@ void template_generic::Decode()
             {
                 int64u SegmentTimeLines_duration=0;
                 int64u SegmentTimeLines_startNumber=startNumber;
-                for (size_t SegmentTimeLines_Pos=0; SegmentTimeLines_Pos<SegmentTimeLines.size(); SegmentTimeLines_Pos++)
+                int64u Names_Remaining=0x10000; //Limit against malformed repeat counts
+                for (size_t SegmentTimeLines_Pos=0; SegmentTimeLines_Pos<SegmentTimeLines.size() && Names_Remaining; SegmentTimeLines_Pos++)
                 {
-                    for (int64u Pos=0; Pos<=SegmentTimeLines[SegmentTimeLines_Pos].r; Pos++)
+                    const segmenttimeline& SegmentTimeLine=SegmentTimeLines[SegmentTimeLines_Pos];
+                    if (SegmentTimeLine.t!=(int64u)-1)
+                        SegmentTimeLines_duration=SegmentTimeLine.t;
+                    int64u r=SegmentTimeLine.r;
+                    if (r==(int64u)-1)
+                    {
+                        //Repeated until the start time of the next S element, else the end of the period is not known (only 1 segment)
+                        r=0;
+                        if (SegmentTimeLines_Pos+1<SegmentTimeLines.size())
+                        {
+                            int64u t_Next=SegmentTimeLines[SegmentTimeLines_Pos+1].t;
+                            if (t_Next!=(int64u)-1 && SegmentTimeLine.d && t_Next>SegmentTimeLines_duration)
+                            {
+                                r=(t_Next-SegmentTimeLines_duration+SegmentTimeLine.d-1)/SegmentTimeLine.d;
+                                if (r)
+                                    r--;
+                            }
+                        }
+                    }
+                    if (r>=Names_Remaining)
+                        r=Names_Remaining-1;
+                    Names_Remaining-=r+1;
+                    for (int64u Pos=0; Pos<=r; Pos++)
                     {
                         Ztring Media_Name_Temp(Media_Name);
                         size_t Time_Pos_Temp=Time_Pos;
@@ -626,7 +672,7 @@ bool File_DashMpd::FileHeader_Begin()
                             //Attributes - codecs
                             Attribute=Period_Item->Attribute("codecs");
                             if (Attribute)
-                                Sequence->Infos["CodecID"]=DashMpd_codecid_CodecID(Attribute);
+                                DashMpd_codecs_Fill(Attribute, Sequence);
 
                             //Attributes - lang
                             Attribute=Period_Item->Attribute("lang");

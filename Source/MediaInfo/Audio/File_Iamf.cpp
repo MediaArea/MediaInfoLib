@@ -611,7 +611,7 @@ void File_Iamf::ia_codec_config()
 void File_Iamf::ia_audio_element()
 {
     //Parsing
-    int64u audio_element_id, codec_config_id, num_substreams, num_parameters;
+    int64u audio_element_id, codec_config_id, num_substreams, num_parameters, recon_gain_parameter_id{ (int64u)-1 };
     int8u audio_element_type;
     Get_leb128 (        audio_element_id,                   "audio_element_id");
     BS_Begin();
@@ -650,7 +650,7 @@ void File_Iamf::ia_audio_element()
         }
         case PARAMETER_DEFINITION_RECON_GAIN: {
             Element_Begin1("recon_gain_info");
-            ParamDefinition(PARAMETER_DEFINITION_RECON_GAIN);
+            recon_gain_parameter_id = ParamDefinition(PARAMETER_DEFINITION_RECON_GAIN);
             Element_End0();
             break;
         }
@@ -673,11 +673,12 @@ void File_Iamf::ia_audio_element()
     switch (audio_element_type) {
     case CHANNEL_BASED: {
         Element_Begin1("scalable_channel_layout_config");
+            int8u num_layers;
             BS_Begin();
             Get_S1 (3,      num_layers,                     "num_layers");
             Skip_S1(5,                                      "reserved_for_future_use");
             BS_End();
-            recon_gain_is_present_flag_Vec.clear();
+            std::vector<bool> recon_gain_is_present_flag_Vec;
             for (int8u i = 1; i <= num_layers; ++i) {
                 Element_Begin1("channel_audio_layer_config");
                 int8u loudspeaker_layout;
@@ -705,6 +706,9 @@ void File_Iamf::ia_audio_element()
                 recon_gain_is_present_flag_Vec.push_back(recon_gain_is_present_flag);
                 Element_End0();
             }
+            auto param_definition = param_definitions.find(recon_gain_parameter_id);
+            if (param_definition != param_definitions.end())
+                param_definition->second.recon_gain_is_present_flags = recon_gain_is_present_flag_Vec;
         Element_End0();
         break;
     }
@@ -918,7 +922,7 @@ void File_Iamf::ia_mix_presentation()
 }
 
 //---------------------------------------------------------------------------
-void File_Iamf::ParamDefinition(int64u param_definition_type)
+int64u File_Iamf::ParamDefinition(int64u param_definition_type)
 {
     //Parsing
     int64u parameter_id, parameter_rate, duration{}, constant_subblock_duration{}, num_subblocks{}, subblock_duration;
@@ -936,7 +940,7 @@ void File_Iamf::ParamDefinition(int64u param_definition_type)
             Get_leb128( num_subblocks,                      "num_subblocks");
             if (num_subblocks > Element_Size) {
                 Reject();
-                return;
+                return parameter_id;
             }
             for (int64u i = 0; i < num_subblocks; ++i) {
                 Get_leb128(subblock_duration,               "subblock_duration");
@@ -1035,6 +1039,7 @@ void File_Iamf::ParamDefinition(int64u param_definition_type)
         param_definition.num_subblocks = num_subblocks;
         param_definitions.insert({ parameter_id, param_definition });
     FILLING_END();
+    return parameter_id;
 }
 
 //---------------------------------------------------------------------------
@@ -1189,8 +1194,8 @@ void File_Iamf::ia_parameter_block()
         }
         case PARAMETER_DEFINITION_RECON_GAIN: {
             Element_Begin1("recon_gain_info_parameter_data");
-            for (int8u n = 0; n < num_layers; ++n) {
-                if (recon_gain_is_present_flag_Vec[n]) {
+            for (bool recon_gain_is_present_flag : param_definition.recon_gain_is_present_flags) {
+                if (recon_gain_is_present_flag) {
                     int64u recon_gain_flags_n;
                     Get_leb128(recon_gain_flags_n,              "recon_gain_flags");
                     for (int8u j = 0; j < 12; ++j) {

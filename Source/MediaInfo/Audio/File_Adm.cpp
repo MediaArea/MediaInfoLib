@@ -2198,7 +2198,7 @@ static const item_infos item_Infos = {
     { nullptr, referenceLayout_Elements, "referenceLayout", nullptr, 0, (int8u)-1, 0},
     { audioContentLabel_Attributes, nullptr, "audioContentLabel", nullptr, 0, (int8u)-1, 0},
     { dialogue_Attributes, nullptr, "dialogue", nullptr, 0, (int8u)-1, 0},
-    { audioObjectLabel_Attributes, nullptr, "dialogue", nullptr, 0, (int8u)-1, 0},
+    { audioObjectLabel_Attributes, nullptr, "audioObjectLabel", nullptr, 0, (int8u)-1, 0},
     { audioComplementaryObjectGroupLabel_Attributes, nullptr, "audioComplementaryObjectGroupLabel", nullptr, 0, (int8u)-1, 0},
     { audioObjectInteraction_Attributes, audioObjectInteraction_Elements, "audioObjectInteraction", nullptr, 0, (int8u)-1, 0},
     { gainInteractionRange_Attributes, nullptr, "gainInteractionRange", nullptr, 0, (int8u)-1, 0},
@@ -3311,21 +3311,23 @@ static void CheckErrors_formatLabelDefinition(file_adm_private* File_Adm_Private
     const auto List = (Style == (style)-1) ? nullptr : Style_Infos[Style].formatDefinition_List;
     const unsigned long List_Size = (Style == (style)-1) ? 0 : Style_Infos[Style].formatDefinition_Size;
     unsigned long formatLabel_Int = (unsigned long)-1;
+    const string LabelName = item_Infos[item_Type].Attribute_Infos[label_Info.Label_Pos].Name;
+    const string DefinitionName = item_Infos[item_Type].Attribute_Infos[label_Info.Definition_Pos].Name;
 
     if (Label_Present) {
         if (Label.size() != 4 || !IsHexaDigit(Label, 0, 4)) {
-            Item.AddError(Error, item_Type, i, ":formatLabel:formatLabel attribute value \"" + Label + "\" is not a valid form (yyyy form, yyyy being hexadecimal digits)");
+            Item.AddError(Error, item_Type, i, ':' + LabelName + ':' + LabelName + " attribute value \"" + Label + "\" is not a valid form (yyyy form, yyyy being hexadecimal digits)");
         }
         else {
             formatLabel_Int = strtoul(Label.c_str(), nullptr, 16);
             if (formatLabel_Int && formatLabel_Int > List_Size) {
-                Item.AddError(Warning, item_Type, i, ":formatLabel:formatLabel attribute value \"" + Label + "\" is not a known value");
+                Item.AddError(Warning, item_Type, i, ':' + LabelName + ':' + LabelName + " attribute value \"" + Label + "\" is not a known value");
             }
             else if (Definition_Present && List && formatLabel_Int && formatLabel_Int <= List_Size && Definition != List[formatLabel_Int - 1]) {
-                Item.AddError(Error, item_Type, i, ":formatDefinition:formatDefinition attribute value \"" + Definition + "\" shall be \"" + List[formatLabel_Int - 1] + "\" in order to match the term corresponding to formatLabel attribute value \"" + Label + "\"");
+                Item.AddError(Error, item_Type, i, ':' + DefinitionName + ':' + DefinitionName + " attribute value \"" + Definition + "\" shall be \"" + List[formatLabel_Int - 1] + "\" in order to match the term corresponding to " + LabelName + " attribute value \"" + Label + "\"");
             }
             if (IsAtmos && ((Style == Style_Format && formatLabel_Int != 1) || (Style == Style_Type && formatLabel_Int != 1 && formatLabel_Int != 3))) {
-                Item.AddError(Error, item_Type, i, ":formatLabel:formatLabel attribute value \"" + Label + "\" is not permitted, permitted value is \"0001\"", Source_Atmos_1_0);
+                Item.AddError(Error, item_Type, i, ':' + LabelName + ':' + LabelName + " attribute value \"" + Label + "\" is not permitted, permitted value" + (Style == Style_Type ? "s are \"0001\" or \"0003\"" : " is \"0001\""), Source_Atmos_1_0);
             }
         }
     }
@@ -3340,17 +3342,17 @@ static void CheckErrors_formatLabelDefinition(file_adm_private* File_Adm_Private
                     formatLabel_Int = j;
                 }
                 else if (formatLabel_Int != j) {
-                    Item.AddError(Error, item_Type, i, ":formatLabel:formatLabel attribute value \"" + Label + "\" shall be \"" + Hex2String(j, 4) + "\" in order to match the term corresponding to formatDefinition attribute value \"" + Definition + "\"");
+                    Item.AddError(Error, item_Type, i, ':' + LabelName + ':' + LabelName + " attribute value \"" + Label + "\" shall be \"" + Hex2String(j, 4) + "\" in order to match the term corresponding to " + DefinitionName + " attribute value \"" + Definition + "\"");
                 }
                 IsKnown = true;
                 break;
             }
         }
         if (!IsKnown) {
-            Item.AddError(Warning, item_Type, i, ":formatDefinition:formatDefinition attribute value \"" + Definition + "\" is not a known value");
+            Item.AddError(Warning, item_Type, i, ':' + DefinitionName + ':' + DefinitionName + " attribute value \"" + Definition + "\" is not a known value");
         }
         if (IsAtmos && ((Style == Style_Format && Definition != List[0]) || (Style == Style_Type && Definition != List[0] && Definition != List[2]))) {
-            Item.AddError(Error, item_Type, i, ":formatDefinition:formatDefinition attribute value \"" + Definition + "\" is not permitted, permitted value is \"PCM\"", Source_Atmos_1_0);
+            Item.AddError(Error, item_Type, i, ':' + DefinitionName + ':' + DefinitionName + " attribute value \"" + Definition + "\" is not permitted, permitted value" + (Style == Style_Type ? (string("s are \"") + List[0] + "\" or \"" + List[2] + '\"') : (string(" is \"") + List[0] + '\"')), Source_Atmos_1_0);
         }
     }
 
@@ -3359,7 +3361,7 @@ static void CheckErrors_formatLabelDefinition(file_adm_private* File_Adm_Private
         if (item_Infos[item_Type].ID_Flags[item_info::Flags_ID_YX] && !CheckErrors_ID(File_Adm_Private, Item_ID, item_Infos[item_Type])) {
             const auto Item_ID_yyyy = Item_ID.substr(strlen(item_Infos[item_Type].ID_Begin) + 1, 4);
             if ((Label_Present && Item_ID_yyyy != Label) || (Definition_Present && formatLabel_Int != strtoul(Item_ID_yyyy.c_str(), nullptr, 16))) {
-                Item.AddError(Error, item_Type, i, ':' + CraftName(item_Infos[item_Type].Name, true) + "ID:" + CraftName(item_Infos[item_Type].Name, true) + "ID attribute yyyy value \"" + Item_ID_yyyy + "\" does not match " + (Label_Present ? ("formatLabel \"" + Label) : ("formatDefinition \"" + Definition)) + '\"');
+                Item.AddError(Error, item_Type, i, ':' + CraftName(item_Infos[item_Type].Name, true) + "ID:" + CraftName(item_Infos[item_Type].Name, true) + "ID attribute yyyy value \"" + Item_ID_yyyy + "\" does not match " + (Label_Present ? (LabelName + " \"" + Label) : (DefinitionName + " \"" + Definition)) + '\"');
             }
         }
     }
@@ -3910,15 +3912,19 @@ void audioBlockFormat_Check(file_adm_private* File_Adm_Private) {
             auto Start_TC = CheckError_Time(File_Adm_Private, item_audioBlockFormat, Element_Pos);
             if (Start_TC.IsValid() && audioBlockFormat_Count == 1) {
                 const auto& frameFormats = Items[item_frameFormat].Items;
+                auto HasFrameStart = false; // rtime is then the frameFormat start, not 0
                 for (size_t k = 0; k < frameFormats.size(); k++) {
                     const auto& frameFormat = frameFormats[k];
                     TimeCode frameFormat_start_TC = frameFormat.Attributes[frameFormat_start];
-                    if (frameFormat_start_TC.IsValid() && frameFormat_start_TC != Start_TC) {
+                    if (Element_Pos == audioBlockFormat_rtime && frameFormat_start_TC.IsValid()) {
+                        HasFrameStart = true;
+                    }
+                    if (Element_Pos == audioBlockFormat_rtime && frameFormat_start_TC.IsValid() && frameFormat_start_TC != Start_TC) {
                         BlockFormat.AddError(Error, string(1, ':') + item_Infos[item_audioBlockFormat].Attribute_Infos[Element_Pos].Name + ':' + item_Infos[item_audioBlockFormat].Attribute_Infos[Element_Pos].Name + " attribute value does not match the frameFormat start attribute value", Source_AdvSSE_1);
                     }
                 }
                 static const TimeCode Zero_TC(0, 0, 0, 0, 0);
-                if (Start_TC != Zero_TC) {
+                if (!HasFrameStart && Start_TC != Zero_TC) {
                     BlockFormat.AddError(Error, string(1, ':') + item_Infos[item_audioBlockFormat].Attribute_Infos[Element_Pos].Name + ':' + item_Infos[item_audioBlockFormat].Attribute_Infos[Element_Pos].Name + " attribute value is not 0", Source_AdvSSE_1);
                 }
             }
@@ -4703,13 +4709,14 @@ void audioChannelFormat_Check(file_adm_private* File_Adm_Private) {
             if (!LastBlockFormatEnd.IsValid()) {
                 return;
             }
+            const auto IsLocal = Element_Pos == audioBlockFormat_lduration;
             const auto& frameFormats = Items[item_frameFormat].Items;
             for (size_t k = 0; k < frameFormats.size(); k++) {
                 const auto& frameFormat = frameFormats[k];
                 TimeCode frameFormat_start_TC = frameFormat.Attributes[frameFormat_start];
                 TimeCode frameFormat_duration_TC = frameFormat.Attributes[frameFormat_duration];
-                if (frameFormat_start_TC.IsValid() && frameFormat_duration_TC.IsValid() && frameFormat_start_TC + frameFormat_duration_TC != LastBlockFormatEnd) {
-                    BlockFormat.AddError(Error, string(1, ':') + item_Infos[item_audioBlockFormat].Attribute_Infos[Element_Pos].Name + ':' + item_Infos[item_audioBlockFormat].Attribute_Infos[Element_Pos].Name + " attribute value does not match the frameFormat start+duration attribute value", Source_AdvSSE_1);
+                if ((IsLocal || frameFormat_start_TC.IsValid()) && frameFormat_duration_TC.IsValid() && (IsLocal ? frameFormat_duration_TC : (frameFormat_start_TC + frameFormat_duration_TC)) != LastBlockFormatEnd) {
+                    BlockFormat.AddError(Error, string(1, ':') + item_Infos[item_audioBlockFormat].Attribute_Infos[Element_Pos].Name + ':' + item_Infos[item_audioBlockFormat].Attribute_Infos[Element_Pos].Name + " attribute value does not match the frameFormat " + (IsLocal ? "duration" : "start+duration") + " attribute value", Source_AdvSSE_1);
                 }
             }
         };
@@ -6786,10 +6793,10 @@ void File_Adm::Streams_Fill()
             else if (dialogue == "1") {
                 const auto& Kind = dialogue_Item.Attributes[dialogue_dialogueContentKind];
                 if (Kind == "1") {
-                    dialogue = "Music";
+                    dialogue = "Storyline Dialogue";
                 }
                 else if (Kind == "2") {
-                    dialogue = "Effect";
+                    dialogue = "Voiceover";
                 }
                 else if (Kind == "3") {
                     dialogue = "Spoken Subtitle";
@@ -7302,8 +7309,8 @@ void File_Adm::Streams_Fill()
             if (Level) {
                 static const int8u MaxCounts[][MaxCount_Size] =
                 {
-                    {  0, 16, 12,  4, 15,  0,  0,  0,  0,  0,  0,  8 },
-                    {  0, 28, 24,  8, 27,  0,  0,  0,  0,  0,  0, 16 },
+                    {  0, 16,  0,  4, 15, 12,  0,  0,  0,  0,  0,  8 },
+                    {  0, 28,  0,  8, 27, 24,  0,  0,  0,  0,  0, 16 },
                 };
                 Level--;
                 if (Level < sizeof(MaxCounts) / sizeof(MaxCounts[0])) {

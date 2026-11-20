@@ -34,6 +34,7 @@ public :
     stream_t StreamKind_Specific; //Always in this stream kind whatever is the configuration
     stream_t StreamKind_Multiple; //Specific stream kind depend if there is multiple streams or not
     stream_t StreamKind_Common;   //Stream kind for common values
+    int32u   SamplingRate;        //For converting the BWF time reference to a delay, 0 if unknown
 
     //Constructor/Destructor
     File_VorbisCom();
@@ -61,6 +62,10 @@ private :
     ZtringList Artists;
     ZtringList Accompaniments;
     ZtringList AlbumArtists;
+    Ztring Encoded_Date;
+    Ztring Encoded_Time;
+    Ztring TimeReference_High;
+    Ztring TimeReference_Low;
     struct cover
     {
         Ztring Mime;

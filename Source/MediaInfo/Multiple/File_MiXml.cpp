@@ -242,7 +242,7 @@ bool File_MiXml::FileHeader_Begin()
         if (Root)
         {
             const char* Attribute = Root->Attribute("xmlns");
-            if (Attribute == NULL || Ztring().From_UTF8(Attribute) != __T("https://mediaarea.net/mediainfo"))
+            if (Attribute == NULL || (strcmp(Attribute, "https://mediaarea.net/mediainfo") && strcmp(Attribute, "http://mediaarea.net/mediainfo")))
             {
                 Reject("MiXml");
                 return false;
@@ -441,7 +441,7 @@ bool File_MiXml::FileHeader_Begin()
                                                     for (int8u i=0; i<9; i++)
                                                         if (!strcmp(ServiceKind, AC3_Mode[i]))
                                                         {
-                                                            Fill(Stream_Audio, 0, (LastNested->Name + "ServiceKind/String").c_str(), AC3_Mode_String[i]);
+                                                            Fill(StreamKind_Last, StreamPos_Last, (LastNested->Name + "ServiceKind/String").c_str(), AC3_Mode_String[i]);
                                                             break;
                                                         }
                                                 }
@@ -501,10 +501,10 @@ bool File_MiXml::FileHeader_Begin()
         Fill(Stream_General, 0, General_UniversalAdID_String, UniversalAdID_Value + __T(" (") + UniversalAdID_Registry + __T(")"), true);
     }
     Ztring MajorBrand=Retrieve(Stream_General, 0, General_CodecID);
-    if (!UniversalAdID_Value.empty() && !UniversalAdID_Registry.empty())
+    if (!MajorBrand.empty())
     {
         Ztring CodecID_String=MajorBrand;
-        Ztring Compatible=Retrieve(Stream_General, 0, General_CodecID);
+        Ztring Compatible=Retrieve(Stream_General, 0, General_CodecID_Compatible);
         if (MajorBrand == __T("qt  "))
         {
             CodecID_String += __T(' ');

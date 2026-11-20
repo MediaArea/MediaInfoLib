@@ -151,8 +151,10 @@ void File_Nut::main()
     Element_Name("main");
 
     //Parsing
-    int64u time_base_count;
-    Skip_VS(                                                    "version");
+    int64u version, time_base_count;
+    Get_VS (version,                                            "version");
+    if (version>3)
+        Skip_VS(                                                "minor_version");
     Skip_VS(                                                    "stream_count");
     Skip_VS(                                                    "max_distance");
     Get_VS (time_base_count,                                    "time_base_count");
@@ -179,7 +181,7 @@ void File_Nut::main()
         if(tmp_fields>0)
             Skip_VS(                                            "tmp_pts"); //TODO: signed
         if(tmp_fields>1)
-            Skip_VS(                                            "tmp_mul");
+            Get_VS (tmp_mul,                                    "tmp_mul");
         if(tmp_fields>2)
             Skip_VS(                                            "tmp_stream");
         if(tmp_fields>3)

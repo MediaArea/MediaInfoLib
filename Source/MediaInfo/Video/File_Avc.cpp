@@ -2114,8 +2114,10 @@ void File_Avc::Data_Parse()
         case 0x0D : Element_Name("seq_parameter_set_extension"); Skip_XX(Element_Size-Element_Offset, "Data"); break;
         case 0x0E : prefix_nal_unit(svc_extension_flag); break;
         case 0x0F : subset_seq_parameter_set(); break;
+        case 0x10 : Element_Name("depth_parameter_set"); Skip_XX(Element_Size-Element_Offset, "Data"); break;
         case 0x13 : Element_Name("slice_layer_without_partitioning"); Skip_XX(Element_Size-Element_Offset, "Data"); break;
         case 0x14 : slice_layer_extension(svc_extension_flag); break;
+        case 0x15 : Element_Name("slice_layer_extension (depth or 3D-AVC texture view)"); Skip_XX(Element_Size-Element_Offset, "Data"); break;
         default :
             if (Element_Code<0x18)
                 Element_Name("reserved");
@@ -3381,12 +3383,6 @@ void File_Avc::sei_message_pic_timing(int32u /*payloadSize*/, int32u seq_paramet
                     Get_SB (hours_flag,                         "hours_flag");
                 if (hours_flag)
                     Get_S1 (5, hours_value,                     "hours_value");
-                if ((*seq_parameter_set_Item)->CpbDpbDelaysPresentFlag())
-                {
-                    int8u time_offset_length=(*seq_parameter_set_Item)->vui_parameters->NAL?(*seq_parameter_set_Item)->vui_parameters->NAL->time_offset_length:(*seq_parameter_set_Item)->vui_parameters->VCL->time_offset_length; //Spec is not precise, I am not sure
-                    if (time_offset_length)
-                        Get_S4 (time_offset_length, time_offset,    "time_offset");
-                }
                 FILLING_BEGIN();
                     if (!i && seconds_flag && minutes_flag && hours_flag && IFrame_Count<=1)
                     {
@@ -3407,6 +3403,11 @@ void File_Avc::sei_message_pic_timing(int32u /*payloadSize*/, int32u seq_paramet
                         Element_Info1(TC_Current.ToString());
                     }
                 FILLING_END();
+                int8u time_offset_length=24; //Inferred value when hrd_parameters() is not present (E.2.2)
+                if ((*seq_parameter_set_Item)->CpbDpbDelaysPresentFlag())
+                    time_offset_length=(*seq_parameter_set_Item)->vui_parameters->NAL?(*seq_parameter_set_Item)->vui_parameters->NAL->time_offset_length:(*seq_parameter_set_Item)->vui_parameters->VCL->time_offset_length; //Spec is not precise, I am not sure
+                if (time_offset_length)
+                    Get_S4 (time_offset_length, time_offset,        "time_offset");
             TEST_SB_END();
             Element_End0();
         }
@@ -3638,7 +3639,7 @@ void File_Avc::sei_message_user_data_unregistered_x264(int32u payloadSize)
                 string option;
                 Get_String (Options_Pos-Options_Pos_Before, option, "option");
                 Options_Pos_Before=Options_Pos;
-                do
+                while (Options_Pos_Before!=Data.size())
                 {
                     string Separator;
                     Peek_String(1, Separator);
@@ -3650,7 +3651,6 @@ void File_Avc::sei_message_user_data_unregistered_x264(int32u payloadSize)
                     else
                         break;
                 }
-                while (Options_Pos_Before!=Data.size());
 
                 //Filling
                 if (option!="options:")

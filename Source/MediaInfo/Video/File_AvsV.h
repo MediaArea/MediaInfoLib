@@ -90,6 +90,7 @@ private :
     int8u   video_format;                       //From sequence_display
     bool    progressive_sequence;               //From video_sequence_start
     bool    low_delay;                          //From video_sequence_start
+    bool    MarkerBitAfterTimeCode;             //From I pictures, not old streams
     bool    video_sequence_start_IsParsed;      //From video_sequence_start
 
     std::vector<stream_payload> Streams;

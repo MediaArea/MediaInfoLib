@@ -2988,7 +2988,7 @@ void File_Usac::drcCoefficientsUniDrc(bool V1)
         }
         bool drcCharacteristicRightPresent;
         Get_SB (   drcCharacteristicRightPresent,               "drcCharacteristicRightPresent");
-        if (drcCharacteristicLeftPresent)
+        if (drcCharacteristicRightPresent)
         {
             int8u characteristicRightCount;
             Get_S1 (4, characteristicRightCount,                "characteristicRightCount");
@@ -2998,10 +2998,10 @@ void File_Usac::drcCoefficientsUniDrc(bool V1)
                 Get_SB (   characteristicFormat,                "characteristicFormat");
                 if (!characteristicFormat)
                 {
-                    Skip_S1(6,                                  "bsGainLeft");
-                    Skip_S1(4,                                  "bsIoRatioLeft");
-                    Skip_S1(4,                                  "bsExpLeft");
-                    Skip_SB(                                    "flipSignLeft");
+                    Skip_S1(6,                                  "bsGainRight");
+                    Skip_S1(4,                                  "bsIoRatioRight");
+                    Skip_S1(4,                                  "bsExpRight");
+                    Skip_SB(                                    "flipSignRight");
                 }
                 else
                 {
@@ -3124,7 +3124,7 @@ void File_Usac::drcInstructionsBasic()
     TEST_SB_SKIP(                                               "additionalDownmixIdPresent");
         int8u additionalDownmixIdCount;
         Get_S1 (3, additionalDownmixIdCount,                    "additionalDownmixIdCount");
-        for (int8u i=1; i <additionalDownmixIdCount; i++)
+        for (int8u i=0; i<additionalDownmixIdCount; i++)
             Skip_S1(7,                                          "additionalDownmixId");
     TEST_SB_END();
     Get_S2 (16, drcSetEffect,                                   "drcSetEffect");

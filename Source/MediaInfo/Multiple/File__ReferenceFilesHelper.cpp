@@ -684,6 +684,9 @@ void File__ReferenceFilesHelper::ParseReferences()
                 {
                     AbsoluteNames.clear();
                     Names=Sequences[Sequences_Current]->FileNames;
+                    for (size_t Pos=0; Pos<Names.size(); Pos++)
+                        if (Names[Pos].find(__T("file:"))==0)
+                            Names[Pos]=ZenLib::Format::Http::URL_Encoded_Decode(Names[Pos]);
 
                     //Configuring file name (this time, we try to test local files)
                     size_t PathSeparator_Pos=Names.empty()?string::npos:Names[0].find_last_of(__T("\\/"));
@@ -727,6 +730,9 @@ void File__ReferenceFilesHelper::ParseReferences()
                             {
                                 AbsoluteNames.clear();
                                 Names=Sequences[Sequences_Current]->FileNames;
+                                for (size_t Pos=0; Pos<Names.size(); Pos++)
+                                    if (Names[Pos].find(__T("file:"))==0)
+                                        Names[Pos]=ZenLib::Format::Http::URL_Encoded_Decode(Names[Pos]);
 
                                 //Configuring file name (this time, we try to test local files)
                                 size_t PathSeparator_Pos=Names[0].find_last_of(__T("\\/"));
@@ -1034,6 +1040,7 @@ bool File__ReferenceFilesHelper::ParseReference_Init()
             {
                 MediaInfo_Internal MI2;
                 MI2.Option(__T("File_KeepInfo"), __T("1"));
+                MI2.Option(__T("File_FileNameFormat"), __T("CSV"));
                 Ztring ParseSpeed_Save=MI2.Option(__T("ParseSpeed_Get"), __T("0"));
                 Ztring Demux_Save=MI2.Option(__T("Demux_Get"), __T(""));
                 MI2.Option(__T("ParseSpeed"), __T("0"));
@@ -1390,6 +1397,7 @@ void File__ReferenceFilesHelper::ParseReference_Finalize_PerStream ()
         {
             MediaInfo_Internal MI2;
             MI2.Option(__T("File_KeepInfo"), __T("1"));
+            MI2.Option(__T("File_FileNameFormat"), __T("CSV"));
             MI2.Option(__T("File_DisplayCaptions"), Config->Option(__T("File_DisplayCaptions_Get"), Ztring())); //Same list of streams as the parsing of the sequence
             MI2.Option(__T("File_ProbeCaption"), Config->File_ProbeCaption_Get());
             MI2.Config.File_ProbeCaption_QuickPass=Config->ParseSpeed>0;
@@ -1666,7 +1674,7 @@ void File__ReferenceFilesHelper::List_Compute()
                             if (Pos_Path!=Ztring::npos)
                                 SourcePath=SourceName.substr(0, Pos_Path);
                         }
-                        size_t SourcePath_Size=SourcePath.size()+1; //Path size + path separator size
+                        size_t SourcePath_Size=SourcePath.empty()?0:(SourcePath.size()+1); //Path size + path separator size
                         Ztring Temp=Sequences[Sequences_Current]->MI->Config.File_Names[0];
                         if (!Config->File_IsReferenced_Get())
                             Temp.erase(0, SourcePath_Size);
@@ -1706,7 +1714,7 @@ void File__ReferenceFilesHelper::List_Compute()
                 if (Pos_Path!=Ztring::npos)
                     SourcePath=SourceName.substr(0, Pos_Path);
             }
-            size_t SourcePath_Size=SourcePath.size()+1; //Path size + path separator size
+            size_t SourcePath_Size=SourcePath.empty()?0:(SourcePath.size()+1); //Path size + path separator size
             for (size_t Pos=0; Pos<Sequences[Sequences_Current]->FileNames.size(); Pos++)
             {
                 Ztring Temp=Sequences[Sequences_Current]->FileNames[Pos];

@@ -3361,6 +3361,7 @@ void File_MpegTs::PES()
         if (Complete_Stream->transport_stream_id_IsValid
          && Mpeg_Psi_stream_type_StreamKind(Complete_Stream->Streams[pid]->stream_type, Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs[Complete_Stream->Streams[pid]->program_numbers[0]].registration_format_identifier)==Stream_Max
          && Complete_Stream->Streams[pid]->stream_type!=0x06 //Exception for private data
+         && Complete_Stream->Streams[pid]->stream_type!=0x12 //Exception for SL-packetized stream, the format is in the IOD
          && Complete_Stream->Streams[pid]->stream_type<=0x7F //Exception for private data
          && Mpeg_Descriptors_registration_format_identifier_StreamKind(Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs[Complete_Stream->Streams[pid]->program_numbers[0]].registration_format_identifier)==Stream_Max //From Descriptor
          && Config->File_MpegTs_stream_type_Trust_Get())
@@ -3613,6 +3614,22 @@ void File_MpegTs::PSI()
         #if MEDIAINFO_EVENTS
             StreamIDs[StreamIDs_Size-1]=pid;
         #endif //MEDIAINFO_EVENTS
+
+        //End of the section started in a previous packet, before the first section of this packet
+        if (Complete_Stream->Streams[pid]->Parser && Element_Size>1)
+        {
+            int8u pointer_field;
+            Peek_B1(pointer_field);
+            if (pointer_field)
+            {
+                Element_Offset=1;
+                Open_Buffer_Continue(Complete_Stream->Streams[pid]->Parser, (size_t)std::min((int64u)pointer_field, Element_Size-1));
+                Element_Offset=0;
+                if (Complete_Stream->Streams[pid]->Parser->Status[IsFilled])
+                    PSI_Filled();
+            }
+        }
+
         delete ((File_Mpeg_Psi*)Complete_Stream->Streams[pid]->Parser); Complete_Stream->Streams[pid]->Parser=new File_Mpeg_Psi;
         Open_Buffer_Init(Complete_Stream->Streams[pid]->Parser);
         ((File_Mpeg_Psi*)Complete_Stream->Streams[pid]->Parser)->Complete_Stream=Complete_Stream;
@@ -3633,92 +3650,98 @@ void File_MpegTs::PSI()
     //Filling
     if (Complete_Stream->Streams[pid]->Parser->Status[IsFilled])
     {
-        //Accept
-        if (!Status[IsAccepted] && pid==0x0000 && Complete_Stream->Streams[pid]->Parser->Status[IsAccepted])
-            Accept("MPEG-TS");
+        PSI_Filled();
 
         //Disabling this pid
         delete Complete_Stream->Streams[pid]->Parser; Complete_Stream->Streams[pid]->Parser=NULL;
         Complete_Stream->Streams[pid]->Searching_Payload_Start_Set(true);
         Complete_Stream->Streams[pid]->Searching_Payload_Continue_Set(false);
-
-        //EPG
-        if (Complete_Stream->Sources_IsUpdated || Complete_Stream->Programs_IsUpdated)
-        {
-            Status[IsUpdated]=true;
-            Status[User_18]=true;
-        }
-
-        //Duration
-        if (Complete_Stream->Duration_End_IsUpdated)
-        {
-            Status[IsUpdated]=true;
-            Status[User_17]=true;
-        }
-
-        //Program change
-        if (pid==0x0000)
-        {
-            Status[IsFilled]=false;
-
-            Status[IsUpdated]=true;
-            Status[User_19]=true;
-        }
-        if (!Complete_Stream->Streams[pid]->Table_IDs.empty() && Complete_Stream->Streams[pid]->Table_IDs[0x02])
-        {
-            Status[IsFilled]=false;
-
-            //Status[IsUpdated]=true;
-            //Status[User_19]=true;
-        }
-
-        //Item removal
-        if (pid==0x0000 || (!Complete_Stream->Streams[pid]->Table_IDs.empty() && Complete_Stream->Streams[pid]->Table_IDs[0x02]))
-        {
-            for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
-                if (!Complete_Stream->StreamPos_ToRemove[StreamKind].empty())
-                {
-                    sort(Complete_Stream->StreamPos_ToRemove[StreamKind].begin(), Complete_Stream->StreamPos_ToRemove[StreamKind].end());
-                    size_t Pos=Complete_Stream->StreamPos_ToRemove[StreamKind].size();
-                    do
-                    {
-                        Pos--;
-
-                        //Erasing text substreams
-                        Ztring ID_ToFind=Retrieve((stream_t)StreamKind, Complete_Stream->StreamPos_ToRemove[StreamKind][Pos], General_ID)+__T('-');
-                        for (size_t TextPos=0; TextPos<Count_Get(Stream_Text); TextPos++)
-                            if (Retrieve(Stream_Text, TextPos, General_ID).find(ID_ToFind)==0)
-                                 Stream_Erase(Stream_Text, TextPos);
-
-                        //Erasing the stream
-                        Stream_Erase((stream_t)StreamKind, Complete_Stream->StreamPos_ToRemove[StreamKind][Pos]);
-
-                        //Moving other StreamPos
-                        for (size_t Pos2=Pos+1; Pos2<Complete_Stream->StreamPos_ToRemove[StreamKind].size(); Pos2++)
-                            Complete_Stream->StreamPos_ToRemove[StreamKind][Pos2]--;
-
-                        //Informing that the menu must be recalculated - TODO: only the related programs
-                        if (StreamKind!=Stream_Menu)
-                        {
-                            for (complete_stream::transport_stream::programs::iterator Program=Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs.begin(); Program!=Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs.end(); ++Program)
-                                Program->second.Update_Needed_StreamPos=true;
-                        }
-                        else if (Complete_Stream->StreamPos_ToRemove[StreamKind][Pos]<Complete_Stream->program_number_Order.size())
-                        {
-                            Complete_Stream->program_number_Order.erase(Complete_Stream->program_number_Order.begin()+Complete_Stream->StreamPos_ToRemove[StreamKind][Pos]);
-                        }
-                    }
-                    while (Pos);
-                    Complete_Stream->StreamPos_ToRemove[StreamKind].clear();
-                }
-
-            Status[IsUpdated]=true;
-            Status[User_19]=true;
-        }
     }
     else
         //Waiting for more data
         Complete_Stream->Streams[pid]->Searching_Payload_Continue_Set(true);
+}
+
+//---------------------------------------------------------------------------
+void File_MpegTs::PSI_Filled()
+{
+    //Accept
+    if (!Status[IsAccepted] && pid==0x0000 && Complete_Stream->Streams[pid]->Parser->Status[IsAccepted])
+        Accept("MPEG-TS");
+
+    //EPG
+    if (Complete_Stream->Sources_IsUpdated || Complete_Stream->Programs_IsUpdated)
+    {
+        Status[IsUpdated]=true;
+        Status[User_18]=true;
+    }
+
+    //Duration
+    if (Complete_Stream->Duration_End_IsUpdated)
+    {
+        Status[IsUpdated]=true;
+        Status[User_17]=true;
+    }
+
+    //Program change
+    if (pid==0x0000)
+    {
+        Status[IsFilled]=false;
+
+        Status[IsUpdated]=true;
+        Status[User_19]=true;
+    }
+    if (!Complete_Stream->Streams[pid]->Table_IDs.empty() && Complete_Stream->Streams[pid]->Table_IDs[0x02])
+    {
+        Status[IsFilled]=false;
+
+        //Status[IsUpdated]=true;
+        //Status[User_19]=true;
+    }
+
+    //Item removal
+    if (pid==0x0000 || (!Complete_Stream->Streams[pid]->Table_IDs.empty() && Complete_Stream->Streams[pid]->Table_IDs[0x02]))
+    {
+        for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
+            if (!Complete_Stream->StreamPos_ToRemove[StreamKind].empty())
+            {
+                sort(Complete_Stream->StreamPos_ToRemove[StreamKind].begin(), Complete_Stream->StreamPos_ToRemove[StreamKind].end());
+                size_t Pos=Complete_Stream->StreamPos_ToRemove[StreamKind].size();
+                do
+                {
+                    Pos--;
+
+                    //Erasing text substreams
+                    Ztring ID_ToFind=Retrieve((stream_t)StreamKind, Complete_Stream->StreamPos_ToRemove[StreamKind][Pos], General_ID)+__T('-');
+                    for (size_t TextPos=0; TextPos<Count_Get(Stream_Text); TextPos++)
+                        if (Retrieve(Stream_Text, TextPos, General_ID).find(ID_ToFind)==0)
+                             Stream_Erase(Stream_Text, TextPos);
+
+                    //Erasing the stream
+                    Stream_Erase((stream_t)StreamKind, Complete_Stream->StreamPos_ToRemove[StreamKind][Pos]);
+
+                    //Moving other StreamPos
+                    for (size_t Pos2=Pos+1; Pos2<Complete_Stream->StreamPos_ToRemove[StreamKind].size(); Pos2++)
+                        Complete_Stream->StreamPos_ToRemove[StreamKind][Pos2]--;
+
+                    //Informing that the menu must be recalculated - TODO: only the related programs
+                    if (StreamKind!=Stream_Menu)
+                    {
+                        for (complete_stream::transport_stream::programs::iterator Program=Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs.begin(); Program!=Complete_Stream->Transport_Streams[Complete_Stream->transport_stream_id].Programs.end(); ++Program)
+                            Program->second.Update_Needed_StreamPos=true;
+                    }
+                    else if (Complete_Stream->StreamPos_ToRemove[StreamKind][Pos]<Complete_Stream->program_number_Order.size())
+                    {
+                        Complete_Stream->program_number_Order.erase(Complete_Stream->program_number_Order.begin()+Complete_Stream->StreamPos_ToRemove[StreamKind][Pos]);
+                    }
+                }
+                while (Pos);
+                Complete_Stream->StreamPos_ToRemove[StreamKind].clear();
+            }
+
+        Status[IsUpdated]=true;
+        Status[User_19]=true;
+    }
 }
 
 //---------------------------------------------------------------------------

@@ -909,7 +909,7 @@ string Angles2String(angles Angles)
         case -90:   ToReturn+='X'; break; //No standard for that
         default :   ToReturn+=(Angles.Elevation>0?'U':'B');
                     //if (Angles.phi!=35 && Angles.phi!=-15)
-                        ToReturn+=ToAngle3Digits(Angles.Elevation);
+                        ToReturn+=ToAngle3Digits(Angles.Elevation<0?-Angles.Elevation:Angles.Elevation);
     }
 
     ToReturn+='_';
@@ -2316,7 +2316,7 @@ void File_DolbyE::evo_protection()
     };
     Skip_BS(len_primary,                                        "protection_bits_primary");
     if (len_second)
-        Skip_BS(len_primary,                                    "protection_bits_secondary");
+        Skip_BS(len_second,                                     "protection_bits_secondary");
 
     Element_End0();
 }
@@ -2326,6 +2326,7 @@ void File_DolbyE::evo_protection()
 void File_DolbyE::object_audio_metadata_payload()
 {
     nonstd_bed_channel_assignment_masks.clear();
+    b_object_in_bed_or_isf.clear();
     ObjectElements.clear();
 
     Element_Begin1("object_audio_metadata_payload");
@@ -2416,10 +2417,7 @@ void File_DolbyE::program_assignment()
                         nonstd_bed_channel_assignment_mask=AC3_bed_channel_assignment_mask_2_nonstd(bed_channel_assignment_mask);
                     }
                     else
-                    {
-                        int32u nonstd_bed_channel_assignment_mask;
                         Get_S3 (17, nonstd_bed_channel_assignment_mask, "nonstd_bed_channel_assignment_mask");
-                    }
                     Param_Info1(AC3_nonstd_bed_channel_assignment_mask_ChannelLayout(nonstd_bed_channel_assignment_mask));
                     nonstd_bed_channel_assignment_masks.push_back(nonstd_bed_channel_assignment_mask);
                     size_t BedChannelCount=BedChannelConfiguration_ChannelCount(nonstd_bed_channel_assignment_mask);

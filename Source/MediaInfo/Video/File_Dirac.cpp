@@ -52,6 +52,8 @@ const char* Dirac_base_video_format(intu base_video_format)
         case  18 : return "4K-50";
         case  19 : return "8K-60";
         case  20 : return "8K-50";
+        case  21 : return "1080p24";
+        case  22 : return "Pro486";
         default  : return "";
     }
 }
@@ -168,7 +170,7 @@ void Dirac_base_video_format(int32u   base_video_format,
                     chroma_format=2;
                     source_sampling=0;
                     clean_width=176;
-                    clean_height=144;
+                    clean_height=120;
                     clean_left_offset=0;
                     clean_top_offset=0;
                     frame_rate=Dirac_frame_rate(9);
@@ -341,7 +343,7 @@ void Dirac_base_video_format(int32u   base_video_format,
                     return;
         case  17 :  frame_width=3840;
                     frame_height=2160;
-                    chroma_format=0;
+                    chroma_format=1;
                     source_sampling=0;
                     clean_width=3840;
                     clean_height=2160;
@@ -352,7 +354,7 @@ void Dirac_base_video_format(int32u   base_video_format,
                     return;
         case  18 :  frame_width=3840;
                     frame_height=2160;
-                    chroma_format=0;
+                    chroma_format=1;
                     source_sampling=0;
                     clean_width=3840;
                     clean_height=2160;
@@ -363,7 +365,7 @@ void Dirac_base_video_format(int32u   base_video_format,
                     return;
         case  19 :  frame_width=7680;
                     frame_height=4320;
-                    chroma_format=0;
+                    chroma_format=1;
                     source_sampling=0;
                     clean_width=7680;
                     clean_height=4320;
@@ -374,7 +376,7 @@ void Dirac_base_video_format(int32u   base_video_format,
                     return;
         case  20 :  frame_width=7680;
                     frame_height=4320;
-                    chroma_format=0;
+                    chroma_format=1;
                     source_sampling=0;
                     clean_width=7680;
                     clean_height=4320;
@@ -382,6 +384,28 @@ void Dirac_base_video_format(int32u   base_video_format,
                     clean_top_offset=0;
                     frame_rate=Dirac_frame_rate(6);
                     pixel_aspect_ratio=Dirac_pixel_aspect_ratio(1);
+                    return;
+        case  21 :  frame_width=1920;
+                    frame_height=1080;
+                    chroma_format=1;
+                    source_sampling=0;
+                    clean_width=1920;
+                    clean_height=1080;
+                    clean_left_offset=0;
+                    clean_top_offset=0;
+                    frame_rate=Dirac_frame_rate(1);
+                    pixel_aspect_ratio=Dirac_pixel_aspect_ratio(1);
+                    return;
+        case  22 :  frame_width=720;
+                    frame_height=486;
+                    chroma_format=1;
+                    source_sampling=1;
+                    clean_width=720;
+                    clean_height=486;
+                    clean_left_offset=0;
+                    clean_top_offset=0;
+                    frame_rate=Dirac_frame_rate(4);
+                    pixel_aspect_ratio=Dirac_pixel_aspect_ratio(2);
                     return;
         default  :  frame_width=0;
                     frame_height=0;
@@ -631,7 +655,8 @@ void File_Dirac::Sequence_header()
         Dirac_base_video_format(base_video_format, frame_width, frame_height, chroma_format, source_sampling,
                                 clean_width, clean_height, clean_left_offset, clean_top_offset,
                                 frame_rate, pixel_aspect_ratio);
-        TEST_SB_SKIP(                                           "custom dimensions flag");
+        bool custom_dimensions_flag;
+        TEST_SB_GET (custom_dimensions_flag,                    "custom dimensions flag");
             Get_UI (frame_width,                                "frame width");
             Get_UI (frame_height,                               "frame height");
         TEST_SB_END();
@@ -673,8 +698,12 @@ void File_Dirac::Sequence_header()
             Get_UI (clean_left_offset,                          "clean left offset");
             Get_UI (clean_top_offset,                           "clean top offset");
         TESTELSE_SB_ELSE(                                       "custom clean area flag");
-            clean_width=frame_width;
-            clean_height=frame_height;
+            //The clean area of the base video format is kept, except with custom dimensions which it does not fit (some encoders write custom dimensions only)
+            if (custom_dimensions_flag)
+            {
+                clean_width=frame_width;
+                clean_height=frame_height;
+            }
         TESTELSE_SB_END();
         TEST_SB_SKIP(                                           "custom signal range flag");
             int32u custom_signal_range_index;
