@@ -1069,7 +1069,7 @@ int File_DtsUhd::Frame()
     auto Result=FTOC();
     if (Result!=DTSUHD_OK)
         return Result;
-    if (UnpackMDFrame())
+    if (UnpackMDFrame() || !Element_IsOK())
         return DTSUHD_INVALID_FRAME;
     UpdateDescriptor();
 
