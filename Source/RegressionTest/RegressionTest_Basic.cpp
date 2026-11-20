@@ -27,19 +27,48 @@ using namespace std;
 /* Events                                                                  */
 /***************************************************************************/
 
-//Parsing times (Basic\New\Times.csv): a line per file of the list, with its complete name, an empty column, its size
-//and the seconds of its parsing. A file referenced by another one (e.g. the files of a DCP) is parsed while the file
-//referencing it is parsed, so its time is in the time of this file, and it has no line.
+//Parsing times (Basic\New\Times.csv): a line per file of the list, with its complete name, an empty column, its size,
+//the seconds of its parsing, then the CPU seconds of the process, its count of read operations, its count of bytes read
+//and its count of other input/output operations during the parsing. The files are parsed one by one, and the reads
+//from the cache are counted, so the counts of a file do not depend on the disk, unlike the seconds.
+//A file referenced by another one (e.g. the files of a DCP) is parsed while the file referencing it is parsed, so its
+//time and counts are in the ones of this file, and it has no line.
 //The start event of a file has its name. The end events are sent by the parser of the file and by its sub-parsers,
 //with their depth as the count of stream IDs: 1 for the parser of a file of the list, 1 more for a sub-parser and for
 //the parser of a referenced file.
 //The log events of the library are stored as they are, each on its own line, after the line of the file being parsed
 //if any. E.g. a file which can not be opened or which is not found has no start event, its name is in its log event.
 
+struct process_counters
+{
+    float64 CPU; //Seconds, user and kernel
+    int64u  Reads;
+    int64u  Bytes;
+    int64u  Others;
+};
+
+static process_counters Process_Counters_Get()
+{
+    process_counters Counters={};
+    FILETIME Creation, Exit, Kernel, User;
+    if (GetProcessTimes(GetCurrentProcess(), &Creation, &Exit, &Kernel, &User))
+        Counters.CPU=((((int64u)Kernel.dwHighDateTime)<<32|Kernel.dwLowDateTime)+(((int64u)User.dwHighDateTime)<<32|User.dwLowDateTime))/10000000.0; //In 100 ns
+    IO_COUNTERS IO;
+    if (GetProcessIoCounters(GetCurrentProcess(), &IO))
+    {
+        Counters.Reads=IO.ReadOperationCount;
+        Counters.Bytes=IO.ReadTransferCount;
+        Counters.Others=IO.OtherOperationCount;
+    }
+    return Counters;
+}
+
 struct opened_file
 {
     chrono::steady_clock::time_point Start;
     chrono::steady_clock::time_point End;
+    process_counters Start_Counters;
+    process_counters End_Counters;
     int64u Size;
     bool   IsEnded;
 };
@@ -61,7 +90,13 @@ static void Basic_Close(struct UserHandle_struct* UserHandle, size_t Count)
         {
             const opened_file& Opened=UserHandle->Opened[0];
             float64 Seconds=chrono::duration<float64>((Opened.IsEnded?Opened.End:chrono::steady_clock::now())-Opened.Start).count();
-            UserHandle->Time_File.Write(__T(';')+Ztring::ToZtring(Opened.Size)+__T(';')+Ztring::ToZtring(Seconds, 3)+EOL+UserHandle->Logs);
+            process_counters End=Opened.IsEnded?Opened.End_Counters:Process_Counters_Get();
+            UserHandle->Time_File.Write(__T(';')+Ztring::ToZtring(Opened.Size)+__T(';')+Ztring::ToZtring(Seconds, 3)
+                                       +__T(';')+Ztring::ToZtring(End.CPU-Opened.Start_Counters.CPU, 3)
+                                       +__T(';')+Ztring::ToZtring(End.Reads-Opened.Start_Counters.Reads)
+                                       +__T(';')+Ztring::ToZtring(End.Bytes-Opened.Start_Counters.Bytes)
+                                       +__T(';')+Ztring::ToZtring(End.Others-Opened.Start_Counters.Others)
+                                       +EOL+UserHandle->Logs);
             UserHandle->Logs.clear();
         }
         UserHandle->Opened.pop_back();
@@ -82,6 +117,7 @@ void Basic_General_Start_0 (struct MediaInfo_Event_General_Start_0* Event, struc
         UserHandle->Time_File.Write(Ztring(Event->FileName_Unicode)+__T(';')); //Name written before the parsing, so the file of a crash or of a hang is known
     opened_file Opened;
     Opened.Start=chrono::steady_clock::now();
+    Opened.Start_Counters=Process_Counters_Get();
     Opened.Size=Event->Stream_Size;
     Opened.IsEnded=false;
     UserHandle->Opened.push_back(Opened);
@@ -100,6 +136,7 @@ void Basic_General_End_0 (struct MediaInfo_Event_General_End_0* Event, struct Us
     if (!Opened.IsEnded)
     {
         Opened.End=chrono::steady_clock::now();
+        Opened.End_Counters=Process_Counters_Get();
         Opened.IsEnded=true;
     }
     UserHandle->Parser.clear();
@@ -182,11 +219,16 @@ struct time_line
     Ztring Name;
     Ztring Size;
     Ztring Seconds;
+    Ztring CPU; //This one and the next ones are empty in a line written without them
+    Ztring Reads;
+    Ztring Bytes;
+    Ztring Others;
 };
 
 static vector<time_line> Basic_Times_Load(const Ztring& FileName)
 {
-    //Lines of a Times.csv file, the fields are read from the end as the complete name may have a ';'
+    //Lines of a Times.csv file, the fields are read from the end as the complete name may have a ';', with the CPU time
+    //and the counts after the seconds, or without them in a line written before they were added
     vector<time_line> Lines;
     File F;
     if (!F.Open(FileName))
@@ -204,24 +246,54 @@ static vector<time_line> Basic_Times_Load(const Ztring& FileName)
             End=Text.size();
         Ztring Line=Text.substr(Begin, End-Begin);
         Begin=End+EOL_Size;
-        size_t Seconds_Pos=Line.rfind(__T(';'));
-        size_t Size_Pos=(Seconds_Pos==string::npos || !Seconds_Pos)?string::npos:Line.rfind(__T(';'), Seconds_Pos-1);
-        size_t Name_End=(Size_Pos==string::npos || !Size_Pos)?string::npos:Line.rfind(__T(';'), Size_Pos-1);
-        if (Name_End==string::npos || Name_End+1!=Size_Pos)
+
+        //Positions of the last separators, from the end
+        size_t Pos[7];
+        size_t Pos_Count=0;
+        size_t Search=Line.size();
+        while (Pos_Count<7 && Search)
+        {
+            Search=Line.rfind(__T(';'), Search-1);
+            if (Search==string::npos)
+                break;
+            Pos[Pos_Count++]=Search;
+        }
+        size_t Fields; //After the empty column
+        if (Pos_Count>=3 && Pos[2]+1==Pos[1])
+            Fields=2; //Size and seconds, tested first as a line with the counts never has an empty read count
+        else if (Pos_Count==7 && Pos[6]+1==Pos[5])
+            Fields=6; //Size, seconds, CPU time and counts
+        else
             continue; //Not a line of times with its empty column, e.g. the name of a file whose parsing did not end or a log
         time_line Item;
-        Item.Name=Line.substr(0, Name_End);
-        Item.Size=Line.substr(Size_Pos+1, Seconds_Pos-Size_Pos-1);
-        Item.Seconds=Line.substr(Seconds_Pos+1);
+        Item.Name=Line.substr(0, Pos[Fields]);
+        Ztring* Items[6]={&Item.Size, &Item.Seconds, &Item.CPU, &Item.Reads, &Item.Bytes, &Item.Others};
+        for (size_t Field=0; Field<Fields; Field++)
+        {
+            size_t Field_Begin=Pos[Fields-1-Field]+1;
+            size_t Field_End=Field+1<Fields?Pos[Fields-2-Field]:Line.size();
+            *Items[Field]=Line.substr(Field_Begin, Field_End-Field_Begin);
+        }
         Lines.push_back(Item);
     }
     return Lines;
 }
 
+static Ztring Basic_Times_Counts_Diff(const time_line& N, const time_line& R)
+{
+    //CPU time and counts as "new --- ref", if one of the lines has them
+    if (N.CPU.empty() && R.CPU.empty())
+        return Ztring();
+    return __T(';')+N.CPU+__T(" --- ")+R.CPU+__T(';')+N.Reads+__T(" --- ")+R.Reads+__T(';')+N.Bytes+__T(" --- ")+R.Bytes+__T(';')+N.Others+__T(" --- ")+R.Others;
+}
+
 static void Basic_Times_Diff(const Ztring& DataBaseDirectory)
 {
-    //Basic\Diff\Times.csv: the files whose parsing time is different by more than 1 second from Basic\Ref\Times.csv, or
-    //whose size is different, as "new --- ref", and the files only in one of them
+    //Basic\Diff\Times.csv: the files whose parsing time is different by more than 1 second from Basic\Ref\Times.csv,
+    //whose size is different, whose CPU time is different by more than 25% and 0.5 second, or whose counts are
+    //different, as "new --- ref", and the files only in one of them. The CPU time and the counts are compared only if
+    //both lines have them. The CPU time is counted by steps of 15.625 ms, and the parsing of a file waiting for the disk
+    //does not take the same CPU time in each run, hence its tolerance.
     Ztring Ref_FileName=DataBaseDirectory+__T("\\Basic\\Ref\\Times.csv");
     if (!File::Exists(Ref_FileName))
         return; //No reference times, New\Times.csv may be copied as Ref\Times.csv
@@ -243,7 +315,7 @@ static void Basic_Times_Diff(const Ztring& DataBaseDirectory)
         size_t& Used=Ref_Lines_Used[N.Name];
         if (Ref_Line==Ref_Lines.end() || Used>=Ref_Line->second.size())
         {
-            Diff+=N.Name+__T(";;")+N.Size+__T(" --- ;")+N.Seconds+__T(" --- ")+EOL;
+            Diff+=N.Name+__T(";;")+N.Size+__T(" --- ;")+N.Seconds+__T(" --- ")+Basic_Times_Counts_Diff(N, time_line())+EOL;
             continue;
         }
         const time_line& R=Ref[Ref_Line->second[Used]];
@@ -251,12 +323,21 @@ static void Basic_Times_Diff(const Ztring& DataBaseDirectory)
         Used++;
         float64 Seconds_Diff=N.Seconds.To_float64()-R.Seconds.To_float64();
         bool IsSizeDiff=N.Size!=R.Size;
-        if (Seconds_Diff>1 || Seconds_Diff<-1 || IsSizeDiff) //1 second of tolerance
-            Diff+=N.Name+__T(";;")+(IsSizeDiff?(N.Size+__T(" --- ")+R.Size):N.Size)+__T(';')+N.Seconds+__T(" --- ")+R.Seconds+EOL;
+        bool IsCountsDiff=false;
+        if (!N.CPU.empty() && !R.CPU.empty())
+        {
+            float64 CPU_Diff=N.CPU.To_float64()-R.CPU.To_float64();
+            float64 CPU_Tolerance=R.CPU.To_float64()/4;
+            if (CPU_Tolerance<0.5)
+                CPU_Tolerance=0.5;
+            IsCountsDiff=CPU_Diff>CPU_Tolerance || CPU_Diff<-CPU_Tolerance || N.Reads!=R.Reads || N.Bytes!=R.Bytes || N.Others!=R.Others;
+        }
+        if (Seconds_Diff>1 || Seconds_Diff<-1 || IsSizeDiff || IsCountsDiff) //1 second of tolerance
+            Diff+=N.Name+__T(";;")+(IsSizeDiff?(N.Size+__T(" --- ")+R.Size):N.Size)+__T(';')+N.Seconds+__T(" --- ")+R.Seconds+Basic_Times_Counts_Diff(N, R)+EOL;
     }
     for (size_t Pos=0; Pos<Ref.size(); Pos++)
         if (!Ref_IsUsed[Pos])
-            Diff+=Ref[Pos].Name+__T(";; --- ")+Ref[Pos].Size+__T("; --- ")+Ref[Pos].Seconds+EOL;
+            Diff+=Ref[Pos].Name+__T(";; --- ")+Ref[Pos].Size+__T("; --- ")+Ref[Pos].Seconds+Basic_Times_Counts_Diff(time_line(), Ref[Pos])+EOL;
 
     if (!Diff.empty())
     {
@@ -434,6 +515,8 @@ void RegressionTest_Basic(Ztring Files, Ztring DataBaseDirectory, int32u Scenari
     for (size_t StreamKind=0; StreamKind<Stream_Max; StreamKind++)
         File::Delete(DataBaseDirectory+__T("\\Basic\\Diff\\")+Ztring::ToZtring(StreamKind)+__T(".csv")); //Diff of a previous run, stale during this run and if this run does not finish
     UserHandle.Time_File.Open(DataBaseDirectory+__T("\\Basic\\New\\Times.csv"), File::Access_Write_Append);
+    TIME_ZONE_INFORMATION Time_Zone;
+    GetTimeZoneInformation(&Time_Zone); //The first call of the process (e.g. for the local dates of a file) reads the time zone data, not counted in the input/output operations of the first file
 
     cout<<" Analyzing"<<endl;
     MIL.Open(Files);
