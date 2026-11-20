@@ -5255,6 +5255,45 @@ void File__Analyze::Streams_Finish_Conformance(stream_t StreamKind, size_t Strea
     }
     Data.Streams_Finish_Conformance();
 }
+
+//---------------------------------------------------------------------------
+void File__Analyze::Conformance_Stream_Move(stream_t StreamKind, size_t StreamPos, size_t StreamPos_Target)
+{
+    if (!Conformance_Data) {
+        return;
+    }
+    auto& Data = *(conformance_data*)Conformance_Data;
+    for (size_t Level = 0; Level < Conformance_Max; Level++) {
+        for (auto Items : { &Data.ConformanceErrors_Total[Level], &Data.ConformanceErrors[Level] }) {
+            for (auto& Item : *Items) {
+                if (Item.StreamKind == StreamKind && Item.StreamPos == StreamPos) {
+                    Item.StreamPos = StreamPos_Target;
+                }
+            }
+        }
+    }
+}
+
+//---------------------------------------------------------------------------
+void File__Analyze::Conformance_Stream_Erase(stream_t StreamKind, size_t StreamPos)
+{
+    if (!Conformance_Data) {
+        return;
+    }
+    auto& Data = *(conformance_data*)Conformance_Data;
+    for (size_t Level = 0; Level < Conformance_Max; Level++) {
+        for (auto Items : { &Data.ConformanceErrors_Total[Level], &Data.ConformanceErrors[Level] }) {
+            for (auto& Item : *Items) {
+                if (Item.StreamKind == StreamKind && Item.StreamPos != (size_t)-1 && Item.StreamPos > StreamPos) {
+                    Item.StreamPos--;
+                }
+            }
+        }
+    }
+    if (Data.StreamKind_Last == StreamKind && Data.StreamPos_Last > StreamPos) {
+        Data.StreamPos_Last--;
+    }
+}
 #endif
 
 //---------------------------------------------------------------------------

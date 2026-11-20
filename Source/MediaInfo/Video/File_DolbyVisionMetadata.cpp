@@ -108,7 +108,8 @@ static std::vector<float64> Values_Get(const char* Text)
 }
 
 //---------------------------------------------------------------------------
-// Trims (Level2 after 3 unused values, Level8 L8Trim): lift, gain, gamma, chroma weight, saturation gain, tone detail
+// Trims (Level2 Trim after 3 unused values in version 2.x to 5.x, Level8 L8Trim, L2 and L8 Trim in version 6.x): lift, gain, gamma, chroma weight, saturation gain, tone detail,
+// then mid contrast bias and highlight clipping in L8 Trim of version 6.x (separate elements in version 4.x and 5.x)
 // Each one must fit in its 12-bit RPU field (2048 for 0), with slope and offset computed from lift and gain and power from gamma as Dolby Vision tools do
 struct trim_range
 {
@@ -117,40 +118,37 @@ struct trim_range
     int64s First_Value = 0;
     string First_Trim;
 };
-static const char* Trim_Fields[] = { "trim_slope", "trim_offset", "trim_power", "trim_chroma_weight", "trim_saturation_gain", "ms_weight" };
-static void Trim_Check(const char* Text, size_t Unused, int64u Frame, std::map<string, trim_range>& Ranges)
+typedef std::map<string, trim_range> trim_ranges; // Per element and RPU field, e.g. "Trim gives trim_offset"
+static const char* Trim_Fields[] = { "trim_slope", "trim_offset", "trim_power", "trim_chroma_weight", "trim_saturation_gain", "ms_weight", "target_mid_contrast", "clip_trim" };
+static void Trim_Range_Add(trim_ranges& Ranges, const char* Element_Name, const char* Field, float64 RPU_Value, const char* Text, int64u Frame)
+{
+    auto Value = round(RPU_Value);
+    if (Value >= 0 && Value <= 4095)
+        return;
+    auto& Range = Ranges[string(Element_Name) + " gives " + Field];
+    if (!Range.Count)
+    {
+        Range.First_Frame = Frame;
+        Range.First_Value = (int64s)(Value < -1e9 ? -1e9 : (Value > 1e9 ? 1e9 : Value));
+        Range.First_Trim = Text;
+    }
+    Range.Count++;
+}
+static void Trim_Check(trim_ranges& Ranges, const char* Element_Name, const char* Text, size_t Unused, size_t Count, int64u Frame)
 {
     auto Values = Values_Get(Text);
-    if (Values.size() != Unused + 6)
+    if (Values.size() != Unused + Count)
         return;
     auto Lift = Values[Unused];
     auto Gain = Values[Unused + 1];
     auto Gamma = Values[Unused + 2];
-    float64 RPU_Values[6] =
-    {
-        ((Gain + 2) * (1 - Lift / 2) - 2) * 2048 + 2048,
-        ((Gain + 2) * (Lift / 2)) * 2048 + 2048,
-        1 + Gamma / 2 > 0 ? (2 / (1 + Gamma / 2) - 2) * 2048 + 2048 : 1e9,
-        Values[Unused + 3] * 2048 + 2048,
-        Values[Unused + 4] * 2048 + 2048,
-        Values[Unused + 5] * 2048 + 2048,
-    };
-    for (size_t i = 0; i < 6; i++)
-    {
-        auto Value = round(RPU_Values[i]);
-        if (Value >= 0 && Value <= 4095)
-            continue;
-        auto& Range = Ranges[Trim_Fields[i]];
-        if (!Range.Count)
-        {
-            Range.First_Frame = Frame;
-            Range.First_Value = (int64s)(Value < -1e9 ? -1e9 : (Value > 1e9 ? 1e9 : Value));
-            Range.First_Trim = Text;
-        }
-        Range.Count++;
-    }
+    Trim_Range_Add(Ranges, Element_Name, Trim_Fields[0], ((Gain + 2) * (1 - Lift / 2) - 2) * 2048 + 2048, Text, Frame);
+    Trim_Range_Add(Ranges, Element_Name, Trim_Fields[1], ((Gain + 2) * (Lift / 2)) * 2048 + 2048, Text, Frame);
+    Trim_Range_Add(Ranges, Element_Name, Trim_Fields[2], 1 + Gamma / 2 > 0 ? (2 / (1 + Gamma / 2) - 2) * 2048 + 2048 : 1e9, Text, Frame);
+    for (size_t i = 3; i < Count; i++)
+        Trim_Range_Add(Ranges, Element_Name, Trim_Fields[i], Values[Unused + i] * 2048 + 2048, Text, Frame);
 }
-static void Trims_Collect(XMLElement* Element, int64u Frame, std::map<string, trim_range>& Level2, std::map<string, trim_range>& Level8)
+static void Trims_Collect(XMLElement* Element, int64u Frame, trim_ranges& Level2, trim_ranges& Level8)
 {
     for (XMLElement* Item = Element->FirstChildElement(); Item; Item = Item->NextSiblingElement())
     {
@@ -159,17 +157,35 @@ static void Trims_Collect(XMLElement* Element, int64u Frame, std::map<string, tr
         {
             if (XMLElement* Trim_Item = Child(Item, "Trim"))
                 if (const char* Text = Trim_Item->GetText())
-                    Trim_Check(Text, 3, Frame, Level2);
+                    Trim_Check(Level2, "Trim", Text, 3, 6, Frame);
         }
         else if (Is(Item, "Level8"))
         {
             if (XMLElement* Trim_Item = Child(Item, "L8Trim"))
                 if (const char* Text = Trim_Item->GetText())
-                    Trim_Check(Text, 0, Frame, Level8);
+                    Trim_Check(Level8, "L8Trim", Text, 0, 6, Frame);
+            static const char* Names[] = { "MidContrastBias", "HighlightClipping" };
+            for (size_t i = 0; i < 2; i++)
+                if (XMLElement* Value_Item = Child(Item, Names[i]))
+                    if (const char* Text = Value_Item->GetText())
+                    {
+                        auto Values = Values_Get(Text);
+                        if (Values.size() == 1)
+                            Trim_Range_Add(Level8, Names[i], Trim_Fields[6 + i], Values[0] * 2048 + 2048, Text, Frame);
+                    }
         }
         else
             Trims_Collect(Item, Frame, Level2, Level8);
     }
+}
+static std::vector<std::pair<string, string>> Trims_Messages(const trim_ranges& Level2, const trim_ranges& Level8)
+{
+    // Field and message of the trims out of range
+    std::vector<std::pair<string, string>> Messages;
+    for (const auto& Level : { std::make_pair("DolbyVision Level2", &Level2), std::make_pair("DolbyVision Level8", &Level8) })
+        for (const auto& Range : *Level.second)
+            Messages.emplace_back(Level.first, Range.first + " out of range " + std::to_string(Range.second.Count) + " time(s), first at frame " + std::to_string(Range.second.First_Frame) + " with \"" + Range.second.First_Trim + "\" (actual " + std::to_string(Range.second.First_Value) + ", expected 0 to 4095)");
+    return Messages;
 }
 
 //---------------------------------------------------------------------------
@@ -2668,7 +2684,7 @@ void File_DolbyVisionMetadata::Conformance_MDF(XMLElement* Root, XMLElement* Tra
     // Shots
     std::set<string> TIDs;
     std::vector<std::pair<int64u, int64u>> Shots;
-    std::map<string, trim_range> Level2_Ranges, Level8_Ranges;
+    trim_ranges Level2_Ranges, Level8_Ranges;
     bool DynamicData_Unexpected_Found = HasSchema;
     for (XMLElement* Shot = Child(Track, "Shot"); Shot; Shot = Next(Shot, "Shot"))
     {
@@ -2697,13 +2713,8 @@ void File_DolbyVisionMetadata::Conformance_MDF(XMLElement* Root, XMLElement* Tra
     Conformance_Shots(Shots, StreamPos);
 
     // Trims must fit in the RPU
-    for (const auto& Level : { std::make_pair("Level2 Trim", &Level2_Ranges), std::make_pair("Level8 L8Trim", &Level8_Ranges) })
-    {
-        string Level_Name(Level.first);
-        auto Space = Level_Name.find(' ');
-        for (const auto& Range : *Level.second)
-            Fill_Conformance(("DolbyVision " + Level_Name.substr(0, Space)).c_str(), Level_Name.substr(Space + 1) + " gives " + Range.first + " out of range " + std::to_string(Range.second.Count) + " time(s), first at frame " + std::to_string(Range.second.First_Frame) + " with \"" + Range.second.First_Trim + "\" (actual " + std::to_string(Range.second.First_Value) + ", expected 0 to 4095)", {}, Conformance_Warning, Stream_Video, StreamPos);
-    }
+    for (const auto& Message : Trims_Messages(Level2_Ranges, Level8_Ranges))
+        Fill_Conformance(Message.first.c_str(), Message.second, {}, Conformance_Warning, Stream_Video, StreamPos);
 
     // Trims must reference a declared target display
     for (const auto& TID : TIDs)
@@ -2767,6 +2778,7 @@ void File_DolbyVisionMetadata::Conformance_V6(XMLElement* Root)
     std::set<string> TIDs;
     std::vector<std::pair<int64u, int64u>> Shots;
     std::vector<string> MaxCLLs;
+    trim_ranges Level2_Ranges, Level8_Ranges;
     for (XMLElement* Track = Child(Root, "Track"); Track; Track = Next(Track, "Track"))
     {
         const char* Type = Track->Attribute("type");
@@ -2809,9 +2821,18 @@ void File_DolbyVisionMetadata::Conformance_V6(XMLElement* Root)
                         if (const char* Text = ID->GetText())
                             Target_IDs.insert(Trim(Text));
                 if (Is(Item, "L2") || Is(Item, "L8"))
+                {
+                    const auto IsL2 = Is(Item, "L2");
+                    const char* Frames = Item->Attribute("f");
+                    auto Frame = Frames ? Values_Get(Frames) : std::vector<float64>();
                     for (XMLElement* Trim_Item = Child(Item, "Trim"); Trim_Item; Trim_Item = Next(Trim_Item, "Trim"))
+                    {
                         if (const char* Text = Trim_Item->Attribute("t"))
                             TIDs.insert(Text);
+                        if (const char* Text = Trim_Item->GetText())
+                            Trim_Check(IsL2 ? Level2_Ranges : Level8_Ranges, "Trim", Text, 0, IsL2 ? 6 : 8, Frame.empty() ? 0 : (int64u)Frame[0]);
+                    }
+                }
             }
     }
 
@@ -2823,6 +2844,10 @@ void File_DolbyVisionMetadata::Conformance_V6(XMLElement* Root)
 
     // Shots
     Conformance_Shots(Shots);
+
+    // Trims must fit in the RPU
+    for (const auto& Message : Trims_Messages(Level2_Ranges, Level8_Ranges))
+        Fill_Conformance(Message.first.c_str(), Message.second, {}, Conformance_Warning, Stream_Video, 0);
 
     // Trims must reference a declared target
     if (!Target_IDs.empty())

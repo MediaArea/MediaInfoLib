@@ -2070,6 +2070,125 @@ bool File__Analyze::Fill_HDR_Format(stream_t StreamKind, size_t StreamPos, const
     return true;
 }
 
+//---------------------------------------------------------------------------
+Ztring File__Analyze::DolbyVision_EL_Layers(File__Analyze& Source, size_t Source_Pos, const std::map<std::string, Ztring>* Container)
+{
+    //Dolby Vision layers of a video stream, from the container configuration if any, else from the stream
+    if (Container)
+    {
+        auto Info=Container->find("HDR_Format");
+        if (Info!=Container->end() && Info->second==__T("Dolby Vision"))
+        {
+            auto Settings=Container->find("HDR_Format_Settings");
+            if (Settings!=Container->end())
+                return Settings->second;
+        }
+    }
+    ZtringList Formats, Settings;
+    Formats.Separator_Set(0, __T(" / "));
+    Settings.Separator_Set(0, __T(" / "));
+    Formats.Write(Source.Retrieve_Const(Stream_Video, Source_Pos, Video_HDR_Format));
+    Settings.Write(Source.Retrieve_Const(Stream_Video, Source_Pos, Video_HDR_Format_Settings));
+    auto Pos=Formats.Find(__T("Dolby Vision"));
+    if (Pos==Error || Pos>=Settings.size())
+        return Ztring();
+    return Settings[Pos];
+}
+
+//---------------------------------------------------------------------------
+bool File__Analyze::DolbyVision_EL_IsAlone(File__Analyze& Source, size_t Source_Pos, const std::map<std::string, Ztring>* Container)
+{
+    //Dolby Vision enhancement layer without the base layer (e.g. in its own PID or track)
+    ZtringList Layers;
+    Layers.Separator_Set(0, __T("+"));
+    Layers.Write(DolbyVision_EL_Layers(Source, Source_Pos, Container));
+    return Layers.Find(__T("BL"))==Error && (Layers.Find(__T("EL"))!=Error || Layers.Find(__T("MEL"))!=Error || Layers.Find(__T("FEL"))!=Error);
+}
+
+//---------------------------------------------------------------------------
+void File__Analyze::DolbyVision_EL_Merge(File__Analyze& Source, size_t Source_Pos, const std::map<std::string, Ztring>* Container, size_t StreamPos)
+{
+    //HDR format, the Dolby Vision configuration from the container has priority, the RPU adds what is not in the configuration
+    static const char* Names[]={"HDR_Format", "HDR_Format_Version", "HDR_Format_Profile", "HDR_Format_Level", "HDR_Format_Settings", "HDR_Format_Compression", "HDR_Format_Compatibility"};
+    ZtringList Formats;
+    Formats.Separator_Set(0, __T(" / "));
+    Formats.Write(Source.Retrieve_Const(Stream_Video, Source_Pos, Video_HDR_Format));
+    auto Stream_DolbyVision=Formats.Find(__T("Dolby Vision"));
+    auto Container_IsDolbyVision=false;
+    if (Container)
+    {
+        auto Info=Container->find("HDR_Format");
+        Container_IsDolbyVision=Info!=Container->end() && Info->second==__T("Dolby Vision");
+    }
+    std::map<std::string, Ztring> HDR;
+    Ztring Stream_Layers;
+    for (const auto Name : Names)
+    {
+        Ztring Stream_Value;
+        if (Stream_DolbyVision!=Error)
+        {
+            ZtringList List;
+            List.Separator_Set(0, __T(" / "));
+            List.Write(Source.Retrieve_Const(Stream_Video, Source_Pos, Name));
+            if (Stream_DolbyVision<List.size())
+                Stream_Value=List[Stream_DolbyVision];
+        }
+        if (!strcmp(Name, "HDR_Format_Settings"))
+            Stream_Layers=Stream_Value;
+        if (Container_IsDolbyVision)
+        {
+            auto Container_Value=Container->find(Name);
+            if (Container_Value!=Container->end() && !Container_Value->second.empty())
+                Stream_Value=Container_Value->second;
+        }
+        HDR[Name]=Stream_Value;
+    }
+    if (HDR["HDR_Format"]!=__T("Dolby Vision"))
+        return;
+
+    //Layers, enhancement layer type from the RPU, with the base layer
+    ZtringList Layers, Layers_RPU;
+    Layers.Separator_Set(0, __T("+"));
+    Layers_RPU.Separator_Set(0, __T("+"));
+    Layers.Write(HDR["HDR_Format_Settings"]);
+    Layers_RPU.Write(Stream_Layers);
+    auto EL_Pos=Layers.Find(__T("EL"));
+    if (EL_Pos!=Error)
+        for (const auto& Layer : Layers_RPU)
+            if (Layer==__T("MEL") || Layer==__T("FEL"))
+                Layers[EL_Pos]=Layer;
+    if (Layers.Find(__T("BL"))==Error)
+        Layers.insert(Layers.begin(), __T("BL"));
+    HDR["HDR_Format_Settings"]=Layers.Read();
+    Fill_HDR_Format(Stream_Video, StreamPos, HDR);
+
+    //Dolby Vision details, conformance of the enhancement layer added to the one of the base layer
+    auto Count=Source.Count_Get(Stream_Video, Source_Pos);
+    for (size_t i=0; i<Count; i++)
+    {
+        Ztring Name=Source.Retrieve_Const(Stream_Video, Source_Pos, i, Info_Name);
+        Ztring Value=Source.Retrieve_Const(Stream_Video, Source_Pos, i);
+        Ztring Options=Source.Retrieve_Const(Stream_Video, Source_Pos, i, Info_Options);
+        auto Name_UTF8=Name.To_UTF8();
+        if (Name==__T("DolbyVision") || !Name.rfind(__T("DolbyVision "), 0))
+        {
+            Fill(Stream_Video, StreamPos, Name_UTF8.c_str(), Value, true);
+            Fill_SetOptions(Stream_Video, StreamPos, Name_UTF8.c_str(), Options.To_UTF8().c_str());
+        }
+        else if (!Name.rfind(__T("ConformanceErrors"), 0) || !Name.rfind(__T("ConformanceWarnings"), 0) || !Name.rfind(__T("ConformanceInfos"), 0))
+        {
+            Ztring Current=Retrieve_Const(Stream_Video, StreamPos, Name_UTF8.c_str());
+            if (Name.find(__T(' '))==string::npos)
+                Value.From_Number(Current.To_int64u()+Value.To_int64u()); //Count of items
+            else if (!Current.empty() && Current!=Value)
+                Value=Current+__T(" / ")+Value;
+            Fill(Stream_Video, StreamPos, Name_UTF8.c_str(), Value, true);
+            if (!Options.empty())
+                Fill_SetOptions(Stream_Video, StreamPos, Name_UTF8.c_str(), Options.To_UTF8().c_str());
+        }
+    }
+}
+
 #if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_AV1_YES) || defined(MEDIAINFO_MPEG4_YES) || defined(MEDIAINFO_MXF_YES) || defined(MEDIAINFO_T35_YES)
 
 //---------------------------------------------------------------------------

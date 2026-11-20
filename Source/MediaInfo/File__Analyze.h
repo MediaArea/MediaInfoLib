@@ -1026,6 +1026,9 @@ public :
     void Fill_HDR(const hdr& HDR, size_t StreamPos=0); //Fills the HDR fields of a video stream from its HDR formats, a value common to all formats is shown once, else the values are aligned with " / "
     #endif
     bool Fill_HDR_Format(stream_t StreamKind, size_t StreamPos, const std::map<std::string, Ztring>& Values, bool Before=true); //Adds an HDR format (values of HDR_Format and HDR_Format_xxx fields) before or after the HDR formats already in a video or image stream, the values are aligned with " / ", false if the same HDR format with the same values is already there
+    Ztring DolbyVision_EL_Layers(File__Analyze& Source, size_t Source_Pos, const std::map<std::string, Ztring>* Container=nullptr); //Dolby Vision layers of a video stream of Source, from the container configuration if any
+    bool DolbyVision_EL_IsAlone(File__Analyze& Source, size_t Source_Pos, const std::map<std::string, Ztring>* Container=nullptr); //Dolby Vision enhancement layer without base layer
+    void DolbyVision_EL_Merge(File__Analyze& Source, size_t Source_Pos, const std::map<std::string, Ztring>* Container, size_t StreamPos); //Dolby Vision enhancement layer of a video stream of Source merged in the base layer video stream StreamPos
     #if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES)
     void Get_AmbientViewingEnvironment(float64& AmbientViewingEnvironment_Illuminance, Ztring& AmbientViewingEnvironment_Illuminance_string, Ztring& AmbientViewingEnvironment_Chromaticity);
     #endif
@@ -1867,6 +1870,8 @@ public :
         void                Merge_Conformance(bool FromConfig = false);
         void                Merge_Conformance(File__Analyze& Sub); //Items found by a sub-parser parsing a part of the current element
         void                Streams_Finish_Conformance(stream_t StreamKind = Stream_Max, size_t StreamPos = (size_t)-1);
+        void                Conformance_Stream_Move(stream_t StreamKind, size_t StreamPos, size_t StreamPos_Target); //Items about a stream moved to another stream (e.g. merged streams)
+        void                Conformance_Stream_Erase(stream_t StreamKind, size_t StreamPos); //Positions of the items about the next streams after the stream is erased
         virtual string      CreateElementName();
         string              BuildConformanceName(const string& ParserName, const char* Prefix, const char* Suffix);
         void                IsTruncated(int64u ExpectedSize = (int64u)-1, bool MoreThan = false, const char* Prefix = nullptr);
@@ -1881,6 +1886,8 @@ public :
         void                Merge_Conformance(bool FromConfig = false) {}
         void                Merge_Conformance(File__Analyze&) {}
         void                Streams_Finish_Conformance(stream_t = Stream_Max, size_t = (size_t)-1) {}
+        void                Conformance_Stream_Move(stream_t, size_t, size_t) {}
+        void                Conformance_Stream_Erase(stream_t, size_t) {}
         string              CreateElementName() { return {}; }
         string              BuildConformanceName(const string& ParserName, const char* Prefix, const char* Suffix) { return {}; }
         void                IsTruncated(int64u ExpectedSize = (int64u)-1, bool MoreThan = false, const char* = nullptr) {}
