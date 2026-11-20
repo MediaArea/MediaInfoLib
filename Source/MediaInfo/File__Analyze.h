@@ -1026,6 +1026,9 @@ public :
     void Fill_HDR(const hdr& HDR, size_t StreamPos=0); //Fills the HDR fields of a video stream from its HDR formats, a value common to all formats is shown once, else the values are aligned with " / "
     #endif
     bool Fill_HDR_Format(stream_t StreamKind, size_t StreamPos, const std::map<std::string, Ztring>& Values, bool Before=true); //Adds an HDR format (values of HDR_Format and HDR_Format_xxx fields) before or after the HDR formats already in a video or image stream, the values are aligned with " / ", false if the same HDR format with the same values is already there
+    Ztring DolbyVision_EL_Layers(File__Analyze& Source, size_t Source_Pos, const std::map<std::string, Ztring>* Container=nullptr); //Dolby Vision layers of a video stream of Source, from the container configuration if any
+    bool DolbyVision_EL_IsAlone(File__Analyze& Source, size_t Source_Pos, const std::map<std::string, Ztring>* Container=nullptr); //Dolby Vision enhancement layer without base layer
+    void DolbyVision_EL_Merge(File__Analyze& Source, size_t Source_Pos, const std::map<std::string, Ztring>* Container, size_t StreamPos); //Dolby Vision enhancement layer of a video stream of Source merged in the base layer video stream StreamPos
     #if defined(MEDIAINFO_HEVC_YES) || defined(MEDIAINFO_MPEG4_YES)
     void Get_AmbientViewingEnvironment(float64& AmbientViewingEnvironment_Illuminance, Ztring& AmbientViewingEnvironment_Illuminance_string, Ztring& AmbientViewingEnvironment_Chromaticity);
     #endif
