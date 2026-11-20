@@ -36,6 +36,7 @@ public :
     bool   MustParse_VPS_SPS_PPS_FromLhvc;
     bool   SizedBlocks;
     size_t SizedBlocks_FileThenStream;
+    bool   PartialFrames; //Complete frames parsed only up to their first slice segment header if the first frame (parsed with all its NAL units, for the slice count) has one frame picture and no other parsed NAL unit than slice segments or filler data after its first slice segment, e.g. by the probe of captions (in prefix SEI messages)
 
     //Constructor/Destructor
     File_Hevc();
@@ -541,6 +542,12 @@ private :
     size_t                              IFrame_Count{};
     size_t                              Slices_CountInThisFrame{}; //Slices of the base layer, not counting dependent slice segments
     size_t                              MaxSlicesCount{};
+
+    //Partial frames
+    int64u                              FirstFrame_Offset{(int64u)-1}; //Offset of the first frame with a parsed slice segment, if frames are always complete
+    size_t                              FirstFrame_Pictures{}; //Count of pictures in this frame, e.g. 2 with fields
+    bool                                FirstFrame_OtherNal{}; //A parsed NAL unit other than slice segments, end of sequence or bitstream and filler data is after the first slice segment of this frame, e.g. Dolby Vision RPU
+    bool                                PartialFrames_IsRest{}; //Current element is the rest of a frame from its first slice segment
 
     //Temp
     Ztring                              Encoded_Library;

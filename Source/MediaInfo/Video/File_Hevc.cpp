@@ -231,6 +231,7 @@ File_Hevc::File_Hevc()
     MustParse_VPS_SPS_PPS_FromLhvc=false;
     SizedBlocks=false;
     SizedBlocks_FileThenStream=0;
+    PartialFrames=false;
 
     //File specific
     lengthSizeMinusOne=(int8u)-1;
@@ -1250,7 +1251,23 @@ void File_Hevc::Header_Parse()
         Get_S1 (3, nuh_temporal_id_plus1,                       "nuh_temporal_id_plus1");
         BS_End();
 
-        if (!Header_Parser_Fill_Size())
+        //Partial frames, after the first frame if it has one picture and no other parsed NAL unit than slice segments after its first slice segment (e.g. no Dolby Vision RPU)
+        const auto IsSliceSegment=nal_unit_type<=9 || (nal_unit_type>=16 && nal_unit_type<=21);
+        if (FirstFrame_Offset==File_Offset && !IsSliceSegment && (nal_unit_type<36 || nal_unit_type>38)) //Not end of sequence, end of bitstream or filler data
+            FirstFrame_OtherNal=true;
+        PartialFrames_IsRest=false;
+        if (PartialFrames && FrameIsAlwaysComplete && !SizedBlocks && IsSliceSegment && FirstFrame_Offset!=File_Offset && FirstFrame_Pictures==1 && !FirstFrame_OtherNal)
+        {
+            //Only frame pictures, not fields
+            PartialFrames_IsRest=true;
+            for (const auto Item : seq_parameter_sets)
+                if (Item && Item->vui_parameters && Item->vui_parameters->flags[field_seq_flag])
+                    PartialFrames_IsRest=false;
+        }
+
+        if (PartialFrames_IsRest)
+            Header_Fill_Size(Buffer_Size-Buffer_Offset); //The rest of the frame from its first slice segment, without search of the next NAL units
+        else if (!Header_Parser_Fill_Size())
         {
             Element_WaitForMoreData();
             return;
@@ -1626,6 +1643,15 @@ void File_Hevc::slice_segment_layer()
     FILLING_BEGIN();
         if (slice_pic_parameter_set_id==(int32u)-1)
             return;
+
+        //Count of pictures in the first frame with a parsed slice segment, it is parsed with all its NAL units (frames after it may be partially parsed)
+        if (FrameIsAlwaysComplete && first_slice_segment_in_pic_flag)
+        {
+            if (FirstFrame_Offset==(int64u)-1)
+                FirstFrame_Offset=File_Offset;
+            if (FirstFrame_Offset==File_Offset)
+                FirstFrame_Pictures++;
+        }
 
         //Count of slices, from the independent slice segments of the base layer
         if (!nuh_layer_id && !dependent_slice_segment_flag)

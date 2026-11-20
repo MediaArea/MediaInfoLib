@@ -23842,6 +23842,12 @@ bool File_Mxf::BookMark_Needed()
                                 if (Parser->ParserName=="AVC")
                                     ((File_Avc*)Parser)->PartialFrames=true; //Captions are in SEI messages, before the slices
                 #endif //defined(MEDIAINFO_AVC_YES)
+                #if defined(MEDIAINFO_HEVC_YES)
+                    for (auto& Essence : Essences)
+                        for (auto Parser : Essence.second.Parsers)
+                            if (Parser->ParserName=="HEVC")
+                                ((File_Hevc*)Parser)->PartialFrames=true; //Captions are in prefix SEI messages, before the slice segments
+                #endif //defined(MEDIAINFO_HEVC_YES)
             }
         }
     }
