@@ -324,7 +324,7 @@ void File_Nsv::FileHeader_Parse()
         Element_WaitForMoreData();
         return; //Must wait for more data
     }
-    if (file_len_ms)
+    if (file_len_ms && file_len_ms!=(int32u)-1) //0xFFFFFFFF is an unknown length
     {
         Fill(Stream_General, 0, General_Duration, file_len_ms);
         Fill(Stream_Video, 0, Video_Duration, file_len_ms);
