@@ -324,7 +324,7 @@ protected :
     bool EOF_AlreadyDetected;
 
     //Data - Helpers
-    void Data_Accept        (const char*)                                       {Accept();}
+    void Data_Accept        (const char* ParserName_Char)                       {Accept(ParserName_Char);}
     void Data_Accept        ()                                                  {Accept();}
     void Data_Reject        (const char*)                                       {Reject();}
     void Data_Reject        ()                                                  {Reject();}
@@ -1338,14 +1338,12 @@ public :
     //***************************************************************************
 
     //Actions
-    void Accept        (const char*)                                            {Accept();}
-    void Accept        ();
+    void Accept        (const char* ParserName=NULL);
     void Accept        (File__Analyze* Parser);
     void Reject        (const char*)                                            {Reject();}
     void Reject        ();
     void Reject        (File__Analyze* Parser);
-    void Fill          (const char*)                                            {Fill();}
-    void Fill          ();
+    void Fill          (const char* ParserName=NULL);
     void Fill          (File__Analyze* Parser);
     void Update        (const char*)                                            {Fill();}
     void Update        ();
@@ -1353,8 +1351,7 @@ public :
     void Finish        (const char*)                                            {Finish();}
     void Finish        ();
     void Finish        (File__Analyze* Parser);
-    void ForceFinish   (const char*)                                            {ForceFinish();}
-    void ForceFinish   ();
+    void ForceFinish   (const char* ParserName=NULL);
     void ForceFinish   (File__Analyze* Parser);
     void GoTo          (int64u GoTo_, const char*)                              {GoTo(GoTo_);}
     void GoTo          (int64u GoTo);
