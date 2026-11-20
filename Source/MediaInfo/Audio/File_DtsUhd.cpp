@@ -1039,12 +1039,15 @@ int File_DtsUhd::FTOC()
         BS_End();
         return DTSUHD_INVALID_FRAME;
     }
-    ExtractPBRSmoothParams();
+    size_t CRC_Size=(SyncFrameFlag || !FullChannelBasedMixFlag)?2:0;
+    int64u BitPos_CRC=((int64u)FTOCPayloadinBytes-CRC_Size)*8;
+    if (Element_Size*8-Data_BS_Remain()<BitPos_CRC)
+        ExtractPBRSmoothParams();
+    else if (SyncFrameFlag)
+        VBRSmoothingBufferEnabled=false; //Some streams have no room before the CRC for the smoothing flag, then not present
 
     //Reserved fields and byte alignment (Table 6-27), up to the CRC
-    size_t CRC_Size=(SyncFrameFlag || !FullChannelBasedMixFlag)?2:0;
     int64u BitPos=Element_Size*8-Data_BS_Remain();
-    int64u BitPos_CRC=((int64u)FTOCPayloadinBytes-CRC_Size)*8;
     if (BitPos>BitPos_CRC)
     {
         BS_End();
