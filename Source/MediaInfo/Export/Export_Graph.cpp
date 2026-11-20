@@ -227,7 +227,7 @@ Export_Graph::~Export_Graph ()
 bool Export_Graph::Load()
 {
     //TODO: detect if graphviz library is usable
-    #if defined(MEDIAINFO_GRAPHVIZ_DLL_RUNTIME)
+    #if defined(MEDIAINFO_GRAPHVIZ_YES) && defined(MEDIAINFO_GRAPHVIZ_DLL_RUNTIME)
         if (!gvc_Module)
         {
             DLOPEN(gvc_Module, GVCDLL_NAME)
@@ -275,7 +275,7 @@ bool Export_Graph::Load()
         return true;
     #else
         return false;
-    #endif //defined(MEDIAINFO_GRAPHVIZ_DLL_RUNTIME)
+    #endif //defined(MEDIAINFO_GRAPHVIZ_YES) && defined(MEDIAINFO_GRAPHVIZ_DLL_RUNTIME)
 }
 
 //***************************************************************************
