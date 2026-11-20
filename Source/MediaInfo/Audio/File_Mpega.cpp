@@ -803,7 +803,8 @@ bool File_Mpega::Synchronize()
                         int8u sampling_frequency1=(CC1(Buffer+Buffer_Offset+Size0+2)>>2)&0x03;
                         int8u padding_bit1       =(CC1(Buffer+Buffer_Offset+Size0+2)>>1)&0x01;
                         //Coherancy
-                        if (Mpega_SamplingRate[ID1][sampling_frequency1]==0 || Mpega_Coefficient[ID1][layer1]==0 || Mpega_BitRate[ID1][layer1][bitrate_index1]==0 || Mpega_SlotSize[layer1]==0)
+                        if (Mpega_SamplingRate[ID1][sampling_frequency1]==0 || Mpega_Coefficient[ID1][layer1]==0 || Mpega_BitRate[ID1][layer1][bitrate_index1]==0 || Mpega_SlotSize[layer1]==0
+                         || ID1!=ID0 || layer1!=layer0 || sampling_frequency1!=sampling_frequency0) //The version, the layer and the sampling rate are the same in the next frames
                             Buffer_Offset++; //False start
                         else
                         {
@@ -841,7 +842,8 @@ bool File_Mpega::Synchronize()
                                     int8u sampling_frequency2=(CC1(Buffer+Buffer_Offset+Size0+Size1+2)>>2)&0x03;
                                     int8u padding_bit2       =(CC1(Buffer+Buffer_Offset+Size0+Size1+2)>>1)&0x01;
                                     //Coherancy
-                                    if (Mpega_SamplingRate[ID2][sampling_frequency2]==0 || Mpega_Coefficient[ID2][layer2]==0 || Mpega_BitRate[ID2][layer2][bitrate_index2]==0 || Mpega_SlotSize[layer2]==0)
+                                    if (Mpega_SamplingRate[ID2][sampling_frequency2]==0 || Mpega_Coefficient[ID2][layer2]==0 || Mpega_BitRate[ID2][layer2][bitrate_index2]==0 || Mpega_SlotSize[layer2]==0
+                                     || ID2!=ID0 || layer2!=layer0 || sampling_frequency2!=sampling_frequency0)
                                         Buffer_Offset++; //False start
                                     else
                                     {
@@ -872,7 +874,8 @@ bool File_Mpega::Synchronize()
                                                 break;
 
                                             //Testing
-                                            if ((CC2(Buffer+Buffer_Offset+Size0+Size1+Size2)&0xFFE0)!=0xFFE0 || (CC1(Buffer+Buffer_Offset+Size0+Size1+Size2+2)&0xF0)==0xF0 || (CC1(Buffer+Buffer_Offset+Size0+Size1+Size2+2)&0x0C)==0x0C)
+                                            if ((CC2(Buffer+Buffer_Offset+Size0+Size1+Size2)&0xFFE0)!=0xFFE0 || (CC1(Buffer+Buffer_Offset+Size0+Size1+Size2+2)&0xF0)==0xF0 || (CC1(Buffer+Buffer_Offset+Size0+Size1+Size2+2)&0x0C)==0x0C
+                                             || (CC1(Buffer+Buffer_Offset+Size0+Size1+Size2+1)&0x1E)!=(CC1(Buffer+Buffer_Offset+1)&0x1E) || (CC1(Buffer+Buffer_Offset+Size0+Size1+Size2+2)&0x0C)!=(CC1(Buffer+Buffer_Offset+2)&0x0C)) //Version and layer, sampling rate
                                                 Buffer_Offset++;
                                             else
                                                 break; //while()
