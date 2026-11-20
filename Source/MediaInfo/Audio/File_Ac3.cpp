@@ -1136,6 +1136,32 @@ bool Ac3_EMDF_Test(const BitStream_Fast &Search)
 }
 
 //---------------------------------------------------------------------------
+// EMDF syncword (0x5838) starting at bit k of a byte (0 being the most
+// significant bit): the next byte is entirely in the syncword, its value is
+// (0x5838>>k)&0xFF, different for each k. For each byte value, count of bits
+// of the syncword in the previous byte (8-k) if the byte can be this next
+// byte, else 0.
+static const int8u Ac3_EMDF_Sync_BitsBefore[256]=
+{
+    0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 6, 0, //0x00
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, //0x10
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //0x20
+    0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, //0x30
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //0x40
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //0x50
+    2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //0x60
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //0x70
+    0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //0x80
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //0x90
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //0xA0
+    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //0xB0
+    0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //0xC0
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //0xD0
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //0xE0
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //0xF0
+};
+
+//---------------------------------------------------------------------------
 /*
 static const int8u ecplsubbndtab[]=
 {
@@ -2715,17 +2741,28 @@ void File_Ac3::Core_Frame()
                 |(         Buffer[Buffer_Offset+(Element_Size)-3] >>2);
     else
         auxdatal=(int16u)-1; //auxdata is empty
-    BitStream_Fast Search(Buffer+Buffer_Offset+Element_Offset, Element_Size-Element_Offset);
-    while(Search.Remain()>18)
+
+    //EMDF: first syncword with a valid container and more than 18 bits from the syncword to the end
+    //A syncword contains the whole byte after its first byte, so each byte gives the only syncword position to test in the byte before it
+    const int8u* Search_Buffer=Buffer+Buffer_Offset+(size_t)Element_Offset;
+    size_t Search_Size=(size_t)(Element_Size-Element_Offset);
+    BitStream_Fast Search(Search_Buffer, Search_Size);
+    EMDF_RemainPos=(size_t)-1;
+    for (size_t i=1; i+1<Search_Size; i++)
     {
+        int8u BitsBefore=Ac3_EMDF_Sync_BitsBefore[Search_Buffer[i]];
+        if (!BitsBefore)
+            continue;
+        size_t Remain=(Search_Size-i)*8+BitsBefore; //Remaining bits from the syncword
+        if (Remain<=18)
+            break; //The next positions are nearer to the end
+        Search.Skip(Search.Remain()-Remain);
         if (Search.Peek2(16)==0x5838 && Ac3_EMDF_Test(Search))
+        {
+            EMDF_RemainPos=Remain;
             break;
-        Search.Skip(1);
+        }
     }
-    if (Search.Remain()>18)
-        EMDF_RemainPos=Search.Remain();
-    else
-        EMDF_RemainPos=(size_t)-1;
 
     //Parsing
     int16u frmsiz=0, chanmap=0;
