@@ -11962,7 +11962,10 @@ bool File_Mxf::Synched_Test()
     {
         Synched=false;
         if (!Status[IsAccepted])
+        {
             Trusted_IsNot("Sync"); //If there is an unsynch before the parser accepts the stream, very high risk the that the file is not MXF
+            Synched_Count=0; //The KLVs needed for accepting the stream follow each other
+        }
     }
     else if (!Status[IsAccepted])
     {
