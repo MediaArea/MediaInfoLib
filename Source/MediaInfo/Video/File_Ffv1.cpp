@@ -480,6 +480,7 @@ File_Ffv1::File_Ffv1()
     RC=NULL;
     slices = NULL;
     version = (int32u)-1;
+    intra = 0;
     picture_structure = (int32u)-1;
     sample_aspect_ratio_num = 0;
     sample_aspect_ratio_den = 0;
