@@ -258,22 +258,60 @@ void File_Nsv::FileHeader_Parse()
     Get_L4 (toc_size,                                           "toc_size");
 
     // Coherency
-    if (!P)
+    //A header with sizes not permitted by the specification is not used, the stream is accepted at its first sync frame
+    //A table of contents with sizes not permitted is not used, the rest of the header is if it does not go past the end of the file
+    struct
     {
-        if (header_size<28
-         || header_size>file_size
-         || metadata_len>header_size-28
-         || toc_alloc<toc_size
-         || toc_alloc>(header_size-28)/4
-         || toc_size>(header_size-28)/4
-         || ((int32u)-1)-toc_alloc<metadata_len // Next add overflow prevention
-         || toc_alloc+metadata_len>header_size-28)
-        {
-            Reject();
-            return;
-        }
-        Accept();
+        const char* Field;
+        int8u       Field_Offset;
+        int32u      Value;
+        const char* Problem;
+        const char* Expected_Prefix;
+        int32u      Expected;
+    } NotValid{};
+    if (header_size<28)
+        NotValid={"NSV header_size", 4, header_size, "header_size is less than the minimal size", ">=", 28};
+    else if (file_size<header_size)
+        NotValid={"NSV file_size", 8, file_size, "file_size is less than header_size", ">=", header_size};
+    else if (metadata_len>header_size-28)
+        NotValid={"NSV metadata_len", 16, metadata_len, "metadata_len is more than what the header can contain", "<=", header_size-28};
+    else if (toc_size>toc_alloc)
+        NotValid={"NSV toc_size", 24, toc_size, "toc_size is more than toc_alloc", "<=", toc_alloc};
+    else
+    {
+        const auto toc_alloc_Max=min((header_size-28)/4, header_size-28-metadata_len);
+        if (toc_alloc>toc_alloc_Max)
+            NotValid={"NSV toc_alloc", 20, toc_alloc, "toc_alloc is more than what the header can contain", "<=", toc_alloc_Max};
     }
+    if (NotValid.Field)
+    {
+        const auto OnlyToc_IsNotValid=NotValid.Field_Offset>=20 && (File_Size==(int64u)-1 || header_size<=File_Size-(File_Offset+Buffer_Offset)); //toc_alloc or toc_size
+        Element_Info1(OnlyToc_IsNotValid?"TOC not valid":"Not valid");
+        Element_Info1(NotValid.Problem);
+        #if MEDIAINFO_CONFORMANCE
+            if (!P) //Only once, the header may be parsed again after a wait for more data
+            {
+                const auto Element_Offset_Save=Element_Offset;
+                Element_Offset=NotValid.Field_Offset; //Offset of the field in the conformance error
+                string Message(NotValid.Problem);
+                Message+=" (actual ";
+                Message+=to_string(NotValid.Value);
+                Message+=", expected ";
+                Message+=NotValid.Expected_Prefix;
+                Message+=to_string(NotValid.Expected);
+                Message+=')';
+                Fill_Conformance(NotValid.Field, Message);
+                Merge_Conformance();
+                Element_Offset=Element_Offset_Save;
+            }
+        #endif //MEDIAINFO_CONFORMANCE
+        if (!OnlyToc_IsNotValid)
+            return;
+        toc_alloc=0;
+        toc_size=0;
+    }
+    if (!P)
+        Accept();
 
     // Parsing
     if (Element_Size<header_size)
