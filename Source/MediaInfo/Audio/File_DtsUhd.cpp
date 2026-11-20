@@ -559,7 +559,7 @@ void File_DtsUhd::ExtractLTLMParamSet(MD01* MD01, bool NominalLD_DescriptionFlag
     if (!NominalLD_DescriptionFlag)
         Skip_S1(5,                                              "AssociatedAssetType");
 
-    Skip_S1(NominalLD_DescriptionFlag?2:4,                      "BitWidth");
+    Skip_S1(NominalLD_DescriptionFlag?2:4,                      "LoudnessMsrmType");
     Element_End0();
 }
 
