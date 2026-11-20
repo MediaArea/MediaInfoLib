@@ -231,6 +231,7 @@ File_Hevc::File_Hevc()
     MustParse_VPS_SPS_PPS_FromLhvc=false;
     SizedBlocks=false;
     SizedBlocks_FileThenStream=0;
+    PartialFrames=false;
 
     //File specific
     lengthSizeMinusOne=(int8u)-1;
@@ -609,6 +610,8 @@ void File_Hevc::Streams_Fill(std::vector<seq_parameter_set_struct*>::iterator se
     Fill(Stream_Video, 0, Video_ChromaSubsampling, Hevc_chroma_format_idc(seq_parameter_set_Item->chroma_format_idc));
     if (seq_parameter_set_Item->bit_depth_luma_minus8==seq_parameter_set_Item->bit_depth_chroma_minus8)
         Fill(Stream_Video, 0, Video_BitDepth, seq_parameter_set_Item->bit_depth_luma_minus8+8);
+    if (MaxSlicesCount>1)
+        Fill(Stream_Video, 0, Video_Format_Settings_SliceCount, MaxSlicesCount);
 
     if (preferred_transfer_characteristics!=2)
         Fill(Stream_Video, 0, Video_transfer_characteristics, Mpegv_transfer_characteristics(preferred_transfer_characteristics));
@@ -1180,6 +1183,7 @@ void File_Hevc::Read_Buffer_Unsynched()
 
     //Temp
     pic_struct_Pending=(int8u)-1;
+    Slices_CountInThisFrame=0;
 
     //Temporal references
     Clean_Temp_References();
@@ -1247,7 +1251,23 @@ void File_Hevc::Header_Parse()
         Get_S1 (3, nuh_temporal_id_plus1,                       "nuh_temporal_id_plus1");
         BS_End();
 
-        if (!Header_Parser_Fill_Size())
+        //Partial frames, after the first frame if it has one picture and no other parsed NAL unit than slice segments after its first slice segment (e.g. no Dolby Vision RPU)
+        const auto IsSliceSegment=nal_unit_type<=9 || (nal_unit_type>=16 && nal_unit_type<=21);
+        if (FirstFrame_Offset==File_Offset && !IsSliceSegment && (nal_unit_type<36 || nal_unit_type>38)) //Not end of sequence, end of bitstream or filler data
+            FirstFrame_OtherNal=true;
+        PartialFrames_IsRest=false;
+        if (PartialFrames && FrameIsAlwaysComplete && !SizedBlocks && IsSliceSegment && FirstFrame_Offset!=File_Offset && FirstFrame_Pictures==1 && !FirstFrame_OtherNal)
+        {
+            //Only frame pictures, not fields
+            PartialFrames_IsRest=true;
+            for (const auto Item : seq_parameter_sets)
+                if (Item && Item->vui_parameters && Item->vui_parameters->flags[field_seq_flag])
+                    PartialFrames_IsRest=false;
+        }
+
+        if (PartialFrames_IsRest)
+            Header_Fill_Size(Buffer_Size-Buffer_Offset); //The rest of the frame from its first slice segment, without search of the next NAL units
+        else if (!Header_Parser_Fill_Size())
         {
             Element_WaitForMoreData();
             return;
@@ -1623,6 +1643,27 @@ void File_Hevc::slice_segment_layer()
     FILLING_BEGIN();
         if (slice_pic_parameter_set_id==(int32u)-1)
             return;
+
+        //Count of pictures in the first frame with a parsed slice segment, it is parsed with all its NAL units (frames after it may be partially parsed)
+        if (FrameIsAlwaysComplete && first_slice_segment_in_pic_flag)
+        {
+            if (FirstFrame_Offset==(int64u)-1)
+                FirstFrame_Offset=File_Offset;
+            if (FirstFrame_Offset==File_Offset)
+                FirstFrame_Pictures++;
+        }
+
+        //Count of slices, from the independent slice segments of the base layer
+        if (!nuh_layer_id && !dependent_slice_segment_flag)
+        {
+            if (first_slice_segment_in_pic_flag && Slices_CountInThisFrame)
+            {
+                if (MaxSlicesCount<Slices_CountInThisFrame)
+                    MaxSlicesCount=Slices_CountInThisFrame;
+                Slices_CountInThisFrame=0;
+            }
+            Slices_CountInThisFrame++;
+        }
 
         //Count of I-Frames
         if (first_slice_segment_in_pic_flag && (Element_Code==19 || Element_Code==20))
@@ -3634,7 +3675,7 @@ void File_Hevc::slice_segment_header()
     Element_Begin1("slice_segment_header");
 
     //Parsing
-    bool    dependent_slice_segment_flag=false;
+    dependent_slice_segment_flag=false;
     int32u  slice_pic_order_cnt_lsb=0;
     Get_SB (   first_slice_segment_in_pic_flag,                 "first_slice_segment_in_pic_flag");
     if (RapPicFlag)
