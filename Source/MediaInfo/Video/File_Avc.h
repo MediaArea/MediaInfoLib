@@ -64,6 +64,9 @@ public :
     //Helper for BitRate_Mode
     static void Fill_BitRate_Mode(File__Analyze* Instance, bool cbr_flag, bool cbr_flag_IsSet, bool cbr_flag_IsValid, int64u bit_rate_value, bool bit_rate_value_IsValid);
 
+    //Helper for streams filled from several parameter sets: a value added by a set only repeating the value before it (e.g. "8" then "8 / 8") is removed
+    static void Streams_RemoveRepetitions(const std::vector<ZtringList>& Before, const std::vector<ZtringListList>& Before_More, std::vector<ZtringList>& After, std::vector<ZtringListList>& After_More);
+
     //Out, statistics about parsed pictures and parameter sets, for checking compliance with specifications
     struct pictures_info
     {

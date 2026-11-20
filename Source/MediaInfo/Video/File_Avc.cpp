@@ -354,6 +354,30 @@ void File_Avc::Fill_BitRate_Mode(File__Analyze* Instance, bool cbr_flag, bool cb
     }
 }
 
+//---------------------------------------------------------------------------
+//Value after the filling is the value before it, or this value repeated (e.g. "8" then "8 / 8")
+static bool Avc_IsRepetition(const Ztring& Before, const Ztring& After, const Ztring& Separator)
+{
+    if (After==Before)
+        return true;
+    const auto Size=Before.size();
+    return Size && After.size()==Size*2+Separator.size() && !After.compare(0, Size, Before) && !After.compare(Size, Separator.size(), Separator) && !After.compare(Size+Separator.size(), Size, Before);
+}
+static void Avc_RemoveRepetitions(const std::vector<ZtringList>& Before, std::vector<ZtringList>& After, const Ztring& Separator)
+{
+    for (size_t Pos=0; Pos<After.size() && Pos<Before.size(); Pos++)
+        for (size_t Pos2=0; Pos2<After[Pos].size() && Pos2<Before[Pos].size(); Pos2++)
+            if (Avc_IsRepetition(Before[Pos][Pos2], After[Pos][Pos2], Separator))
+                After[Pos][Pos2]=Before[Pos][Pos2];
+}
+void File_Avc::Streams_RemoveRepetitions(const std::vector<ZtringList>& Before, const std::vector<ZtringListList>& Before_More, std::vector<ZtringList>& After, std::vector<ZtringListList>& After_More)
+{
+    const auto Separator=MediaInfoLib::Config.TagSeparator_Get();
+    Avc_RemoveRepetitions(Before, After, Separator);
+    for (size_t StreamPos=0; StreamPos<After_More.size() && StreamPos<Before_More.size(); StreamPos++)
+        Avc_RemoveRepetitions(Before_More[StreamPos], After_More[StreamPos], Separator); //Rows of the stream (new ones are after the others), the value is in one of their columns
+}
+
 } //NameSpace
 
 //---------------------------------------------------------------------------
