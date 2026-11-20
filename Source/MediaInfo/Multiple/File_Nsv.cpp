@@ -330,7 +330,7 @@ void File_Nsv::FileHeader_Parse()
         Fill(Stream_Video, 0, Video_Duration, file_len_ms);
         Fill(Stream_Audio, 0, Audio_Duration, file_len_ms);
     }
-    if (file_size>File_Size)
+    if (file_size!=(int32u)-1 && file_size>File_Size) //0xFFFFFFFF is an unknown size
         IsTruncated(file_size, false, "NSV");
     if (metadata_len)
     {
