@@ -5472,6 +5472,11 @@ void File__Analyze::Streams_Finish_InterStreams()
                 }
                 if (Duration==0)
                     Duration=Retrieve(Stream_Video, 0, Video_Duration).To_float64();
+                float64 Duration_General=Retrieve(Stream_General, 0, General_Duration).To_float64();
+                float64 Duration_Tolerance=Retrieve(Stream_Video, 0, Video_FrameRate).To_float64();
+                Duration_Tolerance=Duration_Tolerance?(1000/Duration_Tolerance):1; //1 frame, else 1 ms, for the different roundings of the durations
+                if (Duration_General && Duration>Duration_General && (Duration>Duration_General+Duration_Tolerance || (File_Size!=(int64u)-1 && VideoBitRate/8*Duration/1000>File_Size)))
+                    Duration=Duration_General; //Not more than the duration of the overall bit rate, e.g. video duration from time stamps longer than the duration from the file
                 if (Duration)
                 {
                     int64u StreamSize=float64_int64s(VideoBitRate/8*Duration/1000);
