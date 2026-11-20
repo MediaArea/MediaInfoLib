@@ -786,11 +786,18 @@ bool File_Mpega::Synchronize()
                 if (File_Offset+Buffer_Offset+Size0!=File_Size-File_EndTagSize)
                 {
                     //Padding
-                    while (Buffer_Offset+Size0+4<=Buffer_Size && Buffer[Buffer_Offset+Size0]==0x00)
+                    while (Buffer_Offset+Size0<Buffer_Size && Buffer[Buffer_Offset+Size0]==0x00)
                         Size0++;
 
                     if (Buffer_Offset+Size0+4>Buffer_Size)
-                        return false; //Need more data
+                    {
+                        if (File_Offset+Buffer_Offset+Size0!=File_Size-File_EndTagSize)
+                            return false; //Need more data
+                        if (SingleFrame_IsEnough())
+                            break; //while(), padding up to the end of the file
+                        Buffer_Offset++; //False start
+                        continue;
+                    }
 
                     //Tags
                     bool Tag_Found0;
@@ -851,11 +858,15 @@ bool File_Mpega::Synchronize()
                             if (File_Offset+Buffer_Offset+Size0+Size1!=File_Size-File_EndTagSize)
                             {
                                 //Padding
-                                while (Buffer_Offset+Size0+Size1+4<=Buffer_Size && Buffer[Buffer_Offset+Size0+Size1]==0x00)
+                                while (Buffer_Offset+Size0+Size1<Buffer_Size && Buffer[Buffer_Offset+Size0+Size1]==0x00)
                                     Size0++;
 
                                 if (Buffer_Offset+Size0+Size1+4>Buffer_Size)
-                                    return false; //Need more data
+                                {
+                                    if (File_Offset+Buffer_Offset+Size0+Size1!=File_Size-File_EndTagSize)
+                                        return false; //Need more data
+                                    break; //while(), padding up to the end of the file
+                                }
 
                                 //Tags
                                 bool Tag_Found1;
