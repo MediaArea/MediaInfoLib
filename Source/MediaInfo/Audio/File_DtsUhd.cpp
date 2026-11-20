@@ -670,6 +670,12 @@ int File_DtsUhd::ExtractMultiFrameDistribStaticMD(MD01* MD01)
 
     if (MD01->PacketsAcquired<MD01->NumStaticMDPackets)
     {
+        if (Data_BS_Remain()<(size_t)MD01->StaticMDPacketByteSize*8)
+        {
+            Trusted_IsNot("Static metadata packet is bigger than the frame");
+            Element_End0();
+            return 1;
+        }
         int n=MD01->PacketsAcquired*MD01->StaticMDPacketByteSize;
         for (int32u i = 0; i < MD01->StaticMDPacketByteSize; i++)
             Get_S1 (8/*i==1?6:8*/, MD01->Buffer[n+i],                       ("MetadataPacketPayload[" + std::to_string(n+i) + "]").c_str()); //TEMP, only with p2.mp4
