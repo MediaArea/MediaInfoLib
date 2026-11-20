@@ -74,6 +74,12 @@ float32 Dirac_frame_rate(int32u frame_rate_index)
         case  8 : return (float32)60;
         case  9 : return (float32)15000/(float32)1001;
         case 10 : return (float32)12.5;
+        case 11 : return (float32)48;
+        case 12 : return (float32)48000/(float32)1001;
+        case 13 : return (float32)96;
+        case 14 : return (float32)100;
+        case 15 : return (float32)120000/(float32)1001;
+        case 16 : return (float32)120;
         default : return (float32)0; //Unknown
     }
 }
