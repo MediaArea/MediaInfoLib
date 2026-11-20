@@ -9798,6 +9798,11 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_hvcC()
         Skip_XX(Element_Size-Element_Offset,                    "Data not analyzed");
         return; //Handling only the first description
     }
+    if (Element_Size<23)
+    {
+        Skip_XX(Element_Size,                                   "Data");
+        return; //Too small for a configuration record, the samples are expected to be Annex B, parsed by the parser of the sample entry
+    }
 
     //Parsing
     #ifdef MEDIAINFO_HEVC_YES
