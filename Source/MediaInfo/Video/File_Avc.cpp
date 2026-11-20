@@ -5016,10 +5016,10 @@ void File_Avc::SPS_PPS()
                             Skip_S1( 2,                         "nal_ref_idc");
                             Skip_S1( 5,                         "nal_unit_type");
                             BS_End();
-                            if (Element_Offset+Size-1>Element_Size)
+                            if (!Trusted_Get())
                             {
                                 Element_End0();
-                                break; //Header is invalid, Element_Offset was moved to the end
+                                break; //Header is invalid
                             }
                             int64u Element_Offset_Save=Element_Offset;
                             int64u Element_Size_Save=Element_Size;
