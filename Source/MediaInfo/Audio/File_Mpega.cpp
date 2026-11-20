@@ -674,6 +674,19 @@ bool File_Mpega::FileHeader_Begin()
 //***************************************************************************
 
 //---------------------------------------------------------------------------
+//Layer 1 bit allocation (ISO/IEC 11172-3 2.4.2.5, unchanged for the lower sampling frequencies of ISO/IEC 13818-3): the code 1111 is not allowed, the end of a run of 0xFF bytes (e.g. FF FF C0 00) is a valid Layer 1 header
+static bool Mpega_Layer1_Allocation_IsValid(const int8u* Frame, size_t Frame_Size)
+{
+    size_t Offset=(Frame[1]&0x01)?4:6; //Header, then crc_check if protection_bit is 0
+    int8u mode=Frame[3]>>6;
+    size_t Count=mode==3?32:(mode==1?32+(((Frame[3]>>4)&0x03)+1)*4:64); //Single channel; intensity stereo (2 allocations below the bound); stereo or dual channel
+    for (size_t i=0; i<Count && Offset+i/2<Frame_Size; i++)
+        if (((i&1)?(Frame[Offset+i/2]&0x0F):(Frame[Offset+i/2]>>4))==0x0F)
+            return false;
+    return true;
+}
+
+//---------------------------------------------------------------------------
 bool File_Mpega::Synchronize()
 {
     //Tags
@@ -752,6 +765,11 @@ bool File_Mpega::Synchronize()
             {
                 //Testing next start, to be sure
                 size_t Size0=(Mpega_Coefficient[ID0][layer0]*Mpega_BitRate[ID0][layer0][bitrate_index0]*1000/Mpega_SamplingRate[ID0][sampling_frequency0]+(padding_bit0?1:0))*Mpega_SlotSize[layer0];
+                if (layer0==3 && !Mpega_Layer1_Allocation_IsValid(Buffer+Buffer_Offset, std::min(Size0, Buffer_Size-Buffer_Offset)))
+                {
+                    Buffer_Offset++; //False start
+                    continue;
+                }
                 if (IsSub && Buffer_Offset+Size0==Buffer_Size)
                     break;
                 if (File_Offset+Buffer_Offset+Size0!=File_Size-File_EndTagSize)
