@@ -310,39 +310,6 @@ void File_Hevc::Clean_Temp_References()
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-//Value after the filling is the value before it, or this value repeated (e.g. "8" then "8 / 8")
-static bool Hevc_IsRepetition(const Ztring& Before, const Ztring& After, const Ztring& Separator)
-{
-    if (After==Before)
-        return true;
-    const auto Size=Before.size();
-    return Size && After.size()==Size*2+Separator.size() && !After.compare(0, Size, Before) && !After.compare(Size, Separator.size(), Separator) && !After.compare(Size+Separator.size(), Size, Before);
-}
-static bool Hevc_IsRepetition(const std::vector<ZtringList>& Before, const std::vector<ZtringList>& After, const Ztring& Separator)
-{
-    if (After.size()!=Before.size())
-        return false;
-    for (size_t StreamPos=0; StreamPos<After.size(); StreamPos++)
-    {
-        if (After[StreamPos].size()!=Before[StreamPos].size())
-            return false;
-        for (size_t Pos=0; Pos<After[StreamPos].size(); Pos++)
-            if (!Hevc_IsRepetition(Before[StreamPos][Pos], After[StreamPos][Pos], Separator))
-                return false;
-    }
-    return true;
-}
-static bool Hevc_IsRepetition(const std::vector<ZtringListList>& Before, const std::vector<ZtringListList>& After, const Ztring& Separator)
-{
-    if (After.size()!=Before.size())
-        return false;
-    for (size_t StreamPos=0; StreamPos<After.size(); StreamPos++)
-        if (!Hevc_IsRepetition(Before[StreamPos], After[StreamPos], Separator)) //Rows of the stream, the value is in one of their columns
-            return false;
-    return true;
-}
-
-//---------------------------------------------------------------------------
 void File_Hevc::Streams_Fill()
 {
     if (MustParse_VPS_SPS_PPS_FromFlv)
@@ -357,19 +324,14 @@ void File_Hevc::Streams_Fill()
         if ((*video_parameter_set_Item))
             Streams_Fill(video_parameter_set_Item);
 
-    const auto Separator=MediaInfoLib::Config.TagSeparator_Get();
     for (std::vector<seq_parameter_set_struct*>::iterator seq_parameter_set_Item=seq_parameter_sets.begin(); seq_parameter_set_Item!=seq_parameter_sets.end(); ++seq_parameter_set_Item)
         if ((*seq_parameter_set_Item))
         {
-            //Values of a set only repeating the values of the sets before it (e.g. the same set with another ID) are not added
+            //A value of a set only repeating the value of the sets before it (e.g. the same set with another ID) is not added
             const auto Video_Before=(*Stream)[Stream_Video];
             const auto Video_More_Before=(*Stream_More)[Stream_Video];
             Streams_Fill(seq_parameter_set_Item);
-            if (Hevc_IsRepetition(Video_Before, (*Stream)[Stream_Video], Separator) && Hevc_IsRepetition(Video_More_Before, (*Stream_More)[Stream_Video], Separator))
-            {
-                (*Stream)[Stream_Video]=Video_Before;
-                (*Stream_More)[Stream_Video]=Video_More_Before;
-            }
+            File_Avc::Streams_RemoveRepetitions(Video_Before, Video_More_Before, (*Stream)[Stream_Video], (*Stream_More)[Stream_Video]);
         }
 
     //Library name
