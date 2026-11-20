@@ -69,13 +69,18 @@ private :
     void Inter_Non_Reference_Picture_1();
     void Inter_Non_Reference_Picture_2();
     void Reference_Picture_Low();
+    void Low_Delay_Picture_Fragment();
     void Intra_Non_Reference_Picture_Low();
+    void High_Quality_Picture();
+    void High_Quality_Picture_Fragment();
     void Reserved();
     void picture();
+    void picture_fragment();
 
     std::vector<stream_payload> Streams;
 
     //Temp
+    int32u version_major;
     int32u frame_width;
     int32u frame_height;
     int32u chroma_format;

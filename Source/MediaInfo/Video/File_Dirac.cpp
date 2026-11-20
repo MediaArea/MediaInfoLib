@@ -555,6 +555,7 @@ bool File_Dirac::Synched_Test()
 void File_Dirac::Synched_Init()
 {
     //Temp
+    version_major=0;
     Dirac_base_video_format((int32u)-1, frame_width, frame_height, chroma_format, source_sampling,
                             clean_width, clean_height, clean_left_offset, clean_top_offset,
                             frame_rate, pixel_aspect_ratio);
@@ -631,8 +632,10 @@ void File_Dirac::Data_Parse()
         case 0x0E : Inter_Reference_Picture_2(); break;
         case 0x09 : Inter_Non_Reference_Picture_1(); break;
         case 0x0A : Inter_Non_Reference_Picture_2(); break;
-        case 0xCC : Reference_Picture_Low(); break;
+        case 0xCC : if (version_major<3) Reference_Picture_Low(); else Low_Delay_Picture_Fragment(); break;
         case 0xC8 : Intra_Non_Reference_Picture_Low(); break;
+        case 0xE8 : High_Quality_Picture(); break;
+        case 0xEC : High_Quality_Picture_Fragment(); break;
         default   : Reserved();
     }
 }
@@ -648,7 +651,7 @@ void File_Dirac::Sequence_header()
     Element_Name("Sequence header");
 
     //Parsing
-    int32u version_major, version_minor, profile, level, base_video_format;
+    int32u version_minor, profile, level, base_video_format;
     BS_Begin();
     Get_UI(version_major,                                       "version major");
     Get_UI(version_minor,                                       "version minor");
@@ -768,6 +771,8 @@ void File_Dirac::Sequence_header()
         Streams[0x0A].Searching_Payload=true; //Inter_Non_Reference_Picture_2
         Streams[0xCC].Searching_Payload=true; //Reference_Picture_Low
         Streams[0xC8].Searching_Payload=true; //Intra_Non_Reference_Picture_Low
+        Streams[0xE8].Searching_Payload=true; //High_Quality_Picture
+        Streams[0xEC].Searching_Payload=true; //High_Quality_Picture_Fragment
     FILLING_END();
 }
 
@@ -897,6 +902,16 @@ void File_Dirac::Reference_Picture_Low()
 }
 
 //---------------------------------------------------------------------------
+// Packet "CC", from version 3
+void File_Dirac::Low_Delay_Picture_Fragment()
+{
+    Element_Name("Low Delay Picture Fragment");
+
+    //Parsing
+    picture_fragment();
+}
+
+//---------------------------------------------------------------------------
 // Packet "C8"
 void File_Dirac::Intra_Non_Reference_Picture_Low()
 {
@@ -904,6 +919,26 @@ void File_Dirac::Intra_Non_Reference_Picture_Low()
 
     //Parsing
     picture();
+}
+
+//---------------------------------------------------------------------------
+// Packet "E8"
+void File_Dirac::High_Quality_Picture()
+{
+    Element_Name("High Quality Picture");
+
+    //Parsing
+    picture();
+}
+
+//---------------------------------------------------------------------------
+// Packet "EC"
+void File_Dirac::High_Quality_Picture_Fragment()
+{
+    Element_Name("High Quality Picture Fragment");
+
+    //Parsing
+    picture_fragment();
 }
 
 //---------------------------------------------------------------------------
@@ -918,7 +953,7 @@ void File_Dirac::Reserved()
 void File_Dirac::picture()
 {
     //Parsing
-    Skip_XX(Element_Size,                                       "Data");
+    Skip_XX(Element_Size-Element_Offset,                        "Data");
 
     FILLING_BEGIN();
         //Counting
@@ -938,6 +973,26 @@ void File_Dirac::picture()
             Finish("Dirac");
         }
     FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Dirac::picture_fragment()
+{
+    //Parsing
+    int16u fragment_slice_count;
+    Skip_B4(                                                    "picture number");
+    Skip_B2(                                                    "fragment data length");
+    Get_B2 (fragment_slice_count,                               "fragment slice count");
+    if (fragment_slice_count)
+    {
+        Skip_B2(                                                "fragment x offset");
+        Skip_B2(                                                "fragment y offset");
+        Skip_XX(Element_Size-Element_Offset,                    "Data");
+        return;
+    }
+
+    //First fragment of a picture, with its transform parameters
+    picture();
 }
 
 //***************************************************************************
