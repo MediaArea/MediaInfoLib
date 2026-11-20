@@ -450,7 +450,7 @@ void File_Mpega::Streams_Finish()
     if (LastSync_Offset != (int64u)-1 && File_Offset + Buffer_Size > LastSync_Offset)
     {
         Buffer_Offset = Buffer_Size;
-        SynchLost("MPEG-Audio", File_Offset + Buffer_Size - LastSync_Offset, !LastSync_Offset_AreNotZero);
+        SynchLost("MPEG-Audio", File_Offset + Buffer_Size - LastSync_Offset, NotZero_Offset == (int64u)-1);
     }
 
     //VBR_FileSize calculation
@@ -723,8 +723,6 @@ bool File_Mpega::Synchronize()
 
     //Synchronizing
     auto SingleFrame_IsEnough=[&]() {return Status[IsAccepted] || IsSub || NotZero_Offset==File_Offset+Buffer_Offset;}; //Before the stream is accepted, a single frame followed by the end of the file or by a tag, after other data, is likely a coincidence
-    auto Buffer_Offset_BeforeZero = Buffer_Offset;
-    LastSync_Offset_AreNotZero = true; // In case there is a return during check
     while (Buffer_Offset+4<=Buffer_Size)
     {
         while (Buffer_Offset+4<=Buffer_Size)
@@ -954,11 +952,10 @@ bool File_Mpega::Synchronize()
 
     //Synched is OK
     if (LastSync_Offset != (int64u)-1 && File_Offset + Buffer_Offset > LastSync_Offset) {
-        LastSync_Offset_AreNotZero = Buffer_Offset_BeforeZero != Buffer_Offset;
-        SynchLost("MPEG-Audio", File_Offset + Buffer_Offset - LastSync_Offset, !LastSync_Offset_AreNotZero);
+        SynchLost("MPEG-Audio", File_Offset + Buffer_Offset - LastSync_Offset, NotZero_Offset == File_Offset + Buffer_Offset);
     }
     LastSync_Offset = File_Offset + Buffer_Offset;
-    LastSync_Offset_AreNotZero = false;
+    NotZero_Offset = (int64u)-1;
     return true;
 }
 
@@ -1051,7 +1048,7 @@ void File_Mpega::Read_Buffer_Unsynched()
 {
     FrameInfo.PTS = (int64u)-1;
     LastSync_Offset = (int64u)-1;
-    LastSync_Offset_AreNotZero = false;
+    NotZero_Offset = (int64u)-1;
 }
 
 //---------------------------------------------------------------------------
@@ -1060,7 +1057,7 @@ void File_Mpega::Read_Buffer_Continue()
     if (IsSub)
     {
         LastSync_Offset = (int64u)-1;
-        LastSync_Offset_AreNotZero = false;
+        NotZero_Offset = (int64u)-1;
     }
 }
 
@@ -1144,7 +1141,7 @@ void File_Mpega::Data_Parse()
     }
 
     LastSync_Offset = File_Offset + Buffer_Offset + Element_Size;
-    LastSync_Offset_AreNotZero = false;
+    NotZero_Offset = (int64u)-1;
 
     //VBR and library headers
     bool IsTagFrame=false;
