@@ -4944,6 +4944,7 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
     Source_Kind_Temp=Retrieve(StreamKind, StreamPos_To, "Source_Kind");
     Source_Info_Temp=Retrieve(StreamKind, StreamPos_To, "Source_Info");
     Ztring BitRate_Temp=Retrieve(StreamKind, StreamPos_To, "BitRate");
+    Ztring BitRate_Maximum_Temp=Retrieve(StreamKind, StreamPos_To, "BitRate_Maximum");
     Ztring CodecID_Temp=Retrieve(StreamKind, StreamPos_To, "CodecID");
     Ztring Title_Temp=Retrieve(StreamKind, StreamPos_To, "Title");
 
@@ -5198,6 +5199,13 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
         Ztring Temp=Retrieve(StreamKind, StreamPos_To, "BitRate");
         Temp.FindAndReplace(__T("Unknown"), BitRate_Temp, 0, Ztring_Recursive);
         Fill(StreamKind, StreamPos_To, "BitRate", Temp, true);
+    }
+    if (!BitRate_Maximum_Temp.empty() && BitRate_Maximum_Temp.find(__T(" / "))==string::npos)
+    {
+        //Both are upper limits, the smallest one is kept
+        const Ztring& BitRate_Maximum_New=Retrieve_Const(StreamKind, StreamPos_To, "BitRate_Maximum");
+        if (!BitRate_Maximum_New.empty() && BitRate_Maximum_New.find(__T(" / "))==string::npos && BitRate_Maximum_Temp.To_float64()>0 && BitRate_Maximum_Temp.To_float64()<BitRate_Maximum_New.To_float64())
+            Fill(StreamKind, StreamPos_To, "BitRate_Maximum", BitRate_Maximum_Temp, true);
     }
     const Ztring& CodecID_New =ToAdd.Retrieve_Const(StreamKind, StreamPos_From, "CodecID");
     if (!CodecID_Temp.empty() && !CodecID_New.empty() && CodecID_Temp!=CodecID_New && (Config->File_IsReferenced_Get() ^ !ToAdd.Config->File_IsReferenced_Get())) //TODO: better handling of merges, avoiding duplicate merges so we can remeove hack CodecID_Temp!=CodecID_New

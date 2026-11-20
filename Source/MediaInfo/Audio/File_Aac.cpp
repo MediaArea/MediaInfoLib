@@ -389,9 +389,15 @@ void File_Aac::Read_Buffer_Continue_AudioSpecificConfig()
 {
     File__Analyze::Accept(); //We automaticly trust it
 
-    BS_Begin();
-    AudioSpecificConfig(0); //Up to the end of the block
-    BS_End();
+    //For MPEG-4 ObjectTypeIds 0x66, 0x67, and 0x68, DecoderSpecificInfo is supposed to be an ISO/IEC 13818-7 adif_header() instead of an ISO/IEC 14496-3 AudioSpecificConfig.
+    if (Element_Offset+4<=Element_Size && CC4(Buffer+Buffer_Offset+(size_t)Element_Offset)==0x41444946) //"ADIF"
+        adif_header();
+    else
+    {
+        BS_Begin();
+        AudioSpecificConfig(0); //Up to the end of the block
+        BS_End();
+    }
 
     Infos_AudioSpecificConfig=Infos;
     Mode=Mode_payload; //Mode_AudioSpecificConfig only once

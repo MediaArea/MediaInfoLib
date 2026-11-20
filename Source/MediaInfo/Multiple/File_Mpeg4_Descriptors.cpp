@@ -844,6 +844,8 @@ void File_Mpeg4_Descriptors::Descriptor_04()
                 Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_BitRate_Maximum), MaxBitrate);
             }
         }
+        else if (!AvgBitrate && MaxBitrate)
+            Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_BitRate_Maximum), MaxBitrate);
 
         //Creating parser
         delete Parser; Parser=NULL;
