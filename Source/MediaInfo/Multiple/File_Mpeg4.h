@@ -298,6 +298,7 @@ private :
     void moov_trak_mdia_minf_stbl_stsd_xxxx_mhaC();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_pasp();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_pcmC();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_pixi();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_SA3D();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_sinf();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_frma();
@@ -464,6 +465,7 @@ private :
     void Descriptors();
     void TimeCode_Associate(int32u TrackID);
     void AddCodecConfigurationBoxInfo();
+    int8u PixelInformation(int32u Flags);
 
     //Temp
     int128u                                 Name_UUID;

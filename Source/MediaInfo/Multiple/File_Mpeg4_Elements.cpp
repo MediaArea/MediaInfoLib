@@ -1104,6 +1104,7 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_mhaC=0x6D686143;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_pasp=0x70617370;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_pcmC=0x70636D43;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_pixi=0x70697869;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_SA3D=0x53413344;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_sinf=0x73696E66;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_frma=0x66726D61;
@@ -1562,6 +1563,7 @@ void File_Mpeg4::Data_Parse()
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_lhvC)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_pasp)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_pcmC)
+                                ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_pixi)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_SA3D)
                                 LIST(moov_trak_mdia_minf_stbl_stsd_xxxx_sinf)
                                     ATOM_BEGIN
@@ -3396,10 +3398,9 @@ void File_Mpeg4::meta_iprp_ipco_pasp()
 }
 
 //---------------------------------------------------------------------------
-void File_Mpeg4::meta_iprp_ipco_pixi()
+//Common to the item property and to the box of a sample entry, returns the bit depth of all the channels (0 if they differ)
+int8u File_Mpeg4::PixelInformation(int32u Flags)
 {
-    NAME_VERSION_FLAG("Pixel Information", 0);
-
     //Parsing
     int8u num_channels;
     Get_B1 (num_channels,                                       "num_channels");
@@ -3412,10 +3413,47 @@ void File_Mpeg4::meta_iprp_ipco_pixi()
         Get_B1 (bits_per_channel,                               "bits_per_channel");
         bits_per_channel_List.insert(bits_per_channel);
     }
+    if (Flags&1) //Description of each channel
+    {
+        for (int8u Pos=0; Pos<num_channels; Pos++)
+        {
+            Element_Begin1("channel");
+            bool subsampling_flag, channel_label_flag;
+            BS_Begin();
+            Skip_S1(3,                                          "channel_idc");
+            Skip_SB(                                            "reserved");
+            Skip_S1(2,                                          "component_format");
+            Get_SB (   subsampling_flag,                        "subsampling_flag");
+            Get_SB (   channel_label_flag,                      "channel_label_flag");
+            if (subsampling_flag)
+            {
+                Skip_S1(4,                                      "subsampling_type");
+                Skip_S1(4,                                      "subsampling_location");
+            }
+            BS_End();
+            if (channel_label_flag)
+            {
+                Skip_UTF8(SizeUpTo0(),                          "channel_label");
+                Skip_B1(                                        "zero");
+            }
+            Element_End0();
+        }
+    }
+
+    return bits_per_channel_List.size()==1?*bits_per_channel_List.begin():0;
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::meta_iprp_ipco_pixi()
+{
+    NAME_VERSION_FLAG("Pixel Information", 0);
+
+    //Parsing
+    auto BitDepth=PixelInformation(Flags);
 
     FILLING_BEGIN_IPCO();
-        if (bits_per_channel_List.size()==1)
-            Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_BitDepth), *bits_per_channel_List.begin());
+        if (BitDepth)
+            Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_BitDepth), BitDepth);
     FILLING_END_IPCO();
 }
 
@@ -10079,6 +10117,20 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_pcmC()
                 }
             }
         #endif //defined(MEDIAINFO_PCM_YES)
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_pixi()
+{
+    NAME_VERSION_FLAG("Pixel Information", 0);
+
+    //Parsing
+    auto BitDepth=PixelInformation(Flags);
+
+    FILLING_BEGIN();
+        if (BitDepth && moov_trak_mdia_minf_stbl_stsd_Pos<=1) //Handling only the first description
+            Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_BitDepth), BitDepth);
     FILLING_END();
 }
 
