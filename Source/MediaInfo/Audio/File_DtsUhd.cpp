@@ -588,12 +588,16 @@ int File_DtsUhd::ParseStaticMDParams(MD01* MD01, bool OnlyFirst)
         Param_Info2(NumLongTermLoudnessMsrmSets, " sets");
     }
 
+    int8u FirstLongTermLoudnessIndex=0;
     for (int i=0; i<NumLongTermLoudnessMsrmSets; i++)
     {
         ExtractLTLMParamSet(MD01, NominalLD_DescriptionFlag);
         if (OnlyFirst)
             return 0; //Only the first set is sure to be in the first packet (clause 7.7.2, Table 7-8)
+        if (!i)
+            FirstLongTermLoudnessIndex=LongTermLoudnessIndex;
     }
+    LongTermLoudnessIndex=FirstLongTermLoudnessIndex; //The first set is the one of the complete presentation (clause 7.7.2)
 
     if (!NominalLD_DescriptionFlag)
         Skip_SB(                                                "IsLTLoudnMsrsmOffLine");
