@@ -355,6 +355,71 @@ void File_Avc::Fill_BitRate_Mode(File__Analyze* Instance, bool cbr_flag, bool cb
 }
 
 //---------------------------------------------------------------------------
+static bool Nalu_Header_IsValid(const int8u* Header, bool IsHevc)
+{
+    if (Header[0]&0x80) //forbidden_zero_bit
+        return false;
+    if (IsHevc)
+        return Header[1]&0x07; //nuh_temporal_id_plus1
+    return Header[0]&0x1F; //nal_unit_type
+}
+File_Avc::nalu_framing File_Avc::NaluFraming_Probe(const int8u* Buffer, size_t Buffer_Size, bool IsHevc, int8u LengthSizeMinusOne_Hint)
+{
+    const size_t Header_Size=IsHevc?2:1;
+
+    //Sized: the NAL units fill the block (zeroes are accepted after them), all with a valid header; tested first because a length can look like a start code
+    int8u LengthSizeMinusOnes[4];
+    size_t LengthSizeMinusOnes_Count=0;
+    if (LengthSizeMinusOne_Hint==0 || LengthSizeMinusOne_Hint==1 || LengthSizeMinusOne_Hint==3) //A length on 3 bytes is not allowed
+        LengthSizeMinusOnes[LengthSizeMinusOnes_Count++]=LengthSizeMinusOne_Hint;
+    for (int8u LengthSizeMinusOne : {3, 1, 0})
+        if (LengthSizeMinusOne!=LengthSizeMinusOne_Hint)
+            LengthSizeMinusOnes[LengthSizeMinusOnes_Count++]=LengthSizeMinusOne;
+    for (size_t Pos=0; Pos<LengthSizeMinusOnes_Count; Pos++)
+    {
+        const size_t Length_Size=(size_t)LengthSizeMinusOnes[Pos]+1;
+        size_t Offset=0;
+        size_t Count=0;
+        bool IsValid=true;
+        while (Offset+Length_Size+Header_Size<=Buffer_Size)
+        {
+            size_t Length=0;
+            for (size_t i=0; i<Length_Size; i++)
+                Length=(Length<<8)|Buffer[Offset+i];
+            if (!Length)
+                break; //Zeroes after the NAL units, checked below
+            if (Length<Header_Size || Length>Buffer_Size-Offset-Length_Size || !Nalu_Header_IsValid(Buffer+Offset+Length_Size, IsHevc))
+            {
+                IsValid=false;
+                break;
+            }
+            Offset+=Length_Size+Length;
+            Count++;
+        }
+        if (!IsValid || !Count)
+            continue;
+        while (Offset<Buffer_Size && !Buffer[Offset])
+            Offset++;
+        if (Offset==Buffer_Size)
+            return (nalu_framing)LengthSizeMinusOnes[Pos];
+    }
+
+    //Annex B: a start code then a valid header
+    size_t StartCode_Size=0;
+    if (Buffer_Size>=3 && !Buffer[0] && !Buffer[1])
+    {
+        if (Buffer[2]==0x01)
+            StartCode_Size=3;
+        else if (Buffer_Size>=4 && !Buffer[2] && Buffer[3]==0x01)
+            StartCode_Size=4;
+    }
+    if (StartCode_Size && StartCode_Size+Header_Size<=Buffer_Size && Nalu_Header_IsValid(Buffer+StartCode_Size, IsHevc))
+        return NaluFraming_AnnexB;
+
+    return NaluFraming_Unknown;
+}
+
+//---------------------------------------------------------------------------
 //Value after the filling is the value before it, or this value repeated (e.g. "8" then "8 / 8")
 static bool Avc_IsRepetition(const Ztring& Before, const Ztring& After, const Ztring& Separator)
 {
@@ -726,6 +791,7 @@ File_Avc::File_Avc()
     FrameIsAlwaysComplete=false;
     MustParse_SPS_PPS=false;
     SizedBlocks=false;
+    SizedBlocks_Probe=false;
     PartialFrames=false;
     FirstFrame_Offset=(int64u)-1;
     FirstFrame_Pictures=0;
@@ -1835,6 +1901,42 @@ void File_Avc::Read_Buffer_SegmentChange()
 {
 }
 #endif //MEDIAINFO_ADVANCED2
+
+//---------------------------------------------------------------------------
+void File_Avc::Read_Buffer_Continue()
+{
+    if (!SizedBlocks_Probe || !FrameIsAlwaysComplete || Buffer_Offset>=Buffer_Size)
+        return;
+
+    const auto Framing=NaluFraming_Probe(Buffer+Buffer_Offset, Buffer_Size-Buffer_Offset, false, SizeOfNALU_Minus1);
+    if (Framing==NaluFraming_Unknown)
+        return; //Trying again with the next block
+    if (MustParse_SPS_PPS)
+    {
+        if (Buffer[Buffer_Offset]==0x01)
+            return; //configurationVersion of a configuration record, NAL units start with a zero byte of their length or start code
+        MustParse_SPS_PPS=false; //No configuration record before the frames, or it was not usable
+    }
+    SizedBlocks_Probe=false;
+    if (Framing==NaluFraming_AnnexB)
+    {
+        SizedBlocks=false;
+        MustSynchronize=true;
+        return;
+    }
+    if (MustSynchronize)
+    {
+        MustSynchronize=false;
+        if (File_Offset_FirstSynched==(int64u)-1)
+        {
+            Synched_Init();
+            Buffer_TotalBytes_FirstSynched=0;
+            File_Offset_FirstSynched=File_Offset;
+        }
+    }
+    SizedBlocks=true;
+    SizeOfNALU_Minus1=Framing;
+}
 
 //---------------------------------------------------------------------------
 void File_Avc::Read_Buffer_Unsynched()
@@ -5016,10 +5118,10 @@ void File_Avc::SPS_PPS()
                             Skip_S1( 2,                         "nal_ref_idc");
                             Skip_S1( 5,                         "nal_unit_type");
                             BS_End();
-                            if (Element_Offset+Size-1>Element_Size)
+                            if (!Trusted_Get())
                             {
                                 Element_End0();
-                                break; //Header is invalid, Element_Offset was moved to the end
+                                break; //Header is invalid
                             }
                             int64u Element_Offset_Save=Element_Offset;
                             int64u Element_Size_Save=Element_Size;
@@ -5065,12 +5167,20 @@ void File_Avc::SPS_PPS()
         #endif //MEDIAINFO_CONFORMANCE
 
         MustParse_SPS_PPS=false;
+        SizedBlocks_Probe=false; //The framing is the one of the configuration record
         if (!Status[IsAccepted])
             Accept("AVC");
     FILLING_ELSE();
-        Frame_Count_NotParsedIncluded--;
+        //The configuration record is not a frame
+        const auto Frame_Count_Save=Frame_Count;
+        const auto Frame_Count_InThisBlock_Save=Frame_Count_InThisBlock;
+        const auto Frame_Count_NotParsedIncluded_Save=Frame_Count_NotParsedIncluded;
         RanOutOfData("AVC");
-        Frame_Count_NotParsedIncluded++;
+        Merge_Conformance(true);
+        Frame_Count=Frame_Count_Save;
+        Frame_Count_InThisBlock=Frame_Count_InThisBlock_Save;
+        Frame_Count_NotParsedIncluded=Frame_Count_NotParsedIncluded_Save;
+        SizedBlocks_Probe=true; //The size of the NAL unit length and the framing are not reliable
     FILLING_END();
 }
 

@@ -1262,27 +1262,30 @@ void File_Flv::video_AVC(int8u PacketType_plus1)
     Info_B3(CompositionTime,                                    "CompositionTime"); Param_Info1(Ztring::ToZtring((int32s)(CompositionTime&0x800000?(CompositionTime|0xFF000000):CompositionTime))); //Signed 24-bit value
     }
 
+    #ifdef MEDIAINFO_AVC_YES
+    if (Stream[Stream_Video].Parser==NULL && (AVCPacketType==0 || AVCPacketType==1)) //Also without sequence header, the framing of the frames is probed
+    {
+        Stream[Stream_Video].Parser=new File_Avc;
+        Open_Buffer_Init(Stream[Stream_Video].Parser);
+        ((File_Avc*)Stream[Stream_Video].Parser)->FrameIsAlwaysComplete=true;
+        ((File_Avc*)Stream[Stream_Video].Parser)->MustParse_SPS_PPS=true;
+        ((File_Avc*)Stream[Stream_Video].Parser)->SizedBlocks=true;
+        ((File_Avc*)Stream[Stream_Video].Parser)->SizedBlocks_Probe=true;
+        ((File_Avc*)Stream[Stream_Video].Parser)->MustSynchronize=false;
+        #if MEDIAINFO_DEMUX
+            if (Config->Demux_Avc_Transcode_Iso14496_15_to_Iso14496_10_Get())
+            {
+                Stream[Stream_Video].Parser->Demux_Level=2; //Container
+                Stream[Stream_Video].Parser->Demux_UnpacketizeContainer=true;
+            }
+        #endif //MEDIAINFO_DEMUX
+    }
+    #endif
+
     switch (AVCPacketType)
     {
         case 0 :
                 #ifdef MEDIAINFO_AVC_YES
-                    if (Stream[Stream_Video].Parser==NULL)
-                    {
-                        Stream[Stream_Video].Parser=new File_Avc;
-                        Open_Buffer_Init(Stream[Stream_Video].Parser);
-                        ((File_Avc*)Stream[Stream_Video].Parser)->FrameIsAlwaysComplete=true;
-                        ((File_Avc*)Stream[Stream_Video].Parser)->MustParse_SPS_PPS=true;
-                        ((File_Avc*)Stream[Stream_Video].Parser)->SizedBlocks=true;
-                        ((File_Avc*)Stream[Stream_Video].Parser)->MustSynchronize=false;
-                        #if MEDIAINFO_DEMUX
-                            if (Config->Demux_Avc_Transcode_Iso14496_15_to_Iso14496_10_Get())
-                            {
-                                Stream[Stream_Video].Parser->Demux_Level=2; //Container
-                                Stream[Stream_Video].Parser->Demux_UnpacketizeContainer=true;
-                            }
-                        #endif //MEDIAINFO_DEMUX
-                    }
-
                     //Parsing
                     Open_Buffer_Continue(Stream[Stream_Video].Parser);
 
@@ -1312,13 +1315,6 @@ void File_Flv::video_AVC(int8u PacketType_plus1)
                 break;
         case 1 :
                 #ifdef MEDIAINFO_AVC_YES
-                    if (Stream[Stream_Video].Parser==NULL)
-                    {
-                        //Data before header, this is wrong
-                        video_stream_Count=false;
-                        break;
-                    }
-
                     //Parsing
                     Open_Buffer_Continue(Stream[Stream_Video].Parser);
 
@@ -1367,27 +1363,31 @@ void File_Flv::video_HEVC(int8u PacketType_plus1)
     Info_B3(CompositionTime,                                    "CompositionTime"); Param_Info1(Ztring::ToZtring((int32s)(CompositionTime&0x800000?(CompositionTime|0xFF000000):CompositionTime))); //Signed 24-bit value
     }
 
+    #ifdef MEDIAINFO_HEVC_YES
+    if (Stream[Stream_Video].Parser==NULL && (AVCPacketType==0 || AVCPacketType==1)) //Also without sequence header, the framing of the frames is probed
+    {
+        Stream[Stream_Video].Parser=new File_Hevc;
+        Open_Buffer_Init(Stream[Stream_Video].Parser);
+        ((File_Hevc*)Stream[Stream_Video].Parser)->FrameIsAlwaysComplete=true;
+        ((File_Hevc*)Stream[Stream_Video].Parser)->MustParse_VPS_SPS_PPS=true;
+        ((File_Hevc*)Stream[Stream_Video].Parser)->MustParse_VPS_SPS_PPS_FromFlv=true;
+        ((File_Hevc*)Stream[Stream_Video].Parser)->MustSynchronize=false;
+        ((File_Hevc*)Stream[Stream_Video].Parser)->SizedBlocks=true;
+        ((File_Hevc*)Stream[Stream_Video].Parser)->SizedBlocks_Probe=true;
+        #if MEDIAINFO_DEMUX
+            if (Config->Demux_Hevc_Transcode_Iso14496_15_to_AnnexB_Get())
+            {
+                Stream[Stream_Video].Parser->Demux_Level=2; //Container
+                Stream[Stream_Video].Parser->Demux_UnpacketizeContainer=true;
+            }
+        #endif //MEDIAINFO_DEMUX
+    }
+    #endif
+
     switch (AVCPacketType)
     {
         case 0 :
                 #ifdef MEDIAINFO_HEVC_YES
-                    if (Stream[Stream_Video].Parser==NULL)
-                    {
-                        Stream[Stream_Video].Parser=new File_Hevc;
-                        Open_Buffer_Init(Stream[Stream_Video].Parser);
-                        ((File_Hevc*)Stream[Stream_Video].Parser)->MustParse_VPS_SPS_PPS=true;
-                        ((File_Hevc*)Stream[Stream_Video].Parser)->MustParse_VPS_SPS_PPS_FromFlv=true;
-                        ((File_Hevc*)Stream[Stream_Video].Parser)->MustSynchronize=false;
-                        ((File_Hevc*)Stream[Stream_Video].Parser)->SizedBlocks=true;
-                        #if MEDIAINFO_DEMUX
-                            if (Config->Demux_Hevc_Transcode_Iso14496_15_to_AnnexB_Get())
-                            {
-                                Stream[Stream_Video].Parser->Demux_Level=2; //Container
-                                Stream[Stream_Video].Parser->Demux_UnpacketizeContainer=true;
-                            }
-                        #endif //MEDIAINFO_DEMUX
-                    }
-
                     //Parsing
                     Open_Buffer_Continue(Stream[Stream_Video].Parser);
 
@@ -1417,13 +1417,6 @@ void File_Flv::video_HEVC(int8u PacketType_plus1)
                 break;
         case 1 :
                 #ifdef MEDIAINFO_HEVC_YES
-                    if (Stream[Stream_Video].Parser==NULL)
-                    {
-                        //Data before header, this is wrong
-                        video_stream_Count=false;
-                        break;
-                    }
-
                     //Parsing
                     Open_Buffer_Continue(Stream[Stream_Video].Parser);
 

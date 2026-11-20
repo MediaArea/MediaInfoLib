@@ -36,6 +36,7 @@ public :
     bool   MustParse_VPS_SPS_PPS_FromLhvc;
     bool   SizedBlocks;
     size_t SizedBlocks_FileThenStream;
+    bool   SizedBlocks_Probe; //Sized blocks or Annex B decided by the content of the first complete block, e.g. no usable configuration record
     bool   PartialFrames; //Complete frames parsed only up to their first slice segment header if the first frame (parsed with all its NAL units, for the slice count) has one frame picture and no other parsed NAL unit than slice segments or filler data after its first slice segment, e.g. by the probe of captions (in prefix SEI messages)
 
     //Constructor/Destructor
@@ -401,6 +402,7 @@ private :
     #endif //MEDIAINFO_DEMUX
 
     //Buffer - Global
+    void Read_Buffer_Continue();
     void Read_Buffer_Unsynched();
 
     //Buffer - Per element
