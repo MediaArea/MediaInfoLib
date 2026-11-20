@@ -101,6 +101,7 @@ public :
     };
     mode   Mode;
     bool   FromIamf;
+    int8u  objectTypeIndication;
     void   AudioSpecificConfig_OutOfBand(int64s sampling_frequency, int8u audioObjectType=(int8u)-1, bool sbrData=false, bool psData=false, bool sbrPresentFlag=false, bool psPresentFlag=false);
 
     // Conformance

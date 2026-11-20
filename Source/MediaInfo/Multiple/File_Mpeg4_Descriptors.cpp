@@ -881,6 +881,7 @@ void File_Mpeg4_Descriptors::Descriptor_04()
                             ((File_Aac*)Parser)->Mode=File_Aac::Mode_AudioSpecificConfig;
                             ((File_Aac*)Parser)->FrameIsAlwaysComplete=true;
                             ((File_Aac*)Parser)->FromIamf=FromIamf;
+                            ((File_Aac*)Parser)->objectTypeIndication=ObjectTypeId;
                             #if MEDIAINFO_CONFORMANCE
                                 ((File_Aac*)Parser)->Immediate_FramePos=stss;
                                 ((File_Aac*)Parser)->Immediate_FramePos_IsPresent=stss_IsPresent;
