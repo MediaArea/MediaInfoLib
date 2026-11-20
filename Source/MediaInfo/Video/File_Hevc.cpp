@@ -4448,6 +4448,7 @@ void File_Hevc::VPS_SPS_PPS()
             if (nalUnitLength<2 || Element_Offset+nalUnitLength>Element_Size)
             {
                 Trusted_IsNot("Size is wrong");
+                Element_End0();
                 break; //There is an error
             }
 
@@ -4463,6 +4464,11 @@ void File_Hevc::VPS_SPS_PPS()
             BS_End();
 
             //Data
+            if (Element_Offset+nalUnitLength-2>Element_Size)
+            {
+                Element_End0();
+                break; //Header is invalid, Element_Offset was moved to the end
+            }
             int64u Element_Offset_Save=Element_Offset;
             int64u Element_Size_Save=Element_Size;
             Buffer_Offset+=(size_t)Element_Offset_Save;
@@ -4513,6 +4519,7 @@ void File_Hevc::VPS_SPS_PPS_FromMatroska()
         if (nalUnitLength<2 || Element_Offset+nalUnitLength>Element_Size)
         {
             Trusted_IsNot("Size is wrong");
+            Element_End0();
             break; //There is an error
         }
 
@@ -4528,6 +4535,11 @@ void File_Hevc::VPS_SPS_PPS_FromMatroska()
         BS_End();
 
         //Data
+        if (Element_Offset+nalUnitLength-2>Element_Size)
+        {
+            Element_End0();
+            break; //Header is invalid, Element_Offset was moved to the end
+        }
         int64u Element_Offset_Save=Element_Offset;
         int64u Element_Size_Save=Element_Size;
         Buffer_Offset+=(size_t)Element_Offset_Save;
@@ -4558,6 +4570,7 @@ void File_Hevc::VPS_SPS_PPS_FromMatroska()
         if (nalUnitLength<2 || Element_Offset+nalUnitLength>Element_Size)
         {
             Trusted_IsNot("Size is wrong");
+            Element_End0();
             break; //There is an error
         }
 
@@ -4573,6 +4586,11 @@ void File_Hevc::VPS_SPS_PPS_FromMatroska()
         BS_End();
 
         //Data
+        if (Element_Offset+nalUnitLength-2>Element_Size)
+        {
+            Element_End0();
+            break; //Header is invalid, Element_Offset was moved to the end
+        }
         int64u Element_Offset_Save=Element_Offset;
         int64u Element_Size_Save=Element_Size;
         Buffer_Offset+=(size_t)Element_Offset_Save;
@@ -4595,6 +4613,7 @@ void File_Hevc::VPS_SPS_PPS_FromMatroska()
         if (nalUnitLength<2 || Element_Offset+nalUnitLength>Element_Size)
         {
             Trusted_IsNot("Size is wrong");
+            Element_End0();
             break; //There is an error
         }
 
@@ -4610,6 +4629,11 @@ void File_Hevc::VPS_SPS_PPS_FromMatroska()
         BS_End();
 
         //Data
+        if (Element_Offset+nalUnitLength-2>Element_Size)
+        {
+            Element_End0();
+            break; //Header is invalid, Element_Offset was moved to the end
+        }
         int64u Element_Offset_Save=Element_Offset;
         int64u Element_Size_Save=Element_Size;
         Buffer_Offset+=(size_t)Element_Offset_Save;
