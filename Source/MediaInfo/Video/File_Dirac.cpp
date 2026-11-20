@@ -655,7 +655,7 @@ void File_Dirac::Sequence_header()
     Get_UI(profile,                                             "profile");
     Get_UI(level,                                               "level");
 
-    if (version_major<=2)
+    if (version_major<=3)
     {
         Get_UI(base_video_format,                               "base video format"); //Param_Info1(Dirac_base_video_format(base_video_format));
         Dirac_base_video_format(base_video_format, frame_width, frame_height, chroma_format, source_sampling,
