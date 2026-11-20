@@ -1272,6 +1272,11 @@ void File_Aac::PayloadMux_Payload(int8u Stream, bool Parse)
     size_t Size=8*(size_t)MuxSlotLengthBytes[Stream];
     if (Size>Data_BS_Remain())
     {
+        if (Frame_IsCut) //The AudioMuxElement is cut by the end of the file, the frame is counted
+        {
+            Skip_BS(Data_BS_Remain(),                           "payload[streamID[prog][lay]] (cut)");
+            return;
+        }
         Trusted_IsNot("MuxSlotLengthBytes is too big");
         Skip_BS(Data_BS_Remain(),                               "(Problem)");
         return;
