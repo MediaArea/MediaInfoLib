@@ -231,6 +231,7 @@ File_Hevc::File_Hevc()
     MustParse_VPS_SPS_PPS_FromLhvc=false;
     SizedBlocks=false;
     SizedBlocks_FileThenStream=0;
+    SizedBlocks_Probe=false;
     PartialFrames=false;
 
     //File specific
@@ -1179,6 +1180,45 @@ void File_Hevc::Synched_Init()
 //***************************************************************************
 // Buffer - Global
 //***************************************************************************
+
+//---------------------------------------------------------------------------
+void File_Hevc::Read_Buffer_Continue()
+{
+    if (!SizedBlocks_Probe || !FrameIsAlwaysComplete || Buffer_Offset>=Buffer_Size)
+        return;
+
+    const auto Framing=File_Avc::NaluFraming_Probe(Buffer+Buffer_Offset, Buffer_Size-Buffer_Offset, true, lengthSizeMinusOne);
+    if (Framing==File_Avc::NaluFraming_Unknown)
+        return; //Trying again with the next block
+    if (MustParse_VPS_SPS_PPS)
+    {
+        if (Buffer[Buffer_Offset]==0x01)
+            return; //configurationVersion of a configuration record, NAL units start with a zero byte of their length or start code
+        MustParse_VPS_SPS_PPS=false; //No configuration record before the frames, or it was not usable
+        MustParse_VPS_SPS_PPS_FromMatroska=false; //No old format detected from the configuration record
+        MustParse_VPS_SPS_PPS_FromFlv=false;
+    }
+    SizedBlocks_Probe=false;
+    if (Framing==File_Avc::NaluFraming_AnnexB)
+    {
+        SizedBlocks=false;
+        SizedBlocks_FileThenStream=0;
+        MustSynchronize=true;
+        return;
+    }
+    if (MustSynchronize)
+    {
+        MustSynchronize=false;
+        if (File_Offset_FirstSynched==(int64u)-1)
+        {
+            Synched_Init();
+            Buffer_TotalBytes_FirstSynched=0;
+            File_Offset_FirstSynched=File_Offset;
+        }
+    }
+    SizedBlocks=true;
+    lengthSizeMinusOne=Framing;
+}
 
 //---------------------------------------------------------------------------
 void File_Hevc::Read_Buffer_Unsynched()
@@ -4487,6 +4527,7 @@ void File_Hevc::VPS_SPS_PPS()
 
     MustParse_VPS_SPS_PPS=false;
     FILLING_BEGIN_PRECISE();
+        SizedBlocks_Probe=false; //The framing is the one of the configuration record
         Accept("HEVC");
     FILLING_ELSE();
         //The configuration record is not a frame
@@ -4498,6 +4539,7 @@ void File_Hevc::VPS_SPS_PPS()
         Frame_Count=Frame_Count_Save;
         Frame_Count_InThisBlock=Frame_Count_InThisBlock_Save;
         Frame_Count_NotParsedIncluded=Frame_Count_NotParsedIncluded_Save;
+        SizedBlocks_Probe=true; //The size of the NAL unit length and the framing are not reliable
     FILLING_END();
 }
 
@@ -4659,7 +4701,10 @@ void File_Hevc::VPS_SPS_PPS_FromMatroska()
     //Filling
     MustParse_VPS_SPS_PPS=false;
     FILLING_BEGIN_PRECISE();
+        SizedBlocks_Probe=false; //The framing is the one of the configuration record
         Accept("HEVC");
+    FILLING_ELSE();
+        SizedBlocks_Probe=true; //The size of the NAL unit length and the framing are not reliable
     FILLING_END();
 }
 

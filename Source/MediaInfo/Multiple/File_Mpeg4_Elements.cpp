@@ -8056,6 +8056,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
                 {
                     File_Avc* Parser=new File_Avc;
                     Parser->FrameIsAlwaysComplete=true;
+                    Parser->SizedBlocks_Probe=true; //Used if there is no usable configuration record
                     #if MEDIAINFO_DEMUX
                         switch ((int32u)Element_Code)
                         {
@@ -8131,6 +8132,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
                 {
                     File_Hevc* Parser=new File_Hevc;
                     Parser->FrameIsAlwaysComplete=true;
+                    Parser->SizedBlocks_Probe=true; //Used if there is no usable configuration record
                     #if MEDIAINFO_DEMUX
                         if (Config->Demux_Hevc_Transcode_Iso14496_15_to_AnnexB_Get())
                         {
@@ -9801,7 +9803,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_hvcC()
     if (Element_Size<23)
     {
         Skip_XX(Element_Size,                                   "Data");
-        return; //Too small for a configuration record, the samples are expected to be Annex B, parsed by the parser of the sample entry
+        return; //Too small for a configuration record, the parser of the sample entry finds the framing of the samples
     }
 
     //Parsing

@@ -1937,6 +1937,7 @@ void File_Riff::AVI__hdlr_strl_strf_vids()
     {
         File_Avc* Parser=new File_Avc;
         Parser->FrameIsAlwaysComplete=true;
+        Parser->SizedBlocks_Probe=true; //Used if there are no headers in the format chunk
         Stream[Stream_ID].Parsers.push_back(Parser);
     }
     #endif
@@ -2024,6 +2025,7 @@ void File_Riff::AVI__hdlr_strl_strf_vids_Avc()
         File_Avc* Parser=(File_Avc*)StreamItem.Parsers[0];
         Parser->MustParse_SPS_PPS=false;
         Parser->SizedBlocks=false;
+        Parser->SizedBlocks_Probe=false; //Probing the frames, not these headers
         Parser->MustSynchronize=true;
         int64u Element_Offset_Save=Element_Offset;
         Open_Buffer_Continue(Parser);
@@ -2036,6 +2038,7 @@ void File_Riff::AVI__hdlr_strl_strf_vids_Avc()
             Parser->FrameIsAlwaysComplete=true;
             Parser->MustParse_SPS_PPS=true;
             Parser->SizedBlocks=true;
+            Parser->SizedBlocks_Probe=true; //Used if the configuration record is not usable
             Parser->MustSynchronize=false;
             Open_Buffer_Continue(Parser);
             Element_Show();

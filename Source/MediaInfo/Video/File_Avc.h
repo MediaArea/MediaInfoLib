@@ -41,6 +41,7 @@ public :
     int64u Frame_Count_Valid;
     bool   MustParse_SPS_PPS;
     bool   SizedBlocks;
+    bool   SizedBlocks_Probe; //Sized blocks or Annex B decided by the content of the first complete block, e.g. no usable configuration record
     bool   PartialFrames; //Complete frames parsed only up to their first slice header if the first frame (parsed with all its slices, for the slice count) has one progressive picture, e.g. by the probe of captions (in SEI messages)
 
     //Constructor/Destructor
@@ -63,6 +64,18 @@ public :
 
     //Helper for BitRate_Mode
     static void Fill_BitRate_Mode(File__Analyze* Instance, bool cbr_flag, bool cbr_flag_IsSet, bool cbr_flag_IsValid, int64u bit_rate_value, bool bit_rate_value_IsValid);
+
+    //Helper for the framing of a complete block of AVC or HEVC NAL units: sized (value is the size of the NAL unit length minus 1), Annex B, or unknown
+    enum nalu_framing : int8u
+    {
+        NaluFraming_Sized1,
+        NaluFraming_Sized2,
+        NaluFraming_Sized3,
+        NaluFraming_Sized4,
+        NaluFraming_AnnexB,
+        NaluFraming_Unknown,
+    };
+    static nalu_framing NaluFraming_Probe(const int8u* Buffer, size_t Buffer_Size, bool IsHevc, int8u LengthSizeMinusOne_Hint);
 
     //Helper for streams filled from several parameter sets: a value added by a set only repeating the value before it (e.g. "8" then "8 / 8") is removed
     static void Streams_RemoveRepetitions(const std::vector<ZtringList>& Before, const std::vector<ZtringListList>& Before_More, std::vector<ZtringList>& After, std::vector<ZtringListList>& After_More);
@@ -415,6 +428,7 @@ private :
     #if MEDIAINFO_ADVANCED2
     void Read_Buffer_SegmentChange();
     #endif //MEDIAINFO_ADVANCED2
+    void Read_Buffer_Continue();
     void Read_Buffer_Unsynched();
 
     //Buffer - Per element

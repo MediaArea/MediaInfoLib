@@ -5695,6 +5695,7 @@ void File_Mk::CodecID_Manage()
             parser->MustSynchronize=false;
             parser->MustParse_SPS_PPS=true;
             parser->SizedBlocks=true;
+            parser->SizedBlocks_Probe=true; //Used if there is no usable configuration record
             #if MEDIAINFO_DEMUX
                 if (Config->Demux_Avc_Transcode_Iso14496_15_to_Iso14496_10_Get())
                 {
@@ -5702,6 +5703,14 @@ void File_Mk::CodecID_Manage()
                     streamItem.Parser->Demux_UnpacketizeContainer=true;
                 }
             #endif //MEDIAINFO_DEMUX
+        }
+        else if (InfoCodecID_Format_Type==InfoCodecID_Format_Riff)
+        {
+            //Video for Windows: the private data after the bitmap information header is a configuration record or parameter sets with start codes, the frames are probed if it is not usable
+            parser->MustSynchronize=false;
+            parser->MustParse_SPS_PPS=true;
+            parser->SizedBlocks=true;
+            parser->SizedBlocks_Probe=true;
         }
     }
     #endif
@@ -5729,6 +5738,7 @@ void File_Mk::CodecID_Manage()
             parser->MustParse_VPS_SPS_PPS=true;
             parser->MustParse_VPS_SPS_PPS_FromMatroska=true;
             parser->SizedBlocks=true;
+            parser->SizedBlocks_Probe=true; //Used if there is no usable configuration record
             #if MEDIAINFO_DEMUX
                 if (Config->Demux_Hevc_Transcode_Iso14496_15_to_AnnexB_Get())
                 {
