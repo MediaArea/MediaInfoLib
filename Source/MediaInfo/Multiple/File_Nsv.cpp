@@ -279,7 +279,7 @@ void File_Nsv::FileHeader_Parse()
         NotValid={"NSV toc_size", 24, toc_size, "toc_size is more than toc_alloc", "<=", toc_alloc};
     else
     {
-        const auto toc_alloc_Max=min((header_size-28)/4, header_size-28-metadata_len);
+        const auto toc_alloc_Max=(header_size-28-metadata_len)/4;
         if (toc_alloc>toc_alloc_Max)
             NotValid={"NSV toc_alloc", 20, toc_alloc, "toc_alloc is more than what the header can contain", "<=", toc_alloc_Max};
     }
@@ -405,10 +405,12 @@ void File_Nsv::FileHeader_Parse()
         }
         Element_End0();
     }
-    if (toc_size)
+    //StarDiva metadata, in the second half of a header of 0x96000 bytes, may be in the unused part of the table of contents
+    const auto IsStarDiva=header_size==0x96000 && BigEndian2int32u(Buffer+0x4B000)==0x4A4C1A00;
+    if (toc_alloc)
     {
         Element_Begin1("toc");
-        int64u End=Element_Offset+toc_alloc;
+        int64u End=Element_Offset+(int64u)toc_alloc*4;
         for (int32u i=0; i<toc_size; i++)
         {
             Info_L4(offset,                                     "offset"); Param_Info1(header_size+offset);
@@ -426,13 +428,15 @@ void File_Nsv::FileHeader_Parse()
                 }
             }
         }
+        if (IsStarDiva && Element_Offset<=0x4B000 && End>0x4B000)
+            End=0x4B000;
         if (Element_Offset<End)
             Skip_XX(End-Element_Offset,                         "toc_padding");
         Element_End0();
     }
 
     // StarDiva metadata
-    if (header_size==0x96000 && Element_Offset<=0x4B000 && BigEndian2int32u(Buffer+0x4B000)==0x4A4C1A00)
+    if (IsStarDiva && Element_Offset<=0x4B000)
     {
         Skip_XX(0x4B000-Element_Offset,                         "Zeroes");
 
