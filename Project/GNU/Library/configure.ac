@@ -1017,15 +1017,6 @@ if test "$GXX" = yes ; then
 fi
 
 if test "$enable_visibility" = yes ; then
-	if test -e "/etc/debian_version" ; then
-		Debian_Version="$(more /etc/debian_version)"
-		case $Debian_Version in
-		*4.*)
-			enable_visibility="no" ;;
-		esac
-	fi
-fi
-if test "$enable_visibility" = yes ; then
 	CFLAGS="$CFLAGS -fvisibility=hidden -fvisibility-inlines-hidden"
 	CXXFLAGS="$CXXFLAGS -fvisibility=hidden -fvisibility-inlines-hidden"
 	LDFLAGS="$LDFLAGS -fvisibility=hidden -fvisibility-inlines-hidden"
