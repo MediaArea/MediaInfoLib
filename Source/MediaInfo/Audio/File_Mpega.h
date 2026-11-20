@@ -80,6 +80,7 @@ private :
     size_t Scalefac; //Total
     size_t Reservoir; //Total
     int64u LastSync_Offset;
+    int64u NotZero_Offset; //First byte that is neither zero nor in a tag parsed at the start of Synchronize()
     int64u VBR_FileSize;
     int32u VBR_Frames;
     int32u Reservoir_Max;

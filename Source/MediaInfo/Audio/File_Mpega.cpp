@@ -338,6 +338,7 @@ File_Mpega::File_Mpega()
     Scalefac=0;
     Reservoir=0;
     LastSync_Offset=(int64u)-1;
+    NotZero_Offset=(int64u)-1;
     VBR_FileSize=0;
     VBR_Frames=0;
     Reservoir_Max=0;
@@ -689,16 +690,24 @@ static bool Mpega_Layer1_Allocation_IsValid(const int8u* Frame, size_t Frame_Siz
 //---------------------------------------------------------------------------
 bool File_Mpega::Synchronize()
 {
-    //Tags
-    bool Tag_Found_Begin;
-    if (!File__Tags_Helper::Synchronize(Tag_Found_Begin))
-        return false;
-    if (Tag_Found_Begin)
-        return true;
+    for (;;)
+    {
+        //Tags
+        bool Tag_Found_Begin;
+        if (!File__Tags_Helper::Synchronize(Tag_Found_Begin))
+            return false;
+        if (Tag_Found_Begin)
+            return true;
 
-    //Padding
-    while (Buffer_Offset<Buffer_Size && Buffer[Buffer_Offset]==0x00)
-        Buffer_Offset++;
+        //Padding
+        size_t Buffer_Offset_BeforePadding=Buffer_Offset;
+        while (Buffer_Offset<Buffer_Size && Buffer[Buffer_Offset]==0x00)
+            Buffer_Offset++;
+        if (Status[IsAccepted] || Buffer_Offset==Buffer_Offset_BeforePadding)
+            break; //Before the stream is accepted, tags after zero bytes are tested as tags at the start, they are not other data before a single frame
+    }
+    if (NotZero_Offset==(int64u)-1 && Buffer_Offset<Buffer_Size)
+        NotZero_Offset=File_Offset+Buffer_Offset;
 
     //Synchro
     if (Buffer_Offset+3>Buffer_Size)
@@ -713,6 +722,7 @@ bool File_Mpega::Synchronize()
     }
 
     //Synchronizing
+    auto SingleFrame_IsEnough=[&]() {return Status[IsAccepted] || IsSub || NotZero_Offset==File_Offset+Buffer_Offset;}; //Before the stream is accepted, a single frame followed by the end of the file or by a tag, after other data, is likely a coincidence
     auto Buffer_Offset_BeforeZero = Buffer_Offset;
     LastSync_Offset_AreNotZero = true; // In case there is a return during check
     while (Buffer_Offset+4<=Buffer_Size)
@@ -785,10 +795,17 @@ bool File_Mpega::Synchronize()
                     bool Tag_Found0;
                     if (!File__Tags_Helper::Synchronize(Tag_Found0, Size0))
                         return false;
-                    if (Tag_Found0)
-                        return true;
-                    if (File_Offset+Buffer_Offset+Size0==File_Size-File_EndTagSize)
-                        break;
+                    if (Tag_Found0 || File_Offset+Buffer_Offset+Size0==File_Size-File_EndTagSize)
+                    {
+                        if (!SingleFrame_IsEnough())
+                        {
+                            Buffer_Offset++; //False start
+                            continue;
+                        }
+                        if (Tag_Found0)
+                            return true;
+                        break; //while(), padding up to the end tags
+                    }
 
                     //Testing
                     if ((CC2(Buffer+Buffer_Offset+Size0)&0xFFE0)!=0xFFE0 || (CC1(Buffer+Buffer_Offset+Size0+2)&0xF0)==0xF0 || (CC1(Buffer+Buffer_Offset+Size0+2)&0x0C)==0x0C)
@@ -908,8 +925,10 @@ bool File_Mpega::Synchronize()
                         }
                     }
                 }
-                else
+                else if (SingleFrame_IsEnough())
                     break; //while()
+                else
+                    Buffer_Offset++; //False start
             }
         }
     }
