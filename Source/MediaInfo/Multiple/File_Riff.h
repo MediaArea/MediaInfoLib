@@ -259,6 +259,7 @@ private :
     void AVI__hdlr_strl_strf_vids ();
     void AVI__hdlr_strl_strf_vids_Avc ();
     void AVI__hdlr_strl_strf_vids_Ffv1();
+    void AVI__hdlr_strl_strf_vids_Hevc();
     void AVI__hdlr_strl_strf_vids_HuffYUV(int16u BitCount, int32u Height);
     void AVI__hdlr_strl_strh ();
     void AVI__hdlr_strl_strn ();

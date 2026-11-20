@@ -208,6 +208,9 @@ std::string ExtensibleWave_ChannelMask_ChannelLayout(int32u ChannelMask)
 #if defined(MEDIAINFO_AVC_YES)
     #include "MediaInfo/Video/File_Avc.h"
 #endif
+#if defined(MEDIAINFO_HEVC_YES)
+    #include "MediaInfo/Video/File_Hevc.h"
+#endif
 #if defined(MEDIAINFO_CANOPUS_YES)
     #include "MediaInfo/Video/File_Canopus.h"
 #endif
@@ -1941,6 +1944,19 @@ void File_Riff::AVI__hdlr_strl_strf_vids()
         Stream[Stream_ID].Parsers.push_back(Parser);
     }
     #endif
+    #if defined(MEDIAINFO_HEVC_YES)
+    else if (MediaInfoLib::Config.CodecID_Get(Stream_Video, InfoCodecID_Format_Riff, Ztring().From_CC4(Compression))==__T("HEVC"))
+    {
+        //The headers in the format chunk are a configuration record or parameter sets with start codes, the frames are probed if they are not usable
+        File_Hevc* Parser=new File_Hevc;
+        Parser->FrameIsAlwaysComplete=true;
+        Parser->MustSynchronize=false;
+        Parser->MustParse_VPS_SPS_PPS=true;
+        Parser->SizedBlocks=true;
+        Parser->SizedBlocks_Probe=true;
+        Stream[Stream_ID].Parsers.push_back(Parser);
+    }
+    #endif
     #if defined(MEDIAINFO_CANOPUS_YES)
     else if (MediaInfoLib::Config.CodecID_Get(Stream_Video, InfoCodecID_Format_Riff, Ztring().From_CC4(Compression))==__T("Canopus HQ"))
     {
@@ -2006,6 +2022,8 @@ void File_Riff::AVI__hdlr_strl_strf_vids()
         AVI__hdlr_strl_strf_vids_Avc();
     else if (MediaInfoLib::Config.CodecID_Get(Stream_Video, InfoCodecID_Format_Riff, Ztring().From_CC4(Compression))==__T("FFV1"))
         AVI__hdlr_strl_strf_vids_Ffv1();
+    else if (MediaInfoLib::Config.CodecID_Get(Stream_Video, InfoCodecID_Format_Riff, Ztring().From_CC4(Compression))==__T("HEVC"))
+        AVI__hdlr_strl_strf_vids_Hevc();
     else if (MediaInfoLib::Config.CodecID_Get(Stream_Video, InfoCodecID_Format_Riff, Ztring().From_CC4(Compression))==__T("HuffYUV"))
         AVI__hdlr_strl_strf_vids_HuffYUV(Resolution, Height);
     else Skip_XX(Element_Size-Element_Offset,                   "Unknown");
@@ -2058,6 +2076,19 @@ void File_Riff::AVI__hdlr_strl_strf_vids_Ffv1()
         Open_Buffer_OutOfBand(Stream[Stream_ID].Parsers[0]);
     #else //MEDIAINFO_FFV1_YES
         Skip_XX(Element_Size-Element_Offset,                    "(FFV1 headers)");
+    #endif
+    Element_End0();
+}
+
+//---------------------------------------------------------------------------
+void File_Riff::AVI__hdlr_strl_strf_vids_Hevc()
+{
+    //Parsing
+    Element_Begin1("HEVC options");
+    #if defined(MEDIAINFO_HEVC_YES)
+        Open_Buffer_Continue(Stream[Stream_ID].Parsers[0]);
+    #else //MEDIAINFO_HEVC_YES
+        Skip_XX(Element_Size-Element_Offset,                    "(HEVC headers)");
     #endif
     Element_End0();
 }
