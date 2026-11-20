@@ -3289,26 +3289,16 @@ void File__Analyze::Data_Accept (const char* ParserName)
     if (Status[IsAccepted] || Status[IsFinished])
         return;
 
-    if (ParserName)
-        Info(std::string(ParserName)+", accepted");
-
     Accept(ParserName);
 }
 #endif //MEDIAINFO_TRACE
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_TRACE
-void File__Analyze::Data_Finish (const char* ParserName)
+void File__Analyze::Data_Finish (const char*)
 {
     if (ShouldContinueParsing)
-    {
-        if (ParserName)
-            Info(std::string(ParserName)+", wants to finish, but should continue parsing");
         return;
-    }
-
-    if (ParserName)
-        Info(std::string(ParserName)+", finished");
 
     Finish();
 }
@@ -4107,11 +4097,7 @@ bool File__Analyze::BS_Bookmark_Restore(bs_bookmark& B)
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-#if MEDIAINFO_TRACE
 void File__Analyze::Accept (const char* ParserName_Char)
-#else //MEDIAINFO_TRACE
-void File__Analyze::Accept ()
-#endif //MEDIAINFO_TRACE
 {
     if (Status[IsAccepted] || Status[IsFinished])
         return;
@@ -4120,17 +4106,8 @@ void File__Analyze::Accept ()
     if (!IsSub && !Config->File_FileName_Get().empty())
         File_Name=Config->File_FileName_Get();
 
-    #if MEDIAINFO_TRACE
-        if (ParserName.empty() && ParserName_Char)
-            ParserName = ParserName_Char;
-
-        //The trace of the current element is split at acceptance, except if nothing is parsed in it yet (e.g. a file header not read before the acceptance), else it would be shown empty
-        if (!ParserName.empty() && Element_Level>0 && (Element_Offset || !Element[Element_Level].TraceNode.Children.empty() || !Element[Element_Level].TraceNode.Infos.empty()))
-        {
-            Element_End0(); //Element
-            Element_Level++;
-        }
-    #endif //MEDIAINFO_TRACE
+    if (ParserName.empty() && ParserName_Char)
+        ParserName = ParserName_Char;
 
     Status[IsAccepted]=true;
     if (Count_Get(Stream_General)==0)
@@ -4191,28 +4168,13 @@ void File__Analyze::Update (File__Analyze* Parser)
 }
 
 //---------------------------------------------------------------------------
-#if MEDIAINFO_TRACE
 void File__Analyze::Fill (const char* ParserName_Char)
-#else //MEDIAINFO_TRACE
-void File__Analyze::Fill ()
-#endif //MEDIAINFO_TRACE
 {
     if (!Status[IsAccepted] || Status[IsFilled] || Status[IsFinished])
         return;
 
-    #if MEDIAINFO_TRACE
-        if (ParserName.empty() && ParserName_Char)
-            ParserName = ParserName_Char;
-
-        if (!ParserName.empty())
-        {
-            bool MustElementBegin=Element_Level?true:false;
-            if (Element_Level>0)
-                Element_End0(); //Element
-            if (MustElementBegin)
-                Element_Level++;
-        }
-    #endif //MEDIAINFO_TRACE
+    if (ParserName.empty() && ParserName_Char)
+        ParserName = ParserName_Char;
 
     Streams_Fill();
     Status[IsFilled]=true;
@@ -4236,7 +4198,7 @@ void File__Analyze::Fill (File__Analyze* Parser)
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_TRACE
-void File__Analyze::Finish (const char* ParserName_Char)
+void File__Analyze::Finish (const char*)
 #else //MEDIAINFO_TRACE
 void File__Analyze::Finish ()
 #endif //MEDIAINFO_TRACE
@@ -4265,21 +4227,7 @@ void File__Analyze::Finish ()
     }
 
     if (MustContinue)
-    {
-        #if MEDIAINFO_TRACE
-        if (!ParserName.empty())
-        {
-            bool MustElementBegin=Element_Level?true:false;
-            if (Element_Level>0)
-                Element_End0(); //Element
-            Info(std::string(ParserName)+", wants to finish, but should continue parsing");
-            if (MustElementBegin)
-                Element_Level++;
-        }
-        #endif //MEDIAINFO_TRACE
-
         return;
-    }
 
     ForceFinish();
 }
@@ -4290,11 +4238,7 @@ void File__Analyze::Finish (File__Analyze* Parser)
 }
 
 //---------------------------------------------------------------------------
-#if MEDIAINFO_TRACE
 void File__Analyze::ForceFinish (const char* ParserName_Char)
-#else //MEDIAINFO_TRACE
-void File__Analyze::ForceFinish ()
-#endif //MEDIAINFO_TRACE
 {
     if (Status[IsFinished])
         return;
@@ -4313,10 +4257,10 @@ void File__Analyze::ForceFinish ()
         if (!Data_Parse_IsRunning) //Else the parser continues the element and Data_Manage() ends the levels after it
             while (Element_Level>0)
                 Element_End0(); //This is Finish, must flush
-
-        if (ParserName.empty() && ParserName_Char)
-            ParserName = ParserName_Char;
     #endif //MEDIAINFO_TRACE
+
+    if (ParserName.empty() && ParserName_Char)
+        ParserName = ParserName_Char;
 
     if (Status[IsAccepted])
     {
