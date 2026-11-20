@@ -680,7 +680,11 @@ void File_Dirac::Sequence_header()
                 int32u frame_rate_numer, frame_rate_denom;
                 Get_UI (frame_rate_numer,                       "frame rate numer");
                 Get_UI (frame_rate_denom,                       "frame rate denom");
-                frame_rate=((float32)frame_rate_numer)/((float32)frame_rate_denom);
+                if (Element_IsOK() && !frame_rate_numer)
+                    Fill_Conformance("sequence_header frame_rate_numer", "frame_rate_numer is 0");
+                if (Element_IsOK() && !frame_rate_denom)
+                    Fill_Conformance("sequence_header frame_rate_denom", "frame_rate_denom is 0");
+                frame_rate=(frame_rate_numer && frame_rate_denom)?((float32)frame_rate_numer)/((float32)frame_rate_denom):0;
             }
             else
                 frame_rate=Dirac_frame_rate(frame_rate_index);
@@ -693,7 +697,11 @@ void File_Dirac::Sequence_header()
                 int32u pixel_aspect_ratio_numer, pixel_aspect_ratio_denom;
                 Get_UI (pixel_aspect_ratio_numer,               "pixel aspect ratio numer");
                 Get_UI (pixel_aspect_ratio_denom,               "pixel aspect ratio denom");
-                pixel_aspect_ratio=((float32)pixel_aspect_ratio_numer)/((float32)pixel_aspect_ratio_denom);
+                if (Element_IsOK() && !pixel_aspect_ratio_numer)
+                    Fill_Conformance("sequence_header pixel_aspect_ratio_numer", "pixel_aspect_ratio_numer is 0");
+                if (Element_IsOK() && !pixel_aspect_ratio_denom)
+                    Fill_Conformance("sequence_header pixel_aspect_ratio_denom", "pixel_aspect_ratio_denom is 0");
+                pixel_aspect_ratio=(pixel_aspect_ratio_numer && pixel_aspect_ratio_denom)?((float32)pixel_aspect_ratio_numer)/((float32)pixel_aspect_ratio_denom):0;
             }
             else
                 pixel_aspect_ratio=Dirac_pixel_aspect_ratio(pixel_aspect_ratio_index);
