@@ -5747,6 +5747,14 @@ void File_Mk::CodecID_Manage()
                 }
             #endif //MEDIAINFO_DEMUX
         }
+        else if (InfoCodecID_Format_Type==InfoCodecID_Format_Riff)
+        {
+            //Video for Windows: the private data after the bitmap information header is a configuration record or parameter sets with start codes, the frames are probed if it is not usable
+            parser->MustSynchronize=false;
+            parser->MustParse_VPS_SPS_PPS=true;
+            parser->SizedBlocks=true;
+            parser->SizedBlocks_Probe=true;
+        }
     }
     #endif
     #if defined(MEDIAINFO_FFV1_YES)

@@ -227,13 +227,14 @@ H262;Intel H.262;4CC;V;;;Intel H.262
 H263;Intel H.263;4CC;V;;;Intel H.263
 H264;AVC;4CC;V;AVC;;Intel H.264
 h264;AVC;4CC;V;AVC;;Intel H.264
-H265;Intel H.265;4CC;V;;;Intel H.265
+H265;HEVC;4CC;V;HEVC;;Intel H.265
 H266;Intel H.266;4CC;V;;;Intel H.266
 H267;Intel H.267;4CC;V;;;Intel H.267
 H268;Intel H.268;4CC;V;;;Intel H.268
 H269;Intel H.263;4CC;V;;;Intel H.263 for POTS-based videoconferencing
 HD10;BlueFish;4CC;V;;;BlueFish444 (lossless RGBA, YUV 10-bit)
 HDX4;Jomigo;4CC;V;;;Jomigo HDX4
+HEVC;HEVC;4CC;V;HEVC;;High Efficiency Video Coding
 HFYU;Huffman;4CC;V;;;Huffman Lossless YUV and RGB formats (with Alpha-channel)
 HMCR;Rendition;4CC;V;;;Rendition Motion Compensation Format
 HMRR;Rendition;4CC;V;;;Rendition Motion Compensation Format

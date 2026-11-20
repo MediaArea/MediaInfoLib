@@ -247,13 +247,14 @@ H263;H.263;;;;;;;
 h263;H.263;;;http://www.apple.com/quicktime/download/standalone.html;;;;
 H264;AVC;;;;;;YUV;4:2:0
 h264;AVC;;;;;;YUV;4:2:0
-H265;H.265;;;;;;;
+H265;HEVC;;;;;;;
 H266;H.266;;;;;;;
 H267;H.267;;;;;;;
 H268;H.268;;;;;;;
 H269;H.263;;;;;;;
 HD10;RGB;BlueFish;BlueFish444 (lossless RGBA, YUV 10-bit);;;;RGB;
 HDX4;Jomigo HDX4;;;;;;;
+HEVC;HEVC;;;;;;;
 HFYU;HuffYUV;;;;;;;
 HMCR;Rendition;;Rendition Motion Compensation Format;;;;;
 HMRR;Rendition;;Rendition Motion Compensation Format;;;;;
