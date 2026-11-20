@@ -5068,9 +5068,15 @@ void File_Avc::SPS_PPS()
         if (!Status[IsAccepted])
             Accept("AVC");
     FILLING_ELSE();
-        Frame_Count_NotParsedIncluded--;
+        //The configuration record is not a frame
+        const auto Frame_Count_Save=Frame_Count;
+        const auto Frame_Count_InThisBlock_Save=Frame_Count_InThisBlock;
+        const auto Frame_Count_NotParsedIncluded_Save=Frame_Count_NotParsedIncluded;
         RanOutOfData("AVC");
-        Frame_Count_NotParsedIncluded++;
+        Merge_Conformance(true);
+        Frame_Count=Frame_Count_Save;
+        Frame_Count_InThisBlock=Frame_Count_InThisBlock_Save;
+        Frame_Count_NotParsedIncluded=Frame_Count_NotParsedIncluded_Save;
     FILLING_END();
 }
 

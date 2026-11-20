@@ -4489,9 +4489,15 @@ void File_Hevc::VPS_SPS_PPS()
     FILLING_BEGIN_PRECISE();
         Accept("HEVC");
     FILLING_ELSE();
-        Frame_Count_NotParsedIncluded--;
+        //The configuration record is not a frame
+        const auto Frame_Count_Save=Frame_Count;
+        const auto Frame_Count_InThisBlock_Save=Frame_Count_InThisBlock;
+        const auto Frame_Count_NotParsedIncluded_Save=Frame_Count_NotParsedIncluded;
         RanOutOfData("HEVC");
-        Frame_Count_NotParsedIncluded++;
+        Merge_Conformance(true);
+        Frame_Count=Frame_Count_Save;
+        Frame_Count_InThisBlock=Frame_Count_InThisBlock_Save;
+        Frame_Count_NotParsedIncluded=Frame_Count_NotParsedIncluded_Save;
     FILLING_END();
 }
 
