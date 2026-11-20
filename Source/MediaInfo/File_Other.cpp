@@ -101,6 +101,7 @@ void File_Other::Read_Buffer_Continue()
         return;
     }
     else if (CC5(Buffer)==CC5("ustar")) {Format=__T("Tar archive");}
+    else if (CC8(Buffer)==CC8("!<arch>\n")) {Format=CC8(Buffer+8)==CC8("debian-b")?__T("Debian package"):__T("Static library");} //ar archive, a Debian package has first a debian-binary member
     //TODO: all archive magic numbers
     else if (CC4(Buffer+1)==CC4("MSCB")) {Format=__T("MS Cabinet");}
     else if (CC4(Buffer)==CC4(".snd")) {Format=__T("SUN Audio");}

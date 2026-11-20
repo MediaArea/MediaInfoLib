@@ -2310,12 +2310,12 @@ bool File__Analyze::FileHeader_Begin_0x000001()
         //Else this is the whole file, the tests are done on what is available
     }
 
-    //Detecting OldDirac/WAV/SWF/FLV/ELF/DPG/WM/Matroska/PDF files
+    //Detecting OldDirac/WAV/SWF/FLV/ELF/DPG/WM/Matroska/PDF/static library files
     int64u Magic8=CC8(Buffer);
     int32u Magic4=Magic8>>32;
     int32u Magic3=Magic4>> 8;
     int16u Magic2=Magic4>>16;
-    if (Magic8==0x4B572D4449524143LL || Magic4==0x52494646 || Magic3==0x465753 || Magic3==0x464C56 || Magic4==0x7F454C46 || Magic4==0x44504730 || Magic4==0x3026B275 || Magic2==0x4D5A || Magic4==0x1A45DFA3 || Magic4==0x25504446)
+    if (Magic8==0x4B572D4449524143LL || Magic4==0x52494646 || Magic3==0x465753 || Magic3==0x464C56 || Magic4==0x7F454C46 || Magic4==0x44504730 || Magic4==0x3026B275 || Magic2==0x4D5A || Magic4==0x1A45DFA3 || Magic4==0x25504446 || Magic8==0x213C617263683E0ALL)
     {
         Reject();
         return false;
