@@ -5406,7 +5406,7 @@ void File__Analyze::SynchLost(const char* Prefix, int64u CountOfBytes, bool AreZ
         if (AreZero) {
             Content += ", zeroed bytes";
         }
-        if (File_Offset + Buffer_Offset + CountOfBytes >= File_Size) {
+        if (File_Offset + Buffer_Offset >= File_Size) {
             if (!AreZero)
                 Content += ',';
             Content += " at the end";
