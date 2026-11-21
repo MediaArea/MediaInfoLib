@@ -158,7 +158,15 @@ void File_Au::FileHeader_Parse()
             data_size=(int32u)File_Size-data_start; //Priority for File size
         if (sample_rate && data_size!=0 && data_size!=0xFFFFFFFF)
             Fill(Stream_Audio, 0, Audio_Duration, ((int64u)data_size)*1000/sample_rate);
-        Fill(Stream_Audio, 0, Audio_StreamSize, File_Size-Element_Offset);
+        if (File_Size!=(int64u)-1)
+            Fill(Stream_Audio, 0, Audio_StreamSize, File_Size-Element_Offset);
+        else
+        {
+            //Unknown file size and parsing finished after the header: sizes from the header
+            Fill(Stream_General, 0, General_StreamSize, Element_Offset);
+            if (data_size!=0xFFFFFFFF)
+                Fill(Stream_Audio, 0, Audio_StreamSize, data_size);
+        }
         Fill(Stream_Audio, 0, Audio_BitRate_Mode, "CBR");
         Fill(Stream_General, 0, General_Comment, arbitrary);
 
