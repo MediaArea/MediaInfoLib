@@ -1024,7 +1024,7 @@ void File__MultipleParsing::Read_Buffer_Continue()
                 //Seek if requested
                 if (Parser[0]->File_GoTo<File_Size)
                     File_GoTo=Parser[0]->File_GoTo;
-                else if (Parser[0]->File_GoTo==File_Size && File_Size!=(int64u)-1)
+                else if (Parser[0]->File_GoTo==File_Size && File_Size!=(int64u)-1 && !Parser[0]->Status[IsAccepted])
                 {
                     delete Parser[0];
                     Parser.clear();
