@@ -5413,7 +5413,7 @@ void File__Analyze::SynchLost(const char* Prefix, int64u CountOfBytes, bool AreZ
             Content += " at the end";
             Type = Conformance_Information;
         }
-        Content += " (count " + to_string_with_percent(CountOfBytes, File_Size) + ")";
+        Content += " (count " + to_string_with_percent(CountOfBytes, File_Size, File_Size==(int64u)-1) + ")";
     }
     const auto Shift = Offset == (int64u)-1 ? CountOfBytes : File_Offset + Buffer_Offset + Element_Offset - Offset;
     File_Offset-=Shift;
