@@ -448,7 +448,7 @@ void File_Mpega::Streams_Finish()
     //size_t Ch=Mpega_Channels[Channels];
     //Fill("Scalefactors", Ztring::ToZtring(Scalefac*100/(Granules*Ch*Frame_Count))+__T('%'));
 
-    if (LastSync_Offset != (int64u)-1 && File_Offset + Buffer_Size > LastSync_Offset)
+    if (LastSync_Offset != (int64u)-1 && File_Offset + Buffer_Size > LastSync_Offset + TagsSize - LastSync_TagsSize)
     {
         if (NotZero_Offset == (int64u)-1 && !IsSub) //Bytes not tested by Synchronize(), e.g. fewer than the 8 bytes of the tags test; the buffer of a sub-parser may be the data of a previous call of its parent
             for (size_t i = Buffer_Offset; i < Buffer_Size; i++)
@@ -458,7 +458,7 @@ void File_Mpega::Streams_Finish()
                     break;
                 }
         Buffer_Offset = Buffer_Size;
-        SynchLost("MPEG-Audio", File_Offset + Buffer_Size - LastSync_Offset, NotZero_Offset == (int64u)-1, LastSync_Offset);
+        SynchLost("MPEG-Audio", File_Offset + Buffer_Size - LastSync_Offset - (TagsSize - LastSync_TagsSize), NotZero_Offset == (int64u)-1, LastSync_Offset);
     }
 
     //VBR_FileSize calculation
@@ -711,8 +711,8 @@ bool File_Mpega::Synchronize()
         size_t Buffer_Offset_BeforePadding=Buffer_Offset;
         while (Buffer_Offset<Buffer_Size && Buffer[Buffer_Offset]==0x00)
             Buffer_Offset++;
-        if (Status[IsAccepted] || Buffer_Offset==Buffer_Offset_BeforePadding)
-            break; //Before the stream is accepted, tags after zero bytes are tested as tags at the start, they are not other data before a single frame
+        if (Buffer_Offset==Buffer_Offset_BeforePadding)
+            break; //Tags after zero bytes are tested as tags at the start, they are neither other data before a single frame nor lost bytes
     }
     if (NotZero_Offset==(int64u)-1 && Buffer_Offset<Buffer_Size)
         NotZero_Offset=File_Offset+Buffer_Offset;
@@ -970,8 +970,8 @@ bool File_Mpega::Synchronize()
     }
 
     //Synched is OK
-    if (LastSync_Offset != (int64u)-1 && File_Offset + Buffer_Offset > LastSync_Offset) {
-        SynchLost("MPEG-Audio", File_Offset + Buffer_Offset - LastSync_Offset, NotZero_Offset == File_Offset + Buffer_Offset, LastSync_Offset);
+    if (LastSync_Offset != (int64u)-1 && File_Offset + Buffer_Offset > LastSync_Offset + TagsSize - LastSync_TagsSize) {
+        SynchLost("MPEG-Audio", File_Offset + Buffer_Offset - LastSync_Offset - (TagsSize - LastSync_TagsSize), NotZero_Offset == File_Offset + Buffer_Offset, LastSync_Offset);
     }
     LastSync_Offset = File_Offset + Buffer_Offset;
     LastSync_TagsSize = TagsSize;
