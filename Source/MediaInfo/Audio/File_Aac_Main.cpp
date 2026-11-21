@@ -1016,10 +1016,8 @@ void File_Aac::StreamMuxConfig()
     {
         if (audioMuxVersion==1)
         {
-            Element_Begin1("(not implemented)");
-            Skip_BS(Data_BS_Remain(),                               "(not implemented)");
-            Element_End0();
-            //taraBufferFullness=LatmGetValue();
+            int taraBufferFullness_unused=LatmGetValue();
+            (void)taraBufferFullness_unused;
         }
 
         streamCnt=0;
