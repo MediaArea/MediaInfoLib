@@ -70,6 +70,7 @@ File__Tags_Helper::File__Tags_Helper()
     Id3v2_Size=0;
     TagSizeIsFinal=false;
     SearchingForEndTags=false;
+    SkippingUpToEnd=false;
 }
 
 //---------------------------------------------------------------------------
@@ -163,6 +164,12 @@ bool File__Tags_Helper::Synchronize(bool &Tag_Found, size_t Synchro_Offset)
     if (SearchingForEndTags)
     {
         GoTo(0, "Tags detected");
+        return false;
+    }
+
+    if (SkippingUpToEnd)
+    {
+        Base->Buffer_Offset=Base->Buffer_Size;
         return false;
     }
 
@@ -517,6 +524,17 @@ void File__Tags_Helper::GoTo (int64u GoTo, const char* ParserName)
 //---------------------------------------------------------------------------
 void File__Tags_Helper::GoToFromEnd (int64u GoToFromEnd, const char* ParserName)
 {
+    if (Base->File_Size==(int64u)-1 && !Base->IsSub)
+    {
+        //No position from the end of a stream of unknown size: no jump and no search of the end tags, a finished parser skips the data up to its end, which gives the file size
+        if (!GoToFromEnd)
+        {
+            SkippingUpToEnd=true;
+            Base->GoTo(Base->File_Offset+Base->Buffer_Size);
+        }
+        return;
+    }
+
     if (GoToFromEnd>Base->File_Size)
     {
         if (ParserName)

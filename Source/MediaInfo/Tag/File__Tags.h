@@ -113,6 +113,7 @@ private :
     int64u Id3v2_Size;
     bool TagSizeIsFinal;
     bool SearchingForEndTags;
+    bool SkippingUpToEnd;
 
     //Helpers
     bool DetectBeginOfEndTags();        //return true if we can continue, false if want return
