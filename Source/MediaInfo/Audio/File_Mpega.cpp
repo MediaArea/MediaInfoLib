@@ -338,6 +338,7 @@ File_Mpega::File_Mpega()
     Scalefac=0;
     Reservoir=0;
     LastSync_Offset=(int64u)-1;
+    LastSync_TagsSize=0;
     NotZero_Offset=(int64u)-1;
     VBR_FileSize=0;
     VBR_Frames=0;
@@ -467,7 +468,7 @@ void File_Mpega::Streams_Finish()
         if (LastSync_Offset!=(int64u)-1)
         {
             VBR_FileSize=LastSync_Offset;
-            VBR_FileSize-=File_BeginTagSize;
+            VBR_FileSize-=LastSync_TagsSize;
         }
         else
         {
@@ -973,6 +974,7 @@ bool File_Mpega::Synchronize()
         SynchLost("MPEG-Audio", File_Offset + Buffer_Offset - LastSync_Offset, NotZero_Offset == File_Offset + Buffer_Offset, LastSync_Offset);
     }
     LastSync_Offset = File_Offset + Buffer_Offset;
+    LastSync_TagsSize = TagsSize;
     NotZero_Offset = (int64u)-1;
     return true;
 }
@@ -985,6 +987,7 @@ bool File_Mpega::Synched_Test()
         return false;
 
     LastSync_Offset=File_Offset+Buffer_Offset+Element_Offset;
+    LastSync_TagsSize=TagsSize;
 
     //Must have enough buffer for having header
     if (Buffer_Offset+3>Buffer_Size)
@@ -1159,6 +1162,7 @@ void File_Mpega::Data_Parse()
     }
 
     LastSync_Offset = File_Offset + Buffer_Offset + Element_Size;
+    LastSync_TagsSize = TagsSize;
     NotZero_Offset = (int64u)-1;
 
     //VBR and library headers
