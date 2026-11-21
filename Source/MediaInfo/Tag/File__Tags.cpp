@@ -559,17 +559,18 @@ bool File__Tags_Helper::DetectBeginOfEndTags_Test()
         //Id3v1
         if (Id3v1_Size==0 && File_EndTagSize==0 && Base->File_Size>=128) //Only one, at the end, larger than 128 bytes
         {
-            if (Base->File_Offset>Base->File_Size-128-32) //Must be at least at the end less 128 bytes
+            int64u Begin=Base->File_Size>=128+32?Base->File_Size-128-32:0; //32 to be able to quickly see another tag system
+            if (Base->File_Offset>Begin) //Must be at least at the end less 128 bytes
             {
-                Base->GoTo(Base->File_Size-128-32, "Tags detection"); //32 to be able to quickly see another tag system
+                Base->GoTo(Begin, "Tags detection");
                 TagSizeIsFinal=false;
                 return false;
             }
 
             if (Base->File_Offset+Base->Buffer_Size<Base->File_Size) //Must be at least at the end less 128 bytes of tags
             {
-                if (Base->File_Offset<Base->File_Size-128-32)
-                    Base->GoTo(Base->File_Size-128-32, "Tags detection");
+                if (Base->File_Offset<Begin)
+                    Base->GoTo(Begin, "Tags detection");
                 TagSizeIsFinal=false;
                 return false;
             }
@@ -602,9 +603,10 @@ bool File__Tags_Helper::DetectBeginOfEndTags_Test()
             if (CC8(Base->Buffer+((size_t)((Base->File_Size-File_EndTagSize-9)-Base->File_Offset)))==CC8("LYRICSEN"))
             {
                 //Must find the beginning, 5100 bytes before
-                if (Base->File_Offset>Base->File_Size-File_EndTagSize-5100) //Must be at the end less 15 bytes
+                int64u Begin=Base->File_Size-File_EndTagSize>=5100?Base->File_Size-File_EndTagSize-5100:0;
+                if (Base->File_Offset>Begin) //Must be at the end less 15 bytes
                 {
-                    Base->GoTo(Base->File_Size-File_EndTagSize-5100, "Tags");
+                    Base->GoTo(Begin, "Tags");
                     TagSizeIsFinal=false;
                     return false;
                 }
