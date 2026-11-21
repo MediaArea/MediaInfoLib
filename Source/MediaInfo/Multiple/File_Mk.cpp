@@ -5783,7 +5783,9 @@ void File_Mk::CodecID_Manage()
     #if defined(MEDIAINFO_DIRAC_YES)
     else if (Format==__T("Dirac"))
     {
-        streamItem.Parser=new File_Dirac;
+        File_Dirac* parser = new File_Dirac;
+        streamItem.Parser = parser;
+        parser->FrameIsAlwaysComplete=true;
     }
     #endif
     #if defined(MEDIAINFO_MPEGV_YES)

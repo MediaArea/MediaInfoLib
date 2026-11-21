@@ -84,6 +84,7 @@ public:
     stream          Streams[2];
     int64s          AudioDelay=0;
     int64u          SyncLost_Offset=(int64u)-1;
+    float64         PixelAspectRatio=0;
     bool            IsMajorSynched=false;
     bool            Header_IsValid=false;
 };
@@ -195,13 +196,14 @@ void File_Nsv::Streams_Finish()
     }
 
     float64 DisplayAspectRatio=Retrieve_Const(Stream_Video, 0, Video_DisplayAspectRatio).To_float64();
-    if (!DisplayAspectRatio)
+    if (!DisplayAspectRatio && P->PixelAspectRatio)
     {
         float64 Width=Retrieve_Const(Stream_Video, 0, Video_Width).To_float64();
         float64 Height=Retrieve_Const(Stream_Video, 0, Video_Height).To_float64();
-        float64 PixelAspectRatio=Retrieve_Const(Stream_Video, 0, Video_PixelAspectRatio).To_float64();
-        if (Width && Height && PixelAspectRatio)
-            Fill(Stream_Video, 0, Video_DisplayAspectRatio, Width/Height/PixelAspectRatio);
+        if (Width && Height)
+            Fill(Stream_Video, 0, Video_DisplayAspectRatio, Width/Height*P->PixelAspectRatio);
+        else
+            Fill(Stream_Video, 0, Video_PixelAspectRatio, P->PixelAspectRatio, 3, true);
     }
 }
 
@@ -258,22 +260,65 @@ void File_Nsv::FileHeader_Parse()
     Get_L4 (toc_size,                                           "toc_size");
 
     // Coherency
-    if (!P)
+    //A header with sizes not permitted by the specification is not used, the stream is accepted at its first sync frame
+    //A table of contents with sizes not permitted is not used, the rest of the header is if it does not go past the end of the file
+    struct
     {
-        if (header_size<28
-         || header_size>file_size
-         || metadata_len>header_size-28
-         || toc_alloc<toc_size
-         || toc_alloc>(header_size-28)/4
-         || toc_size>(header_size-28)/4
-         || ((int32u)-1)-toc_alloc<metadata_len // Next add overflow prevention
-         || toc_alloc+metadata_len>header_size-28)
-        {
-            Reject();
-            return;
-        }
-        Accept();
+        const char* Field;
+        int8u       Field_Offset;
+        int32u      Value;
+        const char* Problem;
+        const char* Expected_Prefix;
+        int32u      Expected;
+    } NotValid{};
+    if (header_size<28)
+        NotValid={"NSV header_size", 4, header_size, "header_size is less than the minimal size", ">=", 28};
+    else if (header_size==(int32u)-1)
+        NotValid={"NSV header_size", 4, header_size, "header_size is not permitted", nullptr, 0};
+    else if (file_size<header_size)
+        NotValid={"NSV file_size", 8, file_size, "file_size is less than header_size", ">=", header_size};
+    else if (metadata_len>header_size-28)
+        NotValid={"NSV metadata_len", 16, metadata_len, "metadata_len is more than what the header can contain", "<=", header_size-28};
+    else if (toc_size>toc_alloc)
+        NotValid={"NSV toc_size", 24, toc_size, "toc_size is more than toc_alloc", "<=", toc_alloc};
+    else
+    {
+        const auto toc_alloc_Max=(header_size-28-metadata_len)/4;
+        if (toc_alloc>toc_alloc_Max)
+            NotValid={"NSV toc_alloc", 20, toc_alloc, "toc_alloc is more than what the header can contain", "<=", toc_alloc_Max};
     }
+    if (NotValid.Field)
+    {
+        const auto OnlyToc_IsNotValid=NotValid.Field_Offset>=20 && (File_Size==(int64u)-1 || header_size<=File_Size-(File_Offset+Buffer_Offset)); //toc_alloc or toc_size
+        Element_Info1(OnlyToc_IsNotValid?"TOC not valid":"Not valid");
+        Element_Info1(NotValid.Problem);
+        #if MEDIAINFO_CONFORMANCE
+            if (!P) //Only once, the header may be parsed again after a wait for more data
+            {
+                const auto Element_Offset_Save=Element_Offset;
+                Element_Offset=NotValid.Field_Offset; //Offset of the field in the conformance error
+                string Message(NotValid.Problem);
+                Message+=" (actual ";
+                Message+=to_string(NotValid.Value);
+                if (NotValid.Expected_Prefix)
+                {
+                    Message+=", expected ";
+                    Message+=NotValid.Expected_Prefix;
+                    Message+=to_string(NotValid.Expected);
+                }
+                Message+=')';
+                Fill_Conformance(NotValid.Field, Message);
+                Merge_Conformance();
+                Element_Offset=Element_Offset_Save;
+            }
+        #endif //MEDIAINFO_CONFORMANCE
+        if (!OnlyToc_IsNotValid)
+            return;
+        toc_alloc=0;
+        toc_size=0;
+    }
+    if (!P)
+        Accept();
 
     // Parsing
     if (Element_Size<header_size)
@@ -281,13 +326,13 @@ void File_Nsv::FileHeader_Parse()
         Element_WaitForMoreData();
         return; //Must wait for more data
     }
-    if (file_len_ms)
+    if (file_len_ms && file_len_ms!=(int32u)-1) //0xFFFFFFFF is an unknown length
     {
         Fill(Stream_General, 0, General_Duration, file_len_ms);
         Fill(Stream_Video, 0, Video_Duration, file_len_ms);
         Fill(Stream_Audio, 0, Audio_Duration, file_len_ms);
     }
-    if (file_size>File_Size)
+    if (file_size!=(int32u)-1 && file_size>File_Size) //0xFFFFFFFF is an unknown size
         IsTruncated(file_size, false, "NSV");
     if (metadata_len)
     {
@@ -342,17 +387,14 @@ void File_Nsv::FileHeader_Parse()
                                 };
                                 string Name2(Name);
                                 transform(Name2.begin(), Name2.end(), Name2.begin(), asciitolower);
-                                stream_t StreamKind=Stream_General;
-                                if (Name2=="title")
-                                    Name2="Title";
-                                else if (Name2=="aspect")
+                                if (Name2=="aspect")
                                 {
-                                    Name2="PixelAspectRatio";
-                                    StreamKind=Stream_Video;
+                                    auto Aspect=Ztring().From_UTF8(Value).To_float64(); //Relative height of the pixels
+                                    if (Aspect>0 && !P->PixelAspectRatio)
+                                        P->PixelAspectRatio=1/Aspect;
                                 }
                                 else
-                                    Name2=Name;
-                                Fill(StreamKind, 0, Name2.c_str(), Value);
+                                    Fill(Stream_General, 0, Name2=="title"?"Title":Name.c_str(), Value);
                                 Element_Offset++;
                                 break;
                             }
@@ -367,10 +409,12 @@ void File_Nsv::FileHeader_Parse()
         }
         Element_End0();
     }
-    if (toc_size)
+    //StarDiva metadata, in the second half of a header of 0x96000 bytes, may be in the unused part of the table of contents
+    const auto IsStarDiva=header_size==0x96000 && BigEndian2int32u(Buffer+0x4B000)==0x4A4C1A00;
+    if (toc_alloc)
     {
         Element_Begin1("toc");
-        int64u End=Element_Offset+toc_alloc;
+        int64u End=Element_Offset+(int64u)toc_alloc*4;
         for (int32u i=0; i<toc_size; i++)
         {
             Info_L4(offset,                                     "offset"); Param_Info1(header_size+offset);
@@ -388,13 +432,15 @@ void File_Nsv::FileHeader_Parse()
                 }
             }
         }
+        if (IsStarDiva && Element_Offset<=0x4B000 && End>0x4B000)
+            End=0x4B000;
         if (Element_Offset<End)
             Skip_XX(End-Element_Offset,                         "toc_padding");
         Element_End0();
     }
 
     // StarDiva metadata
-    if (header_size==0x96000 && Element_Offset<0x4B000 && BigEndian2int32u(Buffer+0x4B000)==0x4A4C1A00)
+    if (IsStarDiva && Element_Offset<=0x4B000)
     {
         Skip_XX(0x4B000-Element_Offset,                         "Zeroes");
 

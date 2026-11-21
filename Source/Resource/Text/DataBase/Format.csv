@@ -58,12 +58,13 @@ FLC;;;V;Flic;;fli flc;;http://www.chem.nott.ac.uk/flc.html;Lossy
 FLI;;;V;Flic;;fli flc;;http://www.chem.nott.ac.uk/flc.html;Lossy
 FLIC;;;V;Flic;;fli flc;;http://www.chem.nott.ac.uk/flc.html;Lossy
 H.261;;;V;;;h261;video/H261;;Lossy
-H.263;;;V;;;h263;video/H263;;Lossy
+H.263;;;V;H263;;h263;video/H263;;Lossy
 HEVC;;;V;Hevc;High Efficiency Video Coding;hevc h265 265;video/H265;http://www.itu.int
 MPEG Video;;;V;Mpegv;;mpgv mpv mp1v m1v mp2v m2v;video/MPV;;Lossy
 MPEG-4 Visual;;;V;Mpeg4;;m4v mp4v;video/MP4V-ES;;Lossy
 Theora;;;V;;;;;http://www.theora.org/;Lossy
 VC-1;;;V;Vc1;;vc1;video/vc1;;Lossy
+VC-2;;;V;Dirac;;drc vc2;;;
 YUV4MPEG2;;;V;Y4m;;y4m;;;Lossless
 VP8;;;V;;;;;http://www.webmproject.org/;Lossy
 YUV;;;V;;;;;;Lossless

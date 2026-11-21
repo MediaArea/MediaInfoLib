@@ -22,6 +22,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Video/File_Dirac.h"
+#include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -74,6 +75,12 @@ float32 Dirac_frame_rate(int32u frame_rate_index)
         case  8 : return (float32)60;
         case  9 : return (float32)15000/(float32)1001;
         case 10 : return (float32)12.5;
+        case 11 : return (float32)48;
+        case 12 : return (float32)48000/(float32)1001;
+        case 13 : return (float32)96;
+        case 14 : return (float32)100;
+        case 15 : return (float32)120000/(float32)1001;
+        case 16 : return (float32)120;
         default : return (float32)0; //Unknown
     }
 }
@@ -445,8 +452,8 @@ File_Dirac::File_Dirac()
 void File_Dirac::Streams_Fill()
 {
     Stream_Prepare(Stream_Video);
-    Fill(Stream_Video, 0, Video_Format, "Dirac");
-    Fill(Stream_Video, 0, Video_Codec, "Dirac");
+    Fill(Stream_Video, 0, Video_Format, (IsVc2 && !HasDiracOnlyPicture)?"VC-2":"Dirac");
+    Fill(Stream_Video, 0, Video_Codec, (IsVc2 && !HasDiracOnlyPicture)?"VC-2":"Dirac");
 
     if (clean_width)
         Fill(Stream_Video, StreamPos_Last, Video_Width, clean_width);
@@ -549,6 +556,9 @@ bool File_Dirac::Synched_Test()
 void File_Dirac::Synched_Init()
 {
     //Temp
+    version_major=0;
+    IsVc2=false;
+    HasDiracOnlyPicture=false;
     Dirac_base_video_format((int32u)-1, frame_width, frame_height, chroma_format, source_sampling,
                             clean_width, clean_height, clean_left_offset, clean_top_offset,
                             frame_rate, pixel_aspect_ratio);
@@ -575,7 +585,48 @@ void File_Dirac::Header_Parse()
 
     //Filling
     Header_Fill_Code(Parse_Code, Ztring().From_CC1(Parse_Code));
+    if (!Next_Parse_Offset && (Parse_Code&0x08) && !Element_IsWaitingForMoreData()) //Picture from a real-time encoder which does not know its size
+    {
+        if (!Header_Parser_Fill_Size())
+            Element_WaitForMoreData();
+        return;
+    }
     Header_Fill_Size((Parse_Code==0x10 && Next_Parse_Offset==0)?13:Next_Parse_Offset); //Speacial case if this is the End Of Sequence
+}
+
+//---------------------------------------------------------------------------
+bool File_Dirac::Header_Parser_Fill_Size()
+{
+    //Look for the next parse info prefix
+    if (Buffer_Offset_Temp==0) //Buffer_Offset_Temp is not 0 if the previous bytes were already searched
+        Buffer_Offset_Temp=Buffer_Offset+13;
+    while (Buffer_Offset_Temp+4<=Buffer_Size)
+    {
+        const int8u* Prefix=(const int8u*)memchr(Buffer+Buffer_Offset_Temp, 'B', Buffer_Size-3-Buffer_Offset_Temp);
+        if (!Prefix)
+        {
+            Buffer_Offset_Temp=Buffer_Size-3;
+            break;
+        }
+        Buffer_Offset_Temp=(size_t)(Prefix-Buffer);
+        if (CC4(Prefix)==0x42424344) //"BBCD"
+            break;
+        Buffer_Offset_Temp++;
+    }
+
+    //Must wait more data?
+    if (Buffer_Offset_Temp+4>Buffer_Size)
+    {
+        if (FrameIsAlwaysComplete || Config->IsFinishing || File_Offset+Buffer_Size==File_Size)
+            Buffer_Offset_Temp=Buffer_Size; //No other parse info header
+        else
+            return false;
+    }
+
+    //OK, we continue
+    Header_Fill_Size(Buffer_Offset_Temp-Buffer_Offset);
+    Buffer_Offset_Temp=0;
+    return true;
 }
 
 //---------------------------------------------------------------------------
@@ -625,8 +676,10 @@ void File_Dirac::Data_Parse()
         case 0x0E : Inter_Reference_Picture_2(); break;
         case 0x09 : Inter_Non_Reference_Picture_1(); break;
         case 0x0A : Inter_Non_Reference_Picture_2(); break;
-        case 0xCC : Reference_Picture_Low(); break;
+        case 0xCC : if (version_major<3) Reference_Picture_Low(); else Low_Delay_Picture_Fragment(); break;
         case 0xC8 : Intra_Non_Reference_Picture_Low(); break;
+        case 0xE8 : High_Quality_Picture(); break;
+        case 0xEC : High_Quality_Picture_Fragment(); break;
         default   : Reserved();
     }
 }
@@ -642,14 +695,14 @@ void File_Dirac::Sequence_header()
     Element_Name("Sequence header");
 
     //Parsing
-    int32u version_major, version_minor, profile, level, base_video_format;
+    int32u version_minor, profile, level, base_video_format;
     BS_Begin();
     Get_UI(version_major,                                       "version major");
     Get_UI(version_minor,                                       "version minor");
     Get_UI(profile,                                             "profile");
     Get_UI(level,                                               "level");
 
-    if (version_major<=2)
+    if (version_major<=3)
     {
         Get_UI(base_video_format,                               "base video format"); //Param_Info1(Dirac_base_video_format(base_video_format));
         Dirac_base_video_format(base_video_format, frame_width, frame_height, chroma_format, source_sampling,
@@ -674,7 +727,11 @@ void File_Dirac::Sequence_header()
                 int32u frame_rate_numer, frame_rate_denom;
                 Get_UI (frame_rate_numer,                       "frame rate numer");
                 Get_UI (frame_rate_denom,                       "frame rate denom");
-                frame_rate=((float32)frame_rate_numer)/((float32)frame_rate_denom);
+                if (Element_IsOK() && !frame_rate_numer)
+                    Fill_Conformance("sequence_header frame_rate_numer", "frame_rate_numer is 0");
+                if (Element_IsOK() && !frame_rate_denom)
+                    Fill_Conformance("sequence_header frame_rate_denom", "frame_rate_denom is 0");
+                frame_rate=(frame_rate_numer && frame_rate_denom)?((float32)frame_rate_numer)/((float32)frame_rate_denom):0;
             }
             else
                 frame_rate=Dirac_frame_rate(frame_rate_index);
@@ -687,7 +744,11 @@ void File_Dirac::Sequence_header()
                 int32u pixel_aspect_ratio_numer, pixel_aspect_ratio_denom;
                 Get_UI (pixel_aspect_ratio_numer,               "pixel aspect ratio numer");
                 Get_UI (pixel_aspect_ratio_denom,               "pixel aspect ratio denom");
-                pixel_aspect_ratio=((float32)pixel_aspect_ratio_numer)/((float32)pixel_aspect_ratio_denom);
+                if (Element_IsOK() && !pixel_aspect_ratio_numer)
+                    Fill_Conformance("sequence_header pixel_aspect_ratio_numer", "pixel_aspect_ratio_numer is 0");
+                if (Element_IsOK() && !pixel_aspect_ratio_denom)
+                    Fill_Conformance("sequence_header pixel_aspect_ratio_denom", "pixel_aspect_ratio_denom is 0");
+                pixel_aspect_ratio=(pixel_aspect_ratio_numer && pixel_aspect_ratio_denom)?((float32)pixel_aspect_ratio_numer)/((float32)pixel_aspect_ratio_denom):0;
             }
             else
                 pixel_aspect_ratio=Dirac_pixel_aspect_ratio(pixel_aspect_ratio_index);
@@ -740,6 +801,10 @@ void File_Dirac::Sequence_header()
     }
 
     FILLING_BEGIN();
+        //Version 1 of Dirac is VC-2, version 3 and the high quality profile exist only in VC-2
+        if (version_major==1 || version_major>=3 || profile==3)
+            IsVc2=true;
+
         //Autorisation of other streams
         Streams[0x10].Searching_Payload=true; //End_of_Sequence
         Streams[0x20].Searching_Payload=true; //Auxiliary_data
@@ -754,6 +819,8 @@ void File_Dirac::Sequence_header()
         Streams[0x0A].Searching_Payload=true; //Inter_Non_Reference_Picture_2
         Streams[0xCC].Searching_Payload=true; //Reference_Picture_Low
         Streams[0xC8].Searching_Payload=true; //Intra_Non_Reference_Picture_Low
+        Streams[0xE8].Searching_Payload=true; //High_Quality_Picture
+        Streams[0xEC].Searching_Payload=true; //High_Quality_Picture_Fragment
     FILLING_END();
 }
 
@@ -797,6 +864,7 @@ void File_Dirac::Padding_data()
 void File_Dirac::Intra_Reference_Picture()
 {
     Element_Name("Intra Reference Picture");
+    HasDiracOnlyPicture=true;
 
     //Parsing
     picture();
@@ -817,6 +885,7 @@ void File_Dirac::Intra_Non_Reference_Picture()
 void File_Dirac::Intra_Reference_Picture_No()
 {
     Element_Name("Intra Reference Picture (no arithmetic coding)");
+    HasDiracOnlyPicture=true;
 
     //Parsing
     picture();
@@ -837,6 +906,7 @@ void File_Dirac::Intra_Non_Reference_Picture_No()
 void File_Dirac::Inter_Reference_Picture_1()
 {
     Element_Name("Inter Reference Picture (1 picture)");
+    HasDiracOnlyPicture=true;
 
     //Parsing
     picture();
@@ -847,6 +917,7 @@ void File_Dirac::Inter_Reference_Picture_1()
 void File_Dirac::Inter_Reference_Picture_2()
 {
     Element_Name("Inter Reference Picture (2 pictures)");
+    HasDiracOnlyPicture=true;
 
     //Parsing
     picture();
@@ -857,6 +928,7 @@ void File_Dirac::Inter_Reference_Picture_2()
 void File_Dirac::Inter_Non_Reference_Picture_1()
 {
     Element_Name("Inter Non Reference Picture (1 picture)");
+    HasDiracOnlyPicture=true;
 
     //Parsing
     picture();
@@ -867,6 +939,7 @@ void File_Dirac::Inter_Non_Reference_Picture_1()
 void File_Dirac::Inter_Non_Reference_Picture_2()
 {
     Element_Name("Inter Non Reference Picture (2 pictures)");
+    HasDiracOnlyPicture=true;
 
     //Parsing
     picture();
@@ -877,9 +950,20 @@ void File_Dirac::Inter_Non_Reference_Picture_2()
 void File_Dirac::Reference_Picture_Low()
 {
     Element_Name("Reference Picture (low-delay)");
+    HasDiracOnlyPicture=true;
 
     //Parsing
     picture();
+}
+
+//---------------------------------------------------------------------------
+// Packet "CC", from version 3
+void File_Dirac::Low_Delay_Picture_Fragment()
+{
+    Element_Name("Low Delay Picture Fragment");
+
+    //Parsing
+    picture_fragment();
 }
 
 //---------------------------------------------------------------------------
@@ -890,6 +974,28 @@ void File_Dirac::Intra_Non_Reference_Picture_Low()
 
     //Parsing
     picture();
+}
+
+//---------------------------------------------------------------------------
+// Packet "E8"
+void File_Dirac::High_Quality_Picture()
+{
+    Element_Name("High Quality Picture");
+    IsVc2=true;
+
+    //Parsing
+    picture();
+}
+
+//---------------------------------------------------------------------------
+// Packet "EC"
+void File_Dirac::High_Quality_Picture_Fragment()
+{
+    Element_Name("High Quality Picture Fragment");
+    IsVc2=true;
+
+    //Parsing
+    picture_fragment();
 }
 
 //---------------------------------------------------------------------------
@@ -904,7 +1010,7 @@ void File_Dirac::Reserved()
 void File_Dirac::picture()
 {
     //Parsing
-    Skip_XX(Element_Size,                                       "Data");
+    Skip_XX(Element_Size-Element_Offset,                        "Data");
 
     FILLING_BEGIN();
         //Counting
@@ -924,6 +1030,26 @@ void File_Dirac::picture()
             Finish("Dirac");
         }
     FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Dirac::picture_fragment()
+{
+    //Parsing
+    int16u fragment_slice_count;
+    Skip_B4(                                                    "picture number");
+    Skip_B2(                                                    "fragment data length");
+    Get_B2 (fragment_slice_count,                               "fragment slice count");
+    if (fragment_slice_count)
+    {
+        Skip_B2(                                                "fragment x offset");
+        Skip_B2(                                                "fragment y offset");
+        Skip_XX(Element_Size-Element_Offset,                    "Data");
+        return;
+    }
+
+    //First fragment of a picture, with its transform parameters
+    picture();
 }
 
 //***************************************************************************

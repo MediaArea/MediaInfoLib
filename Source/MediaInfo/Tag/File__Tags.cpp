@@ -208,6 +208,13 @@ bool File__Tags_Helper::Synched_Test()
                                   | ((Size>>2)&0x1FC000)
                                   | ((Size>>3)&0x0FE00000))
                                   +10;
+                if (ID==0x494433 && Base->Buffer[Base->Buffer_Offset+3]==4 && (Base->Buffer[Base->Buffer_Offset+5]&0x10)) //ID3v2.4 footer present, not in the tag size
+                {
+                    if (Base->Buffer_Offset+Parser_Buffer_Size+10>Base->Buffer_Size && Base->File_Offset+Base->Buffer_Offset+Parser_Buffer_Size+10<=Base->File_Size)
+                        return false;
+                    if (Base->Buffer_Offset+Parser_Buffer_Size+10<=Base->Buffer_Size && CC3(Base->Buffer+Base->Buffer_Offset+Parser_Buffer_Size)==0x334449) //"3DI"
+                        Parser_Buffer_Size+=10;
+                }
                 if (Base->Buffer_Offset+Parser_Buffer_Size>Base->Buffer_Size)
                     return false;
                 if (!TagSizeIsFinal)

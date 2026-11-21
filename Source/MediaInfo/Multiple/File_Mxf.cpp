@@ -38,6 +38,9 @@
 #if defined(MEDIAINFO_AVC_YES)
     #include "MediaInfo/Video/File_Avc.h"
 #endif
+#if defined(MEDIAINFO_DIRAC_YES)
+    #include "MediaInfo/Video/File_Dirac.h"
+#endif
 #if defined(MEDIAINFO_FFV1_YES)
     #include "MediaInfo/Video/File_Ffv1.h"
 #endif
@@ -342,6 +345,7 @@ static const char* Mxf_EssenceContainer(const int128u EssenceContainer)
                                                                                         case 0x10 : return "AVC";
                                                                                         case 0x11 : return "VC-3";
                                                                                         case 0x13 : return "Timed Text";
+                                                                                        case 0x15 : return "VC-2";
                                                                                         case 0x16 : return "AAC (ADIF)";
                                                                                         case 0x17 : return "AAC (ADTS)";
                                                                                         case 0x18 : return "AAC (LATM/LOAS)";
@@ -617,6 +621,7 @@ static const char* Mxf_EssenceCompression(const int128u EssenceCompression)
                                                                                     switch (Code6)
                                                                                     {
                                                                                         case 0x01 : return "JPEG 2000";
+                                                                                        case 0x03 : return "VC-2";
                                                                                         case 0x06 : return "ProRes";
                                                                                         case 0x09 : return "FFV1";
                                                                                         default   : return "";
@@ -22218,6 +22223,7 @@ void File_Mxf::ChooseParser__FromCodingScheme(const essences::iterator &Essence,
                                                                     switch (Code6)
                                                                     {
                                                                         case 0x01 : return ChooseParser_Jpeg2000(Essence, Descriptor);
+                                                                        case 0x03 : return ChooseParser_Vc2(Essence, Descriptor);
                                                                         case 0x06 : return ChooseParser_ProRes(Essence, Descriptor);
                                                                         default   : return;
                                                                     }
@@ -22372,7 +22378,7 @@ void File_Mxf::ChooseParser__FromEssenceContainer(const essences::iterator &Esse
     case Labels::MXFGCVC1Pictures: ChooseParser_Vc1(Essence, Descriptor); break;
     case Labels::MXFGCGenericData: ChooseParser_TimedText(Essence, Descriptor); break;
     //case Labels::MXFGCTIFFEP:
-    //case Labels::MXFGCVC2Pictures:
+    case Labels::MXFGCVC2Pictures: ChooseParser_Vc2(Essence, Descriptor); break;
     case Labels::MXF_GC_AAC_ADIF: ChooseParser_Adif(Essence, Descriptor); break;
     case Labels::MXF_GC_AAC_ADTS: ChooseParser_Adts(Essence, Descriptor); break;
     case Labels::MXF_GC_AAC_LATM_LOAS: ChooseParser_Latm(Essence, Descriptor); break;
@@ -22433,7 +22439,7 @@ void File_Mxf::ChooseParser__FromEssence(const essences::iterator &Essence, cons
     case Essences::FrameWrappedTIFF_EPPictureElement:
     case Essences::ClipWrappedTIFF_EPPictureElement: ChooseParser(Essence, Descriptor, Stream_Video, "TIFF"); break;
     case Essences::FrameWrappedVC2PictureElement:
-    case Essences::ClipWrappedVC2PictureElement: ChooseParser(Essence, Descriptor, Stream_Video, "VC-2"); break;
+    case Essences::ClipWrappedVC2PictureElement: ChooseParser_Vc2(Essence, Descriptor); break;
     case Essences::FrameWrappedACESPictureElement:
     case Essences::ClipWrappedACESPictureElement: ChooseParser(Essence, Descriptor, Stream_Video, "ACES"); break;
     case Essences::FrameWrappedVC5PictureElement:
@@ -23276,6 +23282,24 @@ void File_Mxf::ChooseParser_Vc1(const essences::iterator& Essence, const descrip
         Open_Buffer_Init(Parser);
         Parser->Stream_Prepare(Stream_Video);
         Parser->Fill(Stream_Video, 0, Video_Format, "VC-1");
+    #endif
+    Essence->second.Parsers.push_back(Parser);
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::ChooseParser_Vc2(const essences::iterator& Essence, const descriptors::iterator& /*Descriptor*/)
+{
+    Essence->second.StreamKind=Stream_Video;
+
+    //Filling
+    #if defined(MEDIAINFO_DIRAC_YES)
+        File_Dirac* Parser=new File_Dirac;
+    #else
+        //Filling
+        File__Analyze* Parser=new File_Unknown();
+        Open_Buffer_Init(Parser);
+        Parser->Stream_Prepare(Stream_Video);
+        Parser->Fill(Stream_Video, 0, Video_Format, "VC-2");
     #endif
     Essence->second.Parsers.push_back(Parser);
 }

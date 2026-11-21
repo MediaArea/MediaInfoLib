@@ -559,7 +559,7 @@ void File_DtsUhd::ExtractLTLMParamSet(MD01* MD01, bool NominalLD_DescriptionFlag
     if (!NominalLD_DescriptionFlag)
         Skip_S1(5,                                              "AssociatedAssetType");
 
-    Skip_S1(NominalLD_DescriptionFlag?2:4,                      "BitWidth");
+    Skip_S1(NominalLD_DescriptionFlag?2:4,                      "LoudnessMsrmType");
     Element_End0();
 }
 
@@ -588,11 +588,16 @@ int File_DtsUhd::ParseStaticMDParams(MD01* MD01, bool OnlyFirst)
         Param_Info2(NumLongTermLoudnessMsrmSets, " sets");
     }
 
+    int8u FirstLongTermLoudnessIndex=0;
     for (int i=0; i<NumLongTermLoudnessMsrmSets; i++)
+    {
         ExtractLTLMParamSet(MD01, NominalLD_DescriptionFlag);
-
-    if (OnlyFirst)
-        return 0;
+        if (OnlyFirst)
+            return 0; //Only the first set is sure to be in the first packet (clause 7.7.2, Table 7-8)
+        if (!i)
+            FirstLongTermLoudnessIndex=LongTermLoudnessIndex;
+    }
+    LongTermLoudnessIndex=FirstLongTermLoudnessIndex; //The first set is the one of the complete presentation (clause 7.7.2)
 
     if (!NominalLD_DescriptionFlag)
         Skip_SB(                                                "IsLTLoudnMsrsmOffLine");
@@ -652,16 +657,9 @@ int File_DtsUhd::ExtractMultiFrameDistribStaticMD(MD01* MD01)
             MD01->StaticMDPacketByteSize+=3;
         }
 
-        if (MD01->NumStaticMDPackets*MD01->StaticMDPacketByteSize>0x10000) //Arbitrary limit of 64 KiB, real streams use only few bytes
-        {
-            MD01->NumStaticMDPackets=0;
-            MD01->StaticMDPacketByteSize=0;
-            MD01->Buffer.clear();
-            Trusted_IsNot("Static metadata too big");
-            Element_End0();
-            return 1;
-        }
-        MD01->Buffer.resize(MD01->NumStaticMDPackets*MD01->StaticMDPacketByteSize);
+        //Up to 4673 packets of 2722 bytes are valid but real streams use only few bytes: above 64 KiB, only the first packet is kept, it has the loudness of the complete presentation (clause 7.7.2)
+        auto StaticMDSize=(size_t)MD01->NumStaticMDPackets*MD01->StaticMDPacketByteSize;
+        MD01->Buffer.resize(StaticMDSize<=0x10000?StaticMDSize:MD01->StaticMDPacketByteSize);
         if (MD01->NumStaticMDPackets>1)
             Get_SB (MD01->StaticMetadataUpdtFlag,               "StaticMetadataUpdtFlag");
         else
@@ -670,14 +668,26 @@ int File_DtsUhd::ExtractMultiFrameDistribStaticMD(MD01* MD01)
 
     if (MD01->PacketsAcquired<MD01->NumStaticMDPackets)
     {
+        if (Data_BS_Remain()<(size_t)MD01->StaticMDPacketByteSize*8)
+        {
+            Trusted_IsNot("Static metadata packet is bigger than the frame");
+            Element_End0();
+            return 1;
+        }
         int n=MD01->PacketsAcquired*MD01->StaticMDPacketByteSize;
-        for (int32u i = 0; i < MD01->StaticMDPacketByteSize; i++)
-            Get_S1 (8/*i==1?6:8*/, MD01->Buffer[n+i],                       ("MetadataPacketPayload[" + std::to_string(n+i) + "]").c_str()); //TEMP, only with p2.mp4
+        auto IsFullyBuffered=MD01->Buffer.size()==(size_t)MD01->NumStaticMDPackets*MD01->StaticMDPacketByteSize;
+        if (!IsFullyBuffered && MD01->PacketsAcquired)
+            Skip_BS(MD01->StaticMDPacketByteSize*8,             "MetadataPacketPayload");
+        else
+        {
+            for (int32u i = 0; i < MD01->StaticMDPacketByteSize; i++)
+                Get_S1 (8/*i==1?6:8*/, MD01->Buffer[n+i],                   ("MetadataPacketPayload[" + std::to_string(n+i) + "]").c_str()); //TEMP, only with p2.mp4
+        }
         //MD01->Buffer[1]<<=2; //TEMP, only with p2.mp4
         //MD01->Buffer.resize(3); //TEMP, only with p2.mp4
         MD01->PacketsAcquired++;
 
-        if (MD01->PacketsAcquired==MD01->NumStaticMDPackets || MD01->PacketsAcquired==1)
+        if ((MD01->PacketsAcquired==MD01->NumStaticMDPackets && IsFullyBuffered) || MD01->PacketsAcquired==1)
         {
             if (MD01->StaticMetadataUpdtFlag||!MD01->StaticMDParamsExtracted)
             {
@@ -715,7 +725,7 @@ int File_DtsUhd::ExtractMultiFrameDistribStaticMD(MD01* MD01)
                 {
                     //Back to normal buffer
                     if (Data_BS_Remain())
-                        Skip_BS(Data_BS_Remain(),               "Padding");
+                        Skip_BS(Data_BS_Remain(),               MD01->PacketsAcquired==MD01->NumStaticMDPackets?"Padding":"(Not parsed with the first packet)");
                     BS_End();
                     Buffer=Save_Buffer;
                     Buffer_Offset=Save_Buffer_Offset;
@@ -1059,7 +1069,7 @@ int File_DtsUhd::Frame()
     auto Result=FTOC();
     if (Result!=DTSUHD_OK)
         return Result;
-    if (UnpackMDFrame())
+    if (UnpackMDFrame() || !Element_IsOK())
         return DTSUHD_INVALID_FRAME;
     UpdateDescriptor();
 

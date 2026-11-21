@@ -1452,6 +1452,7 @@ protected :
     void           ChooseParser_Mga(const essences::iterator& Essence, const descriptors::iterator& Descriptor);
     void           ChooseParser_Mxf(const essences::iterator& Essence, const descriptors::iterator& Descriptor);
     void           ChooseParser_Vc1(const essences::iterator& Essence, const descriptors::iterator& Descriptor);
+    void           ChooseParser_Vc2(const essences::iterator& Essence, const descriptors::iterator& Descriptor);
     void           ChooseParser_Vbi(const essences::iterator& Essence, const descriptors::iterator& Descriptor);
     void           ChooseParser_Ancillary(const essences::iterator& Essence, const descriptors::iterator& Descriptor);
     void           ChooseParser_xAnc(const essences::iterator& Essence, const descriptors::iterator& Descriptor);
