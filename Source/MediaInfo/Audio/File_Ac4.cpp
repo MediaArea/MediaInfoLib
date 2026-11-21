@@ -327,7 +327,7 @@ static int32u Ac4_ch_mode_2_nonstd(int8u ch_mode, bool b_4_back_channels_present
         if (!b_4_back_channels_present)
             Value&=~(Lb | Rb);
         if (!b_centre_present)
-            Value&=~(LFE);
+            Value&=~(C);
         if (top_channels_present<=1)
             Value&=~(Tbl | Tbr);
         if (!top_channels_present || top_channels_present==2)
