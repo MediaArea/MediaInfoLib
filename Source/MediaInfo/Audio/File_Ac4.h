@@ -476,14 +476,14 @@ private :
     void dialog_enhancement_config(de_info& Info);
     void dialog_enhancement_data(de_info& Info, bool b_iframe, bool b_de_simulcast);
     void custom_dmx_data(dmx& Dmx, int8u pres_ch_mode, int8u pres_ch_mode_core, bool b_pres_4_back_channels_present, int8u pres_top_channel_pairs, bool b_pres_has_lfe);
-    void cdmx_parameters(int8u bs_ch_config, int8u out_ch_config);
-    void tool_scr_to_c_l();
-    void tool_b4_to_b2();
-    void tool_t4_to_t2();
-    void tool_t4_to_f_s_b();
-    void tool_t4_to_f_s();
-    void tool_t2_to_f_s_b();
-    void tool_t2_to_f_s();
+    void cdmx_parameters(dmx::cdmx& Cdmx, int8u bs_ch_config, int8u out_ch_config);
+    void tool_scr_to_c_l(dmx::cdmx& Cdmx);
+    void tool_b4_to_b2(dmx::cdmx& Cdmx);
+    void tool_t4_to_t2(dmx::cdmx& Cdmx);
+    void tool_t4_to_f_s_b(dmx::cdmx& Cdmx);
+    void tool_t4_to_f_s(dmx::cdmx& Cdmx);
+    void tool_t2_to_f_s_b(dmx::cdmx& Cdmx);
+    void tool_t2_to_f_s(dmx::cdmx& Cdmx);
     void loud_corr(int8u pres_ch_mode, int8u pres_ch_mode_core, bool b_objects);
     void drc_frame(drc_info& DrcInfo, bool b_iframe);
     void drc_config(drc_info& DrcInfo);
@@ -515,7 +515,7 @@ private :
     void ac4_toc_Compute(vector<presentation>& Ps, vector<group>& Gs, bool FromDac4);
     int8u Superset(int8u Ch_Mode1, int8u Ch_Mode2);
     int16u Huffman_Decode(const ac4_huffman& Table, const char* Name);
-    void Get_Gain(int8u Bits, dmx::cdmx::gain::type Type, const char* Name);
+    void Get_Gain(dmx::cdmx& Cdmx, int8u Bits, dmx::cdmx::gain::type Type, const char* Name);
 
     //Temp
     int32u frame_size;
