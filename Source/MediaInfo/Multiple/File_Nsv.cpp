@@ -432,7 +432,7 @@ void File_Nsv::FileHeader_Parse()
     }
 
     // StarDiva metadata
-    if (header_size==0x96000 && Element_Offset<0x4B000 && BigEndian2int32u(Buffer+0x4B000)==0x4A4C1A00)
+    if (header_size==0x96000 && Element_Offset<=0x4B000 && BigEndian2int32u(Buffer+0x4B000)==0x4A4C1A00)
     {
         Skip_XX(0x4B000-Element_Offset,                         "Zeroes");
 
