@@ -344,7 +344,7 @@ void File_Nsv::FileHeader_Parse()
             {
                 int8u Space;
                 Peek_B1(Space);
-                if (Space!=' ')
+                if (Space!=' ' && Space!='\t' && Space!='\r' && Space!='\n')
                     break;
                 Element_Offset++;
             }
