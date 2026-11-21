@@ -56,6 +56,7 @@ public :
             max_truepk((int16u)-1),
             loudrelgat((int16u)-1),
             loudspchgat((int16u)-1),
+            loudspchgat_dialgate_prac_type(0),
             lra((int16u)-1),
             max_loudmntry((int16u)-1)
         {}
@@ -109,7 +110,9 @@ public :
         int8u drc_gains_config;
 
         drc_decoder_config() :
-            drc_repeat_id((int8u)-1)
+            drc_repeat_id((int8u)-1),
+            drc_default_profile_flag(false),
+            drc_compression_curve()
         {}
     };
 
@@ -130,7 +133,9 @@ public :
         int8u de_channel_config;
 
         de_config() :
-            de_max_gain((int8u)-1)
+            de_method((int8u)-1),
+            de_max_gain((int8u)-1),
+            de_channel_config((int8u)-1)
         {}
     };
 
@@ -254,6 +259,8 @@ private :
             presentation_config((int8u)-1),
             mdcompat((int8u)-1),
             presentation_id((int32u)-1),
+            b_pres_ndot(false),
+            b_alternative(false),
             frame_rate_fraction_minus1(0),
             dolby_atmos_indicator(false),
             substream_index((int8u)-1),
@@ -314,11 +321,15 @@ private :
             substream_index((int8u)-1),
             sus_ver(false),
             ch_mode((int8u)-1),
+            b_4_back_channels_present(true),
+            b_centre_present(true),
             ch_mode_core((int8u)-1),
             immersive_stereo((int8u)-1),
             top_channels_present((int8u)-1),
             hsf_substream_index((int8u)-1),
-            nonstd_bed_channel_assignment_mask((int32u)-1)
+            n_objects_code((int8u)-1),
+            nonstd_bed_channel_assignment_mask((int32u)-1),
+            top_channel_pairs(2)
         {}
     };
     struct group
@@ -327,6 +338,11 @@ private :
         content_info ContentInfo;
         bool b_channel_coded;
         bool b_hsf_ext;
+
+        group() :
+            b_channel_coded(false),
+            b_hsf_ext(false)
+        {}
     };
     vector<group> Groups;
     vector<group> Groups_IFrame;
