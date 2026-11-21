@@ -451,6 +451,11 @@ void File__Tags_Helper::GoTo (int64u GoTo, const char* ParserName)
     //Configuring
     if (!SearchingForEndTags)
     {
+        if (TagSizeIsFinal) //End tags already searched, the parser was already sent to them
+        {
+            Base->GoTo(GoTo, ParserName);
+            return;
+        }
         if (GoTo==(int64u)-1)
             JumpTo_WantedByParser=Base->File_Offset+Base->Buffer_Offset;
         else
