@@ -4324,7 +4324,7 @@ Ztring File_Aac::Format_Profile_Sbr(bool PS, bool Legacy, bool ESBR) const
     if (audioObjectType==2)
     {
         if (ESBR)
-            return __T("HE-AAC+eSBR");
+            return PS?__T("HE-AACv2+eSBR"):__T("HE-AAC+eSBR");
         if (PS)
             return Legacy?__T("HE-AACv2 / HE-AAC / LC"):__T("HE-AACv2");
         return Legacy?__T("HE-AAC / LC"):__T("HE-AAC");
@@ -4333,7 +4333,7 @@ Ztring File_Aac::Format_Profile_Sbr(bool PS, bool Legacy, bool ESBR) const
     const Ztring Base=Ztring().From_UTF8(Aac_Format_Profile(audioObjectType));
     const Ztring Base_Space=Base.empty()?Ztring():(Base+__T(' '));
     if (ESBR)
-        return Base_Space+__T("SBR eSBR");
+        return Base_Space+(PS?__T("SBR PS eSBR"):__T("SBR eSBR"));
     Ztring ToReturn=Base_Space+(PS?__T("SBR PS"):__T("SBR"));
     if (Legacy)
     {
@@ -4348,7 +4348,8 @@ Ztring File_Aac::Format_Profile_Sbr(bool PS, bool Legacy, bool ESBR) const
 //---------------------------------------------------------------------------
 void File_Aac::FillInfosHEAACv2(const Ztring& Format_Settings)
 {
-    Infos["Format_Profile"] = Format_Profile_Sbr(true, false);
+    const bool ESBR = Infos["Format_Profile"].find(__T("eSBR")) != string::npos;
+    Infos["Format_Profile"] = Format_Profile_Sbr(true, false, ESBR);
     const Ztring Channels = Infos["Channel(s)"];
     const Ztring ChannelPositions = Infos["ChannelPositions"];
     const Ztring ChannelPositions2 = Infos["ChannelPositions/String2"];
@@ -4362,7 +4363,7 @@ void File_Aac::FillInfosHEAACv2(const Ztring& Format_Settings)
     if (MediaInfoLib::Config.LegacyStreamDisplay_Get())
     {
         const Ztring SamplingRate_Previous = Infos["SamplingRate"];
-        Infos["Format_Profile"] = Format_Profile_Sbr(true, true);
+        Infos["Format_Profile"] = Format_Profile_Sbr(true, true, ESBR);
         if (!FromIamf)
         {
             Infos["Channel(s)"] += __T(" / ") + Channels + __T(" / ") + Channels;

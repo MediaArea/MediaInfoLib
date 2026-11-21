@@ -1538,7 +1538,8 @@ void File_Aac::esbr_data(size_t End)
     FILLING_BEGIN();
         if (Infos["Format_Profile"].find(__T("eSBR"))==string::npos)
         {
-            Infos["Format_Profile"]=Format_Profile_Sbr(false, false, true);
+            const bool PS=!Infos["Format_Settings_PS"].find(__T("Yes"));
+            Infos["Format_Profile"]=Format_Profile_Sbr(PS, false, true);
         }
     FILLING_END();
 }
