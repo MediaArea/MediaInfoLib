@@ -132,7 +132,13 @@ bool File__Tags_Helper::Read_Buffer_Continue()
 {
     //Tags
     bool Tag_Found;
-    if (File__Tags_Helper::Synchronize(Tag_Found) &&  Tag_Found)
+    if (!File__Tags_Helper::Synchronize(Tag_Found))
+    {
+        if (Base->File_Offset+Base->Buffer_Offset>=Base->File_Size-File_EndTagSize && Base->File_Offset+Base->Buffer_Size<Base->File_Size)
+            Base->Element_WaitForMoreData(); //End tags not complete in the buffer, they are not stream data
+        return true;
+    }
+    if (Tag_Found)
         File__Tags_Helper::Synched_Test();
     return true;
 }
