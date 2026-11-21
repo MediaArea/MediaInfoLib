@@ -1442,14 +1442,10 @@ void File_Ac4::Streams_Fill()
                     string Loudness_Range=Ztring::ToZtring(L.lra/10.0, 1).To_UTF8();
                     Fill(Stream_Audio, 0, (P+" Loudness Loudness_Range").c_str(), Loudness_Range);
                     Fill_SetOptions(Stream_Audio, 0, (P+" Loudness Loudness_Range").c_str(), "N NFY");
-                    Loudness_Range+=" LU";
-                    if (L.loudspchgat_dialgate_prac_type)
-                    {
-                        string Type=Value(Ac4_lra_prac_type, L.lra_prac_type);
-                        Fill(Stream_Audio, 0, (P+" Loudness Loudness_Range_Type").c_str(), Type);
-                        Fill_SetOptions(Stream_Audio, 0, (P+" Loudness Loudness_Range_Type").c_str(), "N NTY");
-                        Loudness_Range+=" ("+Type+')';
-                    }
+                    string Type=Value(Ac4_lra_prac_type, L.lra_prac_type);
+                    Fill(Stream_Audio, 0, (P+" Loudness Loudness_Range_Type").c_str(), Type);
+                    Fill_SetOptions(Stream_Audio, 0, (P+" Loudness Loudness_Range_Type").c_str(), "N NTY");
+                    Loudness_Range+=" LU ("+Type+')';
                     Fill(Stream_Audio, 0, (P+" Loudness Loudness_Range/String").c_str(), Loudness_Range);
                     Fill_SetOptions(Stream_Audio, 0, (P+" Loudness Loudness_Range/String").c_str(), "Y NTN");
                 }
