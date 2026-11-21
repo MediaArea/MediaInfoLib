@@ -48,6 +48,7 @@ private :
 
     //Temp
     int64u Metadata;
+    int64u TotalFileSize;
 };
 
 } //NameSpace
