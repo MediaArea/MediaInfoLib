@@ -2,8 +2,9 @@
 
 # CLI of MediaInfo (branch of the same name if any) with this library, its file name test and files which can not be opened, for the modes ${1}...:
 # - shared: C++ API of the installed library (same Unicode mode)
-# - dll: C API of the installed library, loaded at run time, by a CLI with Unicode
-# - dll_without_unicode: same, by a CLI without Unicode (ZenLib is built again without Unicode for the CLI, so last)
+# - dll: C API of the installed library (with or without Unicode, the same results), loaded at run time, by a CLI with Unicode
+# - dll_without_unicode: same, by a CLI without Unicode
+# (for the dll modes, ZenLib is built again for the CLI if it has not the Unicode mode of the CLI, so after shared)
 # The libraries are installed before (the CLI and the test load them from the system directories), MAKE and SUDO may be set
 
 set -e
@@ -49,13 +50,17 @@ for mode in "${@}" ; do
         shared)
             options=
             ;;
-        dll)
+        dll|dll_without_unicode)
+            unicode=yes
+            if [ "${mode}" = dll_without_unicode ] ; then
+                unicode=no
+            fi
             options=--with-dll
-            ;;
-        dll_without_unicode)
-            options="--with-dll --enable-staticlibs" # ZenLib without Unicode only as a static library
-            git -C ../ZenLib clean -fdxq
-            ( cd ../ZenLib/Project/GNU/Library && autoreconf -if && ./configure --enable-silent-rules --disable-unicode --enable-static --disable-shared && ${make} -j4 )
+            if [ "$(../ZenLib/Project/GNU/Library/libzen-config Unicode)" != "${unicode}" ] ; then
+                options="--with-dll --enable-staticlibs" # ZenLib built again only as a static library
+                git -C ../ZenLib clean -fdxq
+                ( cd ../ZenLib/Project/GNU/Library && autoreconf -if && ./configure --enable-silent-rules --enable-unicode=${unicode} --enable-static --disable-shared && ${make} -j4 )
+            fi
             ;;
         *)
             echo "unknown mode ${mode}"
