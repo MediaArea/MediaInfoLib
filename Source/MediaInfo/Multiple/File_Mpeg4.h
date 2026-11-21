@@ -612,6 +612,7 @@ private :
         bool                    IsHevc; //The first parser is an HEVC one
         bool                    IsJpeg; //The first parser is a JPEG one
         bool                    IsAv2; //The first parser is an AV2 one
+        int8u                   pixi_BitDepth; //Bit depth of all the channels of the pixel information box, 0 if none or if they differ
         bool                    IsPriorityStream;
         bool                    IsFilled;
         bool                    IsChapter;
@@ -723,6 +724,7 @@ private :
             IsHevc=false;
             IsJpeg=false;
             IsAv2=false;
+            pixi_BitDepth=0;
             IsPriorityStream=false;
             IsFilled=false;
             IsChapter=false;

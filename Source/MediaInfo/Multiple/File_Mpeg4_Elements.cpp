@@ -3457,7 +3457,10 @@ void File_Mpeg4::meta_iprp_ipco_pixi()
 
     FILLING_BEGIN_IPCO();
         if (BitDepth)
+        {
             Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_BitDepth), BitDepth);
+            Streams[moov_trak_tkhd_TrackID].pixi_BitDepth=BitDepth;
+        }
     FILLING_END_IPCO();
 }
 
@@ -10167,7 +10170,10 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_pixi()
 
     FILLING_BEGIN();
         if (BitDepth && moov_trak_mdia_minf_stbl_stsd_Pos<=1) //Handling only the first description
+        {
             Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_BitDepth), BitDepth);
+            Streams[moov_trak_tkhd_TrackID].pixi_BitDepth=BitDepth;
+        }
     FILLING_END();
 }
 
