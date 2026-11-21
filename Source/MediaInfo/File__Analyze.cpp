@@ -5396,7 +5396,7 @@ void File__Analyze::RanOutOfData(const char* Prefix)
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_CONFORMANCE
-void File__Analyze::SynchLost(const char* Prefix, int64u CountOfBytes, bool AreZero)
+void File__Analyze::SynchLost(const char* Prefix, int64u CountOfBytes, bool AreZero, int64u Offset)
 {
     Synched=false;
     const auto Name = BuildConformanceName(ParserName, Prefix, "GeneralCompliance");
@@ -5414,10 +5414,11 @@ void File__Analyze::SynchLost(const char* Prefix, int64u CountOfBytes, bool AreZ
         }
         Content += " (count " + to_string_with_percent(CountOfBytes, File_Size) + ")";
     }
-    File_Offset-=CountOfBytes;
+    const auto Shift = Offset == (int64u)-1 ? CountOfBytes : File_Offset + Buffer_Offset + Element_Offset - Offset;
+    File_Offset-=Shift;
     Fill_Conformance(Name.c_str(), Content, {}, Type);
     Trusted_IsNot("Synchronization lost");
-    File_Offset+=CountOfBytes;
+    File_Offset+=Shift;
     Merge_Conformance();
 }
 

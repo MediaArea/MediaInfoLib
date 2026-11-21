@@ -457,7 +457,7 @@ void File_Mpega::Streams_Finish()
                     break;
                 }
         Buffer_Offset = Buffer_Size;
-        SynchLost("MPEG-Audio", File_Offset + Buffer_Size - LastSync_Offset, NotZero_Offset == (int64u)-1);
+        SynchLost("MPEG-Audio", File_Offset + Buffer_Size - LastSync_Offset, NotZero_Offset == (int64u)-1, LastSync_Offset);
     }
 
     //VBR_FileSize calculation
@@ -970,7 +970,7 @@ bool File_Mpega::Synchronize()
 
     //Synched is OK
     if (LastSync_Offset != (int64u)-1 && File_Offset + Buffer_Offset > LastSync_Offset) {
-        SynchLost("MPEG-Audio", File_Offset + Buffer_Offset - LastSync_Offset, NotZero_Offset == File_Offset + Buffer_Offset);
+        SynchLost("MPEG-Audio", File_Offset + Buffer_Offset - LastSync_Offset, NotZero_Offset == File_Offset + Buffer_Offset, LastSync_Offset);
     }
     LastSync_Offset = File_Offset + Buffer_Offset;
     NotZero_Offset = (int64u)-1;
