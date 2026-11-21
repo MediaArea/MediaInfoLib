@@ -1538,7 +1538,7 @@ void File_Aac::esbr_data(size_t End)
     FILLING_BEGIN();
         if (Infos["Format_Profile"].find(__T("eSBR"))==string::npos)
         {
-            Infos["Format_Profile"]=__T("HE-AAC+eSBR");
+            Infos["Format_Profile"]=Format_Profile_Sbr(false, false, true);
         }
     FILLING_END();
 }

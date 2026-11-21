@@ -411,7 +411,7 @@ protected :
 
 private :
     void FillInfosHEAACv2(const Ztring& Format_Settings);
-    Ztring Format_Profile_Sbr(bool PS, bool Legacy) const;
+    Ztring Format_Profile_Sbr(bool PS, bool Legacy, bool ESBR=false) const;
 };
 
 } //NameSpace

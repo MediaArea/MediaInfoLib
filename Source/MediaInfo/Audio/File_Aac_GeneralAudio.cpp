@@ -4319,10 +4319,12 @@ void File_Aac::hcod(int8u sect_cb, const char* Name)
 
 //---------------------------------------------------------------------------
 // HE-AAC and HE-AACv2 names are only for AAC LC as base audio object type
-Ztring File_Aac::Format_Profile_Sbr(bool PS, bool Legacy) const
+Ztring File_Aac::Format_Profile_Sbr(bool PS, bool Legacy, bool ESBR) const
 {
-    if (audioObjectType==2 || audioObjectType==(int8u)-1)
+    if (audioObjectType==2)
     {
+        if (ESBR)
+            return __T("HE-AAC+eSBR");
         if (PS)
             return Legacy?__T("HE-AACv2 / HE-AAC / LC"):__T("HE-AACv2");
         return Legacy?__T("HE-AAC / LC"):__T("HE-AAC");
@@ -4330,6 +4332,8 @@ Ztring File_Aac::Format_Profile_Sbr(bool PS, bool Legacy) const
 
     const Ztring Base=Ztring().From_UTF8(Aac_Format_Profile(audioObjectType));
     const Ztring Base_Space=Base.empty()?Ztring():(Base+__T(' '));
+    if (ESBR)
+        return Base_Space+__T("SBR eSBR");
     Ztring ToReturn=Base_Space+(PS?__T("SBR PS"):__T("SBR"));
     if (Legacy)
     {
