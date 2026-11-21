@@ -36,7 +36,10 @@ void File_Id3::Read_Buffer_Continue()
 {
     //Buffer size
     if (Buffer_Size<128)
+    {
+        Element_WaitForMoreData();
         return;
+    }
 
     int32u Magic;
     Peek_B4(Magic);
@@ -47,7 +50,10 @@ void File_Id3::Read_Buffer_Continue()
     if (Magic==0x5441472B)
     {
         if (Buffer_Size<227+128)
+        {
+            Element_WaitForMoreData();
             return;
+        }
 
         Skip_C4   (                                                 "ID");
         Get_Local (60, TitleAddition,                               "Title");
