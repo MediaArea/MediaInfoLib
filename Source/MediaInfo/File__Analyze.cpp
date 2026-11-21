@@ -5101,11 +5101,9 @@ void File__Analyze::Fill_Conformance(const char* Field, const char* Value, uint8
             Data.Frame_Count_NotParsedIncluded -= Frame_Count_InThisBlock;
         }
     }
-    if (FrameInfo.PTS != (int64u)-1 && PTS_Begin != (int64u)-1)
-        FrameInfo.PTS -= PTS_Begin;
     Data.PTS = FrameInfo.PTS == (int64u)-1 ? FrameInfo.DTS : FrameInfo.PTS;
     if (FrameInfo.PTS != (int64u)-1 && PTS_Begin != (int64u)-1)
-        FrameInfo.PTS -= PTS_Begin;
+        Data.PTS -= PTS_Begin;
     if (Data.PTS != (int64u)-1) {
         if (Frame_Count_InThisBlock) {
             Data.PTS -= FrameInfo.DUR;
