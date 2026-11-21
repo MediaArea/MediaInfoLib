@@ -455,6 +455,7 @@ void File__Tags_Helper::GoTo (int64u GoTo, const char* ParserName)
     //Normal Data_GoTo;
 
     //Configuring
+    bool IsContinued=SearchingForEndTags;
     if (!SearchingForEndTags)
     {
         if (TagSizeIsFinal) //End tags already searched, the parser was already sent to them
@@ -474,7 +475,16 @@ void File__Tags_Helper::GoTo (int64u GoTo, const char* ParserName)
 
     //If a jump is requested
     if (!TagSizeIsFinal)
+    {
+        if (Base->File_GoTo==(int64u)-1)
+        {
+            if (IsContinued)
+                Base->Element_WaitForMoreData(); //The bytes to test continue after the end of the buffer
+            else
+                Base->GoTo(Base->File_Offset, "Tags detection"); //The bytes to test must not be parsed by the parser, starting again from the buffer start
+        }
         return;
+    }
 
     //Positionning (if finnished)
     if (TagSizeIsFinal)
