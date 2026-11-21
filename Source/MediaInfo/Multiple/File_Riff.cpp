@@ -1254,7 +1254,7 @@ void File_Riff::Header_Parse()
         Name=Elements::AVI_;
 
     //Tests
-    if (Element_Level==2 && Name==Elements::WAVE && !IsRIFF64 && File_Size>0xFFFFFFFF)
+    if (Element_Level==2 && Name==Elements::WAVE && !IsRIFF64 && File_Size!=(int64u)-1 && File_Size>0xFFFFFFFF)
         IsWaveBroken=true; //Non standard big files detection
     if (IsWaveBroken && (Name==Elements::WAVE || Name==Elements::WAVE_data))
         Size_Complete=File_Size-(File_Offset+Buffer_Offset+8); //Non standard big files detection
