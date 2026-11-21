@@ -1322,7 +1322,14 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
     {
         if (Buffer_Offset>Buffer_Size)
             File_GoTo=File_Offset+Buffer_Offset;
+        #if MEDIAINFO_TRACE
+            bool IsComplete=Element[Element_Level].IsComplete;
+        #endif //MEDIAINFO_TRACE
         Buffer_Clear();
+        #if MEDIAINFO_TRACE
+            if (File_GoTo==(int64u)-1)
+                Element[Element_Level].IsComplete=IsComplete; //The data continues in the next buffer, no jump to finalize the details for
+        #endif //MEDIAINFO_TRACE
         return;
     }
 
