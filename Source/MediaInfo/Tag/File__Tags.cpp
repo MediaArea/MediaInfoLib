@@ -120,7 +120,7 @@ void File__Tags_Helper::Streams_Finish()
     if (!Base->IsSub)
     {
         Base->Fill(Stream_General, 0, General_StreamSize, TagsSize+Base->Retrieve(Stream_General, 0, General_StreamSize).To_int64u(), 10, true);
-        if (Base->Retrieve(Stream_Audio, 0, Audio_StreamSize).empty())
+        if (Base->File_Size!=(int64u)-1 && Base->Retrieve(Stream_Audio, 0, Audio_StreamSize).empty())
             Base->Fill(Stream_Audio, 0, Audio_StreamSize, Base->File_Size-TagsSize);
     }
 }
