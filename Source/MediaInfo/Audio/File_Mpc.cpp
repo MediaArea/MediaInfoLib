@@ -112,8 +112,24 @@ File_Mpc::File_Mpc()
 {
     //File__Tags_Helper
     Base=this;
+
+    //Temp
+    FrameCount=0;
+    SampleFreq=0;
 }
 
+//***************************************************************************
+// Streams management
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+void File_Mpc::Streams_Finish()
+{
+    if (FrameCount)
+        Fill(Stream_Audio, 0, Audio_BitRate, (File_Size-25)*8*Mpc_SampleFreq[SampleFreq]/FrameCount/1152);
+
+    File__Tags_Helper::Streams_Finish();
+}
 
 //***************************************************************************
 // Buffer - File header
@@ -145,9 +161,8 @@ void File_Mpc::FileHeader_Parse()
     //Parsing
     Element_Begin1("SV7 header");
     Ztring Encoder;
-    int32u FrameCount;
     int16u TitleGain, AlbumGain;
-    int8u  Profile, Link, SampleFreq, EncoderVersion;
+    int8u  Profile, Link, EncoderVersion;
 
     Skip_C3(                                                    "Signature");
     BS_Begin();
@@ -200,8 +215,6 @@ void File_Mpc::FileHeader_Parse()
         Fill(Stream_Audio, 0, Audio_BitDepth, 16); //MPC support only 16 bits
         Fill(Stream_Audio, 0, Audio_Channel_s_, 2); // MPC support only stereo
         Fill(Stream_Audio, 0, Audio_Duration, ((int64u)FrameCount)*1152*1000/Mpc_SampleFreq[SampleFreq]);
-        if (FrameCount)
-            Fill(Stream_Audio, 0, Audio_BitRate, (File_Size-25)*8*Mpc_SampleFreq[SampleFreq]/FrameCount/1152);
 
         //No more need data
         File__Tags_Helper::Finish("Musepack SV7");

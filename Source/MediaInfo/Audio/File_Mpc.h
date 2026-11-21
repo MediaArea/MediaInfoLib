@@ -34,7 +34,7 @@ public :
 
 private :
     //Streams management
-    void Streams_Finish()                                                       {File__Tags_Helper::Streams_Finish();}
+    void Streams_Finish();
 
     //Buffer - Global
     void Read_Buffer_Continue()                                                 {File__Tags_Helper::Read_Buffer_Continue();}
@@ -42,6 +42,10 @@ private :
     //Buffer - File header
     bool FileHeader_Begin();
     void FileHeader_Parse();
+
+    //Temp
+    int32u FrameCount;
+    int8u  SampleFreq;
 };
 
 } //NameSpace
