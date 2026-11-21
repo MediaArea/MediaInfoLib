@@ -325,7 +325,11 @@ void conformance::Merge_Conformance(bool FromConfig)
             if (Current != Conformance_Total.end()) {
                 if (Current->FramePoss.size() < Limit) {
                     if (FromConfig) {
-                        Current->FramePoss.insert(Current->FramePoss.begin(), { (int64u)-2 });
+                        auto Pos = Current->FramePoss.begin();
+                        while (Pos != Current->FramePoss.end() && Pos->Frame_Count_Min == (int64u)-2) {
+                            ++Pos; //After the previous configurations
+                        }
+                        Current->FramePoss.emplace(Pos, (int64u)-2, (int64u)-1, FieldValue.FramePoss[0].SubFramePos_Min, (int64u)-1, File_Offset);
                     }
                     else if (Frame_Count != (int64u)-1 && !Current->FramePoss.empty() && (Frame_Count - Current->FramePoss.back().Frame_Count_Min <= 1 || Frame_Count - Current->FramePoss.back().Frame_Count_Max <= 1)) {
                         Current->FramePoss.back().Frame_Count_Max = Frame_Count;
@@ -440,6 +444,7 @@ void conformance::Streams_Finish_Conformance()
                         auto& FramePos = ConformanceError.FramePoss[i];
                         if (FramePos.Frame_Count_Min == (int64u)-2) {
                             Frames += "conf";
+                            Times_HasContent--; //No time for a configuration
                         }
                         else {
                             if (FramePos.Frame_Count_NotParsedIncluded_Min != (int64u)-1) {
