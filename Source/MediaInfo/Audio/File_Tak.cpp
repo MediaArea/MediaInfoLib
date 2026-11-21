@@ -76,6 +76,22 @@ File_Tak::File_Tak()
 {
     //File__Tags_Helper
     Base=this;
+
+    //Temp
+    AudioFrames_Offset=(int64u)-1;
+}
+
+//***************************************************************************
+// Streams management
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+void File_Tak::Streams_Finish()
+{
+    if (AudioFrames_Offset!=(int64u)-1)
+        Fill(Stream_Audio, 0, Audio_StreamSize, File_Size-File_EndTagSize-AudioFrames_Offset);
+
+    File__Tags_Helper::Streams_Finish();
 }
 
 //***************************************************************************
@@ -158,7 +174,7 @@ void File_Tak::ENDOFMETADATA()
 {
     //Filling
     Fill(Stream_General, 0, General_StreamSize, 0); //File_Offset+Buffer_Offset+Element_Size);
-    Fill(Stream_Audio, 0, Audio_StreamSize, File_Size-(File_Offset+Buffer_Offset+Element_Size));
+    AudioFrames_Offset=File_Offset+Buffer_Offset+Element_Size;
     File__Tags_Helper::Finish("TAK");
 }
 

@@ -40,7 +40,7 @@ public :
 
 private :
     //Streams management
-    void Streams_Finish()                                                       {File__Tags_Helper::Streams_Finish();}
+    void Streams_Finish();
 
     //Buffer - File header
     bool FileHeader_Begin();
@@ -65,6 +65,7 @@ private :
     //Temp
     bool Last_metadata_block;
     bool IsAudioFrames;
+    int64u AudioFrames_Offset;
     std::unique_ptr<int16u[]> CRC_16_Table;
 };
 

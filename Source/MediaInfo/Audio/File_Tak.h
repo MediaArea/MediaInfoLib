@@ -39,7 +39,7 @@ public :
 
 private :
     //Streams management
-    void Streams_Finish()                                                       {File__Tags_Helper::Streams_Finish();}
+    void Streams_Finish();
 
     //Buffer - File header
     bool FileHeader_Begin();
@@ -59,6 +59,9 @@ private :
     void WAVEMETADATA();
     void ENCODERINFO();
     void PADDING()                                                              {Skip_XX(Element_Size, "Padding");}
+
+    //Temp
+    int64u AudioFrames_Offset;
 };
 
 } //NameSpace
