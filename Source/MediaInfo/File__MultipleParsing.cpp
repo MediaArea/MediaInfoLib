@@ -979,7 +979,7 @@ void File__MultipleParsing::Read_Buffer_Continue()
     {
         //Parsing
         Parser[Pos]->Open_Buffer_Continue(Buffer+Buffer_Offset, (size_t)Element_Size);
-        if (File_Offset+Buffer_Size==File_Size)
+        if (File_Offset+Buffer_Size==File_Size && Parser[Pos]->File_GoTo>=File_Size)
         {
             //Config is shared by all the candidate parsers: the finalization of one of
             //them must not make the next ones parse as if they were finishing
