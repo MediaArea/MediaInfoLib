@@ -913,7 +913,7 @@ void File_Aac::AudioSpecificConfig_OutOfBand (int64s sampling_frequency_, int8u 
 
     if (sbrPresentFlag || !Infos["Format_Settings_SBR"].empty())
     {
-        Infos["Format_Profile"]=__T("HE-AAC");
+        Infos["Format_Profile"]=Format_Profile_Sbr(false, false);
         int32u SamplingRate=(extension_sampling_frequency_index==(int8u)-1)?(((int32u)Frequency_b)*2):extension_sampling_frequency;
         if (SamplingRate)
         {
@@ -921,7 +921,7 @@ void File_Aac::AudioSpecificConfig_OutOfBand (int64s sampling_frequency_, int8u 
             Infos["SamplingRate"].From_Number(SamplingRate, 10);
             if (MediaInfoLib::Config.LegacyStreamDisplay_Get())
             {
-                Infos["Format_Profile"]+=__T(" / LC");
+                Infos["Format_Profile"]=Format_Profile_Sbr(false, true);
                 Infos["SamplingRate"]+=__T(" / ")+SamplingRate_Previous;
             }
         }

@@ -3112,11 +3112,11 @@ void File_Aac::program_config_element()
         if (!Infos["Format_Settings_SBR"].empty())
         {
             const Ztring SamplingRate=Infos["SamplingRate"];
-            Infos["Format_Profile"]=__T("HE-AAC");
+            Infos["Format_Profile"]=Format_Profile_Sbr(false, false);
             Infos["SamplingRate"].From_Number((extension_sampling_frequency_index==(int8u)-1)?(Frequency_b*2):extension_sampling_frequency, 10);
             if (MediaInfoLib::Config.LegacyStreamDisplay_Get())
             {
-                Infos["Format_Profile"]+=__T(" / LC");
+                Infos["Format_Profile"]=Format_Profile_Sbr(false, true);
                 Infos["SamplingRate"]+=__T(" / ")+SamplingRate;
             }
             Infos["Format_Settings"]=__T("NBC"); // "Not Backward Compatible"
@@ -4318,9 +4318,33 @@ void File_Aac::hcod(int8u sect_cb, const char* Name)
 
 
 //---------------------------------------------------------------------------
+// HE-AAC and HE-AACv2 names are only for AAC LC as base audio object type
+Ztring File_Aac::Format_Profile_Sbr(bool PS, bool Legacy) const
+{
+    if (audioObjectType==2 || audioObjectType==(int8u)-1)
+    {
+        if (PS)
+            return Legacy?__T("HE-AACv2 / HE-AAC / LC"):__T("HE-AACv2");
+        return Legacy?__T("HE-AAC / LC"):__T("HE-AAC");
+    }
+
+    const Ztring Base=Ztring().From_UTF8(Aac_Format_Profile(audioObjectType));
+    const Ztring Base_Space=Base.empty()?Ztring():(Base+__T(' '));
+    Ztring ToReturn=Base_Space+(PS?__T("SBR PS"):__T("SBR"));
+    if (Legacy)
+    {
+        if (PS)
+            ToReturn+=__T(" / ")+Base_Space+__T("SBR");
+        if (!Base.empty())
+            ToReturn+=__T(" / ")+Base;
+    }
+    return ToReturn;
+}
+
+//---------------------------------------------------------------------------
 void File_Aac::FillInfosHEAACv2(const Ztring& Format_Settings)
 {
-    Infos["Format_Profile"] = __T("HE-AACv2");
+    Infos["Format_Profile"] = Format_Profile_Sbr(true, false);
     const Ztring Channels = Infos["Channel(s)"];
     const Ztring ChannelPositions = Infos["ChannelPositions"];
     const Ztring ChannelPositions2 = Infos["ChannelPositions/String2"];
@@ -4334,7 +4358,7 @@ void File_Aac::FillInfosHEAACv2(const Ztring& Format_Settings)
     if (MediaInfoLib::Config.LegacyStreamDisplay_Get())
     {
         const Ztring SamplingRate_Previous = Infos["SamplingRate"];
-        Infos["Format_Profile"] += __T(" / HE-AAC / LC");
+        Infos["Format_Profile"] = Format_Profile_Sbr(true, true);
         if (!FromIamf)
         {
             Infos["Channel(s)"] += __T(" / ") + Channels + __T(" / ") + Channels;

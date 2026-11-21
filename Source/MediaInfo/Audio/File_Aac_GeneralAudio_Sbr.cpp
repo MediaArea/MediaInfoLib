@@ -1088,7 +1088,7 @@ void File_Aac::sbr_extension_data(size_t End, int8u id_aac, bool crc_flag)
     FILLING_BEGIN();
         if (Infos["Format_Settings_SBR"].empty())
         {
-            Infos["Format_Profile"]=__T("HE-AAC");
+            Infos["Format_Profile"]=Format_Profile_Sbr(false, false);
             Ztring SamplingRate=Infos["SamplingRate"];
             if (SamplingRate.empty() && Frequency_b)
                 SamplingRate.From_Number(Frequency_b);
@@ -1097,7 +1097,7 @@ void File_Aac::sbr_extension_data(size_t End, int8u id_aac, bool crc_flag)
             Infos["SamplingRate"].From_Number((extension_sampling_frequency_index==(int8u)-1)?(Frequency_b*2):extension_sampling_frequency, 10);
             if (MediaInfoLib::Config.LegacyStreamDisplay_Get())
             {
-                Infos["Format_Profile"]+=__T(" / LC");
+                Infos["Format_Profile"]=Format_Profile_Sbr(false, true);
                 Infos["SamplingRate"]+=__T(" / ")+SamplingRate;
             }
             Infos["Format_Settings"]=__T("Implicit");

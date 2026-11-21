@@ -529,6 +529,13 @@ Ztring ChannelLayout_2018_Rename(stream_t StreamKind, const Ztring Parameter, co
 //***************************************************************************
 // Modifiers - Highest format
 //***************************************************************************
+// SBR with a base audio object type other than AAC LC, e.g. "Main SBR PS / Main SBR / Main"
+static bool IsAacSbrProfile(const Ztring& Profile)
+{
+    const Ztring First=Profile.substr(0, Profile.find(__T(" / ")));
+    return First==__T("SBR") || First==__T("SBR PS") || First.find(__T(" SBR"))!=string::npos;
+}
+
 Ztring HighestFormat(stream_t StreamKind, size_t Parameter, const ZtringList& Info, bool &ShouldReturn)
 {
     if (Parameter>=Info.size())
@@ -693,6 +700,8 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, const ZtringList& In
                     return LCESBR;
                 if (Profile.find(HEAAC)!=string::npos)
                     return LCSBR;
+                if (IsAacSbrProfile(Profile))
+                    return Profile.substr(0, Profile.find(__T(" / ")));
                 if (Profile.find(LC)!=string::npos)
                     return LC;
                 if (Profile.find(LTP)!=string::npos)
@@ -731,6 +740,8 @@ Ztring HighestFormat(stream_t StreamKind, size_t Parameter, const ZtringList& In
             if (Info[Parameter_Format]==ERAAC)
             {
                 const Ztring& Profile=Info[Parameter_Format_Profile];
+                if (IsAacSbrProfile(Profile))
+                    return Profile.substr(0, Profile.find(__T(" / ")));
                 if (Profile.find(LC)!=string::npos)
                     return LC;
                 if (Profile.find(LTP)!=string::npos)
