@@ -69,6 +69,7 @@
 #endif //MEDIAINFO_ADVANCED
 #if MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES)
     #include <limits>
+    #include <signal.h>
     #ifdef WINDOWS
         #ifndef WIN32_LEAN_AND_MEAN
             #define WIN32_LEAN_AND_MEAN
@@ -80,7 +81,6 @@
         #undef Yield
     #else
         #include <unistd.h>
-        #include <signal.h>
         #if defined(_POSIX_PRIORITY_SCHEDULING) // Note: unistd.h must be included first
             #include <sched.h>
         #endif //_POSIX_PRIORITY_SCHEDULING
@@ -944,26 +944,29 @@ static stream_t Text2StreamT(const Ztring& ParameterName, size_t ToRemove)
 //***************************************************************************
 
 #if MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES) && !defined(WINDOWS_UWP) && !defined(__BORLANDC__)
-class Reader_Cin_Thread;
-set<Reader_Cin_Thread*> ToTerminate;
-CriticalSection ToTerminate_CS;
+static size_t Reader_Cin_Count=0;
+static CriticalSection Reader_Cin_Count_CS;
+static volatile sig_atomic_t CtrlC_IsReceived=0;
 
 static void CtrlC_Register();
 static void CtrlC_Unregister();
 
-static void Reader_Cin_Add(Reader_Cin_Thread* Thread)
+static void Reader_Cin_Add()
 {
-    CriticalSectionLocker ToTerminate_CSL(ToTerminate_CS);
-    if (ToTerminate.empty() && MediaInfoLib::Config.AcceptSignals_Get())
+    CriticalSectionLocker Reader_Cin_Count_CSL(Reader_Cin_Count_CS);
+    if (!Reader_Cin_Count && MediaInfoLib::Config.AcceptSignals_Get())
+    {
+        CtrlC_IsReceived=0;
         CtrlC_Register();
-    ToTerminate.insert(Thread);
+    }
+    Reader_Cin_Count++;
 }
 
-static void Reader_Cin_Remove(Reader_Cin_Thread* Thread)
+static void Reader_Cin_Remove()
 {
-    CriticalSectionLocker ToTerminate_CSL(ToTerminate_CS);
-    ToTerminate.erase(Thread);
-    if (ToTerminate.empty() && MediaInfoLib::Config.AcceptSignals_Get())
+    CriticalSectionLocker Reader_Cin_Count_CSL(Reader_Cin_Count_CS);
+    Reader_Cin_Count--;
+    if (!Reader_Cin_Count && MediaInfoLib::Config.AcceptSignals_Get())
         CtrlC_Unregister();
 }
 
@@ -975,6 +978,10 @@ public:
     size_t Buffer_MaxSize;
     bool   Buffer_Filling;
     bool   Buffer_Used;
+    bool   IsReading;
+    bool   IsEnded;
+    bool   IsStopped;
+    CriticalSection CS;
 
     Reader_Cin_Thread()
     {
@@ -985,76 +992,103 @@ public:
         Buffer_Size[1]=0;
         Buffer_Filling=false;
         Buffer_Used=false;
-        Reader_Cin_Add(this);
+        IsReading=false;
+        IsEnded=false;
+        IsStopped=false;
+        Reader_Cin_Add();
     }
 
-    ~Reader_Cin_Thread()
+    bool Current(int8u*& Buffer_New, size_t& Buffer_Size_New)
     {
-        Reader_Cin_Remove(this);
-    }
+        CriticalSectionLocker CSL(CS);
 
-    void Current(int8u*& Buffer_New, size_t& Buffer_Size_New)
-    {
         //If the current buffer is full
         Buffer_New=Buffer[Buffer_Used];
         Buffer_Size_New=Buffer_Size[Buffer_Used];
         if (Buffer_Size_New==Buffer_MaxSize)
-            return;
+            return IsEnded;
 
         //Not full, we accept it only if read is finished
-        if (IsRunning())
+        if (!IsEnded)
             Buffer_Size_New=0;
+        return IsEnded;
     }
 
     void IsManaged()
     {
+        CriticalSectionLocker CSL(CS);
         Buffer_Size[Buffer_Used]=0;
         Buffer_Used=!Buffer_Used;
     }
 
+    void Stop()
+    {
+        Reader_Cin_Remove();
+        CriticalSectionLocker CSL(CS);
+        IsStopped=true;
+    }
+
+    //Returns false if the thread still waits for stdin data, which may never come, the object is then still used by the thread
+    bool Wait_Exit()
+    {
+        {
+            CriticalSectionLocker CSL(CS);
+            if (IsReading)
+                return false;
+        }
+        while (!IsExited())
+            Yield();
+        RequestTerminate(); //The exited state is set with the thread lock held, wait for the lock to be released
+        return true;
+    }
+
     void Entry()
     {
-        while (!IsTerminating() && !IsExited())
+        for (;;)
         {
-            if (Buffer_Size[Buffer_Filling]==Buffer_MaxSize) //If end of buffer is reached
+            int8u* ToRead=NULL;
+            size_t ToRead_Size=0;
             {
-                Buffer_Filling=!Buffer_Filling;
-                while (Buffer_Size[Buffer_Filling]) //Wait for first byte free
-                    Yield(); //TODO: use condition_variable
-                continue; //Check again the condition before next step
+                CriticalSectionLocker CSL(CS);
+                if (IsStopped)
+                    return;
+                if (Buffer_Size[Buffer_Filling]!=Buffer_MaxSize) //Else the buffer is not parsed yet
+                {
+                    ToRead=Buffer[Buffer_Filling]+Buffer_Size[Buffer_Filling];
+                    ToRead_Size=Buffer_MaxSize-Buffer_Size[Buffer_Filling];
+                    IsReading=true;
+                }
+            }
+            if (!ToRead_Size)
+            {
+                Yield(); //Wait for the buffer to be parsed
+                continue;
             }
 
             //Read from stdin
-            int NewChar=getchar();
-            if (NewChar==EOF)
-                break;
-            Buffer[Buffer_Filling][Buffer_Size[Buffer_Filling]++]=(int8u)NewChar; //Fill the new char then increase offset
-        }
+            #ifdef WINDOWS
+                int Read=_read(_fileno(stdin), ToRead, (unsigned int)ToRead_Size);
+            #else //WINDOWS
+                ssize_t Read=read(STDIN_FILENO, ToRead, ToRead_Size);
+            #endif //WINDOWS
 
-        RequestTerminate();
-        while (Buffer_Size[0] || Buffer_Size[1])
-            Yield(); //Wait for the all buffer are cleared by the read thread
+            CriticalSectionLocker CSL(CS);
+            IsReading=false;
+            if (Read<=0)
+            {
+                IsEnded=true;
+                return;
+            }
+            Buffer_Size[Buffer_Filling]+=(size_t)Read;
+            if (Buffer_Size[Buffer_Filling]==Buffer_MaxSize) //If end of buffer is reached
+                Buffer_Filling=!Buffer_Filling;
+        }
     }
 };
 
-static void Reader_Cin_ForceTerminate()
-{
-    CriticalSectionLocker ToTerminate_CSL(ToTerminate_CS);
-    for (set<Reader_Cin_Thread*>::iterator ToTerminate_Item=ToTerminate.begin(); ToTerminate_Item!=ToTerminate.end(); ++ToTerminate_Item)
-        (*ToTerminate_Item)->ForceTerminate();
-    ToTerminate.clear();
-}
-
-static void Reader_Cin_ForceTerminate(Reader_Cin_Thread* Thread)
-{
-    CriticalSectionLocker ToTerminate_CSL(ToTerminate_CS);
-    Thread->ForceTerminate();
-    ToTerminate.erase(Thread);
-}
-
 static void CtrlC_Received()
 {
-    Reader_Cin_ForceTerminate();
+    CtrlC_IsReceived=1;
     CtrlC_Unregister();
 }
 
@@ -1498,41 +1532,37 @@ void MediaInfo_Internal::Entry()
             #endif //defined(WINDOWS) && !defined(WINDOWS_UWP) && !defined(__BORLANDC__)
             )
         {
-            Reader_Cin_Thread Cin;
-            Cin.Run();
+            Reader_Cin_Thread* Cin=new Reader_Cin_Thread;
+            Cin->Run();
             Open_Buffer_Init();
             clock_t LastIn=-1;
             int64u TimeOut_Temp=MediaInfoLib::Config.TimeOut_Get();
             int64u TimeOut_Temp2=TimeOut_Temp*CLOCKS_PER_SEC;
             clock_t TimeOut=(!CLOCKS_PER_SEC || !TimeOut_Temp || TimeOut_Temp2/CLOCKS_PER_SEC==TimeOut_Temp)?((clock_t)TimeOut_Temp2):-1;
 
-            for (;;)
+            while (!CtrlC_IsReceived)
             {
                 int8u* Buffer_New;
                 size_t Buffer_Size_New;
-                if (Cin.IsExited())
-                    break;
-                Cin.Current(Buffer_New, Buffer_Size_New);
+                bool IsEnded=Cin->Current(Buffer_New, Buffer_Size_New);
                 if (Buffer_Size_New)
                 {
-                    if (Open_Buffer_Continue(Buffer_New, Buffer_Size_New)[File__Analyze::IsFinished])
-                        Reader_Cin_ForceTerminate(&Cin);
-                    if (Config.RequestTerminate)
-                        Cin.RequestTerminate();
-                    Cin.IsManaged();
+                    bool IsFinished=Open_Buffer_Continue(Buffer_New, Buffer_Size_New)[File__Analyze::IsFinished];
+                    Cin->IsManaged();
+                    if (IsFinished || Config.RequestTerminate)
+                        break;
                     if (TimeOut!=-1)
                         LastIn=clock();
                 }
                 else
                 {
+                    if (IsEnded)
+                        break;
                     if (LastIn!=-1)
                     {
                         clock_t NewLastIn=clock();
                         if (NewLastIn-LastIn>=TimeOut)
-                        {
-                            Reader_Cin_ForceTerminate(&Cin);
-                            LastIn=-1;
-                        }
+                            break;
                     }
 
                     #ifdef WINDOWS
@@ -1542,7 +1572,10 @@ void MediaInfo_Internal::Entry()
                     #endif //_POSIX_PRIORITY_SCHEDULING
                 }
             }
+            Cin->Stop();
             Open_Buffer_Finalize();
+            if (Cin->Wait_Exit())
+                delete Cin;
         }
     #endif //MEDIAINFO_ADVANCED && defined(MEDIAINFO_FILE_YES) && !defined(WINDOWS_UWP) && !defined(__BORLANDC__)
     #if defined(MEDIAINFO_FILE_YES)
