@@ -390,8 +390,19 @@ void File_Nsv::FileHeader_Parse()
                                 if (Name2=="aspect")
                                 {
                                     auto Aspect=Ztring().From_UTF8(Value).To_float64(); //Relative height of the pixels
-                                    if (Aspect>0 && !P->PixelAspectRatio)
-                                        P->PixelAspectRatio=1/Aspect;
+                                    if (Aspect>=0.1 && Aspect<=10) //Pixels up to 10 times higher or wider than square pixels, other values are not plausible
+                                    {
+                                        if (!P->PixelAspectRatio)
+                                            P->PixelAspectRatio=1/Aspect;
+                                    }
+                                    else
+                                    {
+                                        const auto Element_Offset_Save=Element_Offset;
+                                        Element_Offset=Start_Offset; //Offset of the value in the conformance error
+                                        Fill_Conformance("NSV Aspect", "Aspect is not a number from 0.1 to 10 (actual \""+Value+"\")");
+                                        Merge_Conformance();
+                                        Element_Offset=Element_Offset_Save;
+                                    }
                                 }
                                 else
                                     Fill(Stream_General, 0, Name2=="title"?"Title":Name.c_str(), Value);

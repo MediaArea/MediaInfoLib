@@ -794,9 +794,11 @@ void File_Dirac::Sequence_header()
             }
         TEST_SB_END();
         Info_UI(picture_coding_mode,                            "picture coding mode"); Param_Info1(Dirac_picture_coding_mode(picture_coding_mode));
+        BS_End();
     }
     else
     {
+        BS_End();
         Skip_XX(Element_Size-Element_Offset,                    "Unknown");
     }
 

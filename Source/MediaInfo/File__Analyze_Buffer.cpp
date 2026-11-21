@@ -1431,6 +1431,7 @@ void File__Analyze::Skip_UE(const char* Name)
 void File__Analyze::Get_SI(int32s &Info, const char* Name)
 {
     INTEGRITY_SIZE_ATLEAST_BUFFER();
+    const size_t Remain_Begin=BS->Remain();
 
     Info=1;
     while(BS->Remain()>0 && BS->GetB()==0)
@@ -1451,7 +1452,7 @@ void File__Analyze::Get_SI(int32s &Info, const char* Name)
         Info=-Info;
 
     if (Trace_Activated)
-        Param(Name, Info);
+        Param(Name, Info, (int8u)(Remain_Begin-BS->Remain()));
 }
 
 //---------------------------------------------------------------------------
@@ -1465,6 +1466,7 @@ void File__Analyze::Skip_SI(const char* Name)
 void File__Analyze::Get_UI(int32u &Info, const char* Name)
 {
     INTEGRITY_SIZE_ATLEAST_BUFFER();
+    const size_t Remain_Begin=BS->Remain();
     Info=1;
     while(BS->Remain()>0 && BS->GetB()==0)
     {
@@ -1481,7 +1483,7 @@ void File__Analyze::Get_UI(int32u &Info, const char* Name)
     Info--;
 
     if (Trace_Activated)
-        Param(Name, Info);
+        Param(Name, Info, (int8u)(Remain_Begin-BS->Remain()));
 }
 
 //---------------------------------------------------------------------------

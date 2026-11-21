@@ -449,6 +449,7 @@ void File_Ogg_SubElement::Identification_BBCD()
         StreamKind_Last=Stream_Video;
         Parser=new File_Dirac;
         ((File_Dirac*)Parser)->Ignore_End_of_Sequence=true;
+        ((File_Dirac*)Parser)->FrameIsAlwaysComplete=true;
     #else
         Stream_Prepare(Stream_Video);
         Fill(Stream_Video, 0, Video_Format, "Dirac");
