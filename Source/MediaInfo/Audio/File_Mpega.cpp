@@ -913,8 +913,8 @@ bool File_Mpega::Synchronize()
 
                                             if (Buffer_Offset+Size0+Size1+Size2+4>Buffer_Size)
                                             {
-                                                if (IsSub || File_Offset+Buffer_Offset+Size0+Size1+Size2<File_Size)
-                                                    break;
+                                                if (IsSub || (File_Offset+Buffer_Offset+Size0+Size1+Size2<File_Size && File_Offset+Buffer_Offset+Size0+Size1+Size2+4>File_Size) || (Config->IsFinishing && Buffer_Offset+Size0+Size1+Size2<=Buffer_Size))
+                                                    break; //while(), no room for a fourth frame header before the end of the data
                                                 return false; //Need more data
                                             }
 
