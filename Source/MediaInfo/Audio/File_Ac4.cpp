@@ -327,7 +327,7 @@ static int32u Ac4_ch_mode_2_nonstd(int8u ch_mode, bool b_4_back_channels_present
         if (!b_4_back_channels_present)
             Value&=~(Lb | Rb);
         if (!b_centre_present)
-            Value&=~(LFE);
+            Value&=~(C);
         if (top_channels_present<=1)
             Value&=~(Tbl | Tbr);
         if (!top_channels_present || top_channels_present==2)
@@ -1442,14 +1442,10 @@ void File_Ac4::Streams_Fill()
                     string Loudness_Range=Ztring::ToZtring(L.lra/10.0, 1).To_UTF8();
                     Fill(Stream_Audio, 0, (P+" Loudness Loudness_Range").c_str(), Loudness_Range);
                     Fill_SetOptions(Stream_Audio, 0, (P+" Loudness Loudness_Range").c_str(), "N NFY");
-                    Loudness_Range+=" LU";
-                    if (L.loudspchgat_dialgate_prac_type)
-                    {
-                        string Type=Value(Ac4_lra_prac_type, L.lra_prac_type);
-                        Fill(Stream_Audio, 0, (P+" Loudness Loudness_Range_Type").c_str(), Type);
-                        Fill_SetOptions(Stream_Audio, 0, (P+" Loudness Loudness_Range_Type").c_str(), "N NTY");
-                        Loudness_Range+=" ("+Type+')';
-                    }
+                    string Type=Value(Ac4_lra_prac_type, L.lra_prac_type);
+                    Fill(Stream_Audio, 0, (P+" Loudness Loudness_Range_Type").c_str(), Type);
+                    Fill_SetOptions(Stream_Audio, 0, (P+" Loudness Loudness_Range_Type").c_str(), "N NTY");
+                    Loudness_Range+=" LU ("+Type+')';
                     Fill(Stream_Audio, 0, (P+" Loudness Loudness_Range/String").c_str(), Loudness_Range);
                     Fill_SetOptions(Stream_Audio, 0, (P+" Loudness Loudness_Range/String").c_str(), "Y NTN");
                 }
@@ -4316,7 +4312,7 @@ void File_Ac4::custom_dmx_data(dmx& D, int8u pres_ch_mode, int8u pres_ch_mode_co
             Get_S1(2, n_cdmx_configs,                           "n_cdmx_configs_minus1");
             n_cdmx_configs++;
 
-            Presentations.back().Dmx.Cdmxs.reserve(n_cdmx_configs);
+            D.Cdmxs.reserve(n_cdmx_configs);
             for (int8u Pos=0; Pos<n_cdmx_configs; Pos++)
             {
                 Element_Begin1("cdmx_config");
@@ -4327,9 +4323,9 @@ void File_Ac4::custom_dmx_data(dmx& D, int8u pres_ch_mode, int8u pres_ch_mode_co
                     Get_S1 (3, out_ch_config,                   "out_ch_config");
                 Param_Info1C(out_ch_config<out_ch_config_Size, out_ch_config_Values[out_ch_config]);
 
-                Presentations.back().Dmx.Cdmxs.resize(Presentations.back().Dmx.Cdmxs.size()+1);
-                Presentations.back().Dmx.Cdmxs.back().out_ch_config=out_ch_config;
-                cdmx_parameters(bs_ch_config, out_ch_config);
+                D.Cdmxs.resize(D.Cdmxs.size()+1);
+                D.Cdmxs.back().out_ch_config=out_ch_config;
+                cdmx_parameters(D.Cdmxs.back(), bs_ch_config, out_ch_config);
                 Element_End0();
             }
         TEST_SB_END();
@@ -4357,32 +4353,32 @@ void File_Ac4::custom_dmx_data(dmx& D, int8u pres_ch_mode, int8u pres_ch_mode_co
 }
 
 //---------------------------------------------------------------------------
-void File_Ac4::cdmx_parameters(int8u bs_ch_config, int8u out_ch_config)
+void File_Ac4::cdmx_parameters(dmx::cdmx& Cdmx, int8u bs_ch_config, int8u out_ch_config)
 {
     Element_Begin1("cdmx_parameters");
     if (bs_ch_config==0 || bs_ch_config==3)
-        tool_scr_to_c_l();
+        tool_scr_to_c_l(Cdmx);
 
     if (bs_ch_config<2)
     {
         switch (out_ch_config)
         {
             case 0:
-                    tool_t4_to_f_s();
-                    tool_b4_to_b2();
+                    tool_t4_to_f_s(Cdmx);
+                    tool_b4_to_b2(Cdmx);
                     break;
             case 1:
-                    tool_t4_to_t2();
-                    tool_b4_to_b2();
+                    tool_t4_to_t2(Cdmx);
+                    tool_b4_to_b2(Cdmx);
                     break;
             case 2:
-                    tool_b4_to_b2();
+                    tool_b4_to_b2(Cdmx);
                     break;
             case 3:
-                    tool_t4_to_f_s_b();
+                    tool_t4_to_f_s_b(Cdmx);
                     break;
             case 4:
-                    tool_t4_to_t2();
+                    tool_t4_to_t2(Cdmx);
         break;
         }
     }
@@ -4391,10 +4387,10 @@ void File_Ac4::cdmx_parameters(int8u bs_ch_config, int8u out_ch_config)
         switch (out_ch_config)
         {
             case 0:
-                    tool_t4_to_f_s();
+                    tool_t4_to_f_s(Cdmx);
                     break;
             case 1:
-                    tool_t4_to_t2();
+                    tool_t4_to_t2(Cdmx);
                     break;
         }
     }
@@ -4403,132 +4399,132 @@ void File_Ac4::cdmx_parameters(int8u bs_ch_config, int8u out_ch_config)
         switch (out_ch_config)
         {
             case 0:
-                    tool_t2_to_f_s();
-                    tool_b4_to_b2();
+                    tool_t2_to_f_s(Cdmx);
+                    tool_b4_to_b2(Cdmx);
                     break;
             case 1:
-                    tool_b4_to_b2();
+                    tool_b4_to_b2(Cdmx);
                     break;
             case 2:
-                    tool_b4_to_b2();
+                    tool_b4_to_b2(Cdmx);
                     break;
             case 3:
-                    tool_t2_to_f_s_b();
+                    tool_t2_to_f_s_b(Cdmx);
                     break;
             }
     }
     else if (bs_ch_config==5 && out_ch_config==0)
     {
-        tool_t2_to_f_s();
+        tool_t2_to_f_s(Cdmx);
     }
     Element_End0();
 }
 
 //---------------------------------------------------------------------------
-void File_Ac4::tool_scr_to_c_l()
+void File_Ac4::tool_scr_to_c_l(dmx::cdmx& Cdmx)
 {
     Element_Begin1("tool_scr_to_c_l");
         TESTELSE_SB_SKIP(                                       "b_put_screen_to_c");
-            Get_Gain(3, gain::f1_code,                          "gain_f1_code");
+            Get_Gain(Cdmx, 3, gain::f1_code,                    "gain_f1_code");
         TESTELSE_SB_ELSE(                                       "b_put_screen_to_c");
-            Get_Gain(3, gain::f2_code,                          "gain_f2_code");
+            Get_Gain(Cdmx, 3, gain::f2_code,                    "gain_f2_code");
         TESTELSE_SB_END();
     Element_End0();
 }
 
 //---------------------------------------------------------------------------
-void File_Ac4::tool_b4_to_b2()
+void File_Ac4::tool_b4_to_b2(dmx::cdmx& Cdmx)
 {
     Element_Begin1("tool_b4_to_b2");
-    Get_Gain(3, gain::b_code,                                   "gain_b_code");
+    Get_Gain(Cdmx, 3, gain::b_code,                             "gain_b_code");
     Element_End0();
 }
 
 //---------------------------------------------------------------------------
-void File_Ac4::tool_t4_to_t2()
+void File_Ac4::tool_t4_to_t2(dmx::cdmx& Cdmx)
 {
     Element_Begin1("tool_t4_to_t2");
-    Get_Gain(3, gain::t1_code,                                  "gain_t1_code");
+    Get_Gain(Cdmx, 3, gain::t1_code,                            "gain_t1_code");
     Element_End0();
 }
 
 //---------------------------------------------------------------------------
-void File_Ac4::tool_t4_to_f_s_b()
+void File_Ac4::tool_t4_to_f_s_b(dmx::cdmx& Cdmx)
 {
     Element_Begin1("tool_t4_to_f_s_b");
     TESTELSE_SB_SKIP(                                           "b_top_front_to_front");
-        Get_Gain(3, gain::t2a_code,                             "gain_t2a_code");
-        Get_Gain(0, gain::t2b_code,                             nullptr);
+        Get_Gain(Cdmx, 3, gain::t2a_code,                       "gain_t2a_code");
+        Get_Gain(Cdmx, 0, gain::t2b_code,                       nullptr);
     TESTELSE_SB_ELSE(                                           "b_top_front_to_front");
         TESTELSE_SB_SKIP(                                       "b_top_front_to_side");
-            Get_Gain(3, gain::t2b_code,                         "gain_t2b_code");
+            Get_Gain(Cdmx, 3, gain::t2b_code,                   "gain_t2b_code");
         TESTELSE_SB_ELSE(                                       "b_top_front_to_side");
-            Get_Gain(0, gain::t2b_code,                         nullptr);
-            Get_Gain(3, gain::t2c_code,                         "gain_t2c_code");
+            Get_Gain(Cdmx, 0, gain::t2b_code,                   nullptr);
+            Get_Gain(Cdmx, 3, gain::t2c_code,                   "gain_t2c_code");
         TESTELSE_SB_END();
     TESTELSE_SB_END();
 
     TESTELSE_SB_SKIP(                                           "b_top_back_to_front");
-        Get_Gain(3, gain::t2d_code,                              "gain_t2d_code");
-        Get_Gain(0, gain::t2e_code,                              nullptr);
+        Get_Gain(Cdmx, 3, gain::t2d_code,                        "gain_t2d_code");
+        Get_Gain(Cdmx, 0, gain::t2e_code,                        nullptr);
     TESTELSE_SB_ELSE(                                           "b_top_back_to_front");
         TESTELSE_SB_SKIP(                                       "b_top_back_to_side");
-           Get_Gain(3, gain::t2e_code,                           "gain_t2e_code");
+           Get_Gain(Cdmx, 3, gain::t2e_code,                     "gain_t2e_code");
         TESTELSE_SB_ELSE(                                       "b_top_back_to_side");
-            Get_Gain(0, gain::t2e_code,                          nullptr);
-            Get_Gain(3, gain::t2f_code,                          "gain_t2f_code");
+            Get_Gain(Cdmx, 0, gain::t2e_code,                    nullptr);
+            Get_Gain(Cdmx, 3, gain::t2f_code,                    "gain_t2f_code");
         TESTELSE_SB_END();
     TESTELSE_SB_END();
     Element_End0();
 }
 
 //---------------------------------------------------------------------------
-void File_Ac4::tool_t4_to_f_s()
+void File_Ac4::tool_t4_to_f_s(dmx::cdmx& Cdmx)
 {
     Element_Begin1("tool_t4_to_f_s");
     TESTELSE_SB_SKIP(                                           "b_top_front_to_front");
-        Get_Gain(3, gain::t2a_code,                             "gain_t2a_code");
-        Get_Gain(0, gain::t2b_code,                             nullptr);
+        Get_Gain(Cdmx, 3, gain::t2a_code,                       "gain_t2a_code");
+        Get_Gain(Cdmx, 0, gain::t2b_code,                       nullptr);
     TESTELSE_SB_ELSE(                                           "b_top_front_to_front");
-        Get_Gain(3, gain::t2b_code,                             "gain_t2b_code");
+        Get_Gain(Cdmx, 3, gain::t2b_code,                       "gain_t2b_code");
     TESTELSE_SB_END();
 
     TESTELSE_SB_SKIP(                                           "b_top_back_to_front");
-        Get_Gain(3, gain::t2d_code,                             "gain_t2d_code");
-        Get_Gain(0, gain::t2e_code,                             nullptr);
+        Get_Gain(Cdmx, 3, gain::t2d_code,                       "gain_t2d_code");
+        Get_Gain(Cdmx, 0, gain::t2e_code,                       nullptr);
     TESTELSE_SB_ELSE(                                           "b_top_back_to_front");
-        Get_Gain(3, gain::t2e_code,                             "gain_t2e_code");
+        Get_Gain(Cdmx, 3, gain::t2e_code,                       "gain_t2e_code");
     TESTELSE_SB_END();
     Element_End0();
 }
 
 //---------------------------------------------------------------------------
-void File_Ac4::tool_t2_to_f_s_b()
+void File_Ac4::tool_t2_to_f_s_b(dmx::cdmx& Cdmx)
 {
     Element_Begin1("tool_t2_to_f_s_b");
     TESTELSE_SB_SKIP(                                           "b_top_to_front");
-        Get_Gain(3, gain::t2a_code,                             "gain_t2a_code");
-        Get_Gain(0, gain::t2b_code,                             nullptr);
+        Get_Gain(Cdmx, 3, gain::t2a_code,                       "gain_t2a_code");
+        Get_Gain(Cdmx, 0, gain::t2b_code,                       nullptr);
     TESTELSE_SB_ELSE(                                           "b_top_to_front");
         TESTELSE_SB_SKIP(                                       "b_top_to_side");
-            Get_Gain(3, gain::t2b_code,                         "gain_t2b_code");
+            Get_Gain(Cdmx, 3, gain::t2b_code,                   "gain_t2b_code");
         TESTELSE_SB_ELSE(                                       "b_top_to_side");
-            Get_Gain(0, gain::t2b_code,                         nullptr);
-            Get_Gain(3, gain::t2c_code,                         "gain_t2c_code");
+            Get_Gain(Cdmx, 0, gain::t2b_code,                   nullptr);
+            Get_Gain(Cdmx, 3, gain::t2c_code,                   "gain_t2c_code");
         TESTELSE_SB_END();
     TESTELSE_SB_END();
     Element_End0();
 }
 
 //---------------------------------------------------------------------------
-void File_Ac4::tool_t2_to_f_s()
+void File_Ac4::tool_t2_to_f_s(dmx::cdmx& Cdmx)
 {
     Element_Begin1("tool_t2_to_f_s");
     TESTELSE_SB_SKIP(                                           "b_top_to_front");
-        Get_Gain(3, gain::t2a_code,                             "gain_t2a_code");
-        Get_Gain(0, gain::t2b_code,                             nullptr);
+        Get_Gain(Cdmx, 3, gain::t2a_code,                       "gain_t2a_code");
+        Get_Gain(Cdmx, 0, gain::t2b_code,                       nullptr);
     TESTELSE_SB_ELSE(                                           "b_top_to_front");
-        Get_Gain(3, gain::t2b_code,                             "gain_t2b_code");
+        Get_Gain(Cdmx, 3, gain::t2b_code,                       "gain_t2b_code");
     TESTELSE_SB_END();
     Element_End0();
 }
@@ -4915,6 +4911,7 @@ void File_Ac4::dac4()
     {
         Skip_BS(Data_BS_Remain(),                               "Unknown");
         BS_End();
+        Element_End0();
         return;
     }
     Get_S1 (7, bitstream_version,                               "bitstream_version");
@@ -5061,6 +5058,8 @@ void File_Ac4::ac4_presentation_v1_dsi(presentation& P)
                         if (Ac4_channel_mask[i][j]!=ch_Max)
                             nonstd_bed_channel_assignment_mask|=Ac4_channel_mask[i][j];
             Param_Info1(AC4_nonstd_bed_channel_assignment_mask_ChannelLayout(nonstd_bed_channel_assignment_mask));
+            if (P.pres_ch_mode>=11 && P.pres_ch_mode<=14)
+                P.b_pres_centre_present=(nonstd_bed_channel_assignment_mask&C)?true:false;
         TEST_SB_END();
         TEST_SB_SKIP(                                           "b_presentation_core_differs");
             TEST_SB_SKIP(                                       "b_presentation_core_channel_coded");
@@ -5538,7 +5537,7 @@ int16u File_Ac4::Huffman_Decode(const ac4_huffman& Table, const char* Name)
     return index+64;
 }
 
-void File_Ac4::Get_Gain(int8u Bits, gain Type, const char* Name)
+void File_Ac4::Get_Gain(dmx::cdmx& Cdmx, int8u Bits, gain Type, const char* Name)
 {
     dmx::cdmx::gain Gain;
     Gain.Type=Type;
@@ -5548,7 +5547,7 @@ void File_Ac4::Get_Gain(int8u Bits, gain Type, const char* Name)
     }
     else
         Gain.Value=7;
-    Presentations.back().Dmx.Cdmxs.back().Gains.push_back(Gain);
+    Cdmx.Gains.push_back(Gain);
 }
 
 } //NameSpace
