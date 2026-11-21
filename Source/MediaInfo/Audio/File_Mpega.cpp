@@ -449,6 +449,13 @@ void File_Mpega::Streams_Finish()
 
     if (LastSync_Offset != (int64u)-1 && File_Offset + Buffer_Size > LastSync_Offset)
     {
+        if (NotZero_Offset == (int64u)-1 && !IsSub) //Bytes not tested by Synchronize(), e.g. fewer than the 8 bytes of the tags test; the buffer of a sub-parser may be the data of a previous call of its parent
+            for (size_t i = Buffer_Offset; i < Buffer_Size; i++)
+                if (Buffer[i])
+                {
+                    NotZero_Offset = File_Offset + i;
+                    break;
+                }
         Buffer_Offset = Buffer_Size;
         SynchLost("MPEG-Audio", File_Offset + Buffer_Size - LastSync_Offset, NotZero_Offset == (int64u)-1);
     }
