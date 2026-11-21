@@ -100,7 +100,8 @@ private :
         Sector_VMGM_C_ADT,
         Sector_VMGM_VOBU_ADMAP,
     };
-    std::vector<sector>                 Sectors;
+    std::map<int32u, sector>            Sectors; // Key is the first sector of the table
+    int64u                              Sectors_End; // Sector after the last one of the IFO
 
     //Helpers
     Ztring Time_ADT(int32u Value);

@@ -271,6 +271,7 @@ File_Dvdv::File_Dvdv()
 {
     //Temp
     VTS_Attributes_AreHere=false;
+    Sectors_End=0;
     Program_Pos=0;
     Time_Pos=0;
 }
@@ -528,7 +529,7 @@ void File_Dvdv::VMG()
          || Sector_Pointer_LastSector==(int32u)-1
          || Sector_Pointer_LastSector>=File_Size/2048)
             return;
-        Sectors.resize((size_t)Sector_Pointer_LastSector+1);
+        Sectors_End=(int64u)Sector_Pointer_LastSector+1;
         if (Sector_Pointer_TT_SRPT<=Sector_Pointer_LastSector)
             Sectors[Sector_Pointer_TT_SRPT]=Sector_TT_SRPT;
         if (Sector_Pointer_VMGM_PGCI_UT<=Sector_Pointer_LastSector)
@@ -662,7 +663,7 @@ void File_Dvdv::VTS()
             return;
         if (Sector_Pointer_LastSector==(int32u)-1 || Sector_Pointer_LastSector+1>File_Size/2048)
             Sector_Pointer_LastSector=(int32u)(File_Size/2048);
-        Sectors.resize(Sector_Pointer_LastSector+1);
+        Sectors_End=(int64u)Sector_Pointer_LastSector+1;
         if (Sector_Pointer_VTS_PTT_SRPT<=Sector_Pointer_LastSector)
             Sectors[Sector_Pointer_VTS_PTT_SRPT]=Sector_VTS_PTT_SRPT;
         if (Sector_Pointer_VTS_PGCI<=Sector_Pointer_LastSector)
@@ -885,21 +886,24 @@ void File_Dvdv::MultiChannel()
 void File_Dvdv::Header_Parse()
 {
     //Calculating
-    size_t Sector_Pos=(size_t)((File_Offset+Buffer_Offset)/2048);
-    size_t Sector_Count=1;
-    while (Sector_Pos+Sector_Count<Sectors.size() && Sectors[Sector_Pos+Sector_Count]==Sector_Nothing)
-        Sector_Count++;
+    int64u Sector_Pos=(File_Offset+Buffer_Offset)/2048;
+    int64u Sector_Next=Sector_Pos+1;
+    if (Sector_Next<Sectors_End)
+    {
+        const auto Next=Sectors.upper_bound((int32u)Sector_Pos);
+        Sector_Next=Next==Sectors.end()?Sectors_End:Next->first;
+    }
 
     //Filling
-    Header_Fill_Size(Sector_Count*2048);
+    Header_Fill_Size((Sector_Next-Sector_Pos)*2048);
 }
 
 //---------------------------------------------------------------------------
 void File_Dvdv::Data_Parse()
 {
     //Parsing
-    size_t Sector_Pos=(size_t)((File_Offset+Buffer_Offset)/2048);
-    if (Sector_Pos>=Sectors.size())
+    int64u Sector_Pos=(File_Offset+Buffer_Offset)/2048;
+    if (Sector_Pos>=Sectors_End)
     {
         Accept("DVD Video");
         Finish("DVD Video");
@@ -907,7 +911,8 @@ void File_Dvdv::Data_Parse()
     }
 
     //Parsing
-    switch(Sectors[Sector_Pos])
+    const auto Sector=Sectors.find((int32u)Sector_Pos);
+    switch(Sector==Sectors.end()?Sector_Nothing:Sector->second)
     {
         case Sector_VTS_PTT_SRPT    : VTS_PTT_SRPT(); break;
         case Sector_VTS_PGCI        : VTS_PGCI(); break;
