@@ -1847,7 +1847,8 @@ void File__Analyze::Open_Buffer_Finalize (bool NoBufferModification)
         File_Size_Real=File_Size;
         File_Size=File_Offset+Buffer_Size;
         Open_Buffer_Continue((const int8u*)NULL, 0);
-        File_Size=File_Size_Real;
+        if (File_Size_Real!=(int64u)-1 || IsSub) //Unknown file size: the end of the data is kept as file size for finishing, except for a sub-parser (its container may give only a part of its stream)
+            File_Size=File_Size_Real;
         File_Size_Real=(int64u)-1;
         #if MEDIAINFO_DEMUX
             if (Config->Demux_EventWasSent)
