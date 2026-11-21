@@ -932,11 +932,13 @@ void File_Mpeg4_Descriptors::Descriptor_04()
             case 0xA3 : //VC-1
                         #if defined(MEDIAINFO_VC1_YES)
                             Parser=new File_Vc1;
+                            ((File_Vc1*)Parser)->FrameIsAlwaysComplete=true;
                         #endif
                         break;
             case 0xA4 : //Dirac
                         #if defined(MEDIAINFO_DIRAC_YES)
                             Parser=new File_Dirac;
+                            ((File_Dirac*)Parser)->FrameIsAlwaysComplete=true;
                         #endif
                         break;
             case 0xA5 : //AC-3

@@ -302,7 +302,9 @@ void File_Ogg::Header_Parse()
     //Filling
     Header_Fill_Size(27+page_segments+total_page_size);
     Header_Fill_Code(stream_serial_number, Ztring::ToZtring(stream_serial_number, 16));
-    Stream[stream_serial_number].absolute_granule_position=absolute_granule_position;
+    FILLING_BEGIN();
+        Stream[stream_serial_number].absolute_granule_position=absolute_granule_position;
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------

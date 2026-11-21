@@ -51,7 +51,7 @@ AVS Video;;;V;AvsV;Audio Video Standard, Video part;;;http://www.avs.org.cn/;Los
 AVS3 Video;;;V;Avs3V;Audio Video Standard 3, Video part;avs3;;http://www.avs.org.cn/;Lossy
 Cinegy Daniel;;;V;;;;;https://www.cinegy.com;
 Cinegy Daniel2;;;V;;;;;https://www.cinegy.com;
-Dirac;;;V;Dirac;;drc;;http://diracvideo.org/;Lossy
+Dirac;;;V;Dirac;;drc;;http://diracvideo.org/;
 FFV1;;;V;;;;;;Lossless
 FFV2;;;V;;;;;;Lossless
 FLC;;;V;Flic;;fli flc;;http://www.chem.nott.ac.uk/flc.html;Lossy

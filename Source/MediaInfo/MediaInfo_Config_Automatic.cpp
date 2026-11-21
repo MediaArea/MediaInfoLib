@@ -1490,7 +1490,7 @@ void MediaInfo_Config_Format (InfoMap &Info)
     "AVS3 Video;;;V;Avs3V;Audio Video Standard 3, Video part;avs3;;http://www.avs.org.cn/;Lossy\n"
     "Cinegy Daniel;;;V;;;;;https://www.cinegy.com\n"
     "Cinegy Daniel2;;;V;;;;;https://www.cinegy.com\n"
-    "Dirac;;;V;Dirac;;drc;;http://diracvideo.org/;Lossy\n"
+    "Dirac;;;V;Dirac;;drc;;http://diracvideo.org/\n"
     "FFV1;;;V;;;;;;Lossless\n"
     "FFV2;;;V;;;;;;Lossless\n"
     "FLC;;;V;Flic;;fli flc;;http://www.chem.nott.ac.uk/flc.html;Lossy\n"

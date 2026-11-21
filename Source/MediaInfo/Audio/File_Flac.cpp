@@ -75,6 +75,20 @@ File_Flac::File_Flac()
     //Temp
     Last_metadata_block=false;
     IsAudioFrames=false;
+    AudioFrames_Offset=(int64u)-1;
+}
+
+//***************************************************************************
+// Streams management
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+void File_Flac::Streams_Finish()
+{
+    if (AudioFrames_Offset!=(int64u)-1)
+        Fill(Stream_Audio, 0, Audio_StreamSize, File_Size-File_EndTagSize-AudioFrames_Offset);
+
+    File__Tags_Helper::Streams_Finish();
 }
 
 //***************************************************************************
@@ -249,7 +263,7 @@ void File_Flac::Data_Parse()
     else if (Last_metadata_block)
     {
         if (!IsSub)
-            Fill(Stream_Audio, 0, Audio_StreamSize, File_Size-(File_Offset+Buffer_Offset+Element_Size));
+            AudioFrames_Offset=File_Offset+Buffer_Offset+Element_Size;
 
     if (Retrieve(Stream_Audio, 0, Audio_ChannelPositions).empty() && Retrieve(Stream_Audio, 0, Audio_ChannelPositions_String2).empty() && !FromIamf)
     {
