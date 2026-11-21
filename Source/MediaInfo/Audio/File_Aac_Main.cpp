@@ -1015,12 +1015,7 @@ void File_Aac::StreamMuxConfig()
     if (!audioMuxVersionA)
     {
         if (audioMuxVersion==1)
-        {
-            Element_Begin1("(not implemented)");
-            Skip_BS(Data_BS_Remain(),                               "(not implemented)");
-            Element_End0();
-            //taraBufferFullness=LatmGetValue();
-        }
+            LatmSkipValue("taraBufferFullness");
 
         streamCnt=0;
         bool useSameConfig;
@@ -1048,7 +1043,13 @@ void File_Aac::StreamMuxConfig()
                         AudioSpecificConfig();
                     else
                     {
-                        int ascLen=LatmGetValue();
+                        size_t ascLen=LatmGetValue("ascLen");
+                        if (ascLen>Data_BS_Remain())
+                        {
+                            Trusted_IsNot("ascLen is too large");
+                            Element_End0();
+                            return;
+                        }
                         AudioSpecificConfig(Data_BS_Remain()-ascLen);
                     }
                 }
@@ -1088,7 +1089,7 @@ void File_Aac::StreamMuxConfig()
         if (otherDataPresent)
         {
             if (audioMuxVersion==1)
-                otherDataLenBits=LatmGetValue();
+                otherDataLenBits=LatmGetValue("otherDataLenBits");
             else
             {
                 otherDataLenBits=0;
@@ -1124,9 +1125,9 @@ void File_Aac::StreamMuxConfig()
 }
 
 //---------------------------------------------------------------------------
-int32u File_Aac::LatmGetValue()
+int32u File_Aac::LatmGetValue(const char* Name)
 {
-    Element_Begin1("LatmGetValue");
+    Element_Begin1(Name);
     int8u valueTmp, bytesForValue;
     Get_S1(2, bytesForValue,                                    "bytesForValue");
     int32u value=0;
@@ -1136,8 +1137,15 @@ int32u File_Aac::LatmGetValue()
         Get_S1(8, valueTmp,                                     "valueTmp");
         value+=valueTmp;
     }
+    Element_Info1(value);
     Element_End0();
     return value;
+}
+
+//---------------------------------------------------------------------------
+void File_Aac::LatmSkipValue(const char* Name)
+{
+    (void)LatmGetValue(Name);
 }
 
 //---------------------------------------------------------------------------
