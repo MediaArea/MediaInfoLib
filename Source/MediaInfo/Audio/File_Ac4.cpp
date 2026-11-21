@@ -5057,6 +5057,8 @@ void File_Ac4::ac4_presentation_v1_dsi(presentation& P)
                         if (Ac4_channel_mask[i][j]!=ch_Max)
                             nonstd_bed_channel_assignment_mask|=Ac4_channel_mask[i][j];
             Param_Info1(AC4_nonstd_bed_channel_assignment_mask_ChannelLayout(nonstd_bed_channel_assignment_mask));
+            if (P.pres_ch_mode>=11 && P.pres_ch_mode<=14)
+                P.b_pres_centre_present=(nonstd_bed_channel_assignment_mask&C)?true:false;
         TEST_SB_END();
         TEST_SB_SKIP(                                           "b_presentation_core_differs");
             TEST_SB_SKIP(                                       "b_presentation_core_channel_coded");
