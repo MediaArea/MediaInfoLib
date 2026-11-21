@@ -1032,7 +1032,7 @@ public:
         }
 
         RequestTerminate();
-        while (Buffer_Size[Buffer_Filling])
+        while (Buffer_Size[0] || Buffer_Size[1])
             Yield(); //Wait for the all buffer are cleared by the read thread
     }
 };
