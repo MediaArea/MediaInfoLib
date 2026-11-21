@@ -1063,7 +1063,7 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
         }
     #endif //MEDIAINFO_DEMUX
 
-    if (ToAdd_Size)
+    if (ToAdd_Size && IsSub) //A block is a container packet, the reads of a top-level parser are not blocks
     {
         Frame_Count_InThisBlock=0;
         Field_Count_InThisBlock=0;
