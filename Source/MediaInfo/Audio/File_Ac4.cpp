@@ -4911,6 +4911,7 @@ void File_Ac4::dac4()
     {
         Skip_BS(Data_BS_Remain(),                               "Unknown");
         BS_End();
+        Element_End0();
         return;
     }
     Get_S1 (7, bitstream_version,                               "bitstream_version");
