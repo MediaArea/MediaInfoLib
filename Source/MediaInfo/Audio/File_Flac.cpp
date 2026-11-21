@@ -263,7 +263,7 @@ void File_Flac::Data_Parse()
     else if (Last_metadata_block)
     {
         if (!IsSub)
-            AudioFrames_Offset=File_Offset+Buffer_Offset+Element_Size;
+            AudioFrames_Offset=File_Offset+Buffer_Offset+Element_TotalSize_Get();
 
     if (Retrieve(Stream_Audio, 0, Audio_ChannelPositions).empty() && Retrieve(Stream_Audio, 0, Audio_ChannelPositions_String2).empty() && !FromIamf)
     {

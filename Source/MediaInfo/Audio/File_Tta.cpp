@@ -113,10 +113,10 @@ void File_Tta::FileHeader_Parse()
         Fill(Stream_Audio, StreamPos_Last, Audio_Channel_s_, Channels);
         Fill(Stream_Audio, StreamPos_Last, Audio_SamplingRate, SampleRate);
         Fill(Stream_Audio, 0, Audio_Duration, Duration);
-    FILLING_END();
 
-    //No more need data
-    File__Tags_Helper::Finish("TTA");
+        //No more need data
+        File__Tags_Helper::Finish("TTA");
+    FILLING_END();
 }
 
 //***************************************************************************

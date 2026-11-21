@@ -55,6 +55,9 @@ namespace MediaInfoLib
 //---------------------------------------------------------------------------
 void File_Ivf::Streams_Finish()
 {
+    if (Count_Get(Stream_Video) && File_Size!=(int64u)-1)
+        Fill(Stream_Video, 0, Video_StreamSize, File_Size-StreamSize_Overhead);
+
     if (!MI)
         return;
 
@@ -146,7 +149,7 @@ void File_Ivf::FileHeader_Parse()
             Fill(Stream_Video, 0, Video_FrameCount, frame_count);
             Fill(Stream_Video, 0, Video_Width, width);
             Fill(Stream_Video, 0, Video_Height, height);
-            Fill(Stream_Video, 0, Video_StreamSize, File_Size-header_size-12*frame_count); //Overhead is 12 byte per frame
+            StreamSize_Overhead=header_size+12*(int64u)frame_count; //Overhead is 12 byte per frame
         }
 
         auto const Format = Retrieve(Stream_Video, 0, Video_Format).To_UTF8();

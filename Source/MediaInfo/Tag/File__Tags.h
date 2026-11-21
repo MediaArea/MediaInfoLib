@@ -104,13 +104,16 @@ private :
     int64u Lyrics3_Offset;
     int64u Lyrics3v2_Offset;
     int64u ApeTag_Offset;
+    int64u Id3v2_Offset;
     int64u JumpTo_WantedByParser;
     int64u Id3v1_Size;
     int64u Lyrics3_Size;
     int64u Lyrics3v2_Size;
     int64u ApeTag_Size;
+    int64u Id3v2_Size;
     bool TagSizeIsFinal;
     bool SearchingForEndTags;
+    bool SkippingUpToEnd;
 
     //Helpers
     bool DetectBeginOfEndTags();        //return true if we can continue, false if want return

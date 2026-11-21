@@ -96,6 +96,9 @@ File_Dsf::File_Dsf()
     #endif //MEDIAINFO_EVENTS
     MustSynchronize=true;
     DataMustAlwaysBeComplete=false;
+
+    //Temp
+    TotalFileSize=(int64u)-1;
 }
 
 //---------------------------------------------------------------------------
@@ -118,6 +121,8 @@ void File_Dsf::Streams_Finish()
             break;
         }
     }
+    if (TotalFileSize!=(int64u)-1 && File_Size!=(int64u)-1 && TotalFileSize!=File_Size)
+        Fill(Stream_General, 0, "Truncated", "Yes");
 
     //Tags
     File__Tags_Helper::Streams_Fill();
@@ -229,7 +234,9 @@ void File_Dsf::DSD_()
     Get_L8 (FileSize,                                           "Total file size");
     Get_L8 (Metadata,                                           "Pointer to Metadata chunk");
 
-    if (FileSize!=File_Size)
+    if (File_Size==(int64u)-1)
+        TotalFileSize=FileSize; //Compared when finishing, with the end of the data as file size
+    else if (FileSize!=File_Size)
         Fill(Stream_General, 0, "Truncated", "Yes");
 }
 

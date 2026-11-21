@@ -48,6 +48,7 @@ private :
 
     //Temp
     std::unique_ptr<File__Analyze> MI;
+    int64u StreamSize_Overhead=0;
 };
 
 } //NameSpace

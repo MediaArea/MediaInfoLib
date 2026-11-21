@@ -338,8 +338,10 @@ File_Mpega::File_Mpega()
     Scalefac=0;
     Reservoir=0;
     LastSync_Offset=(int64u)-1;
+    LastSync_TagsSize=0;
     NotZero_Offset=(int64u)-1;
     VBR_FileSize=0;
+    TagFrames_Duration=0;
     VBR_Frames=0;
     Reservoir_Max=0;
     Xing_Info_Found = false; 
@@ -447,10 +449,17 @@ void File_Mpega::Streams_Finish()
     //size_t Ch=Mpega_Channels[Channels];
     //Fill("Scalefactors", Ztring::ToZtring(Scalefac*100/(Granules*Ch*Frame_Count))+__T('%'));
 
-    if (LastSync_Offset != (int64u)-1 && File_Offset + Buffer_Size > LastSync_Offset)
+    if (LastSync_Offset != (int64u)-1 && File_Offset + Buffer_Size > LastSync_Offset + TagsSize - LastSync_TagsSize)
     {
+        if (NotZero_Offset == (int64u)-1 && !IsSub) //Bytes not tested by Synchronize(), e.g. fewer than the 8 bytes of the tags test; the buffer of a sub-parser may be the data of a previous call of its parent
+            for (size_t i = Buffer_Offset; i < Buffer_Size; i++)
+                if (Buffer[i])
+                {
+                    NotZero_Offset = File_Offset + i;
+                    break;
+                }
         Buffer_Offset = Buffer_Size;
-        SynchLost("MPEG-Audio", File_Offset + Buffer_Size - LastSync_Offset, NotZero_Offset == (int64u)-1);
+        SynchLost("MPEG-Audio", File_Offset + Buffer_Size - LastSync_Offset - (TagsSize - LastSync_TagsSize), NotZero_Offset == (int64u)-1, LastSync_Offset);
     }
 
     //VBR_FileSize calculation
@@ -460,7 +469,7 @@ void File_Mpega::Streams_Finish()
         if (LastSync_Offset!=(int64u)-1)
         {
             VBR_FileSize=LastSync_Offset;
-            VBR_FileSize-=File_BeginTagSize;
+            VBR_FileSize-=LastSync_TagsSize;
         }
         else
         {
@@ -555,17 +564,16 @@ void File_Mpega::Streams_Finish()
         //Fill(Stream_Audio, 0, Audio_Channel_s_, 6);
     }
 
-    if (FrameInfo.PTS!=(int64u)-1 && FrameInfo.PTS>PTS_Begin)
+    if (FrameInfo.PTS!=(int64u)-1 && FrameInfo.PTS>PTS_Begin && FrameInfo.PTS-PTS_Begin>TagFrames_Duration)
     {
-        auto Duration = ((float64)(FrameInfo.PTS - PTS_Begin)) / 1000000;
+        auto Duration = ((float64)(FrameInfo.PTS - PTS_Begin - TagFrames_Duration)) / 1000000;
         const auto& ExpectedDurationS = Retrieve_Const(Stream_Audio, 0, Audio_Duration);
         if (!ExpectedDurationS.empty()) {
             DurationIssue(float64_int64s(Duration), ExpectedDurationS.To_int64u(), false, "MPEG-Audio");
         }
         Fill(Stream_Audio, 0, Audio_Duration, Duration, 0, true);
         // Only use PTS-based frame count calculation if FrameCount is not already known 
-        // (e.g., from VBR_Frames/Info tag). Overwriting a valid VBR_Frames count with PTS 
-        // calculation causes an off-by-one error (includes the Xing/Info frame).
+        // (e.g., from VBR_Frames/Info tag).
         if (FrameCount==0 && Retrieve(Stream_Audio, 0, Audio_BitRate_Mode)==__T("CBR") && ID<4 && sampling_frequency<4)
         {
             int16u Samples;
@@ -577,7 +585,7 @@ void File_Mpega::Streams_Finish()
                 Samples=1152;
 
             float64 Frame_Duration=((float64)1)/Mpega_SamplingRate[ID][sampling_frequency]*Samples;
-            FrameCount=float64_int64s(((float64)(FrameInfo.PTS-PTS_Begin))/1000000000/Frame_Duration);
+            FrameCount=float64_int64s(((float64)(FrameInfo.PTS-PTS_Begin-TagFrames_Duration))/1000000000/Frame_Duration);
         }
     }
 
@@ -703,8 +711,8 @@ bool File_Mpega::Synchronize()
         size_t Buffer_Offset_BeforePadding=Buffer_Offset;
         while (Buffer_Offset<Buffer_Size && Buffer[Buffer_Offset]==0x00)
             Buffer_Offset++;
-        if (Status[IsAccepted] || Buffer_Offset==Buffer_Offset_BeforePadding)
-            break; //Before the stream is accepted, tags after zero bytes are tested as tags at the start, they are not other data before a single frame
+        if (Buffer_Offset==Buffer_Offset_BeforePadding)
+            break; //Tags after zero bytes are tested as tags at the start, they are neither other data before a single frame nor lost bytes
     }
     if (NotZero_Offset==(int64u)-1 && Buffer_Offset<Buffer_Size)
         NotZero_Offset=File_Offset+Buffer_Offset;
@@ -906,8 +914,8 @@ bool File_Mpega::Synchronize()
 
                                             if (Buffer_Offset+Size0+Size1+Size2+4>Buffer_Size)
                                             {
-                                                if (IsSub || File_Offset+Buffer_Offset+Size0+Size1+Size2<File_Size)
-                                                    break;
+                                                if (IsSub || (File_Offset+Buffer_Offset+Size0+Size1+Size2<File_Size && File_Offset+Buffer_Offset+Size0+Size1+Size2+4>File_Size) || (Config->IsFinishing && Buffer_Offset+Size0+Size1+Size2<=Buffer_Size))
+                                                    break; //while(), no room for a fourth frame header before the end of the data
                                                 return false; //Need more data
                                             }
 
@@ -962,10 +970,11 @@ bool File_Mpega::Synchronize()
     }
 
     //Synched is OK
-    if (LastSync_Offset != (int64u)-1 && File_Offset + Buffer_Offset > LastSync_Offset) {
-        SynchLost("MPEG-Audio", File_Offset + Buffer_Offset - LastSync_Offset, NotZero_Offset == File_Offset + Buffer_Offset);
+    if (LastSync_Offset != (int64u)-1 && File_Offset + Buffer_Offset > LastSync_Offset + TagsSize - LastSync_TagsSize) {
+        SynchLost("MPEG-Audio", File_Offset + Buffer_Offset - LastSync_Offset - (TagsSize - LastSync_TagsSize), NotZero_Offset == File_Offset + Buffer_Offset, LastSync_Offset);
     }
     LastSync_Offset = File_Offset + Buffer_Offset;
+    LastSync_TagsSize = TagsSize;
     NotZero_Offset = (int64u)-1;
     return true;
 }
@@ -978,6 +987,7 @@ bool File_Mpega::Synched_Test()
         return false;
 
     LastSync_Offset=File_Offset+Buffer_Offset+Element_Offset;
+    LastSync_TagsSize=TagsSize;
 
     //Must have enough buffer for having header
     if (Buffer_Offset+3>Buffer_Size)
@@ -1152,6 +1162,7 @@ void File_Mpega::Data_Parse()
     }
 
     LastSync_Offset = File_Offset + Buffer_Offset + Element_Size;
+    LastSync_TagsSize = TagsSize;
     NotZero_Offset = (int64u)-1;
 
     //VBR and library headers
@@ -1175,6 +1186,8 @@ void File_Mpega::Data_Parse()
 
         Frequency_b=Mpega_SamplingRate[ID][sampling_frequency];
         TS_Add(Samples);
+        if (IsTagFrame)
+            TagFrames_Duration+=FrameInfo.DUR;
     }
 
     //LAME

@@ -61,13 +61,16 @@ File__Tags_Helper::File__Tags_Helper()
     Lyrics3_Offset=(int64u)-1;
     Lyrics3v2_Offset=(int64u)-1;
     ApeTag_Offset=(int64u)-1;
+    Id3v2_Offset=(int64u)-1;
     JumpTo_WantedByParser=(int64u)-1;
     Id3v1_Size=0;
     Lyrics3_Size=0;
     Lyrics3v2_Size=0;
     ApeTag_Size=0;
+    Id3v2_Size=0;
     TagSizeIsFinal=false;
     SearchingForEndTags=false;
+    SkippingUpToEnd=false;
 }
 
 //---------------------------------------------------------------------------
@@ -118,7 +121,7 @@ void File__Tags_Helper::Streams_Finish()
     if (!Base->IsSub)
     {
         Base->Fill(Stream_General, 0, General_StreamSize, TagsSize+Base->Retrieve(Stream_General, 0, General_StreamSize).To_int64u(), 10, true);
-        if (Base->Retrieve(Stream_Audio, 0, Audio_StreamSize).empty())
+        if (Base->File_Size!=(int64u)-1 && Base->Retrieve(Stream_Audio, 0, Audio_StreamSize).empty())
             Base->Fill(Stream_Audio, 0, Audio_StreamSize, Base->File_Size-TagsSize);
     }
 }
@@ -132,7 +135,13 @@ bool File__Tags_Helper::Read_Buffer_Continue()
 {
     //Tags
     bool Tag_Found;
-    if (File__Tags_Helper::Synchronize(Tag_Found) &&  Tag_Found)
+    if (!File__Tags_Helper::Synchronize(Tag_Found))
+    {
+        if (Base->File_Offset+Base->Buffer_Offset>=Base->File_Size-File_EndTagSize && Base->File_Offset+Base->Buffer_Size<Base->File_Size)
+            Base->Element_WaitForMoreData(); //End tags not complete in the buffer, they are not stream data
+        return true;
+    }
+    if (Tag_Found)
         File__Tags_Helper::Synched_Test();
     return true;
 }
@@ -155,6 +164,12 @@ bool File__Tags_Helper::Synchronize(bool &Tag_Found, size_t Synchro_Offset)
     if (SearchingForEndTags)
     {
         GoTo(0, "Tags detected");
+        return false;
+    }
+
+    if (SkippingUpToEnd)
+    {
+        Base->Buffer_Offset=Base->Buffer_Size;
         return false;
     }
 
@@ -364,6 +379,13 @@ bool File__Tags_Helper::Synched_Test()
                 Parser_Format=File__Analyze::Tags_ApeTag;
                 Base->Element_Begin1("ApeTag");
             }
+            else if (Base->File_Offset+Base->Buffer_Offset==Id3v2_Offset)
+            {
+                Parser=new File_Unknown; //Footer without its header, the content is not trusted
+                Parser_Buffer_Size=(size_t)Id3v2_Size;
+                Parser_Format=File__Analyze::Tags_Id3v2;
+                Base->Element_Begin1("Id3v2");
+            }
             else
                 break;
             Base->Open_Buffer_Init(Parser);
@@ -401,7 +423,10 @@ bool File__Tags_Helper::Synched_Test()
                     Parser=NULL;
                 }
                 if (Parser_Buffer_Size)
+                {
                     Base->Skip_XX(Parser_Buffer_Size,           "Data continued");
+                    TagsSize+=Parser_Buffer_Size;
+                }
                 Base->Element_Show();
                 Base->Element_End0();
             }
@@ -449,8 +474,14 @@ void File__Tags_Helper::GoTo (int64u GoTo, const char* ParserName)
     //Normal Data_GoTo;
 
     //Configuring
+    bool IsContinued=SearchingForEndTags;
     if (!SearchingForEndTags)
     {
+        if (TagSizeIsFinal) //End tags already searched, the parser was already sent to them
+        {
+            Base->GoTo(GoTo, ParserName);
+            return;
+        }
         if (GoTo==(int64u)-1)
             JumpTo_WantedByParser=Base->File_Offset+Base->Buffer_Offset;
         else
@@ -463,17 +494,26 @@ void File__Tags_Helper::GoTo (int64u GoTo, const char* ParserName)
 
     //If a jump is requested
     if (!TagSizeIsFinal)
+    {
+        if (Base->File_GoTo==(int64u)-1)
+        {
+            if (IsContinued)
+                Base->Element_WaitForMoreData(); //The bytes to test continue after the end of the buffer
+            else
+                Base->GoTo(Base->File_Offset, "Tags detection"); //The bytes to test must not be parsed by the parser, starting again from the buffer start
+        }
         return;
+    }
 
     //Positionning (if finnished)
     if (TagSizeIsFinal)
     {
         if (JumpTo_WantedByParser!=(int64u)-1)
         {
-            if (JumpTo_WantedByParser<Id3v1_Size+Lyrics3_Size+Lyrics3v2_Size+ApeTag_Size)
+            if (JumpTo_WantedByParser<Id3v1_Size+Lyrics3_Size+Lyrics3v2_Size+ApeTag_Size+Id3v2_Size)
                 Base->GoTo(JumpTo_WantedByParser, ParserName);
             else
-                Base->GoTo(JumpTo_WantedByParser-Id3v1_Size-Lyrics3_Size-Lyrics3v2_Size-ApeTag_Size, ParserName);
+                Base->GoTo(JumpTo_WantedByParser-Id3v1_Size-Lyrics3_Size-Lyrics3v2_Size-ApeTag_Size-Id3v2_Size, ParserName);
         }
         SearchingForEndTags=false;
     }
@@ -484,6 +524,17 @@ void File__Tags_Helper::GoTo (int64u GoTo, const char* ParserName)
 //---------------------------------------------------------------------------
 void File__Tags_Helper::GoToFromEnd (int64u GoToFromEnd, const char* ParserName)
 {
+    if (Base->File_Size==(int64u)-1 && !Base->IsSub)
+    {
+        //No position from the end of a stream of unknown size: no jump and no search of the end tags, a finished parser skips the data up to its end, which gives the file size
+        if (!GoToFromEnd)
+        {
+            SkippingUpToEnd=true;
+            Base->GoTo(Base->File_Offset+Base->Buffer_Size);
+        }
+        return;
+    }
+
     if (GoToFromEnd>Base->File_Size)
     {
         if (ParserName)
@@ -538,17 +589,18 @@ bool File__Tags_Helper::DetectBeginOfEndTags_Test()
         //Id3v1
         if (Id3v1_Size==0 && File_EndTagSize==0 && Base->File_Size>=128) //Only one, at the end, larger than 128 bytes
         {
-            if (Base->File_Offset>Base->File_Size-128-32) //Must be at least at the end less 128 bytes
+            int64u Begin=Base->File_Size>=128+32?Base->File_Size-128-32:0; //32 to be able to quickly see another tag system
+            if (Base->File_Offset>Begin) //Must be at least at the end less 128 bytes
             {
-                Base->GoTo(Base->File_Size-128-32, "Tags detection"); //32 to be able to quickly see another tag system
+                Base->GoTo(Begin, "Tags detection");
                 TagSizeIsFinal=false;
                 return false;
             }
 
             if (Base->File_Offset+Base->Buffer_Size<Base->File_Size) //Must be at least at the end less 128 bytes of tags
             {
-                if (Base->File_Offset<Base->File_Size-128-32)
-                    Base->GoTo(Base->File_Size-128-32, "Tags detection");
+                if (Base->File_Offset<Begin)
+                    Base->GoTo(Begin, "Tags detection");
                 TagSizeIsFinal=false;
                 return false;
             }
@@ -574,8 +626,6 @@ bool File__Tags_Helper::DetectBeginOfEndTags_Test()
 
             if (Base->File_Offset+Base->Buffer_Size<Base->File_Size-File_EndTagSize) //Must be at the end less File_EndTagSize+9 bytes plus 9 bytes of tags
             {
-                if (Base->File_Offset!=Base->File_Size-File_EndTagSize)
-                    Base->GoTo(Base->File_Size-File_EndTagSize, "Tags");
                 TagSizeIsFinal=false;
                 return false;
             }
@@ -583,17 +633,16 @@ bool File__Tags_Helper::DetectBeginOfEndTags_Test()
             if (CC8(Base->Buffer+((size_t)((Base->File_Size-File_EndTagSize-9)-Base->File_Offset)))==CC8("LYRICSEN"))
             {
                 //Must find the beginning, 5100 bytes before
-                if (Base->File_Offset>Base->File_Size-File_EndTagSize-5100) //Must be at the end less 15 bytes
+                int64u Begin=Base->File_Size-File_EndTagSize>=5100?Base->File_Size-File_EndTagSize-5100:0;
+                if (Base->File_Offset>Begin) //Must be at the end less 15 bytes
                 {
-                    Base->GoTo(Base->File_Size-File_EndTagSize-5100, "Tags");
+                    Base->GoTo(Begin, "Tags");
                     TagSizeIsFinal=false;
                     return false;
                 }
 
                 if (Base->File_Offset+Base->Buffer_Size<Base->File_Size-File_EndTagSize) //Must be at the end less File_EndTagSize
                 {
-                    if (Base->File_Offset!=Base->File_Size-File_EndTagSize)
-                        Base->GoTo(Base->File_Size-File_EndTagSize, "Tags");
                     TagSizeIsFinal=false;
                     return false;
                 }
@@ -623,8 +672,6 @@ bool File__Tags_Helper::DetectBeginOfEndTags_Test()
 
             if (Base->File_Offset+Base->Buffer_Size<Base->File_Size-File_EndTagSize) //Must be at the end less File_EndTagSize
             {
-                if (Base->File_Offset!=Base->File_Size-File_EndTagSize)
-                    Base->GoTo(Base->File_Size-File_EndTagSize, "Tags");
                 TagSizeIsFinal=false;
                 return false;
             }
@@ -664,6 +711,43 @@ bool File__Tags_Helper::DetectBeginOfEndTags_Test()
                 File_EndTagSize+=ApeTag_Size;
                 ApeTag_Offset=Base->File_Size-File_EndTagSize;
                 TagSizeIsFinal=false;
+            }
+        }
+
+        //Id3v2, with a footer
+        if (Id3v2_Size==0 && Base->File_Size>=File_EndTagSize+20)
+        {
+            if (Base->File_Offset>Base->File_Size-File_EndTagSize-10)
+            {
+                Base->GoTo(Base->File_Size-File_EndTagSize-10, "Tags");
+                TagSizeIsFinal=false;
+                return false;
+            }
+
+            if (Base->File_Offset+Base->Buffer_Size<Base->File_Size-File_EndTagSize)
+            {
+                if (Base->File_Offset!=Base->File_Size-File_EndTagSize-10)
+                    Base->GoTo(Base->File_Size-File_EndTagSize-10, "Tags");
+                TagSizeIsFinal=false;
+                return false;
+            }
+
+            const int8u* Footer=Base->Buffer+(size_t)((Base->File_Size-File_EndTagSize-10)-Base->File_Offset);
+            if (CC3(Footer)==0x334449 && Footer[3]==4 && Footer[4]!=0xFF && (Footer[5]&0x10) && !((Footer[6]|Footer[7]|Footer[8]|Footer[9])&0x80)) //"3DI"
+            {
+                int32u Size=BigEndian2int32u(Footer+6);
+                int64u Tag_Size=(((Size>>0)&0x7F)
+                               | ((Size>>1)&0x3F80)
+                               | ((Size>>2)&0x1FC000)
+                               | ((Size>>3)&0x0FE00000))
+                               +20;
+                if (Tag_Size<=Base->File_Size-File_EndTagSize)
+                {
+                    Id3v2_Size=Tag_Size;
+                    File_EndTagSize+=Id3v2_Size;
+                    Id3v2_Offset=Base->File_Size-File_EndTagSize;
+                    TagSizeIsFinal=false;
+                }
             }
         }
 

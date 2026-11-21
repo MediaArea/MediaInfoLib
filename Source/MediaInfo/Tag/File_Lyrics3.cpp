@@ -58,7 +58,10 @@ void File_Lyrics3::Read_Buffer_Continue()
 
     //Buffer size
     if (Buffer_Size<TotalSize)
+    {
+        Element_WaitForMoreData();
         return;
+    }
 
     //Parsing
     Element_Offset=0;

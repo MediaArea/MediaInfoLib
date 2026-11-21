@@ -1877,7 +1877,7 @@ public :
         void                IsTruncated(int64u ExpectedSize = (int64u)-1, bool MoreThan = false, const char* Prefix = nullptr);
         void                DurationIssue(int64u ActualDuration, int64u ExpectedDuration = (int64u)-1, bool MoreThan = false, const char* Prefix = nullptr);
         void                RanOutOfData(const char* Prefix = nullptr);
-        void                SynchLost(const char* Prefix = nullptr, int64u CountOfBytes = 0, bool AreZero = false);
+        void                SynchLost(const char* Prefix = nullptr, int64u CountOfBytes = 0, bool AreZero = false, int64u Offset = (int64u)-1); //Offset of the first lost byte, by default CountOfBytes before the current position
     #else //MEDIAINFO_CONFORMANCE
         void                Fill_Conformance(const char* Field, const char* Value, uint8_t Flags = {}, conformance_type Level = Conformance_Error, stream_t StreamKind = Stream_Max, size_t StreamPos = 0) {}
         void                Fill_Conformance(const char* Field, const string& Value, uint8_t Flags = {}, conformance_type Level = Conformance_Error, stream_t StreamKind = Stream_Max, size_t StreamPos = 0) { Fill_Conformance(Field, Value.c_str(), Flags, Level, StreamKind, StreamPos); }
@@ -1893,7 +1893,7 @@ public :
         void                IsTruncated(int64u ExpectedSize = (int64u)-1, bool MoreThan = false, const char* = nullptr) {}
         void                DurationIssue(int64u ActualDuration, int64u ExpectedDuration = (int64u)-1, bool MoreThan = false, const char* Prefix = nullptr) {}
         void                RanOutOfData(const char* = nullptr) { Trusted_IsNot("out of data"); }
-        void                SynchLost(const char* = nullptr, int64u CountOfBytes = 0, bool AreZero = false) { Trusted_IsNot("Synchronization lost"); }
+        void                SynchLost(const char* = nullptr, int64u CountOfBytes = 0, bool AreZero = false, int64u = (int64u)-1) { Trusted_IsNot("Synchronization lost"); }
     #endif //MEDIAINFO_CONFORMANCE
 
     #if MEDIAINFO_SEEK

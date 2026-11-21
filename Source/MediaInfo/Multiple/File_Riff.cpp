@@ -1100,6 +1100,8 @@ void File_Riff::Header_Parse()
         int64u Size_Complete;
         Skip_XX(12,                                             "Name (GUID)");
         Get_L8 (Size_Complete,                                  "Size");
+        if (Element_IsWaitingForMoreData())
+            return;
 
         //Alignment
         if (Name!=Elements::riff && Size_Complete%8)
@@ -1141,6 +1143,8 @@ void File_Riff::Header_Parse()
         Get_B4 (Size,                                           "Size");
     else
         Get_L4 (Size,                                           "Size");
+    if (Element_IsWaitingForMoreData())
+        return;
 
     //RF64
     int64u Size_Complete=Size;
@@ -1254,7 +1258,7 @@ void File_Riff::Header_Parse()
         Name=Elements::AVI_;
 
     //Tests
-    if (Element_Level==2 && Name==Elements::WAVE && !IsRIFF64 && File_Size>0xFFFFFFFF)
+    if (Element_Level==2 && Name==Elements::WAVE && !IsRIFF64 && File_Size!=(int64u)-1 && File_Size>0xFFFFFFFF)
         IsWaveBroken=true; //Non standard big files detection
     if (IsWaveBroken && (Name==Elements::WAVE || Name==Elements::WAVE_data))
         Size_Complete=File_Size-(File_Offset+Buffer_Offset+8); //Non standard big files detection

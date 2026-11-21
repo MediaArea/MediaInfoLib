@@ -5312,7 +5312,7 @@ void File__Analyze::Streams_Finish_InterStreams()
 
         //Filling
         auto StreamSize=File_Size-StreamSize_Total;
-        if (IsOK && StreamSize_Total>0 && StreamSize_Total<File_Size && (File_Size==StreamSize_Total || !StreamSize || StreamSize>=4)) //to avoid strange behavior due to rounding, TODO: avoid rounding
+        if (IsOK && StreamSize_Total>0 && StreamSize_Total<File_Size && File_Size!=(int64u)-1 && (File_Size==StreamSize_Total || !StreamSize || StreamSize>=4)) //to avoid strange behavior due to rounding, TODO: avoid rounding
             Fill(Stream_General, 0, General_StreamSize, StreamSize);
     }
 

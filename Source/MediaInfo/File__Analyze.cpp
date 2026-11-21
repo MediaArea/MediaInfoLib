@@ -1063,7 +1063,7 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
         }
     #endif //MEDIAINFO_DEMUX
 
-    if (ToAdd_Size)
+    if (ToAdd_Size && IsSub) //A block is a container packet, the reads of a top-level parser are not blocks
     {
         Frame_Count_InThisBlock=0;
         Field_Count_InThisBlock=0;
@@ -1847,7 +1847,8 @@ void File__Analyze::Open_Buffer_Finalize (bool NoBufferModification)
         File_Size_Real=File_Size;
         File_Size=File_Offset+Buffer_Size;
         Open_Buffer_Continue((const int8u*)NULL, 0);
-        File_Size=File_Size_Real;
+        if (File_Size_Real!=(int64u)-1 || IsSub) //Unknown file size: the end of the data is kept as file size for finishing, except for a sub-parser (its container may give only a part of its stream)
+            File_Size=File_Size_Real;
         File_Size_Real=(int64u)-1;
         #if MEDIAINFO_DEMUX
             if (Config->Demux_EventWasSent)
@@ -5396,7 +5397,7 @@ void File__Analyze::RanOutOfData(const char* Prefix)
 
 //---------------------------------------------------------------------------
 #if MEDIAINFO_CONFORMANCE
-void File__Analyze::SynchLost(const char* Prefix, int64u CountOfBytes, bool AreZero)
+void File__Analyze::SynchLost(const char* Prefix, int64u CountOfBytes, bool AreZero, int64u Offset)
 {
     Synched=false;
     const auto Name = BuildConformanceName(ParserName, Prefix, "GeneralCompliance");
@@ -5406,18 +5407,19 @@ void File__Analyze::SynchLost(const char* Prefix, int64u CountOfBytes, bool AreZ
         if (AreZero) {
             Content += ", zeroed bytes";
         }
-        if (File_Offset + Buffer_Offset + CountOfBytes >= File_Size) {
+        if (File_Offset + Buffer_Offset >= File_Size) {
             if (!AreZero)
                 Content += ',';
             Content += " at the end";
             Type = Conformance_Information;
         }
-        Content += " (count " + to_string_with_percent(CountOfBytes, File_Size) + ")";
+        Content += " (count " + to_string_with_percent(CountOfBytes, File_Size, File_Size==(int64u)-1) + ")";
     }
-    File_Offset-=CountOfBytes;
+    const auto Shift = Offset == (int64u)-1 ? CountOfBytes : File_Offset + Buffer_Offset + Element_Offset - Offset;
+    File_Offset-=Shift;
     Fill_Conformance(Name.c_str(), Content, {}, Type);
     Trusted_IsNot("Synchronization lost");
-    File_Offset+=CountOfBytes;
+    File_Offset+=Shift;
     Merge_Conformance();
 }
 
