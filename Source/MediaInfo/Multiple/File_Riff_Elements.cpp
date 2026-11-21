@@ -4474,12 +4474,13 @@ void File_Riff::WAVE_fact()
 
             //Coherency test
             bool IsOK=true;
-            if (File_Size!=(int64u)-1)
+            int64u Size=File_Size!=(int64u)-1?File_Size:Element[Element_Level-1].Next; //End of the RIFF chunk if the file size is unknown
+            if (Size!=(int64u)-1)
             {
                 float64 BitRate=Retrieve(Stream_Audio, StreamPos_Last, Audio_BitRate).To_float64();
                 if (BitRate)
                 {
-                    int64u Duration_FromBitRate = File_Size * 8 * 1000 / BitRate;
+                    int64u Duration_FromBitRate = Size * 8 * 1000 / BitRate;
                     if (Duration_FromBitRate > Duration*1.02 || Duration_FromBitRate < Duration*0.98)
                     {
                         if (Retrieve(Stream_Audio, StreamPos_Last, Audio_Format) == __T("PCM"))
