@@ -61,11 +61,13 @@ File__Tags_Helper::File__Tags_Helper()
     Lyrics3_Offset=(int64u)-1;
     Lyrics3v2_Offset=(int64u)-1;
     ApeTag_Offset=(int64u)-1;
+    Id3v2_Offset=(int64u)-1;
     JumpTo_WantedByParser=(int64u)-1;
     Id3v1_Size=0;
     Lyrics3_Size=0;
     Lyrics3v2_Size=0;
     ApeTag_Size=0;
+    Id3v2_Size=0;
     TagSizeIsFinal=false;
     SearchingForEndTags=false;
 }
@@ -370,6 +372,13 @@ bool File__Tags_Helper::Synched_Test()
                 Parser_Format=File__Analyze::Tags_ApeTag;
                 Base->Element_Begin1("ApeTag");
             }
+            else if (Base->File_Offset+Base->Buffer_Offset==Id3v2_Offset)
+            {
+                Parser=new File_Unknown; //Footer without its header, the content is not trusted
+                Parser_Buffer_Size=(size_t)Id3v2_Size;
+                Parser_Format=File__Analyze::Tags_Id3v2;
+                Base->Element_Begin1("Id3v2");
+            }
             else
                 break;
             Base->Open_Buffer_Init(Parser);
@@ -407,7 +416,10 @@ bool File__Tags_Helper::Synched_Test()
                     Parser=NULL;
                 }
                 if (Parser_Buffer_Size)
+                {
                     Base->Skip_XX(Parser_Buffer_Size,           "Data continued");
+                    TagsSize+=Parser_Buffer_Size;
+                }
                 Base->Element_Show();
                 Base->Element_End0();
             }
@@ -491,10 +503,10 @@ void File__Tags_Helper::GoTo (int64u GoTo, const char* ParserName)
     {
         if (JumpTo_WantedByParser!=(int64u)-1)
         {
-            if (JumpTo_WantedByParser<Id3v1_Size+Lyrics3_Size+Lyrics3v2_Size+ApeTag_Size)
+            if (JumpTo_WantedByParser<Id3v1_Size+Lyrics3_Size+Lyrics3v2_Size+ApeTag_Size+Id3v2_Size)
                 Base->GoTo(JumpTo_WantedByParser, ParserName);
             else
-                Base->GoTo(JumpTo_WantedByParser-Id3v1_Size-Lyrics3_Size-Lyrics3v2_Size-ApeTag_Size, ParserName);
+                Base->GoTo(JumpTo_WantedByParser-Id3v1_Size-Lyrics3_Size-Lyrics3v2_Size-ApeTag_Size-Id3v2_Size, ParserName);
         }
         SearchingForEndTags=false;
     }
@@ -681,6 +693,43 @@ bool File__Tags_Helper::DetectBeginOfEndTags_Test()
                 File_EndTagSize+=ApeTag_Size;
                 ApeTag_Offset=Base->File_Size-File_EndTagSize;
                 TagSizeIsFinal=false;
+            }
+        }
+
+        //Id3v2, with a footer
+        if (Id3v2_Size==0 && Base->File_Size>=File_EndTagSize+20)
+        {
+            if (Base->File_Offset>Base->File_Size-File_EndTagSize-10)
+            {
+                Base->GoTo(Base->File_Size-File_EndTagSize-10, "Tags");
+                TagSizeIsFinal=false;
+                return false;
+            }
+
+            if (Base->File_Offset+Base->Buffer_Size<Base->File_Size-File_EndTagSize)
+            {
+                if (Base->File_Offset!=Base->File_Size-File_EndTagSize-10)
+                    Base->GoTo(Base->File_Size-File_EndTagSize-10, "Tags");
+                TagSizeIsFinal=false;
+                return false;
+            }
+
+            const int8u* Footer=Base->Buffer+(size_t)((Base->File_Size-File_EndTagSize-10)-Base->File_Offset);
+            if (CC3(Footer)==0x334449 && Footer[3]==4 && Footer[4]!=0xFF && (Footer[5]&0x10) && !((Footer[6]|Footer[7]|Footer[8]|Footer[9])&0x80)) //"3DI"
+            {
+                int32u Size=BigEndian2int32u(Footer+6);
+                int64u Tag_Size=(((Size>>0)&0x7F)
+                               | ((Size>>1)&0x3F80)
+                               | ((Size>>2)&0x1FC000)
+                               | ((Size>>3)&0x0FE00000))
+                               +20;
+                if (Tag_Size<=Base->File_Size-File_EndTagSize)
+                {
+                    Id3v2_Size=Tag_Size;
+                    File_EndTagSize+=Id3v2_Size;
+                    Id3v2_Offset=Base->File_Size-File_EndTagSize;
+                    TagSizeIsFinal=false;
+                }
             }
         }
 
