@@ -998,6 +998,12 @@ public:
         Reader_Cin_Add();
     }
 
+    ~Reader_Cin_Thread()
+    {
+        delete[] Buffer[0];
+        delete[] Buffer[1];
+    }
+
     bool Current(int8u*& Buffer_New, size_t& Buffer_Size_New)
     {
         CriticalSectionLocker CSL(CS);
