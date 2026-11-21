@@ -60,6 +60,7 @@ public :
     int64u TagsSize;
     int64u File_BeginTagSize;
     int64u File_EndTagSize;
+    int64u NotZero_Offset; //First byte since the last synchronization that is neither zero nor in a tag parsed by Synchronize_TagsAndPadding(), reset by the parser at each synchronization
 
     //Constructor/Destructor
     File__Tags_Helper();
@@ -74,6 +75,8 @@ public :
 
     //Buffer - Synchro
     bool Synchronize(bool &Tag_Found, size_t Synchro_Offset=0);
+    bool Synchronize_TagsAndPadding(bool &Tag_Found); //Tags and zero bytes before the stream data, tags after zero bytes are tested as tags at the start
+    bool SingleFrame_IsEnough(); //Before the stream is accepted, a single frame followed by the end of the file or by a tag, after other data, is likely a coincidence
     bool Synched_Test();
 
     //Buffer - Global
