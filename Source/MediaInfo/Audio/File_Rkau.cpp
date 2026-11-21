@@ -129,10 +129,9 @@ void File_Rkau::FileHeader_Parse()
         Fill(Stream_Audio, 0, Audio_SamplingRate, SampleRate);
         Fill(Stream_Audio, 0, Audio_Duration, Duration);
 
+        //No more needed data
+        File__Tags_Helper::Finish("RKAU");
     FILLING_END();
-
-    //No more needed data
-    File__Tags_Helper::Finish("RKAU");
 }
 
 //***************************************************************************
