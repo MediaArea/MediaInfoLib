@@ -341,6 +341,7 @@ File_Mpega::File_Mpega()
     LastSync_TagsSize=0;
     NotZero_Offset=(int64u)-1;
     VBR_FileSize=0;
+    TagFrames_Duration=0;
     VBR_Frames=0;
     Reservoir_Max=0;
     Xing_Info_Found = false; 
@@ -563,17 +564,16 @@ void File_Mpega::Streams_Finish()
         //Fill(Stream_Audio, 0, Audio_Channel_s_, 6);
     }
 
-    if (FrameInfo.PTS!=(int64u)-1 && FrameInfo.PTS>PTS_Begin)
+    if (FrameInfo.PTS!=(int64u)-1 && FrameInfo.PTS>PTS_Begin && FrameInfo.PTS-PTS_Begin>TagFrames_Duration)
     {
-        auto Duration = ((float64)(FrameInfo.PTS - PTS_Begin)) / 1000000;
+        auto Duration = ((float64)(FrameInfo.PTS - PTS_Begin - TagFrames_Duration)) / 1000000;
         const auto& ExpectedDurationS = Retrieve_Const(Stream_Audio, 0, Audio_Duration);
         if (!ExpectedDurationS.empty()) {
             DurationIssue(float64_int64s(Duration), ExpectedDurationS.To_int64u(), false, "MPEG-Audio");
         }
         Fill(Stream_Audio, 0, Audio_Duration, Duration, 0, true);
         // Only use PTS-based frame count calculation if FrameCount is not already known 
-        // (e.g., from VBR_Frames/Info tag). Overwriting a valid VBR_Frames count with PTS 
-        // calculation causes an off-by-one error (includes the Xing/Info frame).
+        // (e.g., from VBR_Frames/Info tag).
         if (FrameCount==0 && Retrieve(Stream_Audio, 0, Audio_BitRate_Mode)==__T("CBR") && ID<4 && sampling_frequency<4)
         {
             int16u Samples;
@@ -585,7 +585,7 @@ void File_Mpega::Streams_Finish()
                 Samples=1152;
 
             float64 Frame_Duration=((float64)1)/Mpega_SamplingRate[ID][sampling_frequency]*Samples;
-            FrameCount=float64_int64s(((float64)(FrameInfo.PTS-PTS_Begin))/1000000000/Frame_Duration);
+            FrameCount=float64_int64s(((float64)(FrameInfo.PTS-PTS_Begin-TagFrames_Duration))/1000000000/Frame_Duration);
         }
     }
 
@@ -1186,6 +1186,8 @@ void File_Mpega::Data_Parse()
 
         Frequency_b=Mpega_SamplingRate[ID][sampling_frequency];
         TS_Add(Samples);
+        if (IsTagFrame)
+            TagFrames_Duration+=FrameInfo.DUR;
     }
 
     //LAME
