@@ -2916,6 +2916,8 @@ bool File__Analyze::FileHeader_Manage()
     else
     {
         Buffer_Offset+=(size_t)Element_Offset;
+        if (File_Offset_FirstSynched==(int64u)-1 && Buffer_TotalBytes_FirstSynched_Max<(int64u)-1-Element_Offset)
+            Buffer_TotalBytes_FirstSynched_Max+=Element_Offset; //The limit of the first synchronization does not count the file header, as it does not count the tags
         Element_Offset=0;
     }
 
