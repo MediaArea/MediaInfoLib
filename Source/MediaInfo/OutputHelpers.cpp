@@ -16,6 +16,7 @@
 #include "ThirdParty/tfsxml/tfsxml_tinyxml2.h"
 #include "MediaInfo/OutputHelpers.h"
 #include "MediaInfo/File__Analyse_Automatic.h"
+#include "ZenLib/FileName.h"
 #include <ctime>
 
 using namespace std;
@@ -507,6 +508,65 @@ bool ExternalMetadata(const Ztring& FileName, const Ztring& ExternalMetadata, co
     Parse_XML(Parents, PlaceHolder, Template.RootElement(), Main, &MI_Info, FileName, CSV);
 
     return true;
+}
+
+//---------------------------------------------------------------------------
+//Name filled from the name the file was opened with (or from the main referenced file), also as a parent folder (Blu-ray, directory), whatever the form of the names; a name read in the file (MediaInfo XML) is hidden only if it designates the opened file or a parent folder of it
+static bool FileName_IsEnvironment(MediaInfo_Internal& MI)
+{
+    const Ztring Opened=MI.Config.File_Environment_CompleteName_Get();
+    if (Opened.empty())
+        return false;
+    Ztring Name=MI.Get(Stream_General, 0, General_CompleteName);
+    if (Name.empty() || Name==Opened)
+        return true;
+    const Ztring Opened_Absolute=FileName::Absolute_Get(Opened);
+    const Ztring Name_Absolute=FileName::Absolute_Get(Name);
+    if (Name_Absolute==Opened_Absolute)
+        return true;
+    return Opened_Absolute.size()>Name_Absolute.size() && (Name_Absolute.back()==PathSeparator || Opened_Absolute[Name_Absolute.size()]==PathSeparator) && !Opened_Absolute.compare(0, Name_Absolute.size(), Name_Absolute);
+}
+
+//---------------------------------------------------------------------------
+static bool Field_IsFileName(stream_t StreamKind, size_t Parameter)
+{
+    if (StreamKind!=Stream_General)
+        return false;
+    switch (Parameter)
+    {
+        case General_CompleteName:
+        case General_FolderName:
+        case General_FileNameExtension:
+        case General_FileName:
+        case General_FileExtension:
+        case General_CompleteName_Last:
+        case General_FolderName_Last:
+        case General_FileNameExtension_Last:
+        case General_FileName_Last:
+        case General_FileExtension_Last:
+            return true;
+        default:
+            return false;
+    }
+}
+
+//---------------------------------------------------------------------------
+bool Field_IsEnvironment(MediaInfo_Internal& MI, stream_t StreamKind, size_t Parameter)
+{
+    if (Field_IsFileName(StreamKind, Parameter))
+        return FileName_IsEnvironment(MI);
+    if (StreamKind!=Stream_General)
+        return false;
+    switch (Parameter)
+    {
+        case General_File_Created_Date:
+        case General_File_Created_Date_Local:
+        case General_File_Modified_Date:
+        case General_File_Modified_Date_Local:
+            return MI.Get(Stream_General, 0, Parameter)==MI.Config.File_Environment_Date_Get(Parameter-General_File_Created_Date);
+        default:
+            return false;
+    }
 }
 
 //---------------------------------------------------------------------------

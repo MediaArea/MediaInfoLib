@@ -225,6 +225,8 @@ public :
           bool      Inform_Timestamp_Get ();
           void      Inform_HalfWidth_Set (bool NewValue);
           bool      Inform_HalfWidth_Get ();
+          void      Inform_HideEnvironment_Set (bool NewValue);
+          bool      Inform_HideEnvironment_Get ();
 
           #if MEDIAINFO_ADVANCED
           Ztring    Cover_Data_Set (const Ztring &NewValue);
@@ -507,6 +509,7 @@ private :
     bool            Inform_Version;
     bool            Inform_Timestamp;
     bool            Inform_HalfWidth;
+    bool            Inform_HideEnvironment;
     bool            Legacy;
     bool            LegacyStreamDisplay;
     bool            SkipBinaryData;

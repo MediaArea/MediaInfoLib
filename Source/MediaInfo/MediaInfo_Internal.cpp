@@ -1474,6 +1474,7 @@ void MediaInfo_Internal::Entry()
                             if (Info->Retrieve_Const(Stream_General, 0, General_CompleteName)==Dxw_Name)
                             {
                                 Info->Fill(Stream_General, 0, General_CompleteName, Main, true);
+                                Config.File_Environment_CompleteName_Set(Main);
                                 Info->Fill(Stream_General, 0, General_FileExtension, Main.Extension_Get(), true);
                             }
                             Info->Fill(Stream_General, 0, General_FileName, Main.Name_Get(), true);
@@ -2642,6 +2643,16 @@ static void Append_Big(Ztring& Result, Ztring& Content)
 }
 
 //---------------------------------------------------------------------------
+#if defined(MEDIAINFO_XML_YES)
+static Ztring CreatingLibrary(const Ztring& LineSeparator)
+{
+    if (MediaInfoLib::Config.Inform_HideEnvironment_Get())
+        return Ztring();
+    return __T("<creatingLibrary version=\"")+Ztring(MediaInfo_Version).SubString(__T(" - v"), Ztring())+__T("\" url=\"http")+(MediaInfoLib::Config.Https_Get()?Ztring(__T("s")):Ztring())+__T("://mediaarea.net/MediaInfo\">MediaInfoLib</creatingLibrary>")+LineSeparator;
+}
+#endif //defined(MEDIAINFO_XML_YES)
+
+//---------------------------------------------------------------------------
 Ztring MediaInfo_Internal::Inform(std::vector<MediaInfo_Internal*>& Info)
 {
     Ztring Result;
@@ -2661,8 +2672,7 @@ Ztring MediaInfo_Internal::Inform(std::vector<MediaInfo_Internal*>& Info)
         Result+=MediaInfoLib::Config.LineSeparator_Get();
         Result+=__T("    version=\"0.1\"");
         Result+=__T(">")+MediaInfoLib::Config.LineSeparator_Get();
-        Result+=__T("<creatingLibrary version=\"")+Ztring(MediaInfo_Version).SubString(__T(" - v"), Ztring())+__T("\" url=\"http")+(MediaInfoLib::Config.Https_Get()?Ztring(__T("s")):Ztring())+__T("://mediaarea.net/MediaInfo\">MediaInfoLib</creatingLibrary>");
-        Result+=MediaInfoLib::Config.LineSeparator_Get();
+        Result+=CreatingLibrary(MediaInfoLib::Config.LineSeparator_Get());
 
         for (size_t FilePos=0; FilePos<Info.size(); FilePos++)
         {
@@ -2690,15 +2700,14 @@ Ztring MediaInfo_Internal::Inform(std::vector<MediaInfo_Internal*>& Info)
         Result+=MediaInfoLib::Config.LineSeparator_Get();
         Result+=__T("    version=\"0.2\"");
         Result+=__T(">")+MediaInfoLib::Config.LineSeparator_Get();
-        Result+=__T("<creatingLibrary version=\"")+Ztring(MediaInfo_Version).SubString(__T(" - v"), Ztring())+__T("\" url=\"http")+(MediaInfoLib::Config.Https_Get()?Ztring(__T("s")):Ztring())+__T("://mediaarea.net/MediaInfo\">MediaInfoLib</creatingLibrary>");
-        Result+=MediaInfoLib::Config.LineSeparator_Get();
+        Result+=CreatingLibrary(MediaInfoLib::Config.LineSeparator_Get());
 
         for (size_t FilePos=0; FilePos<Info.size(); FilePos++)
         {
             size_t Modified;
             Result+=__T("<media");
             Ztring Options=Info[FilePos]->Get(Stream_General, 0, General_CompleteName, Info_Options);
-            if (InfoOption_ShowInInform<Options.size() && Options[InfoOption_ShowInInform]==__T('Y'))
+            if (InfoOption_ShowInInform<Options.size() && Options[InfoOption_ShowInInform]==__T('Y') && !(MediaInfoLib::Config.Inform_HideEnvironment_Get() && Field_IsEnvironment(*Info[FilePos], Stream_General, General_CompleteName)))
                 Result+=__T(" ref=\"")+MediaInfo_Internal::Xml_Content_Escape(Info[FilePos]->Get(Stream_General, 0, General_CompleteName), Modified)+__T("\"");
             if (Info[FilePos] && !Info[FilePos]->ParserName.empty())
                 Result+=__T(" parser=\"")+Info[FilePos]->ParserName+=__T("\"");
@@ -2727,14 +2736,14 @@ Ztring MediaInfo_Internal::Inform(std::vector<MediaInfo_Internal*>& Info)
         Result+=__T(" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"");
         Result+=__T(" mtsl=\"http")+(MediaInfoLib::Config.Https_Get()?Ztring(__T("s")):Ztring())+__T("://mediaarea.net/micromediatrace http")+(MediaInfoLib::Config.Https_Get()?Ztring(__T("s")):Ztring())+__T("://mediaarea.net/micromediatrace/micromediatrace.xsd\"");
         Result+=__T(" version=\"0.1\">");
-        Result+=__T("<creatingLibrary version=\"")+Ztring(MediaInfo_Version).SubString(__T(" - v"), Ztring())+__T("\" url=\"http")+(MediaInfoLib::Config.Https_Get()?Ztring(__T("s")):Ztring())+__T("://mediaarea.net/MediaInfo\">MediaInfoLib</creatingLibrary>");
+        Result+=CreatingLibrary(Ztring());
 
         for (size_t FilePos=0; FilePos<Info.size(); FilePos++)
         {
             size_t Modified;
             Result+=__T("<media");
             Ztring Options=Info[FilePos]->Get(Stream_General, 0, General_CompleteName, Info_Options);
-            if (InfoOption_ShowInInform<Options.size() && Options[InfoOption_ShowInInform]==__T('Y'))
+            if (InfoOption_ShowInInform<Options.size() && Options[InfoOption_ShowInInform]==__T('Y') && !(MediaInfoLib::Config.Inform_HideEnvironment_Get() && Field_IsEnvironment(*Info[FilePos], Stream_General, General_CompleteName)))
                 Result+=__T(" ref=\"")+MediaInfo_Internal::Xml_Content_Escape(Info[FilePos]->Get(Stream_General, 0, General_CompleteName), Modified)+__T("\"");
             if (Info[FilePos] && !Info[FilePos]->ParserName.empty())
                 Result+=__T(" parser=\"")+Info[FilePos]->ParserName+=__T("\"");
@@ -2761,8 +2770,7 @@ Ztring MediaInfo_Internal::Inform(std::vector<MediaInfo_Internal*>& Info)
         Result+=MediaInfoLib::Config.LineSeparator_Get();
         Result+=__T("    version=\"0.0\"");
         Result+=__T(">")+MediaInfoLib::Config.LineSeparator_Get();
-        Result+=__T("<creatingLibrary version=\"")+Ztring(MediaInfo_Version).SubString(__T(" - v"), Ztring())+__T("\" url=\"http")+(MediaInfoLib::Config.Https_Get()?Ztring(__T("s")):Ztring())+__T("://mediaarea.net/MediaInfo\">MediaInfoLib</creatingLibrary>");
-        Result+=MediaInfoLib::Config.LineSeparator_Get();
+        Result+=CreatingLibrary(MediaInfoLib::Config.LineSeparator_Get());
 
         for (size_t FilePos=0; FilePos<Info.size(); FilePos++)
             Result+=Info[FilePos]->Inform();
@@ -2787,8 +2795,7 @@ Ztring MediaInfo_Internal::Inform(std::vector<MediaInfo_Internal*>& Info)
         Result+=MediaInfoLib::Config.LineSeparator_Get();
         Result+=__T("    version=\"2.0\"");
         Result+=__T(">")+MediaInfoLib::Config.LineSeparator_Get();
-        Result+=__T("<creatingLibrary version=\"")+Ztring(MediaInfo_Version).SubString(__T(" - v"), Ztring())+__T("\" url=\"http")+(MediaInfoLib::Config.Https_Get()?Ztring(__T("s")):Ztring())+__T("://mediaarea.net/MediaInfo\">MediaInfoLib</creatingLibrary>");
-        Result+=MediaInfoLib::Config.LineSeparator_Get();
+        Result+=CreatingLibrary(MediaInfoLib::Config.LineSeparator_Get());
 
         for (size_t FilePos=0; FilePos<Info.size(); FilePos++)
             Result+=Info[FilePos]->Inform();
@@ -2829,7 +2836,10 @@ Ztring MediaInfo_Internal::Inform(std::vector<MediaInfo_Internal*>& Info)
         if (XML)
         {
             Result+=__T("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")+MediaInfoLib::Config.LineSeparator_Get();
-            Result+=__T("<Mediainfo version=\"")+MediaInfoLib::Config.Info_Version_Get().SubString(__T(" v"), Ztring())+__T("\">");
+            if (MediaInfoLib::Config.Inform_HideEnvironment_Get())
+                Result+=__T("<Mediainfo>");
+            else
+                Result+=__T("<Mediainfo version=\"")+MediaInfoLib::Config.Info_Version_Get().SubString(__T(" v"), Ztring())+__T("\">");
             Result+=MediaInfoLib::Config.LineSeparator_Get();
         }
         else

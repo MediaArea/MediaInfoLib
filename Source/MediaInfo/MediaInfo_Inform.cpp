@@ -278,7 +278,7 @@ Ztring MediaInfo_Internal::Inform()
             string Result="<media";
             Result+=(Config.ParseSpeed<1.0 && Config.TimeCode_Dumps_IsPartial())?" full=\"0\"":" full=\"1\"";
             Ztring Options=Get(Stream_General, 0, General_CompleteName, Info_Options);
-            if (InfoOption_ShowInInform<Options.size() && Options[InfoOption_ShowInInform]==__T('Y'))
+            if (InfoOption_ShowInInform<Options.size() && Options[InfoOption_ShowInInform]==__T('Y') && !(MediaInfoLib::Config.Inform_HideEnvironment_Get() && Field_IsEnvironment(*this, Stream_General, General_CompleteName)))
             {
                 Result+=" ref=\"";
                 Result+=XML_Encode(Get(Stream_General, 0, General_CompleteName)).To_UTF8();
@@ -645,7 +645,7 @@ Ztring MediaInfo_Internal::Inform()
     {
         Node_Main=new Node("media");
         Ztring Options=Get(Stream_General, 0, General_CompleteName, Info_Options);
-        if (InfoOption_ShowInInform<Options.size() && Options[InfoOption_ShowInInform]==__T('Y') && !Conformance_JSON)
+        if (InfoOption_ShowInInform<Options.size() && Options[InfoOption_ShowInInform]==__T('Y') && !Conformance_JSON && !(MediaInfoLib::Config.Inform_HideEnvironment_Get() && Field_IsEnvironment(*this, Stream_General, General_CompleteName)))
             Node_Main->Add_Attribute("ref", Get(Stream_General, 0, General_CompleteName));
         if (Info && !Info->ParserName.empty())
             Node_Main->Add_Attribute("parser", Info->ParserName);
@@ -740,7 +740,7 @@ Ztring MediaInfo_Internal::Inform()
         Retour += __T("  </body>\n</html>\n");
     }
 
-    if (!CSV && !HTML && !XML && !XML_0_7_78_MA && !XML_0_7_78_MI && !JSON)
+    if (!CSV && !HTML && !XML && !XML_0_7_78_MA && !XML_0_7_78_MI && !JSON && !MediaInfoLib::Config.Inform_HideEnvironment_Get())
     {
         if (MediaInfoLib::Config.Inform_Version_Get())
         {
@@ -787,14 +787,17 @@ Ztring MediaInfo_Internal::Inform()
             Retour+=__T('{');
             if (!Conformance_JSON)
                 Retour+=__T('\n');
-            Node Node_Version("creatingLibrary");
-            Node_Version.Add_Child("name", Ztring("MediaInfoLib"));
-            Node_Version.Add_Child("version", Ztring(MediaInfo_Version).SubString(__T(" - v"), Ztring()));
-            if (!Conformance_JSON)
-                Node_Version.Add_Child("url", Ztring(__T("http")+(MediaInfoLib::Config.Https_Get()?Ztring(__T("s")):Ztring())+__T("://mediaarea.net/MediaInfo")));
-            Retour+=Ztring().From_UTF8(To_JSON(Node_Version, 0, false, false, false))+__T(',');
-            if (!Conformance_JSON)
-                Retour+=__T('\n');
+            if (!MediaInfoLib::Config.Inform_HideEnvironment_Get())
+            {
+                Node Node_Version("creatingLibrary");
+                Node_Version.Add_Child("name", Ztring("MediaInfoLib"));
+                Node_Version.Add_Child("version", Ztring(MediaInfo_Version).SubString(__T(" - v"), Ztring()));
+                if (!Conformance_JSON)
+                    Node_Version.Add_Child("url", Ztring(__T("http")+(MediaInfoLib::Config.Https_Get()?Ztring(__T("s")):Ztring())+__T("://mediaarea.net/MediaInfo")));
+                Retour+=Ztring().From_UTF8(To_JSON(Node_Version, 0, false, false, false))+__T(',');
+                if (!Conformance_JSON)
+                    Retour+=__T('\n');
+            }
 
             Retour+=Ztring().From_UTF8(To_JSON(*Node_Main, 0, false, false, false));
             if (!Conformance_JSON)
@@ -947,10 +950,14 @@ Ztring MediaInfo_Internal::Inform (stream_t StreamKind, size_t StreamPos, bool I
             Config.File_ExpandSubs_Set(false);
         #endif //MEDIAINFO_XML_YES || MEDIAINFO_JSON_YES
 
+        bool HideEnvironment=MediaInfoLib::Config.Inform_HideEnvironment_Get();
+
         size_t Size = Count_Get(StreamKind, StreamPos);
         for (size_t Champ_Pos=0; Champ_Pos<Size; Champ_Pos++)
         {
             //Pour chaque champ
+            if (HideEnvironment && Field_IsEnvironment(*this, StreamKind, Champ_Pos))
+                continue;
             //Ztring A=Get((stream_t)4, 2, 0, Info_Measure_Text); // TODO Bug sinon? voir Ztring
             Ztring A=Get((stream_t)StreamKind, StreamPos, Champ_Pos, Info_Measure_Text); // TODO Bug sinon? voir Ztring
             bool Shouldshow=false;
