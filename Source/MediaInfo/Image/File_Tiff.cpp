@@ -323,9 +323,9 @@ void File_Tiff::Streams_Finish()
             {
             case 0:
             case 1: break;
-            case 2: Fill(Stream_Image, StreamPos_Current, "Density_Unit", "dpi"); Fill_SetOptions(Stream_Image, 0, "Density_Unit", "N NT"); break;
-            case 3: Fill(Stream_Image, StreamPos_Current, "Density_Unit", "dpcm"); Fill_SetOptions(Stream_Image, 0, "Density_Unit", "N NT"); break;
-            default: Fill(Stream_Image, StreamPos_Current, "Density_Unit", Info->second.Read()); Fill_SetOptions(Stream_Image, 0, "Density_Unit", "N NT");
+            case 2: Fill(Stream_Image, StreamPos_Current, "Density_Unit", "dpi"); Fill_SetOptions(Stream_Image, StreamPos_Current, "Density_Unit", "N NT"); break;
+            case 3: Fill(Stream_Image, StreamPos_Current, "Density_Unit", "dpcm"); Fill_SetOptions(Stream_Image, StreamPos_Current, "Density_Unit", "N NT"); break;
+            default: Fill(Stream_Image, StreamPos_Current, "Density_Unit", Info->second.Read()); Fill_SetOptions(Stream_Image, StreamPos_Current, "Density_Unit", "N NT");
             }
         }
         else if (Infos[i].find(Tiff_Tag::XResolution) != Infos[i].end() || Infos[i].find(Tiff_Tag::YResolution) != Infos[i].end())
