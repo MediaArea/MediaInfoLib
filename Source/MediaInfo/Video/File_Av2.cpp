@@ -122,7 +122,79 @@ const char* Av2_seq_profile_idc(int8u seq_profile_idc)
     case 2: return "Main_420_10_IP2";
     case 3: return "Main_422_10_IP1";
     case 4: return "Main_444_10_IP1";
+    case 5: return "Main_444C_12_IP2";
     case 31: return "Configurable";
+    default: return "";
+    }
+}
+
+#if MEDIAINFO_TRACE
+//---------------------------------------------------------------------------
+static const char* Av2_lcr_global_purpose_id(int8u lcr_global_purpose_id)
+{
+    switch (lcr_global_purpose_id)
+    {
+    case 0: return "Unspecified multiview";
+    case 1: return "Stereoscopic viewports";
+    case 2: return "Immersive multiple viewports";
+    case 3: return "Immersive multiple viewports with alpha";
+    case 4: return "Immersive multiple viewports with depth";
+    case 5: return "Immersive multiple viewports with alpha and depth";
+    case 6: return "Multiview playback";
+    case 7: return "Subregion playback";
+    default: return "";
+    }
+}
+
+//---------------------------------------------------------------------------
+static const char* Av2_lcr_layer_type(int8u lcr_layer_type)
+{
+    switch (lcr_layer_type)
+    {
+    case 0: return "Texture";
+    case 1: return "Auxiliary";
+    case 2: return "Stereo";
+    case 3: return "Dependent";
+    default: return "";
+    }
+}
+
+//---------------------------------------------------------------------------
+static const char* Av2_lcr_view_type(int8u lcr_view_type)
+{
+    switch (lcr_view_type)
+    {
+    case 0: return "Unspecified";
+    case 1: return "Center";
+    case 2: return "Left";
+    case 3: return "Right";
+    case 4: return "Explicit";
+    default: return "";
+    }
+}
+#endif //MEDIAINFO_TRACE
+
+//---------------------------------------------------------------------------
+static const char* Av2_lcr_auxiliary_type(int8u lcr_auxiliary_type)
+{
+    switch (lcr_auxiliary_type)
+    {
+    case 0: return "Alpha";
+    case 1: return "Depth";
+    case 2: return "Segmentation";
+    case 3: return "Gain map";
+    default: return "";
+    }
+}
+
+//---------------------------------------------------------------------------
+static const char* Av2_bit_depth_idc(int32u bit_depth_idc)
+{
+    switch (bit_depth_idc)
+    {
+    case 0: return "10";
+    case 1: return "8";
+    case 2: return "12";
     default: return "";
     }
 }
@@ -279,18 +351,84 @@ void File_Av2::Streams_Accept()
 //---------------------------------------------------------------------------
 void File_Av2::Streams_Fill()
 {
-    string ColorSpace = chroma_format_idc == 1 ? "Y" : (ColorPrimaries == 1 && TransferCharacteristics == 13 && MatrixCoefficients == 0) ? "RGB" : "YUV";
-    Fill(Stream_Video, 0, Video_ColorSpace, ColorSpace);
+    xlayer First;
+    auto First_Item = XLayers.find(FirstXLayer);
+    if (First_Item != XLayers.end())
+        First = First_Item->second;
+    else
+        First.chroma_format_idc = chroma_format_idc;
+    First.ColorDescriptionPresent = ColorDescriptionPresent;
+    First.ColorPrimaries = ColorPrimaries;
+    First.TransferCharacteristics = TransferCharacteristics;
+    First.MatrixCoefficients = MatrixCoefficients;
+    First.FullRange = FullRange;
+    Fill_Color(0, First);
+    if (First.EmbeddedLayer_Count > 1)
+        Fill(Stream_Video, 0, "EmbeddedLayer_Count", First.EmbeddedLayer_Count);
+
+    //Other extended layers: views of the picture of the first stream, or other pictures (auxiliary, subpicture...)
+    if (First_Item == XLayers.end() || Count_Get(Stream_Video) != 1)
+        return;
+    auto IsView = [](const xlayer& XLayer) { return XLayer.lcr_layer_type == 2 || (XLayer.lcr_layer_type == 0 && (XLayer.lcr_view_type == 2 || XLayer.lcr_view_type == 3)); }; //Stereo layer, or texture layer of a left or right view
+    auto Type = [](const xlayer& XLayer) -> const char* { return XLayer.lcr_layer_type == 1 ? Av2_lcr_auxiliary_type(XLayer.lcr_auxiliary_type) : XLayer.lcr_atlas ? "Subpicture" : ""; };
+    size_t MultiView_Count = 1;
+    int8u Second_View_Type = (int8u)-1;
+    bool HasOtherPictures = false;
+    for (const auto& Item : XLayers) {
+        const auto& XLayer = Item.second;
+        if (Item.first == FirstXLayer || !XLayer.sequence_header_Parsed)
+            continue;
+        if (IsView(First) && IsView(XLayer)) {
+            if (MultiView_Count == 1)
+                Second_View_Type = XLayer.lcr_view_type;
+            MultiView_Count++;
+            continue;
+        }
+        HasOtherPictures = true;
+        Stream_Prepare(Stream_Video);
+        Fill(Stream_Video, StreamPos_Last, General_ID, Item.first);
+        Fill(Stream_Video, StreamPos_Last, Video_Format, "AV2");
+        Fill(Stream_Video, StreamPos_Last, "Type", Type(XLayer));
+        Fill(Stream_Video, StreamPos_Last, Video_Format_Profile, XLayer.Format_Profile);
+        Fill(Stream_Video, StreamPos_Last, Video_Width, XLayer.Width);
+        Fill(Stream_Video, StreamPos_Last, Video_Height, XLayer.Height);
+        Fill(Stream_Video, StreamPos_Last, Video_BitDepth, XLayer.BitDepth);
+        if (XLayer.FilmGrain)
+            Fill(Stream_Video, StreamPos_Last, Video_Format_Settings, "Film Grain Synthesis");
+        if (XLayer.Scalable)
+            Fill(Stream_Video, StreamPos_Last, Video_Format_Settings, "Scalable Video Coding");
+        Fill_Color(StreamPos_Last, XLayer);
+        if (XLayer.EmbeddedLayer_Count > 1)
+            Fill(Stream_Video, StreamPos_Last, "EmbeddedLayer_Count", XLayer.EmbeddedLayer_Count);
+    }
+    if (HasOtherPictures) {
+        Fill(Stream_Video, 0, General_ID, FirstXLayer);
+        Fill(Stream_Video, 0, "Type", Type(First));
+    }
+    if (MultiView_Count > 1) {
+        Fill(Stream_Video, 0, Video_MultiView_Count, MultiView_Count);
+        if (MultiView_Count == 2 && First.lcr_view_type == 2 && Second_View_Type == 3)
+            Fill(Stream_Video, 0, Video_MultiView_Layout, "Separate layers (left eye first)");
+        if (MultiView_Count == 2 && First.lcr_view_type == 3 && Second_View_Type == 2)
+            Fill(Stream_Video, 0, Video_MultiView_Layout, "Separate layers (right eye first)");
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_Av2::Fill_Color(size_t StreamPos, const xlayer& XLayer)
+{
+    string ColorSpace = XLayer.chroma_format_idc == 1 ? "Y" : (XLayer.ColorPrimaries == 1 && XLayer.TransferCharacteristics == 13 && XLayer.MatrixCoefficients == 0) ? "RGB" : "YUV";
+    Fill(Stream_Video, StreamPos, Video_ColorSpace, ColorSpace);
     if (ColorSpace == "YUV")
     {
-        Fill(Stream_Video, 0, Video_ChromaSubsampling, chroma_format_idc == 0 ? "4:2:0" : chroma_format_idc == 2 ? "4:4:4" : chroma_format_idc == 3 ? "4:2:2" : "");
+        Fill(Stream_Video, StreamPos, Video_ChromaSubsampling, XLayer.chroma_format_idc == 0 ? "4:2:0" : XLayer.chroma_format_idc == 2 ? "4:4:4" : XLayer.chroma_format_idc == 3 ? "4:2:2" : "");
     }
-    if (ColorDescriptionPresent) {
-        Fill(Stream_Video, 0, Video_colour_description_present, "Yes");
-        Fill(Stream_Video, 0, Video_colour_primaries, Mpegv_colour_primaries(ColorPrimaries));
-        Fill(Stream_Video, 0, Video_transfer_characteristics, Mpegv_transfer_characteristics(TransferCharacteristics));
-        Fill(Stream_Video, 0, Video_matrix_coefficients, Mpegv_matrix_coefficients(MatrixCoefficients));
-        Fill(Stream_Video, 0, Video_colour_range, Avc_video_full_range[FullRange]);
+    if (XLayer.ColorDescriptionPresent) {
+        Fill(Stream_Video, StreamPos, Video_colour_description_present, "Yes");
+        Fill(Stream_Video, StreamPos, Video_colour_primaries, Mpegv_colour_primaries(XLayer.ColorPrimaries));
+        Fill(Stream_Video, StreamPos, Video_transfer_characteristics, Mpegv_transfer_characteristics(XLayer.TransferCharacteristics));
+        Fill(Stream_Video, StreamPos, Video_matrix_coefficients, Mpegv_matrix_coefficients(XLayer.MatrixCoefficients));
+        Fill(Stream_Video, StreamPos, Video_colour_range, Avc_video_full_range[XLayer.FullRange]);
     }
 }
 
@@ -523,9 +661,19 @@ void File_Av2::Data_Parse()
     case  5:
     case 10:
     case 21: tile_group_obu(); break;
-    case 16: layer_config_record_obu(); break;
+    case 16:
+    case 18: {
+             auto Trusted_Before = Trusted;
+             Trusted++; //Not needed for decoding, an error in it is not an error of the stream
+             if (Element_Code == 16)
+                 layer_config_record_obu();
+             else
+                 operating_point_set_obu();
+             if (Trusted > Trusted_Before)
+                 Trusted = Trusted_Before;
+             }
+             break;
     case 17: atlas_segment_info_obu(); break;
-    case 18: operating_point_set_obu(); break;
     case 15: buffer_removal_timing_obu(); break;
     case 22: quantizer_matrix_obu(); break;
     case 23: film_grain_obu(); break;
@@ -604,8 +752,9 @@ void File_Av2::sequence_header_obu()
     int32u bit_depth_idc;
     Get_uvlc(chroma_format_idc,                                 "chroma_format_idc"); Param_Info1(chroma_format_idc == 0 ? "4:2:0" : chroma_format_idc == 2 ? "4:4:4" : chroma_format_idc == 3 ? "4:2:2" : "");
     Monochrome = chroma_format_idc == 1;
-    Get_uvlc(bit_depth_idc,                                     "bit_depth_idc"); Param_Info2(bit_depth_idc == 0 ? "10" : (bit_depth_idc == 1 ? "8" : ""), " bits");
+    Get_uvlc(bit_depth_idc,                                     "bit_depth_idc"); Param_Info2(Av2_bit_depth_idc(bit_depth_idc), " bits");
     int8u max_tlayer_id, max_mlayer_id;
+    int32u seq_max_mlayer_cnt_minus_1 = 0;
     if (single_picture_header_flag) {
         // seq_lcr_id = 0
         // still_picture = 1
@@ -621,7 +770,7 @@ void File_Av2::sequence_header_obu()
         Get_S1(3, max_mlayer_id,                                "max_mlayer_id");
         if (max_mlayer_id > 0) {
             auto n = CeilLog2(max_mlayer_id + 1);
-            Skip_S4(n,                                          "seq_max_mlayer_cnt_minus_1");
+            Get_S4 (n, seq_max_mlayer_cnt_minus_1,              "seq_max_mlayer_cnt_minus_1");
             // SeqMaxMlayerCnt = seq_max_mlayer_cnt_minus_1 + 1
         }
         else {
@@ -694,18 +843,31 @@ void File_Av2::sequence_header_obu()
 
     //Filling
     FILLING_BEGIN_PRECISE();
+    auto& XLayer = XLayers[obu_xlayer_id];
+    if (!XLayer.sequence_header_Parsed)
+    {
+        XLayer.Format_Profile = Av2_seq_profile_idc(seq_profile_idc);
+        XLayer.Format_Profile += '@';
+        XLayer.Format_Profile += Av2_seq_level_idx(seq_level_idx);
+        XLayer.Width = max_frame_width_minus_1 + 1;
+        XLayer.Height = max_frame_height_minus_1 + 1;
+        XLayer.BitDepth = Av2_bit_depth_idc(bit_depth_idc);
+        XLayer.chroma_format_idc = chroma_format_idc;
+        XLayer.EmbeddedLayer_Count = max_mlayer_id > 0 ? seq_max_mlayer_cnt_minus_1 + 1 : 1;
+        XLayer.FilmGrain = film_grain_params_present;
+        XLayer.Scalable = max_mlayer_id > 0 || max_tlayer_id > 0;
+        XLayer.sequence_header_Parsed = true;
+    }
     if (!sequence_header_Parsed)
     {
-        std::string Video_Format_Profile_string = Av2_seq_profile_idc(seq_profile_idc);
-        Video_Format_Profile_string += '@';
-        Video_Format_Profile_string += Av2_seq_level_idx(seq_level_idx);
-        Fill(Stream_Video, 0, Video_Format_Profile, Video_Format_Profile_string);
-        Fill(Stream_Video, 0, Video_Width, max_frame_width_minus_1 + 1);
-        Fill(Stream_Video, 0, Video_Height, max_frame_height_minus_1 + 1);
-        Fill(Stream_Video, 0, Video_BitDepth, bit_depth_idc == 0 ? "10" : (bit_depth_idc == 1 ? "8" : ""));
-        if (film_grain_params_present)
+        FirstXLayer = obu_xlayer_id;
+        Fill(Stream_Video, 0, Video_Format_Profile, XLayer.Format_Profile);
+        Fill(Stream_Video, 0, Video_Width, XLayer.Width);
+        Fill(Stream_Video, 0, Video_Height, XLayer.Height);
+        Fill(Stream_Video, 0, Video_BitDepth, XLayer.BitDepth);
+        if (XLayer.FilmGrain)
             Fill(Stream_Video, 0, Video_Format_Settings, "Film Grain Synthesis");
-        if (max_mlayer_id > 0 || max_tlayer_id > 0)
+        if (XLayer.Scalable)
             Fill(Stream_Video, 0, Video_Format_Settings, "Scalable Video Coding");
 
         sequence_header_Parsed = true;
@@ -1113,9 +1275,221 @@ void File_Av2::multi_frame_header_obu()
 //---------------------------------------------------------------------------
 void File_Av2::layer_config_record_obu()
 {
+    //Parsing
+    BS_Begin();
     Element_Begin1("layer_config_record_obu");
-    Skip_XX(Element_Size,                                       "Data");
+    if (obu_xlayer_id == GLOBAL_XLAYER_ID) {
+        int32u lcr_xlayer_map;
+        int8u lcr_global_purpose_id;
+        bool lcr_aggregate_info_present_flag, lcr_seq_profile_tier_level_info_present_flag, lcr_global_payload_present_flag, lcr_dependent_xlayers_flag, lcr_global_atlas_id_present_flag;
+        Skip_S1( 3,                                             "lcr_global_config_record_id");
+        Get_S4 (31, lcr_xlayer_map,                             "lcr_xlayer_map");
+        Get_SB (    lcr_aggregate_info_present_flag,            "lcr_aggregate_info_present_flag");
+        Get_SB (    lcr_seq_profile_tier_level_info_present_flag, "lcr_seq_profile_tier_level_info_present_flag");
+        Get_SB (    lcr_global_payload_present_flag,            "lcr_global_payload_present_flag");
+        Get_SB (    lcr_dependent_xlayers_flag,                 "lcr_dependent_xlayers_flag");
+        Get_SB (    lcr_global_atlas_id_present_flag,           "lcr_global_atlas_id_present_flag");
+        Get_S1 ( 7, lcr_global_purpose_id,                      "lcr_global_purpose_id"); Param_Info1(Av2_lcr_global_purpose_id(lcr_global_purpose_id));
+        Skip_SB(                                                "lcr_doh_constraint_flag");
+        Skip_SB(                                                "lcr_enforce_tile_alignment_flag");
+        if (lcr_global_atlas_id_present_flag) {
+            Skip_S1(3,                                          "lcr_global_atlas_id");
+        }
+        else {
+            Skip_S1(3,                                          "lcr_reserved_zero_3bits");
+        }
+        Skip_S1(5,                                              "lcr_reserved_zero_5bits");
+        if (lcr_aggregate_info_present_flag) {
+            Element_Begin1("lcr_aggregate_info");
+            Skip_S1(6,                                          "lcr_config_idc");
+            Skip_S1(5,                                          "lcr_aggregate_level_idx");
+            Skip_SB(                                            "lcr_max_tier_flag");
+            Skip_S1(4,                                          "lcr_max_interop");
+            Element_End0();
+        }
+        if (lcr_seq_profile_tier_level_info_present_flag) {
+            for (int8u i = 0; i < 31; i++) {
+                if (lcr_xlayer_map & (1 << i)) {
+                    lcr_seq_profile_tier_level_info();
+                }
+            }
+        }
+        if (lcr_global_payload_present_flag) {
+            BS_End(); //56 bits, 16 bits of aggregate information and 16 bits of profile, tier and level information per extended layer before
+            for (int8u i = 0; i < 31 && Element_IsOK(); i++) {
+                if (lcr_xlayer_map & (1 << i)) {
+                    Element_Begin1("lcr_global_payload");
+                    Element_Info1(i);
+                    int64u lcr_data_size;
+                    Get_leb128(lcr_data_size,                   "lcr_data_size");
+                    if (lcr_data_size > Element_Size - Element_Offset) {
+                        Trusted_IsNot("lcr_data_size is too big");
+                        Element_End0();
+                        break;
+                    }
+                    auto End = (Element_Size - Element_Offset - lcr_data_size) * 8;
+                    BS_Begin();
+                    if (lcr_dependent_xlayers_flag && i) {
+                        Skip_S4(i,                              "lcr_num_dependent_xlayer_map");
+                    }
+                    lcr_xlayer_info(i, true, lcr_global_atlas_id_present_flag);
+                    if (Data_BS_Remain() > End) {
+                        Skip_BS(Data_BS_Remain() - End,         "lcr_remaining_payload_bits");
+                    }
+                    else if (Data_BS_Remain() < End) {
+                        Trusted_IsNot("lcr_data_size is too small");
+                    }
+                    BS_End();
+                    Element_End0();
+                }
+            }
+            BS_Begin();
+        }
+    }
+    else {
+        bool lcr_profile_tier_level_info_present_flag, lcr_local_atlas_id_present_flag;
+        Skip_S1(3,                                              "lcr_global_id");
+        Skip_S1(3,                                              "lcr_local_id");
+        Get_SB (   lcr_profile_tier_level_info_present_flag,    "lcr_profile_tier_level_info_present_flag");
+        Get_SB (   lcr_local_atlas_id_present_flag,             "lcr_local_atlas_id_present_flag");
+        if (lcr_profile_tier_level_info_present_flag) {
+            lcr_seq_profile_tier_level_info();
+        }
+        if (lcr_local_atlas_id_present_flag) {
+            Skip_S1(3,                                          "lcr_local_atlas_id");
+        }
+        else {
+            Skip_S1(3,                                          "lcr_reserved_zero_3bits");
+        }
+        Skip_S1(5,                                              "lcr_reserved_zero_5bits");
+        lcr_xlayer_info(obu_xlayer_id, false, lcr_local_atlas_id_present_flag);
+    }
     Element_End0();
+
+    if (Element_IsOK()) {
+        obu_end();
+    }
+    BS_End();
+}
+
+//---------------------------------------------------------------------------
+void File_Av2::lcr_seq_profile_tier_level_info()
+{
+    Element_Begin1("lcr_seq_profile_tier_level_info");
+    int8u lcr_seq_profile_idc, lcr_max_level_idx;
+    Get_S1(5, lcr_seq_profile_idc,                              "lcr_seq_profile_idc"); Param_Info1(Av2_seq_profile_idc(lcr_seq_profile_idc));
+    Get_S1(5, lcr_max_level_idx,                                "lcr_max_level_idx"); Param_Info1(Av2_seq_level_idx(lcr_max_level_idx));
+    Skip_SB(                                                    "lcr_tier_flag");
+    Skip_S1(3,                                                  "lcr_max_mlayer_count");
+    Skip_S1(2,                                                  "lcr_reserved_2bits");
+    Element_End0();
+}
+
+//---------------------------------------------------------------------------
+void File_Av2::lcr_xlayer_info(int8u xlayer_id, bool is_global, bool atlas_id_present)
+{
+    Element_Begin1("lcr_xlayer_info");
+    Element_Info1(xlayer_id);
+    bool lcr_rep_info_present_flag, lcr_xlayer_purpose_present_flag, lcr_xlayer_color_info_present_flag, lcr_embedded_layer_info_present_flag;
+    Get_SB (lcr_rep_info_present_flag,                          "lcr_rep_info_present_flag");
+    Get_SB (lcr_xlayer_purpose_present_flag,                    "lcr_xlayer_purpose_present_flag");
+    Get_SB (lcr_xlayer_color_info_present_flag,                 "lcr_xlayer_color_info_present_flag");
+    Get_SB (lcr_embedded_layer_info_present_flag,               "lcr_embedded_layer_info_present_flag");
+    if (lcr_rep_info_present_flag) {
+        Element_Begin1("lcr_rep_info");
+        bool lcr_format_info_present_flag, crop_window_present_flag;
+        Skip_uvlc(                                              "lcr_max_pic_width");
+        Skip_uvlc(                                              "lcr_max_pic_height");
+        Get_SB (lcr_format_info_present_flag,                   "lcr_format_info_present_flag");
+        Get_SB (crop_window_present_flag,                       "crop_window_present_flag");
+        if (lcr_format_info_present_flag) {
+            Skip_uvlc(                                          "lcr_bit_depth_idc");
+            Skip_uvlc(                                          "lcr_chroma_format_idc");
+        }
+        if (crop_window_present_flag) {
+            Skip_uvlc(                                          "crop_win_left_offset");
+            Skip_uvlc(                                          "crop_win_right_offset");
+            Skip_uvlc(                                          "crop_win_top_offset");
+            Skip_uvlc(                                          "crop_win_bottom_offset");
+        }
+        Element_End0();
+    }
+    if (lcr_xlayer_purpose_present_flag) {
+        Skip_S1(7,                                              "lcr_xlayer_purpose_id");
+    }
+    if (lcr_xlayer_color_info_present_flag) {
+        Element_Begin1("lcr_xlayer_color_info");
+        int64u layer_color_description_idc;
+        Get_rg (2, layer_color_description_idc,                 "layer_color_description_idc");
+        if (layer_color_description_idc == 0) { // Explicitly signaled
+            Skip_S1(8,                                          "layer_color_primaries");
+            Skip_S1(8,                                          "layer_transfer_characteristics");
+            Skip_S1(8,                                          "layer_matrix_coefficients");
+        }
+        Skip_SB(                                                "layer_full_range_flag");
+        Element_End0();
+    }
+    byte_alignment();
+    if (lcr_embedded_layer_info_present_flag) {
+        Element_Begin1("lcr_embedded_layer_info");
+        int8u lcr_mlayer_map;
+        Get_S1 (8, lcr_mlayer_map,                              "lcr_mlayer_map");
+        bool IsFirst = true;
+        for (int8u i = 0; i < 8; i++) {
+            if (lcr_mlayer_map & (1 << i)) {
+                Element_Begin1("mlayer");
+                Element_Info1(i);
+                int8u lcr_layer_type, lcr_auxiliary_type = (int8u)-1, lcr_view_type;
+                bool lcr_same_sh_max_resolution_flag;
+                Skip_S1(4,                                      "lcr_tlayer_map");
+                if (atlas_id_present) {
+                    Skip_S1(8,                                  "lcr_layer_atlas_segment_id");
+                    Skip_S1(8,                                  "lcr_priority_order");
+                    Skip_S1(8,                                  "lcr_rendering_method");
+                }
+                Get_S1 (8, lcr_layer_type,                      "lcr_layer_type"); Param_Info1(Av2_lcr_layer_type(lcr_layer_type));
+                if (lcr_layer_type == 1) { // Auxiliary
+                    Get_S1 (8, lcr_auxiliary_type,              "lcr_auxiliary_type"); Param_Info1(Av2_lcr_auxiliary_type(lcr_auxiliary_type));
+                }
+                Get_S1 (8, lcr_view_type,                       "lcr_view_type"); Param_Info1(Av2_lcr_view_type(lcr_view_type));
+                if (lcr_view_type == 4) { // Explicit
+                    Skip_S1(8,                                  "lcr_view_id");
+                }
+                if (i) {
+                    Skip_S1(i,                                  "lcr_dependent_layer_map");
+                }
+                Get_SB (lcr_same_sh_max_resolution_flag,        "lcr_same_sh_max_resolution_flag");
+                if (!lcr_same_sh_max_resolution_flag) {
+                    Skip_uvlc(                                  "lcr_max_expected_width");
+                    Skip_uvlc(                                  "lcr_max_expected_height");
+                }
+                byte_alignment();
+                Element_End0();
+
+                FILLING_BEGIN();
+                    auto& XLayer = XLayers[xlayer_id];
+                    if (IsFirst && XLayer.lcr_layer_type == (int8u)-1) { //The first embedded layer gives the role of the extended layer
+                        XLayer.lcr_layer_type = lcr_layer_type;
+                        XLayer.lcr_auxiliary_type = lcr_auxiliary_type;
+                        XLayer.lcr_view_type = lcr_view_type;
+                    }
+                    IsFirst = false;
+                FILLING_END();
+            }
+        }
+        Element_End0();
+    }
+    else if (is_global && atlas_id_present) {
+        Skip_S1(8,                                              "lcr_xlayer_atlas_segment_id");
+        Skip_S1(8,                                              "lcr_xlayer_priority_order");
+        Skip_S1(8,                                              "lcr_xlayer_rendering_method");
+    }
+    Element_End0();
+
+    FILLING_BEGIN();
+        if (atlas_id_present)
+            XLayers[xlayer_id].lcr_atlas = true;
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -1129,9 +1503,59 @@ void File_Av2::atlas_segment_info_obu()
 //---------------------------------------------------------------------------
 void File_Av2::operating_point_set_obu()
 {
+    //Parsing
+    BS_Begin();
     Element_Begin1("operating_point_set_obu");
-    Skip_XX(Element_Size,                                       "Data");
+    int8u ops_cnt;
+    Skip_SB(                                                    "ops_reset_flag");
+    Skip_S1(4,                                                  "ops_id");
+    Get_S1 (3, ops_cnt,                                         "ops_cnt");
+    if (ops_cnt) {
+        bool ops_intent_present_flag;
+        Skip_S1(4,                                              "ops_priority");
+        Skip_S1(7,                                              "ops_intent");
+        Get_SB (   ops_intent_present_flag,                     "ops_intent_present_flag");
+        Skip_SB(                                                "ops_ptl_present_flag");
+        Skip_SB(                                                "ops_color_info_present_flag");
+        if (obu_xlayer_id == GLOBAL_XLAYER_ID) {
+            Skip_S1(2,                                          "ops_mlayer_info_idc");
+        }
+        else {
+            Skip_S1(2,                                          "ops_reserved_2bits");
+        }
+        BS_End(); //24 bits before
+        for (int8u i = 0; i < ops_cnt && Element_IsOK(); i++) {
+            Element_Begin1("operating_point");
+            Element_Info1(i);
+            int64u ops_data_size;
+            Get_leb128(ops_data_size,                           "ops_data_size");
+            if (ops_data_size > Element_Size - Element_Offset) {
+                Trusted_IsNot("ops_data_size is too big");
+                Element_End0();
+                break;
+            }
+            auto End = (Element_Size - Element_Offset - ops_data_size) * 8;
+            BS_Begin();
+            if (ops_intent_present_flag) {
+                Skip_S1(7,                                      "ops_intent_op");
+            }
+            if (Data_BS_Remain() > End) {
+                Skip_BS(Data_BS_Remain() - End,                 "(Not parsed)");
+            }
+            else if (Data_BS_Remain() < End) {
+                Trusted_IsNot("ops_data_size is too small");
+            }
+            BS_End();
+            Element_End0();
+        }
+        BS_Begin();
+    }
     Element_End0();
+
+    if (Element_IsOK()) {
+        obu_end();
+    }
+    BS_End();
 }
 
 //---------------------------------------------------------------------------
@@ -1237,6 +1661,17 @@ void File_Av2::content_interpretation_obu()
 
     //Filling
     FILLING_BEGIN_PRECISE();
+    if (ci_color_description_present_flag)
+    {
+        auto& XLayer = XLayers[obu_xlayer_id];
+        XLayer.ColorDescriptionPresent = ci_color_description_present_flag;
+        XLayer.ColorPrimaries = ci_color_primaries;
+        XLayer.TransferCharacteristics = ci_transfer_characteristics;
+        XLayer.MatrixCoefficients = ci_matrix_coefficients;
+        XLayer.FullRange = ci_full_range_flag;
+    }
+    if (FirstXLayer != (int8u)-1 && obu_xlayer_id != FirstXLayer) //Not the extended layer of the first video stream
+        return;
     if (ci_color_description_present_flag)
     {
         ColorDescriptionPresent = ci_color_description_present_flag;
