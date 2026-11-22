@@ -469,6 +469,8 @@ void File_Mpega::Streams_Finish()
         {
             VBR_FileSize=LastSync_Offset;
             VBR_FileSize-=LastSync_TagsSize;
+            if (File_Size!=(int64u)-1 && File_Size>LastSync_Offset+TagsSize-LastSync_TagsSize)
+                Fill(Stream_General, 0, General_StreamSize, File_Size-(LastSync_Offset+TagsSize-LastSync_TagsSize)); //Bytes after the last frame and not in a tag, the tags helper adds the tags and the zero bytes at the beginning of the file
         }
         else
         {
