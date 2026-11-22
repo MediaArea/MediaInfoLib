@@ -75,6 +75,8 @@ private :
     void multistream_decoder_operation_obu();
     void multi_frame_header_obu();
     void layer_config_record_obu();
+    void lcr_seq_profile_tier_level_info();
+    void lcr_xlayer_info(int8u xlayer_id, bool is_global, bool atlas_id_present);
     void atlas_segment_info_obu();
     void operating_point_set_obu();
     void buffer_removal_timing_obu();

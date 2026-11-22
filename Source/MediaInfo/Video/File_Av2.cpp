@@ -128,6 +128,65 @@ const char* Av2_seq_profile_idc(int8u seq_profile_idc)
     }
 }
 
+#if MEDIAINFO_TRACE
+//---------------------------------------------------------------------------
+static const char* Av2_lcr_global_purpose_id(int8u lcr_global_purpose_id)
+{
+    switch (lcr_global_purpose_id)
+    {
+    case 0: return "Unspecified multiview";
+    case 1: return "Stereoscopic viewports";
+    case 2: return "Immersive multiple viewports";
+    case 3: return "Immersive multiple viewports with alpha";
+    case 4: return "Immersive multiple viewports with depth";
+    case 5: return "Immersive multiple viewports with alpha and depth";
+    case 6: return "Multiview playback";
+    case 7: return "Subregion playback";
+    default: return "";
+    }
+}
+
+//---------------------------------------------------------------------------
+static const char* Av2_lcr_layer_type(int8u lcr_layer_type)
+{
+    switch (lcr_layer_type)
+    {
+    case 0: return "Texture";
+    case 1: return "Auxiliary";
+    case 2: return "Stereo";
+    case 3: return "Dependent";
+    default: return "";
+    }
+}
+
+//---------------------------------------------------------------------------
+static const char* Av2_lcr_view_type(int8u lcr_view_type)
+{
+    switch (lcr_view_type)
+    {
+    case 0: return "Unspecified";
+    case 1: return "Center";
+    case 2: return "Left";
+    case 3: return "Right";
+    case 4: return "Explicit";
+    default: return "";
+    }
+}
+
+//---------------------------------------------------------------------------
+static const char* Av2_lcr_auxiliary_type(int8u lcr_auxiliary_type)
+{
+    switch (lcr_auxiliary_type)
+    {
+    case 0: return "Alpha";
+    case 1: return "Depth";
+    case 2: return "Segmentation";
+    case 3: return "Gain map";
+    default: return "";
+    }
+}
+#endif //MEDIAINFO_TRACE
+
 //---------------------------------------------------------------------------
 static const char* Av2_bit_depth_idc(int32u bit_depth_idc)
 {
@@ -536,9 +595,19 @@ void File_Av2::Data_Parse()
     case  5:
     case 10:
     case 21: tile_group_obu(); break;
-    case 16: layer_config_record_obu(); break;
+    case 16:
+    case 18: {
+             auto Trusted_Before = Trusted;
+             Trusted++; //Not needed for decoding, an error in it is not an error of the stream
+             if (Element_Code == 16)
+                 layer_config_record_obu();
+             else
+                 operating_point_set_obu();
+             if (Trusted > Trusted_Before)
+                 Trusted = Trusted_Before;
+             }
+             break;
     case 17: atlas_segment_info_obu(); break;
-    case 18: operating_point_set_obu(); break;
     case 15: buffer_removal_timing_obu(); break;
     case 22: quantizer_matrix_obu(); break;
     case 23: film_grain_obu(); break;
@@ -1126,8 +1195,205 @@ void File_Av2::multi_frame_header_obu()
 //---------------------------------------------------------------------------
 void File_Av2::layer_config_record_obu()
 {
+    //Parsing
+    BS_Begin();
     Element_Begin1("layer_config_record_obu");
-    Skip_XX(Element_Size,                                       "Data");
+    if (obu_xlayer_id == GLOBAL_XLAYER_ID) {
+        int32u lcr_xlayer_map;
+        int8u lcr_global_purpose_id;
+        bool lcr_aggregate_info_present_flag, lcr_seq_profile_tier_level_info_present_flag, lcr_global_payload_present_flag, lcr_dependent_xlayers_flag, lcr_global_atlas_id_present_flag;
+        Skip_S1( 3,                                             "lcr_global_config_record_id");
+        Get_S4 (31, lcr_xlayer_map,                             "lcr_xlayer_map");
+        Get_SB (    lcr_aggregate_info_present_flag,            "lcr_aggregate_info_present_flag");
+        Get_SB (    lcr_seq_profile_tier_level_info_present_flag, "lcr_seq_profile_tier_level_info_present_flag");
+        Get_SB (    lcr_global_payload_present_flag,            "lcr_global_payload_present_flag");
+        Get_SB (    lcr_dependent_xlayers_flag,                 "lcr_dependent_xlayers_flag");
+        Get_SB (    lcr_global_atlas_id_present_flag,           "lcr_global_atlas_id_present_flag");
+        Get_S1 ( 7, lcr_global_purpose_id,                      "lcr_global_purpose_id"); Param_Info1(Av2_lcr_global_purpose_id(lcr_global_purpose_id));
+        Skip_SB(                                                "lcr_doh_constraint_flag");
+        Skip_SB(                                                "lcr_enforce_tile_alignment_flag");
+        if (lcr_global_atlas_id_present_flag) {
+            Skip_S1(3,                                          "lcr_global_atlas_id");
+        }
+        else {
+            Skip_S1(3,                                          "lcr_reserved_zero_3bits");
+        }
+        Skip_S1(5,                                              "lcr_reserved_zero_5bits");
+        if (lcr_aggregate_info_present_flag) {
+            Element_Begin1("lcr_aggregate_info");
+            Skip_S1(6,                                          "lcr_config_idc");
+            Skip_S1(5,                                          "lcr_aggregate_level_idx");
+            Skip_SB(                                            "lcr_max_tier_flag");
+            Skip_S1(4,                                          "lcr_max_interop");
+            Element_End0();
+        }
+        if (lcr_seq_profile_tier_level_info_present_flag) {
+            for (int8u i = 0; i < 31; i++) {
+                if (lcr_xlayer_map & (1 << i)) {
+                    lcr_seq_profile_tier_level_info();
+                }
+            }
+        }
+        if (lcr_global_payload_present_flag) {
+            BS_End(); //56 bits, 16 bits of aggregate information and 16 bits of profile, tier and level information per extended layer before
+            for (int8u i = 0; i < 31 && Element_IsOK(); i++) {
+                if (lcr_xlayer_map & (1 << i)) {
+                    Element_Begin1("lcr_global_payload");
+                    Element_Info1(i);
+                    int64u lcr_data_size;
+                    Get_leb128(lcr_data_size,                   "lcr_data_size");
+                    if (lcr_data_size > Element_Size - Element_Offset) {
+                        Trusted_IsNot("lcr_data_size is too big");
+                        Element_End0();
+                        break;
+                    }
+                    auto End = (Element_Size - Element_Offset - lcr_data_size) * 8;
+                    BS_Begin();
+                    if (lcr_dependent_xlayers_flag && i) {
+                        Skip_S4(i,                              "lcr_num_dependent_xlayer_map");
+                    }
+                    lcr_xlayer_info(i, true, lcr_global_atlas_id_present_flag);
+                    if (Data_BS_Remain() > End) {
+                        Skip_BS(Data_BS_Remain() - End,         "lcr_remaining_payload_bits");
+                    }
+                    else if (Data_BS_Remain() < End) {
+                        Trusted_IsNot("lcr_data_size is too small");
+                    }
+                    BS_End();
+                    Element_End0();
+                }
+            }
+            BS_Begin();
+        }
+    }
+    else {
+        bool lcr_profile_tier_level_info_present_flag, lcr_local_atlas_id_present_flag;
+        Skip_S1(3,                                              "lcr_global_id");
+        Skip_S1(3,                                              "lcr_local_id");
+        Get_SB (   lcr_profile_tier_level_info_present_flag,    "lcr_profile_tier_level_info_present_flag");
+        Get_SB (   lcr_local_atlas_id_present_flag,             "lcr_local_atlas_id_present_flag");
+        if (lcr_profile_tier_level_info_present_flag) {
+            lcr_seq_profile_tier_level_info();
+        }
+        if (lcr_local_atlas_id_present_flag) {
+            Skip_S1(3,                                          "lcr_local_atlas_id");
+        }
+        else {
+            Skip_S1(3,                                          "lcr_reserved_zero_3bits");
+        }
+        Skip_S1(5,                                              "lcr_reserved_zero_5bits");
+        lcr_xlayer_info(obu_xlayer_id, false, lcr_local_atlas_id_present_flag);
+    }
+    Element_End0();
+
+    if (Element_IsOK()) {
+        obu_end();
+    }
+    BS_End();
+}
+
+//---------------------------------------------------------------------------
+void File_Av2::lcr_seq_profile_tier_level_info()
+{
+    Element_Begin1("lcr_seq_profile_tier_level_info");
+    int8u lcr_seq_profile_idc, lcr_max_level_idx;
+    Get_S1(5, lcr_seq_profile_idc,                              "lcr_seq_profile_idc"); Param_Info1(Av2_seq_profile_idc(lcr_seq_profile_idc));
+    Get_S1(5, lcr_max_level_idx,                                "lcr_max_level_idx"); Param_Info1(Av2_seq_level_idx(lcr_max_level_idx));
+    Skip_SB(                                                    "lcr_tier_flag");
+    Skip_S1(3,                                                  "lcr_max_mlayer_count");
+    Skip_S1(2,                                                  "lcr_reserved_2bits");
+    Element_End0();
+}
+
+//---------------------------------------------------------------------------
+void File_Av2::lcr_xlayer_info(int8u xlayer_id, bool is_global, bool atlas_id_present)
+{
+    Element_Begin1("lcr_xlayer_info");
+    Element_Info1(xlayer_id);
+    bool lcr_rep_info_present_flag, lcr_xlayer_purpose_present_flag, lcr_xlayer_color_info_present_flag, lcr_embedded_layer_info_present_flag;
+    Get_SB (lcr_rep_info_present_flag,                          "lcr_rep_info_present_flag");
+    Get_SB (lcr_xlayer_purpose_present_flag,                    "lcr_xlayer_purpose_present_flag");
+    Get_SB (lcr_xlayer_color_info_present_flag,                 "lcr_xlayer_color_info_present_flag");
+    Get_SB (lcr_embedded_layer_info_present_flag,               "lcr_embedded_layer_info_present_flag");
+    if (lcr_rep_info_present_flag) {
+        Element_Begin1("lcr_rep_info");
+        bool lcr_format_info_present_flag, crop_window_present_flag;
+        Skip_uvlc(                                              "lcr_max_pic_width");
+        Skip_uvlc(                                              "lcr_max_pic_height");
+        Get_SB (lcr_format_info_present_flag,                   "lcr_format_info_present_flag");
+        Get_SB (crop_window_present_flag,                       "crop_window_present_flag");
+        if (lcr_format_info_present_flag) {
+            Skip_uvlc(                                          "lcr_bit_depth_idc");
+            Skip_uvlc(                                          "lcr_chroma_format_idc");
+        }
+        if (crop_window_present_flag) {
+            Skip_uvlc(                                          "crop_win_left_offset");
+            Skip_uvlc(                                          "crop_win_right_offset");
+            Skip_uvlc(                                          "crop_win_top_offset");
+            Skip_uvlc(                                          "crop_win_bottom_offset");
+        }
+        Element_End0();
+    }
+    if (lcr_xlayer_purpose_present_flag) {
+        Skip_S1(7,                                              "lcr_xlayer_purpose_id");
+    }
+    if (lcr_xlayer_color_info_present_flag) {
+        Element_Begin1("lcr_xlayer_color_info");
+        int64u layer_color_description_idc;
+        Get_rg (2, layer_color_description_idc,                 "layer_color_description_idc");
+        if (layer_color_description_idc == 0) { // Explicitly signaled
+            Skip_S1(8,                                          "layer_color_primaries");
+            Skip_S1(8,                                          "layer_transfer_characteristics");
+            Skip_S1(8,                                          "layer_matrix_coefficients");
+        }
+        Skip_SB(                                                "layer_full_range_flag");
+        Element_End0();
+    }
+    byte_alignment();
+    if (lcr_embedded_layer_info_present_flag) {
+        Element_Begin1("lcr_embedded_layer_info");
+        int8u lcr_mlayer_map;
+        Get_S1 (8, lcr_mlayer_map,                              "lcr_mlayer_map");
+        for (int8u i = 0; i < 8; i++) {
+            if (lcr_mlayer_map & (1 << i)) {
+                Element_Begin1("mlayer");
+                Element_Info1(i);
+                int8u lcr_layer_type, lcr_view_type;
+                bool lcr_same_sh_max_resolution_flag;
+                Skip_S1(4,                                      "lcr_tlayer_map");
+                if (atlas_id_present) {
+                    Skip_S1(8,                                  "lcr_layer_atlas_segment_id");
+                    Skip_S1(8,                                  "lcr_priority_order");
+                    Skip_S1(8,                                  "lcr_rendering_method");
+                }
+                Get_S1 (8, lcr_layer_type,                      "lcr_layer_type"); Param_Info1(Av2_lcr_layer_type(lcr_layer_type));
+                if (lcr_layer_type == 1) { // Auxiliary
+                    int8u lcr_auxiliary_type;
+                    Get_S1 (8, lcr_auxiliary_type,              "lcr_auxiliary_type"); Param_Info1(Av2_lcr_auxiliary_type(lcr_auxiliary_type));
+                }
+                Get_S1 (8, lcr_view_type,                       "lcr_view_type"); Param_Info1(Av2_lcr_view_type(lcr_view_type));
+                if (lcr_view_type == 4) { // Explicit
+                    Skip_S1(8,                                  "lcr_view_id");
+                }
+                if (i) {
+                    Skip_S1(i,                                  "lcr_dependent_layer_map");
+                }
+                Get_SB (lcr_same_sh_max_resolution_flag,        "lcr_same_sh_max_resolution_flag");
+                if (!lcr_same_sh_max_resolution_flag) {
+                    Skip_uvlc(                                  "lcr_max_expected_width");
+                    Skip_uvlc(                                  "lcr_max_expected_height");
+                }
+                byte_alignment();
+                Element_End0();
+            }
+        }
+        Element_End0();
+    }
+    else if (is_global && atlas_id_present) {
+        Skip_S1(8,                                              "lcr_xlayer_atlas_segment_id");
+        Skip_S1(8,                                              "lcr_xlayer_priority_order");
+        Skip_S1(8,                                              "lcr_xlayer_rendering_method");
+    }
     Element_End0();
 }
 
@@ -1142,9 +1408,59 @@ void File_Av2::atlas_segment_info_obu()
 //---------------------------------------------------------------------------
 void File_Av2::operating_point_set_obu()
 {
+    //Parsing
+    BS_Begin();
     Element_Begin1("operating_point_set_obu");
-    Skip_XX(Element_Size,                                       "Data");
+    int8u ops_cnt;
+    Skip_SB(                                                    "ops_reset_flag");
+    Skip_S1(4,                                                  "ops_id");
+    Get_S1 (3, ops_cnt,                                         "ops_cnt");
+    if (ops_cnt) {
+        bool ops_intent_present_flag;
+        Skip_S1(4,                                              "ops_priority");
+        Skip_S1(7,                                              "ops_intent");
+        Get_SB (   ops_intent_present_flag,                     "ops_intent_present_flag");
+        Skip_SB(                                                "ops_ptl_present_flag");
+        Skip_SB(                                                "ops_color_info_present_flag");
+        if (obu_xlayer_id == GLOBAL_XLAYER_ID) {
+            Skip_S1(2,                                          "ops_mlayer_info_idc");
+        }
+        else {
+            Skip_S1(2,                                          "ops_reserved_2bits");
+        }
+        BS_End(); //24 bits before
+        for (int8u i = 0; i < ops_cnt && Element_IsOK(); i++) {
+            Element_Begin1("operating_point");
+            Element_Info1(i);
+            int64u ops_data_size;
+            Get_leb128(ops_data_size,                           "ops_data_size");
+            if (ops_data_size > Element_Size - Element_Offset) {
+                Trusted_IsNot("ops_data_size is too big");
+                Element_End0();
+                break;
+            }
+            auto End = (Element_Size - Element_Offset - ops_data_size) * 8;
+            BS_Begin();
+            if (ops_intent_present_flag) {
+                Skip_S1(7,                                      "ops_intent_op");
+            }
+            if (Data_BS_Remain() > End) {
+                Skip_BS(Data_BS_Remain() - End,                 "(Not parsed)");
+            }
+            else if (Data_BS_Remain() < End) {
+                Trusted_IsNot("ops_data_size is too small");
+            }
+            BS_End();
+            Element_End0();
+        }
+        BS_Begin();
+    }
     Element_End0();
+
+    if (Element_IsOK()) {
+        obu_end();
+    }
+    BS_End();
 }
 
 //---------------------------------------------------------------------------
