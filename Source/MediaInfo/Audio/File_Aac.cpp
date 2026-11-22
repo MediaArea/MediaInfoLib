@@ -291,6 +291,8 @@ void File_Aac::Streams_Finish()
             Fill(Stream_Audio, 0, Audio_BitRate_Mode, "CBR");
         }
     }
+    if (AllFramesAreCounted && Frequency_b && Retrieve_Const(Stream_Audio, 0, Audio_Duration).empty())
+        Fill(Stream_Audio, 0, Audio_Duration, ((float64)Frame_Count_NotParsedIncluded)*frame_length/Frequency_b*1000, 0);
 
     if (Mode==Mode_ADTS && !ChannelCount_Temp && ChannelPos_Temp && Retrieve_Const(Stream_Audio, 0, Audio_Channel_s_).empty())
         Fill(Stream_Audio, 0, Audio_Channel_s_, ChannelPos_Temp);
