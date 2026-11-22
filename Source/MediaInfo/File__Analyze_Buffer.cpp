@@ -2636,7 +2636,7 @@ void File__Analyze::Get_BT(size_t Bits, int32u &Info, const char* Name)
 {
     INTEGRITY_INT(Bits<=BT->Remain(), "Size is wrong", BT->Offset_Get())
     Info=BT->Get(Bits);
-    if (Trace_Activated) Param(Name, Info);
+    if (Trace_Activated) Param(Name, Info, (int8u)Bits);
 }
 
 //---------------------------------------------------------------------------
@@ -2644,7 +2644,7 @@ void File__Analyze::Get_TB(             bool &Info, const char* Name)
 {
     INTEGRITY_INT(1<=BT->Remain(), "Size is wrong", BT->Offset_Get())
     Info=BT->GetB();
-    if (Trace_Activated) Param(Name, Info);
+    if (Trace_Activated) Param(Name, Info, 1);
 }
 
 //---------------------------------------------------------------------------
@@ -2654,8 +2654,8 @@ void File__Analyze::Get_T1(size_t Bits, int8u &Info, const char* Name)
     Info=BT->Get1(Bits);
     if (Trace_Activated)
     {
+        Param(Name, Info, (int8u)Bits);
         Param_Info_Bits(Bits);
-        Param(Name, Info);
     }
 }
 
@@ -2664,7 +2664,11 @@ void File__Analyze::Get_T2(size_t Bits, int16u &Info, const char* Name)
 {
     INTEGRITY_INT(Bits<=BT->Remain(), "Size is wrong", BT->Offset_Get())
     Info=BT->Get2(Bits);
-    if (Trace_Activated) Param(Name, Info);
+    if (Trace_Activated)
+    {
+        Param(Name, Info, (int8u)Bits);
+        Param_Info_Bits(Bits);
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -2672,7 +2676,11 @@ void File__Analyze::Get_T4(size_t Bits, int32u &Info, const char* Name)
 {
     INTEGRITY_INT(Bits<=BT->Remain(), "Size is wrong", BT->Offset_Get())
     Info=BT->Get4(Bits);
-    if (Trace_Activated) Param(Name, Info);
+    if (Trace_Activated)
+    {
+        Param(Name, Info, (int8u)Bits);
+        Param_Info_Bits(Bits);
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -2680,7 +2688,11 @@ void File__Analyze::Get_T8(size_t Bits, int64u &Info, const char* Name)
 {
     INTEGRITY_INT(Bits<=BT->Remain(), "Size is wrong", BT->Offset_Get())
     Info=BT->Get8(Bits);
-    if (Trace_Activated) Param(Name, Info);
+    if (Trace_Activated)
+    {
+        Param(Name, Info, (int8u)Bits);
+        Param_Info_Bits(Bits);
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -2732,7 +2744,7 @@ void File__Analyze::Skip_BT(size_t Bits, const char* Name)
     if (Trace_Activated)
     {
         if (Bits<=32) //TODO: in BitStream.h, handle >32 bit gets
-            Param(Name, BT->Get(Bits));
+            Param(Name, BT->Get(Bits), (int8u)Bits);
         else
         {
             Param(Name, "(Data)");
@@ -2748,7 +2760,7 @@ void File__Analyze::Skip_TB(              const char* Name)
 {
     INTEGRITY(1<=BT->Remain(), "Size is wrong", BT->Offset_Get())
     if (Trace_Activated)
-        Param(Name, BT->GetB());
+        Param(Name, BT->GetB(), 1);
     else
         BT->SkipB();
 }
@@ -2759,8 +2771,8 @@ void File__Analyze::Skip_T1(size_t Bits, const char* Name)
     INTEGRITY(Bits<=BT->Remain(), "Size is wrong", BT->Offset_Get())
     if (Trace_Activated)
     {
+        Param(Name, BT->Get1(Bits), (int8u)Bits);
         Param_Info_Bits(Bits);
-        Param(Name, BT->Get1(Bits));
     }
     else
         BT->Skip1(Bits);
@@ -2771,7 +2783,10 @@ void File__Analyze::Skip_T2(size_t Bits, const char* Name)
 {
     INTEGRITY(Bits<=BT->Remain(), "Size is wrong", BT->Offset_Get())
     if (Trace_Activated)
-        Param(Name, BT->Get2(Bits));
+    {
+        Param(Name, BT->Get2(Bits), (int8u)Bits);
+        Param_Info_Bits(Bits);
+    }
     else
         BT->Skip2(Bits);
 }
@@ -2781,7 +2796,10 @@ void File__Analyze::Skip_T4(size_t Bits, const char* Name)
 {
     INTEGRITY(Bits<=BT->Remain(), "Size is wrong", BT->Offset_Get())
     if (Trace_Activated)
-        Param(Name, BT->Get4(Bits));
+    {
+        Param(Name, BT->Get4(Bits), (int8u)Bits);
+        Param_Info_Bits(Bits);
+    }
     else
         BT->Skip4(Bits);
 }
@@ -2791,7 +2809,10 @@ void File__Analyze::Skip_T8(size_t Bits, const char* Name)
 {
     INTEGRITY(Bits<=BT->Remain(), "Size is wrong", BT->Offset_Get())
     if (Trace_Activated)
-        Param(Name, BT->Get8(Bits));
+    {
+        Param(Name, BT->Get8(Bits), (int8u)Bits);
+        Param_Info_Bits(Bits);
+    }
     else
         BT->Skip8(Bits);
 }

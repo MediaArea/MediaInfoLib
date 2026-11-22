@@ -3461,11 +3461,7 @@ void File__Analyze::Element_Begin()
     //TraceNode
     #if MEDIAINFO_TRACE
     if (Trace_Activated)
-    {
-        Elem.TraceNode.Init();
-        Elem.TraceNode.Pos=File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get(); //TODO: change this, used in Element_End0()
-        Elem.TraceNode.Size=Elem.Next-(File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get());
-    }
+        Element_Begin_TraceNode();
     #endif //MEDIAINFO_TRACE
 }
 
@@ -3491,9 +3487,7 @@ void File__Analyze::Element_Begin(const Ztring &Name)
     //TraceNode
     if (Trace_Activated)
     {
-        Elem.TraceNode.Init();
-        Elem.TraceNode.Pos=File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get(); //TODO: change this, used in Element_End0()
-        Elem.TraceNode.Size=Elem.Next-(File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get());
+        Element_Begin_TraceNode();
         Element_Name(Name);
     }
 }
@@ -3521,14 +3515,7 @@ void File__Analyze::Element_Begin(const char* Name)
     //TraceNode
     if (Trace_Activated)
     {
-        Elem.TraceNode.Init();
-        Elem.TraceNode.Pos=File_Offset+Buffer_Offset+Element_Offset; //TODO: change this, used in Element_End0()
-        if (BS_Size)
-        {
-            int64u BS_BitOffset=BS_Size-BS->Remain();
-            Elem.TraceNode.Pos+=BS_BitOffset>>3; //Including Bits to Bytes
-        }
-        Elem.TraceNode.Size=Elem.Next-(File_Offset+Buffer_Offset+Element_Offset+BS->OffsetBeforeLastCall_Get());
+        Element_Begin_TraceNode();
         Element_Name(Name);
     }
 }
@@ -3798,6 +3785,17 @@ bool File__Analyze::Element_Begin_Common()
 }
 
 //---------------------------------------------------------------------------
+#if MEDIAINFO_TRACE
+void File__Analyze::Element_Begin_TraceNode()
+{
+    auto& Elem = Element[Element_Level];
+    Elem.TraceNode.Init();
+    Elem.TraceNode.Pos=File_Offset+Buffer_Offset+Element_Offset+(BS_BitOffset_Get()>>3); //Byte of the current bit, as for the fields; used in Element_End0()
+    Elem.TraceNode.Size=Elem.Next-Elem.TraceNode.Pos;
+}
+#endif //MEDIAINFO_TRACE
+
+//---------------------------------------------------------------------------
 void File__Analyze::Element_End_Common_Flush()
 {
     if (Element_Level_Overflow)
@@ -3812,7 +3810,7 @@ void File__Analyze::Element_End_Common_Flush()
     if (Trace_Activated)
     {
         //Size if not filled
-        int64u Current=File_Offset+Buffer_Offset+Element_Offset+(BS_Size-BS->Remain())/8;
+        int64u Current=File_Offset+Buffer_Offset+Element_Offset+BS_BitOffset_Get()/8;
         if (Current<=Elem1.Next && Current>=Elem1.TraceNode.Pos) //Not if the parser read data stored before the element
             Elem1.TraceNode.Size=Current-Elem1.TraceNode.Pos;
     }
@@ -3890,7 +3888,7 @@ void File__Analyze::Info(const std::string& Value, size_t Element_Level_Minus)
     node.Init();
     node.Set_Name(Trace_String(Value.data(), Value.size()));
     node.IsCat = true;
-    node.Pos = File_Offset+Buffer_Offset+Element_Offset+BS->Offset_Get();
+    node.Pos = File_Offset+Buffer_Offset+Element_Offset+BS_BitOffset_Get()/8;
     Element[Element_Level].TraceNode.Add_Child(&node);
 }
 #endif //MEDIAINFO_TRACE
