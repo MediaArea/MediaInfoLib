@@ -172,6 +172,7 @@ static const char* Av2_lcr_view_type(int8u lcr_view_type)
     default: return "";
     }
 }
+#endif //MEDIAINFO_TRACE
 
 //---------------------------------------------------------------------------
 static const char* Av2_lcr_auxiliary_type(int8u lcr_auxiliary_type)
@@ -185,7 +186,6 @@ static const char* Av2_lcr_auxiliary_type(int8u lcr_auxiliary_type)
     default: return "";
     }
 }
-#endif //MEDIAINFO_TRACE
 
 //---------------------------------------------------------------------------
 static const char* Av2_bit_depth_idc(int32u bit_depth_idc)
@@ -351,18 +351,84 @@ void File_Av2::Streams_Accept()
 //---------------------------------------------------------------------------
 void File_Av2::Streams_Fill()
 {
-    string ColorSpace = chroma_format_idc == 1 ? "Y" : (ColorPrimaries == 1 && TransferCharacteristics == 13 && MatrixCoefficients == 0) ? "RGB" : "YUV";
-    Fill(Stream_Video, 0, Video_ColorSpace, ColorSpace);
+    xlayer First;
+    auto First_Item = XLayers.find(FirstXLayer);
+    if (First_Item != XLayers.end())
+        First = First_Item->second;
+    else
+        First.chroma_format_idc = chroma_format_idc;
+    First.ColorDescriptionPresent = ColorDescriptionPresent;
+    First.ColorPrimaries = ColorPrimaries;
+    First.TransferCharacteristics = TransferCharacteristics;
+    First.MatrixCoefficients = MatrixCoefficients;
+    First.FullRange = FullRange;
+    Fill_Color(0, First);
+    if (First.EmbeddedLayer_Count > 1)
+        Fill(Stream_Video, 0, "EmbeddedLayer_Count", First.EmbeddedLayer_Count);
+
+    //Other extended layers: views of the picture of the first stream, or other pictures (auxiliary, subpicture...)
+    if (First_Item == XLayers.end() || Count_Get(Stream_Video) != 1)
+        return;
+    auto IsView = [](const xlayer& XLayer) { return XLayer.lcr_layer_type == 2 || (XLayer.lcr_layer_type == 0 && (XLayer.lcr_view_type == 2 || XLayer.lcr_view_type == 3)); }; //Stereo layer, or texture layer of a left or right view
+    auto Type = [](const xlayer& XLayer) -> const char* { return XLayer.lcr_layer_type == 1 ? Av2_lcr_auxiliary_type(XLayer.lcr_auxiliary_type) : XLayer.lcr_atlas ? "Subpicture" : ""; };
+    size_t MultiView_Count = 1;
+    int8u Second_View_Type = (int8u)-1;
+    bool HasOtherPictures = false;
+    for (const auto& Item : XLayers) {
+        const auto& XLayer = Item.second;
+        if (Item.first == FirstXLayer || !XLayer.sequence_header_Parsed)
+            continue;
+        if (IsView(First) && IsView(XLayer)) {
+            if (MultiView_Count == 1)
+                Second_View_Type = XLayer.lcr_view_type;
+            MultiView_Count++;
+            continue;
+        }
+        HasOtherPictures = true;
+        Stream_Prepare(Stream_Video);
+        Fill(Stream_Video, StreamPos_Last, General_ID, Item.first);
+        Fill(Stream_Video, StreamPos_Last, Video_Format, "AV2");
+        Fill(Stream_Video, StreamPos_Last, "Type", Type(XLayer));
+        Fill(Stream_Video, StreamPos_Last, Video_Format_Profile, XLayer.Format_Profile);
+        Fill(Stream_Video, StreamPos_Last, Video_Width, XLayer.Width);
+        Fill(Stream_Video, StreamPos_Last, Video_Height, XLayer.Height);
+        Fill(Stream_Video, StreamPos_Last, Video_BitDepth, XLayer.BitDepth);
+        if (XLayer.FilmGrain)
+            Fill(Stream_Video, StreamPos_Last, Video_Format_Settings, "Film Grain Synthesis");
+        if (XLayer.Scalable)
+            Fill(Stream_Video, StreamPos_Last, Video_Format_Settings, "Scalable Video Coding");
+        Fill_Color(StreamPos_Last, XLayer);
+        if (XLayer.EmbeddedLayer_Count > 1)
+            Fill(Stream_Video, StreamPos_Last, "EmbeddedLayer_Count", XLayer.EmbeddedLayer_Count);
+    }
+    if (HasOtherPictures) {
+        Fill(Stream_Video, 0, General_ID, FirstXLayer);
+        Fill(Stream_Video, 0, "Type", Type(First));
+    }
+    if (MultiView_Count > 1) {
+        Fill(Stream_Video, 0, Video_MultiView_Count, MultiView_Count);
+        if (MultiView_Count == 2 && First.lcr_view_type == 2 && Second_View_Type == 3)
+            Fill(Stream_Video, 0, Video_MultiView_Layout, "Separate layers (left eye first)");
+        if (MultiView_Count == 2 && First.lcr_view_type == 3 && Second_View_Type == 2)
+            Fill(Stream_Video, 0, Video_MultiView_Layout, "Separate layers (right eye first)");
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_Av2::Fill_Color(size_t StreamPos, const xlayer& XLayer)
+{
+    string ColorSpace = XLayer.chroma_format_idc == 1 ? "Y" : (XLayer.ColorPrimaries == 1 && XLayer.TransferCharacteristics == 13 && XLayer.MatrixCoefficients == 0) ? "RGB" : "YUV";
+    Fill(Stream_Video, StreamPos, Video_ColorSpace, ColorSpace);
     if (ColorSpace == "YUV")
     {
-        Fill(Stream_Video, 0, Video_ChromaSubsampling, chroma_format_idc == 0 ? "4:2:0" : chroma_format_idc == 2 ? "4:4:4" : chroma_format_idc == 3 ? "4:2:2" : "");
+        Fill(Stream_Video, StreamPos, Video_ChromaSubsampling, XLayer.chroma_format_idc == 0 ? "4:2:0" : XLayer.chroma_format_idc == 2 ? "4:4:4" : XLayer.chroma_format_idc == 3 ? "4:2:2" : "");
     }
-    if (ColorDescriptionPresent) {
-        Fill(Stream_Video, 0, Video_colour_description_present, "Yes");
-        Fill(Stream_Video, 0, Video_colour_primaries, Mpegv_colour_primaries(ColorPrimaries));
-        Fill(Stream_Video, 0, Video_transfer_characteristics, Mpegv_transfer_characteristics(TransferCharacteristics));
-        Fill(Stream_Video, 0, Video_matrix_coefficients, Mpegv_matrix_coefficients(MatrixCoefficients));
-        Fill(Stream_Video, 0, Video_colour_range, Avc_video_full_range[FullRange]);
+    if (XLayer.ColorDescriptionPresent) {
+        Fill(Stream_Video, StreamPos, Video_colour_description_present, "Yes");
+        Fill(Stream_Video, StreamPos, Video_colour_primaries, Mpegv_colour_primaries(XLayer.ColorPrimaries));
+        Fill(Stream_Video, StreamPos, Video_transfer_characteristics, Mpegv_transfer_characteristics(XLayer.TransferCharacteristics));
+        Fill(Stream_Video, StreamPos, Video_matrix_coefficients, Mpegv_matrix_coefficients(XLayer.MatrixCoefficients));
+        Fill(Stream_Video, StreamPos, Video_colour_range, Avc_video_full_range[XLayer.FullRange]);
     }
 }
 
@@ -688,6 +754,7 @@ void File_Av2::sequence_header_obu()
     Monochrome = chroma_format_idc == 1;
     Get_uvlc(bit_depth_idc,                                     "bit_depth_idc"); Param_Info2(Av2_bit_depth_idc(bit_depth_idc), " bits");
     int8u max_tlayer_id, max_mlayer_id;
+    int32u seq_max_mlayer_cnt_minus_1 = 0;
     if (single_picture_header_flag) {
         // seq_lcr_id = 0
         // still_picture = 1
@@ -703,7 +770,7 @@ void File_Av2::sequence_header_obu()
         Get_S1(3, max_mlayer_id,                                "max_mlayer_id");
         if (max_mlayer_id > 0) {
             auto n = CeilLog2(max_mlayer_id + 1);
-            Skip_S4(n,                                          "seq_max_mlayer_cnt_minus_1");
+            Get_S4 (n, seq_max_mlayer_cnt_minus_1,              "seq_max_mlayer_cnt_minus_1");
             // SeqMaxMlayerCnt = seq_max_mlayer_cnt_minus_1 + 1
         }
         else {
@@ -776,18 +843,31 @@ void File_Av2::sequence_header_obu()
 
     //Filling
     FILLING_BEGIN_PRECISE();
+    auto& XLayer = XLayers[obu_xlayer_id];
+    if (!XLayer.sequence_header_Parsed)
+    {
+        XLayer.Format_Profile = Av2_seq_profile_idc(seq_profile_idc);
+        XLayer.Format_Profile += '@';
+        XLayer.Format_Profile += Av2_seq_level_idx(seq_level_idx);
+        XLayer.Width = max_frame_width_minus_1 + 1;
+        XLayer.Height = max_frame_height_minus_1 + 1;
+        XLayer.BitDepth = Av2_bit_depth_idc(bit_depth_idc);
+        XLayer.chroma_format_idc = chroma_format_idc;
+        XLayer.EmbeddedLayer_Count = max_mlayer_id > 0 ? seq_max_mlayer_cnt_minus_1 + 1 : 1;
+        XLayer.FilmGrain = film_grain_params_present;
+        XLayer.Scalable = max_mlayer_id > 0 || max_tlayer_id > 0;
+        XLayer.sequence_header_Parsed = true;
+    }
     if (!sequence_header_Parsed)
     {
-        std::string Video_Format_Profile_string = Av2_seq_profile_idc(seq_profile_idc);
-        Video_Format_Profile_string += '@';
-        Video_Format_Profile_string += Av2_seq_level_idx(seq_level_idx);
-        Fill(Stream_Video, 0, Video_Format_Profile, Video_Format_Profile_string);
-        Fill(Stream_Video, 0, Video_Width, max_frame_width_minus_1 + 1);
-        Fill(Stream_Video, 0, Video_Height, max_frame_height_minus_1 + 1);
-        Fill(Stream_Video, 0, Video_BitDepth, Av2_bit_depth_idc(bit_depth_idc));
-        if (film_grain_params_present)
+        FirstXLayer = obu_xlayer_id;
+        Fill(Stream_Video, 0, Video_Format_Profile, XLayer.Format_Profile);
+        Fill(Stream_Video, 0, Video_Width, XLayer.Width);
+        Fill(Stream_Video, 0, Video_Height, XLayer.Height);
+        Fill(Stream_Video, 0, Video_BitDepth, XLayer.BitDepth);
+        if (XLayer.FilmGrain)
             Fill(Stream_Video, 0, Video_Format_Settings, "Film Grain Synthesis");
-        if (max_mlayer_id > 0 || max_tlayer_id > 0)
+        if (XLayer.Scalable)
             Fill(Stream_Video, 0, Video_Format_Settings, "Scalable Video Coding");
 
         sequence_header_Parsed = true;
@@ -1354,11 +1434,12 @@ void File_Av2::lcr_xlayer_info(int8u xlayer_id, bool is_global, bool atlas_id_pr
         Element_Begin1("lcr_embedded_layer_info");
         int8u lcr_mlayer_map;
         Get_S1 (8, lcr_mlayer_map,                              "lcr_mlayer_map");
+        bool IsFirst = true;
         for (int8u i = 0; i < 8; i++) {
             if (lcr_mlayer_map & (1 << i)) {
                 Element_Begin1("mlayer");
                 Element_Info1(i);
-                int8u lcr_layer_type, lcr_view_type;
+                int8u lcr_layer_type, lcr_auxiliary_type = (int8u)-1, lcr_view_type;
                 bool lcr_same_sh_max_resolution_flag;
                 Skip_S1(4,                                      "lcr_tlayer_map");
                 if (atlas_id_present) {
@@ -1368,7 +1449,6 @@ void File_Av2::lcr_xlayer_info(int8u xlayer_id, bool is_global, bool atlas_id_pr
                 }
                 Get_S1 (8, lcr_layer_type,                      "lcr_layer_type"); Param_Info1(Av2_lcr_layer_type(lcr_layer_type));
                 if (lcr_layer_type == 1) { // Auxiliary
-                    int8u lcr_auxiliary_type;
                     Get_S1 (8, lcr_auxiliary_type,              "lcr_auxiliary_type"); Param_Info1(Av2_lcr_auxiliary_type(lcr_auxiliary_type));
                 }
                 Get_S1 (8, lcr_view_type,                       "lcr_view_type"); Param_Info1(Av2_lcr_view_type(lcr_view_type));
@@ -1385,6 +1465,16 @@ void File_Av2::lcr_xlayer_info(int8u xlayer_id, bool is_global, bool atlas_id_pr
                 }
                 byte_alignment();
                 Element_End0();
+
+                FILLING_BEGIN();
+                    auto& XLayer = XLayers[xlayer_id];
+                    if (IsFirst && XLayer.lcr_layer_type == (int8u)-1) { //The first embedded layer gives the role of the extended layer
+                        XLayer.lcr_layer_type = lcr_layer_type;
+                        XLayer.lcr_auxiliary_type = lcr_auxiliary_type;
+                        XLayer.lcr_view_type = lcr_view_type;
+                    }
+                    IsFirst = false;
+                FILLING_END();
             }
         }
         Element_End0();
@@ -1395,6 +1485,11 @@ void File_Av2::lcr_xlayer_info(int8u xlayer_id, bool is_global, bool atlas_id_pr
         Skip_S1(8,                                              "lcr_xlayer_rendering_method");
     }
     Element_End0();
+
+    FILLING_BEGIN();
+        if (atlas_id_present)
+            XLayers[xlayer_id].lcr_atlas = true;
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -1566,6 +1661,17 @@ void File_Av2::content_interpretation_obu()
 
     //Filling
     FILLING_BEGIN_PRECISE();
+    if (ci_color_description_present_flag)
+    {
+        auto& XLayer = XLayers[obu_xlayer_id];
+        XLayer.ColorDescriptionPresent = ci_color_description_present_flag;
+        XLayer.ColorPrimaries = ci_color_primaries;
+        XLayer.TransferCharacteristics = ci_transfer_characteristics;
+        XLayer.MatrixCoefficients = ci_matrix_coefficients;
+        XLayer.FullRange = ci_full_range_flag;
+    }
+    if (FirstXLayer != (int8u)-1 && obu_xlayer_id != FirstXLayer) //Not the extended layer of the first video stream
+        return;
     if (ci_color_description_present_flag)
     {
         ColorDescriptionPresent = ci_color_description_present_flag;

@@ -39,6 +39,34 @@ public :
     ~File_Av2() override;
 
 private :
+    //Extended layers
+    struct xlayer
+    {
+        //From the layer configuration record
+        int8u   lcr_layer_type{ (int8u)-1 };
+        int8u   lcr_auxiliary_type{ (int8u)-1 };
+        int8u   lcr_view_type{ (int8u)-1 };
+        bool    lcr_atlas{};
+
+        //From the first sequence header
+        bool    sequence_header_Parsed{};
+        std::string Format_Profile;
+        int32u  Width{};
+        int32u  Height{};
+        const char* BitDepth{};
+        int32u  chroma_format_idc{};
+        int32u  EmbeddedLayer_Count{};
+        bool    FilmGrain{};
+        bool    Scalable{};
+
+        //From the content interpretation
+        bool    ColorDescriptionPresent{};
+        bool    FullRange{};
+        int8u   ColorPrimaries{ 2 };
+        int8u   TransferCharacteristics{ 2 };
+        int8u   MatrixCoefficients{ 2 };
+    };
+
     //Streams management
     void Streams_Accept() override;
     void Streams_Fill() override;
@@ -108,8 +136,11 @@ private :
 
     //Custom functions for common code
     void  obu_end();
+    void  Fill_Color(size_t StreamPos, const xlayer& XLayer);
 
     //Temp
+    std::map<int8u, xlayer> XLayers;
+    int8u   FirstXLayer{ (int8u)-1 }; //Extended layer of the first sequence header, the one of the first video stream
     int8u   seq_level_idx{};
     bool    seq_tier{};
     int8u   obu_mlayer_id{};
