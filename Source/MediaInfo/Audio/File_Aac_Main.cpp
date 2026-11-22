@@ -626,6 +626,7 @@ void File_Aac::AudioSpecificConfig (size_t End)
 {
     //Parsing
     bool    sbrData=false, sbrPresentFlag=false, psData=false, psPresentFlag=false;
+    size_t  Start=Data_BS_Remain();
     Element_Begin1("AudioSpecificConfig");
     GetAudioObjectType(audioObjectType,                         "audioObjectType");
     Infos["CodecID"].From_Number(audioObjectType);
@@ -725,7 +726,7 @@ void File_Aac::AudioSpecificConfig (size_t End)
             break;
         case 36:
             Skip_S1(5,                                          "fillBits");
-            ALSSpecificConfig();
+            ALSSpecificConfig(Start, End);
             break;
         case 37:
         case 38:
@@ -786,9 +787,10 @@ void File_Aac::AudioSpecificConfig (size_t End)
     if (extensionAudioObjectType!=5 && End!=(size_t)-1 && Data_BS_Remain()>=End+16)
     {
         int16u syncExtensionType;
-        Get_S2(11,syncExtensionType,                            "syncExtensionType");
+        Peek_S2(11,syncExtensionType);
         if (syncExtensionType == 0x2b7)
         {
+            Skip_S2(11,                                         "syncExtensionType");
             sbrData=true;
             GetAudioObjectType(extensionAudioObjectType,        "extensionAudioObjectType");
             if (extensionAudioObjectType==5 )
@@ -837,10 +839,11 @@ void File_Aac::AudioSpecificConfig (size_t End)
     Element_End0();
     if (Data_BS_Remain()>End)
     {
-        int8u LastByte=0xFF;
-        if (Data_BS_Remain()-End<8)
-            Peek_S1((int8u)(Data_BS_Remain()-End), LastByte);
-        Skip_BS(Data_BS_Remain()-End,                           LastByte?"Unknown":"Padding");
+        size_t Remain=Data_BS_Remain()-End;
+        int64u Value=1;
+        if (Remain<=64)
+            Peek_S8((int8u)Remain, Value);
+        Skip_BS(Remain,                                         Value?"Unknown":"Padding");
     }
 
     //FILLING_BEGIN();
