@@ -519,6 +519,7 @@ static const char* Mxf_EssenceContainer_Mapping(int64u Code_lo)
     case Labels::MXFGCDMCVTData:
     case Labels::MXFGCEssenceContainerProResPicture:
     case Labels::MXFGCMGAAudioMappings:
+    case Labels::SonyCorporationXOCN:
         switch ((int8u)(Code_lo >> 8)) {
         case 0x01: return "Frame";
         }
