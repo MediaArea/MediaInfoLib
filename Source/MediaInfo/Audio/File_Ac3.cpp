@@ -1566,6 +1566,7 @@ void File_Ac3::Streams_Fill()
     Fill(Stream_General, 0, General_Format, Retrieve(Stream_Audio, 0, Audio_Format), true);
     Fill(Stream_General, 0, General_Format_Profile, Retrieve(Stream_Audio, 0, Audio_Format_Profile));
     Fill(Stream_General, 0, General_Format_Commercial_IfAny, Retrieve(Stream_Audio, 0, Audio_Format_Commercial_IfAny));
+    Fill(Stream_General, 0, General_InternetMediaType, Retrieve(Stream_Audio, 0, Audio_InternetMediaType), true);
 }
 
 //---------------------------------------------------------------------------
@@ -1799,6 +1800,7 @@ void File_Ac3::Streams_Fill_PerProgram(size_t StreamPos, int8u Program, bool Has
             Fill(Stream_Audio, StreamPos, Audio_Format_Commercial_IfAny, "Dolby Digital Plus with Dolby Atmos");
         else
             Fill(Stream_Audio, StreamPos, Audio_Format_Commercial_IfAny, "Dolby Digital Plus");
+        Fill(Stream_Audio, StreamPos, Audio_InternetMediaType, "audio/eac3", Unlimited, true, true); // Also for an AC-3 core with E-AC-3 substreams
     }
     else if (Retrieve(Stream_Audio, StreamPos, Audio_Format)==__T("MLP FBA") || Retrieve(Stream_Audio, StreamPos, Audio_Format_Profile).find(__T("MLP FBA"))==0)
     {
