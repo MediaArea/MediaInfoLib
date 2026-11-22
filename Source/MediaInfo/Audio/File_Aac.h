@@ -173,7 +173,8 @@ protected :
     void EPMuxElement                       ();
     void AudioMuxElement                    ();
     void StreamMuxConfig                    ();
-    int32u LatmGetValue                     ();
+    int32u LatmGetValue                     (const char* Name);
+    void LatmSkipValue                      (const char* Name);
     bool PayloadLengthInfo                  ();
     void PayloadMux                         ();
     void PayloadMux_Payload                 (int8u Stream, bool Parse);
