@@ -3473,6 +3473,14 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
     if (Replace && Value.empty())
     {
         Clear(StreamKind, StreamPos, Parameter);
+        if (!IsSub && StreamKind==Stream_General && MediaInfoLib::Config.Legacy_Get())
+            switch (Parameter)
+            {
+                case General_Format_Info:       Clear(Stream_General, 0, General_Codec_Info); break;
+                case General_Format_Url:        Clear(Stream_General, 0, General_Codec_Url); break;
+                case General_Format_Extensions: Clear(Stream_General, 0, General_Codec_Extensions); break;
+                case General_Format_Settings:   Clear(Stream_General, 0, General_Codec_Settings); break;
+            }
         return;
     }
 
