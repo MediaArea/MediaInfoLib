@@ -1458,7 +1458,7 @@ void MediaInfo_Config_Format (InfoMap &Info)
     "HDS F4M;Flash Media Manifest;;M;HdsF4m;;f4m\n"
     "HEIF;;;M;Mpeg4;;heif hif avci avcs heic heics avif avis\n"
     "HLS;;;M;Hls;;m3u8\n"
-    "Google Video;;;M;Riff;Hack of AVI;gvi;;http://video.google.com/playerdownload.html\n"
+    "Google Video;;;M;Riff;Hack of AVI;gvi;video/vnd.avi;http://video.google.com/playerdownload.html\n"
     "ICC;;;;Icc;;icc icm\n"
     "ISM;Internet Streaming Media;;M;Ism;;ism\n"
     "IVF;;;M;Ivf;;ivf\n"

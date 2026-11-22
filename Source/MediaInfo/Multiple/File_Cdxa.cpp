@@ -221,7 +221,9 @@ void File_Cdxa::Streams_Finish ()
         Merge(*(MI->Info));
         Merge(*(MI->Info), Stream_General, 0, 0);
         const Ztring &Format=Retrieve(Stream_General, 0, General_Format);
+        const Ztring InternetMediaType=Retrieve(Stream_General, 0, General_InternetMediaType); //The one of the format in CDXA
         Fill(Stream_General, 0, General_Format, (Ztring(__T("CDXA/"))+Format).c_str(), Unlimited, true);
+        Fill(Stream_General, 0, General_InternetMediaType, InternetMediaType, true);
         Clear(Stream_General, 0, General_Duration);
         Clear(Stream_Video, 0, Video_Duration);
     }

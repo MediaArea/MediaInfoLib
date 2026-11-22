@@ -3573,6 +3573,9 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
         else
             Compare = Target.size() >= Value.size() && !Target.rfind(Value, 0);
     }
+    Ztring Format_Previous;
+    if (Replace && Parameter==Fill_Parameter(StreamKind, Generic_Format))
+        Format_Previous=Target;
     if (Target.empty() || Replace)
         Target=Value; //First value
     else if (!Compare)
@@ -3706,16 +3709,19 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
         //Format
         if (Parameter==Fill_Parameter(StreamKind, Generic_Format))
         {
-            if ((Replace && !MediaInfoLib::Config.Format_Get(Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Format)), InfoFormat_Info).empty()) || Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Format_Info)).empty())
-                Fill(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Format_Info), MediaInfoLib::Config.Format_Get(Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Format)), InfoFormat_Info), true);
-            if ((Replace && !MediaInfoLib::Config.Format_Get(Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Format)), InfoFormat_Url).empty()) || Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Format_Url)).empty())
-                Fill(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Format_Url) , MediaInfoLib::Config.Format_Get(Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Format)), InfoFormat_Url), true);
+            const auto Fill_FromFormat=[&](generic Generic, infoformat_t InfoFormat) {
+                const size_t Parameter_FromFormat=Fill_Parameter(StreamKind, Generic);
+                const Ztring& Current=Retrieve_Const(StreamKind, StreamPos, Parameter_FromFormat);
+                const Ztring& FromFormat=MediaInfoLib::Config.Format_Get(Retrieve(StreamKind, StreamPos, Parameter), InfoFormat);
+                if (Current.empty() || (Replace && !FromFormat.empty()) || Current==MediaInfoLib::Config.Format_Get(Format_Previous, InfoFormat)) // Last test: value of the replaced format, removed if the new format has none
+                    Fill(StreamKind, StreamPos, Parameter_FromFormat, FromFormat, true);
+            };
+            Fill_FromFormat(Generic_Format_Info, InfoFormat_Info);
+            Fill_FromFormat(Generic_Format_Url, InfoFormat_Url);
             if (StreamKind!=Stream_Menu)
             {
-                if ((Replace && !MediaInfoLib::Config.Format_Get(Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Format)), InfoFormat_InternetMediaType).empty()) || Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_InternetMediaType)).empty())
-                    Fill(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_InternetMediaType), MediaInfoLib::Config.Format_Get(Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Format)), InfoFormat_InternetMediaType), true);
-                if ((Replace && !MediaInfoLib::Config.Format_Get(Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Format)), InfoFormat_Compression_Mode).empty()) || Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Compression_Mode)).empty())
-                    Fill(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Compression_Mode), MediaInfoLib::Config.Format_Get(Retrieve(StreamKind, StreamPos, Fill_Parameter(StreamKind, Generic_Format)), InfoFormat_Compression_Mode), true);
+                Fill_FromFormat(Generic_InternetMediaType, InfoFormat_InternetMediaType);
+                Fill_FromFormat(Generic_Compression_Mode, InfoFormat_Compression_Mode);
             }
             if (StreamKind==Stream_General)
             {
