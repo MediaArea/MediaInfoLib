@@ -525,11 +525,15 @@ bool File_Dirac::Synchronize()
             {
                 if (Buffer_Size - Buffer_Offset <= Size)
                     return false; //Need more data
-                if (!memcmp(Sync + Size, Sync_Pattern, 4))
+                const size_t Next_Available = Buffer_Size - Buffer_Offset - Size;
+                char Previous_Size[4];
+                int32u2BigEndian(Previous_Size, Size);
+                if (!memcmp(Sync + Size, Sync_Pattern, Next_Available < 4 ? Next_Available : 4)
+                 && (Next_Available <= 9 || !memcmp(Sync + Size + 9, Previous_Size, Next_Available < 13 ? Next_Available - 9 : 4)))
                 {
-                    auto previous_size2 = BigEndian2int32u(Buffer + Buffer_Offset + Size + 9);
-                    if (previous_size2 == Size)
-                        return true; //Synched is OK
+                    if (Next_Available < 13)
+                        return false; //Need more data
+                    return true; //Synched is OK
                 }
             }
         }
