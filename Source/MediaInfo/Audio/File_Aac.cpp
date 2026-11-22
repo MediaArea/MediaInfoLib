@@ -199,7 +199,8 @@ void File_Aac::Streams_Fill()
 
     switch(Mode)
     {
-        case Mode_ADTS    : File__Tags_Helper::Streams_Fill(); break;
+        case Mode_ADTS    :
+        case Mode_LATM    : File__Tags_Helper::Streams_Fill(); break;
         default           : ;
     }
 
@@ -257,7 +258,7 @@ void File_Aac::Streams_Finish()
         }
     }
 
-    bool AllFramesAreCounted=Mode==Mode_ADTS && !IsSub && Frame_Count_NotParsedIncluded && Frame_Count_NotParsedIncluded!=(int64u)-1 && File_Offset+Buffer_Size==File_Size; //All frames up to the end of the file
+    bool AllFramesAreCounted=(Mode==Mode_ADTS || Mode==Mode_LATM) && !IsSub && Frame_Count_NotParsedIncluded && Frame_Count_NotParsedIncluded!=(int64u)-1 && File_Offset+Buffer_Size==File_Size; //All frames up to the end of the file
     if (AllFramesAreCounted && Retrieve_Const(Stream_Audio, 0, Audio_StreamSize).empty())
     {
         Fill(Stream_Audio, 0, Audio_StreamSize, FrameSize_Total);
@@ -269,7 +270,8 @@ void File_Aac::Streams_Finish()
     {
         case Mode_payload : if (!IsSub) File__Tags_Helper::Streams_Finish(); break; //ADIF raw data blocks up to the end
         case Mode_ADIF    :
-        case Mode_ADTS    : File__Tags_Helper::Streams_Finish(); break;
+        case Mode_ADTS    :
+        case Mode_LATM    : File__Tags_Helper::Streams_Finish(); break;
         default           : ;
     }
 
@@ -292,7 +294,32 @@ void File_Aac::Streams_Finish()
         }
     }
     if (AllFramesAreCounted && Frequency_b && Retrieve_Const(Stream_Audio, 0, Audio_Duration).empty())
-        Fill(Stream_Audio, 0, Audio_Duration, ((float64)Frame_Count_NotParsedIncluded)*frame_length/Frequency_b*1000, 0);
+    {
+        bool FrameLength_IsKnown;
+        if (Mode==Mode_LATM)
+        {
+            //The frame length is the one of GASpecificConfig, and of the last configuration if there are several streams
+            switch (streamCnt==1?audioObjectTypes[0]:0)
+            {
+                case  1:
+                case  2:
+                case  3:
+                case  4:
+                case  6:
+                case  7:
+                case 17:
+                case 19:
+                case 20:
+                case 21:
+                case 22: FrameLength_IsKnown=true; break;
+                default: FrameLength_IsKnown=false;
+            }
+        }
+        else
+            FrameLength_IsKnown=true;
+        if (FrameLength_IsKnown)
+            Fill(Stream_Audio, 0, Audio_Duration, ((float64)Frame_Count_NotParsedIncluded)*frame_length/Frequency_b*1000, 0);
+    }
 
     if (Mode==Mode_ADTS && !ChannelCount_Temp && ChannelPos_Temp && Retrieve_Const(Stream_Audio, 0, Audio_Channel_s_).empty())
         Fill(Stream_Audio, 0, Audio_Channel_s_, ChannelPos_Temp);
