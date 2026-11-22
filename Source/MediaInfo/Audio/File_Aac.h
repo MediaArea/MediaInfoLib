@@ -391,7 +391,7 @@ protected :
     // Elements - Audio Lossless
     //***********************************************************************
 
-    void ALSSpecificConfig                  ();
+    void ALSSpecificConfig                  (size_t Start, size_t End);
 
     //***********************************************************************
     // Elements - Scalable lossless

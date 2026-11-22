@@ -331,7 +331,7 @@ void File_Aac::DSTSpecificConfig()
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-void File_Aac::ALSSpecificConfig()
+void File_Aac::ALSSpecificConfig(size_t Start, size_t End)
 {
     //Not in spec, but something weird in the example I have
     int32u Junk;
@@ -388,25 +388,24 @@ void File_Aac::ALSSpecificConfig()
         for (int32u c=0; c<=channels; c++)
             Skip_BS(ChBits,                                     "chan_pos[c]");
     }
-    if(Data_BS_Remain()%8)
-        Skip_S1(Data_BS_Remain()%8,                             "byte_align");
-    BS_End();
+    size_t Align=(Start-Data_BS_Remain())%8; //Relative to the start of AudioSpecificConfig, not byte aligned in LATM
+    if (Align)
+        Skip_S1(8-Align,                                        "byte_align");
+    if (End==(size_t)-1)
+        End=0;
     int32u header_size,trailer_size;
-    Get_B4(header_size,                                         "header_size");
-    Get_B4(trailer_size,                                        "trailer_size");
-    if (!Trusted_Get() || Element_IsWaitingForMoreData()
-     || Element_Offset>Element_Size || header_size>Element_Size-Element_Offset
-     || Buffer_Offset>Buffer_Size || Element_Offset>Buffer_Size-Buffer_Offset
-     || header_size>Buffer_Size-Buffer_Offset-Element_Offset)
+    Get_BS (32, header_size,                                    "header_size");
+    Get_BS (32, trailer_size,                                   "trailer_size");
+    if (!Trusted_Get() || Data_BS_Remain()<End || header_size>(Data_BS_Remain()-End)/8)
     {
         Trusted_IsNot("Invalid original header size");
         Element_End0();
-        BS_Begin();
         return;
     }
     #ifdef MEDIAINFO_RIFF_YES
-    if (file_type==1) //WAVE file
+    if (file_type==1 && !(Data_BS_Remain()%8) && Buffer_Offset+Element_Size<=Buffer_Size) //WAVE file, byte aligned in the buffer
     {
+        BS_End();
         Element_Begin1("orig_header");
         File_Riff MI;
         Open_Buffer_Init(&MI);
@@ -414,29 +413,40 @@ void File_Aac::ALSSpecificConfig()
         Element_Offset+=header_size;
         File__Analyze::Finish(&MI); //No merge of data, only for trace information, because this is the data about the decoded stream, not the encoded stream
         Element_End0();
+        BS_Begin();
     }
     else
     #endif //MEDIAINFO_RIFF_YES
-        Skip_XX(header_size,                                    "orig_header[]");
-
-    Skip_XX(trailer_size,                                       "orig_trailer[]");
+        Skip_BS((size_t)header_size*8,                          "orig_header[]");
+    if (Data_BS_Remain()<End || trailer_size>(Data_BS_Remain()-End)/8)
+    {
+        Trusted_IsNot("Invalid original trailer size");
+        Element_End0();
+        return;
+    }
+    Skip_BS((size_t)trailer_size*8,                             "orig_trailer[]");
     if (crc_enabled)
-        Skip_B4(                                                "crc");
+        Skip_BS(32,                                             "crc");
     if ((ra_flag == 2) && (random_access > 0))
     {
         int32u ra_unit_size_Count=((samples-1)/(frame_length+1))+1;
-        Loop_CheckValue(ra_unit_size_Count, 4, "ra_unit_size");
+        Loop_CheckValue_BS(ra_unit_size_Count, 32, "ra_unit_size");
         for (int32u f=0; f<ra_unit_size_Count; f++)
-            Skip_B4(                                            "ra_unit_size[f]");
+            Skip_BS(32,                                         "ra_unit_size[f]");
     }
     if (aux_data_enabled)
     {
         int32u aux_size;
-        Get_B4(aux_size,                                        "aux_size");
-        Skip_XX(aux_size,                                       "aux_data[]");
+        Get_BS (32, aux_size,                                   "aux_size");
+        if (Data_BS_Remain()<End || aux_size>(Data_BS_Remain()-End)/8)
+        {
+            Trusted_IsNot("Invalid aux size");
+            Element_End0();
+            return;
+        }
+        Skip_BS((size_t)aux_size*8,                             "aux_data[]");
     }
     Element_End0();
-    BS_Begin(); //To be in sync with other objectTypes
 
     FILLING_BEGIN();
         //Filling

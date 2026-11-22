@@ -626,6 +626,7 @@ void File_Aac::AudioSpecificConfig (size_t End)
 {
     //Parsing
     bool    sbrData=false, sbrPresentFlag=false, psData=false, psPresentFlag=false;
+    size_t  Start=Data_BS_Remain();
     Element_Begin1("AudioSpecificConfig");
     GetAudioObjectType(audioObjectType,                         "audioObjectType");
     Infos["CodecID"].From_Number(audioObjectType);
@@ -725,7 +726,7 @@ void File_Aac::AudioSpecificConfig (size_t End)
             break;
         case 36:
             Skip_S1(5,                                          "fillBits");
-            ALSSpecificConfig();
+            ALSSpecificConfig(Start, End);
             break;
         case 37:
         case 38:
