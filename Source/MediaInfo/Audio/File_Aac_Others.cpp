@@ -450,8 +450,7 @@ void File_Aac::ALSSpecificConfig(size_t Start, size_t End)
 
     FILLING_BEGIN();
         //Filling
-        File__Analyze::Stream_Prepare(Stream_Audio);
-        Fill(Stream_Audio, StreamPos_Last, Audio_Channel_s_, channels+1);
+        Infos["Channel(s)"].From_Number(channels+1);
 
         //Forcing default confignuration (something weird in the example I have)
         channelConfiguration=0;
