@@ -110,10 +110,16 @@ void File__Tags_Helper::Parser_Merge(File__Analyze& MI, File__Analyze::tags_form
     if (Base->Count_Get(Stream_Audio)) //The audio part of the tags is for the audio stream of the file
         Base->Merge(MI, Stream_Audio, 0, 0, Format==File__Analyze::Tags_Id3v2);
     auto ImageCount = MI.Count_Get(Stream_Image);
+    if (!ImageCount)
+        return;
+    auto StreamKind_Last = Base->StreamKind_Last;
+    auto StreamPos_Last = Base->StreamPos_Last;
     for (size_t i = 0; i < ImageCount; ++i) {
         Base->Stream_Prepare(Stream_Image);
         Base->Merge(MI, Stream_Image, i, Base->StreamPos_Last);
     }
+    Base->StreamKind_Last = StreamKind_Last; //The last stream stays the one of the parser, e.g. for the real stream size
+    Base->StreamPos_Last = StreamPos_Last;
 }
 
 //---------------------------------------------------------------------------
