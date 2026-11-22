@@ -406,17 +406,24 @@ void File_Aac::ALSSpecificConfig(size_t Start, size_t End)
         return;
     }
     #ifdef MEDIAINFO_RIFF_YES
-    if (file_type==1 && !(Data_BS_Remain()%8) && Buffer_Offset+Element_Size<=Buffer_Size) //WAVE file, byte aligned in the buffer
+    if (file_type==1 && header_size) //WAVE file
     {
-        BS_End();
         Element_Begin1("orig_header");
+        vector<int8u> orig_header(header_size); //Copied, not byte aligned in the buffer in LATM
+        #if MEDIAINFO_TRACE
+            bool Trace_Activated_Save=Trace_Activated;
+            Trace_Activated=false; //Shown by the RIFF parser
+        #endif //MEDIAINFO_TRACE
+        for (auto& Byte : orig_header)
+            Get_S1(8, Byte,                                     "orig_header[]");
+        #if MEDIAINFO_TRACE
+            Trace_Activated=Trace_Activated_Save;
+        #endif //MEDIAINFO_TRACE
         File_Riff MI;
         Open_Buffer_Init(&MI);
-        Open_Buffer_Continue(&MI, Buffer+Buffer_Offset+(size_t)Element_Offset, header_size);
-        Element_Offset+=header_size;
+        Open_Buffer_Continue(&MI, orig_header.data(), orig_header.size());
         File__Analyze::Finish(&MI); //No merge of data, only for trace information, because this is the data about the decoded stream, not the encoded stream
         Element_End0();
-        BS_Begin();
     }
     else
     #endif //MEDIAINFO_RIFF_YES
