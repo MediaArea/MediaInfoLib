@@ -796,7 +796,7 @@ void File_Mpeg_Psi::Header_Parse()
     BS_End();
 
     //Size
-    if ((size_t)section_length<Element_Offset+(section_syntax_indicator?4:0)) //We must have 4 more byte for CRC
+    if ((size_t)section_length<Element_Offset+((section_syntax_indicator || table_id==0xC1)?4:0)) //We must have 4 more byte for CRC
     {
         Reject("PSI"); //Error, we exit
         return;
