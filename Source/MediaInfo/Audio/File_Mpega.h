@@ -81,7 +81,6 @@ private :
     size_t Reservoir; //Total
     int64u LastSync_Offset;
     int64u LastSync_TagsSize; //TagsSize when LastSync_Offset was set
-    int64u NotZero_Offset; //First byte since the last synchronization that is neither zero nor in a tag parsed at the start of Synchronize()
     int64u VBR_FileSize;
     int64u TagFrames_Duration; //In nanoseconds
     int32u VBR_Frames;

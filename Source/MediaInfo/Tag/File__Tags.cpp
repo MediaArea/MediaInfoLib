@@ -53,6 +53,7 @@ File__Tags_Helper::File__Tags_Helper()
     TagsSize=0;
     File_BeginTagSize=0;
     File_EndTagSize=0;
+    NotZero_Offset=(int64u)-1;
 
     //Temp
     Parser=NULL;
@@ -193,6 +194,35 @@ bool File__Tags_Helper::Synchronize(bool &Tag_Found, size_t Synchro_Offset)
         Tag_Found=false;
 
     return true;
+}
+
+//---------------------------------------------------------------------------
+bool File__Tags_Helper::Synchronize_TagsAndPadding(bool &Tag_Found)
+{
+    for (;;)
+    {
+        //Tags
+        if (!Synchronize(Tag_Found))
+            return false;
+        if (Tag_Found)
+            return true;
+
+        //Padding
+        size_t Buffer_Offset_BeforePadding=Base->Buffer_Offset;
+        while (Base->Buffer_Offset<Base->Buffer_Size && Base->Buffer[Base->Buffer_Offset]==0x00)
+            Base->Buffer_Offset++;
+        if (Base->Buffer_Offset==Buffer_Offset_BeforePadding)
+            break; //Tags after zero bytes are tested as tags at the start, they are neither other data before a single frame nor lost bytes
+    }
+    if (NotZero_Offset==(int64u)-1 && Base->Buffer_Offset<Base->Buffer_Size)
+        NotZero_Offset=Base->File_Offset+Base->Buffer_Offset;
+    return true;
+}
+
+//---------------------------------------------------------------------------
+bool File__Tags_Helper::SingleFrame_IsEnough()
+{
+    return Base->Status[File__Analyze::IsAccepted] || Base->IsSub || NotZero_Offset==Base->File_Offset+Base->Buffer_Offset;
 }
 
 //---------------------------------------------------------------------------

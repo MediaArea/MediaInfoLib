@@ -548,6 +548,7 @@ void File_Aac::Read_Buffer_Continue_payload()
 void File_Aac::Read_Buffer_Unsynched()
 {
     FrameInfo=frame_info();
+    NotZero_Offset=(int64u)-1;
 }
 
 //***************************************************************************
@@ -559,23 +560,37 @@ bool File_Aac::Synchronize()
 {
     switch (Mode)
     {
-        case Mode_Unknown     : if (Synchronize_LATM()) return true; Buffer_Offset=0; return Synchronize_ADTS();
-        case Mode_ADTS        : return Synchronize_ADTS();
-        case Mode_LATM        : return Synchronize_LATM();
+        case Mode_Unknown     :
+        case Mode_ADTS        :
+        case Mode_LATM        : break;
         default               : return true; //No synchro
+    }
+
+    //Tags and padding
+    bool Tag_Found;
+    if (!File__Tags_Helper::Synchronize_TagsAndPadding(Tag_Found))
+        return false;
+    if (Tag_Found)
+        return true;
+
+    switch (Mode)
+    {
+        case Mode_Unknown     :
+                                {
+                                size_t Buffer_Offset_Begin=Buffer_Offset;
+                                if (Synchronize_LATM())
+                                    return true;
+                                Buffer_Offset=Buffer_Offset_Begin;
+                                return Synchronize_ADTS();
+                                }
+        case Mode_ADTS        : return Synchronize_ADTS();
+        default               : return Synchronize_LATM();
     }
 }
 
 //---------------------------------------------------------------------------
 bool File_Aac::Synchronize_ADTS()
 {
-    //Tags
-    bool Tag_Found;
-    if (!File__Tags_Helper::Synchronize(Tag_Found))
-        return false;
-    if (Tag_Found)
-        return true;
-
     //Synchronizing
     while (Buffer_Offset+6<=Buffer_Size)
     {
@@ -592,7 +607,7 @@ bool File_Aac::Synchronize_ADTS()
                 Buffer_Offset++;
                 continue;
             }
-            int16u aac_frame_length=(CC3(Buffer+Buffer_Offset+3)>>5)&0x1FFF;
+            size_t aac_frame_length=(CC3(Buffer+Buffer_Offset+3)>>5)&0x1FFF;
             if (!IsSub && !(Buffer[Buffer_Offset+1]&0x01)) //protection_absent is 0, the header has the position of each raw data block after the first one, which is in the frame (only for a raw stream, e.g. VLB in NSV has something else there)
             {
                 if (Buffer_Offset+7>Buffer_Size)
@@ -614,13 +629,34 @@ bool File_Aac::Synchronize_ADTS()
             if (File_Offset+Buffer_Offset+aac_frame_length!=File_Size-File_EndTagSize)
             {
                 //Padding
-                while (Buffer_Offset+aac_frame_length+2<=Buffer_Size && Buffer[Buffer_Offset+aac_frame_length]==0x00)
+                while (Buffer_Offset+aac_frame_length<Buffer_Size && Buffer[Buffer_Offset+aac_frame_length]==0x00)
                     aac_frame_length++;
 
                 if (IsSub && Buffer_Offset+aac_frame_length==Buffer_Size)
                     break; //while()
                 if (Buffer_Offset+aac_frame_length+2>Buffer_Size)
-                    return false; //Need more data
+                {
+                    if (File_Offset+Buffer_Offset+aac_frame_length!=File_Size-File_EndTagSize)
+                        return false; //Need more data
+                    if (SingleFrame_IsEnough())
+                        break; //while(), padding up to the end of the file
+                    Buffer_Offset++; //False start
+                    continue;
+                }
+
+                //Tags
+                bool Tag_Found0;
+                if (!File__Tags_Helper::Synchronize(Tag_Found0, aac_frame_length))
+                    return false;
+                if (Tag_Found0 || File_Offset+Buffer_Offset+aac_frame_length==File_Size-File_EndTagSize)
+                {
+                    if (!SingleFrame_IsEnough())
+                    {
+                        Buffer_Offset++; //False start
+                        continue;
+                    }
+                    break; //while(), followed by a tag or by padding up to the end tags
+                }
 
                 //Testing
                 if (aac_frame_length<=7 || (CC2(Buffer+Buffer_Offset+aac_frame_length)&0xFFF6)!=0xFFF0)
@@ -636,17 +672,28 @@ bool File_Aac::Synchronize_ADTS()
                         Buffer_Offset++;
                         continue;
                     }
-                    int16u aac_frame_length2=(CC3(Buffer+Buffer_Offset+aac_frame_length+3)>>5)&0x1FFF;
+                    size_t aac_frame_length2=(CC3(Buffer+Buffer_Offset+aac_frame_length+3)>>5)&0x1FFF;
                     if (File_Offset+Buffer_Offset+aac_frame_length+aac_frame_length2!=File_Size-File_EndTagSize)
                     {
                         //Padding
-                        while (Buffer_Offset+aac_frame_length+aac_frame_length2+2<=Buffer_Size && Buffer[Buffer_Offset+aac_frame_length+aac_frame_length2]==0x00)
+                        while (Buffer_Offset+aac_frame_length+aac_frame_length2<Buffer_Size && Buffer[Buffer_Offset+aac_frame_length+aac_frame_length2]==0x00)
                             aac_frame_length2++;
 
                         if (IsSub && Buffer_Offset+aac_frame_length+aac_frame_length2==Buffer_Size)
                             break; //while()
                         if (Buffer_Offset+aac_frame_length+aac_frame_length2+2>Buffer_Size)
-                            return false; //Need more data
+                        {
+                            if (File_Offset+Buffer_Offset+aac_frame_length+aac_frame_length2!=File_Size-File_EndTagSize)
+                                return false; //Need more data
+                            break; //while(), padding up to the end of the file
+                        }
+
+                        //Tags
+                        bool Tag_Found1;
+                        if (!File__Tags_Helper::Synchronize(Tag_Found1, aac_frame_length+aac_frame_length2))
+                            return false;
+                        if (Tag_Found1 || File_Offset+Buffer_Offset+aac_frame_length+aac_frame_length2==File_Size-File_EndTagSize)
+                            break; //while(), followed by a tag or by padding up to the end tags
 
                         //Testing
                         if (aac_frame_length2<=7 || (CC2(Buffer+Buffer_Offset+aac_frame_length+aac_frame_length2)&0xFFF6)!=0xFFF0)
@@ -662,17 +709,28 @@ bool File_Aac::Synchronize_ADTS()
                                 Buffer_Offset++;
                                 continue;
                             }
-                            int16u aac_frame_length3=(CC3(Buffer+Buffer_Offset+aac_frame_length+aac_frame_length2+3)>>5)&0x1FFF;
+                            size_t aac_frame_length3=(CC3(Buffer+Buffer_Offset+aac_frame_length+aac_frame_length2+3)>>5)&0x1FFF;
                             if (File_Offset+Buffer_Offset+aac_frame_length+aac_frame_length2+aac_frame_length3!=File_Size-File_EndTagSize)
                             {
                                 //Padding
-                                while (Buffer_Offset+aac_frame_length+aac_frame_length2+aac_frame_length3+2<=Buffer_Size && Buffer[Buffer_Offset+aac_frame_length+aac_frame_length2+aac_frame_length3]==0x00)
+                                while (Buffer_Offset+aac_frame_length+aac_frame_length2+aac_frame_length3<Buffer_Size && Buffer[Buffer_Offset+aac_frame_length+aac_frame_length2+aac_frame_length3]==0x00)
                                     aac_frame_length3++;
 
                                 if (IsSub && Buffer_Offset+aac_frame_length+aac_frame_length2+aac_frame_length3==Buffer_Size)
                                     break; //while()
                                 if (Buffer_Offset+aac_frame_length+aac_frame_length2+aac_frame_length3+2>Buffer_Size)
-                                    return false; //Need more data
+                                {
+                                    if (File_Offset+Buffer_Offset+aac_frame_length+aac_frame_length2+aac_frame_length3!=File_Size-File_EndTagSize)
+                                        return false; //Need more data
+                                    break; //while(), padding up to the end of the file
+                                }
+
+                                //Tags
+                                bool Tag_Found2;
+                                if (!File__Tags_Helper::Synchronize(Tag_Found2, aac_frame_length+aac_frame_length2+aac_frame_length3))
+                                    return false;
+                                if (Tag_Found2 || File_Offset+Buffer_Offset+aac_frame_length+aac_frame_length2+aac_frame_length3==File_Size-File_EndTagSize)
+                                    break; //while(), followed by a tag or by padding up to the end tags
 
                                 //Testing
                                 if (aac_frame_length3<=7 || (CC2(Buffer+Buffer_Offset+aac_frame_length+aac_frame_length2+aac_frame_length3)&0xFFF6)!=0xFFF0)
@@ -688,10 +746,10 @@ bool File_Aac::Synchronize_ADTS()
                         break; //while()
                 }
             }
-            else if (!IsSub && !Status[IsAccepted] && File_Offset+Buffer_Offset!=File_BeginTagSize) //A single frame up to the end of the file is trusted only at the start of the file
-                Buffer_Offset++;
-            else
+            else if (SingleFrame_IsEnough())
                 break; //while()
+            else
+                Buffer_Offset++; //False start
         }
     }
 
@@ -713,6 +771,7 @@ bool File_Aac::Synchronize_ADTS()
 
     //Synched is OK
     Mode=Mode_ADTS;
+    NotZero_Offset=(int64u)-1;
     File__Analyze::Accept();
     return true;
 }
@@ -730,28 +789,68 @@ bool File_Aac::Synchronize_LATM()
         if (Buffer_Offset+3<=Buffer_Size)//Testing if size is coherant
         {
             //Testing next start, to be sure
-            int16u audioMuxLengthBytes=CC2(Buffer+Buffer_Offset+1)&0x1FFF;
-            if (IsSub && Buffer_Offset+3+audioMuxLengthBytes==Buffer_Size)
+            size_t Size0=3+(CC2(Buffer+Buffer_Offset+1)&0x1FFF); //audioMuxLengthBytes
+            if (IsSub && Buffer_Offset+Size0==Buffer_Size)
                 break;
-            if (File_Offset+Buffer_Offset+3+audioMuxLengthBytes!=File_Size)
+            if (File_Offset+Buffer_Offset+Size0!=File_Size-File_EndTagSize)
             {
-                if (Buffer_Offset+3+audioMuxLengthBytes+3>Buffer_Size)
-                    return false; //Need more data
+                //Padding
+                while (Buffer_Offset+Size0<Buffer_Size && Buffer[Buffer_Offset+Size0]==0x00)
+                    Size0++;
+
+                if (Buffer_Offset+Size0+3>Buffer_Size)
+                {
+                    if (File_Offset+Buffer_Offset+Size0!=File_Size-File_EndTagSize)
+                        return false; //Need more data
+                    if (SingleFrame_IsEnough())
+                        break; //while(), padding up to the end of the file
+                    Buffer_Offset++; //False start
+                    continue;
+                }
+
+                //Tags
+                bool Tag_Found0;
+                if (!File__Tags_Helper::Synchronize(Tag_Found0, Size0))
+                    return false;
+                if (Tag_Found0 || File_Offset+Buffer_Offset+Size0==File_Size-File_EndTagSize)
+                {
+                    if (!SingleFrame_IsEnough())
+                    {
+                        Buffer_Offset++; //False start
+                        continue;
+                    }
+                    break; //while(), followed by a tag or by padding up to the end tags
+                }
 
                 //Testing
-                if ((CC2(Buffer+Buffer_Offset+3+audioMuxLengthBytes)&0xFFE0)!=0x56E0)
+                if ((CC2(Buffer+Buffer_Offset+Size0)&0xFFE0)!=0x56E0)
                     Buffer_Offset++;
                 else
                 {
                     //Testing next start, to be sure
-                    int16u audioMuxLengthBytes2=CC2(Buffer+Buffer_Offset+3+audioMuxLengthBytes+1)&0x1FFF;
-                    if (File_Offset+Buffer_Offset+3+audioMuxLengthBytes+3+audioMuxLengthBytes2!=File_Size)
+                    size_t Size1=3+(CC2(Buffer+Buffer_Offset+Size0+1)&0x1FFF); //audioMuxLengthBytes
+                    if (File_Offset+Buffer_Offset+Size0+Size1!=File_Size-File_EndTagSize)
                     {
-                        if (Buffer_Offset+3+audioMuxLengthBytes+3+audioMuxLengthBytes2+3>Buffer_Size)
-                            return false; //Need more data
+                        //Padding
+                        while (Buffer_Offset+Size0+Size1<Buffer_Size && Buffer[Buffer_Offset+Size0+Size1]==0x00)
+                            Size1++;
+
+                        if (Buffer_Offset+Size0+Size1+3>Buffer_Size)
+                        {
+                            if (File_Offset+Buffer_Offset+Size0+Size1!=File_Size-File_EndTagSize)
+                                return false; //Need more data
+                            break; //while(), padding up to the end of the file
+                        }
+
+                        //Tags
+                        bool Tag_Found1;
+                        if (!File__Tags_Helper::Synchronize(Tag_Found1, Size0+Size1))
+                            return false;
+                        if (Tag_Found1 || File_Offset+Buffer_Offset+Size0+Size1==File_Size-File_EndTagSize)
+                            break; //while(), followed by a tag or by padding up to the end tags
 
                         //Testing
-                        if ((CC2(Buffer+Buffer_Offset+3+audioMuxLengthBytes+3+audioMuxLengthBytes2)&0xFFE0)!=0x56E0)
+                        if ((CC2(Buffer+Buffer_Offset+Size0+Size1)&0xFFE0)!=0x56E0)
                             Buffer_Offset++;
                         else
                             break; //while()
@@ -760,10 +859,10 @@ bool File_Aac::Synchronize_LATM()
                         break; //while()
                 }
             }
-            else if (!IsSub && !Status[IsAccepted] && File_Offset+Buffer_Offset!=File_BeginTagSize) //A single frame up to the end of the file is trusted only at the start of the file
-                Buffer_Offset++;
-            else
+            else if (SingleFrame_IsEnough())
                 break; //while()
+            else
+                Buffer_Offset++; //False start
         }
     }
 
@@ -777,6 +876,7 @@ bool File_Aac::Synchronize_LATM()
 
     //Synched is OK
     Mode=Mode_LATM;
+    NotZero_Offset=(int64u)-1;
     return true;
 }
 
