@@ -474,9 +474,12 @@ void File_Vc3::Streams_Fill()
     //Filling
     Stream_Prepare(Stream_Video);
     Fill(Stream_Video, 0, Video_Format, "VC-3");
-    Fill(Stream_Video, 0, Video_BitRate_Mode, VBR?"VBR":"CBR");
-    if (!VBR && FrameRate && Vc3_CompressedFrameSize(CID, SPL, ALPF*(SST?2:1)))
-        Fill(Stream_Video, 0, Video_BitRate, Vc3_CompressedFrameSize(CID, SPL, ALPF*(SST?2:1))*8*FrameRate, 0);
+    if (FFC_FirstFrame!=(int8u)-1) //VBR flag parsed
+    {
+        Fill(Stream_Video, 0, Video_BitRate_Mode, VBR?"VBR":"CBR");
+        if (!VBR && FrameRate && Vc3_CompressedFrameSize(CID, SPL, ALPF*(SST?2:1)))
+            Fill(Stream_Video, 0, Video_BitRate, Vc3_CompressedFrameSize(CID, SPL, ALPF*(SST?2:1))*8*FrameRate, 0);
+    }
     Fill(Stream_Video, 0, Video_Format_Version, __T("Version ")+Ztring::ToZtring(HVN));
     Fill(Stream_Video, 0, Video_Format_Profile, string(Vc3_FromCID_Profile(CID))+'@'+Vc3_FromCID_Level(CID));
     if (FFC_FirstFrame!=(int8u)-1)
