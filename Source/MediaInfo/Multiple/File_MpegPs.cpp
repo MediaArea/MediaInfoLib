@@ -467,7 +467,10 @@ void File_MpegPs::Streams_Fill_PerStream_PerKind(size_t StreamID, ps_stream &Tem
             Fill(StreamKind_Last, StreamPos, Fill_Parameter(StreamKind_Last, Generic_Delay_Original_Settings), Retrieve(StreamKind_Last, StreamPos, Fill_Parameter(StreamKind_Last, Generic_Delay_Settings)), true);
             Clear(StreamKind_Last, StreamPos, Fill_Parameter(StreamKind_Last, Generic_Delay_Settings));
 
-            Fill(StreamKind_Last, StreamPos, Fill_Parameter(StreamKind_Last, Generic_Delay), ((float64)Temp.TimeStamp_Start.PTS.TimeStamp)/90, 6, true);
+            int64u Delay=Temp.TimeStamp_Start.PTS.TimeStamp;
+            if (Config->File_MpegPs_PTS_Begin_IsNearZero && Delay>0x100000000LL)
+                Delay=0; //Time stamp below 0, in the upper half of the 33-bit range, negative delays are not supported
+            Fill(StreamKind_Last, StreamPos, Fill_Parameter(StreamKind_Last, Generic_Delay), ((float64)Delay)/90, 6, true);
             Fill(StreamKind_Last, StreamPos, Fill_Parameter(StreamKind_Last, Generic_Delay_Source), "Container");
         }
 
@@ -1555,15 +1558,13 @@ bool File_MpegPs::Header_Parse_PES_packet(int8u stream_id)
 }
 
 //---------------------------------------------------------------------------
-void File_MpegPs::TimeStamp_NegativeToZero(int64u& TimeStamp)
+void File_MpegPs::TimeStamp_BeginNearZero_Test(int64u TimeStamp)
 {
     if (!Config->File_MpegPs_PTS_Begin_IsNearZero && Frame_Count<16)
     {
         if (TimeStamp<90000 || TimeStamp>0x200000000LL-90000) // 1 second before and after
             Config->File_MpegPs_PTS_Begin_IsNearZero=true;
     }
-    if (Config->File_MpegPs_PTS_Begin_IsNearZero && TimeStamp>0x100000000LL)
-        TimeStamp=0; //TODO: find a better method for synchronizing streams, Hack in case DTS is negative (currently not supported by MI). TODO: negative DTS.
 }
 
 //---------------------------------------------------------------------------
@@ -1615,7 +1616,7 @@ void File_MpegPs::Header_Parse_PES_packet_MPEG1(int8u stream_id)
                 FrameInfo.PTS=(((int64u)PTS_32)<<30)
                             | (((int64u)PTS_29)<<15)
                             | (((int64u)PTS_14));
-                TimeStamp_NegativeToZero(FrameInfo.PTS);
+                TimeStamp_BeginNearZero_Test(FrameInfo.PTS);
             }
 
         if (Streams[stream_id].Searching_TimeStamp_End && stream_id!=0xBD && stream_id!=0xFD) //0xBD and 0xFD can contain multiple streams, TimeStamp management is in Streams management
@@ -1670,7 +1671,7 @@ void File_MpegPs::Header_Parse_PES_packet_MPEG1(int8u stream_id)
                 FrameInfo.PTS=(((int64u)PTS_32)<<30)
                             | (((int64u)PTS_29)<<15)
                             | (((int64u)PTS_14));
-                TimeStamp_NegativeToZero(FrameInfo.PTS);
+                TimeStamp_BeginNearZero_Test(FrameInfo.PTS);
             }
 
         if (Streams[stream_id].Searching_TimeStamp_End)
@@ -1715,7 +1716,7 @@ void File_MpegPs::Header_Parse_PES_packet_MPEG1(int8u stream_id)
         FrameInfo.DTS=(((int64u)DTS_32)<<30)
                     | (((int64u)DTS_29)<<15)
                     | (((int64u)DTS_14));
-        TimeStamp_NegativeToZero(FrameInfo.DTS);
+        TimeStamp_BeginNearZero_Test(FrameInfo.DTS);
 
         if (Streams[stream_id].Searching_TimeStamp_End)
         {
@@ -1851,7 +1852,7 @@ void File_MpegPs::Header_Parse_PES_packet_MPEG2(int8u stream_id)
                     FrameInfo.PTS=(((int64u)PTS_32)<<30)
                                 | (((int64u)PTS_29)<<15)
                                 | (((int64u)PTS_14));
-                    TimeStamp_NegativeToZero(FrameInfo.PTS);
+                    TimeStamp_BeginNearZero_Test(FrameInfo.PTS);
                 }
             Element_Info_From_Milliseconds(float64_int64s(((float64)FrameInfo.PTS)/90));
             Element_End0();
@@ -1880,7 +1881,7 @@ void File_MpegPs::Header_Parse_PES_packet_MPEG2(int8u stream_id)
                     FrameInfo.PTS=                                  ((((int64u)Buffer[Buffer_Pos  ]&0x0E))<<29)
                       | ( ((int64u)Buffer[Buffer_Pos+1]      )<<22)|((((int64u)Buffer[Buffer_Pos+2]&0xFE))<<14)
                       | ( ((int64u)Buffer[Buffer_Pos+3]      )<< 7)|((((int64u)Buffer[Buffer_Pos+4]&0xFE))>> 1);
-                    TimeStamp_NegativeToZero(FrameInfo.PTS);
+                    TimeStamp_BeginNearZero_Test(FrameInfo.PTS);
                 }
             Element_Offset+=5;
         #if MEDIAINFO_TRACE
@@ -1941,7 +1942,7 @@ void File_MpegPs::Header_Parse_PES_packet_MPEG2(int8u stream_id)
                     FrameInfo.PTS=(((int64u)PTS_32)<<30)
                                 | (((int64u)PTS_29)<<15)
                                 | (((int64u)PTS_14));
-                    TimeStamp_NegativeToZero(FrameInfo.PTS);
+                    TimeStamp_BeginNearZero_Test(FrameInfo.PTS);
                 }
             Element_Info_From_Milliseconds(float64_int64s(((float64)FrameInfo.PTS)/90));
             Element_End0();
@@ -1969,7 +1970,7 @@ void File_MpegPs::Header_Parse_PES_packet_MPEG2(int8u stream_id)
                     FrameInfo.PTS=                                  ((((int64u)Buffer[Buffer_Pos  ]&0x0E))<<29)
                       | ( ((int64u)Buffer[Buffer_Pos+1]      )<<22)|((((int64u)Buffer[Buffer_Pos+2]&0xFE))<<14)
                       | ( ((int64u)Buffer[Buffer_Pos+3]      )<< 7)|((((int64u)Buffer[Buffer_Pos+4]&0xFE))>> 1);
-                    TimeStamp_NegativeToZero(FrameInfo.PTS);
+                    TimeStamp_BeginNearZero_Test(FrameInfo.PTS);
                 }
             Element_Offset+=5;
         #if MEDIAINFO_TRACE
@@ -2019,7 +2020,7 @@ void File_MpegPs::Header_Parse_PES_packet_MPEG2(int8u stream_id)
             FrameInfo.DTS=(((int64u)DTS_32)<<30)
                         | (((int64u)DTS_29)<<15)
                         | (((int64u)DTS_14));
-            TimeStamp_NegativeToZero(FrameInfo.DTS);
+            TimeStamp_BeginNearZero_Test(FrameInfo.DTS);
             Element_Info_From_Milliseconds(float64_int64s(((float64)FrameInfo.DTS)/90));
             Element_End0();
             Element_End0();
@@ -2043,7 +2044,7 @@ void File_MpegPs::Header_Parse_PES_packet_MPEG2(int8u stream_id)
             FrameInfo.DTS=                                  ((((int64u)Buffer[Buffer_Pos  ]&0x0E))<<29)
               | ( ((int64u)Buffer[Buffer_Pos+1]      )<<22)|((((int64u)Buffer[Buffer_Pos+2]&0xFE))<<14)
               | ( ((int64u)Buffer[Buffer_Pos+3]      )<< 7)|((((int64u)Buffer[Buffer_Pos+4]&0xFE))>> 1);
-            TimeStamp_NegativeToZero(FrameInfo.DTS);
+            TimeStamp_BeginNearZero_Test(FrameInfo.DTS);
             Element_Offset+=5;
         #if MEDIAINFO_TRACE
         }

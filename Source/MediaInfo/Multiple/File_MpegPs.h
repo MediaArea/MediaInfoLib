@@ -128,7 +128,7 @@ private :
     void Header_Parse();
     bool Header_Parse_Fill_Size();
     bool Header_Parse_PES_packet(int8u stream_id);
-    void TimeStamp_NegativeToZero(int64u& TimeStamp); //At the beginning of a stream near zero, a time stamp in the upper half of the 33-bit range is negative
+    void TimeStamp_BeginNearZero_Test(int64u TimeStamp); //At the beginning of a stream near zero, a time stamp in the upper half of the 33-bit range is below 0
     void Header_Parse_PES_packet_MPEG1(int8u stream_id);
     void Header_Parse_PES_packet_MPEG2(int8u stream_id);
     void Data_Parse();
