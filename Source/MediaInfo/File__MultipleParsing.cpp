@@ -646,9 +646,6 @@ File__MultipleParsing::File__MultipleParsing()
     #if defined(MEDIAINFO_VC1_YES)
         Parser.push_back(new File_Vc1());
     #endif
-    #if defined(MEDIAINFO_VC3_YES)
-        //Parser.push_back(new File_Vc3());
-    #endif
     #if defined(MEDIAINFO_Y4M_YES)
         Parser.push_back(new File_Y4m());
     #endif
@@ -896,6 +893,9 @@ File__MultipleParsing::File__MultipleParsing()
     #endif
     #if defined(MEDIAINFO_ICC_YES)
         Parser.push_back(new File_Icc());
+    #endif
+    #if defined(MEDIAINFO_VC3_YES)
+        Parser.push_back(new File_Vc3());
     #endif
 }
 

@@ -543,6 +543,38 @@ void File_Vc3::Streams_Finish()
 }
 
 //***************************************************************************
+// Buffer - File header
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+bool File_Vc3::FileHeader_Begin()
+{
+    //No magic number: header prefix and image size of the known versions tested as FFmpeg does (Header_Parse() tests the compression ID if not in a container)
+    if (Buffer_Size<0x1C)
+        return false; //Must wait for more data
+    int32u HeaderSize=BigEndian2int32u(Buffer);
+    int8u HeaderVersion=Buffer[4];
+    bool IsValid;
+    switch (HeaderVersion)
+    {
+        case 0 : IsValid=false; break;
+        case 1 :
+        case 2 : IsValid=HeaderSize==0x280; break;
+        case 3 : IsValid=HeaderSize>=0x280 && HeaderSize<=0x2170 && !(HeaderSize%4); break;
+        default: IsValid=HeaderSize>=0x280 && HeaderSize<=0xFFFF; //Later versions: only the header prefix is known (2 zero bytes, then the header size)
+    }
+    if (IsValid && HeaderVersion<=3)
+        IsValid=BigEndian2int16u(Buffer+0x18) && BigEndian2int16u(Buffer+0x1A);
+    if (!IsValid)
+    {
+        Reject("VC-3");
+        return false;
+    }
+
+    return true;
+}
+
+//***************************************************************************
 // Buffer - Demux
 //***************************************************************************
 
