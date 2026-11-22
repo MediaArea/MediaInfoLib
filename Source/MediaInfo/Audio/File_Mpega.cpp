@@ -476,6 +476,8 @@ void File_Mpega::Streams_Finish()
             VBR_FileSize-=File_BeginTagSize;
             VBR_FileSize-=File_EndTagSize;
         }
+        if (VBR_FileSize>File_BeginPaddingSize)
+            VBR_FileSize-=File_BeginPaddingSize; //Zero bytes at the beginning of the file, added to the general stream size by the tags helper
     }
 
     //VBR detection without header

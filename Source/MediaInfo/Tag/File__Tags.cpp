@@ -54,6 +54,7 @@ File__Tags_Helper::File__Tags_Helper()
     File_BeginTagSize=0;
     File_EndTagSize=0;
     NotZero_Offset=(int64u)-1;
+    File_BeginPaddingSize=0;
 
     //Temp
     Parser=NULL;
@@ -70,6 +71,7 @@ File__Tags_Helper::File__Tags_Helper()
     ApeTag_Size=0;
     Id3v2_Size=0;
     TagSizeIsFinal=false;
+    BeginPaddingSizeIsFinal=false;
     SearchingForEndTags=false;
     SkippingUpToEnd=false;
 }
@@ -121,9 +123,9 @@ void File__Tags_Helper::Streams_Finish()
 
     if (!Base->IsSub)
     {
-        Base->Fill(Stream_General, 0, General_StreamSize, TagsSize+Base->Retrieve(Stream_General, 0, General_StreamSize).To_int64u(), 10, true);
+        Base->Fill(Stream_General, 0, General_StreamSize, TagsSize+File_BeginPaddingSize+Base->Retrieve(Stream_General, 0, General_StreamSize).To_int64u(), 10, true);
         if (Base->File_Size!=(int64u)-1 && Base->Retrieve(Stream_Audio, 0, Audio_StreamSize).empty())
-            Base->Fill(Stream_Audio, 0, Audio_StreamSize, Base->File_Size-TagsSize);
+            Base->Fill(Stream_Audio, 0, Audio_StreamSize, Base->File_Size-TagsSize-File_BeginPaddingSize);
     }
 }
 
@@ -211,11 +213,17 @@ bool File__Tags_Helper::Synchronize_TagsAndPadding(bool &Tag_Found)
         size_t Buffer_Offset_BeforePadding=Base->Buffer_Offset;
         while (Base->Buffer_Offset<Base->Buffer_Size && Base->Buffer[Base->Buffer_Offset]==0x00)
             Base->Buffer_Offset++;
+        if (!BeginPaddingSizeIsFinal)
+            File_BeginPaddingSize+=Base->Buffer_Offset-Buffer_Offset_BeforePadding;
         if (Base->Buffer_Offset==Buffer_Offset_BeforePadding)
             break; //Tags after zero bytes are tested as tags at the start, they are neither other data before a single frame nor lost bytes
     }
-    if (NotZero_Offset==(int64u)-1 && Base->Buffer_Offset<Base->Buffer_Size)
-        NotZero_Offset=Base->File_Offset+Base->Buffer_Offset;
+    if (Base->Buffer_Offset<Base->Buffer_Size)
+    {
+        if (NotZero_Offset==(int64u)-1)
+            NotZero_Offset=Base->File_Offset+Base->Buffer_Offset;
+        BeginPaddingSizeIsFinal=true; //The next zero bytes are after other data
+    }
     return true;
 }
 
