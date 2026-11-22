@@ -767,7 +767,9 @@ bool File__Tags_Helper::DetectBeginOfEndTags_Test()
             if (CC8(Base->Buffer+((size_t)((Base->File_Size-File_EndTagSize-32)-Base->File_Offset)))==CC8("APETAGEX"))
             {
                 ApeTag_Size=LittleEndian2int32u(Base->Buffer+((size_t)((Base->File_Size-File_EndTagSize-32+12)-Base->File_Offset)));
-                if (LittleEndian2int32u(Base->Buffer+((size_t)((Base->File_Size-File_EndTagSize-32+8)-Base->File_Offset)))==2000)
+                if (ApeTag_Size<32 || LastTag_End+ApeTag_Size>Base->File_Size-File_EndTagSize)
+                    ApeTag_Size=32; //Malformed size, the footer alone
+                else if (LittleEndian2int32u(Base->Buffer+((size_t)((Base->File_Size-File_EndTagSize-32+8)-Base->File_Offset)))==2000 && ApeTag_Size+32<=Base->File_Size-File_EndTagSize)
                     ApeTag_Size+=32;
                 File_EndTagSize+=ApeTag_Size;
                 ApeTag_Offset=Base->File_Size-File_EndTagSize;
