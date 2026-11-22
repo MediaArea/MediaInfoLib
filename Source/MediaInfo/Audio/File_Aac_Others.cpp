@@ -32,6 +32,9 @@ using namespace std;
 namespace MediaInfoLib
 {
 
+//---------------------------------------------------------------------------
+extern int8u Aac_AudioSpecificConfig_sampling_frequency_index(const int64s sampling_frequency, bool usac);
+
 //***************************************************************************
 // Speech coding (HVXC)
 //***************************************************************************
@@ -452,9 +455,9 @@ void File_Aac::ALSSpecificConfig(size_t Start, size_t End)
         //Filling
         Infos["Channel(s)"].From_Number(channels+1);
 
-        //Forcing default confignuration (something weird in the example I have)
+        //The ALS configuration has priority over the generic one
         channelConfiguration=0;
-        sampling_frequency_index=(int8u)-1;
+        sampling_frequency_index=Aac_AudioSpecificConfig_sampling_frequency_index(samp_freq, false);
         Frequency_b=samp_freq;
     FILLING_END();
 }
