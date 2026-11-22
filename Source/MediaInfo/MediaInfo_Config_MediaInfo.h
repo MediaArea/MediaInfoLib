@@ -433,6 +433,7 @@ public :
     #endif //defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
     #if defined(MEDIAINFO_MPEGPS_YES)
     bool          File_MpegPs_PTS_Begin_IsNearZero;
+    bool          File_MpegPs_PTS_Begin_IsBelowZero;
     #endif //defined(MEDIAINFO_MPEGPS_YES)
     int64u        File_Current_Offset;
     int64u        File_Current_Size;

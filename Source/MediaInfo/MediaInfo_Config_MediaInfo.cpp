@@ -279,6 +279,7 @@ MediaInfo_Config_MediaInfo::MediaInfo_Config_MediaInfo()
     #endif //defined(MEDIAINFO_EIA608_YES) || defined(MEDIAINFO_EIA708_YES)
     #if defined(MEDIAINFO_MPEGPS_YES)
     File_MpegPs_PTS_Begin_IsNearZero=false;
+    File_MpegPs_PTS_Begin_IsBelowZero=false;
     #endif //defined(MEDIAINFO_MPEGPS_YES)
     File_Current_Offset=0;
     File_Current_Size=(int64u)-1;
