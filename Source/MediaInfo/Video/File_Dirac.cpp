@@ -428,6 +428,16 @@ void Dirac_base_video_format(int32u   base_video_format,
     }
 }
 
+//---------------------------------------------------------------------------
+// Compression mode of a picture, the highest one of the parsed pictures is kept
+enum dirac_compression_mode : int8u
+{
+    Dirac_CompressionMode_None,
+    Dirac_CompressionMode_Lossless, //Quantisers of 0
+    Dirac_CompressionMode_Unknown,  //Quantisation indexes not read
+    Dirac_CompressionMode_Lossy,
+};
+
 //***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
@@ -475,6 +485,10 @@ void File_Dirac::Streams_Fill()
 //---------------------------------------------------------------------------
 void File_Dirac::Streams_Finish()
 {
+    //Lossless only if every picture is parsed, an encoder with a rate control codes simple pictures (e.g. black) without quantisation in a lossy stream
+    if (Compression_Mode==Dirac_CompressionMode_Lossy || (Compression_Mode==Dirac_CompressionMode_Lossless && Config->ParseSpeed>=1))
+        Fill(Stream_Video, 0, Video_Compression_Mode, Compression_Mode==Dirac_CompressionMode_Lossless?"Lossless":"Lossy", Unlimited, true, true);
+
     //Purge what is not needed anymore
     if (!File_Name.empty()) //Only if this is not a buffer, with buffer we can have more data
         Streams.clear();
@@ -556,9 +570,11 @@ bool File_Dirac::Synched_Test()
 void File_Dirac::Synched_Init()
 {
     //Temp
+    Next_Parse_Offset=0;
     version_major=0;
     IsVc2=false;
     HasDiracOnlyPicture=false;
+    Compression_Mode=Dirac_CompressionMode_None;
     Dirac_base_video_format((int32u)-1, frame_width, frame_height, chroma_format, source_sampling,
                             clean_width, clean_height, clean_left_offset, clean_top_offset,
                             frame_rate, pixel_aspect_ratio);
@@ -576,7 +592,7 @@ void File_Dirac::Synched_Init()
 void File_Dirac::Header_Parse()
 {
     //Parsing
-    int32u Next_Parse_Offset, Previous_Parse_Offset;
+    int32u Previous_Parse_Offset;
     int8u  Parse_Code;
     Skip_C4(                                                    "Parse Info Prefix");
     Get_B1 (Parse_Code,                                         "Parse Code");
@@ -1009,12 +1025,18 @@ void File_Dirac::Reserved()
 }
 
 //---------------------------------------------------------------------------
-void File_Dirac::picture()
+void File_Dirac::picture(bool IsFragment)
 {
     //Parsing
+    int8u Mode=Dirac_CompressionMode_Unknown;
+    if (!IsFragment && !(Element_Code&0x03) && version_major<=3) //Quantisation indexes of inter pictures are after the motion data, not read
+        Mode=picture_Compression_Mode();
     Skip_XX(Element_Size-Element_Offset,                        "Data");
 
     FILLING_BEGIN();
+        if (Compression_Mode<Mode)
+            Compression_Mode=Mode;
+
         //Counting
         if (File_Offset+Buffer_Offset+Element_Size==File_Size)
             Frame_Count_Valid=Frame_Count; //Finalize frames in case of there are less than Frame_Count_Valid frames
@@ -1051,7 +1073,185 @@ void File_Dirac::picture_fragment()
     }
 
     //First fragment of a picture, with its transform parameters
-    picture();
+    picture(true);
+}
+
+//---------------------------------------------------------------------------
+// Compression mode from the quantisation indexes, read without decoding the coefficients
+// Read without the element functions: a picture not as expected is accepted as before, the parser synchronizing again only on a sequence header
+int8u File_Dirac::picture_Compression_Mode()
+{
+    const int8u* Data=Buffer+Buffer_Offset+(size_t)Element_Offset;
+    int64u Data_Size=Element_Size-Element_Offset;
+    int64u BitPos=4*8, BitSize=Data_Size*8; //After the picture number
+    bool IsComplete=Next_Parse_Offset==Header_Size+Element_Size; //Else the data unit is cut or its size is unknown, and a count bigger than its data is not malformed
+    auto GetBit=[&]() -> bool {
+        if (BitPos>=BitSize)
+        {
+            BitPos=BitSize+1; //Out of data, ending the codes
+            return true;
+        }
+        bool Value=(Data[(size_t)(BitPos>>3)]>>(7-(BitPos&7)))&1;
+        BitPos++;
+        return Value;
+    };
+    auto GetUInt=[&]() -> int32u {
+        int32u Value=1;
+        while (!GetBit())
+        {
+            Value<<=1;
+            if (GetBit())
+                Value++;
+        }
+        return Value-1;
+    };
+    auto Align=[&]() {
+        BitPos=(BitPos+7)&~(int64u)7;
+    };
+    auto Remain=[&]() -> int64u {
+        return BitPos<BitSize?BitSize-BitPos:0;
+    };
+    auto Loop_IsOK=[&](int64u Count, int64u RemainingSize, int64u MinBlockSize, const char* Name) -> bool {
+        if (BitPos>BitSize) //Out of data, the count is not from the stream
+            return false;
+        if (!IsComplete)
+            return Count<=RemainingSize/MinBlockSize;
+        int64u Count_Max=Count;
+        Loop_CheckValue(Count_Max, RemainingSize, MinBlockSize, Name);
+        return Count_Max==Count;
+    };
+
+    //Picture header
+    if ((Element_Code&0x0C)==0x0C) //Retired picture of a reference picture
+    {
+        if (GetUInt())
+            GetBit();
+        Align();
+    }
+
+    //Transform parameters
+    GetUInt(); //Wavelet index
+    int32u dwt_depth=GetUInt(), dwt_depth_ho=0, slices_x=0, slices_y=0, slice_bytes_numerator=0, slice_bytes_denominator=0, slice_prefix_bytes=0, slice_size_scaler=0, quant_matrix_min=0;
+    if (version_major>=3)
+    {
+        if (GetBit())
+            GetUInt(); //Horizontal only wavelet index
+        if (GetBit())
+            dwt_depth_ho=GetUInt();
+    }
+    bool IsSliced=(Element_Code&0x88)==0x88; //Low delay or high quality
+    if (!IsSliced)
+    {
+        if (GetBit()) //Spatial partition
+        {
+            int64u Levels=(int64u)dwt_depth+1;
+            if (!Loop_IsOK(Levels, Remain(), 2, "codeblocks"))
+                return Dirac_CompressionMode_Unknown;
+            for (int64u Level=0; Level<Levels; Level++)
+            {
+                GetUInt();
+                GetUInt();
+            }
+            if (GetUInt()) //Codeblock mode 1, quantisation offsets of the codeblocks are in the coefficient data
+                return Dirac_CompressionMode_Unknown;
+        }
+    }
+    else
+    {
+        slices_x=GetUInt();
+        slices_y=GetUInt();
+        if (Element_Code&0x20) //High quality
+        {
+            slice_prefix_bytes=GetUInt();
+            slice_size_scaler=GetUInt();
+        }
+        else
+        {
+            slice_bytes_numerator=GetUInt();
+            slice_bytes_denominator=GetUInt();
+        }
+        if (GetBit()) //Custom quantisation matrix
+        {
+            int64u Values=1+(int64u)dwt_depth_ho+3*(int64u)dwt_depth;
+            if (!Loop_IsOK(Values, Remain(), 1, "quant_matrix"))
+                return Dirac_CompressionMode_Unknown;
+            quant_matrix_min=(int32u)-1;
+            for (int64u Pos=0; Pos<Values; Pos++)
+            {
+                int32u Value=GetUInt();
+                if (quant_matrix_min>Value)
+                    quant_matrix_min=Value;
+            }
+        }
+    }
+    Align();
+    if (BitPos>BitSize)
+        return Dirac_CompressionMode_Unknown;
+
+    //Transform data, the quantiser of a subband or a slice is its index minus the quantisation matrix value
+    //A picture whose indexes are not all read is unknown, also with a lossy index read before, which may come from data shifted by a lost packet
+    int8u Mode=Dirac_CompressionMode_None;
+    auto QuantIndex=[&](int32u Value) {
+        if (Value>quant_matrix_min)
+            Mode=Dirac_CompressionMode_Lossy;
+        else if (Mode==Dirac_CompressionMode_None)
+            Mode=Dirac_CompressionMode_Lossless;
+    };
+    if (!IsSliced)
+    {
+        int64u Subbands=3*(1+3*(int64u)dwt_depth);
+        if (!Loop_IsOK(Subbands, Remain()/8, 1, "subbands"))
+            return Dirac_CompressionMode_Unknown;
+        for (int64u Pos=0; Pos<Subbands; Pos++)
+        {
+            int32u length=GetUInt();
+            int32u quant_index=length?GetUInt():0;
+            Align();
+            if ((int64u)length*8>Remain() || BitPos>BitSize)
+                return Dirac_CompressionMode_Unknown;
+            if (length)
+                QuantIndex(quant_index);
+            BitPos+=(int64u)length*8;
+        }
+    }
+    else
+    {
+        Data+=(size_t)(BitPos/8);
+        Data_Size-=BitPos/8;
+        int64u Slices=(int64u)slices_x*slices_y;
+        if (Element_Code&0x20) //High quality, prefix bytes, a quantisation index, then for each component a length of 1 byte and the data
+        {
+            if (!Loop_IsOK(Slices, Data_Size, (int64u)slice_prefix_bytes+4, "slices"))
+                return Dirac_CompressionMode_Unknown;
+            int64u Offset=0;
+            for (int64u Pos=0; Pos<Slices; Pos++)
+            {
+                int64u QuantIndex_Offset=Offset+slice_prefix_bytes;
+                Offset=QuantIndex_Offset+1;
+                int8u Component=0;
+                for (; Component<3 && Offset<Data_Size; Component++)
+                    Offset+=1+(int64u)slice_size_scaler*Data[(size_t)Offset];
+                if (Component<3 || Offset>Data_Size)
+                    return Dirac_CompressionMode_Unknown;
+                QuantIndex(Data[(size_t)QuantIndex_Offset]);
+            }
+        }
+        else if (slice_bytes_denominator && slice_bytes_numerator>=slice_bytes_denominator) //Low delay, slices of 1 byte or more with a quantisation index of 7 bits at their start
+        {
+            if (!Loop_IsOK(Slices, Data_Size, slice_bytes_numerator/slice_bytes_denominator, "slices"))
+                return Dirac_CompressionMode_Unknown;
+            for (int64u Pos=0; Pos<Slices; Pos++)
+            {
+                if ((Pos+1)*slice_bytes_numerator/slice_bytes_denominator>Data_Size)
+                    return Dirac_CompressionMode_Unknown;
+                QuantIndex(Data[(size_t)(Pos*slice_bytes_numerator/slice_bytes_denominator)]>>1);
+            }
+        }
+    }
+
+    if (Mode==Dirac_CompressionMode_None)
+        Mode=Dirac_CompressionMode_Unknown;
+    return Mode;
 }
 
 //***************************************************************************
