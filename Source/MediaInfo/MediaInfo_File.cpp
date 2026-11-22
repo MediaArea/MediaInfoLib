@@ -726,6 +726,9 @@ static File__Analyze* SelectFromExtension(const String& Parser)
     #if defined(MEDIAINFO_LA_YES)
         if (Parser==__T("La"))          return new File_La();
     #endif
+    #if defined(MEDIAINFO_AAC_YES)
+        if (Parser==__T("Latm"))       {auto Parser=new File_Aac(); Parser->Mode=File_Aac::Mode_LATM; return Parser;}
+    #endif
     #if defined(MEDIAINFO_MIDI_YES)
         if (Parser==__T("Midi"))        return new File_Midi();
     #endif
