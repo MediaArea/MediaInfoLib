@@ -1282,6 +1282,7 @@ File_Ac3::File_Ac3()
 File_Ac3::~File_Ac3()
 {
     delete[] addbsi_Buffer;
+    delete[] Save_Buffer; //Byte swapped copy of a little endian frame
 }
 
 //***************************************************************************

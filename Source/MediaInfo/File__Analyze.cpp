@@ -2733,14 +2733,18 @@ bool File__Analyze::Synchro_Manage()
             GoToFromEnd(0);
             return false;
         }
-        if (!Synchronize())
+        int64u Synchro_Start=Buffer_TotalBytes+Buffer_Offset;
+        bool Synchro_Result=Synchronize();
+        if (!Synchro_Result && Status[IsFinished])
+            Finish(); //Finish
+        //Before the first synchronization, the limit is tested where the search starts: a search started before it may wait for more data after it (e.g. at a candidate), the next search is rejected if it goes further than where it starts
+        if (!IsSub && !Status[IsAccepted] && (File_Offset_FirstSynched==(int64u)-1?(Synchro_Start>=Buffer_TotalBytes_FirstSynched_Max && Buffer_TotalBytes+Buffer_Offset>Synchro_Start):(!Synchro_Result && Buffer_TotalBytes+Buffer_Offset>=Buffer_TotalBytes_FirstSynched_Max)))
         {
-            if (Status[IsFinished])
-                Finish(); //Finish
-            if (!IsSub && !Status[IsAccepted] && Buffer_TotalBytes+Buffer_Offset>=Buffer_TotalBytes_FirstSynched_Max)
-                Reject();
-            return false; //Wait for more data
+            Reject();
+            return false;
         }
+        if (!Synchro_Result)
+            return false; //Wait for more data
         Synched=true;
         if (!IsSub)
         {

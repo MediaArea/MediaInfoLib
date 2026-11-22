@@ -1305,6 +1305,12 @@ File_Dts::File_Dts()
     Core_XXCH_nuNumChSetsInXXCH=0;
 }
 
+//---------------------------------------------------------------------------
+File_Dts::~File_Dts()
+{
+    delete[] Save_Buffer; //Converted copy of a little endian or 14-bit frame
+}
+
 //***************************************************************************
 // Streams management
 //***************************************************************************
