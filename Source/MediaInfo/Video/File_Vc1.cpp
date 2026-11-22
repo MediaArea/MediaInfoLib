@@ -811,7 +811,8 @@ void File_Vc1::FrameHeader()
             }
         }
         Param_Info1(Vc1_PictureFormat[PictureFormat]);
-        PictureFormat_Count[PictureFormat]++;
+        if (Element_IsOK()) //Not for a frame header ending before its frame coding mode
+            PictureFormat_Count[PictureFormat]++;
 
         if (PictureFormat==2) //Interlaced Field
         {
@@ -862,6 +863,9 @@ void File_Vc1::FrameHeader()
             {
                 Get_SB (tff,                                    "tff - top field first");
                 Get_SB (rff,                                    "rff - repeat first field");
+            }
+            if (pulldown && Element_IsOK()) //Not for a truncated frame header
+            {
                 if (tff)
                     Interlaced_Top++;
                 else
