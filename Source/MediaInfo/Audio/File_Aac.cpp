@@ -97,6 +97,7 @@ File_Aac::File_Aac()
     //Temp - Main
     muxConfigPresent=true;
     audioMuxVersionA=false;
+    StreamMuxConfig_IsUnknown=false;
     numSubFrames=0;
     streamCnt=0;
     for (size_t i=0; i<128; i++)

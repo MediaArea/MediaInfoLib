@@ -198,6 +198,7 @@ protected :
     int8u   streamCnt;
     int8u   numChunk;
     bool    audioMuxVersionA;
+    bool    StreamMuxConfig_IsUnknown; //A part of StreamMuxConfig is not known, the next fields are not parsed
     int8u   streamID[16][8];
     int8u   progSIndx[128];
     int8u   laySIndx[128];
