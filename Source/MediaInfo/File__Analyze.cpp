@@ -699,6 +699,7 @@ File__Analyze::File__Analyze ()
         Buffer_TotalBytes_Fill_Max=(int64u)-1;
     Buffer_PaddingBytes=0;
     Buffer_JunkBytes=0;
+    Buffer_NotStreamBytes=0;
     Stream_BitRateFromContainer=0;
 
     //Synchro
@@ -4359,7 +4360,10 @@ void File__Analyze::ForceFinish (const char* ParserName_Char)
         if (StreamKind_Last==Stream_Text)
             StreamKind_Last=Stream_Video;
 
-        Fill(StreamKind_Last, 0, "StreamSize", Buffer_TotalBytes, 10, true);
+        int64u StreamSize=Buffer_TotalBytes;
+        if (Buffer_NotStreamBytes && File_Size!=(int64u)-1 && File_Size>Buffer_NotStreamBytes)
+            StreamSize=File_Size-Buffer_NotStreamBytes;
+        Fill(StreamKind_Last, 0, "StreamSize", StreamSize, 10, true);
     }
 
     //Frame count
