@@ -769,7 +769,7 @@ bool File__Tags_Helper::DetectBeginOfEndTags_Test()
                 ApeTag_Size=LittleEndian2int32u(Base->Buffer+((size_t)((Base->File_Size-File_EndTagSize-32+12)-Base->File_Offset)));
                 if (ApeTag_Size<32 || LastTag_End+ApeTag_Size>Base->File_Size-File_EndTagSize)
                     ApeTag_Size=32; //Malformed size, the footer alone
-                else if (LittleEndian2int32u(Base->Buffer+((size_t)((Base->File_Size-File_EndTagSize-32+8)-Base->File_Offset)))==2000 && ApeTag_Size+32<=Base->File_Size-File_EndTagSize)
+                else if (LittleEndian2int32u(Base->Buffer+((size_t)((Base->File_Size-File_EndTagSize-32+8)-Base->File_Offset)))!=1000 && (LittleEndian2int32u(Base->Buffer+((size_t)((Base->File_Size-File_EndTagSize-32+20)-Base->File_Offset)))&0x80000000) && LastTag_End+ApeTag_Size+32<=Base->File_Size-File_EndTagSize) //Contains a header, not in the tag size, APEv1 has no header
                     ApeTag_Size+=32;
                 File_EndTagSize+=ApeTag_Size;
                 ApeTag_Offset=Base->File_Size-File_EndTagSize;
