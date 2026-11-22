@@ -298,6 +298,7 @@ private :
     void moov_trak_mdia_minf_stbl_stsd_xxxx_mhaC();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_pasp();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_pcmC();
+    void moov_trak_mdia_minf_stbl_stsd_xxxx_pixi();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_SA3D();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_sinf();
     void moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_frma();
@@ -464,6 +465,7 @@ private :
     void Descriptors();
     void TimeCode_Associate(int32u TrackID);
     void AddCodecConfigurationBoxInfo();
+    int8u PixelInformation(int32u Flags);
 
     //Temp
     int128u                                 Name_UUID;
@@ -609,6 +611,8 @@ private :
         #endif //MEDIAINFO_DVDIF_ANALYZE_YES
         bool                    IsHevc; //The first parser is an HEVC one
         bool                    IsJpeg; //The first parser is a JPEG one
+        bool                    IsAv2; //The first parser is an AV2 one
+        int8u                   pixi_BitDepth; //Bit depth of all the channels of the pixel information box, 0 if none or if they differ
         bool                    IsPriorityStream;
         bool                    IsFilled;
         bool                    IsChapter;
@@ -719,6 +723,8 @@ private :
             #endif //MEDIAINFO_DVDIF_ANALYZE_YES
             IsHevc=false;
             IsJpeg=false;
+            IsAv2=false;
+            pixi_BitDepth=0;
             IsPriorityStream=false;
             IsFilled=false;
             IsChapter=false;
@@ -776,6 +782,7 @@ private :
             #endif //MEDIAINFO_DVDIF_ANALYZE_YES
             IsHevc=false;
             IsJpeg=false;
+            IsAv2=false;
         }
 
         void Parsers_Erase(size_t Pos)
@@ -788,6 +795,7 @@ private :
             #endif //MEDIAINFO_DVDIF_ANALYZE_YES
             IsHevc=false;
             IsJpeg=false;
+            IsAv2=false;
         }
     };
     typedef std::map<int32u, stream> streams;

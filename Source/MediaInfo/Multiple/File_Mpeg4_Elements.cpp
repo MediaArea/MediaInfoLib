@@ -750,6 +750,10 @@ static std::string Mpeg4_chan_ChannelBitmap (int32u ChannelBitmap)
 //---------------------------------------------------------------------------
 extern string Aac_ChannelLayout_GetString(int8u ChannelLayout, bool IsMpegh3da=false, bool IsTip=false);
 extern string Aac_OutputChannelPosition_GetString(int8u OutputChannelPosition);
+#if defined(MEDIAINFO_AV2_YES)
+    extern const char* Av2_seq_profile_idc(int8u seq_profile_idc);
+    extern const char* Av2_seq_level_idx(int8u seq_level_idx);
+#endif //defined(MEDIAINFO_AV2_YES)
 
 //---------------------------------------------------------------------------
 static const char* Mpeg4_jp2h_METH(int8u METH)
@@ -1104,6 +1108,7 @@ namespace Elements
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_mhaC=0x6D686143;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_pasp=0x70617370;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_pcmC=0x70636D43;
+    const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_pixi=0x70697869;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_SA3D=0x53413344;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_sinf=0x73696E66;
     const int64u moov_trak_mdia_minf_stbl_stsd_xxxx_sinf_frma=0x66726D61;
@@ -1562,6 +1567,7 @@ void File_Mpeg4::Data_Parse()
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_lhvC)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_pasp)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_pcmC)
+                                ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_pixi)
                                 ATOM(moov_trak_mdia_minf_stbl_stsd_xxxx_SA3D)
                                 LIST(moov_trak_mdia_minf_stbl_stsd_xxxx_sinf)
                                     ATOM_BEGIN
@@ -3396,10 +3402,9 @@ void File_Mpeg4::meta_iprp_ipco_pasp()
 }
 
 //---------------------------------------------------------------------------
-void File_Mpeg4::meta_iprp_ipco_pixi()
+//Common to the item property and to the box of a sample entry, returns the bit depth of all the channels (0 if they differ)
+int8u File_Mpeg4::PixelInformation(int32u Flags)
 {
-    NAME_VERSION_FLAG("Pixel Information", 0);
-
     //Parsing
     int8u num_channels;
     Get_B1 (num_channels,                                       "num_channels");
@@ -3412,10 +3417,50 @@ void File_Mpeg4::meta_iprp_ipco_pixi()
         Get_B1 (bits_per_channel,                               "bits_per_channel");
         bits_per_channel_List.insert(bits_per_channel);
     }
+    if (Flags&1) //Description of each channel
+    {
+        for (int8u Pos=0; Pos<num_channels; Pos++)
+        {
+            Element_Begin1("channel");
+            bool subsampling_flag, channel_label_flag;
+            BS_Begin();
+            Skip_S1(3,                                          "channel_idc");
+            Skip_SB(                                            "reserved");
+            Skip_S1(2,                                          "component_format");
+            Get_SB (   subsampling_flag,                        "subsampling_flag");
+            Get_SB (   channel_label_flag,                      "channel_label_flag");
+            if (subsampling_flag)
+            {
+                Skip_S1(4,                                      "subsampling_type");
+                Skip_S1(4,                                      "subsampling_location");
+            }
+            BS_End();
+            if (channel_label_flag)
+            {
+                Skip_UTF8(SizeUpTo0(),                          "channel_label");
+                Skip_B1(                                        "zero");
+            }
+            Element_End0();
+        }
+    }
+
+    return bits_per_channel_List.size()==1?*bits_per_channel_List.begin():0;
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::meta_iprp_ipco_pixi()
+{
+    NAME_VERSION_FLAG("Pixel Information", 0);
+
+    //Parsing
+    auto BitDepth=PixelInformation(Flags);
 
     FILLING_BEGIN_IPCO();
-        if (bits_per_channel_List.size()==1)
-            Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_BitDepth), *bits_per_channel_List.begin());
+        if (BitDepth)
+        {
+            Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_BitDepth), BitDepth);
+            Streams[moov_trak_tkhd_TrackID].pixi_BitDepth=BitDepth;
+        }
     FILLING_END_IPCO();
 }
 
@@ -8049,6 +8094,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
                     Parser->FrameIsAlwaysComplete=true;
                     Parser->IsAnnexB=true;
                     Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
+                    Streams[moov_trak_tkhd_TrackID].IsAv2=Streams[moov_trak_tkhd_TrackID].Parsers.size()==1;
                 }
             #endif
             #if defined(MEDIAINFO_AVC_YES)
@@ -8650,6 +8696,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_av2C()
         #endif //MEDIAINFO_DEMUX
         Open_Buffer_Init(Parser);
         Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
+        Streams[moov_trak_tkhd_TrackID].IsAv2=true;
         mdat_MustParse=true; //Data is in MDAT
 
         //Parsing
@@ -8666,13 +8713,44 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_av2c()
     AddCodecConfigurationBoxInfo();
 
     //Parsing
+    int8u max_profile_idc, max_level_idx;
+    bool max_tier;
     BS_Begin();
     Skip_S1(3,                                                  "reserved1");
-    Skip_S1(2,                                                  "max_num_streams_minus1");
-    Skip_S1(5,                                                  "max_profile_idc");
-    Skip_S1(5,                                                  "max_level_idx");
-    Skip_SB(                                                    "max_tier");
+    Info_S1(2, max_num_streams_minus1,                          "max_num_streams_minus1"); Param_Info2(max_num_streams_minus1+1, " streams");
+    Get_S1 (5, max_profile_idc,                                 "max_profile_idc");
+    #if defined(MEDIAINFO_AV2_YES)
+        Param_Info1(Av2_seq_profile_idc(max_profile_idc));
+    #endif //defined(MEDIAINFO_AV2_YES)
+    Get_S1 (5, max_level_idx,                                   "max_level_idx");
+    #if defined(MEDIAINFO_AV2_YES)
+        Param_Info1(Av2_seq_level_idx(max_level_idx));
+    #endif //defined(MEDIAINFO_AV2_YES)
+    Get_SB (   max_tier,                                        "max_tier");
     BS_End();
+
+    #if defined(MEDIAINFO_AV2_YES)
+    FILLING_BEGIN();
+        if (moov_trak_mdia_minf_stbl_stsd_Pos<=1) //Handling only the first description
+        {
+            //Profile and level of the stream if its sequence header is not parsed
+            string Format_Profile=Av2_seq_profile_idc(max_profile_idc);
+            Format_Profile+='@';
+            Format_Profile+=Av2_seq_level_idx(max_level_idx);
+            Fill(Stream_Video, StreamPos_Last, Video_Format_Profile, Format_Profile);
+
+            //Maximums checked with each sequence header
+            auto& Stream_Temp=Streams[moov_trak_tkhd_TrackID];
+            if (Stream_Temp.IsAv2)
+            {
+                auto Parser=(File_Av2*)Stream_Temp.Parsers[0];
+                Parser->InBand_max_profile_idc=max_profile_idc;
+                Parser->InBand_max_level_idx=max_level_idx;
+                Parser->InBand_max_tier=max_tier;
+            }
+        }
+    FILLING_END();
+    #endif //defined(MEDIAINFO_AV2_YES)
 }
 
 //---------------------------------------------------------------------------
@@ -10079,6 +10157,23 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_pcmC()
                 }
             }
         #endif //defined(MEDIAINFO_PCM_YES)
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_pixi()
+{
+    NAME_VERSION_FLAG("Pixel Information", 0);
+
+    //Parsing
+    auto BitDepth=PixelInformation(Flags);
+
+    FILLING_BEGIN();
+        if (BitDepth && moov_trak_mdia_minf_stbl_stsd_Pos<=1) //Handling only the first description
+        {
+            Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_BitDepth), BitDepth);
+            Streams[moov_trak_tkhd_TrackID].pixi_BitDepth=BitDepth;
+        }
     FILLING_END();
 }
 

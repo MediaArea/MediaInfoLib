@@ -504,6 +504,9 @@ void File_Mpeg4::Streams_Finish()
             moov_trak_tkhd_TrackID=Item.first;
             meta_CreateStream();
         }
+    #if MEDIAINFO_CONFORMANCE
+        conformance_errors pixi_Errors; //Pixel information boxes not matching the bit depth of their stream, filled once the streams are final
+    #endif //MEDIAINFO_CONFORMANCE
     streams::iterator Temp=Streams.begin();
     while (Temp!=Streams.end())
     {
@@ -1587,6 +1590,19 @@ void File_Mpeg4::Streams_Finish()
             }
         }
 
+        #if MEDIAINFO_CONFORMANCE
+            //Crosscheck of the pixel information box with the bit depth of the stream
+            if (Temp->second.pixi_BitDepth)
+            {
+                auto BitDepth=Retrieve_Const(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_BitDepth)).To_int8u();
+                if (BitDepth && BitDepth!=Temp->second.pixi_BitDepth)
+                {
+                    pixi_Errors.StreamID=Retrieve_Const(StreamKind_Last, StreamPos_Last, General_ID).To_UTF8();
+                    pixi_Errors.Add("MP4 pixi bits_per_channel does not match the bit depth of the stream (actual "+std::to_string(Temp->second.pixi_BitDepth)+", expected "+std::to_string(BitDepth)+')');
+                }
+            }
+        #endif //MEDIAINFO_CONFORMANCE
+
         ++Temp;
     }
 
@@ -1629,6 +1645,9 @@ void File_Mpeg4::Streams_Finish()
         }
     }
     Streams_Finish_Grid(Image_StreamPos, Grids);
+    #if MEDIAINFO_CONFORMANCE
+        Fill_Conformance_Specification("Crosscheck pixi bits_per_channel", string(), pixi_Errors);
+    #endif //MEDIAINFO_CONFORMANCE
     if (Vendor!=0x00000000 && Vendor!=0xFFFFFFFF)
     {
         Ztring VendorS=Mpeg4_Encoded_Library(Vendor);

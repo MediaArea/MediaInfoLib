@@ -113,7 +113,7 @@ static const char* Av2_obu_type(int8u obu_type)
 }
 
 //---------------------------------------------------------------------------
-static const char* Av2_seq_profile_idc(int8u seq_profile_idc)
+const char* Av2_seq_profile_idc(int8u seq_profile_idc)
 {
     switch (seq_profile_idc)
     {
@@ -128,7 +128,7 @@ static const char* Av2_seq_profile_idc(int8u seq_profile_idc)
 }
 
 //---------------------------------------------------------------------------
-static const char* Av2_seq_level_idx(int8u seq_level_idx)
+const char* Av2_seq_level_idx(int8u seq_level_idx)
 {
     switch (seq_level_idx)
     {
@@ -710,6 +710,17 @@ void File_Av2::sequence_header_obu()
 
         sequence_header_Parsed = true;
     }
+    #if MEDIAINFO_CONFORMANCE
+        //Crosscheck with the in-band configuration of the container: maximum profile, level and tier of the stream
+        if (InBand_max_profile_idc != (int8u)-1) {
+            if (seq_profile_idc > InBand_max_profile_idc)
+                Fill_Conformance("Crosscheck InBandAV2CodecConfigurationBox max_profile_idc", "MP4 InBandAV2CodecConfigurationBox max_profile_idc is less than AV2 sequence header seq_profile_idc (actual " + std::to_string(InBand_max_profile_idc) + ", expected >=" + std::to_string(seq_profile_idc) + ')');
+            if (seq_level_idx > InBand_max_level_idx)
+                Fill_Conformance("Crosscheck InBandAV2CodecConfigurationBox max_level_idx", "MP4 InBandAV2CodecConfigurationBox max_level_idx is less than AV2 sequence header seq_level_idx (actual " + std::to_string(InBand_max_level_idx) + ", expected >=" + std::to_string(seq_level_idx) + ')');
+            if (seq_tier && !InBand_max_tier)
+                Fill_Conformance("Crosscheck InBandAV2CodecConfigurationBox max_tier", "MP4 InBandAV2CodecConfigurationBox max_tier is less than AV2 sequence header seq_tier (actual 0, expected 1)");
+        }
+    #endif //MEDIAINFO_CONFORMANCE
     FILLING_END();
 }
 
