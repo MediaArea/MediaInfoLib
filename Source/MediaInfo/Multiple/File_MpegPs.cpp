@@ -1555,6 +1555,18 @@ bool File_MpegPs::Header_Parse_PES_packet(int8u stream_id)
 }
 
 //---------------------------------------------------------------------------
+void File_MpegPs::TimeStamp_NegativeToZero(int64u& TimeStamp)
+{
+    if (!Config->File_MpegPs_PTS_Begin_IsNearZero && Frame_Count<16)
+    {
+        if (TimeStamp<90000 || TimeStamp>0x200000000LL-90000) // 1 second before and after
+            Config->File_MpegPs_PTS_Begin_IsNearZero=true;
+    }
+    if (Config->File_MpegPs_PTS_Begin_IsNearZero && TimeStamp>0x100000000LL)
+        TimeStamp=0; //TODO: find a better method for synchronizing streams, Hack in case DTS is negative (currently not supported by MI). TODO: negative DTS.
+}
+
+//---------------------------------------------------------------------------
 // Packet header data - MPEG-1
 void File_MpegPs::Header_Parse_PES_packet_MPEG1(int8u stream_id)
 {
@@ -1603,13 +1615,7 @@ void File_MpegPs::Header_Parse_PES_packet_MPEG1(int8u stream_id)
                 FrameInfo.PTS=(((int64u)PTS_32)<<30)
                             | (((int64u)PTS_29)<<15)
                             | (((int64u)PTS_14));
-                if (!Config->File_MpegPs_PTS_Begin_IsNearZero && Frame_Count<16)
-                {
-                    if (FrameInfo.PTS<90000 || FrameInfo.PTS>0x200000000LL-90000) // 1 second before and after 
-                        Config->File_MpegPs_PTS_Begin_IsNearZero=true;
-                }
-                if (Config->File_MpegPs_PTS_Begin_IsNearZero && FrameInfo.PTS>0x100000000LL)
-                    FrameInfo.PTS=0; //TODO: find a better method for synchronizing streams, Hack in case DTS is negative (currently not supported by MI). TODO: negative DTS.
+                TimeStamp_NegativeToZero(FrameInfo.PTS);
             }
 
         if (Streams[stream_id].Searching_TimeStamp_End && stream_id!=0xBD && stream_id!=0xFD) //0xBD and 0xFD can contain multiple streams, TimeStamp management is in Streams management
@@ -1664,13 +1670,7 @@ void File_MpegPs::Header_Parse_PES_packet_MPEG1(int8u stream_id)
                 FrameInfo.PTS=(((int64u)PTS_32)<<30)
                             | (((int64u)PTS_29)<<15)
                             | (((int64u)PTS_14));
-                if (!Config->File_MpegPs_PTS_Begin_IsNearZero && Frame_Count<16)
-                {
-                    if (FrameInfo.PTS<90000 || FrameInfo.PTS>0x200000000LL-90000) // 1 second before and after 
-                        Config->File_MpegPs_PTS_Begin_IsNearZero=true;
-                }
-                if (Config->File_MpegPs_PTS_Begin_IsNearZero && FrameInfo.PTS>0x100000000LL)
-                    FrameInfo.PTS=0; //TODO: find a better method for synchronizing streams, Hack in case DTS is negative (currently not supported by MI). TODO: negative DTS.
+                TimeStamp_NegativeToZero(FrameInfo.PTS);
             }
 
         if (Streams[stream_id].Searching_TimeStamp_End)
@@ -1715,13 +1715,7 @@ void File_MpegPs::Header_Parse_PES_packet_MPEG1(int8u stream_id)
         FrameInfo.DTS=(((int64u)DTS_32)<<30)
                     | (((int64u)DTS_29)<<15)
                     | (((int64u)DTS_14));
-        if (!Config->File_MpegPs_PTS_Begin_IsNearZero && Frame_Count<16)
-        {
-            if (FrameInfo.DTS<90000 || FrameInfo.DTS>0x200000000LL-90000) // 1 second before and after 
-                Config->File_MpegPs_PTS_Begin_IsNearZero=true;
-        }
-        if (Config->File_MpegPs_PTS_Begin_IsNearZero && FrameInfo.DTS>0x100000000LL)
-            FrameInfo.DTS=0; //TODO: find a better method for synchronizing streams, Hack in case DTS is negative (currently not supported by MI). TODO: negative DTS.
+        TimeStamp_NegativeToZero(FrameInfo.DTS);
 
         if (Streams[stream_id].Searching_TimeStamp_End)
         {
@@ -1853,9 +1847,12 @@ void File_MpegPs::Header_Parse_PES_packet_MPEG2(int8u stream_id)
             #if defined(MEDIAINFO_ARIBSTDB24B37_YES)
                 if (!FromAribStdB24B37)
             #endif //defined(MEDIAINFO_ARIBSTDB24B37_YES)
+                {
                     FrameInfo.PTS=(((int64u)PTS_32)<<30)
                                 | (((int64u)PTS_29)<<15)
                                 | (((int64u)PTS_14));
+                    TimeStamp_NegativeToZero(FrameInfo.PTS);
+                }
             Element_Info_From_Milliseconds(float64_int64s(((float64)FrameInfo.PTS)/90));
             Element_End0();
             Element_End0();
@@ -1883,13 +1880,7 @@ void File_MpegPs::Header_Parse_PES_packet_MPEG2(int8u stream_id)
                     FrameInfo.PTS=                                  ((((int64u)Buffer[Buffer_Pos  ]&0x0E))<<29)
                       | ( ((int64u)Buffer[Buffer_Pos+1]      )<<22)|((((int64u)Buffer[Buffer_Pos+2]&0xFE))<<14)
                       | ( ((int64u)Buffer[Buffer_Pos+3]      )<< 7)|((((int64u)Buffer[Buffer_Pos+4]&0xFE))>> 1);
-                    if (!Config->File_MpegPs_PTS_Begin_IsNearZero && Frame_Count<16)
-                    {
-                        if (FrameInfo.PTS<90000 || FrameInfo.PTS>0x200000000LL-90000) // 1 second before and after 
-                            Config->File_MpegPs_PTS_Begin_IsNearZero=true;
-                    }
-                    if (Config->File_MpegPs_PTS_Begin_IsNearZero && FrameInfo.PTS>0x100000000LL)
-                        FrameInfo.PTS=0; //TODO: find a better method for synchronizing streams, Hack in case DTS is negative (currently not supported by MI). TODO: negative DTS.
+                    TimeStamp_NegativeToZero(FrameInfo.PTS);
                 }
             Element_Offset+=5;
         #if MEDIAINFO_TRACE
@@ -1946,9 +1937,12 @@ void File_MpegPs::Header_Parse_PES_packet_MPEG2(int8u stream_id)
             #if defined(MEDIAINFO_ARIBSTDB24B37_YES)
                 if (!FromAribStdB24B37)
             #endif //defined(MEDIAINFO_ARIBSTDB24B37_YES)
+                {
                     FrameInfo.PTS=(((int64u)PTS_32)<<30)
                                 | (((int64u)PTS_29)<<15)
                                 | (((int64u)PTS_14));
+                    TimeStamp_NegativeToZero(FrameInfo.PTS);
+                }
             Element_Info_From_Milliseconds(float64_int64s(((float64)FrameInfo.PTS)/90));
             Element_End0();
         }
@@ -1975,13 +1969,7 @@ void File_MpegPs::Header_Parse_PES_packet_MPEG2(int8u stream_id)
                     FrameInfo.PTS=                                  ((((int64u)Buffer[Buffer_Pos  ]&0x0E))<<29)
                       | ( ((int64u)Buffer[Buffer_Pos+1]      )<<22)|((((int64u)Buffer[Buffer_Pos+2]&0xFE))<<14)
                       | ( ((int64u)Buffer[Buffer_Pos+3]      )<< 7)|((((int64u)Buffer[Buffer_Pos+4]&0xFE))>> 1);
-                    if (!Config->File_MpegPs_PTS_Begin_IsNearZero && Frame_Count<16)
-                    {
-                        if (FrameInfo.PTS<90000 || FrameInfo.PTS>0x200000000LL-90000) // 1 second before and after 
-                            Config->File_MpegPs_PTS_Begin_IsNearZero=true;
-                    }
-                    if (Config->File_MpegPs_PTS_Begin_IsNearZero && FrameInfo.PTS>0x100000000LL)
-                        FrameInfo.PTS=0; //TODO: find a better method for synchronizing streams, Hack in case DTS is negative (currently not supported by MI). TODO: negative DTS.
+                    TimeStamp_NegativeToZero(FrameInfo.PTS);
                 }
             Element_Offset+=5;
         #if MEDIAINFO_TRACE
@@ -2031,13 +2019,7 @@ void File_MpegPs::Header_Parse_PES_packet_MPEG2(int8u stream_id)
             FrameInfo.DTS=(((int64u)DTS_32)<<30)
                         | (((int64u)DTS_29)<<15)
                         | (((int64u)DTS_14));
-            if (!Config->File_MpegPs_PTS_Begin_IsNearZero && Frame_Count<16)
-            {
-                if (FrameInfo.DTS<90000 || FrameInfo.DTS>0x200000000LL-90000) // 1 second before and after 
-                    Config->File_MpegPs_PTS_Begin_IsNearZero=true;
-            }
-            if (Config->File_MpegPs_PTS_Begin_IsNearZero && FrameInfo.PTS>0x100000000LL)
-                FrameInfo.DTS=0; //TODO: find a better method for synchronizing streams, Hack in case DTS is negative (currently not supported by MI). TODO: negative DTS.
+            TimeStamp_NegativeToZero(FrameInfo.DTS);
             Element_Info_From_Milliseconds(float64_int64s(((float64)FrameInfo.DTS)/90));
             Element_End0();
             Element_End0();
@@ -2061,13 +2043,7 @@ void File_MpegPs::Header_Parse_PES_packet_MPEG2(int8u stream_id)
             FrameInfo.DTS=                                  ((((int64u)Buffer[Buffer_Pos  ]&0x0E))<<29)
               | ( ((int64u)Buffer[Buffer_Pos+1]      )<<22)|((((int64u)Buffer[Buffer_Pos+2]&0xFE))<<14)
               | ( ((int64u)Buffer[Buffer_Pos+3]      )<< 7)|((((int64u)Buffer[Buffer_Pos+4]&0xFE))>> 1);
-            if (!Config->File_MpegPs_PTS_Begin_IsNearZero && Frame_Count<16)
-            {
-                if (FrameInfo.DTS<90000 || FrameInfo.DTS>0x200000000LL-90000) // 1 second before and after 
-                    Config->File_MpegPs_PTS_Begin_IsNearZero=true;
-            }
-            if (Config->File_MpegPs_PTS_Begin_IsNearZero && FrameInfo.DTS>0x100000000LL)
-                FrameInfo.DTS=0; //TODO: find a better method for synchronizing streams, Hack in case DTS is negative (currently not supported by MI). TODO: negative DTS.
+            TimeStamp_NegativeToZero(FrameInfo.DTS);
             Element_Offset+=5;
         #if MEDIAINFO_TRACE
         }
