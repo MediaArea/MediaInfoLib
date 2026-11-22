@@ -348,6 +348,109 @@ static void Basic_Times_Diff(const Ztring& DataBaseDirectory)
 }
 
 /***************************************************************************/
+/* Streams                                                                 */
+/***************************************************************************/
+
+//Basic\New\N.csv: a line per stream of the kind N, with the complete name of its file, the values of the standard
+//parameters of this kind (the first line has their names), then the extra parameters of the stream (the ones which are
+//not standard, their count and their order are not the same from a stream to another) as "name=value", also the empty
+//ones as they are not expected. Basic\Diff\N.csv compares the standard parameters by position and the extra parameters
+//by name, so an extra parameter added or removed is shown without changing the comparison of the other ones. The extra
+//parameters of a line of Basic\Ref\N.csv written without their name are compared by position.
+
+static vector<vector<Ztring> > Basic_Standard_Parameters(MediaInfoList& MIL)
+{
+    //Names of the standard parameters of each kind of stream, from the list of the library: a line with the name of the
+    //kind of stream, a line per parameter beginning with its name, an empty line
+    vector<vector<Ztring> > Standard(Stream_Max);
+    Ztring Text=MIL.Option(__T("Info_Parameters_CSV"));
+    size_t StreamKind=0;
+    bool IsKindName=true;
+    for (size_t Begin=0; Begin<Text.size() && StreamKind<Stream_Max;)
+    {
+        size_t End=Text.find(__T('\n'), Begin);
+        if (End==string::npos)
+            End=Text.size();
+        size_t Line_End=(End>Begin && Text[End-1]==__T('\r'))?(End-1):End;
+        if (Line_End==Begin)
+        {
+            if (!IsKindName)
+                StreamKind++;
+            IsKindName=true;
+        }
+        else if (IsKindName)
+            IsKindName=false;
+        else
+        {
+            size_t Name_End=Text.find(__T(';'), Begin);
+            if (Name_End==string::npos || Name_End>Line_End)
+                Name_End=Line_End;
+            Standard[StreamKind].push_back(Text.substr(Begin, Name_End-Begin));
+        }
+        Begin=End+1;
+    }
+    return Standard;
+}
+
+static const Ztring& Basic_Cell(const ZtringList& Line, size_t Pos)
+{
+    static const Ztring Empty;
+    return Pos<Line.size()?Line[Pos]:Empty;
+}
+
+static void Basic_Extra_Diff(const ZtringList& N, const ZtringList& R, size_t Extra_Begin, vector<pair<size_t, Ztring> >& Diff_Cells)
+{
+    //Extra parameters of a stream, as "new --- ref" at their position in the New line, or after it if only in the Ref line
+    bool R_IsNamed=true;
+    for (size_t Pos=Extra_Begin; Pos<R.size(); Pos++)
+        if (!R[Pos].empty() && (R[Pos].find(__T('='))==string::npos || !R[Pos].find(__T('='))))
+            R_IsNamed=false;
+    if (!R_IsNamed)
+    {
+        //Ref line written without the names: values by position
+        size_t Count=max(N.size(), R.size());
+        for (size_t Pos=Extra_Begin; Pos<Count; Pos++)
+        {
+            const Ztring& N_Cell=Basic_Cell(N, Pos);
+            size_t Equal=N_Cell.find(__T('='));
+            if ((Equal==string::npos?N_Cell:N_Cell.substr(Equal+1))!=Basic_Cell(R, Pos))
+                Diff_Cells.push_back(make_pair(Pos, N_Cell+__T(" --- ")+Basic_Cell(R, Pos)));
+        }
+        return;
+    }
+
+    //By name, the n-th parameter with a name in the New line compared to the n-th one with this name in the Ref line
+    map<Ztring, vector<size_t> > R_Names;
+    for (size_t Pos=Extra_Begin; Pos<R.size(); Pos++)
+        if (!R[Pos].empty())
+            R_Names[R[Pos].substr(0, R[Pos].find(__T('=')))].push_back(Pos);
+    map<Ztring, size_t> R_Names_Used;
+    vector<bool> R_IsUsed(R.size());
+    for (size_t Pos=Extra_Begin; Pos<N.size(); Pos++)
+    {
+        if (N[Pos].empty())
+            continue;
+        Ztring Name=N[Pos].substr(0, N[Pos].find(__T('=')));
+        map<Ztring, vector<size_t> >::iterator R_Name=R_Names.find(Name);
+        size_t& Used=R_Names_Used[Name];
+        if (R_Name==R_Names.end() || Used>=R_Name->second.size())
+        {
+            Diff_Cells.push_back(make_pair(Pos, N[Pos]+__T(" --- ")));
+            continue;
+        }
+        size_t R_Pos=R_Name->second[Used];
+        Used++;
+        R_IsUsed[R_Pos]=true;
+        if (N[Pos]!=R[R_Pos])
+            Diff_Cells.push_back(make_pair(Pos, N[Pos]+__T(" --- ")+R[R_Pos]));
+    }
+    size_t Pos_After=max(N.size(), Extra_Begin);
+    for (size_t Pos=Extra_Begin; Pos<R.size(); Pos++)
+        if (!R[Pos].empty() && !R_IsUsed[Pos])
+            Diff_Cells.push_back(make_pair(Pos_After++, __T(" --- ")+R[Pos]));
+}
+
+/***************************************************************************/
 /* The callback function                                                   */
 /***************************************************************************/
 
@@ -527,11 +630,13 @@ void RegressionTest_Basic(Ztring Files, Ztring DataBaseDirectory, int32u Scenari
     cout<<" Times diff"<<endl;
     Basic_Times_Diff(DataBaseDirectory);
 
+    vector<vector<Ztring> > Standard=Basic_Standard_Parameters(MIL);
     for (size_t StreamKind=0; StreamKind<Stream_Max; StreamKind++)
     {
         ZtringListListF New;
         ZtringListListF Ref;
         ZtringListListF Diff;
+        size_t Standard_Count=Standard[StreamKind].size(); //0 if the list of parameters is not available: the extra parameters without their name, compared by position
 
         cout<<" Retrieving ref data"<<endl;
         if (File::Exists(DataBaseDirectory+__T("\\Basic\\Ref\\")+Ztring::ToZtring(StreamKind)+__T(".csv")))
@@ -543,8 +648,12 @@ void RegressionTest_Basic(Ztring Files, Ztring DataBaseDirectory, int32u Scenari
             {
                 New.push_back(ZtringList());
                 New.at(New.size()-1).push_back(Ztring()); //CompleteFileName
-                for (size_t LinePos=0; LinePos<MIL.Count_Get(FilePos, (stream_t)StreamKind, 0); LinePos++)
-                    New.at(New.size()-1).push_back(MIL.Get(FilePos, (stream_t)StreamKind, 0, LinePos, Info_Name));
+                if (Standard_Count)
+                    for (size_t LinePos=0; LinePos<Standard_Count; LinePos++)
+                        New.at(New.size()-1).push_back(Standard[StreamKind][LinePos]);
+                else
+                    for (size_t LinePos=0; LinePos<MIL.Count_Get(FilePos, (stream_t)StreamKind, 0); LinePos++)
+                        New.at(New.size()-1).push_back(MIL.Get(FilePos, (stream_t)StreamKind, 0, LinePos, Info_Name));
                 break;
             }
 
@@ -564,6 +673,8 @@ void RegressionTest_Basic(Ztring Files, Ztring DataBaseDirectory, int32u Scenari
                         if (Value.size()>=3 && Value.rfind(__T(" / "))== Value.size()-3)
                             Value.resize(Value.size()-3);
                     }
+                    if (Standard_Count && LinePos>=Standard_Count)
+                        Value=MIL.Get(FilePos, (stream_t)StreamKind, StreamPos, LinePos, Info_Name)+__T('=')+Value; //Extra parameter, also if empty (not expected)
                     New.at(New.size()-1).push_back(Value);
                 }
             }
@@ -595,19 +706,22 @@ void RegressionTest_Basic(Ztring Files, Ztring DataBaseDirectory, int32u Scenari
             }
             else
             {
-                bool IsDiff=false;
-                size_t LinePos_Max=max(New(New_Pos).size(), Ref(Ref_Pos).size());
-                for (size_t LinePos=1; LinePos<LinePos_Max; LinePos++)
-                    if (New(New_Pos, LinePos)!=Ref(Ref_Pos, LinePos))
-                    {
-                        if (!IsDiff)
-                        {
-                            Diff.push_back(ZtringList());
-                            Diff(Diff.size()-1, 0)=New(New_Pos, 0);
-                            IsDiff=true;
-                        }
-                        Diff(Diff.size()-1, LinePos)=New(New_Pos, LinePos)+__T(" --- ")+Ref(Ref_Pos, LinePos);
-                    }
+                //Standard parameters by position, then extra parameters by name
+                const ZtringList& N=New[New_Pos];
+                const ZtringList& R=Ref[Ref_Pos];
+                size_t Extra_Begin=Standard_Count?(1+Standard_Count):max(N.size(), R.size());
+                vector<pair<size_t, Ztring> > Diff_Cells;
+                for (size_t LinePos=1; LinePos<Extra_Begin; LinePos++)
+                    if (Basic_Cell(N, LinePos)!=Basic_Cell(R, LinePos))
+                        Diff_Cells.push_back(make_pair(LinePos, Basic_Cell(N, LinePos)+__T(" --- ")+Basic_Cell(R, LinePos)));
+                Basic_Extra_Diff(N, R, Extra_Begin, Diff_Cells);
+                if (!Diff_Cells.empty())
+                {
+                    Diff.push_back(ZtringList());
+                    Diff(Diff.size()-1, 0)=N[0];
+                    for (size_t Pos=0; Pos<Diff_Cells.size(); Pos++)
+                        Diff(Diff.size()-1, Diff_Cells[Pos].first)=Diff_Cells[Pos].second;
+                }
 
                 Ref_Pos++;
                 New_Pos++;
