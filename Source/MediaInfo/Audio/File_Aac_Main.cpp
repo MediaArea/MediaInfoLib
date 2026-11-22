@@ -1191,8 +1191,8 @@ bool File_Aac::PayloadLengthInfo()
             Get_S1(4,streamIndx,                                "streamIndx");
             if (streamIndx>=streamCnt)
             {
-                Trusted_IsNot("Invalid stream index");
-                Skip_BS(Data_BS_Remain(),                       "Invalid data");
+                Fill_Conformance("LATM PayloadLengthInfo streamIndx", "LATM PayloadLengthInfo streamIndx is not the index of a stream of StreamMuxConfig (actual "+std::to_string(streamIndx)+", expected <"+std::to_string(streamCnt)+')');
+                Skip_BS(Data_BS_Remain(),                       "(Invalid stream index)");
                 Element_End0();
                 return false;
             }
