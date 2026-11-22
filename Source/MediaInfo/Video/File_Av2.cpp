@@ -122,7 +122,20 @@ const char* Av2_seq_profile_idc(int8u seq_profile_idc)
     case 2: return "Main_420_10_IP2";
     case 3: return "Main_422_10_IP1";
     case 4: return "Main_444_10_IP1";
+    case 5: return "Main_444C_12_IP2";
     case 31: return "Configurable";
+    default: return "";
+    }
+}
+
+//---------------------------------------------------------------------------
+static const char* Av2_bit_depth_idc(int32u bit_depth_idc)
+{
+    switch (bit_depth_idc)
+    {
+    case 0: return "10";
+    case 1: return "8";
+    case 2: return "12";
     default: return "";
     }
 }
@@ -604,7 +617,7 @@ void File_Av2::sequence_header_obu()
     int32u bit_depth_idc;
     Get_uvlc(chroma_format_idc,                                 "chroma_format_idc"); Param_Info1(chroma_format_idc == 0 ? "4:2:0" : chroma_format_idc == 2 ? "4:4:4" : chroma_format_idc == 3 ? "4:2:2" : "");
     Monochrome = chroma_format_idc == 1;
-    Get_uvlc(bit_depth_idc,                                     "bit_depth_idc"); Param_Info2(bit_depth_idc == 0 ? "10" : (bit_depth_idc == 1 ? "8" : ""), " bits");
+    Get_uvlc(bit_depth_idc,                                     "bit_depth_idc"); Param_Info2(Av2_bit_depth_idc(bit_depth_idc), " bits");
     int8u max_tlayer_id, max_mlayer_id;
     if (single_picture_header_flag) {
         // seq_lcr_id = 0
@@ -702,7 +715,7 @@ void File_Av2::sequence_header_obu()
         Fill(Stream_Video, 0, Video_Format_Profile, Video_Format_Profile_string);
         Fill(Stream_Video, 0, Video_Width, max_frame_width_minus_1 + 1);
         Fill(Stream_Video, 0, Video_Height, max_frame_height_minus_1 + 1);
-        Fill(Stream_Video, 0, Video_BitDepth, bit_depth_idc == 0 ? "10" : (bit_depth_idc == 1 ? "8" : ""));
+        Fill(Stream_Video, 0, Video_BitDepth, Av2_bit_depth_idc(bit_depth_idc));
         if (film_grain_params_present)
             Fill(Stream_Video, 0, Video_Format_Settings, "Film Grain Synthesis");
         if (max_mlayer_id > 0 || max_tlayer_id > 0)
