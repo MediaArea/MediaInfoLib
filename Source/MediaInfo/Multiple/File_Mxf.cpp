@@ -405,6 +405,12 @@ static const char* Mxf_EssenceContainer(const int128u EssenceContainer)
                                                                                                         case 0x01 : return "Sony RAW?";
                                                                                                         default   : return "";
                                                                                                     }
+                                                                                        case 0x02 :
+                                                                                                    switch (Code7)
+                                                                                                    {
+                                                                                                        case 0x01 : return "X-OCN";
+                                                                                                        default   : return "";
+                                                                                                    }
                                                                                         default   : return "";
                                                                                     }
                                                                         default   : return "";
@@ -761,6 +767,14 @@ static const char* Mxf_EssenceCompression(const int128u EssenceCompression)
                                                                                                         case 0x02 : return "Sony RAW SQ";
                                                                                                         default   : return "";
                                                                                                     }
+                                                                                        case 0x06 :
+                                                                                                    switch (Code7)
+                                                                                                    {
+                                                                                                        case 0x05 : return "X-OCN"; //ST
+                                                                                                        case 0x06 : return "X-OCN"; //LT
+                                                                                                        case 0x07 : return "X-OCN"; //XT
+                                                                                                        default   : return "";
+                                                                                                    }
                                                                                         default   : return "";
                                                                                     }
                                                                         default   : return "";
@@ -893,6 +907,34 @@ static const char* Mxf_EssenceCompression_Profile(const int128u& EssenceCompress
         case 0x0E : //Private Use
                     switch (Code2)
                     {
+                        case 0x06 : //Sony
+                                    switch (Code3)
+                                    {
+                                        case 0x04 :
+                                                    switch (Code4)
+                                                    {
+                                                        case 0x01 :
+                                                                    switch (Code5)
+                                                                    {
+                                                                        case 0x02 :
+                                                                                    switch (Code6)
+                                                                                    {
+                                                                                        case 0x06 :
+                                                                                                    switch (Code7)
+                                                                                                    {
+                                                                                                        case 0x05 : return "ST";
+                                                                                                        case 0x06 : return "LT";
+                                                                                                        case 0x07 : return "XT";
+                                                                                                        default   : return "";
+                                                                                                    }
+                                                                                        default   : return "";
+                                                                                    }
+                                                                        default   : return "";
+                                                                    }
+                                                         default   : return "";
+                                                    }
+                                         default   : return "";
+                                    }
                         case 0x21 : //Fraunhofer
                                     switch (Code3)
                                     {
