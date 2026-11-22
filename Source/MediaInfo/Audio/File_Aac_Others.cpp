@@ -336,20 +336,36 @@ void File_Aac::DSTSpecificConfig()
 //---------------------------------------------------------------------------
 void File_Aac::ALSSpecificConfig(size_t Start, size_t End)
 {
-    //Not in spec, but something weird in the example I have
-    int32u Junk;
-    while (Data_BS_Remain())
+    if (End==(size_t)-1)
+        End=0;
+    if (Data_BS_Remain()<End+32)
     {
-        Peek_S4(32, Junk);
-        if (Junk!=0x414C5300)
-        {
-            Skip_SB(                                            "Unknown");
-        }
-        else
-            break;
+        Trusted_IsNot("ALSSpecificConfig is too small");
+        return;
     }
-    if (Data_BS_Remain()==0)
-        return; //There is a problem
+    int32u als_id;
+    Peek_S4(32, als_id);
+    if (als_id!=0x414C5300)
+    {
+        //Not at its place, but seen further in a file
+        BitStream_Fast_Mixed BS_Search=*BS;
+        size_t Unknown_Size=0;
+        while (als_id!=0x414C5300 && BS_Search.Remain()>End+32)
+        {
+            BS_Search.Skip(1);
+            Unknown_Size++;
+            als_id=BS_Search.Peek4(32);
+        }
+        if (als_id!=0x414C5300)
+        {
+            Trusted_IsNot("als_id not found");
+            return;
+        }
+        Skip_BS(Unknown_Size,                                   "Unknown");
+        #if MEDIAINFO_CONFORMANCE
+            Fill_Conformance("ALSSpecificConfig als_id", "als_id is not right after fillBits");
+        #endif
+    }
 
     Element_Begin1("ALSSpecificConfig");
     bool chan_config,chan_sort,crc_enabled,aux_data_enabled;
@@ -394,8 +410,6 @@ void File_Aac::ALSSpecificConfig(size_t Start, size_t End)
     size_t Align=(Start-Data_BS_Remain())%8; //Relative to the start of AudioSpecificConfig, not byte aligned in LATM
     if (Align)
         Skip_S1(8-Align,                                        "byte_align");
-    if (End==(size_t)-1)
-        End=0;
     int32u header_size,trailer_size;
     Get_BS (32, header_size,                                    "header_size");
     Get_BS (32, trailer_size,                                   "trailer_size");
@@ -406,17 +420,24 @@ void File_Aac::ALSSpecificConfig(size_t Start, size_t End)
         return;
     }
     #ifdef MEDIAINFO_RIFF_YES
-    if (file_type==1 && !(Data_BS_Remain()%8) && Buffer_Offset+Element_Size<=Buffer_Size) //WAVE file, byte aligned in the buffer
+    if (file_type==1 && header_size) //WAVE file
     {
-        BS_End();
         Element_Begin1("orig_header");
+        vector<int8u> orig_header(header_size); //Copied, not byte aligned in the buffer in LATM
+        #if MEDIAINFO_TRACE
+            bool Trace_Activated_Save=Trace_Activated;
+            Trace_Activated=false; //Shown by the RIFF parser
+        #endif //MEDIAINFO_TRACE
+        for (auto& Byte : orig_header)
+            Get_S1(8, Byte,                                     "orig_header[]");
+        #if MEDIAINFO_TRACE
+            Trace_Activated=Trace_Activated_Save;
+        #endif //MEDIAINFO_TRACE
         File_Riff MI;
         Open_Buffer_Init(&MI);
-        Open_Buffer_Continue(&MI, Buffer+Buffer_Offset+(size_t)Element_Offset, header_size);
-        Element_Offset+=header_size;
+        Open_Buffer_Continue(&MI, orig_header.data(), orig_header.size());
         File__Analyze::Finish(&MI); //No merge of data, only for trace information, because this is the data about the decoded stream, not the encoded stream
         Element_End0();
-        BS_Begin();
     }
     else
     #endif //MEDIAINFO_RIFF_YES
