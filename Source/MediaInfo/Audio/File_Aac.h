@@ -224,6 +224,7 @@ protected :
     bool    protection_absent;
     int64u  FrameSize_Min;
     int64u  FrameSize_Max;
+    int64u  FrameSize_Total; //Headers included, since the start of the parsing or the last jump
     bool    adts_buffer_fullness_Is7FF;
     bool    Frame_IsCut; //The frame is parsed without all its data (end of the file)
     #if MEDIAINFO_ADVANCED

@@ -85,6 +85,7 @@ File_Aac::File_Aac()
     aacScalefactorDataResilienceFlag=false;
     FrameSize_Min=(int64u)-1;
     FrameSize_Max=0;
+    FrameSize_Total=0;
     adts_buffer_fullness_Is7FF=false;
     Frame_IsCut=false;
     #if MEDIAINFO_ADVANCED
@@ -254,6 +255,14 @@ void File_Aac::Streams_Finish()
                 break;
             }
         }
+    }
+
+    bool AllFramesAreCounted=Mode==Mode_ADTS && !IsSub && Frame_Count_NotParsedIncluded && Frame_Count_NotParsedIncluded!=(int64u)-1 && File_Offset+Buffer_Size==File_Size; //All frames up to the end of the file
+    if (AllFramesAreCounted && Retrieve_Const(Stream_Audio, 0, Audio_StreamSize).empty())
+    {
+        Fill(Stream_Audio, 0, Audio_StreamSize, FrameSize_Total);
+        if (File_Size>TagsSize+File_BeginPaddingSize+FrameSize_Total)
+            Fill(Stream_General, 0, General_StreamSize, File_Size-(TagsSize+File_BeginPaddingSize+FrameSize_Total)); //Bytes neither in a frame nor in a tag, the tags helper adds the tags and the zero bytes at the beginning of the file
     }
 
     switch(Mode)
@@ -550,6 +559,7 @@ void File_Aac::Read_Buffer_Unsynched()
 {
     FrameInfo=frame_info();
     NotZero_Offset=(int64u)-1;
+    FrameSize_Total=0;
 }
 
 //***************************************************************************
@@ -1072,6 +1082,7 @@ void File_Aac::Data_Parse()
 
     FILLING_BEGIN();
         //Counting
+        FrameSize_Total+=Header_Size+Element_Size;
         if (File_Offset+Buffer_Offset+Element_Size==File_Size)
             Frame_Count_Valid=Frame_Count; //Finish frames in case of there are less than Frame_Count_Valid frames
 
