@@ -54,6 +54,7 @@ File__Tags_Helper::File__Tags_Helper()
     File_BeginTagSize=0;
     File_EndTagSize=0;
     NotZero_Offset=(int64u)-1;
+    File_BeginPaddingSize=0;
 
     //Temp
     Parser=NULL;
@@ -70,6 +71,7 @@ File__Tags_Helper::File__Tags_Helper()
     ApeTag_Size=0;
     Id3v2_Size=0;
     TagSizeIsFinal=false;
+    BeginPaddingSizeIsFinal=false;
     SearchingForEndTags=false;
     SkippingUpToEnd=false;
 }
@@ -108,10 +110,16 @@ void File__Tags_Helper::Parser_Merge(File__Analyze& MI, File__Analyze::tags_form
     if (Base->Count_Get(Stream_Audio)) //The audio part of the tags is for the audio stream of the file
         Base->Merge(MI, Stream_Audio, 0, 0, Format==File__Analyze::Tags_Id3v2);
     auto ImageCount = MI.Count_Get(Stream_Image);
+    if (!ImageCount)
+        return;
+    auto StreamKind_Last = Base->StreamKind_Last;
+    auto StreamPos_Last = Base->StreamPos_Last;
     for (size_t i = 0; i < ImageCount; ++i) {
         Base->Stream_Prepare(Stream_Image);
         Base->Merge(MI, Stream_Image, i, Base->StreamPos_Last);
     }
+    Base->StreamKind_Last = StreamKind_Last; //The last stream stays the one of the parser, e.g. for the real stream size
+    Base->StreamPos_Last = StreamPos_Last;
 }
 
 //---------------------------------------------------------------------------
@@ -121,9 +129,10 @@ void File__Tags_Helper::Streams_Finish()
 
     if (!Base->IsSub)
     {
-        Base->Fill(Stream_General, 0, General_StreamSize, TagsSize+Base->Retrieve(Stream_General, 0, General_StreamSize).To_int64u(), 10, true);
+        Base->Buffer_NotStreamBytes=TagsSize+File_BeginPaddingSize+Base->Retrieve(Stream_General, 0, General_StreamSize).To_int64u();
+        Base->Fill(Stream_General, 0, General_StreamSize, Base->Buffer_NotStreamBytes, 10, true);
         if (Base->File_Size!=(int64u)-1 && Base->Retrieve(Stream_Audio, 0, Audio_StreamSize).empty())
-            Base->Fill(Stream_Audio, 0, Audio_StreamSize, Base->File_Size-TagsSize);
+            Base->Fill(Stream_Audio, 0, Audio_StreamSize, Base->File_Size-TagsSize-File_BeginPaddingSize);
     }
 }
 
@@ -211,11 +220,17 @@ bool File__Tags_Helper::Synchronize_TagsAndPadding(bool &Tag_Found)
         size_t Buffer_Offset_BeforePadding=Base->Buffer_Offset;
         while (Base->Buffer_Offset<Base->Buffer_Size && Base->Buffer[Base->Buffer_Offset]==0x00)
             Base->Buffer_Offset++;
+        if (!BeginPaddingSizeIsFinal)
+            File_BeginPaddingSize+=Base->Buffer_Offset-Buffer_Offset_BeforePadding;
         if (Base->Buffer_Offset==Buffer_Offset_BeforePadding)
             break; //Tags after zero bytes are tested as tags at the start, they are neither other data before a single frame nor lost bytes
     }
-    if (NotZero_Offset==(int64u)-1 && Base->Buffer_Offset<Base->Buffer_Size)
-        NotZero_Offset=Base->File_Offset+Base->Buffer_Offset;
+    if (Base->Buffer_Offset<Base->Buffer_Size)
+    {
+        if (NotZero_Offset==(int64u)-1)
+            NotZero_Offset=Base->File_Offset+Base->Buffer_Offset;
+        BeginPaddingSizeIsFinal=true; //The next zero bytes are after other data
+    }
     return true;
 }
 

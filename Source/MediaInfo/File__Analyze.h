@@ -1655,6 +1655,7 @@ public : //TO CHANGE
     int64u Buffer_TotalBytes_LastSynched;
     int64u Buffer_PaddingBytes;
     int64u Buffer_JunkBytes;
+    int64u Buffer_NotStreamBytes; //Bytes of the file which are not stream data (tags...), the real stream size is the file size without them
     float64 Stream_BitRateFromContainer;
 protected :
     int8u* Buffer_Temp;

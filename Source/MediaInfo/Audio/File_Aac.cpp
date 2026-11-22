@@ -85,6 +85,9 @@ File_Aac::File_Aac()
     aacScalefactorDataResilienceFlag=false;
     FrameSize_Min=(int64u)-1;
     FrameSize_Max=0;
+    FrameSize_Total=0;
+    LastFrame_End=(int64u)-1;
+    LastFrame_TagsSize=0;
     adts_buffer_fullness_Is7FF=false;
     Frame_IsCut=false;
     #if MEDIAINFO_ADVANCED
@@ -97,6 +100,7 @@ File_Aac::File_Aac()
     //Temp - Main
     muxConfigPresent=true;
     audioMuxVersionA=false;
+    StreamMuxConfig_IsUnknown=false;
     numSubFrames=0;
     streamCnt=0;
     for (size_t i=0; i<128; i++)
@@ -197,7 +201,8 @@ void File_Aac::Streams_Fill()
 
     switch(Mode)
     {
-        case Mode_ADTS    : File__Tags_Helper::Streams_Fill(); break;
+        case Mode_ADTS    :
+        case Mode_LATM    : File__Tags_Helper::Streams_Fill(); break;
         default           : ;
     }
 
@@ -255,11 +260,33 @@ void File_Aac::Streams_Finish()
         }
     }
 
+    bool AllFramesAreCounted=(Mode==Mode_ADTS || Mode==Mode_LATM) && !IsSub && Frame_Count_NotParsedIncluded && Frame_Count_NotParsedIncluded!=(int64u)-1 && File_Offset+Buffer_Size==File_Size; //All frames up to the end of the file
+    if (AllFramesAreCounted && Retrieve_Const(Stream_Audio, 0, Audio_StreamSize).empty())
+    {
+        Fill(Stream_Audio, 0, Audio_StreamSize, FrameSize_Total);
+        if (File_Size>TagsSize+File_BeginPaddingSize+FrameSize_Total)
+            Fill(Stream_General, 0, General_StreamSize, File_Size-(TagsSize+File_BeginPaddingSize+FrameSize_Total)); //Bytes neither in a frame nor in a tag, the tags helper adds the tags and the zero bytes at the beginning of the file
+    }
+    else if ((Mode==Mode_ADTS || Mode==Mode_LATM) && !IsSub && LastFrame_End!=(int64u)-1 && File_Size!=(int64u)-1 && File_Offset+Buffer_Size==File_Size && Retrieve_Const(Stream_Audio, 0, Audio_StreamSize).empty())
+    {
+        //Last frames parsed after a jump, the end tags are parsed after them or were parsed before them
+        int64u TagsSize_AfterLastFrame=TagsSize-LastFrame_TagsSize;
+        if (TagsSize_AfterLastFrame<File_EndTagSize)
+            TagsSize_AfterLastFrame=File_EndTagSize;
+        int64u End=LastFrame_End+TagsSize_AfterLastFrame;
+        if (File_Size>End && File_Size-End<File_Size-TagsSize-File_BeginPaddingSize)
+        {
+            Fill(Stream_Audio, 0, Audio_StreamSize, File_Size-TagsSize-File_BeginPaddingSize-(File_Size-End));
+            Fill(Stream_General, 0, General_StreamSize, File_Size-End); //Bytes after the last frame and not in a tag, the tags helper adds the tags and the zero bytes at the beginning of the file
+        }
+    }
+
     switch(Mode)
     {
         case Mode_payload : if (!IsSub) File__Tags_Helper::Streams_Finish(); break; //ADIF raw data blocks up to the end
         case Mode_ADIF    :
-        case Mode_ADTS    : File__Tags_Helper::Streams_Finish(); break;
+        case Mode_ADTS    :
+        case Mode_LATM    : File__Tags_Helper::Streams_Finish(); break;
         default           : ;
     }
 
@@ -280,6 +307,33 @@ void File_Aac::Streams_Finish()
         {
             Fill(Stream_Audio, 0, Audio_BitRate_Mode, "CBR");
         }
+    }
+    if (AllFramesAreCounted && Frequency_b && Retrieve_Const(Stream_Audio, 0, Audio_Duration).empty())
+    {
+        bool FrameLength_IsKnown;
+        if (Mode==Mode_LATM)
+        {
+            //The frame length is the one of GASpecificConfig, and of the last configuration if there are several streams
+            switch (streamCnt==1?audioObjectTypes[0]:0)
+            {
+                case  1:
+                case  2:
+                case  3:
+                case  4:
+                case  6:
+                case  7:
+                case 17:
+                case 19:
+                case 20:
+                case 21:
+                case 22: FrameLength_IsKnown=true; break;
+                default: FrameLength_IsKnown=false;
+            }
+        }
+        else
+            FrameLength_IsKnown=true;
+        if (FrameLength_IsKnown)
+            Fill(Stream_Audio, 0, Audio_Duration, ((float64)Frame_Count_NotParsedIncluded)*frame_length/Frequency_b*1000, 0);
     }
 
     if (Mode==Mode_ADTS && !ChannelCount_Temp && ChannelPos_Temp && Retrieve_Const(Stream_Audio, 0, Audio_Channel_s_).empty())
@@ -549,6 +603,8 @@ void File_Aac::Read_Buffer_Unsynched()
 {
     FrameInfo=frame_info();
     NotZero_Offset=(int64u)-1;
+    FrameSize_Total=0;
+    LastFrame_End=(int64u)-1;
 }
 
 //***************************************************************************
@@ -1060,7 +1116,7 @@ void File_Aac::Data_Parse()
         case Mode_LATM        : Frames=AudioMuxElement_FrameCount; break;
         default               : ;
     }
-    if (Frames)
+    if (Frames && (IsSub || !Status[IsFilled])) //Not the last frames of a file, parsed after the first ones, the last one is often smaller
     {
         int64u FrameSize=(Header_Size+Element_Size)/Frames;
         if (FrameSize_Min>FrameSize)
@@ -1071,6 +1127,9 @@ void File_Aac::Data_Parse()
 
     FILLING_BEGIN();
         //Counting
+        FrameSize_Total+=Header_Size+Element_Size;
+        LastFrame_End=File_Offset+Buffer_Offset+Element_Size;
+        LastFrame_TagsSize=TagsSize;
         if (File_Offset+Buffer_Offset+Element_Size==File_Size)
             Frame_Count_Valid=Frame_Count; //Finish frames in case of there are less than Frame_Count_Valid frames
 
@@ -1100,10 +1159,20 @@ void File_Aac::Data_Parse()
                                         if (!Status[IsFilled])
                                         {
                                             Fill();
-                                            if (File_Offset+Buffer_Offset+Element_Size!=File_Size)
-                                                Open_Buffer_Unsynch();
-                                            if (!IsSub)
-                                                File__Tags_Helper::Finish();
+                                            if (!IsSub && File_Size!=(int64u)-1 && File_Offset+Buffer_Offset+Element_Size+16*1024<File_Size)
+                                            {
+                                                File__Tags_Helper::GoToFromEnd(16*1024, "AAC"); //The last frames give the end of the stream data
+                                                if (File_GoTo!=(int64u)-1)
+                                                    Open_Buffer_Unsynch();
+                                            }
+                                            else if (IsSub || File_Size==(int64u)-1)
+                                            {
+                                                if (File_Offset+Buffer_Offset+Element_Size!=File_Size)
+                                                    Open_Buffer_Unsynch();
+                                                if (!IsSub)
+                                                    File__Tags_Helper::Finish();
+                                            }
+                                            //Else the last frames are parsed
                                         }
                                         break;
                 default               : ; //No header

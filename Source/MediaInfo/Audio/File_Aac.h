@@ -198,6 +198,7 @@ protected :
     int8u   streamCnt;
     int8u   numChunk;
     bool    audioMuxVersionA;
+    bool    StreamMuxConfig_IsUnknown; //A part of StreamMuxConfig is not known, the next fields are not parsed
     int8u   streamID[16][8];
     int8u   progSIndx[128];
     int8u   laySIndx[128];
@@ -223,6 +224,9 @@ protected :
     bool    protection_absent;
     int64u  FrameSize_Min;
     int64u  FrameSize_Max;
+    int64u  FrameSize_Total; //Headers included, since the start of the parsing or the last jump
+    int64u  LastFrame_End; //Since the start of the parsing or the last jump
+    int64u  LastFrame_TagsSize; //TagsSize at the end of the last frame
     bool    adts_buffer_fullness_Is7FF;
     bool    Frame_IsCut; //The frame is parsed without all its data (end of the file)
     #if MEDIAINFO_ADVANCED

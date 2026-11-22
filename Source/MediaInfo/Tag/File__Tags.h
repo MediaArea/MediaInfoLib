@@ -60,6 +60,7 @@ public :
     int64u TagsSize;
     int64u File_BeginTagSize;
     int64u File_EndTagSize;
+    int64u File_BeginPaddingSize; //Zero bytes parsed by Synchronize_TagsAndPadding() before the first byte that is neither zero nor in a tag
     int64u NotZero_Offset; //First byte since the last synchronization that is neither zero nor in a tag parsed by Synchronize_TagsAndPadding(), reset by the parser at each synchronization
 
     //Constructor/Destructor
@@ -115,6 +116,7 @@ private :
     int64u ApeTag_Size;
     int64u Id3v2_Size;
     bool TagSizeIsFinal;
+    bool BeginPaddingSizeIsFinal;
     bool SearchingForEndTags;
     bool SkippingUpToEnd;
 

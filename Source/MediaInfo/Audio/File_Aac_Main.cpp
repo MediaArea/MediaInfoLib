@@ -977,6 +977,12 @@ void File_Aac::AudioMuxElement()
         Skip_BS(Data_BS_Remain(),                               "(Waiting for configuration)");
         return;
     }
+    if (StreamMuxConfig_IsUnknown) //The fields after an unknown part of the configuration are unknown
+    {
+        Skip_BS(Data_BS_Remain(),                               "(Unknown)");
+        Element_End0();
+        return;
+    }
     if (audioMuxVersionA==0)
     {
         AudioMuxElement_FrameCount=0;
@@ -1027,10 +1033,11 @@ void File_Aac::StreamMuxConfig()
         Get_S1 (6, numSubFrames,                                "numSubFrames");
         Get_S1 (4, numProgram,                                  "numProgram");
 
-        for (int8u prog=0; prog<=numProgram; prog++)
+        StreamMuxConfig_IsUnknown=false;
+        for (int8u prog=0; prog<=numProgram && !StreamMuxConfig_IsUnknown; prog++)
         {
             Get_S1(3,numLayer[prog],                            "numLayer");
-            for (int8u lay=0; lay<=numLayer[prog]; lay++)
+            for (int8u lay=0; lay<=numLayer[prog] && !StreamMuxConfig_IsUnknown; lay++)
             {
                 progSIndx[streamCnt]=prog;
                 laySIndx[streamCnt]=lay;
@@ -1081,11 +1088,19 @@ void File_Aac::StreamMuxConfig()
                             Skip_S1(1,                          "HVXCframeLengthTableIndex[streamID[prog][lay]]");
                             break;
                     default :
-                            Element_Begin1("(not implemented)");
-                            Skip_BS(Data_BS_Remain(),       "(not implemented)");
-                            Element_End0();
+                            Fill_Conformance("LATM StreamMuxConfig frameLengthType", "LATM StreamMuxConfig frameLengthType "+std::to_string(frameLengthType[streamID[prog][lay]])+" is reserved");
+                            Skip_BS(Data_BS_Remain(),           "(Unknown)");
+                            StreamMuxConfig_IsUnknown=true; //The next fields depend on this value
                 }
             }
+        }
+        if (StreamMuxConfig_IsUnknown)
+        {
+            Element_End0();
+            FILLING_BEGIN();
+                CanFill=true;
+            FILLING_END();
+            return;
         }
         bool otherDataPresent, crcCheckPresent;
         Get_SB (otherDataPresent,                               "otherDataPresent");
@@ -1191,8 +1206,8 @@ bool File_Aac::PayloadLengthInfo()
             Get_S1(4,streamIndx,                                "streamIndx");
             if (streamIndx>=streamCnt)
             {
-                Trusted_IsNot("Invalid stream index");
-                Skip_BS(Data_BS_Remain(),                       "Invalid data");
+                Fill_Conformance("LATM PayloadLengthInfo streamIndx", "LATM PayloadLengthInfo streamIndx is not the index of a stream of StreamMuxConfig (actual "+std::to_string(streamIndx)+", expected <"+std::to_string(streamCnt)+')');
+                Skip_BS(Data_BS_Remain(),                       "(Invalid stream index)");
                 Element_End0();
                 return false;
             }
