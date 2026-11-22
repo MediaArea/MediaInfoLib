@@ -360,6 +360,8 @@ Ztring ToReturn;
 Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
 {
     Ztring ToReturn;
+    bool HideEnvironment=MediaInfoLib::Config.Inform_HideEnvironment_Get();
+    bool HideFileName=HideEnvironment && Field_IsEnvironment(MI, Stream_General, General_CompleteName);
 
     Node Node_Main("pbcoreInstantiationDocument");
     if (Version==Version_2_0)
@@ -373,6 +375,8 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
     Ztring instantiationIdentifier=MI.Get(Stream_General, 0, General_FileName);
     if (!MI.Get(Stream_General, 0, General_FileExtension).empty())
        instantiationIdentifier+=__T(".")+MI.Get(Stream_General, 0, General_FileExtension);
+    if (HideFileName)
+        instantiationIdentifier.clear(); //Mandatory
 
     Node_Main.Add_Child("instantiationIdentifier", instantiationIdentifier, "source", "File Name");
 
@@ -406,7 +410,7 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
 
     //dateFileModified
     Ztring dateModified=MI.Get(Stream_General, 0, General_File_Modified_Date);
-    if (!dateModified.empty())
+    if (!dateModified.empty() && !(HideEnvironment && Field_IsEnvironment(MI, Stream_General, General_File_Modified_Date)))
     {
         dateModified.FindAndReplace(__T(" UTC"), __T("Z"));
         dateModified.FindAndReplace(__T(" "), __T("T"));
@@ -468,7 +472,7 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
     if (!MI.Get(Stream_General, 0, __T("instantiationLocation")).empty())
         Node_Main.Add_Child_IfNotEmpty(MI, Stream_General, 0, "instantiationLocation", "instantiationLocation");
     else
-        Node_Main.Add_Child("instantiationLocation", MI.Get(Stream_General, 0, General_CompleteName));
+        Node_Main.Add_Child("instantiationLocation", HideFileName?Ztring():MI.Get(Stream_General, 0, General_CompleteName)); //Mandatory
 
     //instantiationMediaType
     if (!PBCore2_MediaType(MI).empty())
@@ -609,7 +613,8 @@ Ztring Export_PBCore2::Transform(MediaInfo_Internal &MI, version Version)
             MI.Get(Stream_General, 0, Pos, Info_Name)!=__T("Video_Language_List") &&
             MI.Get(Stream_General, 0, Pos, Info_Name).find(__T("_Format_List"))==std::string::npos &&
             MI.Get(Stream_General, 0, Pos, Info_Name).find(__T("_Format_WithHint_List"))==std::string::npos &&
-            MI.Get(Stream_General, 0, Pos, Info_Name).find(__T("String"))==std::string::npos
+            MI.Get(Stream_General, 0, Pos, Info_Name).find(__T("String"))==std::string::npos &&
+            !(HideEnvironment && Field_IsEnvironment(MI, Stream_General, Pos))
             )
                 Node_Main.Add_Child("instantiationAnnotation", MI.Get(Stream_General, 0, Pos),
                     "annotationType", MI.Get(Stream_General, 0, Pos, Info_Name).To_UTF8());

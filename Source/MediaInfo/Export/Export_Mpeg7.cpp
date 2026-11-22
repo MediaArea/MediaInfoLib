@@ -223,6 +223,8 @@ Ztring Mpeg7_ContentCS_Name(int32u termID, MediaInfo_Internal &MI, size_t) //xxy
                     break;
         case 50 : return __T("Text");
     }
+    if (MediaInfoLib::Config.Inform_HideEnvironment_Get() && Field_IsEnvironment(MI, Stream_General, General_FileExtension))
+        return Ztring();
     return MI.Get(Stream_General, 0, General_FileExtension);
 }
 
@@ -2382,6 +2384,8 @@ void Mpeg7_Transform(Node* Node_MultimediaContent, MediaInfo_Internal& MI, size_
             Ztring Extension=MI.Get(Stream_General, 0, General_FileExtension);
             if (!Extension.empty())
                 FileName+=__T('.')+Extension;
+            if (MediaInfoLib::Config.Inform_HideEnvironment_Get() && Field_IsEnvironment(MI, Stream_General, General_FileName))
+                FileName.clear(); //Title is mandatory
               Node_Creation->Add_Child("mpeg7:Title", FileName);
         }
 
@@ -2710,17 +2714,18 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI, size_t Version)
         Node_DescriptionMetadata->Add_Child("mpeg7:PublicIdentifier", UMID, "type", std::string("UMID"));
     }
 
+    bool HideEnvironment=MediaInfoLib::Config.Inform_HideEnvironment_Get();
     Ztring FileName=MI.Get(Stream_General, 0, General_FileName);
     Ztring Extension=MI.Get(Stream_General, 0, General_FileExtension);
     if (!Extension.empty())
         FileName+=__T('.')+Extension;
-    if (!FileName.empty())
+    if (!FileName.empty() && !(HideEnvironment && Field_IsEnvironment(MI, Stream_General, General_FileName)))
        Node_DescriptionMetadata->Add_Child("mpeg7:PrivateIdentifier", FileName);
 
     //Current date/time is ISO format
     time_t Time=time(NULL);
     Ztring TimeS; TimeS.Date_From_Seconds_1970((int32u)Time);
-    if (!TimeS.empty())
+    if (!TimeS.empty() && !HideEnvironment)
     {
         TimeS.FindAndReplace(__T("UTC "), __T(""));
         TimeS.FindAndReplace(__T(" "), __T("T"));
@@ -2728,8 +2733,11 @@ Ztring Export_Mpeg7::Transform(MediaInfo_Internal &MI, size_t Version)
         Node_DescriptionMetadata->Add_Child("mpeg7:CreationTime", TimeS);
     }
 
-    Node* Node_Instrument=Node_DescriptionMetadata->Add_Child("mpeg7:Instrument");
-    Node_Instrument->Add_Child("mpeg7:Tool")->Add_Child("mpeg7:Name", MediaInfoLib::Config.Info_Version_Get());
+    if (!HideEnvironment)
+    {
+        Node* Node_Instrument=Node_DescriptionMetadata->Add_Child("mpeg7:Instrument");
+        Node_Instrument->Add_Child("mpeg7:Tool")->Add_Child("mpeg7:Name", MediaInfoLib::Config.Info_Version_Get());
+    }
 
     //Description - CreationDescription
     Node* Node_Description=Node_Mpeg7->Add_Child("mpeg7:Description", "", "xsi:type", "ContentEntityType");

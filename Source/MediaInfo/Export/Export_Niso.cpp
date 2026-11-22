@@ -97,6 +97,7 @@ void ComputeSamplingFrequency(Node* Parent, Ztring& Value)
 Ztring Export_Niso::Transform(MediaInfo_Internal &MI, Ztring ExternalMetadataValues, Ztring ExternalMetaDataConfig)
 {
     bool UseExternalMetaData=(!ExternalMetaDataConfig.empty() && !ExternalMetadataValues.empty());
+    bool HideEnvironment=MediaInfoLib::Config.Inform_HideEnvironment_Get();
 
     Ztring ToReturn;
     for (size_t Pos=0; Pos<MI.Count_Get(Stream_Image); Pos++)
@@ -145,10 +146,14 @@ Ztring Export_Niso::Transform(MediaInfo_Internal &MI, Ztring ExternalMetadataVal
                     Node_CoreMain->Add_Attribute("xsi:schemaLocation", string("urn:ebu:metadata-schema:ebucore http") + string(MediaInfoLib::Config.Https_Get() ? "s" : "") + "://www.ebu.ch/metadata/schemas/EBUCore/20171009/ebucore.xsd");
                     Node_CoreMain->Add_Attribute("version", "1.8");
                     Node_CoreMain->Add_Attribute("writingLibraryName", "MediaInfoLib");
-                    Node_CoreMain->Add_Attribute("writingLibraryVersion", MediaInfoLib::Config.Info_Version_Get().SubString(__T(" - v"), Ztring()));
+                    if (!HideEnvironment)
+                        Node_CoreMain->Add_Attribute("writingLibraryVersion", MediaInfoLib::Config.Info_Version_Get().SubString(__T(" - v"), Ztring()));
                 }
-                Node_CoreMain->Add_Attribute("dateLastModified", Date);
-                Node_CoreMain->Add_Attribute("timeLastModified", Time);
+                if (!HideEnvironment)
+                {
+                    Node_CoreMain->Add_Attribute("dateLastModified", Date);
+                    Node_CoreMain->Add_Attribute("timeLastModified", Time);
+                }
             }
 
             if (!ExternalMetadata(FileName, ExternalMetadataValues, ExternalMetaDataConfig,
@@ -165,7 +170,8 @@ Ztring Export_Niso::Transform(MediaInfo_Internal &MI, Ztring ExternalMetadataVal
         Node* Node_ObjectIdentifier=Node_BasicDigitalObjectInformation->Add_Child("mix:ObjectIdentifier");
 
         Node_ObjectIdentifier->Add_Child("mix:objectIdentifierType", std::string("MediaInfo"));
-        Node_ObjectIdentifier->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_CompleteName, "mix:objectIdentifierValue");
+        if (!(HideEnvironment && Field_IsEnvironment(MI, Stream_General, General_CompleteName)))
+            Node_ObjectIdentifier->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_CompleteName, "mix:objectIdentifierValue");
 
         if (MI.Get(Stream_General, 0, General_FileSize).To_int64u()>0)
             Node_BasicDigitalObjectInformation->Add_Child("mix:fileSize", MI.Get(Stream_General, 0, General_FileSize));

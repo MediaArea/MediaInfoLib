@@ -123,8 +123,9 @@ string To_XML (Node& Cur_Node, const int& Level, bool Print_Header, bool Indent)
     }
 
     if (Print_Header)
-    {
         Result+="<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+    if (Print_Header && !MediaInfoLib::Config.Inform_HideEnvironment_Get())
+    {
         Result+="<!-- Generated";
         time_t Time=time(NULL);
         Ztring TimeS; TimeS.Date_From_Seconds_1970((int32u)Time);
