@@ -554,6 +554,8 @@ static bool Field_IsFileName(stream_t StreamKind, size_t Parameter)
 //---------------------------------------------------------------------------
 bool Field_IsEnvironment(MediaInfo_Internal& MI, stream_t StreamKind, size_t Parameter)
 {
+    if (Parameter==General_Count) //Count of fields, changing with the library version
+        return true;
     if (Field_IsFileName(StreamKind, Parameter))
         return FileName_IsEnvironment(MI);
     if (StreamKind!=Stream_General)

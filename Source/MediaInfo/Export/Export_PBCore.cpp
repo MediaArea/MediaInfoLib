@@ -186,9 +186,10 @@ void PBCore_Transform(Node *Parent, MediaInfo_Internal &MI, stream_t StreamKind,
         Node_EssenceTrack->Add_Child("essenceTrackLanguage", MediaInfoLib::Config.Iso639_2_Get(MI.Get(StreamKind, StreamPos, __T("Language"))));
 
     //essenceTrackAnnotation - all fields (except *_String*) separated by |
+    bool HideEnvironment=MediaInfoLib::Config.Inform_HideEnvironment_Get();
     Ztring Temp;
     for (size_t Pos=0; Pos<MI.Count_Get(StreamKind, StreamPos); Pos++)
-        if (MI.Get(StreamKind, StreamPos, Pos, Info_Name).find(__T("String"))==std::string::npos && !MI.Get(StreamKind, StreamPos, Pos).empty())
+        if (MI.Get(StreamKind, StreamPos, Pos, Info_Name).find(__T("String"))==std::string::npos && !MI.Get(StreamKind, StreamPos, Pos).empty() && !(HideEnvironment && Field_IsEnvironment(MI, StreamKind, Pos)))
             Temp+=MI.Get(StreamKind, StreamPos, Pos, Info_Name)+__T(": ")+MI.Get(StreamKind, StreamPos, Pos)+__T('|');
     if (!Temp.empty())
     {

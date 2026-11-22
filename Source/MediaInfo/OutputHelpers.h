@@ -235,7 +235,7 @@ std::string To_JSON (Node& Cur_Node, const int& Level, bool Print_Header=false, 
 
 bool ExternalMetadata(const ZenLib::Ztring& FileName, const ZenLib::Ztring& ExternalMetadata, const ZenLib::Ztring& ExternalMetaDataConfig, const ZenLib::ZtringList& Parents, const  ZenLib::Ztring& PlaceHolder, Node* Main, Node* MI_Info);
 
-//Inform_HideEnvironment option: fields filled from the file system, not from the file content
+//Inform_HideEnvironment option: fields filled from the file system or from the library version, not from the file content
 bool Field_IsEnvironment(MediaInfo_Internal& MI, stream_t StreamKind, size_t Parameter);
 
 #if defined(MEDIAINFO_EBUCORE_YES) || defined(MEDIAINFO_FIMS_YES) || defined(MEDIAINFO_MPEG7_YES)
