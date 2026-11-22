@@ -205,6 +205,9 @@ void File_ProRes::Read_Buffer_OutOfBand()
 //---------------------------------------------------------------------------
 void File_ProRes::Read_Buffer_Continue()
 {
+    if (Buffer_Size==0)
+        return;
+
     //Parsing
     int32u  Name, creatorID;
     int16u  hdrSize, version, frameWidth, frameHeight;

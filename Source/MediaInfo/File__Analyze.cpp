@@ -981,18 +981,20 @@ void File__Analyze::Open_Buffer_OutOfBand (File__Analyze* Sub, size_t Size)
     #endif //MEDIAINFO_DEMUX
 
     #if MEDIAINFO_TRACE
-        if (Size)
-            Trace_Details_Handling(Sub);
+        Trace_Details_Handling(Sub, Size!=0);
     #endif // MEDIAINFO_TRACE
 }
 #if MEDIAINFO_TRACE
-void File__Analyze::Trace_Details_Handling(File__Analyze* Sub)
+void File__Analyze::Trace_Details_Handling(File__Analyze* Sub, bool IsFed)
 {
     if (Trace_Activated)
     {
         //Element in which the sub-parser is fed, for its elements ended at finalization
-        Sub->Trace_Parent_Level=Element_Level;
-        Sub->Trace_Parent_Pos=Element[Element_Level].TraceNode.Pos;
+        if (IsFed)
+        {
+            Sub->Trace_Parent_Level=Element_Level;
+            Sub->Trace_Parent_Pos=Element[Element_Level].TraceNode.Pos;
+        }
 
         //Details handling
         if ((!Sub->Element[0].TraceNode.Name_Is_Empty() || Sub->Element[Sub->Element_Level].TraceNode.Children.size()) && !Trace_DoNotSave)
@@ -1018,7 +1020,7 @@ void File__Analyze::Trace_Details_Handling(File__Analyze* Sub)
                 Sub->Element[0].TraceNode.Init();
             }
         }
-        else
+        else if (IsFed)
             Element[Element_Level].TraceNode.NoShow = true; //We don't want to show this item because there is no info in it
     }
 }
@@ -1615,8 +1617,7 @@ void File__Analyze::Open_Buffer_Continue (File__Analyze* Sub, const int8u* ToAdd
     }
 
     #if MEDIAINFO_TRACE
-        if (ToAdd_Size)
-            Trace_Details_Handling(Sub);
+        Trace_Details_Handling(Sub, ToAdd_Size!=0);
     #endif //MEDIAINFO_TRACE
 }
 
