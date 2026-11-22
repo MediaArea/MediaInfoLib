@@ -119,6 +119,7 @@ private :
     bool BeginPaddingSizeIsFinal;
     bool SearchingForEndTags;
     bool SkippingUpToEnd;
+    int64u LastTag_End; //File offset after the last tag parsed
 
     //Helpers
     bool DetectBeginOfEndTags();        //return true if we can continue, false if want return
