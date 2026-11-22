@@ -13021,7 +13021,11 @@ void File_Mpeg4::wide()
     Element_Name("Wide");
 
     //Parsing
-    Skip_XX(Element_Size,                                       "Free");
+    Skip_XX(Element_TotalSize_Get(),                            "Free");
+    #if MEDIAINFO_HASH
+        if (Hash && !IsSecondPass)
+            GoTo(File_Offset+Buffer_Offset+Element_TotalSize_Get()); //Hash will be done during second pass
+    #endif //MEDIAINFO_HASH
 }
 
 //***************************************************************************
