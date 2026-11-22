@@ -261,8 +261,8 @@ protected :
     //***********************************************************************
 
     //Elements - Decoder configuration
-    void GASpecificConfig                   ();
-    void program_config_element             ();
+    void GASpecificConfig                   (size_t Start);
+    void program_config_element             (size_t Start);
 
     //Elements - GA bitstream
     void payload                            (size_t BitsNotIncluded=(size_t)-1);
@@ -402,7 +402,7 @@ protected :
     // Elements - Scalable lossless
     //***********************************************************************
 
-    void SLSSpecificConfig                  ();
+    void SLSSpecificConfig                  (size_t Start);
 
     //***********************************************************************
     // Temp
