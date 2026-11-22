@@ -131,6 +131,7 @@ protected :
     void Read_Buffer_Continue ();
     void Read_Buffer_Continue_AudioSpecificConfig();
     void Read_Buffer_Continue_HEAACWAVEFORMAT();
+    void Read_Buffer_Continue_ADIF();
     void Read_Buffer_Continue_payload();
     void Read_Buffer_Unsynched();
 

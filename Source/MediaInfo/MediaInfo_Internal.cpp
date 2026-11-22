@@ -1694,7 +1694,7 @@ size_t MediaInfo_Internal::Open_Buffer_Init (int64u File_Size_, int64u File_Offs
         }
     }
 
-    if (Info==NULL || File_Size_!=(int64u)-1)
+    if (Info==NULL || (File_Size_!=(int64u)-1 && File_Size_!=Info->File_Size))
         Open_Buffer_Init(File_Size_);
 
     if (File_Offset_!=(int64u)-1 && Info)

@@ -147,8 +147,12 @@ void File_Y4m::FileHeader_Parse()
                             {
                                 float64 x=Value[0].To_float64();
                                 float64 y=Value[1].To_float64();
-                                if (x && y)
-                                    Fill(Stream_Video, 0, Video_PixelAspectRatio, x/y, 3);
+                                if (y)
+                                {
+                                    float64 PixelAspectRatio=x/y;
+                                    if (PixelAspectRatio>=0.1 && PixelAspectRatio<=10) //Pixels up to 10 times higher or wider than square pixels, other values are not plausible
+                                        Fill(Stream_Video, 0, Video_PixelAspectRatio, PixelAspectRatio, 3);
+                                }
                             }
                             }
                             break;

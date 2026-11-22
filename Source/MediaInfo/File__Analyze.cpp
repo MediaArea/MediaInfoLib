@@ -1322,7 +1322,14 @@ void File__Analyze::Open_Buffer_Continue (const int8u* ToAdd, size_t ToAdd_Size)
     {
         if (Buffer_Offset>Buffer_Size)
             File_GoTo=File_Offset+Buffer_Offset;
+        #if MEDIAINFO_TRACE
+            bool IsComplete=Element[Element_Level].IsComplete;
+        #endif //MEDIAINFO_TRACE
         Buffer_Clear();
+        #if MEDIAINFO_TRACE
+            if (File_GoTo==(int64u)-1)
+                Element[Element_Level].IsComplete=IsComplete; //The data continues in the next buffer, no jump to finalize the details for
+        #endif //MEDIAINFO_TRACE
         return;
     }
 
@@ -3129,7 +3136,7 @@ void File__Analyze::Header_Fill_Size(int64u Size)
           && File_Offset+Buffer_Offset<Element[Element_Level-2].Next //An end before this element is not a limit (a sub-parser can get more data than the file has up to its end, e.g. merged channels)
           && (Element_Level>2 || Buffer_Offset+Size>Buffer_Size)) //Nor is the end of the file for an element which is completely in the buffer
     {
-        if (Element_IsComplete_Get() && (!IsSub || (File_Offset + Buffer_Size < File_Size && File_Size - (File_Offset + Buffer_Size) >= 0x10000))) { //TODO: good support of end of TS dumps
+        if (!Element_IsWaitingForMoreData() && (!IsSub || (File_Offset + Buffer_Size < File_Size && File_Size - (File_Offset + Buffer_Size) >= 0x10000))) { //TODO: good support of end of TS dumps
             auto Name = CreateElementName();
             if (!Name.empty()) {
                 Name += ' ';
@@ -5101,11 +5108,9 @@ void File__Analyze::Fill_Conformance(const char* Field, const char* Value, uint8
             Data.Frame_Count_NotParsedIncluded -= Frame_Count_InThisBlock;
         }
     }
-    if (FrameInfo.PTS != (int64u)-1 && PTS_Begin != (int64u)-1)
-        FrameInfo.PTS -= PTS_Begin;
     Data.PTS = FrameInfo.PTS == (int64u)-1 ? FrameInfo.DTS : FrameInfo.PTS;
     if (FrameInfo.PTS != (int64u)-1 && PTS_Begin != (int64u)-1)
-        FrameInfo.PTS -= PTS_Begin;
+        Data.PTS -= PTS_Begin;
     if (Data.PTS != (int64u)-1) {
         if (Frame_Count_InThisBlock) {
             Data.PTS -= FrameInfo.DUR;

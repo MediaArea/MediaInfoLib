@@ -3154,8 +3154,9 @@ void File_Aac::raw_data_block(size_t BitsNotIncluded)
 {
     if (BitsNotIncluded==(size_t)-1)
         BitsNotIncluded=0;
-    if ((ParseCompletely<1 && Status[IsFilled])
-     ||  ParseCompletely<0)
+    if (((ParseCompletely<1 && Status[IsFilled])
+      ||  ParseCompletely<0)
+     && (IsSub || Mode!=Mode_payload)) //Not ADIF, its raw data blocks are parsed for finding the next one
     {
         if (Data_BS_Remain()>BitsNotIncluded)
             Skip_BS(Data_BS_Remain()-BitsNotIncluded,           "raw_data_block");
@@ -3222,7 +3223,7 @@ void File_Aac::raw_data_block(size_t BitsNotIncluded)
     if (Element_IsOK() && Data_BS_Remain()<BitsNotIncluded)
         Trusted_IsNot("Too big");
     if ((!HasEnd || (ChannelCount_Temp && ChannelPos_Temp!=ChannelCount_Temp)) && Retrieve_Const(Stream_Audio, 0, "Errors").empty()
-     && !Frame_IsCut) //Not for a frame cut by the end of the file, its end is not there
+     && !Frame_IsCut && !Element_IsWaitingForMoreData()) //Not for a frame cut by the end of the file or of the buffer, its end is not there
     {
         if (!HasEnd)
             Fill(Stream_Audio, 0, "Errors", "Missing ID_END");

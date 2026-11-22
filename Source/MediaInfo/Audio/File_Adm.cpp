@@ -2394,7 +2394,7 @@ set<string> audioPackFormatID_2_audioChannelFormatIDRef (int16u audioPackFormatI
     }
 }
 
-enum atmos_audioChannelFormatName {
+enum atmos_audioChannelFormatName : int8s {
     Atmos_L,
     Atmos_R,
     Atmos_C,

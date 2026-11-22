@@ -360,6 +360,8 @@ File_DvDif::File_DvDif()
     TF2=false; //Valid by default, for direct analyze
     TF3=false; //Valid by default, for direct analyze
     system=false;
+    FSC=false;
+    FSP=false;
     FSC_WasSet=false;
     FSP_WasNotSet=false;
     video_sourcecontrol_IsParsed=false;

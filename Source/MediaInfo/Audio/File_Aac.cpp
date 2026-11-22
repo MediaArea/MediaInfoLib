@@ -257,6 +257,7 @@ void File_Aac::Streams_Finish()
 
     switch(Mode)
     {
+        case Mode_payload : if (!IsSub) File__Tags_Helper::Streams_Finish(); break; //ADIF raw data blocks up to the end
         case Mode_ADIF    :
         case Mode_ADTS    : File__Tags_Helper::Streams_Finish(); break;
         default           : ;
@@ -375,7 +376,11 @@ void File_Aac::FileHeader_Parse()
 void File_Aac::FileHeader_Parse_ADIF()
 {
     adif_header();
-    Mode=Mode_payload;
+
+    FILLING_BEGIN();
+        Infos_AudioSpecificConfig=Infos;
+        Mode=Mode_payload;
+    FILLING_END();
 }
 
 //***************************************************************************
@@ -405,7 +410,7 @@ void File_Aac::Read_Buffer_Continue()
     switch(Mode)
     {
         case Mode_AudioSpecificConfig : Read_Buffer_Continue_AudioSpecificConfig(); break;
-        case Mode_payload             : Read_Buffer_Continue_payload(); break;
+        case Mode_payload             : if (IsSub) Read_Buffer_Continue_payload(); else Read_Buffer_Continue_ADIF(); break;
         case Mode_ADIF                :
         case Mode_LATM:
         case Mode_ADTS                : File__Tags_Helper::Read_Buffer_Continue(); break;
@@ -462,6 +467,42 @@ void File_Aac::Read_Buffer_Continue_HEAACWAVEFORMAT()
 }
 
 //---------------------------------------------------------------------------
+void File_Aac::Read_Buffer_Continue_ADIF()
+{
+    //The raw data blocks have no size, each one is parsed for finding the next one, up to the tags after them
+    while (Buffer_Offset<Buffer_Size)
+    {
+        size_t Buffer_Offset_Before=Buffer_Offset;
+        bool Tag_Found;
+        bool Tag_Synched=File__Tags_Helper::Synchronize(Tag_Found);
+        if (Buffer_Offset!=Buffer_Offset_Before)
+        {
+            Mode=Mode_ADIF; //Tags after the stream
+            break;
+        }
+        if (!Tag_Synched && File_Offset+Buffer_Size<File_Size)
+        {
+            Element_WaitForMoreData();
+            return;
+        }
+
+        Element_Offset=0;
+        Element_Size=Buffer_Size-Buffer_Offset;
+        Read_Buffer_Continue_payload();
+        if (Mode!=Mode_payload || Element_IsWaitingForMoreData())
+            return;
+        if (!Element_IsOK())
+        {
+            Mode=Mode_ADIF; //No next raw data block to find
+            File__Tags_Helper::Finish();
+            return;
+        }
+        Buffer_Offset+=(size_t)Element_Offset;
+        Element_Offset=0;
+    }
+}
+
+//---------------------------------------------------------------------------
 void File_Aac::Read_Buffer_Continue_payload()
 {
     BS_Begin();
@@ -491,7 +532,7 @@ void File_Aac::Read_Buffer_Continue_payload()
                 Open_Buffer_Unsynch();
                 if (!IsSub && Mode!=Mode_LATM) //Mainly for knowinf it is ADIF, which has sometimes tags at the end
                 {
-                    Mode=Mode_Unknown;
+                    Mode=Mode_ADIF;
                     File__Tags_Helper::Finish();
                 }
                 else
