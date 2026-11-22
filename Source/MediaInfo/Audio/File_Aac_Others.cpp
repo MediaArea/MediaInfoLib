@@ -488,7 +488,7 @@ void File_Aac::ALSSpecificConfig(size_t Start, size_t End)
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-void File_Aac::SLSSpecificConfig()
+void File_Aac::SLSSpecificConfig(size_t Start)
 {
     Element_Begin1("SLSSpecificConfig");
     Skip_S1(3,"pcmWordLength");
@@ -497,7 +497,7 @@ void File_Aac::SLSSpecificConfig()
     Skip_SB("reserved_bit");
     Skip_S1(3,"frameLength");
     if (!channelConfiguration)
-        program_config_element();
+        program_config_element(Start);
     Element_End0();
 }
 

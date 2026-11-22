@@ -682,7 +682,7 @@ void File_Aac::AudioSpecificConfig (size_t End)
         case 21:
         case 22:
         case 23:
-            GASpecificConfig();
+            GASpecificConfig(Start);
             break;
         case 8:
             CelpSpecificConfig();
@@ -730,7 +730,7 @@ void File_Aac::AudioSpecificConfig (size_t End)
             break;
         case 37:
         case 38:
-            SLSSpecificConfig();
+            SLSSpecificConfig(Start);
             break;
         case 39:
             ELDSpecificConfig();
@@ -1415,6 +1415,7 @@ void File_Aac::adif_header()
     bool   bitstream_type;
     Skip_C4(                                                    "adif_id");
     BS_Begin();
+    size_t Start=Data_BS_Remain();
     TEST_SB_SKIP(                                               "copyright_id_present");
         Skip_S4(32,                                             "copyright_id");
         Skip_S4(32,                                             "copyright_id");
@@ -1429,7 +1430,7 @@ void File_Aac::adif_header()
     {
         if (!bitstream_type)
             Skip_S3(20,                                         "adif_buffer_fullness");
-        program_config_element();
+        program_config_element(Start);
     }
     BS_End();
 

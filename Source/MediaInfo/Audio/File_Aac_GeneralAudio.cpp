@@ -2881,7 +2881,7 @@ static const char* Aac_window_sequence[4]=
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-void File_Aac::GASpecificConfig ()
+void File_Aac::GASpecificConfig (size_t Start)
 {
     //Parsing
     Element_Begin1("GASpecificConfig");
@@ -2893,7 +2893,7 @@ void File_Aac::GASpecificConfig ()
         Skip_S2(14,                                             "coreCoderDelay");
     Get_SB (   extensionFlag,                                   "extensionFlag");
     if (channelConfiguration==0)
-        program_config_element();
+        program_config_element(Start);
     if (audioObjectType==06 || audioObjectType==20)
         Skip_S1(3,                                              "layerNr");
     if (extensionFlag)
@@ -2923,7 +2923,7 @@ void File_Aac::GASpecificConfig ()
 }
 
 //---------------------------------------------------------------------------
-void File_Aac::program_config_element()
+void File_Aac::program_config_element(size_t Start)
 {
     Element_Begin1("program_config_element");
     Ztring comment_field_data;
@@ -3032,11 +3032,32 @@ void File_Aac::program_config_element()
         Skip_S1(4,                                              "valid_cc_element_tag_select");
         Element_End0();
     }
-    BS_End(); //Byte align
-    Get_B1 (comment_field_bytes,                                "comment_field_bytes");
+    size_t Align=(Start-Data_BS_Remain())%8; //Relative to the start of the containing element, not byte aligned in the buffer in LATM
+    if (Align)
+        Skip_S1(8-Align,                                        "byte_alignment");
+    Get_S1 (8, comment_field_bytes,                             "comment_field_bytes");
+    Loop_CheckValue_BS(comment_field_bytes, 8, "comment_field_bytes");
     if (comment_field_bytes)
-        Get_UTF8(comment_field_bytes, comment_field_data,       "comment_field_data");
-    BS_Begin(); //The stream needs continuity in the bitstream
+    {
+        Element_Begin1("comment_field_data");
+        string comment_field_data_Raw(comment_field_bytes, '\0'); //Copied, not byte aligned in the buffer in LATM
+        #if MEDIAINFO_TRACE
+            bool Trace_Activated_Save=Trace_Activated;
+            Trace_Activated=false; //Shown as the element info
+        #endif //MEDIAINFO_TRACE
+        for (auto& Byte : comment_field_data_Raw)
+        {
+            int8u Value;
+            Get_S1(8, Value,                                    "comment_field_data[]");
+            Byte=(char)Value;
+        }
+        #if MEDIAINFO_TRACE
+            Trace_Activated=Trace_Activated_Save;
+        #endif //MEDIAINFO_TRACE
+        comment_field_data.From_UTF8(comment_field_data_Raw);
+        Element_Info1(comment_field_data);
+        Element_End0();
+    }
     Element_End0();
 
     //Filling
@@ -3171,6 +3192,7 @@ void File_Aac::raw_data_block(size_t BitsNotIncluded)
         return;
     }
 
+    size_t Start=Data_BS_Remain();
     Element_Begin1("raw_data_block");
     raw_data_block_Pos=0;
     ChannelPos_Temp=0;
@@ -3196,7 +3218,7 @@ void File_Aac::raw_data_block(size_t BitsNotIncluded)
             case 0x02 : coupling_channel_element();         break; //ID_CCE
             case 0x03 : lfe_channel_element();              break; //ID_LFE
             case 0x04 : data_stream_element();              break; //ID_DSE
-            case 0x05 : program_config_element();           break; //ID_PCE
+            case 0x05 : program_config_element(Start);      break; //ID_PCE
             case 0x06 : fill_element(id_syn_ele_Previous);  break; //ID_FIL
             case 0x07 :                                     break; //ID_END
             default   :                                          ; //Can not happen
