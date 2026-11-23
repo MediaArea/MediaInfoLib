@@ -1033,7 +1033,7 @@ void File_Dirac::picture(bool IsFragment)
 {
     //Parsing
     int8u Mode=Dirac_CompressionMode_Unknown;
-    if (!IsFragment && !(Element_Code&0x03) && version_major<=3) //Quantisation indexes of inter pictures are after the motion data, not read
+    if (!IsFragment && !(Element_Code&0x03) && version_major && version_major<=3) //Quantisation indexes of inter pictures are after the motion data, not read; version 0 is from software before the specification, with another picture syntax
         Mode=picture_Compression_Mode();
     Skip_XX(Element_Size-Element_Offset,                        "Data");
 
