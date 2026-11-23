@@ -516,6 +516,7 @@ protected :
 protected :
     //Element - Common
     bool   Element_Begin_Common();
+    void   Element_Begin_TraceNode();
     void   Element_End_Common_Flush();
     void   Element_End_Common_Flush_Details();
 public :
@@ -537,6 +538,12 @@ public :
     const element_details::Element_Node_String& Trace_String(const char* Data, size_t Size);
     const element_details::Element_Node_String& Trace_String(const char* Data) {return Trace_String(Data, Data?strlen(Data):0);}
 
+    //Bits already read in the current bit stream, big endian (BS) or little endian (BT), the other one is not attached
+    int64u BS_BitOffset_Get()
+    {
+        return BS_Size?(BS_Size-BS->Remain()-BT->Remain()):0;
+    }
+
     //Param - Main
     element_details::Element_Node* Param_Node(int8u GenericOption)
     {
@@ -554,7 +561,7 @@ public :
         node->Pos = File_Offset+Buffer_Offset+Element_Offset;
         if (BS_Size)
         {
-            int64u BS_BitOffset = BS_Size-BS->Remain();
+            int64u BS_BitOffset = BS_BitOffset_Get();
             if (GenericOption != (int8u)-1)
                 BS_BitOffset -= GenericOption;
             node->Pos += BS_BitOffset>>3; //Including Bits to Bytes
