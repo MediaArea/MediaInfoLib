@@ -611,8 +611,10 @@ protected :
     void CameraUnitAcquisitionMetadata_GammaForCDL();                      //8116
     void CameraUnitAcquisitionMetadata_ASC_CDL_V12();                      //8117
     void CameraUnitAcquisitionMetadata_ColorMatrix();                      //8118
+    void CameraUnitAcquisitionMetadata_TintCorrection();                   //811F
     void UserDefinedAcquisitionMetadata_UdamSetIdentifier();    //E000
     void UserDefinedAcquisitionMetadata_Sony_8007();
+    void UserDefinedAcquisitionMetadata_Sony_8414();
     void UserDefinedAcquisitionMetadata_Sony_E101();
     void UserDefinedAcquisitionMetadata_Sony_E102();
     void UserDefinedAcquisitionMetadata_Sony_E103();
@@ -620,8 +622,20 @@ protected :
     void UserDefinedAcquisitionMetadata_Sony_E105();
     void UserDefinedAcquisitionMetadata_Sony_E106();
     void UserDefinedAcquisitionMetadata_Sony_E107();
+    void UserDefinedAcquisitionMetadata_Sony_E108();
     void UserDefinedAcquisitionMetadata_Sony_E109();
+    void UserDefinedAcquisitionMetadata_Sony_E10A();
     void UserDefinedAcquisitionMetadata_Sony_E10B();
+    void UserDefinedAcquisitionMetadata_Sony_E10D();
+    void UserDefinedAcquisitionMetadata_Sony_E10E();
+    void UserDefinedAcquisitionMetadata_Sony_E10F();
+    void UserDefinedAcquisitionMetadata_Sony_E110();
+    void UserDefinedAcquisitionMetadata_Sony_E111();
+    void UserDefinedAcquisitionMetadata_Sony_E112();
+    void UserDefinedAcquisitionMetadata_Sony_E113();
+    void UserDefinedAcquisitionMetadata_Sony_E114();
+    void UserDefinedAcquisitionMetadata_Sony_E115();
+    void UserDefinedAcquisitionMetadata_Sony_E116();
     void UserDefinedAcquisitionMetadata_Sony_E201();
     void UserDefinedAcquisitionMetadata_Sony_E202();
     void UserDefinedAcquisitionMetadata_Sony_E203();
