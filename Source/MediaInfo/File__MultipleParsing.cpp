@@ -87,6 +87,9 @@
 #if defined(MEDIAINFO_MIXML_YES)
     #include "MediaInfo/Multiple/File_MiXml.h"
 #endif
+#if defined(MEDIAINFO_MMTTLV_YES)
+    #include "MediaInfo/Multiple/File_MmtTlv.h"
+#endif
 #if defined(MEDIAINFO_MPEG4_YES)
     #include "MediaInfo/Multiple/File_Mpeg4.h"
 #endif
@@ -541,6 +544,9 @@ File__MultipleParsing::File__MultipleParsing()
     #endif
     #if defined(MEDIAINFO_MIXML_YES)
         Parser.push_back(new File_MiXml());
+    #endif
+    #if defined(MEDIAINFO_MMTTLV_YES)
+        Parser.push_back(new File_MmtTlv());
     #endif
     #if defined(MEDIAINFO_MPEG4_YES)
         Parser.push_back(new File_Mpeg4());
