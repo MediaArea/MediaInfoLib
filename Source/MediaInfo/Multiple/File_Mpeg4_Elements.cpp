@@ -356,6 +356,7 @@ std::string File_Mpeg4_sv3d_ProjectionType(int8u Value)
 #include "MediaInfo/Multiple/File_Mpeg4_TimeCode.h"
 #include "ZenLib/FileName.h"
 #include "ThirdParty/base64/base64.h"
+#include "ThirdParty/tfsxml/tfsxml_tinyxml2.h"
 #define FMT_UNICODE 0
 #include "ThirdParty/fmt/format.h"
 #include <zlib.h>
@@ -918,6 +919,7 @@ namespace Elements
     const int64u meta_iprp_ipma=0x69706D61;
     const int64u meta_iref=0x69726566;
     const int64u meta_pitm=0x7069746D;
+    const int64u meta_xml=0x786D6C20;
     const int64u mfra=0x6D667261;
     const int64u mfra_mfro=0x6D66726F;
     const int64u mfra_tfra=0x74667261;
@@ -954,6 +956,7 @@ namespace Elements
     const int64u moov_meta_hdlr_mdta=0x6D647461;
     const int64u moov_meta_hdlr_mp7b=0x6D703762;
     const int64u moov_meta_hdlr_mp7t=0x6D703774;
+    const int64u moov_meta_hdlr_nrtm=0x6E72746D;
     const int64u moov_meta_keys=0x6B657973;
     const int64u moov_meta_keys_mdta=0x6D647461;
     const int64u moov_meta_ilst=0x696C7374;
@@ -1358,6 +1361,7 @@ void File_Mpeg4::Data_Parse()
         LIST(meta_iref)
             ATOM_DEFAULT_ALONE (meta_iref_xxxx)
         ATOM(meta_pitm)
+        ATOM(meta_xml)
         ATOM_END
     LIST(mfra)
         ATOM_BEGIN
@@ -5602,10 +5606,51 @@ void File_Mpeg4::moov_meta_ilst_xxxx_name()
 void File_Mpeg4::moov_meta_xml()
 {
     NAME_VERSION_FLAG("XML", 0); //ISO/IEC 14496-12
-    INTEGRITY(moov_meta_hdlr_Type==Elements::moov_meta_hdlr_mp7t, "Bad meta type");
+    INTEGRITY(moov_meta_hdlr_Type==Elements::moov_meta_hdlr_mp7t || moov_meta_hdlr_Type==Elements::moov_meta_hdlr_nrtm, "Bad meta type");
 
     //Parsing
+    const char* Xml=(const char*)Buffer+Buffer_Offset+(size_t)Element_Offset;
+    size_t Xml_Size=(size_t)(Element_Size-Element_Offset);
     Skip_XX(Element_Size-Element_Offset,                        "XML dump");
+
+    FILLING_BEGIN();
+        if (moov_meta_hdlr_Type==Elements::moov_meta_hdlr_nrtm)
+        {
+            tinyxml2::XMLDocument document;
+            if (!document.Parse(Xml, Xml_Size))
+            {
+                tinyxml2::XMLElement* Root=document.FirstChildElement("NonRealTimeMeta");
+                if (Root)
+                {
+                    tinyxml2::XMLElement* Element;
+                    const char* Value;
+
+                    //CreationDate
+                    Element=Root->FirstChildElement("CreationDate");
+                    if (Element && (Value=Element->Attribute("value")))
+                        Fill(Stream_General, 0, General_Recorded_Date, Value, Unlimited, true, true);
+
+                    //Device
+                    Element=Root->FirstChildElement("Device");
+                    if (Element && (Value=Element->Attribute("manufacturer")))
+                    {
+                        string manufacturer_modelName(Value);
+                        if ((Value=Element->Attribute("modelName")))
+                        {
+                            manufacturer_modelName+=' ';
+                            manufacturer_modelName+=Value;
+                        }
+                        Fill(Stream_General, 0, General_Encoded_Application, manufacturer_modelName, true, false);
+                    }
+
+                    //Lens
+                    Element=Root->FirstChildElement("Lens");
+                    if (Element && (Value=Element->Attribute("modelName")))
+                        Fill(Stream_General, 0, "LensModel", Value, Unlimited, true, true);
+                }
+            }
+        }
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
