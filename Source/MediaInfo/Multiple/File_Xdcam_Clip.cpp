@@ -26,6 +26,7 @@
 #include "MediaInfo/MediaInfo_Internal.h"
 #if defined(MEDIAINFO_REFERENCES_YES)
 #include "ZenLib/File.h"
+#include "ZenLib/FileName.h"
 #endif //defined(MEDIAINFO_REFERENCES_YES)
 #include "ThirdParty/tfsxml/tfsxml_tinyxml2.h"
 using namespace tinyxml2;
@@ -80,7 +81,8 @@ bool File_Xdcam_Clip::FileHeader_Begin()
             int64u File_Size_Total=File_Size;
 
             #if defined(MEDIAINFO_REFERENCES_YES)
-                if (File_Name.size()>12
+                if (RelatedFiles_CanBeSearched(File_Name)
+                 && FileName::FullName_Get(File_Name).size()>7
                  && File_Name[File_Name.size()-7]==__T('M')
                  && File_Name[File_Name.size()-6]==__T('0')
                  && File_Name[File_Name.size()-5]==__T('1')
@@ -89,10 +91,8 @@ bool File_Xdcam_Clip::FileHeader_Begin()
                  && File_Name[File_Name.size()-2]==__T('M')
                  && File_Name[File_Name.size()-1]==__T('L'))
                 {
-                    Ztring file=File_Name.substr(File_Name.size()-12, 5);
                     Ztring MXF_File=File_Name;
-                    MXF_File.resize(MXF_File.size()-12);
-                    MXF_File+=file;
+                    MXF_File.resize(MXF_File.size()-7);
                     if (File::Exists(MXF_File+__T(".MXF")))
                         MXF_File+=__T(".MXF");
                     if (File::Exists(MXF_File+__T(".MP4")))
