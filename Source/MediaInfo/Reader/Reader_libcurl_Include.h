@@ -1175,6 +1175,15 @@ typedef enum {
   /* bitmask of allowed auth methods for connections to SOCKS5 proxies */
   CINIT(SOCKS5_AUTH, LONG, 267),
 
+  /* specify which protocols that are allowed to be used for the transfer,
+     which thus helps the app which takes URLs from users or other external
+     inputs and want to restrict what protocol(s) to deal with. Defaults to
+     all built-in protocols. */
+  CINIT(PROTOCOLS_STR, STRINGPOINT, 318),
+
+  /* specify which protocols that libcurl is allowed to follow directs to */
+  CINIT(REDIR_PROTOCOLS_STR, STRINGPOINT, 319),
+
   CURLOPT_LASTENTRY /* the last unused */
 } CURLoption;
 
