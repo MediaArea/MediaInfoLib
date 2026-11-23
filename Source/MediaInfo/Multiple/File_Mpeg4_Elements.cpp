@@ -10823,7 +10823,7 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxx_wave_enda()
         #if defined(MEDIAINFO_PCM_YES)
             if (Streams[moov_trak_tkhd_TrackID].IsPcm)
             {
-                char EndiannessC=Endianness?'L':'B';
+                char EndiannessC=(Endianness&0xFF)==1?'L':'B'; //Only the low byte is tested by Apple software
                 const std::vector<File__Analyze*>& Parsers=Streams[moov_trak_tkhd_TrackID].Parsers;
                 for (size_t i=0; i< Parsers.size(); i++)
                     ((File_Pcm_Base*)Parsers[i])->Endianness=EndiannessC;

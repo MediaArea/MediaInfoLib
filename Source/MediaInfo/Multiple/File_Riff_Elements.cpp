@@ -301,6 +301,7 @@ namespace Elements
     const int32u AIFC_COMT=0x434F4D54;
     const int32u AIFC_FVER=0x46564552;
     const int32u AIFC_SSND=0x53534E44;
+    const int32u AIFC_wave=0x77617665;
     const int32u AIFF=0x41494646;
     const int32u AIFF_COMM=0x434F4D4D;
     const int32u AIFF_COMT=0x434F4D54;
@@ -534,6 +535,7 @@ void File_Riff::Data_Parse()
         ATOM(AIFC_COMT)
         ATOM(AIFC_FVER)
         ATOM(AIFC_SSND)
+        ATOM(AIFC_wave)
         ATOM_DEFAULT(AIFC_xxxx)
         ATOM_END_DEFAULT
     LIST(AIFF)
@@ -773,6 +775,82 @@ void File_Riff::AIFC_FVER()
 void File_Riff::AIFC_SSND()
 {
     AIFF_SSND();
+}
+
+//---------------------------------------------------------------------------
+void File_Riff::AIFC_wave()
+{
+    Element_Name("Decompression parameters");
+
+    //Parsing
+    int8u enda=(int8u)-1;
+    while (Element_Offset+8<=Element_Size)
+    {
+        int32u Size, Type;
+        Element_Begin0();
+        Get_B4 (Size,                                           "Size");
+        Get_C4 (Type,                                           "Type");
+        if (!Type)
+        {
+            Element_Name("Terminator");
+            Element_End0();
+            break;
+        }
+        Element_Name(Ztring().From_CC4(Type));
+        if (Size<8 || Size-8>Element_Size-Element_Offset)
+        {
+            Trusted_IsNot("Size");
+            Element_End0();
+            break;
+        }
+        const int64u End=Element_Offset+Size-8;
+        switch (Type)
+        {
+            case 0x656E6461 : //enda
+                if (Size>=10)
+                {
+                    int16u Endianness;
+                    Get_B2 (Endianness,                         "Endianness");
+                    enda=(int8u)Endianness; //Only the low byte is tested by Apple software
+                }
+                break;
+            case 0x66726D61 : //frma
+                if (Size>=12)
+                    Skip_C4(                                    "Data format");
+                break;
+            default:;
+        }
+        if (Element_Offset<End)
+            Skip_XX(End-Element_Offset,                         "Unknown");
+        Element_End0();
+    }
+    if (Element_Offset<Element_Size)
+        Skip_XX(Element_Size-Element_Offset,                    "Unknown");
+
+    FILLING_BEGIN();
+        #if defined(MEDIAINFO_PCM_YES) || defined(MEDIAINFO_DTS_YES) || defined(MEDIAINFO_SMPTEST0337_YES)
+        //Compression types with a big-endian default which can be changed by the decompression parameters
+        const Ztring Codec=Retrieve(Stream_Audio, StreamPos_Last, Audio_CodecID);
+        if (enda==1 && (Codec==__T("in24") || Codec==__T("in32") || Codec==__T("fl32") || Codec==__T("FL32") || Codec==__T("fl64") || Codec==__T("FL64")))
+        {
+            stream& StreamItem=Stream[Stream_ID];
+            bool HasData=false;
+            for (size_t Pos=0; Pos<StreamItem.Parsers.size(); Pos++)
+                if (StreamItem.Parsers[Pos]->Buffer_TotalBytes)
+                    HasData=true;
+            if (!HasData)
+            {
+                //The PCM parsers are created again with the little-endian setting
+                for (size_t Pos=0; Pos<StreamItem.Parsers.size(); Pos++)
+                    delete StreamItem.Parsers[Pos];
+                StreamItem.Parsers.clear();
+                const int16u BitDepth=Retrieve_Const(Stream_Audio, StreamPos_Last, Audio_BitDepth).To_int16u();
+                Parser_Pcm(StreamItem, Retrieve_Const(Stream_Audio, StreamPos_Last, Audio_Channel_s_).To_int16u(), BitDepth, BitDepth, Retrieve_Const(Stream_Audio, StreamPos_Last, Audio_SamplingRate).To_int32u(), 'L');
+                Open_Buffer_Init_All();
+            }
+        }
+        #endif
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -4782,6 +4860,8 @@ void File_Riff::Parser_Pcm(stream& StreamItem, int16u Channels, int16u BitsPerSa
             Parser->Endianness=Endianness;
         else if (Kind!=Kind_Aiff && BitsPerSample>=16 && BitsPerSample<=32)
             Parser->Endianness='L'; // WAV PCM is little-endian by default, AIFF-C PCM has the endianness of its compression type
+        if (Kind==Kind_Aiff && (Parser->Codec.empty() || Parser->Codec==__T("NONE")))
+            Parser->Sign='S'; // AIFF samples are two's complement, also with 8 bits
         int16u StoredBitsPerSample=BitsPerSample;
         if (BitsPerSample%8)
         {
