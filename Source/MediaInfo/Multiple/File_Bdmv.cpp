@@ -448,15 +448,11 @@ static Ztring Bdmv_Decimal_Hexa(int64u Number)
 // The file (name of 10 characters) is in its folder of a Blu-ray disc, else the files of the other folders can not be found from its name
 static bool Bdmv_IsInFolder(const Ztring& File_Name, const Char* Folder)
 {
-    const size_t Folder_Size=Ztring(Folder).size();
-    if (File_Name.size()<10+1+Folder_Size)
+    if (!RelatedFiles_CanBeSearched(File_Name) || FileName::FullName_Get(File_Name).size()!=10)
         return false;
-    const size_t Folder_Pos=File_Name.size()-(10+1+Folder_Size);
-    Ztring Name=File_Name.substr(Folder_Pos, Folder_Size);
+    Ztring Name=FileName::FolderName_Get(File_Name);
     Name.MakeUpperCase();
-    return Name==Folder
-        && (File_Name[Folder_Pos+Folder_Size]==__T('/') || File_Name[Folder_Pos+Folder_Size]==__T('\\'))
-        && (!Folder_Pos || File_Name[Folder_Pos-1]==__T('/') || File_Name[Folder_Pos-1]==__T('\\'));
+    return Name==Folder;
 }
 
 //***************************************************************************
@@ -709,26 +705,27 @@ void File_Bdmv::Clpi_ProgramInfo()
     //Retrieving data from the M2TS file
     std::map<int16u, stream_t> PIDs_StreamKind;
     std::map<int16u, size_t> PIDs_StreamPos;
-    if (Config->File_Bdmv_ParseTargetedFile_Get() && File_Name.size()>10+1+7)
+    if (Config->File_Bdmv_ParseTargetedFile_Get())
     {
-        Ztring file=File_Name.substr(File_Name.size()-10, 5);
-        Ztring M2TS_File=File_Name;
-        M2TS_File.resize(M2TS_File.size()-(10+1+7));
-        M2TS_File+=__T("STREAM");
-        M2TS_File+=PathSeparator;
-        M2TS_File+=file;
-        M2TS_File+=__T(".m2ts");
-
-        MediaInfo_Internal MI;
-        MI.Option(__T("File_Bdmv_ParseTargetedFile"), __T("0"));
-        MI.Option(__T("File_IsReferenced"), __T("1"));
-        MI.Option(__T("File_DisplayCaptions"), Config->Option(__T("File_DisplayCaptions_Get"), Ztring()));
-        if (Bdmv_IsInFolder(File_Name, __T("CLIPINF")) && MI.Open(M2TS_File))
+        if (Bdmv_IsInFolder(File_Name, __T("CLIPINF")))
         {
-            Merge(MI);
-            for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
-                for (size_t StreamPos=0; StreamPos<Count_Get((stream_t)StreamKind); StreamPos++)
-                    Fill((stream_t)StreamKind, StreamPos, "Source", file+__T(".m2ts"));
+            Ztring file=File_Name.substr(File_Name.size()-10, 5);
+            Ztring M2TS_File=__T("STREAM");
+            M2TS_File+=PathSeparator;
+            M2TS_File+=file;
+            M2TS_File+=__T(".m2ts");
+
+            MediaInfo_Internal MI;
+            MI.Option(__T("File_Bdmv_ParseTargetedFile"), __T("0"));
+            MI.Option(__T("File_IsReferenced"), __T("1"));
+            MI.Option(__T("File_DisplayCaptions"), Config->Option(__T("File_DisplayCaptions_Get"), Ztring()));
+            if (MI.Open(FileName::FromFolder_Get(File_Name, M2TS_File, 1)))
+            {
+                Merge(MI);
+                for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
+                    for (size_t StreamPos=0; StreamPos<Count_Get((stream_t)StreamKind); StreamPos++)
+                        Fill((stream_t)StreamKind, StreamPos, "Source", file+__T(".m2ts"));
+            }
         }
 
         //Retrieving PID mapping
@@ -1210,11 +1207,9 @@ void File_Bdmv::Mpls_PlayList_PlayItem()
 
     Mpls_PlayList_PlayItem_STN_table();
 
-    if (Clip_Information_file_names.find(Clip_Information_file_name)==Clip_Information_file_names.end() && File_Name.size()>10+1+8)
+    if (Clip_Information_file_names.find(Clip_Information_file_name)==Clip_Information_file_names.end() && Bdmv_IsInFolder(File_Name, __T("PLAYLIST")))
     {
-        Ztring CLPI_File=File_Name;
-        CLPI_File.resize(CLPI_File.size()-(10+1+8));
-        CLPI_File+=__T("CLIPINF");
+        Ztring CLPI_File=__T("CLIPINF");
         CLPI_File+=PathSeparator;
         CLPI_File+=Clip_Information_file_name;
         CLPI_File+=__T(".clpi");
@@ -1223,7 +1218,7 @@ void File_Bdmv::Mpls_PlayList_PlayItem()
         MI.Option(__T("File_Bdmv_ParseTargetedFile"), Config->File_Bdmv_ParseTargetedFile_Get()?__T("1"):__T("0"));
         MI.Option(__T("File_IsReferenced"), __T("1"));
         MI.Option(__T("File_DisplayCaptions"), Config->Option(__T("File_DisplayCaptions_Get"), Ztring()));
-        if (Bdmv_IsInFolder(File_Name, __T("PLAYLIST")) && MI.Open(CLPI_File))
+        if (MI.Open(FileName::FromFolder_Get(File_Name, CLPI_File, 1)))
         {
             for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
                 for (size_t StreamPos=0; StreamPos<MI.Count_Get((stream_t)StreamKind); StreamPos++)
@@ -1399,11 +1394,9 @@ void File_Bdmv::Mpls_PlayList_SubPlayItem(int8u SubPath_type, int16u Pos)
     FILLING_BEGIN();
         if (SubPath_type==8 && Pos!=(int16u)-1) //MVC
         {
-            if (File_Name.size()>=10+1+8)
+            if (Bdmv_IsInFolder(File_Name, __T("PLAYLIST")))
             {
-                Ztring CLPI_File=File_Name;
-                CLPI_File.resize(CLPI_File.size()-(10+1+8));
-                CLPI_File+=__T("CLIPINF");
+                Ztring CLPI_File=__T("CLIPINF");
                 CLPI_File+=PathSeparator;
                 CLPI_File+=Clip_Information_file_name;
                 CLPI_File+=__T(".clpi");
@@ -1411,7 +1404,7 @@ void File_Bdmv::Mpls_PlayList_SubPlayItem(int8u SubPath_type, int16u Pos)
                 MediaInfo_Internal MI;
                 MI.Option(__T("File_Bdmv_ParseTargetedFile"), Config->File_Bdmv_ParseTargetedFile_Get()?__T("1"):__T("0"));
                 MI.Option(__T("File_IsReferenced"), __T("1"));
-                if (Bdmv_IsInFolder(File_Name, __T("PLAYLIST")) && MI.Open(CLPI_File))
+                if (MI.Open(FileName::FromFolder_Get(File_Name, CLPI_File, 1)))
                 {
                     if (MI.Count_Get(Stream_Video))
                     {
