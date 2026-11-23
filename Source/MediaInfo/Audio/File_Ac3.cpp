@@ -1282,6 +1282,7 @@ File_Ac3::File_Ac3()
 File_Ac3::~File_Ac3()
 {
     delete[] addbsi_Buffer;
+    delete[] Save_Buffer; //Byte swapped copy of a little endian frame
 }
 
 //***************************************************************************
@@ -1293,7 +1294,8 @@ void File_Ac3::Streams_Fill()
 {
     //Programs (independent substreams), each one in its own audio stream
     Programs.clear();
-    if (bsid_Max>0x09 && bsid_Max<=0x10)
+    const bool IsEac3=bsid_Max<=0x10 && (bsid_Max>0x09 || (!Core_IsPresent && chanmape_Max[0][1])); //Without frame, also an AC-3 core with dependent substreams in the E-AC-3 specific box
+    if (IsEac3)
         for (int8u Pos=0; Pos<8; Pos++)
             if (acmod_Max[Pos][0]!=(int8u)-1)
                 Programs.push_back(Pos);
@@ -1429,7 +1431,7 @@ void File_Ac3::Streams_Fill()
     }
 
     //AC-3
-    if (bsid_Max<=0x09)
+    if (bsid_Max<=0x09 && !IsEac3)
     {
         if (Count_Get(Stream_Audio)==0)
             Stream_Prepare(Stream_Audio);
@@ -1492,7 +1494,7 @@ void File_Ac3::Streams_Fill()
     }
 
     //E-AC-3
-    else if (bsid_Max<=0x10)
+    else if (IsEac3)
     {
         //One audio stream per program (independent substream and its dependent substreams)
         for (size_t StreamPos=0; StreamPos<Programs.size(); StreamPos++)
@@ -1565,6 +1567,7 @@ void File_Ac3::Streams_Fill()
     Fill(Stream_General, 0, General_Format, Retrieve(Stream_Audio, 0, Audio_Format), true);
     Fill(Stream_General, 0, General_Format_Profile, Retrieve(Stream_Audio, 0, Audio_Format_Profile));
     Fill(Stream_General, 0, General_Format_Commercial_IfAny, Retrieve(Stream_Audio, 0, Audio_Format_Commercial_IfAny));
+    Fill(Stream_General, 0, General_InternetMediaType, Retrieve(Stream_Audio, 0, Audio_InternetMediaType), true);
 }
 
 //---------------------------------------------------------------------------
@@ -1576,7 +1579,7 @@ void File_Ac3::Streams_Fill_Eac3(size_t StreamPos, int8u Program)
         Stream_Prepare(Stream_Audio);
     if (Retrieve(Stream_Audio, StreamPos, Audio_Format).empty())
     {
-        const bool IsAc3=!Program && Formats[0]; //AC-3 syncframes are in the first program only
+        const bool IsAc3=!Program && (Formats[0] || bsid_Max<=0x09); //AC-3 syncframes are in the first program only, without frame the AC-3 core is from the E-AC-3 specific box
         Fill(Stream_Audio, StreamPos, Audio_Format, IsAc3?"AC-3":"E-AC-3");
         Fill(Stream_Audio, StreamPos, Audio_Codec, IsAc3?"AC-3":"AC3+");
     }
@@ -1606,12 +1609,12 @@ void File_Ac3::Streams_Fill_Eac3(size_t StreamPos, int8u Program)
             Fill(Stream_Audio, StreamPos, Audio_BitRate_Encoded, ((int64u)frmsiz_Total+TimeStamp_Size)*SamplingRate/32/numblks);
     }
 
-    const bool HasDependent=acmod_Max[Program][1]!=(int8u)-1;
+    const bool HasDependent=acmod_Max[Program][1]!=(int8u)-1 || (!Core_IsPresent && chanmape_Max[Program][1]); //Without frame, from the E-AC-3 specific box
     if (HasDependent)
     {
         int16u chanmap_Final=0;
         for (int8u Pos2=0; Pos2<9; Pos2++)
-            if (acmod_Max[Program][Pos2]!=(int8u)-1)
+            if (acmod_Max[Program][Pos2]!=(int8u)-1 || chanmape_Max[Program][Pos2])
             {
                 if (chanmape_Max[Program][Pos2])
                     chanmap_Final|=chanmap_Max[Program][Pos2];
@@ -1798,6 +1801,7 @@ void File_Ac3::Streams_Fill_PerProgram(size_t StreamPos, int8u Program, bool Has
             Fill(Stream_Audio, StreamPos, Audio_Format_Commercial_IfAny, "Dolby Digital Plus with Dolby Atmos");
         else
             Fill(Stream_Audio, StreamPos, Audio_Format_Commercial_IfAny, "Dolby Digital Plus");
+        Fill(Stream_Audio, StreamPos, Audio_InternetMediaType, "audio/eac3", Unlimited, true, true); // Also for an AC-3 core with E-AC-3 substreams
     }
     else if (Retrieve(Stream_Audio, StreamPos, Audio_Format)==__T("MLP FBA") || Retrieve(Stream_Audio, StreamPos, Audio_Format_Profile).find(__T("MLP FBA"))==0)
     {
@@ -5924,7 +5928,16 @@ void File_Ac3::dec3()
         Skip_S1(3,                                              "reserved");
         Get_S1 (4, num_dep_sub,                                 "num_dep_sub");
         if (num_dep_sub>0)
-            Skip_S2(9,                                          "chan_loc");
+        {
+            int16u chan_loc;
+            Get_S2 (9, chan_loc,                                "chan_loc");
+            chanmape_Max[Pos][1]=true; //Dependent substreams, used if no frame is parsed
+            //chan_loc bits 0 to 7 are the chanmap locations 5 (Lc/Rc) to 12 (Vhc), bit 8 is LFE2
+            chanmap_Max[Pos][1]=(chan_loc&0x100)?0x0002:0;
+            for (int8u Pos2=0; Pos2<8; Pos2++)
+                if (chan_loc&(1<<Pos2))
+                    chanmap_Max[Pos][1]|=1<<(10-Pos2);
+        }
         else
             Skip_SB(                                            "reserved");
         Element_End0();

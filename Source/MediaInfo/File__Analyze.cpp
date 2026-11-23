@@ -981,18 +981,20 @@ void File__Analyze::Open_Buffer_OutOfBand (File__Analyze* Sub, size_t Size)
     #endif //MEDIAINFO_DEMUX
 
     #if MEDIAINFO_TRACE
-        if (Size)
-            Trace_Details_Handling(Sub);
+        Trace_Details_Handling(Sub, Size!=0);
     #endif // MEDIAINFO_TRACE
 }
 #if MEDIAINFO_TRACE
-void File__Analyze::Trace_Details_Handling(File__Analyze* Sub)
+void File__Analyze::Trace_Details_Handling(File__Analyze* Sub, bool IsFed)
 {
     if (Trace_Activated)
     {
         //Element in which the sub-parser is fed, for its elements ended at finalization
-        Sub->Trace_Parent_Level=Element_Level;
-        Sub->Trace_Parent_Pos=Element[Element_Level].TraceNode.Pos;
+        if (IsFed)
+        {
+            Sub->Trace_Parent_Level=Element_Level;
+            Sub->Trace_Parent_Pos=Element[Element_Level].TraceNode.Pos;
+        }
 
         //Details handling
         if ((!Sub->Element[0].TraceNode.Name_Is_Empty() || Sub->Element[Sub->Element_Level].TraceNode.Children.size()) && !Trace_DoNotSave)
@@ -1018,7 +1020,7 @@ void File__Analyze::Trace_Details_Handling(File__Analyze* Sub)
                 Sub->Element[0].TraceNode.Init();
             }
         }
-        else
+        else if (IsFed)
             Element[Element_Level].TraceNode.NoShow = true; //We don't want to show this item because there is no info in it
     }
 }
@@ -1615,8 +1617,7 @@ void File__Analyze::Open_Buffer_Continue (File__Analyze* Sub, const int8u* ToAdd
     }
 
     #if MEDIAINFO_TRACE
-        if (ToAdd_Size)
-            Trace_Details_Handling(Sub);
+        Trace_Details_Handling(Sub, ToAdd_Size!=0);
     #endif //MEDIAINFO_TRACE
 }
 
@@ -2733,14 +2734,18 @@ bool File__Analyze::Synchro_Manage()
             GoToFromEnd(0);
             return false;
         }
-        if (!Synchronize())
+        int64u Synchro_Start=Buffer_TotalBytes+Buffer_Offset;
+        bool Synchro_Result=Synchronize();
+        if (!Synchro_Result && Status[IsFinished])
+            Finish(); //Finish
+        //Before the first synchronization, the limit is tested where the search starts: a search started before it may wait for more data after it (e.g. at a candidate), the next search is rejected if it goes further than where it starts
+        if (!IsSub && !Status[IsAccepted] && (File_Offset_FirstSynched==(int64u)-1?(Synchro_Start>=Buffer_TotalBytes_FirstSynched_Max && Buffer_TotalBytes+Buffer_Offset>Synchro_Start):(!Synchro_Result && Buffer_TotalBytes+Buffer_Offset>=Buffer_TotalBytes_FirstSynched_Max)))
         {
-            if (Status[IsFinished])
-                Finish(); //Finish
-            if (!IsSub && !Status[IsAccepted] && Buffer_TotalBytes+Buffer_Offset>=Buffer_TotalBytes_FirstSynched_Max)
-                Reject();
-            return false; //Wait for more data
+            Reject();
+            return false;
         }
+        if (!Synchro_Result)
+            return false; //Wait for more data
         Synched=true;
         if (!IsSub)
         {
@@ -2916,6 +2921,8 @@ bool File__Analyze::FileHeader_Manage()
     else
     {
         Buffer_Offset+=(size_t)Element_Offset;
+        if (File_Offset_FirstSynched==(int64u)-1 && Buffer_TotalBytes_FirstSynched_Max<(int64u)-1-Element_Offset)
+            Buffer_TotalBytes_FirstSynched_Max+=Element_Offset; //The limit of the first synchronization does not count the file header, as it does not count the tags
         Element_Offset=0;
     }
 

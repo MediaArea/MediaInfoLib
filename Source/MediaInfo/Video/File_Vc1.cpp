@@ -341,7 +341,7 @@ void File_Vc1::Streams_Fill()
         Fill(Stream_Video, StreamPos_Last, Video_FrameRate, FrameRate);
 
     //Interlacement
-    if (!interlace || (PictureFormat_Count[1]==0 && PictureFormat_Count[2]==0)) //No interlaced frame/field
+    if (!interlace || (PictureFormat_Count[0]>0 && PictureFormat_Count[1]==0 && PictureFormat_Count[2]==0)) //No interlaced frame/field
     {
         Fill(Stream_Video, 0, Video_ScanType, "Progressive");
         Fill(Stream_Video, 0, Video_Interlacement, "PPF");
@@ -351,12 +351,12 @@ void File_Vc1::Streams_Fill()
         Fill(Stream_Video, 0, Video_ScanType, "Mixed");
         Fill(Stream_Video, 0, Video_Interlacement, "Mixed");
     }
-    else
+    else if (PictureFormat_Count[1]>0 || PictureFormat_Count[2]>0) //Interlaced frames/fields only, unknown without parsed frame
     {
         Fill(Stream_Video, 0, Video_ScanType, "Interlaced");
         Fill(Stream_Video, 0, Video_Interlacement, "Interlaced");
     }
-    if (Frame_Count>0 && interlace)
+    if (interlace && (PictureFormat_Count[0]>0 || PictureFormat_Count[1]>0 || PictureFormat_Count[2]>0))
         Fill(Stream_Video, 0, Video_ScanOrder, Interlaced_Bottom?"BFF":"TFF");
     std::string TempRef;
     for (std::map<int16u, temporalreference>::iterator Temp=TemporalReference.begin(); Temp!=TemporalReference.end(); ++Temp)
@@ -811,7 +811,8 @@ void File_Vc1::FrameHeader()
             }
         }
         Param_Info1(Vc1_PictureFormat[PictureFormat]);
-        PictureFormat_Count[PictureFormat]++;
+        if (Element_IsOK()) //Not for a frame header ending before its frame coding mode
+            PictureFormat_Count[PictureFormat]++;
 
         if (PictureFormat==2) //Interlaced Field
         {
@@ -862,6 +863,9 @@ void File_Vc1::FrameHeader()
             {
                 Get_SB (tff,                                    "tff - top field first");
                 Get_SB (rff,                                    "rff - repeat first field");
+            }
+            if (pulldown && Element_IsOK()) //Not for a truncated frame header
+            {
                 if (tff)
                     Interlaced_Top++;
                 else
@@ -1168,6 +1172,9 @@ void File_Vc1::SequenceHeader()
     BS_End();
 
     FILLING_BEGIN();
+        if (profile!=3)
+            interlace=false; //Interlaced coding is in the advanced profile only
+
         //NextCode
         NextCode_Clear();
         NextCode_Add(0x0D);

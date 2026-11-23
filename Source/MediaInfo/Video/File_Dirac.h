@@ -74,15 +74,18 @@ private :
     void High_Quality_Picture();
     void High_Quality_Picture_Fragment();
     void Reserved();
-    void picture();
+    void picture(bool IsFragment=false);
     void picture_fragment();
+    int8u picture_Compression_Mode();
 
     std::vector<stream_payload> Streams;
 
     //Temp
+    int32u Next_Parse_Offset;
     int32u version_major;
     bool   IsVc2;
     bool   HasDiracOnlyPicture;
+    int8u  Compression_Mode;
     int32u frame_width;
     int32u frame_height;
     int32u chroma_format;

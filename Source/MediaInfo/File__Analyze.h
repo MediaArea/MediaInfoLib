@@ -1746,7 +1746,7 @@ protected :
 #endif // MEDIAINFO_TRACE
 private :
 #if MEDIAINFO_TRACE
-    void Trace_Details_Handling(File__Analyze* Sub);
+    void Trace_Details_Handling(File__Analyze* Sub, bool IsFed); //IsFed: data was given to Sub, else an empty buffer (e.g. signaling the end of a packet) only makes Sub parse the data it has
     element_details::Element_Node* Trace_Node_Find(size_t Level, int64u Pos); //Node of the element begun at Pos at this level, open or still in the trace, else NULL
     size_t Trace_Parent_Level; //Level of the element of the parent parser in which this parser was last fed, (size_t)-1 if none
     int64u Trace_Parent_Pos; //Position of this element

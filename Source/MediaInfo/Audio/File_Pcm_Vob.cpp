@@ -167,6 +167,9 @@ void File_Pcm_Vob::Streams_Fill()
 //---------------------------------------------------------------------------
 void File_Pcm_Vob::Read_Buffer_Continue()
 {
+    if (Buffer_Size==0)
+        return;
+
     if (Element_Offset>Element_Size || Element_Size-Element_Offset<6
      || Buffer_Offset>Buffer_Size || Element_Size>Buffer_Size-Buffer_Offset)
     {

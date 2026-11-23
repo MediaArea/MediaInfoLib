@@ -765,6 +765,7 @@ void File_Ffv1::Read_Buffer_Continue()
     if (!Parameters_IsValid || !KeyFramePassed)
     {
         Skip_Frame();
+        Element_End0();
         return;
     }
 
@@ -775,6 +776,7 @@ void File_Ffv1::Read_Buffer_Continue()
     {
         Trusted_IsNot("Invalid frame range");
         Skip_Frame();
+        Element_End0();
         return;
     }
     vector<int32u> Slices_BufferSizes;
@@ -788,6 +790,7 @@ void File_Ffv1::Read_Buffer_Continue()
                 //There is a problem
                 Trusted_IsNot("Invalid slice footer");
                 Skip_Frame();
+                Element_End0();
                 return;
             }
 
@@ -799,6 +802,7 @@ void File_Ffv1::Read_Buffer_Continue()
                 //There is a problem
                 Trusted_IsNot("Invalid slice footer");
                 Skip_Frame();
+                Element_End0();
                 return;
             }
             Slices_BufferPos-=Size;
@@ -821,6 +825,7 @@ void File_Ffv1::Read_Buffer_Continue()
                 Trusted_IsNot("Invalid slice size");
                 Element_End0();
                 Skip_Frame();
+                Element_End0();
                 return;
             }
             Element_Size=Element_Offset+Slices_BufferSizes[Pos];
@@ -831,6 +836,7 @@ void File_Ffv1::Read_Buffer_Continue()
             Element_Size=Element_Size_Save;
             Element_End0();
             Skip_Frame();
+            Element_End0();
             return;
         }
         int32u crc_left=0;

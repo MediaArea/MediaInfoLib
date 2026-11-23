@@ -78,6 +78,7 @@ class File_Dts : public File_Dts_Common
 public :
     //Constructor/Destructor
     File_Dts();
+    ~File_Dts();
 
 private :
     //Streams management

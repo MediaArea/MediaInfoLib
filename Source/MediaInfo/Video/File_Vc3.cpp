@@ -474,9 +474,12 @@ void File_Vc3::Streams_Fill()
     //Filling
     Stream_Prepare(Stream_Video);
     Fill(Stream_Video, 0, Video_Format, "VC-3");
-    Fill(Stream_Video, 0, Video_BitRate_Mode, VBR?"VBR":"CBR");
-    if (!VBR && FrameRate && Vc3_CompressedFrameSize(CID, SPL, ALPF*(SST?2:1)))
-        Fill(Stream_Video, 0, Video_BitRate, Vc3_CompressedFrameSize(CID, SPL, ALPF*(SST?2:1))*8*FrameRate, 0);
+    if (FFC_FirstFrame!=(int8u)-1) //VBR flag parsed
+    {
+        Fill(Stream_Video, 0, Video_BitRate_Mode, VBR?"VBR":"CBR");
+        if (!VBR && FrameRate && Vc3_CompressedFrameSize(CID, SPL, ALPF*(SST?2:1)))
+            Fill(Stream_Video, 0, Video_BitRate, Vc3_CompressedFrameSize(CID, SPL, ALPF*(SST?2:1))*8*FrameRate, 0);
+    }
     Fill(Stream_Video, 0, Video_Format_Version, __T("Version ")+Ztring::ToZtring(HVN));
     Fill(Stream_Video, 0, Video_Format_Profile, string(Vc3_FromCID_Profile(CID))+'@'+Vc3_FromCID_Level(CID));
     if (FFC_FirstFrame!=(int8u)-1)
@@ -537,6 +540,38 @@ void File_Vc3::Streams_Finish()
                 Fill(Stream_General, 0, General_Title, Title);
         }
     #endif //defined(MEDIAINFO_CDP_YES)
+}
+
+//***************************************************************************
+// Buffer - File header
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+bool File_Vc3::FileHeader_Begin()
+{
+    //No magic number: header prefix and image size of the known versions tested as FFmpeg does (Header_Parse() tests the compression ID if not in a container)
+    if (Buffer_Size<0x1C)
+        return false; //Must wait for more data
+    int32u HeaderSize=BigEndian2int32u(Buffer);
+    int8u HeaderVersion=Buffer[4];
+    bool IsValid;
+    switch (HeaderVersion)
+    {
+        case 0 : IsValid=false; break;
+        case 1 :
+        case 2 : IsValid=HeaderSize==0x280; break;
+        case 3 : IsValid=HeaderSize>=0x280 && HeaderSize<=0x2170 && !(HeaderSize%4); break;
+        default: IsValid=HeaderSize>=0x280 && HeaderSize<=0xFFFF; //Later versions: only the header prefix is known (2 zero bytes, then the header size)
+    }
+    if (IsValid && HeaderVersion<=3)
+        IsValid=BigEndian2int16u(Buffer+0x18) && BigEndian2int16u(Buffer+0x1A);
+    if (!IsValid)
+    {
+        Reject("VC-3");
+        return false;
+    }
+
+    return true;
 }
 
 //***************************************************************************

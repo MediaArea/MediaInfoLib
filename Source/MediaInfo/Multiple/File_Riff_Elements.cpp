@@ -1584,7 +1584,6 @@ void File_Riff::AVI__hdlr_strl_strf_auds_Vorbis()
         {
             Open_Buffer_Continue(&MI, Elements_Size[Pos]);
             Open_Buffer_Continue(&MI, 0);
-            Element_Offset+=Elements_Size[Pos];
         }
         //Finalizing
         Finish(&MI);

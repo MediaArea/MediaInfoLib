@@ -74,8 +74,12 @@ File_Amr::File_Amr()
 //---------------------------------------------------------------------------
 bool File_Amr::FileHeader_Begin()
 {
-    if (!Codec.empty()) //Test of header only if it is a file --> The codec field is empty
-        return true;
+    if (!Codec.empty()) //From a container, without file header
+    {
+        Accept("AMR");
+        Finish("AMR");
+        return false;
+    }
 
     //Testing
     if (Buffer_Size<5)
@@ -155,14 +159,6 @@ void File_Amr::Streams_Finish()
 //---------------------------------------------------------------------------
 void File_Amr::FileHeader_Parse()
 {
-    //From a container
-    if (!Codec.empty())
-    {
-        Accept("AMR");
-        Finish("AMR");
-        return;
-    }
-
     //Parsing
     int64u Signature;
     Skip_C5(                                                    "Signature (Common)");

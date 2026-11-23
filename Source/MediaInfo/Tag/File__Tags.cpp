@@ -74,6 +74,7 @@ File__Tags_Helper::File__Tags_Helper()
     BeginPaddingSizeIsFinal=false;
     SearchingForEndTags=false;
     SkippingUpToEnd=false;
+    LastTag_End=0;
 }
 
 //---------------------------------------------------------------------------
@@ -291,11 +292,25 @@ bool File__Tags_Helper::Synched_Test()
             }
             else if (ID8==0x4150455441474558LL) //"APETAGEX"
             {
-                if (Base->Buffer_Offset+16>Base->Buffer_Size)
+                if (Base->Buffer_Offset+32>Base->Buffer_Size)
                     return false;
-                Parser_Buffer_Size=LittleEndian2int32u(Base->Buffer+Base->Buffer_Offset+12);
-                if (LittleEndian2int32u(Base->Buffer+Base->Buffer_Offset+8))
+                Parser_Buffer_Size=LittleEndian2int32u(Base->Buffer+Base->Buffer_Offset+12); //Items and footer
+                bool IsHeader=(LittleEndian2int32u(Base->Buffer+Base->Buffer_Offset+20)&0x20000000)?true:false;
+                if (!IsHeader && LittleEndian2int32u(Base->Buffer+Base->Buffer_Offset+8)!=1000 && Parser_Buffer_Size>=32 && Base->File_Offset+Base->Buffer_Offset+32+Parser_Buffer_Size<=Base->File_Size) //A header without the "is the header" flag has its footer at the end of the tag, APEv1 has no header
+                {
+                    if ((int64u)Base->Buffer_Offset+Parser_Buffer_Size+16>Base->Buffer_Size)
+                        return false;
+                    IsHeader=CC8(Base->Buffer+Base->Buffer_Offset+Parser_Buffer_Size)==0x4150455441474558LL && LittleEndian2int32u(Base->Buffer+Base->Buffer_Offset+Parser_Buffer_Size+12)==Parser_Buffer_Size;
+                }
+                if (IsHeader)
                     Parser_Buffer_Size+=32;
+                else
+                {
+                    //Footer, after the items: the items are counted with the tags if they were skipped since the first non-zero byte after the last synchronization, and are not in another tag
+                    if (Parser_Buffer_Size>32 && NotZero_Offset!=(int64u)-1 && NotZero_Offset+Parser_Buffer_Size-32<=Base->File_Offset+Base->Buffer_Offset && LastTag_End+Parser_Buffer_Size-32<=Base->File_Offset+Base->Buffer_Offset)
+                        TagsSize+=Parser_Buffer_Size-32;
+                    Parser_Buffer_Size=32;
+                }
                 if (Base->Buffer_Offset+Parser_Buffer_Size>Base->Buffer_Size)
                     return false;
                 if (!TagSizeIsFinal)
@@ -474,6 +489,7 @@ bool File__Tags_Helper::Synched_Test()
                 }
                 Base->Element_Show();
                 Base->Element_End0();
+                LastTag_End=Base->File_Offset+Base->Buffer_Offset;
             }
             else
                 break;
@@ -751,7 +767,9 @@ bool File__Tags_Helper::DetectBeginOfEndTags_Test()
             if (CC8(Base->Buffer+((size_t)((Base->File_Size-File_EndTagSize-32)-Base->File_Offset)))==CC8("APETAGEX"))
             {
                 ApeTag_Size=LittleEndian2int32u(Base->Buffer+((size_t)((Base->File_Size-File_EndTagSize-32+12)-Base->File_Offset)));
-                if (LittleEndian2int32u(Base->Buffer+((size_t)((Base->File_Size-File_EndTagSize-32+8)-Base->File_Offset)))==2000)
+                if (ApeTag_Size<32 || LastTag_End+ApeTag_Size>Base->File_Size-File_EndTagSize)
+                    ApeTag_Size=32; //Malformed size, the footer alone
+                else if (LittleEndian2int32u(Base->Buffer+((size_t)((Base->File_Size-File_EndTagSize-32+8)-Base->File_Offset)))!=1000 && (LittleEndian2int32u(Base->Buffer+((size_t)((Base->File_Size-File_EndTagSize-32+20)-Base->File_Offset)))&0x80000000) && LastTag_End+ApeTag_Size+32<=Base->File_Size-File_EndTagSize) //Contains a header, not in the tag size, APEv1 has no header
                     ApeTag_Size+=32;
                 File_EndTagSize+=ApeTag_Size;
                 ApeTag_Offset=Base->File_Size-File_EndTagSize;

@@ -242,6 +242,9 @@ std::string File_Mpeg4_sv3d_ProjectionType(int8u Value)
 #if defined(MEDIAINFO_CINEFORM_YES)
     #include "MediaInfo/Video/File_CineForm.h"
 #endif
+#if defined(MEDIAINFO_DIRAC_YES)
+    #include "MediaInfo/Video/File_Dirac.h"
+#endif
 #if defined(MEDIAINFO_FFV1_YES)
     #include "MediaInfo/Video/File_Ffv1.h"
 #endif
@@ -8152,6 +8155,14 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_stsd_xxxxVideo()
                 if (MediaInfoLib::Config.CodecID_Get(Stream_Video, InfoCodecID_Format_Mpeg4, Ztring().From_CC4((int32u)Element_Code), InfoCodecID_Format)==__T("AVS3 Video"))
                 {
                     auto Parser=new File_Avs3V;
+                    Parser->FrameIsAlwaysComplete=true;
+                    Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
+                }
+            #endif
+            #if defined(MEDIAINFO_DIRAC_YES)
+                if (MediaInfoLib::Config.CodecID_Get(Stream_Video, InfoCodecID_Format_Mpeg4, Ztring().From_CC4((int32u)Element_Code), InfoCodecID_Format)==__T("Dirac"))
+                {
+                    File_Dirac* Parser=new File_Dirac;
                     Parser->FrameIsAlwaysComplete=true;
                     Streams[moov_trak_tkhd_TrackID].Parsers.push_back(Parser);
                 }
