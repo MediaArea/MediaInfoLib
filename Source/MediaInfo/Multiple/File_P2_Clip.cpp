@@ -36,6 +36,23 @@ namespace MediaInfoLib
 {
 
 //***************************************************************************
+// Helpers
+//***************************************************************************
+
+#if defined(MEDIAINFO_REFERENCES_YES) && defined(MEDIAINFO_FILE_YES) && defined(MEDIAINFO_DIRECTORY_YES) && defined(MEDIAINFO_MXF_YES)
+//---------------------------------------------------------------------------
+// The file (name of 10 characters) is in the CLIP folder of a P2 card, the MXF files are in the folders next to this folder
+static bool P2_Clip_IsInClipFolder(const Ztring& File_Name)
+{
+    if (FileName::FullName_Get(File_Name).size()!=10)
+        return false;
+    Ztring Folder=FileName::FolderName_Get(File_Name);
+    Folder.MakeUpperCase();
+    return Folder==__T("CLIP");
+}
+#endif //defined(MEDIAINFO_REFERENCES_YES) && defined(MEDIAINFO_FILE_YES) && defined(MEDIAINFO_DIRECTORY_YES) && defined(MEDIAINFO_MXF_YES)
+
+//***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
 
@@ -163,19 +180,13 @@ bool File_P2_Clip::FileHeader_Begin()
                             }
 
                            #if defined(MEDIAINFO_MXF_YES)
-                                if (File_Name.size()>10+1+4+1
-                                 && File_Name[File_Name.size()-10-1]==PathSeparator
-                                 && (File_Name[File_Name.size()-10-2]&(~0x20))==__T('P')
-                                 && (File_Name[File_Name.size()-10-3]&(~0x20))==__T('I')
-                                 && (File_Name[File_Name.size()-10-4]&(~0x20))==__T('L')
-                                 && (File_Name[File_Name.size()-10-5]&(~0x20))==__T('C')
-                                 && File_Name[File_Name.size()-10-6]==PathSeparator)
+                                if (P2_Clip_IsInClipFolder(File_Name))
                                 {
                                     Ztring file=File_Name.substr(File_Name.size()-10, 6);
                                     Ztring MXF_File=__T("..");
                                     MXF_File+=PathSeparator;
 
-                                    Ztring Path=File_Name.substr(0, File_Name.size()-10-6);
+                                    Ztring Path=FileName::FromFolder_Get(File_Name, __T("."), 1);
                                     ZtringList Dirs=Dir::GetAllFileNames(Path, Dir::Include_Dirs);
                                     bool Exists=false;
                                     for (size_t Pos=0; Pos<Dirs.size(); Pos++)
@@ -185,7 +196,7 @@ bool File_P2_Clip::FileHeader_Begin()
                                          && (Dirs[Pos][Dirs[Pos].size()-3]&(~0x20))==__T('D')
                                          && (Dirs[Pos][Dirs[Pos].size()-4]&(~0x20))==__T('I')
                                          && (Dirs[Pos][Dirs[Pos].size()-5]&(~0x20))==__T('V')
-                                         && Dirs[Pos][Dirs[Pos].size()-6]==PathSeparator)
+                                         && FileName::FullName_Get(Dirs[Pos]).size()==5)
                                         {
                                             MXF_File+=Dirs[Pos].substr(Dirs[Pos].size()-5, 5);
                                             Exists=true;
@@ -198,7 +209,7 @@ bool File_P2_Clip::FileHeader_Begin()
                                     MXF_File+=PathSeparator;
                                     MXF_File+=file;
 
-                                    Dirs=Dir::GetAllFileNames(File_Name.substr(0, File_Name.size()-10-1)+PathSeparator+MXF_File+__T(".MXF"), Dir::Include_Files);
+                                    Dirs=Dir::GetAllFileNames(FileName::FromFolder_Get(File_Name, MXF_File+__T(".MXF")), Dir::Include_Files);
                                     Exists=false;
                                     for (size_t Pos=0; Pos<Dirs.size(); Pos++)
                                         if (Dirs[Pos].size()>4
@@ -226,19 +237,13 @@ bool File_P2_Clip::FileHeader_Begin()
                         else if (Field=="Audio")
                         {
                             #if defined(MEDIAINFO_MXF_YES)
-                                if (File_Name.size()>10+1+4+1
-                                 && File_Name[File_Name.size()-10-1]==PathSeparator
-                                 && (File_Name[File_Name.size()-10-2]&(~0x20))==__T('P')
-                                 && (File_Name[File_Name.size()-10-3]&(~0x20))==__T('I')
-                                 && (File_Name[File_Name.size()-10-4]&(~0x20))==__T('L')
-                                 && (File_Name[File_Name.size()-10-5]&(~0x20))==__T('C')
-                                 && File_Name[File_Name.size()-10-6]==PathSeparator)
+                                if (P2_Clip_IsInClipFolder(File_Name))
                                 {
                                     Ztring file=File_Name.substr(File_Name.size()-10, 6);
                                     Ztring MXF_File=__T("..");
                                     MXF_File+=PathSeparator;
 
-                                    Ztring Path=File_Name.substr(0, File_Name.size()-10-6);
+                                    Ztring Path=FileName::FromFolder_Get(File_Name, __T("."), 1);
                                     ZtringList Dirs=Dir::GetAllFileNames(Path, Dir::Include_Dirs);
                                     bool Exists=false;
                                     for (size_t Pos=0; Pos<Dirs.size(); Pos++)
@@ -248,7 +253,7 @@ bool File_P2_Clip::FileHeader_Begin()
                                          && (Dirs[Pos][Dirs[Pos].size()-3]&(~0x20))==__T('D')
                                          && (Dirs[Pos][Dirs[Pos].size()-4]&(~0x20))==__T('U')
                                          && (Dirs[Pos][Dirs[Pos].size()-5]&(~0x20))==__T('A')
-                                         && Dirs[Pos][Dirs[Pos].size()-6]==PathSeparator)
+                                         && FileName::FullName_Get(Dirs[Pos]).size()==5)
                                         {
                                             MXF_File+=Dirs[Pos].substr(Dirs[Pos].size()-5, 5);
                                             Exists=true;
@@ -265,7 +270,7 @@ bool File_P2_Clip::FileHeader_Begin()
                                         Pos.insert(0, 1, __T('0'));
                                     MXF_File+=Pos;
 
-                                    Dirs=Dir::GetAllFileNames(File_Name.substr(0, File_Name.size()-10-1)+PathSeparator+MXF_File+__T(".MXF"), Dir::Include_Files);
+                                    Dirs=Dir::GetAllFileNames(FileName::FromFolder_Get(File_Name, MXF_File+__T(".MXF")), Dir::Include_Files);
                                     Exists=false;
                                     for (size_t Pos=0; Pos<Dirs.size(); Pos++)
                                         if (Dirs[Pos].size()>4
