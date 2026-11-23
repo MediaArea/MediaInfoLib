@@ -455,6 +455,13 @@ static bool Bdmv_IsInFolder(const Ztring& File_Name, const Char* Folder)
     return Name==Folder;
 }
 
+//---------------------------------------------------------------------------
+// The name is the BDMV folder of a Blu-ray disc (directory), also e.g. "." from this folder
+static bool Bdmv_IsDirectory(const Ztring& File_Name)
+{
+    return RelatedFiles_CanBeSearched(File_Name) && FileName::FolderName_Get(File_Name+PathSeparator)==__T("BDMV");
+}
+
 //***************************************************************************
 // Streams management
 //***************************************************************************
@@ -479,8 +486,7 @@ void File_Bdmv::Streams_Accept()
 //---------------------------------------------------------------------------
 bool File_Bdmv::FileHeader_Begin()
 {
-    size_t BDMV_Pos=File_Name.find(Ztring(1, PathSeparator)+__T("BDMV"));
-    if (BDMV_Pos!=string::npos && BDMV_Pos+5==File_Name.size()) //Blu-ray directory
+    if (Bdmv_IsDirectory(File_Name))
         return true;
 
     //Element_Size
@@ -512,8 +518,7 @@ bool File_Bdmv::FileHeader_Begin()
 //---------------------------------------------------------------------------
 void File_Bdmv::Read_Buffer_Continue()
 {
-    size_t BDMV_Pos=File_Name.find(Ztring(1, PathSeparator)+__T("BDMV"));
-    if (BDMV_Pos!=string::npos && BDMV_Pos+5==File_Name.size()) //Blu-ray directory
+    if (Bdmv_IsDirectory(File_Name))
     {
         BDMV();
         return;
@@ -686,14 +691,12 @@ void File_Bdmv::BDMV()
     #endif //defined(MEDIAINFO_DIRECTORY_YES)
 
     //Filling
-    File_Name.resize(File_Name.size()-5); //Removing "/BDMV"
+    Ztring Disc_Name=FileName::FolderName_Get(File_Name+PathSeparator, 1); //Also for "." or ".."
+    File_Name=FileName::FolderPath_Get(File_Name+PathSeparator, 1); //Removing "BDMV", ".." for "."
     Fill(Stream_General, 0, General_Format, "Blu-ray movie", Unlimited, true, true);
     Fill(Stream_General, 0, General_CompleteName, File_Name, true);
     Fill(Stream_General, 0, General_FolderName, FileName::Path_Get(File_Name), true);
-    if (FileName::Extension_Get(File_Name).empty())
-        Fill(Stream_General, 0, General_FileName, FileName::Name_Get(File_Name), true);
-    else
-        Fill(Stream_General, 0, General_FileName, FileName::Name_Get(File_Name)+__T('.')+FileName::Extension_Get(File_Name), true);
+    Fill(Stream_General, 0, General_FileName, Disc_Name, true);
     File_Name.clear();
 
     Finish("BDMV");
