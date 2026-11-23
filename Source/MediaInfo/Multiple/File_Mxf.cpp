@@ -1129,6 +1129,16 @@ static int8u Mxf_FrameLayout_Multiplier(int8u FrameLayout)
 //---------------------------------------------------------------------------
 static const char* Mxf_ColorPrimaries(const int128u ColorPrimaries)
 {
+    if ((ColorPrimaries.lo>>16)==0x0E06040101030000LL>>16) // Sony
+    {
+        switch ((int16u)ColorPrimaries.lo)
+        {
+            case 0x0104 : return "S-Gamut3";
+            case 0x0105 : return "S-Gamut3.Cine";
+            default     : return "";
+        }
+    }
+
     int32u Code_Compare4=(int32u)ColorPrimaries.lo;
     switch ((int8u)(Code_Compare4>>16))
     {
@@ -1216,6 +1226,23 @@ const char* Mxf_TransferCharacteristic_Sony_5[]= // 0x0E06x Sony values are read
     "",
     "Cine-Log",
     "ASC-CDL",
+    "S-Log2",
+};
+const char* Mxf_TransferCharacteristic_Sony_6[]=
+{
+    "",
+    "",
+    "",
+    "S-Log3",
+    "S-Log3 (S-Gamut3.Cine)",
+};
+const char* Mxf_TransferCharacteristic_Sony_7[]=
+{
+    "",
+    "",
+    "",
+    "",
+    "S-Cinetone",
 };
 const char** Mxf_TransferCharacteristic_Sony[]=
 {
@@ -1224,6 +1251,8 @@ const char** Mxf_TransferCharacteristic_Sony[]=
     Mxf_TransferCharacteristic_Sony_3,
     Mxf_TransferCharacteristic_Sony_4,
     Mxf_TransferCharacteristic_Sony_5,
+    Mxf_TransferCharacteristic_Sony_6,
+    Mxf_TransferCharacteristic_Sony_7,
 };
 const int8u Mxf_TransferCharacteristic_Sony_Size[]=
 {
@@ -1232,6 +1261,8 @@ const int8u Mxf_TransferCharacteristic_Sony_Size[]=
     (int8u)(sizeof(Mxf_TransferCharacteristic_Sony_3)/sizeof(Mxf_TransferCharacteristic_Sony_3[0])),
     (int8u)(sizeof(Mxf_TransferCharacteristic_Sony_4)/sizeof(Mxf_TransferCharacteristic_Sony_4[0])),
     (int8u)(sizeof(Mxf_TransferCharacteristic_Sony_5)/sizeof(Mxf_TransferCharacteristic_Sony_5[0])),
+    (int8u)(sizeof(Mxf_TransferCharacteristic_Sony_6)/sizeof(Mxf_TransferCharacteristic_Sony_6[0])),
+    (int8u)(sizeof(Mxf_TransferCharacteristic_Sony_7)/sizeof(Mxf_TransferCharacteristic_Sony_7[0])),
 };
 static string Mxf_TransferCharacteristic(const int128u Value)
 {
@@ -1801,6 +1832,7 @@ static string Mxf_CameraUnitAcquisitionMetadata_GammaforCDL(int8u Value)
         case 0x01 : return "Linear";
         case 0x02 : return "S-Log";
         case 0x03 : return "Cine-Log";
+        case 0x05 : return "BT.709";
         case 0xFF : return "";
         default   : return Ztring::ToZtring(Value).To_UTF8();
     }
@@ -2000,18 +2032,7 @@ static string Mxf_AcquisitionMetadata_Sony_CameraProcessDiscriminationCode(int16
 // Read from SR Viewer program
 static string Mxf_AcquisitionMetadata_Sony_MonitoringBaseCurve(int128u Value)
 {
-    switch(Value.lo)
-    {
-        case 0x0E06040101010508LL : return "S-Log2";
-        default   :
-                    {
-                    Ztring ValueS;
-                    ValueS.From_Number(Value.lo, 16);
-                    if (ValueS.size()<16)
-                        ValueS.insert(0, 16-ValueS.size(), __T('0'));
-                    return ValueS.To_UTF8();
-                    }
-    }
+    return Mxf_TransferCharacteristic(Value);
 }
 
 //***************************************************************************
