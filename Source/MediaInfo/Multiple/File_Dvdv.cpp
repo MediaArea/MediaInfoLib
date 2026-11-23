@@ -40,6 +40,7 @@ using namespace std;
 #include "MediaInfo/Multiple/File_Dvdv.h"
 #include "MediaInfo/MediaInfo_Config.h"
 #include "MediaInfo/MediaInfo_Internal.h"
+#include "ZenLib/FileName.h"
 //---------------------------------------------------------------------------
 
 namespace MediaInfoLib
@@ -284,7 +285,7 @@ File_Dvdv::File_Dvdv()
 void File_Dvdv::Streams_Finish()
 {
     //Manage related VOB files
-    if (!IsSub && !Config->File_IsReferenced_Get() && File_Name.size()>=5 && File_Name.find(__T("0.IFO"), File_Name.size()-5)!=string::npos)
+    if (!IsSub && !Config->File_IsReferenced_Get() && RelatedFiles_CanBeSearched(File_Name) && File_Name.size()>=5 && File_Name.find(__T("0.IFO"), File_Name.size()-5)!=string::npos)
     {
         Ztring VOB_File=File_Name.substr(0, File_Name.size()-5)+__T("1.VOB");
 
@@ -306,17 +307,13 @@ void File_Dvdv::Streams_Finish()
                     if (!Languages[StreamKind-Stream_Audio][StreamPos].empty())
                         Fill((stream_t)StreamKind, StreamPos, Fill_Parameter((stream_t)StreamKind, Generic_Language), Languages[StreamKind-Stream_Audio][StreamPos], true);
         }
-        auto SeparatorPos=VOB_File.find_last_of(__T("/\\"));
-        if (SeparatorPos!=string::npos)
-        {
-            auto FileSize=Retrieve_Const(Stream_General, 0, General_FileSize).To_int64u();
-            FileSize+=MI.Get(Stream_General, 0, General_FileSize).To_int64u();
-            Fill(Stream_General, 0, General_FileSize, FileSize, 10, true);
-            VOB_File.erase(0, SeparatorPos+1);
-            for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
-                for (size_t StreamPos=0; StreamPos<Count_Get((stream_t)StreamKind); StreamPos++)
-                    Fill((stream_t)StreamKind, StreamPos, "Source", VOB_File);
-        }
+        auto FileSize=Retrieve_Const(Stream_General, 0, General_FileSize).To_int64u();
+        FileSize+=MI.Get(Stream_General, 0, General_FileSize).To_int64u();
+        Fill(Stream_General, 0, General_FileSize, FileSize, 10, true);
+        VOB_File=FileName::FullName_Get(VOB_File);
+        for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
+            for (size_t StreamPos=0; StreamPos<Count_Get((stream_t)StreamKind); StreamPos++)
+                Fill((stream_t)StreamKind, StreamPos, "Source", VOB_File);
     }
 
     //Remove menus with short duration
