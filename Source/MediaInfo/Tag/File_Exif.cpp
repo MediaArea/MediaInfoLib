@@ -1772,10 +1772,7 @@ void File_Exif::Streams_Finish()
                     ShutterSpeed_Time = "1/" + std::to_string(static_cast<int>(round(1 / exposure_time)));
                 }
                 else {
-                    ShutterSpeed_Time = std::to_string(exposure_time);
-                    ShutterSpeed_Time.erase(ShutterSpeed_Time.find_last_not_of('0') + 1);
-                    if (!ShutterSpeed_Time.empty() && ShutterSpeed_Time.back() == '.')
-                        ShutterSpeed_Time.pop_back();
+                    ShutterSpeed_Time = Ztring().From_Number(exposure_time, 6, Ztring_NoZero).To_UTF8();
                 }
                 Value = Item.second.Read();
                 ParameterS = !ShutterSpeed_Time.empty() ? ShutterSpeed_Time + " s" : "";
