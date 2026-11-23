@@ -2424,6 +2424,17 @@ Ztring MediaInfo_Config::Language_Get ()
 
 Ztring MediaInfo_Config::Language_Get_Translate(const Ztring &Par, const Ztring &Value)
 {
+    //Each value of a list is translated, e.g. "VFR / CFR"
+    if (Value.find(__T(" / "))!=string::npos)
+    {
+        ZtringList List;
+        List.Separator_Set(0, __T(" / "));
+        List.Write(Value);
+        for (size_t Pos=0; Pos<List.size(); Pos++)
+            List[Pos]=Language_Get_Translate(Par, List[Pos]);
+        return List.Read();
+    }
+
     const Ztring Translated = Language_Get(Par + Value);
     return Translated.find(Par.c_str()) ? Translated : Value;
 }
