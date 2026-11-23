@@ -1449,33 +1449,33 @@ void MediaInfo_Internal::Entry()
                     if (!BaseName.empty())
                     {
                         ZtringList List;
-                        List+=Dir::GetAllFileNames(Test.Path_Get()+PathSeparator+BaseName+__T("_*_audio.mp4"), Dir::Include_Files);
-                        List+=Dir::GetAllFileNames(Test.Path_Get()+PathSeparator+BaseName+__T("_*_sub.dfxp"), Dir::Include_Files);
-                        List+=Dir::GetAllFileNames(Test.Path_Get()+PathSeparator+BaseName+__T("_*_sub.sami"), Dir::Include_Files);
-                        List+=Dir::GetAllFileNames(Test.Path_Get()+PathSeparator+BaseName+__T("_*_sub.sc2"), Dir::Include_Files);
-                        List+=Dir::GetAllFileNames(Test.Path_Get()+PathSeparator+BaseName+__T("_*_sub.scc"), Dir::Include_Files);
-                        List+=Dir::GetAllFileNames(Test.Path_Get()+PathSeparator+BaseName+__T("_*_sub.smi"), Dir::Include_Files);
-                        List+=Dir::GetAllFileNames(Test.Path_Get()+PathSeparator+BaseName+__T("_*_sub.srt"), Dir::Include_Files);
-                        List+=Dir::GetAllFileNames(Test.Path_Get()+PathSeparator+BaseName+__T("_*_sub.stl"), Dir::Include_Files);
-                        List+=Dir::GetAllFileNames(Test.Path_Get()+PathSeparator+BaseName+__T("_*_sub.vtt"), Dir::Include_Files);
-                        List+=Dir::GetAllFileNames(Test.Path_Get()+PathSeparator+BaseName+__T("_*_forcesub.dfxp"), Dir::Include_Files);
-                        List+=Dir::GetAllFileNames(Test.Path_Get()+PathSeparator+BaseName+__T("_*_forcesub.sami"), Dir::Include_Files);
-                        List+=Dir::GetAllFileNames(Test.Path_Get()+PathSeparator+BaseName+__T("_*_forcesub.sc2"), Dir::Include_Files);
-                        List+=Dir::GetAllFileNames(Test.Path_Get()+PathSeparator+BaseName+__T("_*_forcesub.scc"), Dir::Include_Files);
-                        List+=Dir::GetAllFileNames(Test.Path_Get()+PathSeparator+BaseName+__T("_*_forcesub.smi"), Dir::Include_Files);
-                        List+=Dir::GetAllFileNames(Test.Path_Get()+PathSeparator+BaseName+__T("_*_forcesub.srt"), Dir::Include_Files);
-                        List+=Dir::GetAllFileNames(Test.Path_Get()+PathSeparator+BaseName+__T("_*_forcesub.stl"), Dir::Include_Files);
-                        List+=Dir::GetAllFileNames(Test.Path_Get()+PathSeparator+BaseName+__T("_*_forcesub.vtt"), Dir::Include_Files);
-                        List+=Dir::GetAllFileNames(Test.Path_Get()+PathSeparator+BaseName+__T("_*_cc.dfxp"), Dir::Include_Files);
-                        List+=Dir::GetAllFileNames(Test.Path_Get()+PathSeparator+BaseName+__T("_*_cc.sami"), Dir::Include_Files);
-                        List+=Dir::GetAllFileNames(Test.Path_Get()+PathSeparator+BaseName+__T("_*_cc.sc2"), Dir::Include_Files);
-                        List+=Dir::GetAllFileNames(Test.Path_Get()+PathSeparator+BaseName+__T("_*_cc.scc"), Dir::Include_Files);
-                        List+=Dir::GetAllFileNames(Test.Path_Get()+PathSeparator+BaseName+__T("_*_cc.smi"), Dir::Include_Files);
-                        List+=Dir::GetAllFileNames(Test.Path_Get()+PathSeparator+BaseName+__T("_*_cc.srt"), Dir::Include_Files);
-                        List+=Dir::GetAllFileNames(Test.Path_Get()+PathSeparator+BaseName+__T("_*_cc.stl"), Dir::Include_Files);
-                        List+=Dir::GetAllFileNames(Test.Path_Get()+PathSeparator+BaseName+__T("_*_cc.vtt"), Dir::Include_Files);
+                        List+=Dir::GetAllFileNames(Test.FromFolder_Get(BaseName+__T("_*_audio.mp4")), Dir::Include_Files);
+                        List+=Dir::GetAllFileNames(Test.FromFolder_Get(BaseName+__T("_*_sub.dfxp")), Dir::Include_Files);
+                        List+=Dir::GetAllFileNames(Test.FromFolder_Get(BaseName+__T("_*_sub.sami")), Dir::Include_Files);
+                        List+=Dir::GetAllFileNames(Test.FromFolder_Get(BaseName+__T("_*_sub.sc2")), Dir::Include_Files);
+                        List+=Dir::GetAllFileNames(Test.FromFolder_Get(BaseName+__T("_*_sub.scc")), Dir::Include_Files);
+                        List+=Dir::GetAllFileNames(Test.FromFolder_Get(BaseName+__T("_*_sub.smi")), Dir::Include_Files);
+                        List+=Dir::GetAllFileNames(Test.FromFolder_Get(BaseName+__T("_*_sub.srt")), Dir::Include_Files);
+                        List+=Dir::GetAllFileNames(Test.FromFolder_Get(BaseName+__T("_*_sub.stl")), Dir::Include_Files);
+                        List+=Dir::GetAllFileNames(Test.FromFolder_Get(BaseName+__T("_*_sub.vtt")), Dir::Include_Files);
+                        List+=Dir::GetAllFileNames(Test.FromFolder_Get(BaseName+__T("_*_forcesub.dfxp")), Dir::Include_Files);
+                        List+=Dir::GetAllFileNames(Test.FromFolder_Get(BaseName+__T("_*_forcesub.sami")), Dir::Include_Files);
+                        List+=Dir::GetAllFileNames(Test.FromFolder_Get(BaseName+__T("_*_forcesub.sc2")), Dir::Include_Files);
+                        List+=Dir::GetAllFileNames(Test.FromFolder_Get(BaseName+__T("_*_forcesub.scc")), Dir::Include_Files);
+                        List+=Dir::GetAllFileNames(Test.FromFolder_Get(BaseName+__T("_*_forcesub.smi")), Dir::Include_Files);
+                        List+=Dir::GetAllFileNames(Test.FromFolder_Get(BaseName+__T("_*_forcesub.srt")), Dir::Include_Files);
+                        List+=Dir::GetAllFileNames(Test.FromFolder_Get(BaseName+__T("_*_forcesub.stl")), Dir::Include_Files);
+                        List+=Dir::GetAllFileNames(Test.FromFolder_Get(BaseName+__T("_*_forcesub.vtt")), Dir::Include_Files);
+                        List+=Dir::GetAllFileNames(Test.FromFolder_Get(BaseName+__T("_*_cc.dfxp")), Dir::Include_Files);
+                        List+=Dir::GetAllFileNames(Test.FromFolder_Get(BaseName+__T("_*_cc.sami")), Dir::Include_Files);
+                        List+=Dir::GetAllFileNames(Test.FromFolder_Get(BaseName+__T("_*_cc.sc2")), Dir::Include_Files);
+                        List+=Dir::GetAllFileNames(Test.FromFolder_Get(BaseName+__T("_*_cc.scc")), Dir::Include_Files);
+                        List+=Dir::GetAllFileNames(Test.FromFolder_Get(BaseName+__T("_*_cc.smi")), Dir::Include_Files);
+                        List+=Dir::GetAllFileNames(Test.FromFolder_Get(BaseName+__T("_*_cc.srt")), Dir::Include_Files);
+                        List+=Dir::GetAllFileNames(Test.FromFolder_Get(BaseName+__T("_*_cc.stl")), Dir::Include_Files);
+                        List+=Dir::GetAllFileNames(Test.FromFolder_Get(BaseName+__T("_*_cc.vtt")), Dir::Include_Files);
                         for (size_t Pos=0; Pos<List.size(); Pos++)
-                            Dxw+=" <clip file=\""+List[Pos].To_UTF8()+"\" />\r\n";
+                            Dxw+=" <clip file=\""+Ztring(FileName::FullName_Get(List[Pos])).To_UTF8()+"\" />\r\n";
                     }
                     #endif //defined(MEDIAINFO_DIRECTORY_YES)
 
@@ -1504,7 +1504,10 @@ void MediaInfo_Internal::Entry()
                 }
                 else
                 {
-                    Open_Buffer_Init(Dxw.size(), FileName(Config.File_Names[0]).Path_Get()+PathSeparator+FileName(Config.File_Names[0]).Name_Get());
+                    Ztring Dxw_Name=FileName(Config.File_Names[0]).Name_Get();
+                    if (Dxw_Name.empty())
+                        Dxw_Name=__T("."); //Name with only an extension (e.g. ".mp4"), an empty name would be a buffer without file name
+                    Open_Buffer_Init(Dxw.size(), FileName::FromFolder_Get(Config.File_Names[0], Dxw_Name));
                     Open_Buffer_Continue((const int8u*)Dxw.c_str(), Dxw.size());
                     #if MEDIAINFO_NEXTPACKET
                         if (Config.NextPacket_Get())
