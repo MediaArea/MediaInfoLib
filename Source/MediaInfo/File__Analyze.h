@@ -99,10 +99,11 @@ enum conformance_type {
 };
 
 //---------------------------------------------------------------------------
-// Files related to a file (referenced files, other files of its package, side-car files) are searched only in a build which can open
-// files; with internal linkage, so that the compilers remove the code searching them from the other builds, also without inlining
+// Files related to a file (referenced files, other files of its package, side-car files) are searched only from its name, and only in
+// a build which can open files; with internal linkage, so that the compilers remove the code searching them from the other builds, also
+// without inlining
 #if defined(MEDIAINFO_FILE_YES)
-static inline bool RelatedFiles_CanBeSearched(const Ztring &) {return true;}
+static inline bool RelatedFiles_CanBeSearched(const Ztring &Name) {return !Name.empty();}
 #else //defined(MEDIAINFO_FILE_YES)
 static inline bool RelatedFiles_CanBeSearched(const Ztring &) {return false;}
 #endif //defined(MEDIAINFO_FILE_YES)

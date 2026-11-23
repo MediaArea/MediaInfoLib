@@ -122,6 +122,29 @@ static size_t File__ReferenceFilesHelper_PathSeparator_RFind(const Ztring& Name)
     #endif //__WINDOWS__
 }
 
+//---------------------------------------------------------------------------
+// Folder of a file with a path separator, the start of the names of the files it references ("/" for a file at the root, empty for a file
+// without folder or without file name, the drive for "C:name" on Windows)
+static Ztring File__ReferenceFilesHelper_FolderPath(const Ztring& File_Name)
+{
+    if (File_Name.find(__T("://"))==string::npos)
+        return FileName::FromFolder_Get(File_Name, Ztring());
+    return File_Name.substr(0, File_Name.find_last_of(__T('/'))+1);
+}
+
+//---------------------------------------------------------------------------
+// Name of the file which references the files (of the top level file for the parser of a part of it, which has no name), with the path
+// separators of the names of the referenced local files
+static Ztring File__ReferenceFilesHelper_FileName(const File__Analyze* MI)
+{
+    Ztring File_Name=MI->File_Name.empty()?MI->File_Name_WithoutDemux:MI->File_Name;
+    #ifdef __WINDOWS__
+        if (File_Name.find(__T("://"))==string::npos)
+            File_Name.FindAndReplace(__T("/"), __T("\\"), 0, Ztring_Recursive);
+    #endif //__WINDOWS__
+    return File_Name;
+}
+
 //***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
@@ -614,7 +637,12 @@ void File__ReferenceFilesHelper::ParseReferences()
             }
         #endif //MEDIAINFO_EVENTS
 
-        //Configuring file names
+        //Configuring file names, from the folder of the file (of the top level file for the parser of a part of it, which has no name)
+        //Without file name (buffer without name) or in a build which can not open files, the referenced files are not searched, their names
+        //are kept as listed
+        const Ztring File_Name=File__ReferenceFilesHelper_FileName(MI);
+        const Ztring File_Path=File__ReferenceFilesHelper_FolderPath(File_Name);
+        const bool IsSearched=RelatedFiles_CanBeSearched(File_Name);
         Sequences_Current=0;
         while (Sequences_Current<Sequences.size())
         {
@@ -643,18 +671,7 @@ void File__ReferenceFilesHelper::ParseReferences()
                 }
                 Ztring AbsoluteName;
                 if (Names[Pos].find(__T(':'))!=1 && Names[Pos].find(__T("/"))!=0 && Names[Pos].find(__T("\\\\"))!=0 && Names[Pos].find(__T("://"))==string::npos) //If absolute patch
-                {
-                    if (MI->File_Name.find(__T("://"))==string::npos)
-                        AbsoluteName=ZenLib::FileName::Path_Get(MI->File_Name);
-                    else
-                    {
-                        size_t Pos_Path=MI->File_Name.find_last_of('/');
-                        if (Pos_Path!=Ztring::npos)
-                            AbsoluteName=MI->File_Name.substr(0, Pos_Path);
-                    }
-                    if (!AbsoluteName.empty())
-                        AbsoluteName+=ZenLib::PathSeparator;
-                }
+                    AbsoluteName=File_Path;
                 AbsoluteName+=Names[Pos];
                 #ifdef __WINDOWS__
                     if (AbsoluteName.find(__T("://"))==string::npos)
@@ -664,7 +681,7 @@ void File__ReferenceFilesHelper::ParseReferences()
                 #endif //__WINDOWS__
                 AbsoluteNames.push_back(AbsoluteName);
             }
-            if (AbsoluteNames.empty() || !(AbsoluteNames[0].find(__T("://"))!=string::npos || File::Exists(AbsoluteNames[0])))
+            if (!IsSearched || AbsoluteNames.empty() || !(AbsoluteNames[0].find(__T("://"))!=string::npos || File::Exists(AbsoluteNames[0])))
             {
                 AbsoluteNames.clear();
 
@@ -675,18 +692,7 @@ void File__ReferenceFilesHelper::ParseReferences()
                     IsUrlEncoded=true;
                     Ztring AbsoluteName;
                     if (Names[Pos].find(__T(':'))!=1 && Names[Pos].find(__T("/"))!=0 && Names[Pos].find(__T("\\\\"))!=0 && Names[Pos].find(__T("://"))==string::npos) //If absolute patch
-                    {
-                        if (MI->File_Name.find(__T("://"))==string::npos)
-                            AbsoluteName=ZenLib::FileName::Path_Get(MI->File_Name);
-                        else
-                        {
-                            size_t Pos_Path=MI->File_Name.find_last_of('/');
-                            if (Pos_Path!=Ztring::npos)
-                                AbsoluteName=MI->File_Name.substr(0, Pos_Path);
-                        }
-                        if (!AbsoluteName.empty())
-                            AbsoluteName+=ZenLib::PathSeparator;
-                    }
+                        AbsoluteName=File_Path;
                     AbsoluteName+=Names[Pos];
                     #ifdef __WINDOWS__
                         AbsoluteName.FindAndReplace(__T("/"), __T("\\"), 0, Ztring_Recursive); //Names[Pos] normalization
@@ -694,7 +700,7 @@ void File__ReferenceFilesHelper::ParseReferences()
                     AbsoluteNames.push_back(AbsoluteName);
                 }
 
-                if (AbsoluteNames.empty() || !File::Exists(AbsoluteNames[0]))
+                if (!IsSearched || AbsoluteNames.empty() || !File::Exists(AbsoluteNames[0]))
                 {
                     AbsoluteNames.clear();
                     Names=Sequences[Sequences_Current]->FileNames;
@@ -719,17 +725,7 @@ void File__ReferenceFilesHelper::ParseReferences()
                             for (size_t Pos=0; Pos<Names.size(); Pos++)
                             {
                                 Names[Pos].erase(0, PathSeparator_Pos+1);
-                                Ztring AbsoluteName;
-                                if (MI->File_Name.find(__T("://"))==string::npos)
-                                    AbsoluteName=ZenLib::FileName::Path_Get(MI->File_Name);
-                                else
-                                {
-                                    size_t Pos_Path=MI->File_Name.find_last_of('/');
-                                    if (Pos_Path!=Ztring::npos)
-                                        AbsoluteName=MI->File_Name.substr(0, Pos_Path);
-                                }
-                                if (!AbsoluteName.empty())
-                                    AbsoluteName+=ZenLib::PathSeparator;
+                                Ztring AbsoluteName=File_Path;
                                 AbsoluteName+=Names[Pos];
                                 #ifdef __WINDOWS__
                                     if (AbsoluteName.find(__T("://"))==string::npos)
@@ -740,7 +736,7 @@ void File__ReferenceFilesHelper::ParseReferences()
                                 AbsoluteNames.push_back(AbsoluteName);
                             }
 
-                            if (!File::Exists(AbsoluteNames[0]))
+                            if (!IsSearched || !File::Exists(AbsoluteNames[0]))
                             {
                                 AbsoluteNames.clear();
                                 Names=Sequences[Sequences_Current]->FileNames;
@@ -766,17 +762,7 @@ void File__ReferenceFilesHelper::ParseReferences()
                                         for (size_t Pos=0; Pos<Names.size(); Pos++)
                                         {
                                             Names[Pos].erase(0, PathSeparator_Pos+1);
-                                            Ztring AbsoluteName;
-                                            if (MI->File_Name.find(__T("://"))==string::npos)
-                                                AbsoluteName=ZenLib::FileName::Path_Get(MI->File_Name);
-                                            else
-                                            {
-                                                size_t Pos_Path=MI->File_Name.find_last_of('/');
-                                                if (Pos_Path!=Ztring::npos)
-                                                    AbsoluteName=MI->File_Name.substr(0, Pos_Path);
-                                            }
-                                            if (!AbsoluteName.empty())
-                                                AbsoluteName+=ZenLib::PathSeparator;
+                                            Ztring AbsoluteName=File_Path;
                                             AbsoluteName+=Names[Pos];
                                             #ifdef __WINDOWS__
                                                 AbsoluteName.FindAndReplace(__T("/"), __T("\\"), 0, Ztring_Recursive); //Names[Pos] normalization
@@ -785,7 +771,7 @@ void File__ReferenceFilesHelper::ParseReferences()
                                         }
                                 }
 
-                                if (!AbsoluteNames.empty() && !File::Exists(AbsoluteNames[0]))
+                                if (!AbsoluteNames.empty() && (!IsSearched || !File::Exists(AbsoluteNames[0])))
                                 {
                                     AbsoluteNames.clear();
                                     IsUrlEncoded=false;
@@ -805,7 +791,7 @@ void File__ReferenceFilesHelper::ParseReferences()
             if (!AbsoluteNames.empty())
                 Sequences[Sequences_Current]->FileNames=AbsoluteNames;
 
-            if (!AbsoluteNames.empty() && AbsoluteNames[0]==MI->File_Name)
+            if (!AbsoluteNames.empty() && AbsoluteNames[0]==File_Name)
             {
                 Sequences[Sequences_Current]->IsCircular=true;
                 Sequences[Sequences_Current]->FileNames.clear();
@@ -815,7 +801,9 @@ void File__ReferenceFilesHelper::ParseReferences()
                 Sequences[Sequences_Current]->FileNames=AbsoluteNames;
             else
             {
+                Sequences[Sequences_Current]->FileNames.clear(); //Not opened later with the names as listed, from the current folder
                 Sequences[Sequences_Current]->Status.set(File__Analyze::IsFinished);
+                Sequences[Sequences_Current]->FileSize=0;
                 #if MEDIAINFO_EVENTS
                     Config->Event_SubFile_Missing(Sequences[Sequences_Current]->Source);
                 #endif //MEDIAINFO_EVENTS
@@ -843,7 +831,10 @@ void File__ReferenceFilesHelper::ParseReferences()
                     Sequences[Sequences_Current]->Resources[Pos]->FileNames.clear();
                     Sequences[Sequences_Current]->Resources[Pos]->FileNames.push_back(Sequences[Sequences_Current]->FileNames[Pos]);
                 }
-                Sequences[Sequences_Current]->FileNames.resize(1);
+                for (size_t Pos=Sequences[Sequences_Current]->FileNames.size(); Pos<Sequences[Sequences_Current]->Resources.size(); Pos++)
+                    Sequences[Sequences_Current]->Resources[Pos]->FileNames.clear(); //Missing or circular reference, not opened or sized later with the names as listed
+                if (!Sequences[Sequences_Current]->FileNames.empty() || Sequences[Sequences_Current]->IsCircular) //A missing reference is not opened
+                    Sequences[Sequences_Current]->FileNames.resize(1);
             }
 
             Sequences_Current++;
@@ -1678,20 +1669,10 @@ void File__ReferenceFilesHelper::List_Compute()
                 {
                     if (MI->Retrieve(StreamKind_Target, StreamPos_Target, "Source").empty())
                     {
-                        Ztring SourcePath;
-                        const Ztring& SourceName=MI->File_Name;
-                        if (SourceName.find(__T("://"))==string::npos)
-                            SourcePath=ZenLib::FileName::Path_Get(SourceName);
-                        else
-                        {
-                            size_t Pos_Path=SourceName.find_last_of('/');
-                            if (Pos_Path!=Ztring::npos)
-                                SourcePath=SourceName.substr(0, Pos_Path);
-                        }
-                        size_t SourcePath_Size=SourcePath.empty()?0:(SourcePath.size()+1); //Path size + path separator size
+                        const Ztring SourcePath=File__ReferenceFilesHelper_FolderPath(MI->File_Name.empty()?MI->File_Name_WithoutDemux:MI->File_Name);
                         Ztring Temp=Sequences[Sequences_Current]->MI->Config.File_Names[0];
-                        if (!Config->File_IsReferenced_Get())
-                            Temp.erase(0, SourcePath_Size);
+                        if (!Config->File_IsReferenced_Get() && !Temp.compare(0, SourcePath.size(), SourcePath))
+                            Temp.erase(0, SourcePath.size());
                         MI->Fill(StreamKind_Target, StreamPos_Target, "Source", Temp);
                     }
                     MI->Fill(StreamKind_Target, StreamPos_Target, ("Source_"+Hash_Name+"_Generated").c_str(), Sequences[Sequences_Current]->MI->Get(Stream_General, 0, Hash_NameU+__T("_Generated")));
@@ -1718,22 +1699,12 @@ void File__ReferenceFilesHelper::List_Compute()
     #if MEDIAINFO_ADVANCED
         if (!HasMainFile && Config->File_Source_List_Get())
         {
-            Ztring SourcePath;
-            const Ztring& SourceName=MI->File_Name;
-            if (SourceName.find(__T("://"))==string::npos)
-                SourcePath=ZenLib::FileName::Path_Get(SourceName);
-            else
-            {
-                size_t Pos_Path=SourceName.find_last_of('/');
-                if (Pos_Path!=Ztring::npos)
-                    SourcePath=SourceName.substr(0, Pos_Path);
-            }
-            size_t SourcePath_Size=SourcePath.empty()?0:(SourcePath.size()+1); //Path size + path separator size
+            const Ztring SourcePath=File__ReferenceFilesHelper_FolderPath(MI->File_Name.empty()?MI->File_Name_WithoutDemux:MI->File_Name);
             for (size_t Pos=0; Pos<Sequences[Sequences_Current]->FileNames.size(); Pos++)
             {
                 Ztring Temp=Sequences[Sequences_Current]->FileNames[Pos];
-                if (!Config->File_IsReferenced_Get())
-                    Temp.erase(0, SourcePath_Size);
+                if (!Config->File_IsReferenced_Get() && !Temp.compare(0, SourcePath.size(), SourcePath))
+                    Temp.erase(0, SourcePath.size());
                 MI->Fill(StreamKind_Target, StreamPos_Target, "Source_List", Temp);
             }
             if (!Sequences[Sequences_Current]->MI->Get(Stream_General, 0, __T("Source_List")).empty())
@@ -1744,8 +1715,8 @@ void File__ReferenceFilesHelper::List_Compute()
                 for (size_t Pos=0; Pos<List.size(); Pos++)
                 {
                     Ztring Temp=List[Pos];
-                    if (!Config->File_IsReferenced_Get())
-                        Temp.erase(0, SourcePath_Size);
+                    if (!Config->File_IsReferenced_Get() && !Temp.compare(0, SourcePath.size(), SourcePath))
+                        Temp.erase(0, SourcePath.size());
                     MI->Fill(StreamKind_Target, StreamPos_Target, "Source_List", Temp);
                 }
             }

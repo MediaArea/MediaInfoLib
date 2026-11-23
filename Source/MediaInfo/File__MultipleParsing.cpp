@@ -955,6 +955,7 @@ void File__MultipleParsing::Read_Buffer_Init()
             }
         #endif //MEDIAINFO_EVENTS
         Parser[Pos]->File_Name=File_Name;
+        Parser[Pos]->File_Name_WithoutDemux=File_Name_WithoutDemux;
         Parser[Pos]->Open_Buffer_Init(File_Size);
     }
 }

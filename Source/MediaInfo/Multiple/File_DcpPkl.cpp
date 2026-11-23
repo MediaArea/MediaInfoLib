@@ -185,19 +185,18 @@ bool File_DcpPkl::FileHeader_Begin()
     {
         ReferenceFiles_Accept(this, Config);
 
-        FileName Directory(File_Name);
-        Ztring DirPath = Directory.Path_Get();
-        if (!DirPath.empty())
-            DirPath += PathSeparator;
-        Ztring Assetmap_FileName=DirPath+__T("ASSETMAP.xml");
+        Ztring Assetmap_FileName=FileName::FromFolder_Get(File_Name, __T("ASSETMAP.xml"));
         bool IsOk=false;
-        if (File::Exists(Assetmap_FileName))
-            IsOk=true;
-        else
+        if (RelatedFiles_CanBeSearched(File_Name))
         {
-            Assetmap_FileName.resize(Assetmap_FileName.size()-4); //Old fashion, without ".xml"
             if (File::Exists(Assetmap_FileName))
                 IsOk=true;
+            else
+            {
+                Assetmap_FileName=FileName::FromFolder_Get(File_Name, __T("ASSETMAP")); //Old fashion, without ".xml"
+                if (File::Exists(Assetmap_FileName))
+                    IsOk=true;
+            }
         }
         if (IsOk)
         {

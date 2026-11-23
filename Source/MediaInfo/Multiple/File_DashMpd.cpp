@@ -133,7 +133,7 @@ static void DashMpd_codecs_Fill (const char* codecs, sequence* Sequence)
 struct template_generic
 {
     sequence* Sequence;
-    Ztring SourceDir;
+    Ztring SourceName;
     Ztring BaseURL;
     Ztring initialization;
     Ztring media;
@@ -157,11 +157,11 @@ struct template_generic
     std::vector<segmenttimeline> SegmentTimeLines;
     std::map<Ztring, Ztring> Attributes_ForMedia;
 
-    template_generic(const Ztring &BaseURL=Ztring(), const Ztring &SourceDir=Ztring())
+    template_generic(const Ztring &BaseURL=Ztring(), const Ztring &SourceName=Ztring())
     {
         Sequence=new sequence;
         template_generic::BaseURL=BaseURL;
-        template_generic::SourceDir=SourceDir;
+        template_generic::SourceName=SourceName;
         duration=1;
         startNumber=1;
         duration_Max=0;
@@ -175,7 +175,7 @@ struct template_generic
         Sequence=new sequence;
         *Sequence=*ToCopy.Sequence;
         template_generic::BaseURL=ToCopy.BaseURL;
-        template_generic::SourceDir=ToCopy.SourceDir;
+        template_generic::SourceName=ToCopy.SourceName;
         initialization=ToCopy.initialization;
         media=ToCopy.media;
         duration=ToCopy.duration;
@@ -407,13 +407,8 @@ void template_generic::Decode()
                     else
                         Media_Name_Temp.insert(Time_Pos, Index);
 
-                    Ztring File_Name;
-                    Ztring File_Name_With_Path;
-                    if (!SourceDir.empty())
-                        File_Name_With_Path+=SourceDir+PathSeparator;
-                    File_Name+=BaseURL+Media_Name_Temp;
-                    File_Name_With_Path+=BaseURL+Media_Name_Temp;
-                    if (!File::Exists(File_Name_With_Path))
+                    Ztring File_Name=BaseURL+Media_Name_Temp;
+                    if (!RelatedFiles_CanBeSearched(SourceName) || !File::Exists(FileName::FromFolder_Get(SourceName, File_Name)))
                         break;
                     Sequence->AddFileName(File_Name);
                     Index_Pos_Temp++;
@@ -546,7 +541,7 @@ bool File_DashMpd::FileHeader_Begin()
                         //AdaptationSet (=a stream)
                         if (string(Period_Item->Value())=="AdaptationSet")
                         {
-                            template_generic Template_Generic(BaseURL, FileName(File_Name).Path_Get());
+                            template_generic Template_Generic(BaseURL, File_Name);
 
                             Template_Generic.AdaptationSet_Attributes_Parse(Period_Item);
 

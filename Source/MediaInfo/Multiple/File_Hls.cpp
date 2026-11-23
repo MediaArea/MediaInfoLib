@@ -205,10 +205,10 @@ bool File_Hls::FileHeader_Begin()
 
                             #if MEDIAINFO_AES
                             //Trying to get the key from FileName.FileExt.key
-                            if (Config->Encryption_Key_Get().empty())
+                            if (Config->Encryption_Key_Get().empty() && RelatedFiles_CanBeSearched(File_Name))
                             {
                                 File KeyFile;
-                                if (KeyFile.Open(File_Name+__T(".key")))
+                                if (KeyFile.Open(FileName::FromFolder_Get(File_Name, FileName::FullName_Get(File_Name)+__T(".key"))))
                                 {
                                     if (KeyFile.Size_Get()==16)
                                     {
