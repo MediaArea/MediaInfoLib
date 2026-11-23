@@ -2024,7 +2024,13 @@ static string Mxf_AcquisitionMetadata_Sony_CameraProcessDiscriminationCode(int16
         case 0x0101: return "F65 RAW Mode released in December 2011";
         case 0x0102: return "F65 HD Mode released in April 2012";
         case 0x0103: return "F65 RAW High Frame Rate Mode released in July 2012";
-        default:     return Ztring(Ztring::ToZtring(Value, 16)).To_UTF8();
+        default:
+                     {
+                     Ztring ValueS=Ztring::ToZtring(Value, 16);
+                     if (ValueS.size()<4)
+                         ValueS.insert(0, 4-ValueS.size(), __T('0'));
+                     return ValueS.To_UTF8();
+                     }
     }
 };
 
@@ -20598,8 +20604,7 @@ void File_Mxf::UserDefinedAcquisitionMetadata_UdamSetIdentifier()
     Get_UUID(Value,                                             "Value");
 
     FILLING_BEGIN();
-        if ((Value.hi==0x966908004678031CLL && Value.lo==0x20500000F0C01181LL)
-         || (Value.hi==0x966908004678031CLL && Value.lo==0x20500002F0C01181LL)) //Found Sony metadata with 00 or 02, what is the difference?
+        if (Value.hi==0x966908004678031CLL && (Value.lo&0xFFFFFF00FFFFFFFFLL)==0x20500000F0C01181LL) //The byte not tested is the camera family
             UserDefinedAcquisitionMetadata_UdamSetIdentifier_IsSony=true;
     FILLING_END();
 }
