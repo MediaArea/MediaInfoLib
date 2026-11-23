@@ -39,6 +39,14 @@
 namespace MediaInfoLib
 {
 
+//---------------------------------------------------------------------------
+//ID3v2 header ("ID3", or "ea3" in OpenMG): known major version, revision not 0xFF (the size is not tested, some taggers write its bytes with 8 bits)
+static bool Id3v2_Header_IsValid(const int8u* Header)
+{
+    return Header[3]>=2 && Header[3]<=4
+        && Header[4]!=0xFF;
+}
+
 //***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
@@ -195,7 +203,7 @@ bool File__Tags_Helper::Synchronize(bool &Tag_Found, size_t Synchro_Offset)
         return false;
     int32u ID3=CC3(Base->Buffer+Base->Buffer_Offset+Synchro_Offset);
     int64u ID8=CC8(Base->Buffer+Base->Buffer_Offset+Synchro_Offset);
-    if (ID3==0x494433 //"ID3"
+    if ((ID3==0x494433 && Id3v2_Header_IsValid(Base->Buffer+Base->Buffer_Offset+Synchro_Offset)) //"ID3"
      || ID8==0x4150455441474558LL //"APETAGEX"
      || ID8==0x4C59524943534245LL //"LYRICSBE"
      || ID3==0x544147) //"TAG" / "TAG+"
@@ -259,7 +267,7 @@ bool File__Tags_Helper::Synched_Test()
             int32u ID=CC3(Base->Buffer+Base->Buffer_Offset);
             int32u ID4=CC4(Base->Buffer+Base->Buffer_Offset);
             int64u ID8=CC8(Base->Buffer+Base->Buffer_Offset);
-                 if (ID==0x494433 || ID==0x656133) //"ID3" and "ea3" (found in OpenMG)
+                 if ((ID==0x494433 || ID==0x656133) && Id3v2_Header_IsValid(Base->Buffer+Base->Buffer_Offset)) //"ID3" and "ea3" (found in OpenMG)
             {
                 if (Base->Buffer_Offset+10>Base->Buffer_Size)
                     return false;
