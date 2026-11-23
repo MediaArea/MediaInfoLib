@@ -3810,7 +3810,7 @@ void File__Analyze::Element_End_Common_Flush()
     if (Trace_Activated)
     {
         //Size if not filled
-        int64u Current=File_Offset+Buffer_Offset+Element_Offset+BS_BitOffset_Get()/8;
+        int64u Current=File_Offset+Buffer_Offset+Element_Offset+(BS_BitOffset_Get()+7)/8; //Byte after the last bit, an element ending inside a byte includes this byte
         if (Current<=Elem1.Next && Current>=Elem1.TraceNode.Pos) //Not if the parser read data stored before the element
             Elem1.TraceNode.Size=Current-Elem1.TraceNode.Pos;
     }
