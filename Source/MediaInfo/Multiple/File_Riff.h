@@ -220,6 +220,7 @@ private :
     void AIFC_COMT ();
     void AIFC_FVER ();
     void AIFC_SSND ();
+    void AIFC_wave ();
     void AIFF_SSND_Continue();
     void AIFC_xxxx ();
     void AIFF ();
