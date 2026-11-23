@@ -105,6 +105,22 @@ using namespace std;
 namespace MediaInfoLib
 {
 
+//***************************************************************************
+// Utils
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+// Position of the last path separator of a listed name, "/" or "\" whatever the platform
+// On Windows found by ZenLib::FileName, which skips the second byte of a character of a multibyte code page without Unicode (e.g. "\" in cp932)
+static size_t File__ReferenceFilesHelper_PathSeparator_RFind(const Ztring& Name)
+{
+    #ifdef __WINDOWS__
+        size_t Pos=Name.size()-FileName::FullName_Get(Name).size(); //After the last path separator, or after the drive of "C:name"
+        return (Pos && (Name[Pos-1]==__T('\\') || Name[Pos-1]==__T('/')))?(Pos-1):string::npos;
+    #else //__WINDOWS__
+        return Name.find_last_of(__T("\\/"));
+    #endif //__WINDOWS__
+}
 
 //***************************************************************************
 // Constructor/Destructor
@@ -187,13 +203,11 @@ void File__ReferenceFilesHelper_InfoFromFileName (sequences &Sequences)
         if (Sequences[Sequences_Pos]->StreamKind==Stream_Audio && !Sequences[Sequences_Pos]->FileNames.empty())
         {
             Ztring Name=Sequences[Sequences_Pos]->FileNames[0];
+            Name=FileName::FullName_Get(Name); //Removing the path
             while (Name.FindAndReplace(__T("51 "), Ztring()));
             while (Name.FindAndReplace(__T("_"), __T(" ")));
             while (Name.FindAndReplace(__T("."), __T(" ")));
             while (Name.FindAndReplace(__T("  "), __T(" ")));
-            size_t PathSeparator_Pos=Name.rfind(PathSeparator);
-            if (PathSeparator_Pos!=(size_t)-1)
-                Name.erase(0, PathSeparator_Pos+1);
 
             //Removing extension
             if (Name.size()>4 && Name.rfind(__T('.'))==Name.size())
@@ -689,7 +703,7 @@ void File__ReferenceFilesHelper::ParseReferences()
                             Names[Pos]=ZenLib::Format::Http::URL_Encoded_Decode(Names[Pos]);
 
                     //Configuring file name (this time, we try to test local files)
-                    size_t PathSeparator_Pos=Names.empty()?string::npos:Names[0].find_last_of(__T("\\/"));
+                    size_t PathSeparator_Pos=Names.empty()?string::npos:File__ReferenceFilesHelper_PathSeparator_RFind(Names[0]);
                     if (PathSeparator_Pos!=string::npos && PathSeparator_Pos && !Sequences[Sequences_Current]->PathOnly)
                     {
                         Ztring PathToRemove=Names[0].substr(0, PathSeparator_Pos);
@@ -735,9 +749,9 @@ void File__ReferenceFilesHelper::ParseReferences()
                                         Names[Pos]=ZenLib::Format::Http::URL_Encoded_Decode(Names[Pos]);
 
                                 //Configuring file name (this time, we try to test local files)
-                                size_t PathSeparator_Pos=Names[0].find_last_of(__T("\\/"));
+                                size_t PathSeparator_Pos=File__ReferenceFilesHelper_PathSeparator_RFind(Names[0]);
                                 if (PathSeparator_Pos!=string::npos && PathSeparator_Pos)
-                                    PathSeparator_Pos=Names[0].find_last_of(__T("\\/"), PathSeparator_Pos-1);
+                                    PathSeparator_Pos=File__ReferenceFilesHelper_PathSeparator_RFind(Names[0].substr(0, PathSeparator_Pos));
                                 if (PathSeparator_Pos!=string::npos && PathSeparator_Pos)
                                 {
                                     Ztring PathToRemove=Names[0].substr(0, PathSeparator_Pos);

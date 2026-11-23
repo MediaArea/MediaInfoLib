@@ -98,6 +98,15 @@ enum conformance_type {
     Conformance_Max,
 };
 
+//---------------------------------------------------------------------------
+// Files related to a file (referenced files, other files of its package, side-car files) are searched only in a build which can open
+// files; with internal linkage, so that the compilers remove the code searching them from the other builds, also without inlining
+#if defined(MEDIAINFO_FILE_YES)
+static inline bool RelatedFiles_CanBeSearched(const Ztring &) {return true;}
+#else //defined(MEDIAINFO_FILE_YES)
+static inline bool RelatedFiles_CanBeSearched(const Ztring &) {return false;}
+#endif //defined(MEDIAINFO_FILE_YES)
+
 #if !MEDIAINFO_TRACE
     #include "MediaInfo/File__Analyze_MinimizeSize.h"
 #else

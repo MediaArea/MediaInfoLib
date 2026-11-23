@@ -3374,7 +3374,7 @@ void MediaInfo_Config_MediaInfo::Event_SubFile_Start(const Ztring &FileName_Abso
     Ztring FileName_Relative;
     if (File_Names_RootDirectory.empty())
     {
-        FileName FN(FileName_Absolute);
+        FileName FN(FileName::FullName_Get(FileName_Absolute)); //Without the folder and the drive
         FileName_Relative=FN.Name_Get();
         if (!FN.Extension_Get().empty())
         {
@@ -3433,7 +3433,7 @@ void MediaInfo_Config_MediaInfo::Event_SubFile_Missing_Absolute(const Ztring &Fi
     Ztring FileName_Relative;
     if (File_Names_RootDirectory.empty())
     {
-        FileName FN(FileName_Absolute);
+        FileName FN(FileName::FullName_Get(FileName_Absolute)); //Without the folder and the drive
         FileName_Relative=FN.Name_Get();
         if (!FN.Extension_Get().empty())
         {
