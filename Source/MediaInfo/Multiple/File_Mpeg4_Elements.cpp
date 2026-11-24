@@ -356,7 +356,7 @@ std::string File_Mpeg4_sv3d_ProjectionType(int8u Value)
 #include "MediaInfo/Multiple/File_Mpeg4_TimeCode.h"
 #include "ZenLib/FileName.h"
 #include "ThirdParty/base64/base64.h"
-#include "ThirdParty/tfsxml/tfsxml_tinyxml2.h"
+#include "ThirdParty/tfsxml/tfsxml.h"
 #define FMT_UNICODE 0
 #include "ThirdParty/fmt/format.h"
 #include <zlib.h>
@@ -5627,42 +5627,75 @@ void File_Mpeg4::moov_meta_xml()
 
     FILLING_BEGIN();
         if (moov_meta_hdlr_Type==Elements::moov_meta_hdlr_nrtm)
+            moov_meta_xml_NonRealTimeMeta(Xml, Xml_Size);
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mpeg4::moov_meta_xml_NonRealTimeMeta(const char* Xml, size_t Xml_Size)
+{
+    //Sony Non-Real Time Metadata, read element by element for keeping what is before the end of a truncated box
+    tfsxml_string p, b, n, v;
+    if (tfsxml_init(&p, Xml, (unsigned)Xml_Size, 0))
+        return;
+    bool Root_IsFound=false;
+    while (!Root_IsFound && !tfsxml_next(&p, &b))
+        Root_IsFound=!tfsxml_strcmp_charp(b, "NonRealTimeMeta");
+    if (!Root_IsFound || tfsxml_enter(&p))
+        return;
+
+    bool CreationDate_IsParsed=false, Device_IsParsed=false, Lens_IsParsed=false;
+    while (!tfsxml_next(&p, &b))
+    {
+        if (!CreationDate_IsParsed && !tfsxml_strcmp_charp(b, "CreationDate"))
         {
-            tinyxml2::XMLDocument document;
-            if (!document.Parse(Xml, Xml_Size))
-            {
-                tinyxml2::XMLElement* Root=document.FirstChildElement("NonRealTimeMeta");
-                if (Root)
+            CreationDate_IsParsed=true;
+            while (!tfsxml_attr(&p, &n, &v))
+                if (!tfsxml_strcmp_charp(n, "value"))
                 {
-                    tinyxml2::XMLElement* Element;
-                    const char* Value;
-
-                    //CreationDate
-                    Element=Root->FirstChildElement("CreationDate");
-                    if (Element && (Value=Element->Attribute("value")))
-                        Fill(Stream_General, 0, General_Recorded_Date, Value, Unlimited, true, true);
-
-                    //Device
-                    Element=Root->FirstChildElement("Device");
-                    if (Element && (Value=Element->Attribute("manufacturer")))
-                    {
-                        string manufacturer_modelName(Value);
-                        if ((Value=Element->Attribute("modelName")))
-                        {
-                            manufacturer_modelName+=' ';
-                            manufacturer_modelName+=Value;
-                        }
-                        Fill(Stream_General, 0, General_Encoded_Application, manufacturer_modelName, true, false);
-                    }
-
-                    //Lens
-                    Element=Root->FirstChildElement("Lens");
-                    if (Element && (Value=Element->Attribute("modelName")))
-                        Fill(Stream_General, 0, "LensModel", Value, Unlimited, true, true);
+                    Fill(Stream_General, 0, General_Recorded_Date, tfsxml_decode(v), true, true);
+                    break;
+                }
+        }
+        else if (!Device_IsParsed && !tfsxml_strcmp_charp(b, "Device"))
+        {
+            Device_IsParsed=true;
+            bool manufacturer_IsFound=false, modelName_IsFound=false;
+            string manufacturer, modelName;
+            while (!tfsxml_attr(&p, &n, &v))
+            {
+                if (!manufacturer_IsFound && !tfsxml_strcmp_charp(n, "manufacturer"))
+                {
+                    manufacturer_IsFound=true;
+                    manufacturer=tfsxml_decode(v);
+                }
+                else if (!modelName_IsFound && !tfsxml_strcmp_charp(n, "modelName"))
+                {
+                    modelName_IsFound=true;
+                    modelName=tfsxml_decode(v);
                 }
             }
+            if (manufacturer_IsFound)
+            {
+                if (modelName_IsFound)
+                {
+                    manufacturer+=' ';
+                    manufacturer+=modelName;
+                }
+                Fill(Stream_General, 0, General_Encoded_Application, manufacturer, true, false);
+            }
         }
-    FILLING_END();
+        else if (!Lens_IsParsed && !tfsxml_strcmp_charp(b, "Lens"))
+        {
+            Lens_IsParsed=true;
+            while (!tfsxml_attr(&p, &n, &v))
+                if (!tfsxml_strcmp_charp(n, "modelName"))
+                {
+                    Fill(Stream_General, 0, "LensModel", tfsxml_decode(v), true, true);
+                    break;
+                }
+        }
+    }
 }
 
 //---------------------------------------------------------------------------

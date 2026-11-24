@@ -178,6 +178,7 @@ private :
     void moov_meta_ilst_xxxx_mean();
     void moov_meta_ilst_xxxx_name();
     void moov_meta_xml();
+    void moov_meta_xml_NonRealTimeMeta(const char* Xml, size_t Xml_Size);
     void moov_mvex();
     void moov_mvex_mehd();
     void moov_mvex_trex();
