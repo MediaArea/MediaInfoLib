@@ -449,7 +449,7 @@ public :
     MediaInfo_Config_PerPackage* Config_PerPackage;
     bool          Config_PerPackage_IsOwned; //Else it is the one of the referencing file
     bool          Events_TimestampShift_Disabled;
-    Ztring        File_Names_RootDirectory;
+    Ztring        File_Names_RootDirectory; //Folder of the referencing file with its path separator, removed from the names of the events
     #endif //MEDIAINFO_EVENTS
     #if MEDIAINFO_DEMUX
     bool          Demux_EventWasSent;

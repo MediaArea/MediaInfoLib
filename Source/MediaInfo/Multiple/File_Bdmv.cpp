@@ -660,6 +660,24 @@ void File_Bdmv::BDMV()
         MI.Open(List[MaxDuration_Pos]); //Open it again for having the M2TS part
         Merge(MI);
 
+        //Names of the streams from the disc folder, the playlist gives them from the PLAYLIST folder (e.g. "../STREAM/00000.m2ts")
+        Ztring Up(__T(".."));
+        Up+=PathSeparator;
+        for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
+            for (size_t StreamPos=0; StreamPos<Count_Get((stream_t)StreamKind); StreamPos++)
+            {
+                ZtringList Sources;
+                Sources.Separator_Set(0, __T(" / "));
+                Sources.Quote_Set(Ztring());
+                Sources.Write(Retrieve((stream_t)StreamKind, StreamPos, "Source"));
+                if (Sources.empty())
+                    continue;
+                for (size_t Sources_Pos=0; Sources_Pos<Sources.size(); Sources_Pos++)
+                    if (!Sources[Sources_Pos].compare(0, Up.size(), Up))
+                        Sources[Sources_Pos].replace(0, 2, __T("BDMV"));
+                Fill((stream_t)StreamKind, StreamPos, "Source", Sources.Read(), true);
+            }
+
         Clear(Stream_General, 0, General_Format);
         Clear(Stream_General, 0, General_Format_String);
         Clear(Stream_General, 0, General_Format_Extensions);
@@ -727,7 +745,7 @@ void File_Bdmv::Clpi_ProgramInfo()
                 Merge(MI);
                 for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
                     for (size_t StreamPos=0; StreamPos<Count_Get((stream_t)StreamKind); StreamPos++)
-                        Fill((stream_t)StreamKind, StreamPos, "Source", file+__T(".m2ts"));
+                        Fill((stream_t)StreamKind, StreamPos, "Source", Ztring(__T(".."))+PathSeparator+M2TS_File); //From the CLIPINF folder, also from the PLAYLIST folder
             }
         }
 
@@ -1423,7 +1441,7 @@ void File_Bdmv::Mpls_PlayList_SubPlayItem(int8u SubPath_type, int16u Pos)
                         if (!BitRate.empty())
                             Fill(Stream_Video, Pos, Video_BitRate, Ztring::ToZtring(BitRate.To_int32u()+MI.Get(Stream_Video, 0, Video_BitRate).To_int32u())+__T(" / ")+BitRate, true);
                         if (!Source.empty())
-                            Fill(Stream_Video, Pos, "Source", Clip_Information_file_name +__T(".m2ts / ")+Source, true);
+                            Fill(Stream_Video, Pos, "Source", Ztring(__T(".."))+PathSeparator+__T("STREAM")+PathSeparator+Clip_Information_file_name+__T(".m2ts / ")+Source, true);
                     }
                 }
             }

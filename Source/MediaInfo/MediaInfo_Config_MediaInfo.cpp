@@ -3384,7 +3384,7 @@ void MediaInfo_Config_MediaInfo::Event_SubFile_Start(const Ztring &FileName_Abso
     }
     else
     {
-        Ztring Root=File_Names_RootDirectory+PathSeparator;
+        const Ztring& Root=File_Names_RootDirectory; //With its path separator
         FileName_Relative=FileName_Absolute;
         if (FileName_Relative.find(Root)==0)
             FileName_Relative.erase(0, Root.size());
@@ -3443,7 +3443,7 @@ void MediaInfo_Config_MediaInfo::Event_SubFile_Missing_Absolute(const Ztring &Fi
     }
     else
     {
-        Ztring Root=File_Names_RootDirectory+PathSeparator;
+        const Ztring& Root=File_Names_RootDirectory; //With its path separator
         FileName_Relative=FileName_Absolute;
         if (FileName_Relative.find(Root)==0)
             FileName_Relative.erase(0, Root.size());

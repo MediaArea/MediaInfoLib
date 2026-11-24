@@ -108,7 +108,7 @@ bool File_Xdcam_Clip::FileHeader_Begin()
                     {
                         //MediaInfo::Option_Static(__T("ReadByHuman"), ReadByHuman?__T("1"):__T("0"));
                         Merge(MI);
-                        Fill(Stream_Video, StreamPos_Last, "Source", MXF_File);
+                        Fill(Stream_Video, StreamPos_Last, "Source", FileName::FullName_Get(MXF_File)); //From the folder of the file, the essence is next to it
                         File_Size_Total+=Ztring(MI.Get(Stream_General, 0, General_FileSize)).To_int64u();
 
                         //Commercial names

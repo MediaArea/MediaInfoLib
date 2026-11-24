@@ -67,6 +67,7 @@ public:
 
 public:
     ZtringList          FileNames;
+    ZtringList          FileNames_FromFolder; //Names of the opened files (FileNames once they are found, before they are given to the resources) from the folder of the file which references them, as listed if they are listed from the root, a drive, a server or an URL
     Ztring              Source; //Source file name (relative path)
     float64             FrameRate;
     int64u              Delay;
