@@ -771,7 +771,7 @@ void File__ReferenceFilesHelper::ParseReferences()
                         AbsoluteName.FindAndReplace(__T("\\"), __T("/"), 0, Ztring_Recursive); //Names[Pos] normalization with protocol (so "/" in all cases)
                 #endif //__WINDOWS__
                 FromFolderNames.push_back(AbsoluteName.substr(Name_Pos));
-                AbsoluteNames.push_back(AbsoluteName);
+                AbsoluteNames.push_back(FileName::ExtendedLength_Get(AbsoluteName)); //The system does not apply "." and ".." to an extended-length name
             }
             if (!IsSearched || AbsoluteNames.empty() || !(AbsoluteNames[0].find(__T("://"))!=string::npos || File::Exists(AbsoluteNames[0])))
             {
@@ -790,7 +790,7 @@ void File__ReferenceFilesHelper::ParseReferences()
                         AbsoluteName.FindAndReplace(__T("/"), __T("\\"), 0, Ztring_Recursive); //Names[Pos] normalization
                     #endif //__WINDOWS__
                     FromFolderNames.push_back(AbsoluteName.substr(Name_Pos));
-                    AbsoluteNames.push_back(AbsoluteName);
+                    AbsoluteNames.push_back(FileName::ExtendedLength_Get(AbsoluteName)); //The system does not apply "." and ".." to an extended-length name
                 }
 
                 if (!IsSearched || AbsoluteNames.empty() || !File::Exists(AbsoluteNames[0]))
@@ -828,7 +828,7 @@ void File__ReferenceFilesHelper::ParseReferences()
                                         AbsoluteName.FindAndReplace(__T("\\"), __T("/"), 0, Ztring_Recursive); //Names[Pos] normalization with protocol (so "/" in all cases)
                                 #endif //__WINDOWS__
                                 FromFolderNames.push_back(AbsoluteName.substr(File_Path.size()));
-                                AbsoluteNames.push_back(AbsoluteName);
+                                AbsoluteNames.push_back(FileName::ExtendedLength_Get(AbsoluteName)); //The system does not apply "." and ".." to an extended-length name
                             }
 
                             if (!IsSearched || !File::Exists(AbsoluteNames[0]))
@@ -864,7 +864,7 @@ void File__ReferenceFilesHelper::ParseReferences()
                                                 AbsoluteName.FindAndReplace(__T("/"), __T("\\"), 0, Ztring_Recursive); //Names[Pos] normalization
                                             #endif //__WINDOWS__
                                             FromFolderNames.push_back(AbsoluteName.substr(File_Path.size()));
-                                            AbsoluteNames.push_back(AbsoluteName);
+                                            AbsoluteNames.push_back(FileName::ExtendedLength_Get(AbsoluteName)); //The system does not apply "." and ".." to an extended-length name
                                         }
                                 }
 
