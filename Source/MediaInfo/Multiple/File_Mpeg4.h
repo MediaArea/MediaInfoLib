@@ -139,6 +139,7 @@ private :
     void meta_iref();
     void meta_iref_xxxx();
     void meta_pitm();
+    void meta_xml() {moov_meta_xml();}
     void mfra();
     void mfra_mfro();
     void mfra_tfra();
