@@ -5644,7 +5644,7 @@ void File_Mpeg4::moov_meta_xml_NonRealTimeMeta(const char* Xml, size_t Xml_Size)
     if (!Root_IsFound || tfsxml_enter(&p))
         return;
 
-    bool CreationDate_IsParsed=false, Device_IsParsed=false, Lens_IsParsed=false;
+    bool CreationDate_IsParsed=false, Device_IsParsed=false, Lens_IsParsed=false, LtcChangeTable_IsParsed=false;
     while (!tfsxml_next(&p, &b))
     {
         if (!CreationDate_IsParsed && !tfsxml_strcmp_charp(b, "CreationDate"))
@@ -5694,6 +5694,41 @@ void File_Mpeg4::moov_meta_xml_NonRealTimeMeta(const char* Xml, size_t Xml_Size)
                     Fill(Stream_General, 0, "LensModel", tfsxml_decode(v), true, true);
                     break;
                 }
+        }
+        else if (!LtcChangeTable_IsParsed && !tfsxml_strcmp_charp(b, "LtcChangeTable"))
+        {
+            //Drop frame flag of the time code in the value of the first LTC change
+            //(SMPTE ST 12-1 time address in hexadecimal, frames byte first, drop frame flag 0x40 of this byte)
+            LtcChangeTable_IsParsed=true;
+            if (tfsxml_enter(&p))
+                break;
+            while (!tfsxml_next(&p, &b))
+            {
+                if (tfsxml_strcmp_charp(b, "LtcChange"))
+                    continue;
+                while (!tfsxml_attr(&p, &n, &v))
+                    if (!tfsxml_strcmp_charp(n, "value"))
+                    {
+                        if (v.len==8)
+                        {
+                            int Frames_Tens=v.buf[0];
+                            if (Frames_Tens>='0' && Frames_Tens<='9')
+                                Frames_Tens-='0';
+                            else if (Frames_Tens>='A' && Frames_Tens<='F')
+                                Frames_Tens-='A'-10;
+                            else if (Frames_Tens>='a' && Frames_Tens<='f')
+                                Frames_Tens-='a'-10;
+                            else
+                                Frames_Tens=-1;
+                            if (Frames_Tens>=0)
+                                NonRealTimeMeta_DropFrame=(Frames_Tens&0x4)?1:0;
+                        }
+                        break;
+                    }
+                break;
+            }
+            if (tfsxml_leave(&p))
+                break;
         }
     }
 }

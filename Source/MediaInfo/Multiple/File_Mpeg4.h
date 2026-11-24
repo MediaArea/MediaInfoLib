@@ -512,6 +512,7 @@ private :
     size_t                                  StreamOrder;
     int32u                                  meta_pitm_item_ID;
     bool                                    meta_iref_IsParsed;
+    int8u                                   NonRealTimeMeta_DropFrame; //(int8u)-1 if not present
     std::vector<std::vector<int32u> >       meta_iprp_ipma_Entries;
     std::set<int32u>                        meta_iprp_SkippedItems; //HEIF tiles hidden by their grid, their properties are not needed
     #if MEDIAINFO_TRACE

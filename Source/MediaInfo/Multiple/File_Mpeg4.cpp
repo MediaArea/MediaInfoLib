@@ -359,6 +359,7 @@ File_Mpeg4::File_Mpeg4()
     StreamOrder=0;
     meta_pitm_item_ID=(int32u)-1;
     meta_iref_IsParsed=false;
+    NonRealTimeMeta_DropFrame=(int8u)-1;
     meta_iprp_ipco_Buffer=NULL;
     moov_trak_mdia_minf_stbl_stsd_Pos=0;
     moov_trak_tkhd_TrackID=(int32u)-1;
@@ -1692,6 +1693,19 @@ void File_Mpeg4::Streams_Finish()
         Fill(Stream_General, 0, General_Encoded_Library_Name, Mpeg4_Encoded_Library(Vendor));
         Fill(Stream_General, 0, General_Encoded_Library_Version, Vendor_Version);
     }
+
+    //Sony Non-Real Time Metadata, its drop frame flag replaces the one of the real time metadata
+    if (NonRealTimeMeta_DropFrame!=(int8u)-1)
+        for (size_t StreamPos=0; StreamPos<Count_Get(Stream_Other); StreamPos++)
+            if (Retrieve_Const(Stream_Other, StreamPos, Other_Format)==__T("Sony Real Time Metadata"))
+            {
+                Ztring TimeCode_FirstFrame=Retrieve_Const(Stream_Other, StreamPos, Other_TimeCode_FirstFrame);
+                if (TimeCode_FirstFrame.size()>=11 && (TimeCode_FirstFrame[8]==__T(':') || TimeCode_FirstFrame[8]==__T(';')))
+                {
+                    TimeCode_FirstFrame[8]=NonRealTimeMeta_DropFrame?__T(';'):__T(':');
+                    Fill(Stream_Other, StreamPos, Other_TimeCode_FirstFrame, TimeCode_FirstFrame, true);
+                }
+            }
 
     if (File_Size_Total!=File_Size)
         Fill(Stream_General, 0, General_FileSize, File_Size_Total, 10, true);
