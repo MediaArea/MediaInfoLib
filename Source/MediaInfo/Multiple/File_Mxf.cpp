@@ -1129,6 +1129,16 @@ static int8u Mxf_FrameLayout_Multiplier(int8u FrameLayout)
 //---------------------------------------------------------------------------
 static const char* Mxf_ColorPrimaries(const int128u ColorPrimaries)
 {
+    if ((ColorPrimaries.lo>>16)==0x0E06040101030000LL>>16) // Sony
+    {
+        switch ((int16u)ColorPrimaries.lo)
+        {
+            case 0x0104 : return "S-Gamut3";
+            case 0x0105 : return "S-Gamut3.Cine";
+            default     : return "";
+        }
+    }
+
     int32u Code_Compare4=(int32u)ColorPrimaries.lo;
     switch ((int8u)(Code_Compare4>>16))
     {
@@ -1216,6 +1226,23 @@ const char* Mxf_TransferCharacteristic_Sony_5[]= // 0x0E06x Sony values are read
     "",
     "Cine-Log",
     "ASC-CDL",
+    "S-Log2",
+};
+const char* Mxf_TransferCharacteristic_Sony_6[]=
+{
+    "",
+    "",
+    "",
+    "S-Log3",
+    "S-Log3 (S-Gamut3.Cine)",
+};
+const char* Mxf_TransferCharacteristic_Sony_7[]=
+{
+    "",
+    "",
+    "",
+    "",
+    "S-Cinetone",
 };
 const char** Mxf_TransferCharacteristic_Sony[]=
 {
@@ -1224,6 +1251,8 @@ const char** Mxf_TransferCharacteristic_Sony[]=
     Mxf_TransferCharacteristic_Sony_3,
     Mxf_TransferCharacteristic_Sony_4,
     Mxf_TransferCharacteristic_Sony_5,
+    Mxf_TransferCharacteristic_Sony_6,
+    Mxf_TransferCharacteristic_Sony_7,
 };
 const int8u Mxf_TransferCharacteristic_Sony_Size[]=
 {
@@ -1232,6 +1261,8 @@ const int8u Mxf_TransferCharacteristic_Sony_Size[]=
     (int8u)(sizeof(Mxf_TransferCharacteristic_Sony_3)/sizeof(Mxf_TransferCharacteristic_Sony_3[0])),
     (int8u)(sizeof(Mxf_TransferCharacteristic_Sony_4)/sizeof(Mxf_TransferCharacteristic_Sony_4[0])),
     (int8u)(sizeof(Mxf_TransferCharacteristic_Sony_5)/sizeof(Mxf_TransferCharacteristic_Sony_5[0])),
+    (int8u)(sizeof(Mxf_TransferCharacteristic_Sony_6)/sizeof(Mxf_TransferCharacteristic_Sony_6[0])),
+    (int8u)(sizeof(Mxf_TransferCharacteristic_Sony_7)/sizeof(Mxf_TransferCharacteristic_Sony_7[0])),
 };
 static string Mxf_TransferCharacteristic(const int128u Value)
 {
@@ -1801,6 +1832,7 @@ static string Mxf_CameraUnitAcquisitionMetadata_GammaforCDL(int8u Value)
         case 0x01 : return "Linear";
         case 0x02 : return "S-Log";
         case 0x03 : return "Cine-Log";
+        case 0x05 : return "BT.709";
         case 0xFF : return "";
         default   : return Ztring::ToZtring(Value).To_UTF8();
     }
@@ -1904,6 +1936,8 @@ static string Mxf_AcquisitionMetadata_ElementName(int16u Value, bool IsSony=fals
     if (IsSony)
         switch (Value)
         {
+            case 0x8414: return "CameraTiltAngle";
+            case 0x8415: return "CameraRollAngle";
             case 0xE101: return "EffectiveMarkerCoverage";
             case 0xE102: return "EffectiveMarkerAspectRatio";
             case 0xE103: return "CameraProcessDiscriminationCode";
@@ -1911,8 +1945,20 @@ static string Mxf_AcquisitionMetadata_ElementName(int16u Value, bool IsSony=fals
             case 0xE105: return "RawBlackCodeValue";
             case 0xE106: return "RawGrayCodeValue";
             case 0xE107: return "RawWhiteCodeValue";
+            case 0xE108: return "MonitoringCharacteristics";
             case 0xE109: return "MonitoringDescriptions";
+            case 0xE10A: return "ImageOrientation";
             case 0xE10B: return "MonitoringBaseCurve";
+            case 0xE10D: return "MonitoringColorPrimaries";
+            case 0xE10E: return "MonitoringCodingEquations";
+            case 0xE10F: return "ActiveAreaAspectRatio";
+            case 0xE110: return "PixelAspectRatio";
+            case 0xE111: return "GammaForLook";
+            case 0xE112: return "ColorForLook";
+            case 0xE113: return "PreCDLTransform";
+            case 0xE114: return "PostCDLTransform";
+            case 0xE115: return "LookProcessBaked";
+            case 0xE116: return "UserFrameLine";
           //case 0xE201: return "CookeProtocol_BinaryMetadata"; //Not used
             case 0xE202: return "CookeProtocol_UserMetadata";
             case 0xE203: return "CookeProtocol_CalibrationType";
@@ -1961,6 +2007,7 @@ static string Mxf_AcquisitionMetadata_ElementName(int16u Value, bool IsSony=fals
         case 0x8116: return "GammaForCDL";
         case 0x8117: return "ASC_CDL_V12";
         case 0x8118: return "ColorMatrix";
+        case 0x811F: return "TintCorrection";
         default:     return Ztring(Ztring::ToZtring(Value, 16)).To_UTF8();
     }
 }
@@ -1992,7 +2039,13 @@ static string Mxf_AcquisitionMetadata_Sony_CameraProcessDiscriminationCode(int16
         case 0x0101: return "F65 RAW Mode released in December 2011";
         case 0x0102: return "F65 HD Mode released in April 2012";
         case 0x0103: return "F65 RAW High Frame Rate Mode released in July 2012";
-        default:     return Ztring(Ztring::ToZtring(Value, 16)).To_UTF8();
+        default:
+                     {
+                     Ztring ValueS=Ztring::ToZtring(Value, 16);
+                     if (ValueS.size()<4)
+                         ValueS.insert(0, 4-ValueS.size(), __T('0'));
+                     return ValueS.To_UTF8();
+                     }
     }
 };
 
@@ -2000,18 +2053,7 @@ static string Mxf_AcquisitionMetadata_Sony_CameraProcessDiscriminationCode(int16
 // Read from SR Viewer program
 static string Mxf_AcquisitionMetadata_Sony_MonitoringBaseCurve(int128u Value)
 {
-    switch(Value.lo)
-    {
-        case 0x0E06040101010508LL : return "S-Log2";
-        default   :
-                    {
-                    Ztring ValueS;
-                    ValueS.From_Number(Value.lo, 16);
-                    if (ValueS.size()<16)
-                        ValueS.insert(0, 16-ValueS.size(), __T('0'));
-                    return ValueS.To_UTF8();
-                    }
-    }
+    return Mxf_TransferCharacteristic(Value);
 }
 
 //***************************************************************************
@@ -3010,6 +3052,11 @@ void File_Mxf::Streams_Finish()
                     case 0x810E : //WhiteBalance
                         Fill_SetOptions(Stream_Other, 0, ElementName_FirstFrame.c_str(), "N NT");
                         Fill(Stream_Other, 0, (ElementName_FirstFrame+"/String").c_str(), (*AcquisitionMetadataLists[Pos])[0].Value+" K");
+                        break;
+                    case 0x8414 : //CameraTiltAngle
+                    case 0x8415 : //CameraRollAngle
+                        Fill_SetOptions(Stream_Other, 0, ElementName_FirstFrame.c_str(), "N NT");
+                        Fill(Stream_Other, 0, (ElementName_FirstFrame+"/String").c_str(), (*AcquisitionMetadataLists[Pos])[0].Value+"\xc2\xB0");
                         break;
                     default : ;
                 }
@@ -16324,6 +16371,7 @@ void File_Mxf::CameraUnitAcquisitionMetadata()
     ELEMENT(8116, CameraUnitAcquisitionMetadata_GammaForCDL)
     ELEMENT(8117, CameraUnitAcquisitionMetadata_ASC_CDL_V12)
     ELEMENT(8118, CameraUnitAcquisitionMetadata_ColorMatrix)
+    ELEMENT(811F, CameraUnitAcquisitionMetadata_TintCorrection)
     ELEMENT_MIDDLE()
     ELEMENT_END()
     GenerationInterchangeObject();
@@ -16346,6 +16394,8 @@ void File_Mxf::UserDefinedAcquisitionMetadata()
         switch(Code2)
         {
     ELEMENT(8007, LensUnitAcquisitionMetadata_LensAttributes)
+    ELEMENT(8414, UserDefinedAcquisitionMetadata_Sony_8414) //Camera Tilt Angle
+    ELEMENT(8415, UserDefinedAcquisitionMetadata_Sony_8414) //Camera Roll Angle
     ELEMENT(E101, UserDefinedAcquisitionMetadata_Sony_E101) //Effective Marker Coverage
     ELEMENT(E102, UserDefinedAcquisitionMetadata_Sony_E102) //Effective Marker Aspect Ratio
     ELEMENT(E103, UserDefinedAcquisitionMetadata_Sony_E103) //Camera Process Discrimination Code
@@ -16353,8 +16403,20 @@ void File_Mxf::UserDefinedAcquisitionMetadata()
     ELEMENT(E105, UserDefinedAcquisitionMetadata_Sony_E105) //Raw Black Code Value
     ELEMENT(E106, UserDefinedAcquisitionMetadata_Sony_E106) //Raw Gray Code Value
     ELEMENT(E107, UserDefinedAcquisitionMetadata_Sony_E107) //Raw White Code Value
+    ELEMENT(E108, UserDefinedAcquisitionMetadata_Sony_E108) //Monitoring Characteristics
     ELEMENT(E109, UserDefinedAcquisitionMetadata_Sony_E109) //Monitoring Descriptions
+    ELEMENT(E10A, UserDefinedAcquisitionMetadata_Sony_E10A) //Image Orientation
     ELEMENT(E10B, UserDefinedAcquisitionMetadata_Sony_E10B) //Monitoring Base Curve
+    ELEMENT(E10D, UserDefinedAcquisitionMetadata_Sony_E10D) //Monitoring Color Primaries
+    ELEMENT(E10E, UserDefinedAcquisitionMetadata_Sony_E10E) //Monitoring Coding Equations
+    ELEMENT(E10F, UserDefinedAcquisitionMetadata_Sony_E10F) //Active Area Aspect Ratio
+    ELEMENT(E110, UserDefinedAcquisitionMetadata_Sony_E110) //Pixel Aspect Ratio
+    ELEMENT(E111, UserDefinedAcquisitionMetadata_Sony_E111) //Gamma For Look
+    ELEMENT(E112, UserDefinedAcquisitionMetadata_Sony_E112) //Color For Look
+    ELEMENT(E113, UserDefinedAcquisitionMetadata_Sony_E113) //Pre-CDL Transform
+    ELEMENT(E114, UserDefinedAcquisitionMetadata_Sony_E114) //Post-CDL Transform
+    ELEMENT(E115, UserDefinedAcquisitionMetadata_Sony_E115) //Look Process Baked
+    ELEMENT(E116, UserDefinedAcquisitionMetadata_Sony_E116) //User Frame Line
     ELEMENT(E201, UserDefinedAcquisitionMetadata_Sony_E201) //Cooke Protocol Binary Metadata
     ELEMENT(E202, UserDefinedAcquisitionMetadata_Sony_E202) //Cooke Protocol User Metadata
     ELEMENT(E203, UserDefinedAcquisitionMetadata_Sony_E203) //Cooke Protocol Calibration Type
@@ -20570,6 +20632,19 @@ void File_Mxf::CameraUnitAcquisitionMetadata_ColorMatrix()
 }
 
 //---------------------------------------------------------------------------
+void File_Mxf::CameraUnitAcquisitionMetadata_TintCorrection()
+{
+    //Parsing
+    int16u Value;
+    Get_B2(Value,                                               "Value");
+
+    FILLING_BEGIN();
+        if (Value!=0x8000 && Value!=0x7FFF)
+            AcquisitionMetadata_Add(Code2, Ztring::ToZtring(((float64)(int16s)Value)/100000, 5).To_UTF8());
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
 void File_Mxf::UserDefinedAcquisitionMetadata_UdamSetIdentifier()
 {
     //Parsing
@@ -20577,9 +20652,27 @@ void File_Mxf::UserDefinedAcquisitionMetadata_UdamSetIdentifier()
     Get_UUID(Value,                                             "Value");
 
     FILLING_BEGIN();
-        if ((Value.hi==0x966908004678031CLL && Value.lo==0x20500000F0C01181LL)
-         || (Value.hi==0x966908004678031CLL && Value.lo==0x20500002F0C01181LL)) //Found Sony metadata with 00 or 02, what is the difference?
+        if ((Value.hi==0x966908004678031CLL && (Value.lo&0xFFFFFF00FFFFFFFFLL)==0x20500000F0C01181LL) //The byte not tested is the camera family
+         || (Value.hi==0x851008004678031CLL && Value.lo==0x515E1A1933F911E0LL)) //Camera tilt and roll
             UserDefinedAcquisitionMetadata_UdamSetIdentifier_IsSony=true;
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::UserDefinedAcquisitionMetadata_Sony_8414()
+{
+    //Parsing
+    if (Length2!=4)
+    {
+        Skip_XX(Length2,                                        "Unknown");
+        return;
+    }
+    int32u Value;
+    Get_B4(Value,                                               "Value");
+
+    FILLING_BEGIN();
+        if (Value!=0x7FFFFFFF && Value!=0x80000000 && Value!=0xFFFFFFFF)
+            AcquisitionMetadata_Add(Code2, Ztring::ToZtring(((float64)(int32s)Value)/36000, 1).To_UTF8());
     FILLING_END();
 }
 
@@ -20670,6 +20763,25 @@ void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E107()
 }
 
 //---------------------------------------------------------------------------
+void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E108()
+{
+    //Parsing
+    if (Length2!=16)
+    {
+        Skip_XX(Length2,                                        "Unknown");
+        return;
+    }
+    int128u Value;
+    Get_UUID(Value,                                             "Value");
+
+    FILLING_BEGIN();
+        string ValueS=Mxf_TransferCharacteristic(Value);
+        if (!ValueS.empty())
+            AcquisitionMetadata_Add(Code2, ValueS);
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
 void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E109()
 {
     //Parsing
@@ -20678,6 +20790,22 @@ void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E109()
 
     FILLING_BEGIN();
         AcquisitionMetadata_Add(Code2, Value.To_UTF8());
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E10A()
+{
+    //Parsing
+    int8u Value;
+    Get_B1(Value,                                               "Value");
+
+    FILLING_BEGIN();
+        switch (Value)
+        {
+            case 0 : AcquisitionMetadata_Add(Code2, "Normal"); break;
+            default: AcquisitionMetadata_Add(Code2, Ztring::ToZtring(Value).To_UTF8());
+        }
     FILLING_END();
 }
 
@@ -20694,6 +20822,161 @@ void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E10B()
         if (ValueS.size()<16)
             ValueS.insert(0, 16-ValueS.size(), __T('0'));
         AcquisitionMetadata_Add(Code2, Mxf_AcquisitionMetadata_Sony_MonitoringBaseCurve(Value));
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E10D()
+{
+    //Parsing
+    int128u Value;
+    Get_UL(Value,                                               "Value", Mxf_ColorPrimaries);
+
+    FILLING_BEGIN();
+        string ValueS=Mxf_ColorPrimaries(Value);
+        if (!ValueS.empty())
+            AcquisitionMetadata_Add(Code2, ValueS);
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E10E()
+{
+    //Parsing
+    int128u Value;
+    Get_UL(Value,                                               "Value", Mxf_CodingEquations);
+
+    FILLING_BEGIN();
+        string ValueS=Mxf_CodingEquations(Value);
+        if (!ValueS.empty())
+            AcquisitionMetadata_Add(Code2, ValueS);
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E10F()
+{
+    //Parsing
+    int32u Width, Height;
+    Get_B4 (Width,                                              "Width");
+    Get_B4 (Height,                                             "Height");
+
+    FILLING_BEGIN();
+        if (Width && Height)
+            AcquisitionMetadata_Add(Code2, Ztring(Ztring::ToZtring(Width)+__T(":")+Ztring::ToZtring(Height)).To_UTF8());
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E110()
+{
+    //Parsing
+    if (Length2!=2)
+    {
+        Skip_XX(Length2,                                        "Unknown");
+        return;
+    }
+    int8u Num, Den;
+    Get_B1 (Num,                                                "Numerator");
+    Get_B1 (Den,                                                "Denominator");
+
+    FILLING_BEGIN();
+        if (Num && Den)
+            AcquisitionMetadata_Add(Code2, Ztring(Ztring::ToZtring(Num)+__T(":")+Ztring::ToZtring(Den)).To_UTF8());
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E111()
+{
+    //Parsing
+    int128u Value;
+    Get_UUID(Value,                                             "Value");
+
+    FILLING_BEGIN();
+        string ValueS=Mxf_TransferCharacteristic(Value);
+        if (!ValueS.empty())
+            AcquisitionMetadata_Add(Code2, ValueS);
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E112()
+{
+    //Parsing
+    int128u Value;
+    Get_UL(Value,                                               "Value", Mxf_ColorPrimaries);
+
+    FILLING_BEGIN();
+        string ValueS=Mxf_ColorPrimaries(Value);
+        if (!ValueS.empty())
+            AcquisitionMetadata_Add(Code2, ValueS);
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E113()
+{
+    //Parsing
+    Ztring Value;
+    Get_UTF8(Length2, Value,                                    "Value");
+
+    FILLING_BEGIN();
+        Value.TrimRight(__T('\0'));
+        if (!Value.empty())
+            AcquisitionMetadata_Add(Code2, Value.To_UTF8());
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E114()
+{
+    //Parsing
+    Ztring Value;
+    Get_UTF8(Length2, Value,                                    "Value");
+
+    FILLING_BEGIN();
+        Value.TrimRight(__T('\0'));
+        if (!Value.empty() && Value!=__T("none"))
+            AcquisitionMetadata_Add(Code2, Value.To_UTF8());
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E115()
+{
+    //Parsing
+    int8u Value;
+    Get_B1(Value,                                               "Value");
+
+    FILLING_BEGIN();
+        switch (Value)
+        {
+            case 0 : AcquisitionMetadata_Add(Code2, "Unbaked"); break;
+            case 1 : AcquisitionMetadata_Add(Code2, "Baked"); break;
+            default: AcquisitionMetadata_Add(Code2, Ztring::ToZtring(Value).To_UTF8());
+        }
+    FILLING_END();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::UserDefinedAcquisitionMetadata_Sony_E116()
+{
+    //Parsing
+    if (Length2!=8)
+    {
+        Skip_XX(Length2,                                        "Unknown");
+        return;
+    }
+    int16u Width, Height, X, Y;
+    Get_B2 (Width,                                              "Width");
+    Get_B2 (Height,                                             "Height");
+    Get_B2 (X,                                                  "X");
+    Get_B2 (Y,                                                  "Y");
+
+    FILLING_BEGIN();
+        if (Width && Height)
+            AcquisitionMetadata_Add(Code2, Ztring(Ztring::ToZtring(Width)+__T('x')+Ztring::ToZtring(Height)+__T('+')+Ztring::ToZtring(X)+__T('+')+Ztring::ToZtring(Y)).To_UTF8());
     FILLING_END();
 }
 
