@@ -1859,6 +1859,7 @@ protected :
     };
     std::map<int64u, generic_stream_data_element_key> MXFGenericStreamDataElementKey; // Key is file offset
     std::vector<File__Analyze*> ToMergeLater;
+    Ztring ToMergeLater_ID; //ID of the stream of the first one
     int64u ExtraMetadata_Offset;
     std::set<int32u> ExtraMetadata_SID;
     File__Analyze* DolbyAudioMetadata;

@@ -3089,7 +3089,10 @@ void File_Mxf::Streams_Finish()
                     Parser->Merge(*Elem.second.Parser, Stream_Video, 0, 0);
             }
             if (!Count_Get(Stream_Video))
+            {
                 Stream_Prepare(Stream_Video);
+                Fill(Stream_Video, StreamPos_Last, Video_ID, ToMergeLater_ID);
+            }
             Merge(*Parser, Stream_Video, 0, 0);
         }
         delete Parser;
@@ -8020,6 +8023,8 @@ void File_Mxf::Streams_Finish_Essence(int64u EssenceUID, int128u TrackUID)
         if (Format == __T("Dolby Vision Metadata")
          || Format == __T("HDR Vivid Metadata"))
         {
+            if (ToMergeLater.empty() && StreamKind_Last!=Stream_Max)
+                ToMergeLater_ID=Retrieve_Const(StreamKind_Last, StreamPos_Last, General_ID);
             ToMergeLater.push_back(*Parser);
             Essence->second.Parsers.erase(Parser); //Parsing may continue after this finish, e.g. with a seek to the end of the file
         }
@@ -8262,6 +8267,8 @@ void File_Mxf::Streams_Finish_Descriptor(const int128u DescriptorUID, const int1
     }
 
     Streams_Finish_Descriptor(Descriptor);
+    if (StreamKind_Last==Stream_Max)
+        Fill_Flush(); //Descriptor without stream (e.g. ANC data), its ID and other values are not the ones of the next stream
     auto StreamKind_Last_Sav=StreamKind_Last;
     auto StreamPos_Last_Sav=StreamPos_Last;
     auto ID_Sav=Ztring::ToZtring(Descriptor->second.LinkedTrackID);
