@@ -2332,14 +2332,14 @@ void File_Mpeg4::mdat_xxxx()
                         case 0 :
                                 break;
                         case 1 :
-                                if (Stream_Temp.edts[0].Duration==Stream_Temp.tkhd_Duration && Stream_Temp.edts[0].Rate==0x00010000 && moov_mvhd_TimeScale)
+                                if (Stream_Temp.edts_IsWholeTrack(Stream_Temp.edts[0].Duration, IsFragmented) && Stream_Temp.edts[0].Rate==0x00010000 && moov_mvhd_TimeScale)
                                 {
                                     Delay=-((int64s)Stream_Temp.edts[0].Delay);
                                     MediaTime=Stream_Temp.edts[0].Delay;
                                 }
                                 break;
                         case 2 :
-                                if (Stream_Temp.edts[0].Delay==-1 && Stream_Temp.edts[0].Duration+Stream_Temp.edts[1].Duration==Stream_Temp.tkhd_Duration && Stream_Temp.edts[0].Rate==0x00010000 && Stream_Temp.edts[1].Rate==0x00010000 && moov_mvhd_TimeScale)
+                                if (Stream_Temp.edts[0].Delay==-1 && Stream_Temp.edts_IsWholeTrack(Stream_Temp.edts[0].Duration+Stream_Temp.edts[1].Duration, IsFragmented) && Stream_Temp.edts[0].Rate==0x00010000 && Stream_Temp.edts[1].Rate==0x00010000 && moov_mvhd_TimeScale)
                                 {
                                     Delay=((int64s)Stream_Temp.edts[0].Duration)*Stream_Temp.mdhd_TimeScale/moov_mvhd_TimeScale-Stream_Temp.edts[1].Delay;
                                     MediaTime=Stream_Temp.edts[1].Delay;

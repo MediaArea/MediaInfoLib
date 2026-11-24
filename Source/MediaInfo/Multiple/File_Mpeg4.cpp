@@ -928,7 +928,7 @@ void File_Mpeg4::Streams_Finish()
             case 0 :
                     break;
             case 1 :
-                    if (Temp->second.edts[0].Duration==Temp->second.tkhd_Duration && Temp->second.edts[0].Rate==0x00010000 && moov_mvhd_TimeScale)
+                    if (Temp->second.edts_IsWholeTrack(Temp->second.edts[0].Duration, IsFragmented) && Temp->second.edts[0].Rate==0x00010000 && moov_mvhd_TimeScale)
                     {
                         Delay=Temp->second.edts[0].Delay;
                         Delay=-Delay;
@@ -937,10 +937,11 @@ void File_Mpeg4::Streams_Finish()
                     }
                     break;
             case 2 :
-                    if (Temp->second.edts[0].Delay==-1 && Temp->second.edts[0].Duration+Temp->second.edts[1].Duration==Temp->second.tkhd_Duration && Temp->second.edts[0].Rate==0x00010000 && Temp->second.edts[1].Rate==0x00010000 && moov_mvhd_TimeScale)
+                    if (Temp->second.edts[0].Delay==-1 && Temp->second.edts_IsWholeTrack(Temp->second.edts[0].Duration+Temp->second.edts[1].Duration, IsFragmented) && Temp->second.edts[0].Rate==0x00010000 && Temp->second.edts[1].Rate==0x00010000 && moov_mvhd_TimeScale)
                     {
                         Delay=Temp->second.edts[0].Duration;
-                        Temp->second.tkhd_Duration-=float64_int64s(Delay);
+                        if (Temp->second.tkhd_Duration>=Temp->second.edts[0].Duration) //Not with a last edit of 0 in fragments
+                            Temp->second.tkhd_Duration-=Temp->second.edts[0].Duration;
                         Delay/=moov_mvhd_TimeScale; //In seconds
                     }
                     break;
@@ -3077,13 +3078,13 @@ bool File_Mpeg4::BookMark_Needed()
                                         case 0 :
                                                 break;
                                         case 1 :
-                                                if (Streams[*Temp].edts[0].Duration==Streams[*Temp].tkhd_Duration && Streams[*Temp].edts[0].Rate==0x00010000 && moov_mvhd_TimeScale)
+                                                if (Streams[*Temp].edts_IsWholeTrack(Streams[*Temp].edts[0].Duration, IsFragmented) && Streams[*Temp].edts[0].Rate==0x00010000 && moov_mvhd_TimeScale)
                                                 {
                                                     Delay=-((int64s)Streams[*Temp].edts[0].Delay);
                                                 }
                                                 break;
                                         case 2 :
-                                                if (Streams[*Temp].edts[0].Delay==-1 && Streams[*Temp].edts[0].Duration+Streams[*Temp].edts[1].Duration==Streams[*Temp].tkhd_Duration && Streams[*Temp].edts[0].Rate==0x00010000 && Streams[*Temp].edts[1].Rate==0x00010000 && moov_mvhd_TimeScale)
+                                                if (Streams[*Temp].edts[0].Delay==-1 && Streams[*Temp].edts_IsWholeTrack(Streams[*Temp].edts[0].Duration+Streams[*Temp].edts[1].Duration, IsFragmented) && Streams[*Temp].edts[0].Rate==0x00010000 && Streams[*Temp].edts[1].Rate==0x00010000 && moov_mvhd_TimeScale)
                                                 {
                                                     Delay=((int64s)Streams[*Temp].edts[0].Duration)*Streams[*Temp].mdhd_TimeScale/moov_mvhd_TimeScale-Streams[*Temp].edts[1].Delay;
                                                 }
