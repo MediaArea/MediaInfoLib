@@ -11333,22 +11333,26 @@ void File_Mpeg4::stream::ctts_Add(int32u SampleCount, int32s SampleOffset)
 }
 
 //---------------------------------------------------------------------------
-int64s File_Mpeg4::stream::PresentationTime_First(int64u File_Size) const
+void File_Mpeg4::stream::PresentationTimes(int64u File_Size, int64s& First, int64u& Duration_Min, int64u& Duration_Max) const
 {
-    //Earliest presentation time of the samples from the decoding times and the composition offsets, in the media time scale
-    int64s First=INT64_MAX;
+    //Presentation time of each sample from the decoding times and the composition offsets, in the media time scale
+    First=INT64_MAX;
+    Duration_Min=(int64u)-1;
+    Duration_Max=0;
     if (stts.empty() || ctts.empty())
-        return First;
+        return;
     int64u SampleCount_Max=std::max(stsz_Total.size(), stsz.size());
     if (!SampleCount_Max)
         SampleCount_Max=stsz_Sample_Size?std::min(stsz_Sample_Count, File_Size/stsz_Sample_Size):0; //Not more samples than the file can hold
     SampleCount_Max=std::min(SampleCount_Max, std::min(stts_FrameCount, ctts_SampleCount));
+    std::vector<int64s> Times;
+    Times.reserve((size_t)SampleCount_Max);
     int64s DecodingTime=(int64s)tfdt_First;
     auto Ctts=ctts.begin();
     auto Stts=stts.begin();
     int32u Ctts_Remaining=Ctts->SampleCount;
     int32u Stts_Remaining=Stts->SampleCount;
-    for (int64u Pos=0; Pos<SampleCount_Max; Pos++)
+    while (Times.size()<SampleCount_Max)
     {
         while (!Ctts_Remaining && ++Ctts!=ctts.end())
             Ctts_Remaining=Ctts->SampleCount;
@@ -11356,13 +11360,27 @@ int64s File_Mpeg4::stream::PresentationTime_First(int64u File_Size) const
             Stts_Remaining=Stts->SampleCount;
         if (Ctts==ctts.end() || Stts==stts.end())
             break;
-        if (First>DecodingTime+Ctts->SampleOffset)
-            First=DecodingTime+Ctts->SampleOffset;
+        Times.push_back(DecodingTime+Ctts->SampleOffset);
         DecodingTime+=(int32s)Stts->SampleDuration; //Negative if 0x80000000 or more
         Ctts_Remaining--;
         Stts_Remaining--;
     }
-    return First;
+    if (Times.empty())
+        return;
+
+    //Earliest time and durations between consecutive presentation times
+    std::sort(Times.begin(), Times.end());
+    First=Times.front();
+    for (size_t Pos=1; Pos<Times.size(); Pos++)
+    {
+        int64u Duration=(int64u)(Times[Pos]-Times[Pos-1]);
+        if (!Duration)
+            continue; //Same presentation time, not a frame duration
+        if (Duration_Min>Duration)
+            Duration_Min=Duration;
+        if (Duration_Max<Duration)
+            Duration_Max=Duration;
+    }
 }
 
 //---------------------------------------------------------------------------

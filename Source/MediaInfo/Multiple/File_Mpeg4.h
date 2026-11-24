@@ -676,7 +676,7 @@ private :
         void                moov_trak_mdia_minf_stbl_stts_Common(int32u SampleCount, int32u SampleDuration, int32u Pos=0, int32u NumberOfEntries=1);
         bool                edts_IsWholeTrack(int64u Duration, bool IsFragmented) const {return (IsFragmented && !edts.back().Duration) || (Duration+1>=tkhd_Duration && Duration<=tkhd_Duration+1);} //A last edit of 0 spans the whole media of fragments, durations are rounded in the movie time scale
         void                ctts_Add(int32u SampleCount, int32s SampleOffset);
-        int64s              PresentationTime_First(int64u File_Size) const;
+        void                PresentationTimes(int64u File_Size, int64s& First, int64u& Duration_Min, int64u& Duration_Max) const;
         #if MEDIAINFO_DEMUX
             bool            PtsDtsAreSame;
             bool            Demux_EventWasSent;

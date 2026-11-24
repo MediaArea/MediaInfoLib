@@ -923,8 +923,9 @@ void File_Mpeg4::Streams_Finish()
 
         //Presentation times
         int64s PresentationTime_First=INT64_MAX;
+        int64u PresentationDuration_Min=(int64u)-1, PresentationDuration_Max=0;
         if (Temp->second.ctts_HasOffset)
-            PresentationTime_First=Temp->second.PresentationTime_First(File_Size);
+            Temp->second.PresentationTimes(File_Size, PresentationTime_First, PresentationDuration_Min, PresentationDuration_Max);
         else if (!Temp->second.stts.empty())
             PresentationTime_First=(int64s)Temp->second.tfdt_First; //Same as the decoding time
 
@@ -989,21 +990,26 @@ void File_Mpeg4::Streams_Finish()
 
         if (StreamKind_Last==Stream_Video && Temp->second.TimeCode==NULL)
         {
-            if (Temp->second.mdhd_TimeScale && Temp->second.stts_Min && Temp->second.stts_Max)
+            //Frame durations from the presentation times if there are composition offsets, else from the decoding times
+            int64u Duration_Min=Temp->second.stts_Min, Duration_Max=Temp->second.stts_Max;
+            if (PresentationDuration_Max)
             {
-                if (Temp->second.stts_Min==0 || Temp->second.stts_Max==0 || (Temp->second.stts_Min!=Temp->second.stts_Max && ((float)Temp->second.mdhd_TimeScale)/Temp->second.stts_Min-((float)Temp->second.mdhd_TimeScale)/Temp->second.stts_Max>=0.001))
+                Duration_Min=PresentationDuration_Min;
+                Duration_Max=PresentationDuration_Max;
+            }
+            if (Temp->second.mdhd_TimeScale && Duration_Min && Duration_Max)
+            {
+                if (Duration_Min!=Duration_Max && ((float)Temp->second.mdhd_TimeScale)/Duration_Min-((float)Temp->second.mdhd_TimeScale)/Duration_Max>=0.001)
                 {
-                    if (Temp->second.stts_Max)
-                        Fill(Stream_Video, StreamPos_Last, Video_FrameRate_Minimum, ((float)Temp->second.mdhd_TimeScale)/Temp->second.stts_Max, 3, true);
-                    if (Temp->second.stts_Min)
-                        Fill(Stream_Video, StreamPos_Last, Video_FrameRate_Maximum, ((float)Temp->second.mdhd_TimeScale)/Temp->second.stts_Min, 3, true);
+                    Fill(Stream_Video, StreamPos_Last, Video_FrameRate_Minimum, ((float)Temp->second.mdhd_TimeScale)/Duration_Max, 3, true);
+                    Fill(Stream_Video, StreamPos_Last, Video_FrameRate_Maximum, ((float)Temp->second.mdhd_TimeScale)/Duration_Min, 3, true);
                     if (Temp->second.stts_Duration)
                         Fill(Stream_Video, StreamPos_Last, Video_FrameRate,         ((float)Temp->second.stts_FrameCount)/Temp->second.stts_Duration*Temp->second.mdhd_TimeScale, 3, true);
                     Fill(Stream_Video, StreamPos_Last, Video_FrameRate_Mode,    "VFR", Unlimited, true, true);
                 }
                 else
                 {
-                    Fill(Stream_Video, StreamPos_Last, Video_FrameRate,         ((float)Temp->second.mdhd_TimeScale)/Temp->second.stts_Max, 3, true);
+                    Fill(Stream_Video, StreamPos_Last, Video_FrameRate,         ((float)Temp->second.mdhd_TimeScale)/Duration_Max, 3, true);
                     Fill(Stream_Video, StreamPos_Last, Video_FrameRate_Mode,    "CFR", Unlimited, true, true);
                 }
             }
