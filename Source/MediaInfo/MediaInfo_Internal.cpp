@@ -21,6 +21,7 @@
 #include "MediaInfo/MediaInfo_Config.h"
 #include "MediaInfo/File__Analyze.h"
 #include "MediaInfo/File__MultipleParsing.h"
+#include "MediaInfo/OutputHelpers.h"
 #if defined(MEDIAINFO_FILE_YES)
 #include "ZenLib/File.h"
 #endif //defined(MEDIAINFO_DIRECTORY_YES)
@@ -1346,106 +1347,47 @@ void MediaInfo_Internal::Entry()
                 if (Config.File_CheckSideCarFiles_Get() && !Config.File_IsReferenced_Get())
                 {
                     FileName Test(Config.File_Names[0]);
-                    Ztring FileExtension=Test.Extension_Get();
+                    const FileName Main_Name(Test.FullName_Get());
+                    Ztring FileExtension=Main_Name.Extension_Get();
                     FileExtension.MakeLowerCase();
 
-                    if (FileExtension!=__T("cap"))
-                    {
-                        Test.Extension_Set(__T("cap"));
-                        if (File::Exists(Test))
-                            Dxw+=" <clip file=\""+Test.Name_Get().To_UTF8()+".cap\" />\r\n";
-                    }
-                    if (FileExtension!=__T("dfxp"))
-                    {
-                        Test.Extension_Set(__T("dfxp"));
-                        if (File::Exists(Test))
-                            Dxw+=" <clip file=\""+Test.Name_Get().To_UTF8()+".dfxp\" />\r\n";
-                    }
-                    if (FileExtension!=__T("sami"))
-                    {
-                        Test.Extension_Set(__T("sami"));
-                        if (File::Exists(Test))
-                            Dxw+=" <clip file=\""+Test.Name_Get().To_UTF8()+".sami\" />\r\n";
-                    }
-                    if (FileExtension!=__T("sc2"))
-                    {
-                        Test.Extension_Set(__T("sc2"));
-                        if (File::Exists(Test))
-                            Dxw+=" <clip file=\""+Test.Name_Get().To_UTF8()+".sc2\" />\r\n";
-                    }
-                    if (FileExtension!=__T("scc"))
-                    {
-                        Test.Extension_Set(__T("scc"));
-                        if (File::Exists(Test))
-                            Dxw+=" <clip file=\""+Test.Name_Get().To_UTF8()+".scc\" />\r\n";
-                    }
-                    if (FileExtension!=__T("smi"))
-                    {
-                        Test.Extension_Set(__T("smi"));
-                        if (File::Exists(Test))
-                            Dxw+=" <clip file=\""+Test.Name_Get().To_UTF8()+".smi\" />\r\n";
-                    }
-                    if (FileExtension!=__T("srt"))
-                    {
-                        Test.Extension_Set(__T("srt"));
-                        if (File::Exists(Test))
-                            Dxw+=" <clip file=\""+Test.Name_Get().To_UTF8()+".srt\" />\r\n";
-                    }
-                    if (FileExtension!=__T("stl"))
-                    {
-                        Test.Extension_Set(__T("stl"));
-                        if (File::Exists(Test))
-                            Dxw+=" <clip file=\""+Test.Name_Get().To_UTF8()+".stl\" />\r\n";
-                    }
-                    if (FileExtension!=__T("ttml"))
-                    {
-                        Test.Extension_Set(__T("ttml"));
-                        if (File::Exists(Test))
-                            Dxw+=" <clip file=\""+Test.Name_Get().To_UTF8()+".ttml\" />\r\n";
-                    }
-                    if (FileExtension!=__T("ssa"))
-                    {
-                        Test.Extension_Set(__T("ssa"));
-                        if (File::Exists(Test))
-                            Dxw+=" <clip file=\""+Test.Name_Get().To_UTF8()+".ssa\" />\r\n";
-                    }
-                    if (FileExtension!=__T("ass"))
-                    {
-                        Test.Extension_Set(__T("ass"));
-                        if (File::Exists(Test))
-                            Dxw+=" <clip file=\""+Test.Name_Get().To_UTF8()+".ass\" />\r\n";
-                    }
-                    if (FileExtension!=__T("vtt"))
-                    {
-                        Test.Extension_Set(__T("vtt"));
-                        if (File::Exists(Test))
-                            Dxw+=" <clip file=\""+Test.Name_Get().To_UTF8()+".vtt\" />\r\n";
-                    }
+                    //Names as in a DXW file next to the file, from its folder
+                    static const Char* const SideCar_Extensions[]={__T("cap"), __T("dfxp"), __T("sami"), __T("sc2"), __T("scc"), __T("smi"), __T("srt"), __T("stl"), __T("ttml"), __T("ssa"), __T("ass"), __T("vtt")};
+                    for (size_t Pos=0; Pos<sizeof(SideCar_Extensions)/sizeof(*SideCar_Extensions); Pos++)
+                        if (FileExtension!=SideCar_Extensions[Pos])
+                        {
+                            Ztring SideCar_Name=Main_Name.Name_Get()+__T('.')+SideCar_Extensions[Pos];
+                            if (File::Exists(Test.FromFolder_Get(SideCar_Name)))
+                                Dxw+=" <clip file=\""+XML_Encode(SideCar_Name.To_UTF8())+"\" />\r\n";
+                        }
                     if (FileExtension!=__T("xml"))
                     {
-                        Test.Extension_Set(__T("xml"));
-                        if (File::Exists(Test))
+                        Ztring SideCar_Name=Main_Name.Name_Get()+__T(".xml");
+                        if (File::Exists(Test.FromFolder_Get(SideCar_Name)))
                         {
                             MediaInfo_Internal MI;
                             Ztring ParseSpeed_Save=MI.Option(__T("ParseSpeed_Get"), __T(""));
                             Ztring Demux_Save=MI.Option(__T("Demux_Get"), __T(""));
                             MI.Option(__T("ParseSpeed"), __T("0"));
                             MI.Option(__T("Demux"), Ztring());
-                            size_t MiOpenResult=MI.Open(Test);
+                            size_t MiOpenResult=MI.Open(Test.FromFolder_Get(SideCar_Name));
                             MI.Option(__T("ParseSpeed"), ParseSpeed_Save); //This is a global value, need to reset it. TODO: local value
                             MI.Option(__T("Demux"), Demux_Save); //This is a global value, need to reset it. TODO: local value
                             if (MiOpenResult)
                             {
                                 Ztring Format=MI.Get(Stream_General, 0, General_Format);
                                 if (Format==__T("TTML"))
-                                    Dxw+=" <clip file=\""+Test.Name_Get().To_UTF8()+".xml\" />\r\n";
+                                    Dxw+=" <clip file=\""+XML_Encode(SideCar_Name.To_UTF8())+"\" />\r\n";
                             }
                         }
                     }
 
                     #if defined(MEDIAINFO_DIRECTORY_YES)
-                    Ztring Name=Test.Name_Get();
-                    Ztring BaseName=Name.SubString(Ztring(), __T("_"));
+                    Ztring BaseName=Main_Name.Name_Get(); //Up to the first "_", empty without it
+                    size_t BaseName_Size=0;
+                    for (size_t Pos=FileName::FullName_RFind(BaseName, __T('_')); Pos!=string::npos; Pos=FileName::FullName_RFind(BaseName.substr(0, Pos), __T('_')))
+                        BaseName_Size=Pos;
+                    BaseName.resize(BaseName_Size);
                     if (!BaseName.empty())
                     {
                         ZtringList List;
@@ -1475,7 +1417,15 @@ void MediaInfo_Internal::Entry()
                         List+=Dir::GetAllFileNames(Test.FromFolder_Get(BaseName+__T("_*_cc.stl")), Dir::Include_Files);
                         List+=Dir::GetAllFileNames(Test.FromFolder_Get(BaseName+__T("_*_cc.vtt")), Dir::Include_Files);
                         for (size_t Pos=0; Pos<List.size(); Pos++)
-                            Dxw+=" <clip file=\""+Ztring(FileName::FullName_Get(List[Pos])).To_UTF8()+"\" />\r\n";
+                        {
+                            Ztring SideCar_Name=FileName::FullName_Get(List[Pos]);
+                            #if defined(WINDOWS)
+                            if (!SideCar_Name.Compare(Main_Name)) //e.g. "clip_en_audio.mp4", the main file is not a side-car file, also typed with another case
+                            #else //defined(WINDOWS)
+                            if (SideCar_Name!=Main_Name) //e.g. "clip_en_audio.mp4", the main file is not a side-car file
+                            #endif //defined(WINDOWS)
+                                Dxw+=" <clip file=\""+XML_Encode(SideCar_Name.To_UTF8())+"\" />\r\n";
+                        }
                     }
                     #endif //defined(MEDIAINFO_DIRECTORY_YES)
 
@@ -1483,7 +1433,7 @@ void MediaInfo_Internal::Entry()
                     {
                         Dxw.insert(0, "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\r\n"
                                 "<indexFile xmlns=\"urn:digimetrics-xml-wrapper\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"urn:digimetrics-xml-wrapper DMSCLIP.XSD\">\r\n"
-                                " <clip source=\"main\" file=\""+FileName(Config.File_Names[0]).Name_Get().To_UTF8()+"."+FileName(Config.File_Names[0]).Extension_Get().To_UTF8()+"\" />\r\n");
+                                " <clip source=\"main\" file=\""+XML_Encode(Main_Name.To_UTF8())+"\" />\r\n");
                         Dxw.append("</indexFile>\r\n");
                         Config.File_FileNameFormat_Set(__T("Dxw"));
                     }
@@ -1504,11 +1454,28 @@ void MediaInfo_Internal::Entry()
                 }
                 else
                 {
-                    Ztring Dxw_Name=FileName(Config.File_Names[0]).Name_Get();
-                    if (Dxw_Name.empty())
-                        Dxw_Name=__T("."); //Name with only an extension (e.g. ".mp4"), an empty name would be a buffer without file name
-                    Open_Buffer_Init(Dxw.size(), FileName::FromFolder_Get(Config.File_Names[0], Dxw_Name));
+                    const Ztring Dxw_Name=Config.File_Names[0]+__T(".dxw"); //As a DXW file next to the file, its name is never the one of the main file (circular reference), also for a main file without extension or with the DXW extension
+                    Open_Buffer_Init(Dxw.size(), Dxw_Name);
                     Open_Buffer_Continue((const int8u*)Dxw.c_str(), Dxw.size());
+                    {
+                        //This DXW file does not exist, the names are the ones of the opened file, without the dates of a file having its name
+                        CriticalSectionLocker CSL(CS);
+                        if (Info && Info->Count_Get(Stream_General))
+                        {
+                            const FileName Main(Config.File_Names[0]);
+                            if (Info->Retrieve_Const(Stream_General, 0, General_CompleteName)==Dxw_Name)
+                            {
+                                Info->Fill(Stream_General, 0, General_CompleteName, Main, true);
+                                Info->Fill(Stream_General, 0, General_FileExtension, Main.Extension_Get(), true);
+                            }
+                            Info->Fill(Stream_General, 0, General_FileName, Main.Name_Get(), true);
+                            Info->Fill(Stream_General, 0, General_FileNameExtension, Main.Extension_Get().empty()?Main.Name_Get():Ztring(Main.Name_Get()+__T('.')+Main.Extension_Get()), true);
+                            Info->Clear(Stream_General, 0, General_File_Created_Date);
+                            Info->Clear(Stream_General, 0, General_File_Created_Date_Local);
+                            Info->Clear(Stream_General, 0, General_File_Modified_Date);
+                            Info->Clear(Stream_General, 0, General_File_Modified_Date_Local);
+                        }
+                    }
                     #if MEDIAINFO_NEXTPACKET
                         if (Config.NextPacket_Get())
                             return;
