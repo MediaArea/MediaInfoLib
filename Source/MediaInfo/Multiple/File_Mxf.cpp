@@ -10388,7 +10388,15 @@ void File_Mxf::Streams_Finish_Component(const int128u ComponentUID, float64 Edit
         //Precharge (essence before the origin of the track) and rollout (essence after its duration, seen in the index tables) are not content
         int64u PreCharge=(Origin>0 && (int64u)Origin<FrameCount)?((int64u)Origin):0;
         int64u RollOut=0;
-        if (IndexEditRate && IndexEditRate!=DBL_MAX)
+        set<int64u> IndexSIDs; //Index Streams with index entries, the end of the indexed essence is known only with one (e.g. one per body of the source packages of an OP2b file)
+        for (const auto& Segment : IndexTableSegments)
+        {
+            int64u IndexSID, IndexDuration;
+            if (Raw_UInt_Get(Property_Get(Segment.Properties, 0x3F06), 4, IndexSID)
+             && Raw_UInt_Get(Property_Get(Segment.Properties, 0x3F0D), 8, IndexDuration) && IndexDuration)
+                IndexSIDs.insert(IndexSID);
+        }
+        if (IndexEditRate && IndexEditRate!=DBL_MAX && IndexSIDs.size()<=1)
         {
             const auto FrameCount_Index=(int64u)float64_int64s(IndexStartPositionIndexDuration_Max/IndexEditRate*EditRate);
             if (FrameCount_Index>Component->second.Duration)
