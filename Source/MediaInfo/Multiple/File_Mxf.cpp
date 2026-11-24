@@ -135,6 +135,12 @@ using namespace std;
 namespace MediaInfoLib
 {
 
+//---------------------------------------------------------------------------
+static bool Mxf_IsSame(const int128u& A, const int128u& B)
+{
+    return A.hi==B.hi && A.lo==B.lo;
+}
+
 #pragma warning(disable: 4065) // switch statement contains 'default' but no 'case' labels
 
 #if defined(MEDIAINFO_IAB_YES)
@@ -2219,7 +2225,7 @@ File_Mxf::File_Mxf()
     MayHaveCaptionsInStream=false;
     StereoscopicPictureSubDescriptor_IsPresent=false;
     UserDefinedAcquisitionMetadata_UdamSetIdentifier_IsSony=false;
-    Essences_UsedForFrameCount=(int32u)-1;
+    Essences_UsedForFrameCount=(int64u)-1;
     FirstPass_ContentPackage_First=(int64u)-1;
     FirstPass_ContentPackage_End=0;
     FirstPass_ContentPackage_Count=0;
@@ -2736,7 +2742,7 @@ void File_Mxf::Streams_Finish()
                     for (essences::iterator Essence=Essences.begin(); Essence!=Essences.end(); ++Essence)
                         if (Essence->second.StreamKind==StreamKind && !Essence->second.Track_Number_IsMappedToTrack)
                         {
-                            Track->second.TrackNumber=Essence->first;
+                            Track->second.TrackNumber=(int32u)Essence->first;
                             Essence->second.Track_Number_IsMappedToTrack=true;
                             break;
                         }
@@ -2766,7 +2772,7 @@ void File_Mxf::Streams_Finish()
             int64u Count_Max=0;
             for (const auto& Track : Tracks)
             {
-                const auto Essence=Essences.find(Track.second.TrackNumber);
+                const auto Essence=Essences.find(Essence_Key(Track.first));
                 const auto Component=Components.find(Track.second.Sequence);
                 const auto EditRate=Track.second.EditRate_Real?Track.second.EditRate_Real:Track.second.EditRate;
                 auto Descriptor=Descriptor_FromTrackID(Track.second.TrackID);
@@ -3280,12 +3286,329 @@ void File_Mxf::Streams_Finish_ContentStorage (const int128u ContentStorageUID)
     if (ContentStorage==ContentStorages.end())
         return;
 
+    TrackIDs_Restore(); //Conformance is about the IDs in the file
     #if MEDIAINFO_CONFORMANCE
         Streams_Finish_ContentStorage_Conformance(ContentStorageUID); //Before Streams_Finish_Descriptor(), which may fill LinkedTrackID
     #endif //MEDIAINFO_CONFORMANCE
 
+    TrackIDs_SetUnique();
     for (size_t Pos=0; Pos<ContentStorage->second.Packages.size(); Pos++)
         Streams_Finish_Package(ContentStorage->second.Packages[Pos]);
+    Streams_Finish_Playlists(ContentStorageUID);
+    TrackIDs_Restore();
+}
+
+//---------------------------------------------------------------------------
+// Tracks as seen by the player: the source clips of a track of the Material Package are one stream
+void File_Mxf::Streams_Finish_Playlists (const int128u ContentStorageUID)
+{
+    const auto ContentStorage=ContentStorages.find(ContentStorageUID);
+    if (ContentStorage==ContentStorages.end() || !EssenceDatas_HasSeveralBodies())
+        return;
+
+    //ID is the one of the source track, alone or with a sub ID, or with another one (channel grouping)
+    const auto ID_Match=[](const Ztring& ID, const Ztring& TrackID, Ztring& SubID)
+    {
+        if (ID==TrackID)
+        {
+            SubID.clear();
+            return true;
+        }
+        if (ID.size()<=TrackID.size() || ID.compare(0, TrackID.size(), TrackID) || ID[TrackID.size()]!=__T('-'))
+            return false;
+        SubID=ID.substr(TrackID.size());
+        return SubID!=__T("-Source") && SubID!=__T("-Material"); //Time code tracks
+    };
+    const auto ID_Replace=[&](stream_t StreamKind, size_t StreamPos, const Ztring& From, const Ztring& To)
+    {
+        ZtringList List;
+        List.Separator_Set(0, __T(" / "));
+        List.Write(Retrieve_Const(StreamKind, StreamPos, General_ID));
+        bool IsChanged=false;
+        for (auto& Item : List)
+        {
+            Ztring SubID;
+            if (ID_Match(Item, From, SubID))
+            {
+                Item=To+SubID;
+                IsChanged=true;
+            }
+        }
+        if (IsChanged)
+        {
+            Clear(StreamKind, StreamPos, General_ID_String);
+            Fill(StreamKind, StreamPos, General_ID, List.Read(), true);
+        }
+    };
+
+    //Source tracks of the tracks of the Material Packages
+    struct player_track
+    {
+        Ztring ID;
+        float64 Duration; //In milliseconds, 0 if there is only one clip
+        std::vector<int128u> TrackUIDs; //Source tracks, in order of the playlist
+    };
+    std::vector<player_track> PlayerTracks;
+    for (const auto& PackageUID : ContentStorage->second.Packages)
+    {
+        const auto Material=Packages.find(PackageUID);
+        if (Material==Packages.end() || Material->second.IsSourcePackage)
+            continue;
+        for (const auto& TrackUID : Material->second.Tracks)
+        {
+            const auto Track=Tracks.find(TrackUID);
+            if (Track==Tracks.end())
+                continue;
+            const auto Sequence=Components.find(Track->second.Sequence);
+            if (Sequence==Components.end())
+                continue;
+            player_track PlayerTrack;
+            PlayerTrack.ID=Ztring::ToZtring(Track->second.TrackID);
+            PlayerTrack.Duration=0;
+            size_t Clip_Count=0;
+            int64u Clip_Duration=0;
+            auto IsComplete=true;
+            auto Clips=Sequence->second.StructuralComponents;
+            if (Clips.empty())
+                Clips.push_back(Sequence->first); //Source clip without sequence
+            for (const auto& ClipUID : Clips)
+            {
+                const auto Clip=Components.find(ClipUID);
+                auto IsFound=false;
+                if (Clip!=Components.end())
+                    for (const auto& Source : Packages)
+                    {
+                        if (!EssenceDatas_IsLinked(0, Source.second) || !Mxf_IsSame(Source.second.PackageUID.hi, Clip->second.SourcePackageID.hi) || !Mxf_IsSame(Source.second.PackageUID.lo, Clip->second.SourcePackageID.lo))
+                            continue;
+                        for (const auto& SourceTrackUID : Source.second.Tracks)
+                        {
+                            const auto SourceTrack=Tracks.find(SourceTrackUID);
+                            if (SourceTrack==Tracks.end())
+                                continue;
+                            const auto Unique=TrackIDs_Unique.find(SourceTrackUID);
+                            if ((Unique==TrackIDs_Unique.end()?SourceTrack->second.TrackID:Unique->second.TrackID)!=Clip->second.SourceTrackID)
+                                continue;
+                            IsFound=true;
+                            Clip_Count++;
+                            if (Clip->second.Duration!=(int64u)-1)
+                                Clip_Duration+=Clip->second.Duration;
+                            else
+                                IsComplete=false;
+                            if (std::find(PlayerTrack.TrackUIDs.begin(), PlayerTrack.TrackUIDs.end(), SourceTrackUID)==PlayerTrack.TrackUIDs.end())
+                                PlayerTrack.TrackUIDs.push_back(SourceTrackUID);
+                            break;
+                        }
+                    }
+                if (!IsFound)
+                    IsComplete=false;
+            }
+            if (PlayerTrack.TrackUIDs.empty())
+                continue;
+            const auto EditRate=Track->second.EditRate_Real?Track->second.EditRate_Real:Track->second.EditRate;
+            const auto Duration=Sequence->second.Duration!=(int64u)-1?Sequence->second.Duration:(IsComplete?Clip_Duration:0);
+            if (Clip_Count>1 && EditRate && Duration)
+                PlayerTrack.Duration=Duration*1000/EditRate;
+            PlayerTracks.push_back(PlayerTrack);
+        }
+    }
+
+    const auto TrackID_Get=[&](const int128u& TrackUID)
+    {
+        const auto Track=Tracks.find(TrackUID);
+        return Track==Tracks.end()?Ztring():Ztring::ToZtring(Track->second.TrackID);
+    };
+
+    //Streams to remove, with update of the positions of the next ones
+    std::set<size_t> Streams_ToErase[Stream_Max];
+    const auto Streams_Erase=[&](stream_t Kind)
+    {
+        for (auto Pos=Streams_ToErase[Kind].rbegin(); Pos!=Streams_ToErase[Kind].rend(); ++Pos)
+        {
+            Stream_Erase(Kind, *Pos);
+            for (auto& Descriptor : Descriptors)
+                if (Descriptor.second.StreamKind==Kind && Descriptor.second.StreamPos!=(size_t)-1 && Descriptor.second.StreamPos>=*Pos && Descriptor.second.StreamPos)
+                    Descriptor.second.StreamPos--;
+            const auto Essence_Base=StreamPos_StartAtZero[Kind]?0:1;
+            for (auto& Essence : Essences)
+                if (Essence.second.StreamKind==Kind && Essence.second.StreamPos!=(size_t)-1 && Essence.second.StreamPos>*Pos+Essence_Base)
+                    Essence.second.StreamPos--;
+            if (Kind==Stream_Video)
+            {
+                for (auto Item=StreamSizes_FromElements.begin(); Item!=StreamSizes_FromElements.end();)
+                    if (Item->StreamPos==*Pos)
+                        Item=StreamSizes_FromElements.erase(Item);
+                    else
+                    {
+                        if (Item->StreamPos>*Pos)
+                            Item->StreamPos--;
+                        ++Item;
+                    }
+            }
+        }
+        Streams_ToErase[Kind].clear();
+    };
+
+    //Tracks not in a Material Package are not seen by the player
+    if (!PlayerTracks.empty())
+        for (const auto& Package : Packages)
+        {
+            if (!EssenceDatas_IsLinked(0, Package.second))
+                continue;
+            for (const auto& TrackUID : Package.second.Tracks)
+            {
+                const auto Track=Tracks.find(TrackUID);
+                if (Track==Tracks.end() || !Track->second.TrackNumber || Track->second.TrackNumber==(int32u)-1)
+                    continue;
+                auto IsPlayed=false;
+                for (const auto& PlayerTrack : PlayerTracks)
+                    IsPlayed=IsPlayed || std::find(PlayerTrack.TrackUIDs.begin(), PlayerTrack.TrackUIDs.end(), TrackUID)!=PlayerTrack.TrackUIDs.end();
+                if (IsPlayed)
+                    continue;
+                for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
+                    for (size_t StreamPos=0; StreamPos<Count_Get((stream_t)StreamKind); StreamPos++)
+                    {
+                        Ztring SubID;
+                        if (ID_Match(Retrieve_Const((stream_t)StreamKind, StreamPos, General_ID), TrackID_Get(TrackUID), SubID))
+                            Streams_ToErase[StreamKind].insert(StreamPos);
+                    }
+            }
+        }
+    for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
+        Streams_Erase((stream_t)StreamKind);
+
+    for (const auto& PlayerTrack : PlayerTracks)
+    {
+        if (!PlayerTrack.Duration)
+            continue;
+        for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
+        {
+            const auto Kind=(stream_t)StreamKind;
+            std::map<Ztring, std::vector<size_t> > Groups_Pos; //Key is the sub ID, value is the streams in order of the playlist
+            for (const auto& TrackUID : PlayerTrack.TrackUIDs)
+                for (size_t StreamPos=0; StreamPos<Count_Get(Kind); StreamPos++)
+                {
+                    Ztring SubID;
+                    if (ID_Match(Retrieve_Const(Kind, StreamPos, General_ID), TrackID_Get(TrackUID), SubID))
+                        Groups_Pos[SubID].push_back(StreamPos);
+                }
+            std::vector<size_t> ToErase;
+            for (const auto& Group : Groups_Pos)
+            {
+                const auto Main=Group.second.front();
+
+                //Sums, duration of the clips as weight of the bit rates
+                const auto Duration_Parameter=Fill_Parameter(Kind, Generic_Duration);
+                float64 BitRate_Sum=0, Duration_Sum=0;
+                int64u StreamSize_Sum=0;
+                auto HasBitRate=true, HasStreamSize=true, HasStoredDuration=false;
+                float64 Source_Duration_Sum=0;
+                for (const auto Pos : Group.second)
+                {
+                    const auto Duration=Retrieve_Const(Kind, Pos, Duration_Parameter).To_float64();
+                    const auto Source_Duration=Retrieve_Const(Kind, Pos, "Source_Duration").To_float64();
+                    const auto BitRate=Retrieve_Const(Kind, Pos, Fill_Parameter(Kind, Generic_BitRate)).To_float64();
+                    const auto StreamSize=Retrieve_Const(Kind, Pos, Fill_Parameter(Kind, Generic_StreamSize)).To_int64u();
+                    HasBitRate=HasBitRate && BitRate && Duration;
+                    HasStreamSize=HasStreamSize && StreamSize;
+                    HasStoredDuration=HasStoredDuration || Source_Duration;
+                    BitRate_Sum+=BitRate*Duration;
+                    Duration_Sum+=Duration;
+                    StreamSize_Sum+=StreamSize;
+                    Source_Duration_Sum+=Source_Duration?Source_Duration:Duration;
+                }
+
+                //Values which are not the same in all clips
+                static const char* const Names[]=
+                {
+                    "Format", "Format_Version", "Format_Profile", "CodecID", "Width", "Height", "DisplayAspectRatio", "ScanType", "ScanOrder", "ColorSpace", "ChromaSubsampling", "BitDepth",
+                    "colour_primaries", "transfer_characteristics", "matrix_coefficients", "HDR_Format", "FrameRate", "SamplingRate", "Channel(s)", "ChannelLayout", "Language",
+                };
+                for (const auto Name : Names)
+                {
+                    std::vector<Ztring> Values;
+                    for (const auto Pos : Group.second)
+                    {
+                        const auto Value=Retrieve_Const(Kind, Pos, Name);
+                        if (!Value.empty() && std::find(Values.begin(), Values.end(), Value)==Values.end())
+                            Values.push_back(Value);
+                    }
+                    if (Values.size()<2)
+                        continue;
+                    auto Value=Values[0];
+                    for (size_t Pos=1; Pos<Values.size(); Pos++)
+                        Value+=__T(" / ")+Values[Pos];
+                    Fill(Kind, Main, Name, Value, true);
+                }
+
+                const auto FrameCount_Parameter=Fill_Parameter(Kind, Generic_FrameCount);
+                const auto FrameRate=Retrieve_Const(Kind, Main, Fill_Parameter(Kind, Generic_FrameRate)).To_float64();
+                const auto HasFrameCount=!Retrieve_Const(Kind, Main, FrameCount_Parameter).empty();
+                Fill(Kind, Main, Duration_Parameter, PlayerTrack.Duration, 0, true);
+                if (HasFrameCount)
+                {
+                    if (FrameRate)
+                        Fill(Kind, Main, FrameCount_Parameter, float64_int64s(PlayerTrack.Duration*FrameRate/1000), 10, true);
+                    else
+                        Clear(Kind, Main, FrameCount_Parameter);
+                }
+                if (Kind==Stream_Audio)
+                    Clear(Stream_Audio, Main, Audio_SamplingCount); //Computed from the duration
+                if (Group.second.size()>1)
+                {
+                    if (HasBitRate && Duration_Sum)
+                        Fill(Kind, Main, Fill_Parameter(Kind, Generic_BitRate), BitRate_Sum/Duration_Sum, 0, true);
+                    else
+                        Clear(Kind, Main, Fill_Parameter(Kind, Generic_BitRate));
+                    if (HasStreamSize)
+                        Fill(Kind, Main, Fill_Parameter(Kind, Generic_StreamSize), StreamSize_Sum, 10, true);
+                    else
+                        Clear(Kind, Main, Fill_Parameter(Kind, Generic_StreamSize));
+                    if (HasStoredDuration)
+                    {
+                        Fill(Kind, Main, "Source_Duration", Source_Duration_Sum, 0, true);
+                        Clear(Kind, Main, "Source_FrameCount");
+                        Clear(Kind, Main, "PreCharge");
+                        Clear(Kind, Main, "RollOut");
+                    }
+                }
+                if (Kind==Stream_Video)
+                    StreamSizes_FromElements.erase(std::remove_if(StreamSizes_FromElements.begin(), StreamSizes_FromElements.end(), [&](const streamsize_fromelements& Item) {return std::find(Group.second.begin(), Group.second.end(), Item.StreamPos)!=Group.second.end();}), StreamSizes_FromElements.end());
+                ToErase.insert(ToErase.end(), Group.second.begin()+1, Group.second.end());
+            }
+
+            for (const auto& Pos : ToErase)
+                Streams_ToErase[Kind].insert(Pos);
+            Streams_Erase(Kind);
+        }
+    }
+
+    //IDs, the ones of the Material Package if the Track IDs of the source packages are not unique
+    if (!TrackIDs_Unique.empty())
+    {
+        for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
+            for (size_t StreamPos=0; StreamPos<Count_Get((stream_t)StreamKind); StreamPos++)
+            {
+                auto IsReplaced=false;
+                for (const auto& PlayerTrack : PlayerTracks)
+                {
+                    for (const auto& TrackUID : PlayerTrack.TrackUIDs)
+                    {
+                        const auto ID_Before=Retrieve_Const((stream_t)StreamKind, StreamPos, General_ID);
+                        ID_Replace((stream_t)StreamKind, StreamPos, TrackID_Get(TrackUID), PlayerTrack.ID);
+                        if (Retrieve_Const((stream_t)StreamKind, StreamPos, General_ID)!=ID_Before)
+                        {
+                            IsReplaced=true;
+                            break;
+                        }
+                    }
+                    if (IsReplaced)
+                        break;
+                }
+                if (!IsReplaced)
+                    for (const auto& Unique : TrackIDs_Unique)
+                        ID_Replace((stream_t)StreamKind, StreamPos, Ztring::ToZtring(Unique.second.TrackID_Unique), Ztring::ToZtring(Unique.second.TrackID));
+            }
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -7160,13 +7483,13 @@ void File_Mxf::Streams_Finish_Track(const int128u TrackUID)
     size_t StreamCount_BeforeEssence[Stream_Max]; //The streams after them are from the essence (e.g. captions in the video)
     for (size_t StreamKind=0; StreamKind<Stream_Max; StreamKind++)
         StreamCount_BeforeEssence[StreamKind]=Count_Get((stream_t)StreamKind);
-    Streams_Finish_Essence(Track->second.TrackNumber, TrackUID);
+    Streams_Finish_Essence(Essence_Key(TrackUID), TrackUID);
 
     //Sequence
     Streams_Finish_Component(Track->second.Sequence, Track->second.EditRate_Real?Track->second.EditRate_Real:Track->second.EditRate, Track->second.TrackID, Track->second.Origin, StreamCount_BeforeEssence);
 
     //Stream size from the size of frame wrapped video elements, if constant
-    const auto Essence=Essences.find(Track->second.TrackNumber);
+    const auto Essence=Essences.find(Essence_Key(TrackUID));
     if (StreamKind_Last==Stream_Video && Essence!=Essences.end() && Essence->second.Element_Size_Constant && Essence->second.Element_Size_Constant!=(int64u)-1
      && Retrieve_Const(Stream_Video, StreamPos_Last, Video_StreamSize).empty())
     {
@@ -7222,7 +7545,7 @@ void File_Mxf::Streams_Finish_Track_ForAS11(const int128u TrackUID)
 }
 
 //---------------------------------------------------------------------------
-void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
+void File_Mxf::Streams_Finish_Essence(int64u EssenceUID, int128u TrackUID)
 {
     essences::iterator Essence=Essences.find(EssenceUID);
     if (Essence==Essences.end() && IsArriExperimental && (EssenceUID&0xFF00FF00)==0x15000500)
@@ -7277,6 +7600,9 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
     }
     if (IsSub)
         Fill(StreamKind_Last, StreamPos_Last, "MuxingMode", "MXF");
+
+    if (EssenceDatas_HasSeveralBodies() && StreamKind_Last==Essence->second.StreamKind)
+        Essence->second.StreamPos=StreamPos_Last+(StreamPos_StartAtZero[Essence->second.StreamKind]?0:1); //Element numbers are not unique
 
     descriptors::iterator TrackDescriptor=Descriptor_FromTrackID(Essence->second.TrackID);
     if (TrackDescriptor!=Descriptors.end() && TrackDescriptor->second.StreamKind!=Stream_Max)
@@ -7701,7 +8027,7 @@ void File_Mxf::Streams_Finish_Essence(int32u EssenceUID, int128u TrackUID)
 }
 
 //---------------------------------------------------------------------------
-void File_Mxf::Streams_Finish_Essence_FillID(int32u EssenceUID, int128u TrackUID)
+void File_Mxf::Streams_Finish_Essence_FillID(int64u EssenceUID, int128u TrackUID)
 {
     essences::iterator Essence=Essences.find(EssenceUID);
     if (Essence==Essences.end() || Essence->second.Stream_Finish_Done)
@@ -7735,8 +8061,8 @@ void File_Mxf::Streams_Finish_Essence_FillID(int32u EssenceUID, int128u TrackUID
             ID=Ztring::ToZtring(Track->second.TrackID);
         else
         {
-            ID=Ztring::ToZtring(Essence->first);
-            ID_String=Ztring::ToZtring(Essence->first, 16);
+            ID=Ztring::ToZtring((int32u)Essence->first);
+            ID_String=Ztring::ToZtring((int32u)Essence->first, 16);
         }
         if (!ID.empty())
         {
@@ -12800,21 +13126,23 @@ void File_Mxf::Data_Parse()
             IsParsingMiddle_MinOffset=File_Offset+Buffer_Offset+Element_Size; //The caption probe must not give again this content to the parsers, they would count it twice
 
         //The jump of the caption probe is usually in the middle of a content package, its frame is not the frame of the next content package
-        if (ProbeCaption_IsInContentPackage && Code_Compare4==Essences_UsedForFrameCount && !Buffer_End)
+        const auto BodySID=BodySID_Get();
+        const auto EssenceKey=Essence_Key(Code_Compare4, BodySID);
+        if (ProbeCaption_IsInContentPackage && EssenceKey==Essences_UsedForFrameCount && !Buffer_End)
         {
             ProbeCaption_IsInContentPackage=false;
             Position_Update(File_Offset+Buffer_Offset-Header_Size, false);
             if (Frame_Count_NotParsedIncluded!=(int64u)-1 && ContentPackage_Last!=(int64u)-1)
                 Position_Update(File_Offset+Buffer_Offset-Header_Size, true); //Content parsed with an unknown frame, parsers start again from here as after a jump to this position
         }
-        if (Code_Compare4==Essences_UsedForFrameCount)
+        if (EssenceKey==Essences_UsedForFrameCount)
             ContentPackage_Last=File_Offset+Buffer_Offset-Header_Size;
 
-        essences::iterator Essence=Essences.find(Code_Compare4);
+        essences::iterator Essence=Essences.find(EssenceKey);
         if (Essence==Essences.end())
         {
-            Essences[Code_Compare4];
-            Essence=Essences.find(Code_Compare4);
+            Essences[EssenceKey].BodySID=BodySID;
+            Essence=Essences.find(EssenceKey);
             if (ContentPackage_Elements.empty())
                 ContentPackage_SystemItemIsFirst=SDTI_IsPresent;
             ContentPackage_Elements.push_back(Code_Compare4);
@@ -12860,12 +13188,14 @@ void File_Mxf::Data_Parse()
             //Searching the corresponding Track (for TrackID)
             if (!Essence->second.TrackID_WasLookedFor)
             {
-                Essence->second.TrackID=TrackID_FromTrackNumber(Code_Compare4);
+                TrackIDs_SetUnique();
+                Essence->second.TrackID=TrackID_FromTrackNumber(Code_Compare4, BodySID);
                 #if MEDIAINFO_DEMUX || MEDIAINFO_SEEK
                     if (Config->ParseSpeed>=1 && Essence->second.TrackID==(int32u)-1 && !Duration_Detected && !Config->File_IsDetectingDuration_Get())
                     {
                         DetectDuration(); //In one file (*-009.mxf), the TrackNumber is known only at the end of the file (Open and incomplete header/footer)
-                        Essence->second.TrackID=TrackID_FromTrackNumber(Code_Compare4);
+                        TrackIDs_SetUnique();
+                        Essence->second.TrackID=TrackID_FromTrackNumber(Code_Compare4, BodySID);
                     }
                 #endif //MEDIAINFO_DEMUX || MEDIAINFO_SEEK
 
@@ -12892,7 +13222,7 @@ void File_Mxf::Data_Parse()
                                         {
                                             if (Track->second.TrackNumber==0 && Track->second.TrackID==Essence->second.TrackID)
                                             {
-                                                Track->second.TrackNumber=Essence->first;
+                                                Track->second.TrackNumber=(int32u)Essence->first;
                                                 Essence->second.Track_Number_IsMappedToTrack=true;
                                             }
                                         }
@@ -12954,7 +13284,7 @@ void File_Mxf::Data_Parse()
             }
 
             //Check of Essence used as a reference for frame count
-            if (Essences_UsedForFrameCount==(int32u)-1)
+            if (Essences_UsedForFrameCount==(int64u)-1)
             {
                 Essences_UsedForFrameCount=Essence->first;
                 FirstPass_ContentPackage_First=File_Offset+Buffer_Offset-Header_Size;
@@ -12971,6 +13301,13 @@ void File_Mxf::Data_Parse()
                     Essence->second.FrameInfo.DTS=FrameInfo.DTS;
                     if (Essence->second.FrameInfo.DTS!=(int64u)-1 && FrameInfo.DUR!=(int64u)-1 && Frame_Count_NotParsedIncluded && Essence->first!=Essences_UsedForFrameCount)
                         Essence->second.FrameInfo.DTS-=FrameInfo.DUR; //Info is from the first essence parsed, and 1 frame is already parsed
+                    if ((Essence->first>>32) && IsParsingMiddle_MaxOffset==(int64u)-1 && Essence->second.Frame_Count_NotParsedIncluded!=(int64u)-1)
+                    {
+                        //Start of the essence of another package, the frames of the previous bodies are not its frames
+                        Essence->second.Frame_Count_NotParsedIncluded=0;
+                        if (Essence->second.FrameInfo.DTS!=(int64u)-1)
+                            Essence->second.FrameInfo.DTS=float64_int64s(DTS_Delay*1000000000);
+                    }
                     if (!Tracks.empty() && Tracks.begin()->second.EditRate) //TODO: use the corresponding track instead of the first one
                         Essence->second.FrameInfo.DUR=float64_int64s(1000000000/Tracks.begin()->second.EditRate);
                     else if (!IndexTables.empty() && IndexTables[0].IndexEditRate)
@@ -17188,7 +17525,12 @@ void File_Mxf::DescriptiveMarker_TrackIDs()
 void File_Mxf::EssenceData_LinkedPackageUID()
 {
     //Parsing
-    Skip_UMID();
+    int256u Data;
+    Get_UMID(Data,                                              "LinkedPackageUID");
+
+    FILLING_BEGIN();
+        EssenceDatas[InstanceUID].PackageUID=Data;
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -17202,7 +17544,12 @@ void File_Mxf::EssenceData_IndexSID()
 void File_Mxf::EssenceData_BodySID()
 {
     //Parsing
-    Info_B4(Data,                                               "Data"); Element_Info1(Data);
+    int32u Data;
+    Get_B4 (Data,                                               "Data"); Element_Info1(Data);
+
+    FILLING_BEGIN();
+        EssenceDatas[InstanceUID].BodySID=Data;
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -17327,6 +17674,12 @@ void File_Mxf::InterchangeObject_InstanceUID()
         {
             Packages[InstanceUID]=Package->second;
             Packages.erase(Package);
+        }
+        essencedatas::iterator EssenceData=EssenceDatas.find(0);
+        if (EssenceData!=EssenceDatas.end())
+        {
+            EssenceDatas[InstanceUID]=EssenceData->second;
+            EssenceDatas.erase(EssenceData);
         }
         tracks::iterator Track=Tracks.find(0);
         if (Track!=Tracks.end())
@@ -24292,8 +24645,190 @@ bool File_Mxf::SubDescriptor_IsDangling(const descriptors::iterator& Descriptor)
 }
 
 //---------------------------------------------------------------------------
-int32u File_Mxf::TrackID_FromTrackNumber(int32u TrackNumber)
+bool File_Mxf::EssenceDatas_HasSeveralBodies() const
 {
+    const essencedata* First=nullptr;
+    for (const auto& EssenceData : EssenceDatas)
+    {
+        if (!EssenceData.second.BodySID)
+            continue;
+        if (!First)
+            First=&EssenceData.second;
+        else if (EssenceData.second.BodySID!=First->BodySID
+         && !(Mxf_IsSame(EssenceData.second.PackageUID.hi, First->PackageUID.hi) && Mxf_IsSame(EssenceData.second.PackageUID.lo, First->PackageUID.lo)))
+            return true;
+    }
+    return false;
+}
+
+//---------------------------------------------------------------------------
+bool File_Mxf::EssenceDatas_IsLinked(int32u BodySID, const package& Package) const
+{
+    if (!Package.IsSourcePackage)
+        return false;
+    for (const auto& EssenceData : EssenceDatas)
+        if (EssenceData.second.BodySID && (!BodySID || EssenceData.second.BodySID==BodySID) //0 is for any body
+         && Mxf_IsSame(EssenceData.second.PackageUID.hi, Package.PackageUID.hi) && Mxf_IsSame(EssenceData.second.PackageUID.lo, Package.PackageUID.lo))
+            return true;
+    return false;
+}
+
+//---------------------------------------------------------------------------
+bool File_Mxf::EssenceDatas_HasTrackNumber(int32u BodySID, int32u TrackNumber)
+{
+    for (const auto& Package : Packages)
+        if (EssenceDatas_IsLinked(BodySID, Package.second))
+            for (const auto& TrackUID : Package.second.Tracks)
+            {
+                const auto Track=Tracks.find(TrackUID);
+                if (Track!=Tracks.end() && Track->second.TrackNumber==TrackNumber)
+                    return true;
+            }
+    return false;
+}
+
+//---------------------------------------------------------------------------
+int32u File_Mxf::BodySID_Get() const
+{
+    if (!EssenceDatas_HasSeveralBodies())
+        return 0;
+
+    //Last known partition before the element, from the parsed partitions or from the Random Index Pack (not in order after a jump)
+    const auto Offset=File_Offset+Buffer_Offset;
+    const auto RunIn=Partitions.empty()?0:Partitions.front().StreamOffset;
+    int64u Partition_Offset=0;
+    int32u BodySID=0;
+    const auto Partition_Next=upper_bound(Partitions.begin(), Partitions.end(), Offset, [](int64u Offset, const partition& Item) {return Offset<Item.StreamOffset;});
+    if (Partition_Next!=Partitions.begin())
+    {
+        Partition_Offset=(Partition_Next-1)->StreamOffset;
+        BodySID=(Partition_Next-1)->BodySID;
+    }
+    if (RandomIndexPack_Entries.size()>Partitions.size()) //Else all partitions are parsed
+        for (const auto& Entry : RandomIndexPack_Entries)
+            if (Entry.ByteOffset+RunIn<=Offset && Entry.ByteOffset+RunIn>Partition_Offset)
+            {
+                Partition_Offset=Entry.ByteOffset+RunIn;
+                BodySID=Entry.BodySID;
+            }
+    return BodySID;
+}
+
+//---------------------------------------------------------------------------
+int64u File_Mxf::Essence_Key(int32u TrackNumber, int32u BodySID)
+{
+    const auto Essence=Essences.find(TrackNumber);
+    if (!BodySID || Essence==Essences.end() || !Essence->second.BodySID || Essence->second.BodySID==BodySID)
+        return TrackNumber;
+
+    //Another body is another essence only if it is the one of another package
+    for (const auto& Package : Packages)
+        if (EssenceDatas_IsLinked(BodySID, Package.second) && EssenceDatas_IsLinked(Essence->second.BodySID, Package.second))
+            return TrackNumber;
+    if (!EssenceDatas_HasTrackNumber(BodySID, TrackNumber) || !EssenceDatas_HasTrackNumber(Essence->second.BodySID, TrackNumber))
+        return TrackNumber;
+    return (((int64u)BodySID)<<32)|TrackNumber;
+}
+
+//---------------------------------------------------------------------------
+int64u File_Mxf::Essence_Key(const int128u& TrackUID)
+{
+    const auto Track=Tracks.find(TrackUID);
+    if (Track==Tracks.end())
+        return (int64u)-1;
+    const auto TrackNumber=Track->second.TrackNumber;
+    const auto Essence=Essences.find(TrackNumber);
+    if (Essence==Essences.end() || !Essence->second.BodySID)
+        return TrackNumber;
+    for (const auto& Package : Packages)
+    {
+        if (!EssenceDatas_IsLinked(0, Package.second) || std::find(Package.second.Tracks.begin(), Package.second.Tracks.end(), TrackUID)==Package.second.Tracks.end())
+            continue;
+        if (EssenceDatas_IsLinked(Essence->second.BodySID, Package.second))
+            return TrackNumber;
+        for (const auto& EssenceData : EssenceDatas)
+            if (EssenceData.second.BodySID && EssenceDatas_IsLinked(EssenceData.second.BodySID, Package.second))
+            {
+                const auto Key=(((int64u)EssenceData.second.BodySID)<<32)|TrackNumber;
+                if (Essences.find(Key)!=Essences.end())
+                    return Key;
+            }
+        if (EssenceDatas_HasTrackNumber(Essence->second.BodySID, TrackNumber))
+            return (int64u)-1; //The essence of this track is not parsed, the one with this Track Number is of another package
+    }
+    return TrackNumber;
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::TrackIDs_SetUnique()
+{
+    if (!EssenceDatas_HasSeveralBodies())
+        return;
+
+    //Essence tracks of the packages with essence in the file
+    std::map<int32u, int128u> TrackIDs; //Key is TrackID, value is the first package having it
+    for (auto& Package : Packages)
+    {
+        if (!EssenceDatas_IsLinked(0, Package.second))
+            continue;
+        for (const auto& TrackUID : Package.second.Tracks)
+        {
+            const auto Track=Tracks.find(TrackUID);
+            if (Track==Tracks.end() || !Track->second.TrackNumber || Track->second.TrackNumber==(int32u)-1 || Track->second.TrackID==(int32u)-1)
+                continue;
+            auto Unique=TrackIDs_Unique.find(TrackUID);
+            if (Unique==TrackIDs_Unique.end())
+            {
+                const auto First=TrackIDs.emplace(Track->second.TrackID, Package.first);
+                if (First.second || Mxf_IsSame(First.first->second, Package.first))
+                    continue;
+                Unique=TrackIDs_Unique.emplace(TrackUID, trackid_unique{Track->second.TrackID, 0x80000000+(int32u)TrackIDs_Unique.size()}).first;
+            }
+            Track->second.TrackID=Unique->second.TrackID_Unique;
+
+            //Descriptor of the track
+            std::vector<int128u> DescriptorUIDs(1, Package.second.Descriptor);
+            for (size_t Pos=0; Pos<DescriptorUIDs.size() && Pos<1024; Pos++)
+            {
+                const auto Descriptor=Descriptors.find(DescriptorUIDs[Pos]);
+                if (Descriptor==Descriptors.end())
+                    continue;
+                if (Descriptor->second.LinkedTrackID==Unique->second.TrackID)
+                    Descriptor->second.LinkedTrackID=Unique->second.TrackID_Unique;
+                DescriptorUIDs.insert(DescriptorUIDs.end(), Descriptor->second.SubDescriptors.begin(), Descriptor->second.SubDescriptors.end());
+            }
+        }
+    }
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::TrackIDs_Restore()
+{
+    for (const auto& Unique : TrackIDs_Unique)
+    {
+        const auto Track=Tracks.find(Unique.first);
+        if (Track!=Tracks.end())
+            Track->second.TrackID=Unique.second.TrackID;
+        for (auto& Descriptor : Descriptors)
+            if (Descriptor.second.LinkedTrackID==Unique.second.TrackID_Unique)
+                Descriptor.second.LinkedTrackID=Unique.second.TrackID;
+    }
+}
+
+//---------------------------------------------------------------------------
+int32u File_Mxf::TrackID_FromTrackNumber(int32u TrackNumber, int32u BodySID)
+{
+    //Track of a package having this body, if it is not the only one with this Track Number
+    if (BodySID && EssenceDatas_HasSeveralBodies())
+        for (const auto& Package : Packages)
+            if (EssenceDatas_IsLinked(BodySID, Package.second))
+                for (const auto& TrackUID : Package.second.Tracks)
+                {
+                    const auto Track=Tracks.find(TrackUID);
+                    if (Track!=Tracks.end() && Track->second.TrackNumber==TrackNumber)
+                        return Track->second.TrackID;
+                }
+
     //Last track with this Track Number
     int32u TrackID=(int32u)-1;
     for (tracks::iterator Track=Tracks.begin(); Track!=Tracks.end(); ++Track)
