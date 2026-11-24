@@ -921,35 +921,51 @@ void File_Mpeg4::Streams_Finish()
             }
         }
 
+        //Presentation times
+        int64s PresentationTime_First=INT64_MAX;
+        if (Temp->second.ctts_HasOffset)
+            PresentationTime_First=Temp->second.PresentationTime_First(File_Size);
+        else if (!Temp->second.stts.empty())
+            PresentationTime_First=(int64s)Temp->second.tfdt_First; //Same as the decoding time
+
         //Edit Lists
-        float64 Delay=0;
+        float64 Delay=0; //Position of the media time 0 in the presentation timeline, in seconds
+        float64 Start=0; //Presentation time of the first displayed sample, in seconds
+        int64s MediaTime=0; //Media time presented first
+        bool IsSupported=false;
         switch (Temp->second.edts.size())
         {
             case 0 :
+                    IsSupported=true;
                     break;
             case 1 :
                     if (Temp->second.edts_IsWholeTrack(Temp->second.edts[0].Duration, IsFragmented) && Temp->second.edts[0].Rate==0x00010000 && moov_mvhd_TimeScale)
                     {
-                        Delay=Temp->second.edts[0].Delay;
-                        Delay=-Delay;
+                        MediaTime=Temp->second.edts[0].Delay;
+                        Delay=-((float64)MediaTime);
                         if (Temp->second.mdhd_TimeScale)
                             Delay/=Temp->second.mdhd_TimeScale; //In seconds
+                        IsSupported=true;
                     }
                     break;
             case 2 :
                     if (Temp->second.edts[0].Delay==-1 && Temp->second.edts_IsWholeTrack(Temp->second.edts[0].Duration+Temp->second.edts[1].Duration, IsFragmented) && Temp->second.edts[0].Rate==0x00010000 && Temp->second.edts[1].Rate==0x00010000 && moov_mvhd_TimeScale)
                     {
-                        Delay=Temp->second.edts[0].Duration;
+                        Start=((float64)Temp->second.edts[0].Duration)/moov_mvhd_TimeScale; //In seconds
                         if (Temp->second.tkhd_Duration>=Temp->second.edts[0].Duration) //Not with a last edit of 0 in fragments
                             Temp->second.tkhd_Duration-=Temp->second.edts[0].Duration;
-                        Delay/=moov_mvhd_TimeScale; //In seconds
+                        MediaTime=Temp->second.edts[1].Delay;
+                        Delay=Start;
                         if (Temp->second.mdhd_TimeScale)
-                            Delay-=((float64)Temp->second.edts[1].Delay)/Temp->second.mdhd_TimeScale; //Position of the media time 0
+                            Delay-=((float64)MediaTime)/Temp->second.mdhd_TimeScale;
+                        IsSupported=true;
                     }
                     break;
             default:
                     break; //TODO: handle more complex Edit Lists
         }
+        if (IsSupported && Temp->second.mdhd_TimeScale && PresentationTime_First!=INT64_MAX && PresentationTime_First>MediaTime)
+            Start+=((float64)(PresentationTime_First-MediaTime))/Temp->second.mdhd_TimeScale; //The first displayed sample may be after the first presented media time, e.g. because of composition offsets without edit list
         if (Delay && !Retrieve(StreamKind_Last, StreamPos_Last, "Source_Duration").empty())
         {
             Delay+=Retrieve(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay)).To_float64()/1000; //TODO: use TimeCode value directly instead of the rounded value
@@ -962,6 +978,13 @@ void File_Mpeg4::Streams_Finish()
             Fill(StreamKind_Last, StreamPos_Last, "Source_Delay_Source", "Container", Unlimited, true, true);
             Fill_SetOptions(StreamKind_Last, StreamPos_Last, "Source_Delay", "N NT");
             Fill_SetOptions(StreamKind_Last, StreamPos_Last, "Source_Delay_Source", "N NT");
+        }
+        if (Start && Temp->second.TimeCode==NULL) //Delay of time code tracks is the time code
+        {
+            Start+=Retrieve(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay)).To_float64()/1000; //Time code
+            Start=float64_int64s(Start*1000000)/1000.0; //In milliseconds, rounded to the microsecond
+            Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay), Start, Start==float64_int64s(Start)?0:3, true);
+            Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Delay_Source), "Container", Unlimited, true, true);
         }
 
         if (StreamKind_Last==Stream_Video && Temp->second.TimeCode==NULL)

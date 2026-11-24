@@ -28,6 +28,12 @@ struct stts_struct
     int32u                      SampleDuration;
 };
 
+struct ctts_struct
+{
+    int32u                      SampleCount;
+    int32s                      SampleOffset;
+};
+
 struct sgpd_prol_struct
 {
     int16s                      roll_distance;
@@ -582,6 +588,10 @@ private :
         std::vector<int64u>     stss; //Sync Sample, base=0
         int64u                  FramePos_Offset;
         std::vector<stts_struct> stts;
+        std::vector<ctts_struct> ctts; //Composition offsets, from ctts or from trun in fragmented files
+        int64u                  ctts_SampleCount;
+        bool                    ctts_HasOffset;
+        int64u                  tfdt_First; //Decoding time of the first sample of a fragmented file
         int64u                  stsz_Sample_Size;
         int64u                  stsz_Sample_Multiplier;
         int64u                  stsz_Sample_Count;
@@ -665,6 +675,8 @@ private :
         #endif //MEDIAINFO_DEMUX || MEDIAINFO_SEEK
         void                moov_trak_mdia_minf_stbl_stts_Common(int32u SampleCount, int32u SampleDuration, int32u Pos=0, int32u NumberOfEntries=1);
         bool                edts_IsWholeTrack(int64u Duration, bool IsFragmented) const {return (IsFragmented && !edts.back().Duration) || (Duration+1>=tkhd_Duration && Duration<=tkhd_Duration+1);} //A last edit of 0 spans the whole media of fragments, durations are rounded in the movie time scale
+        void                ctts_Add(int32u SampleCount, int32s SampleOffset);
+        int64s              PresentationTime_First(int64u File_Size) const;
         #if MEDIAINFO_DEMUX
             bool            PtsDtsAreSame;
             bool            Demux_EventWasSent;
@@ -699,6 +711,9 @@ private :
             stsz_Sample_Multiplier=1;
             stsz_Sample_Count=0;
             tkhd_Duration=0;
+            ctts_SampleCount=0;
+            ctts_HasOffset=false;
+            tfdt_First=0;
             mdhd_TimeScale=0;
             mdhd_Duration=0;
             stts_Min=(int32u)-1;

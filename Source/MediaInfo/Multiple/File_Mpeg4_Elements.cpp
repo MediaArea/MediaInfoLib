@@ -4344,14 +4344,22 @@ void File_Mpeg4::moof_traf_tfdt()
     }
 
     //Parsing
+    int64u baseMediaDecodeTime;
     if (!Version)
     {
-        Skip_B4(                                                "baseMediaDecodeTime");
+        int32u baseMediaDecodeTime32;
+        Get_B4 (baseMediaDecodeTime32,                          "baseMediaDecodeTime");
+        baseMediaDecodeTime=baseMediaDecodeTime32;
     }
     else
     {
-        Skip_B8(                                                "baseMediaDecodeTime");
+        Get_B8 (baseMediaDecodeTime,                            "baseMediaDecodeTime");
     }
+
+    FILLING_BEGIN();
+        if (Stream!=Streams.end() && !Stream->second.stts_FrameCount)
+            Stream->second.tfdt_First=baseMediaDecodeTime;
+    FILLING_END();
 }
 
 //---------------------------------------------------------------------------
@@ -4435,6 +4443,7 @@ void File_Mpeg4::moof_traf_trun()
     //Filling
     if (moof_traf_base_data_offset!=(int64u)-1 || data_offset_present)
         Stream->second.stco.push_back(data_offset_Final);
+    const int64u FirstSamplePos=Stream->second.stts_FrameCount;
     stream::stsc_struct Stsc;
     if (Stream->second.stsc.empty())
         Stsc.FirstChunk=1;
@@ -4534,10 +4543,13 @@ void File_Mpeg4::moof_traf_trun()
                 Stream->second.stss.push_back(Stream->second.FramePos_Offset+Pos);
             Streams[moov_trak_tkhd_TrackID].stss_IsPresent=true; // Spec does not indicate that but we may consider trun presence as enough for considering that stts is present and empty
         #endif
+        int32u sample_composition_time_offset=0;
         if (sample_composition_time_offset_present)
         {
-            Info_B4(sample_composition_time_offset,             "sample_composition_time_offset"); Param_Info1((int32s)sample_composition_time_offset);
+            Get_B4 (sample_composition_time_offset,             "sample_composition_time_offset"); Param_Info1((int32s)sample_composition_time_offset);
         }
+        if (FirstSamplePos+Pos==Stream->second.ctts_SampleCount) //Offsets of all the previous samples are known
+            Stream->second.ctts_Add(1, (int32s)sample_composition_time_offset); //Negative with version 1
         Element_End0();
     }
 }
@@ -6598,16 +6610,24 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_ctts()
     int32u entry_count;
     Get_B4 (entry_count,                                        "entry_count");
 
-    //Only the first offset is used, for the display time of the first picture
+    //Used for the presentation times of the samples
+    auto& Stream_Temp=Streams[moov_trak_tkhd_TrackID];
+    Stream_Temp.ctts.clear();
+    Stream_Temp.ctts_SampleCount=0;
+    Stream_Temp.ctts_HasOffset=false;
+    Loop_CheckValue(entry_count, 8, "entry_count");
+    Stream_Temp.ctts.reserve(entry_count);
+    for (int32u Pos=0; Pos<entry_count; Pos++)
+    {
+        //Faster than Get_B4, as for stsz
+        int32u sample_count=BigEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset);
+        int32u sample_offset=BigEndian2int32u(Buffer+Buffer_Offset+(size_t)Element_Offset+4);
+        Element_Offset+=8;
+        Stream_Temp.ctts_Add(sample_count, (int32s)sample_offset); //Negative with version 1
+    }
     #if MEDIAINFO_DEMUX
-        if (entry_count && Element_Offset+8<=Element_Size)
-        {
-            int32u sample_offset;
-            Skip_B4(                                            "sample_count");
-            Get_B4 (sample_offset,                              "sample_offset");
-            if (!(sample_offset>>31)) //Negative with version 1
-                Streams[moov_trak_tkhd_TrackID].ctts_FirstOffset=sample_offset;
-        }
+        if (!Stream_Temp.ctts.empty() && Stream_Temp.ctts[0].SampleOffset>=0)
+            Stream_Temp.ctts_FirstOffset=Stream_Temp.ctts[0].SampleOffset;
     #endif //MEDIAINFO_DEMUX
 
     //Other entries are currently not used
@@ -11301,6 +11321,51 @@ void File_Mpeg4::moov_trak_mdia_minf_stbl_subs_Common()
     }
 }
 
+void File_Mpeg4::stream::ctts_Add(int32u SampleCount, int32s SampleOffset)
+{
+    if (!ctts.empty() && ctts.back().SampleOffset==SampleOffset && ctts.back().SampleCount<=((int32u)-1)-SampleCount)
+        ctts.back().SampleCount+=SampleCount;
+    else
+        ctts.push_back({SampleCount, SampleOffset});
+    ctts_SampleCount+=SampleCount;
+    if (SampleOffset)
+        ctts_HasOffset=true;
+}
+
+//---------------------------------------------------------------------------
+int64s File_Mpeg4::stream::PresentationTime_First(int64u File_Size) const
+{
+    //Earliest presentation time of the samples from the decoding times and the composition offsets, in the media time scale
+    int64s First=INT64_MAX;
+    if (stts.empty() || ctts.empty())
+        return First;
+    int64u SampleCount_Max=std::max(stsz_Total.size(), stsz.size());
+    if (!SampleCount_Max)
+        SampleCount_Max=stsz_Sample_Size?std::min(stsz_Sample_Count, File_Size/stsz_Sample_Size):0; //Not more samples than the file can hold
+    SampleCount_Max=std::min(SampleCount_Max, std::min(stts_FrameCount, ctts_SampleCount));
+    int64s DecodingTime=(int64s)tfdt_First;
+    auto Ctts=ctts.begin();
+    auto Stts=stts.begin();
+    int32u Ctts_Remaining=Ctts->SampleCount;
+    int32u Stts_Remaining=Stts->SampleCount;
+    for (int64u Pos=0; Pos<SampleCount_Max; Pos++)
+    {
+        while (!Ctts_Remaining && ++Ctts!=ctts.end())
+            Ctts_Remaining=Ctts->SampleCount;
+        while (!Stts_Remaining && ++Stts!=stts.end())
+            Stts_Remaining=Stts->SampleCount;
+        if (Ctts==ctts.end() || Stts==stts.end())
+            break;
+        if (First>DecodingTime+Ctts->SampleOffset)
+            First=DecodingTime+Ctts->SampleOffset;
+        DecodingTime+=(int32s)Stts->SampleDuration; //Negative if 0x80000000 or more
+        Ctts_Remaining--;
+        Stts_Remaining--;
+    }
+    return First;
+}
+
+//---------------------------------------------------------------------------
 void File_Mpeg4::stream::moov_trak_mdia_minf_stbl_stts_Common(int32u SampleCount, int32u SampleDuration, int32u Pos, int32u NumberOfEntries)
 {
     stts_struct Stts;
