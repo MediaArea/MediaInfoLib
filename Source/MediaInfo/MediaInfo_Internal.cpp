@@ -1336,7 +1336,14 @@ void MediaInfo_Internal::Entry()
 
     #if defined(MEDIAINFO_DIRECTORY_YES)
         else if (Dir::Exists(Config.File_Names[0]))
+        {
             Reader_Directory().Format_Test(this, Config.File_Names[0]);
+
+            #if MEDIAINFO_NEXTPACKET
+                if (Config.NextPacket_Get() && Reader) //A clip of the directory is being read
+                    return;
+            #endif //MEDIAINFO_NEXTPACKET
+        }
     #endif //MEDIAINFO_DIRECTORY_YES
 
     #if defined(MEDIAINFO_FILE_YES)
