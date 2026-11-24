@@ -91,29 +91,27 @@ int Reader_Directory::Bdmv_Format_Test(MediaInfo_Internal* MI, const String &Fil
 #ifdef MEDIAINFO_BDMV_YES
 void Reader_Directory::Bdmv_Directory_Cleanup(ZtringList &List)
 {
-    //if there is a BDMV folder, this is blu-ray
-    Ztring ToSearch=__T("index.bdmv");
+    //if there is a BDMV folder, this is blu-ray, for each disc of the list
     for (size_t File_Pos=0; File_Pos<List.size(); File_Pos++)
     {
         size_t Name_Pos=List[File_Pos].size()-FileName::FullName_Get(List[File_Pos]).size();
-        if (Name_Pos && Name_Pos+10==List[File_Pos].size() && !List[File_Pos].compare(Name_Pos, 10, ToSearch) && FileName::FolderName_Get(List[File_Pos])==__T("BDMV"))
+        if (Name_Pos && Name_Pos+10==List[File_Pos].size() && !List[File_Pos].compare(Name_Pos, 10, __T("index.bdmv")) && FileName::FolderName_Get(List[File_Pos])==__T("BDMV"))
         {
             //This is a BDMV index, parsing the directory only if index and movie objects are BOTH present
-            ToSearch=List[File_Pos];
-            ToSearch.resize(ToSearch.size()-10);
-            ToSearch+=__T("MovieObject.bdmv");  //"%CompletePath%\BDMV\MovieObject.bdmv"
-            if (List.Find(ToSearch)!=string::npos)
+            Ztring Path=List[File_Pos].substr(0, Name_Pos); //"%CompletePath%\BDMV\"
+            if (List.Find(Path+__T("MovieObject.bdmv"))!=string::npos)
             {
                 //We want the folder instead of the files
-                List[File_Pos].resize(List[File_Pos].size()-11); //only %CompletePath%\BDMV
-                ToSearch=List[File_Pos];
+                List[File_Pos]=FileName::FolderPath_Get(List[File_Pos]); //only %CompletePath%\BDMV
 
                 for (size_t Pos=0; Pos<List.size(); Pos++)
                 {
-                    if (List[Pos].find(ToSearch)==0 && List[Pos]!=ToSearch) //Remove all subdirs of ToSearch but not ToSearch
+                    if (!List[Pos].compare(0, Path.size(), Path)) //Remove all subdirs of the BDMV folder, not the ones of a folder whose name starts with BDMV
                     {
                         //Removing the file in the blu-ray directory
                         List.erase(List.begin()+Pos);
+                        if (Pos<File_Pos)
+                            File_Pos--;
                         Pos--;
                     }
                 }
