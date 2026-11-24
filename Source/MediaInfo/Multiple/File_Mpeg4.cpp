@@ -943,6 +943,8 @@ void File_Mpeg4::Streams_Finish()
                         if (Temp->second.tkhd_Duration>=Temp->second.edts[0].Duration) //Not with a last edit of 0 in fragments
                             Temp->second.tkhd_Duration-=Temp->second.edts[0].Duration;
                         Delay/=moov_mvhd_TimeScale; //In seconds
+                        if (Temp->second.mdhd_TimeScale)
+                            Delay-=((float64)Temp->second.edts[1].Delay)/Temp->second.mdhd_TimeScale; //Position of the media time 0
                     }
                     break;
             default:
