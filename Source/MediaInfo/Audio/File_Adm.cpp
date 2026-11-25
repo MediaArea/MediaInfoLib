@@ -5380,6 +5380,7 @@ void file_adm_private::clear()
     IsLocalTimeReference = false;
     IsPartial = false;
     profileInfos.clear();
+    loudnessMetadata_Source.clear();
 }
 
 int file_adm_private::coreMetadata()
