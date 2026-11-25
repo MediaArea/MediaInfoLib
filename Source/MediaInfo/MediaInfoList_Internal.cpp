@@ -20,11 +20,11 @@
 #include "MediaInfo/MediaInfo_Config.h"
 #if defined(MEDIAINFO_FILE_YES)
 #include "ZenLib/File.h"
-#include "ZenLib/FileName.h"
 #endif //defined(MEDIAINFO_FILE_YES)
 #if defined(MEDIAINFO_DIRECTORY_YES)
 #include "ZenLib/Dir.h"
 #endif //defined(MEDIAINFO_DIRECTORY_YES)
+#include "ZenLib/FileName.h"
 #include "MediaInfo/Reader/Reader_Directory.h"
 #include "MediaInfo/File__Analyse_Automatic.h"
 #include <algorithm>
@@ -99,14 +99,10 @@ size_t MediaInfoList_Internal::Open(const String &File_Name, const fileoptions_t
             if (MediaInfoLib::Config.ParseOnlyKnownExtensions_IsSet())
             {
                 set<Ztring> ExtensionsList=MediaInfoLib::Config.ParseOnlyKnownExtensions_GetList_Set();
-                bool AcceptNoExtension=ExtensionsList.find(Ztring())!=ExtensionsList.end();
                 for (size_t i=List.size()-1; i!=(size_t)-1; i--)
                 {
-                    const Ztring& Name=List[i];
-                    size_t Extension_Pos=Name.rfind(__T('.'));
-                    if (Extension_Pos!=string::npos && ExtensionsList.find(Name.substr(Extension_Pos+1))==ExtensionsList.end()
-                     || Extension_Pos==string::npos && !AcceptNoExtension)
-                            List.erase(List.begin()+i);
+                    if (ExtensionsList.find(FileName::Extension_Get(List[i]))==ExtensionsList.end())
+                        List.erase(List.begin()+i);
                 }
             }
         #endif //MEDIAINFO_ADVANCED
