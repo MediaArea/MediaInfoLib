@@ -207,7 +207,7 @@ bool File_DcpAm::FileHeader_Begin()
         MI.Option(__T("ParseSpeed"), __T("0"));
         MI.Option(__T("Demux"), Ztring());
         MI.Option(__T("File_IsReferenced"), __T("1"));
-        size_t MiOpenResult=MI.Open(FileName::FromFolder_Get(File_Name, PKL_FileName));
+        size_t MiOpenResult=ReferenceFiles->Open_Related(MI, FileName::FromFolder_Get(File_Name, PKL_FileName));
         MI.Option(__T("ParseSpeed"), ParseSpeed_Save); //This is a global value, need to reset it. TODO: local value
         MI.Option(__T("Demux"), Demux_Save); //This is a global value, need to reset it. TODO: local value
         if (MiOpenResult

@@ -1462,6 +1462,7 @@ void MediaInfo_Internal::Entry()
                 else
                 {
                     const Ztring Dxw_Name=Config.File_Names[0]+__T(".dxw"); //As a DXW file next to the file, its name is never the one of the main file (circular reference), also for a main file without extension or with the DXW extension
+                    Config.File_IsSideCarDxw=true;
                     Open_Buffer_Init(Dxw.size(), Dxw_Name);
                     Open_Buffer_Continue((const int8u*)Dxw.c_str(), Dxw.size());
                     {
@@ -1963,6 +1964,9 @@ void MediaInfo_Internal::Close()
     #if !defined(MEDIAINFO_READER_NO)
         delete Reader; Reader=NULL;
     #endif //defined(MEDIAINFO_READER_NO)
+    #if defined(MEDIAINFO_REFERENCES_YES)
+        Config.File_IsSideCarDxw=false;
+    #endif //defined(MEDIAINFO_REFERENCES_YES)
 }
 
 //***************************************************************************

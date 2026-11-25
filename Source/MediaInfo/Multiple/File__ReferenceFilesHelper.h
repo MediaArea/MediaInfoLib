@@ -43,6 +43,7 @@ public :
 
     //Streams management
     void ParseReferences();
+    size_t Open_Related(MediaInfo_Internal &MI_Related, const Ztring &Name); //A file related to the file, not one of its sequences (e.g. the asset map of a DCP/IMF packing list), as a referenced file
 
 private :
     sequences                       Sequences;
@@ -94,6 +95,8 @@ private :
     void   FileSize_Compute();
     void   CountOfReferences_ForReadSize_Run();
     MediaInfo_Internal* MI_Create();
+    const ZtringList& Names_Referencing();
+    ZtringList                      File_Names_Referencing;
     #if MEDIAINFO_ADVANCED || MEDIAINFO_HASH
         void   List_Compute();
     #endif //MEDIAINFO_ADVANCED || MEDIAINFO_HASH

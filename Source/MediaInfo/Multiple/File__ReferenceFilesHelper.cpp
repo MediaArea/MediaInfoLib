@@ -146,6 +146,40 @@ static Ztring File__ReferenceFilesHelper_FileName(const File__Analyze* MI)
 }
 
 //---------------------------------------------------------------------------
+// Levels of referenced files analyzed below the opened file, real packages have 3 or 4 levels (e.g. ASSETMAP, PKL, CPL, MXF) and the count of
+// opened files grows with each level
+static const size_t File__ReferenceFilesHelper_Levels_Max=7;
+
+//---------------------------------------------------------------------------
+// The files referenced by a file are beyond the last level, Names_Referencing having the real names of this file and of the files which
+// reference it, one per level
+static bool File__ReferenceFilesHelper_IsBeyondLevels(const ZtringList& Names_Referencing)
+{
+    return Names_Referencing.size()>File__ReferenceFilesHelper_Levels_Max;
+}
+
+//---------------------------------------------------------------------------
+// A file referenced by a sequence (one of the first Names_Count names) is the file which references it or one of the files which reference
+// this file, whose real names are in Names_Referencing; also a file beyond the last level, circular or not
+static bool File__ReferenceFilesHelper_IsCircular(const ZtringList& Names, size_t Names_Count, const ZtringList& Names_Referencing)
+{
+    if (File__ReferenceFilesHelper_IsBeyondLevels(Names_Referencing))
+        return true;
+    for (size_t Pos=0; Pos<Names.size() && Pos<Names_Count; Pos++)
+    {
+        const Ztring Name=File::RealName_Get(Names[Pos]);
+        for (size_t Referencing_Pos=0; Referencing_Pos<Names_Referencing.size(); Referencing_Pos++)
+            #ifdef __WINDOWS__
+            if (Name.Compare(Names_Referencing[Referencing_Pos])) //The case is the one of the listed name if the real name is unknown
+            #else //__WINDOWS__
+            if (Name==Names_Referencing[Referencing_Pos])
+            #endif //__WINDOWS__
+                return true;
+    }
+    return false;
+}
+
+//---------------------------------------------------------------------------
 // The listed name is from the folder of the file which lists it, not from the root, a drive, a server or an URL
 static bool File__ReferenceFilesHelper_IsRelative(const Ztring& Name)
 {
@@ -889,7 +923,7 @@ void File__ReferenceFilesHelper::ParseReferences()
             if (!AbsoluteNames.empty())
                 Sequences[Sequences_Current]->FileNames=AbsoluteNames;
 
-            if (!AbsoluteNames.empty() && AbsoluteNames[0]==File_Name)
+            if (!AbsoluteNames.empty() && File__ReferenceFilesHelper_IsCircular(AbsoluteNames, FilesForStorage?AbsoluteNames.size():1, Names_Referencing()))
             {
                 Sequences[Sequences_Current]->IsCircular=true;
                 Sequences[Sequences_Current]->FileNames.clear();
@@ -1147,6 +1181,7 @@ bool File__ReferenceFilesHelper::ParseReference_Init()
                 MediaInfo_Internal MI2;
                 MI2.Option(__T("File_KeepInfo"), __T("1"));
                 MI2.Option(__T("File_FileNameFormat"), __T("CSV"));
+                MI2.Config.File_Names_Referencing=Names_Referencing();
                 Ztring ParseSpeed_Save=MI2.Option(__T("ParseSpeed_Get"), __T("0"));
                 Ztring Demux_Save=MI2.Option(__T("Demux_Get"), __T(""));
                 MI2.Option(__T("ParseSpeed"), __T("0"));
@@ -1508,6 +1543,7 @@ void File__ReferenceFilesHelper::ParseReference_Finalize_PerStream ()
             MI2.Option(__T("File_DisplayCaptions"), Config->Option(__T("File_DisplayCaptions_Get"), Ztring())); //Same list of streams as the parsing of the sequence
             MI2.Option(__T("File_ProbeCaption"), Config->File_ProbeCaption_Get());
             MI2.Config.File_ProbeCaption_QuickPass=Config->ParseSpeed>0;
+            MI2.Config.File_Names_Referencing=Names_Referencing();
             Ztring ParseSpeed_Save=MI2.Option(__T("ParseSpeed_Get"), __T(""));
             Ztring Demux_Save=MI2.Option(__T("Demux_Get"), __T(""));
             MI2.Option(__T("ParseSpeed"), __T("0"));
@@ -1824,10 +1860,35 @@ void File__ReferenceFilesHelper::List_Compute()
 #endif //MEDIAINFO_ADVANCED || MEDIAINFO_HASH
 
 //---------------------------------------------------------------------------
+// Real names of the file and of the files which reference it, without the DXW built in memory for the side-car files of the opened file
+const ZtringList& File__ReferenceFilesHelper::Names_Referencing()
+{
+    if (File_Names_Referencing.empty())
+    {
+        File_Names_Referencing=Config->File_Names_Referencing;
+        if (!Config->File_IsSideCarDxw)
+            File_Names_Referencing.push_back(File::RealName_Get(File__ReferenceFilesHelper_FileName(MI)));
+    }
+    return File_Names_Referencing;
+}
+
+//---------------------------------------------------------------------------
+// Opened as one level of referenced files below the file, not beyond the last level; not tested for a circular reference, the files of a
+// package listing each other (e.g. a DCP/IMF packing list and its asset map), the levels stop a loop
+size_t File__ReferenceFilesHelper::Open_Related(MediaInfo_Internal &MI_Related, const Ztring &Name)
+{
+    if (File__ReferenceFilesHelper_IsBeyondLevels(Names_Referencing()))
+        return 0;
+    MI_Related.Config.File_Names_Referencing=Names_Referencing();
+    return MI_Related.Open(Name);
+}
+
+//---------------------------------------------------------------------------
 MediaInfo_Internal* File__ReferenceFilesHelper::MI_Create()
 {
     //Configuration
     MediaInfo_Internal* MI_Temp=new MediaInfo_Internal();
+    MI_Temp->Config.File_Names_Referencing=Names_Referencing();
     MI_Temp->Option(__T("File_DisplayCaptions"), Config->Option(__T("File_DisplayCaptions_Get"), Ztring()));
     MI_Temp->Option(__T("File_ProbeCaption"), Config->File_ProbeCaption_Get());
     for (std::map<string, Ztring>::iterator Config_Item=Sequences[Sequences_Current]->Config.begin(); Config_Item!=Sequences[Sequences_Current]->Config.end(); ++Config_Item)

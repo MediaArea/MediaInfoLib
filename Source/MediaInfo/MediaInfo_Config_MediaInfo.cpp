@@ -270,6 +270,9 @@ MediaInfo_Config_MediaInfo::MediaInfo_Config_MediaInfo()
     File_IsGrowing=false;
     File_IsNotGrowingAnymore=false;
     File_IsImageSequence=false;
+    #if defined(MEDIAINFO_REFERENCES_YES)
+    File_IsSideCarDxw=false;
+    #endif //defined(MEDIAINFO_REFERENCES_YES)
     #if defined(MEDIAINFO_EIA608_YES)
     File_Scte20_IsPresent=false;
     #endif //defined(MEDIAINFO_EIA608_YES)
