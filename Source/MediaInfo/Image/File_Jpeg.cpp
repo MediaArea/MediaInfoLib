@@ -1285,15 +1285,16 @@ void File_Jpeg::SIZ()
 void File_Jpeg::COD()
 {
     //Parsing
-    int8u Style, Style2, Levels, MultipleComponentTransform;
+    int8u Style, Style2, Levels, Transformation;
     bool PrecinctUsed;
     Get_B1 (Style,                                              "Scod - Style");
         Get_Flags (Style, 0, PrecinctUsed,                      "Precinct used");
         Skip_Flags(Style, 1,                                    "Use SOP (start of packet)");
         Skip_Flags(Style, 2,                                    "Use EPH (end of packet header)");
-    Get_B1 (Levels,                                             "Number of decomposition levels");
     Skip_B1(                                                    "Progression order");
     Skip_B2(                                                    "Number of layers");
+    Skip_B1(                                                    "Multiple component transform");
+    Get_B1 (Levels,                                             "Number of decomposition levels");
     Info_B1(DimX,                                               "Code-blocks dimensions X (2^(n+2))"); Param_Info2(1<<(DimX+2), " pixels");
     Info_B1(DimY,                                               "Code-blocks dimensions Y (2^(n+2))"); Param_Info2(1<<(DimY+2), " pixels");
     Get_B1 (Style2,                                             "Style of the code-block coding passes");
@@ -1303,20 +1304,19 @@ void File_Jpeg::COD()
         Skip_Flags(Style2, 3,                                   "Vertically stripe-causal context formation");
         Skip_Flags(Style2, 4,                                   "Error resilience info is embedded on MQ termination");
         Skip_Flags(Style2, 5,                                   "Segmentation marker is to be inserted at the end of each normalization coding pass");
-    Skip_B1(                                                    "Transform");
-    Get_B1(MultipleComponentTransform,                          "Multiple component transform");
+    Get_B1 (Transformation,                                     "Transformation");
     if (PrecinctUsed)
     {
         BS_Begin();
-        Skip_S1(4,                                              "LL sub-band width");
         Skip_S1(4,                                              "LL sub-band height");
+        Skip_S1(4,                                              "LL sub-band width");
         BS_End();
         for (int16u Pos=0; Pos<Levels; Pos++)
         {
             Element_Begin1("Decomposition level");
             BS_Begin();
-            Skip_S1(4,                                          "decomposition level width");
             Skip_S1(4,                                          "decomposition level height");
+            Skip_S1(4,                                          "decomposition level width");
             BS_End();
             Element_End0();
         }
@@ -1325,7 +1325,7 @@ void File_Jpeg::COD()
     FILLING_BEGIN();
         if (Frame_Count==0 && Field_Count==0)
         {
-            switch (MultipleComponentTransform)
+            switch (Transformation)
             {
                 case 0x01 : Fill(StreamKind_Last, StreamPos_Last, "Compression_Mode", "Lossless", Unlimited, true, true); break;
                 case 0x02 : Fill(StreamKind_Last, StreamPos_Last, "Compression_Mode", "Lossy", Unlimited, true, true); break;
