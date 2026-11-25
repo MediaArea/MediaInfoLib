@@ -1515,7 +1515,7 @@ void File_Jpeg::SOF_(int8u Encoding)
             case 0x7:
             case 0xB:
             case 0xF:
-                Fill(StreamKind_Last, StreamPos_Last, Image_Compression_Mode, "Lossless", Unlimited, true, true);
+                Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Compression_Mode), "Lossless", Unlimited, true, true);
                 break;
             default:
                 break;
