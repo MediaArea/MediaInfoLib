@@ -8089,6 +8089,16 @@ bool File_Adm::audioProgramme_Get(const string& ID, string& Name, string& FirstL
     return false;
 }
 
+string File_Adm::FrameType_Get()
+{
+    if (!File_Adm_Private)
+        return {};
+    const auto& FrameFormats = File_Adm_Private->Items[item_frameFormat].Items;
+    if (FrameFormats.empty() || FrameFormats.back().Attributes.size() <= frameFormat_type)
+        return {};
+    return FrameFormats.back().Attributes[frameFormat_type];
+}
+
 const File_Adm::broadcast_metadata* File_Adm::BroadcastMetadata_Get()
 {
     if (!File_Adm_Private)

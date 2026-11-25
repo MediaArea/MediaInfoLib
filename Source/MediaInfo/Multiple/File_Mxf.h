@@ -237,6 +237,7 @@ protected :
     void ContainerConstraintsSubDescriptor();
     void ACESPictureSubDescriptor();
     void TargetFrameSubDescriptor();
+    void IABChannelSubDescriptor();
     void MPEG4VisualSubDescriptor();
     void AudioChannelLabelSubDescriptor();
     void SoundfieldGroupLabelSubDescriptor();
@@ -922,6 +923,8 @@ protected :
         int64u Stream_Size;
         int64u Element_Size_Constant; //Size of parsed elements if it is always the same, 0 if no element is parsed, (int64u)-1 if not constant
         int64u Element_Count; //Count of parsed complete elements
+        int64u Element_Key; //Low part of the key of the last parsed element
+        std::set<int64u> Element_Starts; //Distinct offsets of the value of parsed elements, limited to the first ones
         int32u TrackID;
         int32u BodySID;
         bool   TrackID_WasLookedFor;
@@ -946,6 +949,7 @@ protected :
             Stream_Size=(int64u)-1;
             Element_Size_Constant=0;
             Element_Count=0;
+            Element_Key=0;
             TrackID=(int32u)-1;
             BodySID=0;
             TrackID_WasLookedFor=false;
@@ -1712,6 +1716,7 @@ protected :
     std::set<int64u>                IndexTableSegments_StreamOffsets; //Stream offset of each Index Table Segment, for not storing a segment parsed again
     std::string                     IndexTableSegment_Flags; //Flags of each index entry of the index table segment being parsed
     std::vector<int32u>             ContentPackage_Elements; //Track Number of essence elements, in order of first appearance
+    std::set<int64u>                ContentPackage_Elements_Keys; //Low part of the keys of essence elements, limited to the first ones
     bool                            ContentPackage_SystemItemIsFirst;
     bool                            SDTI_PackageMetadataSet_IsPresent;
     bool                            PrivateMetadata_IsPresent;
@@ -1748,9 +1753,13 @@ protected :
         bool                        St20675_IsRequested; //SMPTE ST 2067-5 requested by the user, conformance errors are reported
         bool                        St206721_IsRequested; //SMPTE ST 2067-21 requested by the user, conformance errors are reported
         bool                        St206750_IsRequested; //SMPTE ST 2067-50 requested by the user, conformance errors are reported
+        bool                        St2067201_IsRequested; //SMPTE ST 2067-201 requested by the user, conformance errors are reported
+        bool                        St2067202_IsRequested; //SMPTE ST 2067-202 requested by the user, conformance errors are reported
+        bool                        St2067203_IsRequested; //SMPTE ST 2067-203 requested by the user, conformance errors are reported
         struct imf_image
         {
-            const std::string*      Duration=nullptr; //Of the Picture Track
+            const std::string*      Duration=nullptr; //Of the Essence Track
+            const std::string*      EditRate=nullptr; //Of the Essence Track
             const properties*       Properties=nullptr; //Of the File Descriptor
             bool                    IsInMultipleDescriptor=false;
             int64u                  DescriptorKey=0;
@@ -1758,8 +1767,24 @@ protected :
             std::vector<int128u>    SubDescriptors;
             int32u                  TrackID=(int32u)-1;
             int32u                  TrackNumber=0;
+            char                    TrackKind='\0';
         };
-        bool ImfImage_Get (imf_image& Image); //File Descriptor and Picture Track of the Top-Level File Package, returns false if there is no File Descriptor
+        bool ImfImage_Get (imf_image& Image, char Kind='V'); //File Descriptor and Essence Track of this kind (any kind if 0) of the Top-Level File Package, returns false if there is no File Descriptor
+        bool ImfEssences_Get (std::vector<imf_image>& Images, char Kind='V'); //Essence of the Top-Level File Package, else all the File Descriptors in use and returns false
+        size_t ConformsToSpecifications_Count (const std::string& Label);
+        bool ImfImage_Track (imf_image& Image, const package& Package, char Kind, int32u LinkedTrackID, bool TrackID_IsRequired); //Items of the Essence Track, returns false if there is not exactly one track with this TrackID in case it is required
+        void ImfPlugin_Elements (const imf_image& Image, const char* Name, int64u Key_Expected, conformance_errors& Errors);
+        void ImfPlugin_EditRate (const imf_image& Image, conformance_errors& Errors);
+        void ImfPlugin_Sound (const imf_image& Image, const char* Name, int64u TrackNumber_Expected, conformance_errors& Errors, conformance_errors& Warnings);
+        void CompliantWith_St2067201_Essence (const imf_image& Image, conformance_errors& Errors, conformance_errors& Warnings);
+        conformance_errors CompliantWith_St2067201 (bool WithTrackFile, conformance_errors& Warnings); //IAB Track File, with the overall constraints of IMF Track Files if WithTrackFile, Warnings are filled with the recommendations not followed
+        void CompliantWith_St2067202_Essence (const imf_image& Image, conformance_errors& Errors, conformance_errors& Warnings);
+        conformance_errors CompliantWith_St2067202 (bool WithTrackFile, conformance_errors& Warnings); //ISXD Track File, with the overall constraints of IMF Track Files if WithTrackFile
+        void CompliantWith_St2127 (const imf_image& Image, conformance_errors& Errors); //MGA signals with S-ADM metadata
+        void CompliantWith_St2067203_Essence (const imf_image& Image, conformance_errors& Errors, conformance_errors& Warnings);
+        conformance_errors CompliantWith_St2067203 (conformance_errors& Warnings); //MGA S-ADM Track File, with Operational Mode A, Warnings are filled with the recommendations not followed
+        bool CompliantWith_ImfPlugins_IsTested (); //All partitions are needed for a Track File of a plug-in
+        void Streams_Finish_CompliantWith_ImfPlugins ();
         void ImfImage_Generic (const imf_image& Image, conformance_errors& Errors);
         void ImfImage_MasteringDisplay (const properties& Properties, const int64u* Keys, const char* Prefix, conformance_errors& Errors, conformance_errors& Warnings); //4 keys
         void Jp2k_Restrictions (const std::map<int16u, std::string>& MainHeader, conformance_errors& Errors, conformance_errors& Warnings); //Codestream restrictions of the JPEG 2000 profiles

@@ -48,6 +48,7 @@ public :
     vector<string> ID_List(const string& Element); //IDs of all elements with this name, e.g. "audioTrackUID"
     bool audioTrackUID_Get(const string& UID, string& TrackFormatIDRef, string& ChannelFormatIDRef, string& PackFormatIDRef); //Returns false if the UID is not present
     bool audioProgramme_Get(const string& ID, string& Name, string& FirstLabel); //Returns false if the ID is not present
+    string FrameType_Get(); //Type of the last S-ADM frame, empty if it is not S-ADM
     size_t audioFormatExtended_Count();
     struct broadcast_metadata // Broadcast metadata e.g. converted from BWF bext or ubxt chunks (ITU-R BS.2088-2 11)
     {

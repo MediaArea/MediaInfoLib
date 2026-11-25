@@ -2223,6 +2223,9 @@ File_Mxf::File_Mxf()
         St20675_IsRequested=MxfProfiles.find(",SMPTE_ST_2067-5,")!=string::npos;
         St206721_IsRequested=MxfProfiles.find(",SMPTE_ST_2067-21,")!=string::npos;
         St206750_IsRequested=MxfProfiles.find(",SMPTE_ST_2067-50,")!=string::npos;
+        St2067201_IsRequested=MxfProfiles.find(",SMPTE_ST_2067-201,")!=string::npos;
+        St2067202_IsRequested=MxfProfiles.find(",SMPTE_ST_2067-202,")!=string::npos;
+        St2067203_IsRequested=MxfProfiles.find(",SMPTE_ST_2067-203,")!=string::npos;
         RiffChunks_ErrorCount=0;
         McaLabels_ErrorCount=0;
     #endif //MEDIAINFO_CONFORMANCE
@@ -7557,8 +7560,8 @@ void File_Mxf::Jp2k_Restrictions (const map<int16u, string>& MainHeader, conform
 }
 
 //---------------------------------------------------------------------------
-// File Descriptor, key of the File Descriptor, Essence Track of an IMF Image Track File
-bool File_Mxf::ImfImage_Get (imf_image& Image)
+// File Descriptor, key of the File Descriptor, Essence Track of an IMF Track File
+bool File_Mxf::ImfImage_Get (imf_image& Image, char Kind)
 {
     if (IsSub)
         return false;
@@ -7574,13 +7577,27 @@ bool File_Mxf::ImfImage_Get (imf_image& Image)
     Image.EssenceContainer=Descriptor->second.EssenceContainer;
     Image.Properties=&SetProperties_Get(Package.Descriptor, Image.DescriptorKey);
     Image.SubDescriptors=SubDescriptors_Get(Package.Descriptor);
+    ImfImage_Track(Image, Package, Kind, Descriptor->second.LinkedTrackID, false);
+    return true;
+}
+
+//---------------------------------------------------------------------------
+bool File_Mxf::ImfImage_Track (imf_image& Image, const package& Package, char Kind, int32u LinkedTrackID, bool TrackID_IsRequired)
+{
     vector<track_info> Tracks_List;
     string Kinds;
     conformance_errors Tracks_Errors; //Reported elsewhere
     Package_Tracks(Package, Tracks_List, Kinds, Tracks_Errors);
+    if (TrackID_IsRequired && count_if(Tracks_List.begin(), Tracks_List.end(), [&](const track_info& Track) { return Track.Track->second.TrackID==LinkedTrackID; })!=1)
+        return false;
+    auto IsFound=false;
     for (const auto& Track : Tracks_List)
-        if (Track.Kind=='V')
+        if ((Kind?Track.Kind==Kind:(Track.Kind=='V' || Track.Kind=='A' || Track.Kind=='D'))
+         && ((!IsFound && !TrackID_IsRequired) || Track.Track->second.TrackID==LinkedTrackID)) //The first one, or the one linked to the descriptor
         {
+            IsFound=true;
+            Image.EditRate=Property_Get(*Track.Properties, 0x4B01);
+            Image.TrackKind=Track.Kind;
             Image.TrackID=Track.Track->second.TrackID;
             Image.TrackNumber=Track.TrackNumber;
             Image.Duration=nullptr;
@@ -7588,7 +7605,7 @@ bool File_Mxf::ImfImage_Get (imf_image& Image)
             if (Sequence!=SetProperties.end())
                 Image.Duration=Property_Get(Sequence->second, 0x0202);
         }
-    return true;
+    return IsFound;
 }
 
 //---------------------------------------------------------------------------
@@ -8421,27 +8438,7 @@ void File_Mxf::Streams_Finish_CompliantWith_ImfImage ()
     //SMPTE ST 2065-5 is declared by the Essence Container label, and the sub-descriptors are defined by SMPTE ST 2067-50: their compliance is mandatory, it is checked without request, and SMPTE ST 2067-50 is not listed unless requested if there are such sub-descriptors
     auto St206750_IsDeclared=false;
     vector<imf_image> Images;
-    imf_image Image_Main;
-    const auto Image_Main_IsPresent=ImfImage_Get(Image_Main);
-    if (Image_Main_IsPresent)
-        Images.push_back(Image_Main);
-    else
-    {
-        const auto InUse=Descriptors_InUse();
-        for (const auto& Descriptor : Descriptors)
-        {
-            imf_image Image;
-            Image.DescriptorKey=SetKey_FileDescriptor_Get(Descriptor.first);
-            if (!Image.DescriptorKey || Image.DescriptorKey==Groups::MultipleDescriptor || (!InUse.empty() && InUse.find(Descriptor.first)==InUse.end()))
-                continue;
-            Image.EssenceContainer=Descriptor.second.EssenceContainer;
-            Image.Properties=&SetProperties_Get(Descriptor.first, Image.DescriptorKey);
-            Image.SubDescriptors=SubDescriptors_Get(Descriptor.first);
-            Image.TrackID=Descriptor.second.LinkedTrackID;
-            Image.IsInMultipleDescriptor=true;
-            Images.push_back(Image);
-        }
-    }
+    const auto Image_Main_IsPresent=ImfEssences_Get(Images);
     for (const auto& Image : Images)
     {
         if ((Image.EssenceContainer.lo&0xFFFFFFFFFFFF0000LL)!=Labels::MXFGCACESPictures)
@@ -8468,6 +8465,828 @@ void File_Mxf::Streams_Finish_CompliantWith_ImfImage ()
         {
             Fill_Conformance_Specification("MXF MxfProfile", "SMPTE_ST_2067-50", Errors);
             Fill_Conformance_Specification("MXF MxfProfile", "SMPTE_ST_2067-50", Warnings, Conformance_Warning);
+        }
+    }
+}
+
+//---------------------------------------------------------------------------
+// Essence of the Top-Level File Package, else (e.g. Multiple Descriptor) all the File Descriptors in use
+bool File_Mxf::ImfEssences_Get (vector<imf_image>& Images, char Kind)
+{
+    imf_image Image_Main;
+    if (ImfImage_Get(Image_Main, Kind))
+    {
+        Images.push_back(Image_Main);
+        return true;
+    }
+    vector<int128u> MaterialPackages, TopLevelPackages, EssenceContainerDatas;
+    ContentStorage_Packages_Get(MaterialPackages, TopLevelPackages, EssenceContainerDatas);
+    const auto InUse=Descriptors_InUse();
+    for (const auto& Descriptor : Descriptors)
+    {
+        imf_image Image;
+        Image.DescriptorKey=SetKey_FileDescriptor_Get(Descriptor.first);
+        if (!Image.DescriptorKey || Image.DescriptorKey==Groups::MultipleDescriptor || (!InUse.empty() && InUse.find(Descriptor.first)==InUse.end()))
+            continue;
+        Image.EssenceContainer=Descriptor.second.EssenceContainer;
+        Image.Properties=&SetProperties_Get(Descriptor.first, Image.DescriptorKey);
+        Image.SubDescriptors=SubDescriptors_Get(Descriptor.first);
+        Image.TrackID=Descriptor.second.LinkedTrackID;
+        if (!IsSub && TopLevelPackages.size()==1 && Image.TrackID!=(int32u)-1)
+            ImfImage_Track(Image, Packages[TopLevelPackages[0]], 0, Image.TrackID, true);
+        Image.IsInMultipleDescriptor=true;
+        Images.push_back(Image);
+    }
+    return false;
+}
+
+//---------------------------------------------------------------------------
+// Count of a specification label in the Conforms To Specifications item of the Preface
+size_t File_Mxf::ConformsToSpecifications_Count (const string& Label)
+{
+    const auto Value=Property_Get(SetProperties_Get(Preface_Current), Elements::ConformsToSpecifications);
+    if (!Value || Value->size()<8 || BigEndian2int32u(Value->data()+4)!=16)
+        return 0;
+    size_t Count=0;
+    for (size_t i=8; i+16<=Value->size(); i+=16)
+        if (Raw_IsSame(Value->substr(i, 16), Label))
+            Count++;
+    return Count;
+}
+
+//---------------------------------------------------------------------------
+// Keys of the essence elements parsed, the Element Count and the Element Number are not tested
+void File_Mxf::ImfPlugin_Elements (const imf_image& Image, const char* Name, int64u Key_Expected, conformance_errors& Errors)
+{
+    if (Image.IsInMultipleDescriptor || ContentPackage_Elements.empty()) //Elements of other tracks, or not parsed e.g. encrypted
+        return;
+    for (const auto Key : ContentPackage_Elements_Keys)
+        if ((Key&0xFFFFFFFFFF00FF00LL)!=Key_Expected)
+            Errors.Add(string("Essence element is not ")+Name+" (actual key 060E2B34 010201xx "+Raw_Hex(Raw_UInt(Key>>32, 4))+' '+Raw_Hex(Raw_UInt(Key&0xFFFFFFFF, 4))+')');
+    if (Image.TrackNumber && Image.TrackNumber!=(int32u)-1 && find(ContentPackage_Elements.begin(), ContentPackage_Elements.end(), Image.TrackNumber)==ContentPackage_Elements.end())
+        Errors.Add("Track Number is not the one of an essence element (actual "+Raw_Hex(Raw_UInt(Image.TrackNumber, 4))+')');
+}
+
+//---------------------------------------------------------------------------
+// Edit Rate of the Essence Track is the Sample Rate of the File Descriptor
+void File_Mxf::ImfPlugin_EditRate (const imf_image& Image, conformance_errors& Errors)
+{
+    const auto SampleRate=Property_Get(*Image.Properties, 0x3001);
+    if (SampleRate && Image.EditRate && SampleRate->size()==8 && Image.EditRate->size()==8
+     && (int64u)BigEndian2int32u(SampleRate->data())*BigEndian2int32u(Image.EditRate->data()+4)!=(int64u)BigEndian2int32u(Image.EditRate->data())*BigEndian2int32u(SampleRate->data()+4))
+        Errors.Add("Sample Rate is not the Edit Rate of the Essence Track (actual "+Raw_Text(*SampleRate, true)+", expected "+Raw_Text(*Image.EditRate, true)+')');
+}
+
+//---------------------------------------------------------------------------
+// Items of the Generic Sound Essence Descriptor and labels common to the IAB and MGA plug-ins
+void File_Mxf::ImfPlugin_Sound (const imf_image& Image, const char* Name, int64u TrackNumber_Expected, conformance_errors& Errors, conformance_errors& Warnings)
+{
+    const auto& Properties=*Image.Properties;
+
+    //Essence element, a Track Number of 0 is for essence which is not in the file
+    if (TrackNumber_Expected && Image.TrackNumber && Image.TrackNumber!=(int32u)-1 && (Image.TrackNumber&0xFF00FF00)!=(int32u)TrackNumber_Expected)
+        Errors.Add(string("Track Number is not the one of a clip-wrapped ")+Name+" Sound Element (actual "+Raw_Hex(Raw_UInt(Image.TrackNumber, 4))+')');
+    if (Image.TrackKind && Image.TrackKind!='A')
+        Errors.Add("Essence Track is not a Sound Essence Track");
+
+    //Descriptor
+    const auto ElectroSpatial=Property_Get(Properties, 0x3D05);
+    if (ElectroSpatial && *ElectroSpatial!=Raw_UInt(15, 1))
+        Errors.Add("Electro-Spatial Formulation is wrong (actual "+Raw_Text(*ElectroSpatial)+", expected 15)");
+    const vector<property_expected> List=
+    {
+        {0x3D01, "Quantization Bits", {Raw_UInt(24, 4)}, false},
+    };
+    Properties_Test(Properties, List, Errors);
+    if (!Property_Get(Properties, Elements::ReferenceImageEditRate))
+        Warnings.Add("Reference Image Edit Rate is not present");
+    if (!Property_Get(Properties, Elements::ReferenceAudioAlignmentLevel))
+        Warnings.Add("Reference Audio Alignment Level is not present");
+
+    //Labels
+    size_t OtherLabels=0;
+    for (const auto& SubDescriptor : Image.SubDescriptors)
+        if (SetKey_Is(SubDescriptor, Groups::AudioChannelLabelSubDescriptor) || SetKey_Is(SubDescriptor, Groups::SoundfieldGroupLabelSubDescriptor) || SetKey_Is(SubDescriptor, Groups::GroupOfSoundfieldGroupsLabelSubDescriptor)) //Also if another set of the same Header Metadata reuses its Instance UID
+            OtherLabels++;
+    if (OtherLabels)
+        Errors.Add("AudioChannelLabelSubDescriptor, SoundfieldGroupLabelSubDescriptor or GroupOfSoundfieldGroupsLabelSubDescriptor is present (actual "+to_string(OtherLabels)+')');
+}
+
+//---------------------------------------------------------------------------
+// IAB Track File (SMPTE ST 2067-201:2019, SMPTE ST 2067-201:2021 and SMPTE ST 2067-201:2026, items required by an edition and ignored by another one are not checked)
+// Not checked: value of RFC5646SpokenLanguage, MCA vocabulary (checked with the other MCA labels), Channel Count (0 in the 2019 edition, ignored since 2021), Stream Offset of the index entries (including KL since 2026), Duration of the Essence Track against the count of IAB frames, essence elements which are not parsed, Composition items
+void File_Mxf::CompliantWith_St2067201_Essence (const imf_image& Image, conformance_errors& Errors, conformance_errors& Warnings)
+{
+    const auto& Properties=*Image.Properties;
+    const auto Get=[&](int64u Key) { return Property_Get(Properties, Key); };
+    const auto Text=[&](const string* Value, bool IsRational=false) { return Value?Raw_Text(*Value, IsRational):string("none"); };
+
+    //Identification (5.2)
+    const auto Conforms=ConformsToSpecifications_Count(Raw_UL(0x060E2B340401010DLL, 0x0101020102000000LL));
+    if (Conforms!=1)
+        Errors.Add("Conforms To Specifications does not contain one IMF IAB Track File Level 0 label (actual "+to_string(Conforms)+')');
+
+    //Descriptor (5.9)
+    if (Image.EssenceContainer.lo!=0x0D010301021D0101LL)
+        Errors.Add("Essence Container is not the IMF clip-wrapped IAB one (actual "+Raw_Hex(Raw_UL(Image.EssenceContainer.hi, Image.EssenceContainer.lo))+", expected "+Raw_Hex(Raw_UL(0x060E2B340401010DLL, 0x0D010301021D0101LL))+')');
+    if (Image.DescriptorKey!=Groups::IABEssenceDescriptor)
+    {
+        Errors.Add("File Descriptor is not an IAB Essence Descriptor");
+        return;
+    }
+    ImfPlugin_EditRate(Image, Errors);
+    ImfPlugin_Sound(Image, "IAB", 0x16000D00, Errors, Warnings);
+    ImfPlugin_Elements(Image, "a clip-wrapped IAB Sound Element", 0x0D01030116000D00LL, Errors);
+    const auto Elements_Parsed=Essences.find(Image.TrackNumber);
+    if (Image.EssenceContainer.lo==0x0D010301021D0101LL && Elements_Parsed!=Essences.end() && Elements_Parsed->second.Element_Starts.size()>1)
+        Errors.Add("IAB is not contained in a single Sound Element");
+    if (Image.EditRate)
+        for (const auto& Segment : IndexTableSegments)
+        {
+            const auto IndexEditRate=Property_Get(Segment.Properties, 0x3F0B);
+            if (IndexEditRate && Mxf_Rational_Normalized(*IndexEditRate)!=Mxf_Rational_Normalized(*Image.EditRate))
+            {
+                Errors.Add("Index Edit Rate is not the Edit Rate of the Essence Track (actual "+Text(IndexEditRate, true)+", expected "+Text(Image.EditRate, true)+')');
+                break;
+            }
+        }
+    if (Get(0x3005))
+        Errors.Add("Codec is present");
+    const vector<property_expected> List=
+    {
+        {0x3D06, "Sound Essence Coding", {Raw_UL(0x060E2B3404010105LL, 0x0E09060400000000LL)}, false},
+        {0x3D03, "Audio Sampling Rate", {}, false},
+        {0x3001, "Sample Rate", {}, false},
+    };
+    Properties_Test(Properties, List, Errors);
+
+    //Labels (5.10, Annex C)
+    vector<const properties*> Labels;
+    vector<const properties*> Channels;
+    for (const auto& SubDescriptor : Image.SubDescriptors)
+    {
+        if (SetKey_Is(SubDescriptor, Groups::IABSoundfieldLabelSubDescriptor)) //Also if another set of the same Header Metadata reuses its Instance UID
+            Labels.push_back(&SetProperties_Get(SubDescriptor, Groups::IABSoundfieldLabelSubDescriptor));
+        if (SetKey_Is(SubDescriptor, Groups::IABChannelSubDescriptor))
+            Channels.push_back(&SetProperties_Get(SubDescriptor, Groups::IABChannelSubDescriptor));
+    }
+    if (Labels.size()!=1)
+        Errors.Add("File Descriptor does not reference one IAB Soundfield Label Sub-Descriptor (actual "+to_string(Labels.size())+')');
+    for (const auto Label : Labels)
+    {
+        const vector<property_expected> Label_List=
+        {
+            {Elements::MCALabelDictionaryID, "MCALabelDictionaryID", {Raw_UL(0x060E2B340401010DLL, 0x0302022100000000LL)}, false},
+            {Elements::MCALinkID, "MCALinkID", {}, false},
+        };
+        Properties_Test(*Label, Label_List, Errors);
+        for (const auto Key : {Elements::MCATagSymbol, Elements::MCATagName})
+        {
+            const char* Name=Key==Elements::MCATagSymbol?"MCATagSymbol":"MCATagName";
+            const auto Value=Property_Get(*Label, Key);
+            if (!Value)
+                Errors.Add(string(Name)+" is missing");
+            else if (Raw_UTF16_Get(Value)!="IAB")
+                Errors.Add(string(Name)+" is wrong (actual \""+Raw_UTF16_Get(Value)+"\", expected \"IAB\")");
+        }
+        if (Property_Get(*Label, Elements::MCAChannelID))
+            Errors.Add("MCAChannelID is present");
+        if (!Property_Get(*Label, Elements::MCATitle))
+            Warnings.Add("MCATitle is not present");
+        if (!Property_Get(*Label, Elements::MCATitleVersion))
+            Warnings.Add("MCATitleVersion is not present");
+        if (!Property_Get(*Label, Elements::MCAContent) && !Property_Get(*Label, Elements::MCAAudioContentKind)) //Legacy item is recommended before the 2026 edition
+            Warnings.Add("MCAContent is not present");
+        if (!Property_Get(*Label, Elements::MCAUseClass) && !Property_Get(*Label, Elements::MCAAudioElementKind))
+            Warnings.Add("MCAUseClass is not present");
+    }
+
+    //IAB Channel Sub-Descriptors (Annex E)
+    struct channel
+    {
+        const properties*   Properties;
+        int64u              BedMetaID;
+        int64u              ChannelID;
+        int64u              AudioDescription;
+    };
+    vector<channel> Channels_List;
+    for (const auto Channel : Channels)
+    {
+        channel Item;
+        Item.Properties=Channel;
+        static const struct { int64u Key; const char* Name; size_t Size; } Items[]=
+        {
+            {Elements::IABBedMetaID, "IABBedMetaID", 4},
+            {Elements::IABChannelID, "IABChannelID", 4},
+            {Elements::IABAudioDescription, "IABAudioDescription", 1},
+        };
+        int64u Values[3];
+        auto IsValid=true;
+        for (size_t i=0; i<3; i++)
+            if (!Raw_UInt_Get(Property_Get(*Channel, Items[i].Key), Items[i].Size, Values[i]))
+            {
+                Errors.Add(string(Items[i].Name)+" of an IAB Channel Sub-Descriptor is missing or not "+to_string(Items[i].Size)+(Items[i].Size>1?" bytes":" byte"));
+                IsValid=false;
+            }
+        if (!IsValid)
+            continue;
+        Item.BedMetaID=Values[0];
+        Item.ChannelID=Values[1];
+        Item.AudioDescription=Values[2];
+        if ((Values[2]&0x80) && !Property_Get(*Channel, Elements::IABAudioDescriptionText))
+            Errors.Add("IABAudioDescriptionText of an IAB Channel Sub-Descriptor is missing (IABAudioDescription "+to_string(Values[2])+')');
+        Channels_List.push_back(Item);
+    }
+
+    //Bitstream
+    #if defined(MEDIAINFO_IAB_YES)
+        const auto Essence=Essences.find(Image.TrackNumber);
+        if (Essence==Essences.end() || Essence->second.Parsers.size()!=1 || Essence->second.Parsers[0]->Retrieve_Const(Stream_Audio, 0, Audio_Format)!=__T("IAB"))
+            return;
+        const auto& Checks=((File_Iab*)Essence->second.Parsers[0])->Checks;
+        if (!Checks.Frame_Count)
+            return;
+        if (Checks.BitDepth!=24)
+            Errors.Add("IAB bit depth is not 24 (actual "+(Checks.BitDepth?to_string(Checks.BitDepth):string("unknown"))+')');
+        const auto SamplingRate=Get(0x3D03);
+        if (SamplingRate && SamplingRate->size()==8 && Checks.SampleRate && (int64u)BigEndian2int32u(SamplingRate->data())!=(int64u)Checks.SampleRate*BigEndian2int32u(SamplingRate->data()+4))
+            Errors.Add("Audio Sampling Rate is not the one of the IAB (actual "+Text(SamplingRate, true)+", expected "+to_string(Checks.SampleRate)+"/1)");
+        const auto SampleRate=Get(0x3001);
+        if (SampleRate && SampleRate->size()==8 && Checks.FrameRate_Num && (int64u)BigEndian2int32u(SampleRate->data())*Checks.FrameRate_Den!=(int64u)Checks.FrameRate_Num*BigEndian2int32u(SampleRate->data()+4))
+            Errors.Add("Sample Rate is not the IAB frame rate (actual "+Text(SampleRate, true)+", expected "+to_string(Checks.FrameRate_Num)+'/'+to_string(Checks.FrameRate_Den)+')');
+        static const struct { bool File_Iab::checks::*Flag; const char* Message; } Flags[]=
+        {
+            {&File_Iab::checks::Characteristics_AreNotConstant, "IAB bit depth, frame rate or sample rate is not constant"},
+            {&File_Iab::checks::Dlc_IsPresent, "AudioDataDLC element is present in the IAB"},
+            {&File_Iab::checks::BedRemap_IsPresent, "BedRemap element is present in the IAB"},
+            {&File_Iab::checks::SubElements_ArePresent, "Bed Definition or Object Definition of the IAB has sub-elements"},
+            {&File_Iab::checks::Conditional_IsNotAlways, "IAB has a conditional element with a use case other than 0xFF (Always Use)"},
+            {&File_Iab::checks::MetaID_IsDuplicated, "IAB Frame has several Bed Definitions or Object Definitions with the same MetaID"},
+            {&File_Iab::checks::Beds_AreNotConstant, "Bed Definitions are not the same in all IAB Frames"},
+        };
+        for (const auto& Flag : Flags)
+            if (Checks.*Flag.Flag)
+                Errors.Add(Flag.Message);
+        if (Checks.Beds_DescriptionsAreNotConstant) //Since SMPTE ST 2067-201:2026
+            Warnings.Add("Audio descriptions of the Bed Definitions are not the same in all IAB Frames");
+        if (Checks.Objects_AreNotConstant) //Since SMPTE ST 2067-201:2026
+            Warnings.Add("Object Definitions with the same MetaID are not the same in all IAB Frames");
+        int64u MaxObjectCount, Duration;
+        if (Get(Elements::IABMaxObjectCount))
+        {
+            if (!Raw_UInt_Get(Get(Elements::IABMaxObjectCount), 2, MaxObjectCount))
+                Errors.Add("IABMaxObjectCount is not 2 bytes");
+            else if (MaxObjectCount<Checks.Objects_Max)
+                Errors.Add("IABMaxObjectCount is less than the count of objects in the IAB (actual "+to_string(MaxObjectCount)+", expected at least "+to_string(Checks.Objects_Max)+')');
+            else if (MaxObjectCount>Checks.Objects_Max && Raw_UInt_Get(Image.Duration, 8, Duration) && Checks.Frame_Count==Duration) //Only if all frames are parsed, the item may be used as an upper limit
+                Warnings.Add("IABMaxObjectCount is greater than the maximum count of objects in the IAB (actual "+to_string(MaxObjectCount)+", expected "+to_string(Checks.Objects_Max)+')');
+        }
+        set<pair<int64u, int64u> > Channels_Done;
+        for (const auto& Item : Channels_List)
+        {
+            const auto Bed=Checks.Beds.find((int32u)Item.BedMetaID);
+            if (Bed==Checks.Beds.end() || find(Bed->second.ChannelIDs.begin(), Bed->second.ChannelIDs.end(), (int32u)Item.ChannelID)==Bed->second.ChannelIDs.end())
+                Errors.Add("IAB Channel Sub-Descriptor is not about a channel of a Bed Definition of the IAB (actual IABBedMetaID "+to_string(Item.BedMetaID)+", IABChannelID "+to_string(Item.ChannelID)+')');
+            else
+            {
+                if (!Channels_Done.insert(make_pair(Item.BedMetaID, Item.ChannelID)).second)
+                    Errors.Add("Several IAB Channel Sub-Descriptors are about the same channel (actual IABBedMetaID "+to_string(Item.BedMetaID)+", IABChannelID "+to_string(Item.ChannelID)+')');
+                if (Item.AudioDescription!=Bed->second.AudioDescription)
+                    Errors.Add("IABAudioDescription of an IAB Channel Sub-Descriptor is not the one of the Bed Definition (actual "+to_string(Item.AudioDescription)+", expected "+to_string(Bed->second.AudioDescription)+')');
+                const auto AudioDescriptionText=Property_Get(*Item.Properties, Elements::IABAudioDescriptionText);
+                if (AudioDescriptionText && AudioDescriptionText->size()<256 && none_of(Bed->second.AudioDescriptionText.begin(), Bed->second.AudioDescriptionText.end(), [](char Value) { return (Value&0x80)!=0; }) && Raw_UTF16_Get(AudioDescriptionText)!=Bed->second.AudioDescriptionText)
+                    Errors.Add("IABAudioDescriptionText of an IAB Channel Sub-Descriptor is not the one of the Bed Definition (actual \""+Raw_UTF16_Get(AudioDescriptionText)+"\", expected \""+Bed->second.AudioDescriptionText+"\")");
+            }
+        }
+        size_t Channels_Expected=0;
+        for (const auto& Bed : Checks.Beds)
+            Channels_Expected+=Bed.second.ChannelIDs.size();
+        if (Channels_Done.size()<Channels_Expected)
+            Warnings.Add("IAB Channel Sub-Descriptors are not present for all the channels of the Bed Definitions (actual "+to_string(Channels_Done.size())+", expected "+to_string(Channels_Expected)+')');
+    #endif //defined(MEDIAINFO_IAB_YES)
+}
+
+//---------------------------------------------------------------------------
+File_Mxf::conformance_errors File_Mxf::CompliantWith_St2067201 (bool WithTrackFile, conformance_errors& Warnings)
+{
+    conformance_errors Errors;
+    if (WithTrackFile)
+    {
+        const auto& St20675=CompliantWith_St20675();
+        Errors=St20675.TrackFile_Errors;
+        Warnings.insert(Warnings.end(), St20675.TrackFile_Warnings.begin(), St20675.TrackFile_Warnings.end());
+    }
+    imf_image Image;
+    if (!ImfImage_Get(Image, 0))
+        return Errors;
+    if (Image.TrackID!=(int32u)-1)
+        Errors.StreamID=Warnings.StreamID=to_string(Image.TrackID);
+    if ((Image.EssenceContainer.lo&0xFFFFFFFFFFFF0000LL)!=Labels::MXFGCImmersiveAudio && Image.DescriptorKey!=Groups::IABEssenceDescriptor)
+        Errors.Add("Essence is not IAB");
+    else
+        CompliantWith_St2067201_Essence(Image, Errors, Warnings);
+    return Errors;
+}
+
+//---------------------------------------------------------------------------
+// ISXD Track File (SMPTE ST 2067-202:2023, SMPTE RDD 47:2018), descriptor and essence element
+// Not checked: XML documents, Static Track of the Static XML Documents
+void File_Mxf::CompliantWith_St2067202_Essence (const imf_image& Image, conformance_errors& Errors, conformance_errors& Warnings)
+{
+    const auto& Properties=*Image.Properties;
+    if (!Raw_IsSame(Raw_UL(Image.EssenceContainer.hi, Image.EssenceContainer.lo), Raw_UL(0x060E2B3404010105LL, 0x0E09060701010103LL)))
+        Errors.Add("Essence Container is not the frame-wrapped ISXD one (actual "+Raw_Hex(Raw_UL(Image.EssenceContainer.hi, Image.EssenceContainer.lo))+", expected "+Raw_Hex(Raw_UL(0x060E2B3404010105LL, 0x0E09060701010103LL))+')');
+    if (Image.DescriptorKey!=Groups::ISXDDataEssenceDescriptor)
+    {
+        Errors.Add("File Descriptor is not an ISXD Data Essence Descriptor");
+        return;
+    }
+    if (Image.TrackNumber && Image.TrackNumber!=(int32u)-1 && (Image.TrackNumber&0xFF00FF00)!=0x01000100)
+        Errors.Add("Track Number is not the one of a frame-wrapped ISXD Data Element (actual "+Raw_Hex(Raw_UInt(Image.TrackNumber, 4))+')');
+    ImfPlugin_Elements(Image, "an ISXD Data Element", 0x0E09050201000100LL, Errors);
+    if (!St2067202_IsRequested && ContentPackage_Elements.size()>1 && all_of(ContentPackage_Elements_Keys.begin(), ContentPackage_Elements_Keys.end(), [](int64u Key) { return (Key&0xFFFFFFFFFF00FF00LL)==0x0E09050201000100LL; })) //Reported with the overall constraints if requested
+        Errors.Add("Data Item does not contain a single ISXD Data Element");
+    if (Image.TrackKind && Image.TrackKind!='D')
+        Errors.Add("Essence Track is not a Data Essence Track");
+    const vector<property_expected> List=
+    {
+        {0x3E01, "Data Essence Coding", {Raw_UL(0x060E2B3404010105LL, 0x0E09060600000000LL)}, false},
+    };
+    Properties_Test(Properties, List, Errors);
+    const auto NamespaceURI=Property_Get(Properties, Elements::DolbyNamespaceURI);
+    if (!NamespaceURI || NamespaceURI->empty())
+        Errors.Add("NamespaceURI is missing");
+
+    //Static XML Documents after the essence and index partitions (5.4), from the partitions parsed
+    auto GenericStream_IsPresent=false;
+    for (const auto& Partition : Partitions)
+        if (Partition.Status==0x11)
+            GenericStream_IsPresent=true;
+        else if (GenericStream_IsPresent && Partition.Kind==0x03 && (Partition.BodySID || Partition.IndexByteCount))
+        {
+            Warnings.Add("Body Partition is after a Generic Stream Partition"); //Only a warning because the Generic Stream may be another content than Static XML Documents
+            break;
+        }
+}
+
+//---------------------------------------------------------------------------
+File_Mxf::conformance_errors File_Mxf::CompliantWith_St2067202 (bool WithTrackFile, conformance_errors& Warnings)
+{
+    conformance_errors Errors;
+    if (WithTrackFile)
+    {
+        const auto& St20675=CompliantWith_St20675();
+        Errors=St20675.TrackFile_Errors;
+        const auto TextBased_IsPresent=any_of(SetKeys.begin(), SetKeys.end(), [](const pair<const int128u, int64u>& Set) { return Set.second==Groups::TextBasedFramework; });
+        for (const auto& Warning : St20675.TrackFile_Warnings)
+            if (!TextBased_IsPresent || Warning.Value!="Static Track is present") //Static XML Documents are in a Static Track (5.4)
+                Warnings.push_back(Warning);
+    }
+    imf_image Image;
+    if (!ImfImage_Get(Image, 0))
+        return Errors;
+    if (Image.TrackID!=(int32u)-1)
+        Errors.StreamID=Warnings.StreamID=to_string(Image.TrackID);
+    if (Image.EssenceContainer.lo!=0x0E09060701010103LL && Image.DescriptorKey!=Groups::ISXDDataEssenceDescriptor)
+        Errors.Add("Essence is not ISXD");
+    else
+        CompliantWith_St2067202_Essence(Image, Errors, Warnings);
+    return Errors;
+}
+
+//---------------------------------------------------------------------------
+// MGA signals (SMPTE ST 2127-1:2022) with S-ADM metadata (SMPTE ST 2127-10:2022)
+// Not checked: Random Access flags against the metadata, S-ADM frames (type if Random Access is signaled, duration), ST 2109 payloads in Audio Metadata Packs, values of the labels
+void File_Mxf::CompliantWith_St2127 (const imf_image& Image, conformance_errors& Errors)
+{
+    const auto& Properties=*Image.Properties;
+    const auto Get=[&](int64u Key) { return Property_Get(Properties, Key); };
+    if (Image.EssenceContainer.lo!=0x0D01030102250100LL && Image.EssenceContainer.lo!=0x0D01030102250200LL)
+        Errors.Add("Essence Container is not frame-wrapped or clip-wrapped MGA (actual "+Raw_Hex(Raw_UL(Image.EssenceContainer.hi, Image.EssenceContainer.lo))+')');
+    else
+    {
+        const auto TrackNumber_Expected=(int32u)(Image.EssenceContainer.lo==0x0D01030102250100LL?0x16000E00:0x16000F00);
+        if (Image.TrackNumber && Image.TrackNumber!=(int32u)-1 && (Image.TrackNumber&0xFF00FF00)!=TrackNumber_Expected)
+            Errors.Add("Track Number is not the one of the MGA Sound Element of the Essence Container (actual "+Raw_Hex(Raw_UInt(Image.TrackNumber, 4))+')');
+        ImfPlugin_Elements(Image, Image.EssenceContainer.lo==0x0D01030102250100LL?"a frame-wrapped MGA Sound Element":"a clip-wrapped MGA Sound Element", 0x0D01030100000000LL|TrackNumber_Expected, Errors);
+    }
+    if (Image.DescriptorKey!=Groups::MGASoundEssenceDescriptor)
+    {
+        Errors.Add("File Descriptor is not a MGA Sound Essence Descriptor");
+        return;
+    }
+    const vector<property_expected> List=
+    {
+        {0x3D06, "Sound Essence Coding", {Raw_UL(0x060E2B340401010DLL, 0x0402020102010000LL)}, false},
+        {0x3001, "Sample Rate", {}, false},
+        {0x3D03, "Audio Sampling Rate", {}, false},
+        {Elements::MGASoundEssenceBlockAlign, "MGASoundEssenceBlockAlign", {}, false},
+        {Elements::MGASoundEssenceAverageBytesPerSecond, "MGASoundEssenceAverageBytesPerSecond", {}, false},
+    };
+    Properties_Test(Properties, List, Errors);
+    ImfPlugin_EditRate(Image, Errors);
+    int64u ChannelCount, QuantizationBits, BlockAlign=0, AverageBytesPerSecond;
+    const auto BlockAlign_IsPresent=Raw_UInt_Get(Get(Elements::MGASoundEssenceBlockAlign), 2, BlockAlign);
+    if (BlockAlign_IsPresent && Raw_UInt_Get(Get(0x3D07), 4, ChannelCount) && Raw_UInt_Get(Get(0x3D01), 4, QuantizationBits) && ChannelCount && QuantizationBits && ChannelCount<0x10000 && QuantizationBits<0x100 && BlockAlign!=ChannelCount*((QuantizationBits+7)/8))
+        Errors.Add("MGASoundEssenceBlockAlign is not the one of the Channel Count and the Quantization Bits (actual "+to_string(BlockAlign)+", expected "+to_string(ChannelCount*((QuantizationBits+7)/8))+')');
+    const auto SamplingRate=Get(0x3D03);
+    if (BlockAlign_IsPresent && SamplingRate && SamplingRate->size()==8 && BigEndian2int32u(SamplingRate->data()+4)==1 && Raw_UInt_Get(Get(Elements::MGASoundEssenceAverageBytesPerSecond), 4, AverageBytesPerSecond) && AverageBytesPerSecond<BlockAlign*BigEndian2int32u(SamplingRate->data())) //May include the metadata
+        Errors.Add("MGASoundEssenceAverageBytesPerSecond is less than the one of the block alignment and the Audio Sampling Rate (actual "+to_string(AverageBytesPerSecond)+", expected at least "+to_string(BlockAlign*BigEndian2int32u(SamplingRate->data()))+')');
+
+    //MGA Audio Metadata Sub-Descriptors and S-ADM Audio Metadata Sub-Descriptors
+    const auto Payload_Sadm=Raw_UL(0x060E2B340401010DLL, 0x0404021200000000LL);
+    map<int64u, int64u> Sections; //Key is the index, value is the identifier
+    map<string, size_t> LinkIDs; //Key is MGALinkID, value is the count of S-ADM payloads
+    size_t Metadata_Count=0;
+    size_t SoundfieldGroups=0;
+    vector<const properties*> Sadms;
+    vector<const properties*> Labels;
+    for (const auto& SubDescriptor : Image.SubDescriptors)
+    {
+        if (SetKey_Is(SubDescriptor, Groups::MGAAudioMetadataSubDescriptor)) //Also if another set of the same Header Metadata reuses its Instance UID
+        {
+            const auto& Metadata=SetProperties_Get(SubDescriptor, Groups::MGAAudioMetadataSubDescriptor);
+            Metadata_Count++;
+            static const struct { int64u Key; const char* Name; } Items[]=
+            {
+                {Elements::MGALinkID, "MGALinkID"},
+                {Elements::MGAAudioMetadataIndex, "MGAAudioMetadataIndex"},
+                {Elements::MGAAudioMetadataIdentifier, "MGAAudioMetadataIdentifier"},
+                {Elements::MGAAudioMetadataPayloadULArray, "MGAAudioMetadataPayloadULArray"},
+            };
+            for (const auto& Item : Items)
+                if (!Property_Get(Metadata, Item.Key))
+                    Errors.Add(string(Item.Name)+" of a MGA Audio Metadata Sub-Descriptor is missing");
+            int64u Index=0, Identifier=0;
+            const auto Identifier_IsPresent=Raw_UInt_Get(Property_Get(Metadata, Elements::MGAAudioMetadataIdentifier), 1, Identifier);
+            if (Identifier_IsPresent && (!Identifier || Identifier>3))
+                Errors.Add("MGAAudioMetadataIdentifier is wrong (actual "+to_string(Identifier)+", expected 1 to 3)");
+            if (Raw_UInt_Get(Property_Get(Metadata, Elements::MGAAudioMetadataIndex), 1, Index))
+            {
+                if (!Index || Index==0xFF)
+                    Errors.Add("MGAAudioMetadataIndex is wrong (actual "+to_string(Index)+", expected 1 to 254)");
+                else if (!Sections.emplace(Index, Identifier).second)
+                    Errors.Add("Several MGA Audio Metadata Sub-Descriptors have the same MGAAudioMetadataIndex (actual "+to_string(Index)+')');
+            }
+            const auto Payloads=Property_Get(Metadata, Elements::MGAAudioMetadataPayloadULArray);
+            size_t Sadm_Count=0;
+            if (Payloads)
+            {
+                if (Payloads->size()<8 || BigEndian2int32u(Payloads->data()+4)!=16 || Payloads->size()!=8+(int64u)BigEndian2int32u(Payloads->data())*16)
+                    Errors.Add("MGAAudioMetadataPayloadULArray is not an array of ULs");
+                else
+                {
+                    const auto Count=BigEndian2int32u(Payloads->data());
+                    if (Identifier_IsPresent && (Identifier==1?!Count:Count!=1))
+                        Errors.Add("MGAAudioMetadataPayloadULArray does not contain one UL (actual "+to_string(Count)+')');
+                    for (size_t i=8; i+16<=Payloads->size(); i+=16)
+                        if (Raw_IsSame(Payloads->substr(i, 16), Payload_Sadm))
+                            Sadm_Count++;
+                    if (Sadm_Count && Identifier_IsPresent && Identifier==3)
+                        Errors.Add("MGAAudioMetadataIdentifier of S-ADM metadata is 3");
+                }
+            }
+            const auto LinkID=Property_Get(Metadata, Elements::MGALinkID);
+            if (LinkID && !LinkIDs.emplace(*LinkID, Sadm_Count).second)
+                Errors.Add("Several MGA Audio Metadata Sub-Descriptors have the same MGALinkID");
+        }
+        if (SetKey_Is(SubDescriptor, Groups::SADMAudioMetadataSubDescriptor))
+            Sadms.push_back(&SetProperties_Get(SubDescriptor, Groups::SADMAudioMetadataSubDescriptor));
+        if (SetKey_Is(SubDescriptor, Groups::MGASoundfieldGroupLabelSubDescriptor))
+            Labels.push_back(&SetProperties_Get(SubDescriptor, Groups::MGASoundfieldGroupLabelSubDescriptor));
+        if (SetKey_Is(SubDescriptor, Groups::SoundfieldGroupLabelSubDescriptor))
+            SoundfieldGroups++;
+    }
+    if (!Metadata_Count)
+        Errors.Add("No MGA Audio Metadata Sub-Descriptor");
+    if (SoundfieldGroups)
+        Errors.Add("SoundfieldGroupLabelSubDescriptor is present (actual "+to_string(SoundfieldGroups)+')');
+    map<string, size_t> Sadm_LinkIDs;
+    for (const auto Sadm : Sadms)
+    {
+        const auto LinkID=Property_Get(*Sadm, Elements::SADMMetadataSectionLinkID);
+        if (!LinkID)
+            Errors.Add("SADMMetadataSectionLinkID is missing");
+        else if (LinkIDs.find(*LinkID)==LinkIDs.end())
+            Errors.Add("SADMMetadataSectionLinkID is not the MGALinkID of a MGA Audio Metadata Sub-Descriptor");
+        else
+            Sadm_LinkIDs[*LinkID]++;
+    }
+    for (const auto& LinkID : LinkIDs)
+    {
+        const auto Sadm=Sadm_LinkIDs.find(LinkID.first);
+        const auto Count=Sadm==Sadm_LinkIDs.end()?0:Sadm->second;
+        if (Count!=LinkID.second)
+            Errors.Add("S-ADM Audio Metadata Sub-Descriptors are not present once per S-ADM payload of a MGA Audio Metadata Sub-Descriptor (actual "+to_string(Count)+", expected "+to_string(LinkID.second)+')');
+    }
+    for (const auto Label : Labels)
+    {
+        const auto LinkID=Property_Get(*Label, Elements::MGAMetadataSectionLinkID);
+        if (!LinkID)
+            Errors.Add("MGAMetadataSectionLinkID is missing");
+        else if (LinkIDs.find(*LinkID)==LinkIDs.end())
+            Errors.Add("MGAMetadataSectionLinkID is not the MGALinkID of a MGA Audio Metadata Sub-Descriptor");
+    }
+
+    //MGA Frames
+    #if defined(MEDIAINFO_MGA_YES)
+        const auto Essence=Essences.find(Image.TrackNumber);
+        if (Essence==Essences.end() || Essence->second.Parsers.size()!=1 || Essence->second.Parsers[0]->Retrieve_Const(Stream_Audio, 0, Audio_Format)!=__T("MGA"))
+            return;
+        const auto& Checks=((File_Mga*)Essence->second.Parsers[0])->Checks;
+        if (!Checks.Frame_Count)
+            return;
+        for (const auto& Error : Checks.Errors)
+            Errors.Add("MGA Frame: "+Error);
+        const auto Sections_Text=[](const map<int64u, int64u>& List) {
+            string Text;
+            for (const auto& Section : List)
+                Text+=(Text.empty()?"":", ")+to_string(Section.first)+':'+to_string(Section.second);
+            return Text.empty()?string("none"):Text;
+        };
+        if (!Sections.empty() && Checks.Sections!=Sections)
+            Errors.Add("MGA Audio Metadata Sub-Descriptors do not match the Audio Metadata sections of the MGA Frames (actual "+Sections_Text(Sections)+", expected "+Sections_Text(Checks.Sections)+", index:identifier)");
+        for (const auto Length : Checks.AudioEssence_Lengths)
+        {
+            if (!BlockAlign)
+                break;
+            if (Length%BlockAlign)
+                Errors.Add("Audio Essence of the MGA Frames is not a multiple of the block alignment (actual "+to_string(Length)+", block alignment "+to_string(BlockAlign)+')');
+            else if (SamplingRate && SamplingRate->size()==8 && Image.EditRate && Image.EditRate->size()==8)
+            {
+                const auto Num=(float64)BigEndian2int32u(SamplingRate->data())*BigEndian2int32u(Image.EditRate->data()+4);
+                const auto Den=(float64)BigEndian2int32u(SamplingRate->data()+4)*BigEndian2int32u(Image.EditRate->data());
+                const auto Samples=Length/BlockAlign;
+                if (Num && Den && fabs(Samples-Num/Den)>=1) //Sample count is not constant with e.g. 60000/1001 edit units per second
+                    Errors.Add("Audio Essence of the MGA Frames is not for the duration of one Edit Unit (actual "+to_string(Samples)+" samples, expected "+Ztring::ToZtring(Num/Den, Num/Den==floor(Num/Den)?0:3).To_UTF8()+')');
+            }
+        }
+        if (Image.EssenceContainer.lo==0x0D01030102250100LL && !Image.IsInMultipleDescriptor && Essence->second.Element_Count && Checks.Frame_Count>Essence->second.Element_Count+1) //A frame may be in an element parsed partially
+            Errors.Add("Several MGA Frames are in an essence element (actual "+to_string(Checks.Frame_Count)+" frames in "+to_string(Essence->second.Element_Count)+" elements)");
+        for (const auto& Payload : Checks.Payloads)
+            if (Sections.find(Payload.first)!=Sections.end() && Sections[Payload.first]==2)
+                for (const auto& SubDescriptor : Image.SubDescriptors)
+                {
+                    if (!SetKey_Is(SubDescriptor, Groups::MGAAudioMetadataSubDescriptor))
+                        continue;
+                    const auto& Metadata=SetProperties_Get(SubDescriptor, Groups::MGAAudioMetadataSubDescriptor);
+                    int64u Index;
+                    const auto Payloads=Property_Get(Metadata, Elements::MGAAudioMetadataPayloadULArray);
+                    if (!Raw_UInt_Get(Property_Get(Metadata, Elements::MGAAudioMetadataIndex), 1, Index) || Index!=Payload.first || !Payloads || Payloads->size()<24)
+                        continue;
+                    if (Raw_IsSame(Payloads->substr(8, 16), Payload_Sadm)!=(Payload.second==0x12))
+                        Errors.Add("MGAAudioMetadataPayloadULArray is not the payload of the Audio Metadata section (actual "+Raw_Hex(Payloads->substr(8, 16))+", Payload Tag "+to_string(Payload.second)+')');
+                }
+    #endif //defined(MEDIAINFO_MGA_YES)
+}
+
+//---------------------------------------------------------------------------
+// MGA S-ADM Track File (SMPTE ST 2067-203:2023), with Operational Mode A
+// Not checked: value of RFC5646SpokenLanguage, values of the channel-based labels of SMPTE ST 377-42, Sound Channel Count against the audio essence, labels without audioProgramme if all frames are not parsed, Composition items
+void File_Mxf::CompliantWith_St2067203_Essence (const imf_image& Image, conformance_errors& Errors, conformance_errors& Warnings)
+{
+    CompliantWith_St2127(Image, Errors);
+    const auto& Properties=*Image.Properties;
+    if (Image.EssenceContainer.lo!=0x0D01030102250200LL)
+        Errors.Add("MGA is not clip-wrapped");
+    if (Image.DescriptorKey!=Groups::MGASoundEssenceDescriptor)
+        return;
+    ImfPlugin_Sound(Image, "MGA", 0, Errors, Warnings); //Track Number is already checked
+    const vector<property_expected> List=
+    {
+        {0x3D03, "Audio Sampling Rate", {Raw_Rational(48000, 1), Raw_Rational(96000, 1)}, true}, //Already reported if absent
+        {0x3D07, "Channel Count", {}, false},
+    };
+    Properties_Test(Properties, List, Errors);
+
+    //Index Table (5.2)
+    for (const auto& Segment : IndexTableSegments)
+        if (any_of(Segment.Flags.begin(), Segment.Flags.end(), [](char Flags) { return !(Flags&0x80); }))
+        {
+            Errors.Add("Random Access flag of an index entry is not set");
+            break;
+        }
+
+    //Audio Metadata sections (4.2), labels (5.6)
+    const auto Payload_Sadm=Raw_UL(0x060E2B340401010DLL, 0x0404021200000000LL);
+    const string* Sadm_LinkID=nullptr;
+    size_t Sadm_Count=0;
+    vector<const properties*> Labels;
+    for (const auto& SubDescriptor : Image.SubDescriptors)
+    {
+        if (SetKey_Is(SubDescriptor, Groups::MGAAudioMetadataSubDescriptor)) //Also if another set of the same Header Metadata reuses its Instance UID
+        {
+            const auto& Metadata=SetProperties_Get(SubDescriptor, Groups::MGAAudioMetadataSubDescriptor);
+            int64u Index=0, Identifier=0;
+            Raw_UInt_Get(Property_Get(Metadata, Elements::MGAAudioMetadataIndex), 1, Index);
+            Raw_UInt_Get(Property_Get(Metadata, Elements::MGAAudioMetadataIdentifier), 1, Identifier);
+            if (Identifier==1)
+                Errors.Add("Audio Metadata section is an Audio Metadata Pack");
+            const auto Payloads=Property_Get(Metadata, Elements::MGAAudioMetadataPayloadULArray);
+            if (Payloads)
+                for (size_t i=8; i+16<=Payloads->size(); i+=16)
+                    if (Raw_IsSame(Payloads->substr(i, 16), Payload_Sadm))
+                    {
+                        Sadm_Count++;
+                        if (Index!=1 || Identifier!=2)
+                            Errors.Add("Audio Metadata section with S-ADM is not an Audio Metadata Payload with index 1 (actual index "+to_string(Index)+" and identifier "+to_string(Identifier)+')');
+                        Sadm_LinkID=Property_Get(Metadata, Elements::MGALinkID);
+                    }
+        }
+        if (SetKey_Is(SubDescriptor, Groups::SADMAudioMetadataSubDescriptor) && !Property_Get(SetProperties_Get(SubDescriptor, Groups::SADMAudioMetadataSubDescriptor), Elements::SADMProfileLevelULBatch))
+            Warnings.Add("SADMProfileLevelULBatch is not present");
+        if (SetKey_Is(SubDescriptor, Groups::MGASoundfieldGroupLabelSubDescriptor))
+            Labels.push_back(&SetProperties_Get(SubDescriptor, Groups::MGASoundfieldGroupLabelSubDescriptor));
+    }
+    if (Sadm_Count!=1)
+        Errors.Add("Not one Audio Metadata section with S-ADM (actual "+to_string(Sadm_Count)+')');
+    if (Labels.empty())
+        Errors.Add("No MGASoundfieldGroupLabelSubDescriptor");
+    #if defined(MEDIAINFO_MGA_YES) && defined(MEDIAINFO_ADM_YES)
+        const File_Mga::checks* Checks=nullptr;
+        const auto Essence=Essences.find(Image.TrackNumber);
+        if (Essence!=Essences.end() && Essence->second.Parsers.size()==1 && Essence->second.Parsers[0]->Retrieve_Const(Stream_Audio, 0, Audio_Format)==__T("MGA"))
+            Checks=&((File_Mga*)Essence->second.Parsers[0])->Checks;
+    #endif //defined(MEDIAINFO_MGA_YES) && defined(MEDIAINFO_ADM_YES)
+    map<string, size_t> Programmes_Labels; //Count of MGASoundfieldGroupLabelSubDescriptor per audioProgramme
+    for (size_t i=0; i<Labels.size(); i++)
+    {
+        const auto& Label=*Labels[i];
+        const auto ProgrammeID_Raw=Property_Get(Label, Elements::ADMAudioProgrammeID);
+        const auto ProgrammeID=Raw_UTF16_Get(ProgrammeID_Raw);
+        const auto Name=ProgrammeID.empty()?("MGASoundfieldGroupLabelSubDescriptor "+to_string(i+1)):("MGASoundfieldGroupLabelSubDescriptor of "+ProgrammeID);
+        const auto DictionaryID=Property_Get(Label, Elements::MCALabelDictionaryID);
+        const auto TagSymbol=Raw_UTF16_Get(Property_Get(Label, Elements::MCATagSymbol));
+        const auto IsMgaSoundfield=DictionaryID && Raw_IsSame(*DictionaryID, Raw_UL(0x060E2B340401010DLL, 0x0302022200000000LL));
+        if (!DictionaryID)
+            Errors.Add("MCALabelDictionaryID of "+Name+" is missing");
+        if (IsMgaSoundfield?TagSymbol!="MGASf":(TagSymbol.rfind("sg", 0) && (DictionaryID || TagSymbol!="MGASf")))
+            Errors.Add("MCATagSymbol of "+Name+" is wrong (actual \""+TagSymbol+"\", expected "+(IsMgaSoundfield?"\"MGASf\"":"a symbol with the \"sg\" prefix")+')');
+        const auto TagName=Property_Get(Label, Elements::MCATagName);
+        if (!TagName)
+            Errors.Add("MCATagName of "+Name+" is missing");
+        else if (IsMgaSoundfield && Raw_UTF16_Get(TagName)!="MGA Soundfield")
+            Errors.Add("MCATagName of "+Name+" is wrong (actual \""+Raw_UTF16_Get(TagName)+"\", expected \"MGA Soundfield\")");
+        static const struct { int64u Key; const char* Name; } Items_Recommended[]=
+        {
+            {Elements::MCAContent, "MCAContent"},
+            {Elements::MCAUseClass, "MCAUseClass"},
+            {Elements::MCATitle, "MCATitle"},
+            {Elements::MCATitleVersion, "MCATitleVersion"},
+        };
+        for (const auto& Item : Items_Recommended)
+            if (!Property_Get(Label, Item.Key))
+                Warnings.Add(string(Item.Name)+" of "+Name+" is not present");
+        if (Property_Get(Label, Elements::MCAChannelID))
+            Errors.Add("MCAChannelID of "+Name+" is present");
+        const auto LinkID=Property_Get(Label, Elements::MGAMetadataSectionLinkID);
+        if (LinkID && Sadm_LinkID && *LinkID!=*Sadm_LinkID)
+            Errors.Add("MGAMetadataSectionLinkID of "+Name+" is not the one of the Audio Metadata section with S-ADM");
+
+        //Operational Mode A (7.2)
+        if (!ProgrammeID_Raw)
+            Errors.Add("ADMAudioProgrammeID of "+Name+" is missing (Operational Mode A)");
+        else
+            Programmes_Labels[ProgrammeID]++;
+        if (Property_Get(Label, Elements::ADMAudioContentID))
+            Errors.Add("ADMAudioContentID of "+Name+" is present (Operational Mode A)");
+        if (Property_Get(Label, Elements::ADMAudioObjectID))
+            Errors.Add("ADMAudioObjectID of "+Name+" is present (Operational Mode A)");
+        #if defined(MEDIAINFO_MGA_YES) && defined(MEDIAINFO_ADM_YES)
+            const auto Title_Raw=Property_Get(Label, Elements::MCATitle);
+            if (Checks && Title_Raw)
+            {
+                const auto Programme=Checks->Programmes.find(ProgrammeID);
+                if (Programme!=Checks->Programmes.end())
+                {
+                    const auto Title=Ztring().From_UTF16BE(Title_Raw->data(), Title_Raw->size()).To_UTF8();
+                    if (!Programme->second.Label.empty() && Title!=Programme->second.Label)
+                        Errors.Add("MCATitle of "+Name+" is not the first audioProgrammeLabel of the audioProgramme (actual \""+Title+"\", expected \""+Programme->second.Label+"\", Operational Mode A)");
+                    else if (Programme->second.Label.empty() && Title!=Programme->second.Name)
+                        Warnings.Add("MCATitle of "+Name+" is not the audioProgrammeName of the audioProgramme (actual \""+Title+"\", expected \""+Programme->second.Name+"\", Operational Mode A)");
+                }
+            }
+        #endif //defined(MEDIAINFO_MGA_YES) && defined(MEDIAINFO_ADM_YES)
+    }
+    #if defined(MEDIAINFO_MGA_YES) && defined(MEDIAINFO_ADM_YES)
+        if (Checks)
+        {
+            for (const auto& FrameType : Checks->Adm_FrameTypes)
+                if (FrameType!="full" && FrameType!="header")
+                    Errors.Add("S-ADM frame of type \""+FrameType+"\" is present");
+            if (Checks->Programmes.empty() && (Checks->Adm_FrameTypes.find("full")!=Checks->Adm_FrameTypes.end() || Checks->Adm_FrameTypes.find("all")!=Checks->Adm_FrameTypes.end())) //Other types may not have all the content
+                Errors.Add("S-ADM metadata does not define an audioProgramme (Operational Mode A)");
+            for (const auto& Programme : Checks->Programmes)
+            {
+                const auto Programme_Labels=Programmes_Labels.find(Programme.first);
+                const auto Count=Programme_Labels==Programmes_Labels.end()?0:Programme_Labels->second;
+                if (Count!=1)
+                    Errors.Add("audioProgramme "+Programme.first+" is not referenced by one MGASoundfieldGroupLabelSubDescriptor (actual "+to_string(Count)+", Operational Mode A)");
+            }
+            int64u Duration;
+            if (!Checks->Programmes.empty() && Raw_UInt_Get(Image.Duration, 8, Duration) && Checks->Frame_Count==Duration) //Only if all frames are parsed, other programmes may be in the next frames
+                for (const auto& Programme : Programmes_Labels)
+                    if (Checks->Programmes.find(Programme.first)==Checks->Programmes.end())
+                        Errors.Add("ADMAudioProgrammeID of a MGASoundfieldGroupLabelSubDescriptor is not in the S-ADM metadata (actual \""+Programme.first+"\", Operational Mode A)");
+        }
+    #endif //defined(MEDIAINFO_MGA_YES) && defined(MEDIAINFO_ADM_YES)
+}
+
+//---------------------------------------------------------------------------
+File_Mxf::conformance_errors File_Mxf::CompliantWith_St2067203 (conformance_errors& Warnings)
+{
+    const auto& St20675=CompliantWith_St20675();
+    auto Errors=St20675.TrackFile_Errors;
+    Warnings.insert(Warnings.end(), St20675.TrackFile_Warnings.begin(), St20675.TrackFile_Warnings.end());
+    imf_image Image;
+    if (!ImfImage_Get(Image, 0))
+        return Errors;
+    if (Image.TrackID!=(int32u)-1)
+        Errors.StreamID=Warnings.StreamID=to_string(Image.TrackID);
+    if ((Image.EssenceContainer.lo&0xFFFFFFFFFFFF0000LL)!=Labels::MXFGCMGAAudioMappings && Image.DescriptorKey!=Groups::MGASoundEssenceDescriptor)
+        Errors.Add("Essence is not MGA");
+    else
+        CompliantWith_St2067203_Essence(Image, Errors, Warnings);
+    return Errors;
+}
+
+//---------------------------------------------------------------------------
+// Declared SMPTE ST 2067-201 (label in Conforms To Specifications), or candidate for a MGA S-ADM Track File (clip-wrapped MGA), all partitions are needed
+bool File_Mxf::CompliantWith_ImfPlugins_IsTested ()
+{
+    if (IsSub)
+        return false;
+    if (St2067201_IsRequested || St2067202_IsRequested || St2067203_IsRequested || ConformsToSpecifications_Count(Raw_UL(0x060E2B340401010DLL, 0x0101020102000000LL)))
+        return true;
+    imf_image Image;
+    return ImfImage_Get(Image, 0) && Image.EssenceContainer.lo==0x0D01030102250200LL;
+}
+
+//---------------------------------------------------------------------------
+// Track Files of the IMF plug-ins: IAB (SMPTE ST 2067-201), ISXD (SMPTE ST 2067-202), MGA S-ADM (SMPTE ST 2067-203)
+// SMPTE ST 2067-201 is declared by the Conforms To Specifications label (the whole file conforms to it) or by the Essence Container label, SMPTE ST 2067-202 by the Essence Container label, SMPTE ST 2127-1 by the Essence Container label:
+// their compliance is mandatory, it is checked without request, and the profile is not listed unless requested
+void File_Mxf::Streams_Finish_CompliantWith_ImfPlugins ()
+{
+    vector<imf_image> Images;
+    const auto Image_IsMain=ImfEssences_Get(Images, 0);
+
+    //IAB
+    const auto Iab_IsConforming=ConformsToSpecifications_Count(Raw_UL(0x060E2B340401010DLL, 0x0101020102000000LL))!=0;
+    const auto Iab_IsLabeled=Image_IsMain && Images.front().EssenceContainer.lo==0x0D010301021D0101LL;
+    if (St2067201_IsRequested || Iab_IsConforming || Iab_IsLabeled)
+    {
+        conformance_errors Warnings;
+        const auto IsIncomplete=!Retrieve_Const(Stream_General, 0, "IsTruncated").empty() || none_of(Partitions.begin(), Partitions.end(), [](const partition& Partition) { return Partition.Kind==0x04; }); //Not parsed or already reported, the missing partitions are not reported one by one
+        const auto Errors=CompliantWith_St2067201(St2067201_IsRequested || (Iab_IsConforming && !IsIncomplete), Warnings);
+        if (St2067201_IsRequested)
+        {
+            if (Errors.empty() && Image_IsMain)
+                Fill(Stream_General, 0, General_CompliantWith, "SMPTE_ST_2067-201");
+            Fill_Conformance_Specification("MXF MxfProfile", "SMPTE_ST_2067-201", Errors);
+            Fill_Conformance_Specification("MXF MxfProfile", "SMPTE_ST_2067-201", Warnings, Conformance_Warning);
+        }
+        else
+            Fill_Conformance_Specification("MXF IabTrackFile", "SMPTE_ST_2067-201", Errors);
+    }
+
+    //ISXD
+    const auto Isxd_IsLabeled=Image_IsMain && Images.front().EssenceContainer.lo==0x0E09060701010103LL;
+    if (St2067202_IsRequested || Isxd_IsLabeled)
+    {
+        conformance_errors Warnings;
+        const auto Errors=CompliantWith_St2067202(St2067202_IsRequested, Warnings);
+        if (St2067202_IsRequested)
+        {
+            if (Errors.empty() && Image_IsMain)
+                Fill(Stream_General, 0, General_CompliantWith, "SMPTE_ST_2067-202");
+            Fill_Conformance_Specification("MXF MxfProfile", "SMPTE_ST_2067-202", Errors);
+            Fill_Conformance_Specification("MXF MxfProfile", "SMPTE_ST_2067-202", Warnings, Conformance_Warning);
+        }
+        else
+            Fill_Conformance_Specification("MXF IsxdTrackFile", "SMPTE_ST_2067-202", Errors);
+    }
+
+    //MGA
+    for (const auto& Image : Images)
+        if ((Image.EssenceContainer.lo&0xFFFFFFFFFFFF0000LL)==Labels::MXFGCMGAAudioMappings && !(St2067203_IsRequested && Image_IsMain))
+        {
+            conformance_errors Errors;
+            if (Image.TrackID!=(int32u)-1)
+                Errors.StreamID=to_string(Image.TrackID);
+            CompliantWith_St2127(Image, Errors);
+            Fill_Conformance_Specification("MXF MgaSound", "SMPTE_ST_2127", Errors);
+        }
+    if (St2067203_IsRequested || (Image_IsMain && Images.front().EssenceContainer.lo==0x0D01030102250200LL))
+    {
+        conformance_errors Warnings;
+        const auto Errors=CompliantWith_St2067203(Warnings);
+        if (Errors.empty() && Image_IsMain)
+            Fill(Stream_General, 0, General_CompliantWith, "SMPTE_ST_2067-203");
+        if (St2067203_IsRequested) //Conformance errors and warnings only if this profile is requested
+        {
+            Fill_Conformance_Specification("MXF MxfProfile", "SMPTE_ST_2067-203", Errors);
+            Fill_Conformance_Specification("MXF MxfProfile", "SMPTE_ST_2067-203", Warnings, Conformance_Warning);
         }
     }
 }
@@ -10622,6 +11441,7 @@ void File_Mxf::Streams_Finish_CompliantWith ()
             }
         }
         Streams_Finish_CompliantWith_ImfImage();
+        Streams_Finish_CompliantWith_ImfPlugins();
     #endif //MEDIAINFO_CONFORMANCE
 }
 
@@ -11875,7 +12695,7 @@ bool File_Mxf::CompliantWith_St20672_IsTested (bool WithApplications)
 {
     #if MEDIAINFO_CONFORMANCE
         return St20672_IsRequested || St20675_IsRequested || CompliantWith_St20672_IsCandidate()
-            || (WithApplications && (St2067204_IsRequested || St206721_IsRequested || St206750_IsRequested || CompliantWith_St206721_IsCandidate() || CompliantWith_St206750_IsCandidate()));
+            || (WithApplications && (St2067204_IsRequested || St206721_IsRequested || St206750_IsRequested || CompliantWith_St206721_IsCandidate() || CompliantWith_St206750_IsCandidate() || CompliantWith_ImfPlugins_IsTested()));
     #else //MEDIAINFO_CONFORMANCE
         return false;
     #endif //MEDIAINFO_CONFORMANCE
@@ -14472,6 +15292,14 @@ void File_Mxf::Data_Parse()
                 ContentPackage_SystemItemIsFirst=SDTI_IsPresent;
             ContentPackage_Elements.push_back(Code_Compare4);
         }
+        if (Essence->second.Element_Key!=Code.lo)
+        {
+            Essence->second.Element_Key=Code.lo;
+            if (ContentPackage_Elements_Keys.size()<256)
+                ContentPackage_Elements_Keys.insert(Code.lo);
+        }
+        if (Essence->second.Element_Starts.size()<2)
+            Essence->second.Element_Starts.insert(Buffer_End?Buffer_Begin:(File_Offset+Buffer_Offset)); //An element parsed in several parts is the same element
         if (SystemItem_Checks.ContentPackage_Elements.size()<256) //Content packages have a few elements, limited if there is no System Item
             SystemItem_Checks.ContentPackage_Elements.push_back(Code_Compare4);
         if (Code_Compare4==0x17010201) //Frame-wrapped ANC Data, size of the element for checking compliance with specifications
@@ -15145,6 +15973,7 @@ void File_Mxf::Data_Parse()
     GROUP(ContainerConstraintsSubDescriptor)
     GROUP(ACESPictureSubDescriptor)
     GROUP(TargetFrameSubDescriptor)
+    GROUP(IABChannelSubDescriptor)
     GROUP(MPEG4VisualSubDescriptor)
     GROUP(AudioChannelLabelSubDescriptor)
     GROUP(SoundfieldGroupLabelSubDescriptor)
@@ -17628,6 +18457,15 @@ void File_Mxf::ContainerConstraintsSubDescriptor()
 
 //---------------------------------------------------------------------------
 void File_Mxf::ACESPictureSubDescriptor()
+{
+    if (Code2==0x3C0A || Code2==0x0102) //Instance UID and Generation UID
+        GenerationInterchangeObject();
+    else
+        UnknownGroupItem();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::IABChannelSubDescriptor()
 {
     if (Code2==0x3C0A || Code2==0x0102) //Instance UID and Generation UID
         GenerationInterchangeObject();
@@ -26473,8 +27311,8 @@ void File_Mxf::Property_Store(properties& Properties, int64u Size)
         Key=Primer_Value->second.lo;
     }
 
-    //Raw content, only the beginning of long values (e.g. index entries) is kept, except for the references to sub-descriptors and to Groups of Soundfield Groups
-    if (Size>256 && Key!=Elements::SubDescriptors && Key!=Elements::GroupOfSoundfieldGroupsLinkID)
+    //Raw content, only the beginning of long values (e.g. index entries) is kept, except for the lists of references and labels which are fully checked
+    if (Size>256 && Key!=Elements::SubDescriptors && Key!=Elements::GroupOfSoundfieldGroupsLinkID && Key!=Elements::ConformsToSpecifications && Key!=Elements::MGAAudioMetadataPayloadULArray && Key!=Elements::MCATitle)
         Size=256;
     if (Buffer_Offset+Element_Offset+Size>Buffer_Size)
         return;
