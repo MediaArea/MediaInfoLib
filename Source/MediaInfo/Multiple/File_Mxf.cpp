@@ -6747,7 +6747,8 @@ const File_Mxf::st20675_results& File_Mxf::CompliantWith_St20675 ()
     else if (Descriptor && Descriptor->EssenceContainer.hi!=(int64u)-1)
     {
         const auto EssenceContainer=Raw_UL(Descriptor->EssenceContainer.hi, Descriptor->EssenceContainer.lo);
-        if ((Descriptor->EssenceContainer.lo>>32)!=0x0D010301)
+        const auto IsIsxd=Descriptor->EssenceContainer.lo==0x0E09060701010103LL; //SMPTE ST 2067-202, its label does not comply with SMPTE ST 379-2
+        if ((Descriptor->EssenceContainer.lo>>32)!=0x0D010301 && !IsIsxd)
             Error("Essence Container is not an MXF Generic Container (actual "+Raw_Hex(EssenceContainer)+')');
         const auto EssenceContainers=Property_Get(Preface, 0x3B0A);
         const auto EssenceContainers_Count=(EssenceContainers && EssenceContainers->size()>=8)?BigEndian2int32u(EssenceContainers->data()):0;
@@ -6763,7 +6764,7 @@ const File_Mxf::st20675_results& File_Mxf::CompliantWith_St20675 ()
              && !Raw_IsSame(Preface_EssenceContainer, Raw_UL(0x060E2B340401010DLL, 0x0D010301020B0300LL)))
                 Error("Essence Container of the Preface is not the one of the File Descriptor (actual "+Raw_Hex(Preface_EssenceContainer)+", expected "+Raw_Hex(EssenceContainer)+')');
         }
-        Wrapping=Mxf_EssenceContainer_Mapping(Descriptor->EssenceContainer.lo);
+        Wrapping=IsIsxd?"Frame":Mxf_EssenceContainer_Mapping(Descriptor->EssenceContainer.lo);
         if ((Descriptor->EssenceContainer.lo&0xFFFFFFFFFFFF0000LL)==Labels::MXFGCJPEG2000PictureMappings)
             switch ((int8u)(Descriptor->EssenceContainer.lo>>8)) //Content kinds of SMPTE ST 422:2019, all of them frame-wrapped except clip-wrapped
             {
@@ -7081,7 +7082,11 @@ File_Mxf::conformance_errors File_Mxf::CompliantWith_St20672 (conformance_errors
     const auto& Descriptor_Properties=SetProperties_Get(Package.Descriptor, DescriptorKey);
     const auto SubDescriptors=SubDescriptors_Get(Package.Descriptor);
 
-    if (EssenceTrack->Kind=='A' || DescriptorKey==Groups::WAVEPCMDescriptor || DescriptorKey==Groups::AES3PCMDescriptor) //Also if the kind of the track is not the one of the File Descriptor
+    const auto EssenceContainer_Mapping=Descriptor->second.EssenceContainer.lo&0xFFFFFFFFFFFF0000LL;
+    const auto IsPlugin=DescriptorKey==Groups::IABEssenceDescriptor || DescriptorKey==Groups::MGASoundEssenceDescriptor || EssenceContainer_Mapping==Labels::MXFGCImmersiveAudio || EssenceContainer_Mapping==Labels::MXFGCMGAAudioMappings; //Track Files specified by plug-ins, they are not Audio Track Files
+    if (IsPlugin)
+        ; //Only the overall constraints
+    else if (EssenceTrack->Kind=='A' || DescriptorKey==Groups::WAVEPCMDescriptor || DescriptorKey==Groups::AES3PCMDescriptor) //Also if the kind of the track is not the one of the File Descriptor
     {
         //Audio Track File (5.3)
         CompliantWith_St20672_Audio(Descriptor->second, Descriptor_Properties, Errors, Warnings);
