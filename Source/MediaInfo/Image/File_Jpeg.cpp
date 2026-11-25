@@ -1823,6 +1823,9 @@ void File_Jpeg::Data_Parse()
         SOS_SOD_Parsed=false;
         return;
     }
+    #if MEDIAINFO_CONFORMANCE
+        Jp2k_MainHeader_Parse();
+    #endif //MEDIAINFO_CONFORMANCE
     switch (Element_Code)
     {
         CASE_INFO(TEM ,                                         "TEM");
@@ -1993,6 +1996,59 @@ void File_Jpeg::CAP()
 
     Data_Common();
 }
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
+void File_Jpeg::Jp2k_MainHeader_Parse()
+{
+    switch (Element_Code)
+    {
+        case Elements::SOC :
+                            Jp2k_MainHeader_Current.clear();
+                            Jp2k_MainHeader_IsCurrent=true;
+                            Jp2k_Codestream_Count++;
+                            break;
+        case Elements::SOT : //End of the main header
+                            if (!Jp2k_MainHeader_IsCurrent)
+                                break;
+                            Jp2k_MainHeader_IsCurrent=false;
+                            if (Jp2k_MainHeader.empty())
+                                Jp2k_MainHeader=std::move(Jp2k_MainHeader_Current);
+                            else
+                            {
+                                for (const auto& Segment : Jp2k_MainHeader_Current)
+                                {
+                                    const auto First=Jp2k_MainHeader.find(Segment.first);
+                                    if (First==Jp2k_MainHeader.end() || First->second!=Segment.second)
+                                        Jp2k_MainHeader_Differences.insert(Segment.first);
+                                }
+                                for (const auto& Segment : Jp2k_MainHeader)
+                                    if (Jp2k_MainHeader_Current.find(Segment.first)==Jp2k_MainHeader_Current.end())
+                                        Jp2k_MainHeader_Differences.insert(Segment.first);
+                            }
+                            break;
+        case Elements::CAP :
+        case Elements::SIZ :
+        case Elements::COD :
+        case Elements::QCD : //Only one is permitted in the main header
+                            if (Jp2k_MainHeader_IsCurrent && Element_Size<=0x10000)
+                            {
+                                auto& Segment=Jp2k_MainHeader_Current[(int16u)Element_Code];
+                                if (Segment.empty())
+                                    Segment.assign((const char*)Buffer+Buffer_Offset, (size_t)Element_Size);
+                            }
+                            break;
+        case Elements::TLM :
+        case Elements::RGN :
+        case Elements::POC :
+        case Elements::PPM : //Only the presence is needed
+                            if (Jp2k_MainHeader_IsCurrent)
+                                Jp2k_MainHeader_Current[(int16u)Element_Code];
+                            break;
+        default             : ;
+    }
+}
+#endif //MEDIAINFO_CONFORMANCE
 
 //---------------------------------------------------------------------------
 void File_Jpeg::SIZ()

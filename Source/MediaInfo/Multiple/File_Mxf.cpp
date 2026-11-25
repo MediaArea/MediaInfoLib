@@ -2221,6 +2221,8 @@ File_Mxf::File_Mxf()
         St2067204_IsTested=false;
         St20672_IsRequested=MxfProfiles.find(",SMPTE_ST_2067-2,")!=string::npos;
         St20675_IsRequested=MxfProfiles.find(",SMPTE_ST_2067-5,")!=string::npos;
+        St206721_IsRequested=MxfProfiles.find(",SMPTE_ST_2067-21,")!=string::npos;
+        St206750_IsRequested=MxfProfiles.find(",SMPTE_ST_2067-50,")!=string::npos;
         RiffChunks_ErrorCount=0;
         McaLabels_ErrorCount=0;
     #endif //MEDIAINFO_CONFORMANCE
@@ -7283,6 +7285,1189 @@ bool File_Mxf::CompliantWith_St20672_IsCandidate ()
 }
 
 //---------------------------------------------------------------------------
+// JPEG 2000 profiles (ISO/IEC 15444-1 Table A.10)
+enum jp2k_family
+{
+    Jp2k_Unknown,
+    Jp2k_BCS,       //Broadcast Contribution Single Tile Profile
+    Jp2k_BCMR,      //Broadcast Contribution Multi-tile Reversible Profile
+    Jp2k_IMFS,      //IMF Single Tile Lossy Profile
+    Jp2k_IMFMR,     //IMF Single/Multi Tile Reversible Profile
+    Jp2k_HT,        //HTJ2K (ISO/IEC 15444-15)
+};
+struct jp2k_profile
+{
+    jp2k_family Family;
+    int32u      Width_Max;  //IMF profiles only: 2048, 4096 or 8192
+    int8u       MainLevel;
+    int8u       SubLevel;
+};
+static jp2k_profile Mxf_Jp2k_Profile(int16u Rsiz)
+{
+    jp2k_profile Profile={Jp2k_Unknown, 0, 0, 0};
+    if (Rsiz&0x4000)
+    {
+        Profile.Family=Jp2k_HT;
+        return Profile;
+    }
+    switch (Rsiz>>8)
+    {
+        case 0x01 : if (!(Rsiz&0xF0)) { Profile.Family=Jp2k_BCS; Profile.MainLevel=(int8u)(Rsiz&0x0F); } break;
+        case 0x03 : if (Rsiz==0x0306 || Rsiz==0x0307) { Profile.Family=Jp2k_BCMR; Profile.MainLevel=(int8u)(Rsiz&0x0F); } break;
+        case 0x04 :
+        case 0x05 :
+        case 0x06 :
+        case 0x07 :
+        case 0x08 :
+        case 0x09 :
+                    Profile.Family=Rsiz<0x0700?Jp2k_IMFS:Jp2k_IMFMR;
+                    Profile.Width_Max=2048<<(((Rsiz>>8)-4)%3);
+                    Profile.MainLevel=(int8u)(Rsiz&0x0F);
+                    Profile.SubLevel=(int8u)((Rsiz>>4)&0x0F);
+                    break;
+        default   : ;
+    }
+    return Profile;
+}
+
+//---------------------------------------------------------------------------
+// Rsiz corresponding to a JPEG 2000 Picture Essence Coding label (low part), 0 if the label does not indicate a Broadcast Contribution or IMF profile
+static int16u Mxf_Jp2k_Rsiz_FromLabel(int64u Label)
+{
+    const auto Variant=(int8u)(Label>>8);
+    const auto Constraints=(int8u)Label;
+    if ((Label&0xFFFFFFFFFFFF0000LL)!=0x0401020203010000LL)
+        return 0;
+    if (Variant==0x01)
+    {
+        if (Constraints>=0x11 && Constraints<=0x15)
+            return 0x0100|(Constraints-0x10);
+        if (Constraints==0x16 || Constraints==0x17)
+            return 0x0300|(Constraints-0x10);
+        return 0;
+    }
+    if (Variant<0x02 || Variant>0x07)
+        return 0;
+    int8u Pos=1; //First value is Mainlevel 0 Sublevel 0
+    for (int8u MainLevel=0; MainLevel<=11; MainLevel++)
+    {
+        const int8u SubLevel_Max=MainLevel<4?(MainLevel?1:0):(MainLevel-2);
+        if (Constraints>=Pos && Constraints<=Pos+SubLevel_Max)
+            return (int16u)(((Variant+2)<<8)|((Constraints-Pos)<<4)|MainLevel);
+        Pos+=SubLevel_Max+1;
+    }
+    return 0;
+}
+
+//---------------------------------------------------------------------------
+// Maximum components sampling rate in MSamples/s (ISO/IEC 15444-1 Tables A.49, A.50 and A.53), 0 if not specified
+static int64u Mxf_Jp2k_SamplingRate_Max(const jp2k_profile& Profile)
+{
+    static const int64u Rates[]={0, 65, 130, 195, 260, 520, 1200, 2400, 4800, 9600, 19200, 38400};
+    if (Profile.Family==Jp2k_BCMR)
+        return 520;
+    return Profile.MainLevel<sizeof(Rates)/sizeof(*Rates)?Rates[Profile.MainLevel]:0;
+}
+
+//---------------------------------------------------------------------------
+// Codestream restrictions of the JPEG 2000 profiles (ISO/IEC 15444-1 Tables A.48, A.51 and A.52) and of HTJ2K in SMPTE ST 2067-21 (APP2.HT.REV and APP2.HT.IRV), from the main header of the codestream
+// Not checked: tile-parts, marker segments in tile-part headers, COC and QCC marker segments, compressed bit rate
+void File_Mxf::Jp2k_Restrictions (const map<int16u, string>& MainHeader, conformance_errors& Errors, conformance_errors& Warnings)
+{
+    const auto Segment_Get=[&](int16u Marker) -> const string* {
+        const auto Segment=MainHeader.find(Marker);
+        return Segment==MainHeader.end()?nullptr:&Segment->second;
+    };
+    const auto SIZ=Segment_Get(0xFF51);
+    if (!SIZ || SIZ->size()<36)
+        return;
+    const auto Rsiz=BigEndian2int16u(SIZ->data());
+    const auto Xsiz=BigEndian2int32u(SIZ->data()+2);
+    const auto Ysiz=BigEndian2int32u(SIZ->data()+6);
+    const auto XOsiz=BigEndian2int32u(SIZ->data()+10);
+    const auto YOsiz=BigEndian2int32u(SIZ->data()+14);
+    const auto XTsiz=BigEndian2int32u(SIZ->data()+18);
+    const auto YTsiz=BigEndian2int32u(SIZ->data()+22);
+    const auto XTOsiz=BigEndian2int32u(SIZ->data()+26);
+    const auto YTOsiz=BigEndian2int32u(SIZ->data()+30);
+    const auto Csiz=BigEndian2int16u(SIZ->data()+34);
+    const auto Profile=Mxf_Jp2k_Profile(Rsiz);
+    if (Profile.Family==Jp2k_Unknown)
+        return; //Reported elsewhere
+    const auto IsHT=Profile.Family==Jp2k_HT;
+    const auto IsIMF=Profile.Family==Jp2k_IMFS || Profile.Family==Jp2k_IMFMR;
+    const auto Error=[&](const string& Value) { Errors.Add("JPEG 2000 codestream: "+Value); };
+
+    //SIZ marker segment
+    if (XOsiz || YOsiz || XTOsiz || YTOsiz)
+        Error("image or tile origin is not 0");
+    const auto IsSingleTile=(int64u)XTsiz+XTOsiz>=Xsiz && (int64u)YTsiz+YTOsiz>=Ysiz;
+    if (!IsSingleTile && (Profile.Family==Jp2k_BCS || Profile.Family==Jp2k_IMFS || IsHT))
+        Error("image does not have one tile (actual tiles of "+to_string(XTsiz)+'x'+to_string(YTsiz)+')');
+    else if (!IsSingleTile && Profile.Family==Jp2k_BCMR)
+    {
+        const auto Tiles=(XTsiz && YTsiz)?((((int64u)Xsiz+XTsiz-1)/XTsiz)*(((int64u)Ysiz+YTsiz-1)/YTsiz)):0;
+        if (Tiles!=4 || Xsiz%XTsiz || Ysiz%YTsiz || (int64u)XTsiz*2<Xsiz)
+            Error("image does not have 1x1, 2x2 or 1x4 tiles of the same size (actual tiles of "+to_string(XTsiz)+'x'+to_string(YTsiz)+')');
+    }
+    else if (!IsSingleTile && (XTsiz!=YTsiz || (XTsiz!=1024 && !(XTsiz==2048 && Profile.Width_Max>=4096) && !(XTsiz==4096 && Profile.Width_Max>=8192))))
+        Error("tile size is not permitted (actual "+to_string(XTsiz)+'x'+to_string(YTsiz)+')');
+    if (Csiz>(IsIMF?3:4))
+        Error("component count is more than "+string(IsIMF?"3":"4")+" (actual "+to_string(Csiz)+')');
+    const int8u Ssiz_Max=(Profile.Family==Jp2k_BCS || Profile.Family==Jp2k_BCMR)?11:15;
+    auto Ssiz_IsValid=true, Subsampling_IsValid=true, Ssiz_IsSame=true;
+    for (int16u i=0; i<Csiz && 36+(size_t)(i+1)*3<=SIZ->size(); i++)
+    {
+        const auto Ssiz=(int8u)(*SIZ)[36+(size_t)i*3];
+        const auto XRsiz=(int8u)(*SIZ)[36+(size_t)i*3+1];
+        const auto YRsiz=(int8u)(*SIZ)[36+(size_t)i*3+2];
+        if (Ssiz<7 || Ssiz>Ssiz_Max) //A signed component has its upper bit set
+            Ssiz_IsValid=false;
+        if (Ssiz!=(int8u)(*SIZ)[36])
+            Ssiz_IsSame=false;
+        if (YRsiz!=1 || !XRsiz || XRsiz>((i==1 || i==2)?2:1))
+            Subsampling_IsValid=false;
+    }
+    if (Csiz>=3 && SIZ->size()>=45 && (*SIZ)[40]!=(*SIZ)[43])
+        Subsampling_IsValid=false;
+    if (!Ssiz_IsValid)
+        Error("component bit depth is not unsigned 8 to "+to_string(Ssiz_Max+1)+" bits");
+    if (IsHT && !Ssiz_IsSame)
+        Error("components do not have the same bit depth");
+    if (!Subsampling_IsValid)
+        Error("component subsampling is not 4:4:4 or 4:2:2");
+
+    if (IsHT && (Rsiz&0xB000))
+        Error("Rsiz indicates other capabilities than ISO/IEC 15444-1 and ISO/IEC 15444-15 (actual 0x"+Ztring().From_Number(Rsiz, 16).To_UTF8()+')');
+
+    //CAP marker segment
+    auto IsReversible=Profile.Family==Jp2k_BCMR || Profile.Family==Jp2k_IMFMR;
+    int8u Magb=0;
+    if (IsHT)
+    {
+        const auto CAP=Segment_Get(0xFF50);
+        if (!CAP || CAP->size()<4)
+        {
+            Error("CAP marker segment is not present");
+            return;
+        }
+        const auto Pcap=BigEndian2int32u(CAP->data());
+        if (Pcap!=0x00020000 || CAP->size()<6)
+        {
+            Error("Pcap does not indicate only ISO/IEC 15444-15 (actual 0x"+Ztring().From_Number(Pcap, 16).To_UTF8()+')');
+            return;
+        }
+        const auto Ccap15=BigEndian2int16u(CAP->data()+4);
+        if (Ccap15&0xC000)
+            Error("Ccap15 is not HTONLY");
+        if (Ccap15&0x2000)
+            Error("Ccap15 is not SINGLEHT");
+        if (Ccap15&0x1000)
+            Error("Ccap15 is not RGNFREE");
+        if (Ccap15&0x0800)
+            Error("Ccap15 is not HOMOGENEOUS");
+        if (Ccap15&0x07C0)
+            Error("reserved bits of Ccap15 are not 0");
+        IsReversible=!(Ccap15&0x0020);
+        const auto P=Ccap15&0x001F;
+        Magb=(int8u)(!P?8:(P<20?P+8:(P<31?4*(P-19)+27:74)));
+    }
+
+    //COD marker segment
+    const auto COD=Segment_Get(0xFF52);
+    if (!COD || COD->size()<10)
+        Error("COD marker segment is not present");
+    else
+    {
+        const auto Scod=(int8u)(*COD)[0];
+        const auto Progression=(int8u)(*COD)[1];
+        const auto Layers=BigEndian2int16u(COD->data()+2);
+        const auto Mct=(int8u)(*COD)[4];
+        const auto Levels=(int8u)(*COD)[5];
+        const auto Xcb=(int8u)(*COD)[6]+2;
+        const auto Ycb=(int8u)(*COD)[7]+2;
+        const auto Style=(int8u)(*COD)[8];
+        const auto Transformation=(int8u)(*COD)[9];
+        if (IsHT?Progression>4:Progression!=4)
+            Error("progression order is not "+string(IsHT?"permitted":"CPRL")+" (actual "+to_string(Progression)+')');
+        else if (IsHT && Progression!=2)
+            Warnings.Add("JPEG 2000 codestream: progression order is not RPCL, the only one permitted since SMPTE ST 2067-21:2026 (actual "+to_string(Progression)+')');
+        if (Layers!=1)
+            Error("number of layers is not 1 (actual "+to_string(Layers)+')');
+        int8u Levels_Max;
+        if (IsHT)
+            Levels_Max=max(Xsiz, Ysiz)<=2048?5:(max(Xsiz, Ysiz)<=4096?6:7);
+        else if (Profile.Family==Jp2k_IMFMR)
+        {
+            Levels_Max=XTsiz>=8192?7:(XTsiz>=4096?6:(XTsiz>=2048?5:(XTsiz>=1024?4:32)));
+            if (Profile.Width_Max<=4096 && Levels_Max!=32)
+                Levels_Max=min(Levels_Max, (int8u)(Profile.Width_Max<=2048?5:6));
+        }
+        else if (Profile.Family==Jp2k_IMFS)
+            Levels_Max=Profile.Width_Max<=2048?5:(Profile.Width_Max<=4096?6:7);
+        else
+            Levels_Max=5;
+        if (!Levels || Levels>Levels_Max)
+            Error("number of decomposition levels is not "+(Levels_Max==32?string("permitted"):("1 to "+to_string(Levels_Max)))+" (actual "+to_string(Levels)+')');
+        if (IsIMF?(Xcb!=5 || Ycb!=5):(Xcb<5 || Xcb>7 || Ycb<5 || Ycb>6 || Xcb+Ycb>12))
+            Error("code-block size is not permitted (actual "+to_string(Xcb<16?(1<<Xcb):0)+'x'+to_string(Ycb<16?(1<<Ycb):0)+')');
+        if (Style!=(IsHT?0x40:0x00))
+            Error("code-block style is not permitted (actual "+to_string(Style)+", expected "+(IsHT?"64":"0")+')');
+        if (Transformation!=(IsReversible?1:0))
+            Error("transformation is not the "+string(IsReversible?"5-3 reversible":"9-7 irreversible")+" one (actual "+to_string(Transformation)+')');
+        auto Precincts_IsValid=(Scod&0x01) && COD->size()>=10+(size_t)Levels+1;
+        for (size_t i=0; Precincts_IsValid && i<=Levels; i++)
+            if ((int8u)(*COD)[10+i]!=(i?0x88:0x77))
+                Precincts_IsValid=false;
+        if (!Precincts_IsValid)
+            Error("precinct sizes are not 128x128 for the lowest resolution level then 256x256");
+
+        //Parameter B (SMPTE ST 2067-21 Annex I, Annex H since 2026)
+        if (IsHT && Csiz && SIZ->size()>=39)
+        {
+            const auto BitDepth=(int8u)((*SIZ)[36]&0x7F)+1;
+            int8u B=0;
+            if (IsReversible)
+                B=(int8u)(BitDepth+3+(Levels>5?1:0)+(Mct?1:0));
+            else
+                B=(int8u)(BitDepth<=8?9:(BitDepth<=10?11:(BitDepth<=12?(Mct?14:13):(Mct?18:17))));
+            if (IsReversible && Magb>B)
+                Error("MAGBP is more than the one of APP2.HT.REV (actual "+to_string(Magb)+", expected "+to_string(B)+')');
+            if (!IsReversible && Magb>31)
+                Error("MAGBP is more than the one of APP2.HT.IRV (actual "+to_string(Magb)+", expected 31)");
+            else if (!IsReversible && Magb>B)
+                Warnings.Add("JPEG 2000 codestream: MAGBP is more than the recommended one of APP2.HT.IRV (actual "+to_string(Magb)+", expected "+to_string(B)+')');
+        }
+    }
+
+    //Other marker segments
+    if (Segment_Get(0xFF5E))
+        Error("RGN marker segment is present");
+    if (Segment_Get(0xFF5F))
+        Error("POC marker segment is present");
+    if (Segment_Get(0xFF60))
+        Error("PPM marker segment is present");
+    if (!Segment_Get(0xFF55))
+        Error("TLM marker segment is not present");
+}
+
+//---------------------------------------------------------------------------
+// File Descriptor, key of the File Descriptor, Essence Track of an IMF Image Track File
+bool File_Mxf::ImfImage_Get (imf_image& Image)
+{
+    if (IsSub)
+        return false;
+    vector<int128u> MaterialPackages, TopLevelPackages, EssenceContainerDatas;
+    ContentStorage_Packages_Get(MaterialPackages, TopLevelPackages, EssenceContainerDatas);
+    if (TopLevelPackages.size()!=1)
+        return false;
+    const auto& Package=Packages[TopLevelPackages[0]];
+    const auto Descriptor=Descriptors.find(Package.Descriptor);
+    Image.DescriptorKey=SetKey_FileDescriptor_Get(Package.Descriptor); //Also if another set of the same Header Metadata reuses its Instance UID
+    if (Descriptor==Descriptors.end() || !Image.DescriptorKey || Image.DescriptorKey==Groups::MultipleDescriptor)
+        return false; //A Multiple Descriptor is reported as not mono-essence
+    Image.EssenceContainer=Descriptor->second.EssenceContainer;
+    Image.Properties=&SetProperties_Get(Package.Descriptor, Image.DescriptorKey);
+    Image.SubDescriptors=SubDescriptors_Get(Package.Descriptor);
+    vector<track_info> Tracks_List;
+    string Kinds;
+    conformance_errors Tracks_Errors; //Reported elsewhere
+    Package_Tracks(Package, Tracks_List, Kinds, Tracks_Errors);
+    for (const auto& Track : Tracks_List)
+        if (Track.Kind=='V')
+        {
+            Image.TrackID=Track.Track->second.TrackID;
+            Image.TrackNumber=Track.TrackNumber;
+            Image.Duration=nullptr;
+            const auto Sequence=SetProperties.find(Track.Track->second.Sequence);
+            if (Sequence!=SetProperties.end())
+                Image.Duration=Property_Get(Sequence->second, 0x0202);
+        }
+    return true;
+}
+
+//---------------------------------------------------------------------------
+// Items of the Generic Picture Essence Descriptor with the same constraint in SMPTE ST 2067-21 and SMPTE ST 2065-5
+void File_Mxf::ImfImage_Generic (const imf_image& Image, conformance_errors& Errors)
+{
+    const auto& Properties=*Image.Properties;
+    const auto Absent=[&](int64u Key, const char* Name) {
+        if (Property_Get(Properties, Key))
+            Errors.Add(string(Name)+" is present");
+    };
+    const auto Present=[&](int64u Key, const char* Name) {
+        if (!Property_Get(Properties, Key))
+            Errors.Add(string(Name)+" is missing");
+    };
+    const auto AbsentOr=[&](int64u Key, const char* Name, const string* Expected) {
+        const auto Value=Property_Get(Properties, Key);
+        if (Value && Expected && *Value!=*Expected)
+            Errors.Add(string(Name)+" is wrong (actual "+Raw_Text(*Value)+", expected "+Raw_Text(*Expected)+')');
+    };
+    const string Zero(4, '\0');
+    Present(0x3001, "Sample Rate");
+    for (const auto Key : {0x3203, 0x3202})
+    {
+        const char* Name=Key==0x3203?"Stored Width":"Stored Height";
+        Present(Key, Name);
+        const auto Value=Property_Get(Properties, Key);
+        if (Value && Value->size()!=4)
+            Errors.Add(string(Name)+" is not 4 bytes (actual "+to_string(Value->size())+')');
+    }
+    Absent(0x3216, "Stored F2 Offset");
+    AbsentOr(0x3205, "Sampled Width", Property_Get(Properties, 0x3203));
+    AbsentOr(0x3204, "Sampled Height", Property_Get(Properties, 0x3202));
+    AbsentOr(0x3206, "Sampled X Offset", &Zero);
+    AbsentOr(0x3207, "Sampled Y Offset", &Zero);
+    Present(0x320E, "Aspect Ratio");
+    const auto AspectRatio=Property_Get(Properties, 0x320E);
+    if (AspectRatio && (AspectRatio->size()!=8 || !BigEndian2int32u(AspectRatio->data()) || !BigEndian2int32u(AspectRatio->data()+4)))
+        Errors.Add("Aspect Ratio is unknown (actual "+Raw_Text(*AspectRatio, true)+')');
+    Absent(0x3211, "Image Alignment Offset");
+    Absent(0x3213, "Image Start Offset");
+    Absent(0x3214, "Image End Offset");
+}
+
+//---------------------------------------------------------------------------
+// Mastering Display Color Volume Metadata: all or none of the items, recommended order of the primaries
+void File_Mxf::ImfImage_MasteringDisplay (const properties& Properties, const int64u* Keys, const char* Prefix, conformance_errors& Errors, conformance_errors& Warnings)
+{
+    static const char* const Names[4]={"Primaries", "White Point Chromaticity", "Maximum Luminance", "Minimum Luminance"};
+    size_t Count=0;
+    for (size_t i=0; i<4; i++)
+    {
+        const auto Value=Property_Get(Properties, Keys[i]);
+        if (!Value)
+            continue;
+        Count++;
+        const size_t Size=i?4:12;
+        if (Value->size()!=Size)
+            Errors.Add(string(Prefix)+' '+Names[i]+" is not "+to_string(Size)+" bytes (actual "+to_string(Value->size())+')');
+    }
+    if (Count && Count!=4)
+        Errors.Add(string(Prefix)+" items are not all present (actual "+to_string(Count)+", expected 4)");
+    const auto Primaries=Property_Get(Properties, Keys[0]);
+    if (!Primaries || Primaries->size()!=12)
+        return;
+    int16u X[3], Y[3];
+    for (size_t i=0; i<3; i++)
+    {
+        X[i]=BigEndian2int16u(Primaries->data()+i*4);
+        Y[i]=BigEndian2int16u(Primaries->data()+i*4+2);
+    }
+    if (X[0]<X[1] || X[0]<X[2] || Y[1]<Y[0] || Y[1]<Y[2])
+        Warnings.Add(string(Prefix)+" Primaries are not ordered with the largest x chromaticity coordinate first then the largest y one");
+}
+
+//---------------------------------------------------------------------------
+// Image Track File of IMF Application #2E (SMPTE ST 2067-21:2026, which is a superset of the frame characteristics of the editions since 2016), descriptors only
+// Items not permitted in an edition but permitted in another one are accepted: 8K images (since 2026), Alpha Transparency (ignored since 2026), Display F2 Offset (required before 2023), mastering display metadata with COLOR.3 (since 2020)
+// Not checked: rectangles of the active area, composition (ApplicationIdentification, homogeneous image essence, segment duration, MaxCLL and MaxFALL), compressed bit rate
+void File_Mxf::CompliantWith_St206721_Descriptors (const imf_image& Image, conformance_errors& Errors, conformance_errors& Warnings)
+{
+    const auto& Properties=*Image.Properties;
+    const auto Get=[&](int64u Key) { return Property_Get(Properties, Key); };
+    const auto Text=[&](const string* Value) { return Value?Raw_Text(*Value):string("none"); };
+    const auto Present=[&](int64u Key, const char* Name) {
+        if (!Get(Key))
+            Errors.Add(string(Name)+" is missing");
+    };
+    const auto Absent=[&](int64u Key, const char* Name) {
+        if (Get(Key))
+            Errors.Add(string(Name)+" is present");
+    };
+
+    //Wrapping (7.1.2)
+    const auto IsCDCI=Image.DescriptorKey==Groups::CDCIDescriptor;
+    const auto IsRGBA=Image.DescriptorKey==Groups::RGBADescriptor;
+    if (!IsCDCI && !IsRGBA)
+    {
+        Errors.Add("File Descriptor is not a CDCI or RGBA Picture Essence Descriptor");
+        return;
+    }
+    const auto& EssenceContainer=Image.EssenceContainer;
+    const auto EssenceContainer_IsP1=EssenceContainer.lo==(Labels::MXFGCJPEG2000PictureMappings|0x0600);
+    const auto EssenceContainer_IsI1=EssenceContainer.lo==(Labels::MXFGCJPEG2000PictureMappings|0x0300);
+    if (!EssenceContainer_IsP1 && !EssenceContainer_IsI1)
+        Errors.Add("Essence Container is not JPEG 2000 with P1 or I1 wrapping (actual "+(EssenceContainer.hi==(int64u)-1?string("none"):Raw_Hex(Raw_UL(EssenceContainer.hi, EssenceContainer.lo)))+')');
+
+    //Generic Picture Essence Descriptor (7.2.1)
+    ImfImage_Generic(Image, Errors);
+    int64u FrameLayout=(int64u)-1;
+    Raw_UInt_Get(Get(0x320C), 1, FrameLayout);
+    if (FrameLayout>1)
+        Errors.Add("Frame Layout is not full frame or separate fields (actual "+Text(Get(0x320C))+')');
+    const auto IsInterlaced=FrameLayout==1;
+    if (FrameLayout<=1 && (IsInterlaced?EssenceContainer_IsP1:EssenceContainer_IsI1))
+        Errors.Add("Frame Layout is not the one of the Essence Container wrapping (actual "+string(IsInterlaced?"separate fields":"full frame")+", expected "+(IsInterlaced?"full frame":"separate fields")+')');
+    if (IsInterlaced)
+    {
+        const auto DisplayF2Offset=Get(0x3217);
+        Present(0x3217, "Display F2 Offset");
+        if (DisplayF2Offset && *DisplayF2Offset!=Raw_UInt(0, 4) && *DisplayF2Offset!=Raw_UInt((int32u)-1, 4))
+            Errors.Add("Display F2 Offset is wrong (actual "+(DisplayF2Offset->size()==4?to_string((int32s)BigEndian2int32u(DisplayF2Offset->data())):Raw_Text(*DisplayF2Offset))+", expected 0 or -1)");
+        const vector<property_expected> List=
+        {
+            {0x3212, "Field Dominance", {Raw_UInt(1, 1), Raw_UInt(2, 1)}, false},
+        };
+        Properties_Test(Properties, List, Errors);
+    }
+    else if (FrameLayout==0)
+    {
+        if (Get(0x3217))
+            Warnings.Add("Display F2 Offset is present with a progressive structure");
+        Absent(0x3212, "Field Dominance");
+    }
+
+    //Colorimetry (7.2.2 to 7.2.4)
+    struct color_system
+    {
+        int8u   Number;
+        int64u  TransferCharacteristic_Hi;
+        int64u  TransferCharacteristic;
+        int64u  ColorPrimaries;
+        int64u  CodingEquations; //0 if none
+    };
+    static const color_system ColorSystems[]=
+    {
+        {1, 0x060E2B3404010101LL, 0x0401010101020000LL, 0x0401010103020000LL, 0x0401010102010000LL},
+        {2, 0x060E2B3404010101LL, 0x0401010101020000LL, 0x0401010103010000LL, 0x0401010102010000LL},
+        {3, 0x060E2B3404010101LL, 0x0401010101020000LL, 0x0401010103030000LL, 0x0401010102020000LL},
+        {4, 0x060E2B340401010DLL, 0x0401010101080000LL, 0x0401010103030000LL, 0x0401010102020000LL},
+        {5, 0x060E2B340401010ELL, 0x0401010101090000LL, 0x0401010103040000LL, 0x0401010102060000LL},
+        {6, 0x060E2B340401010DLL, 0x04010101010A0000LL, 0x0401010103060000LL, 0},
+        {7, 0x060E2B340401010DLL, 0x04010101010A0000LL, 0x0401010103040000LL, 0x0401010102060000LL},
+        {8, 0x060E2B340401010DLL, 0x04010101010B0000LL, 0x0401010103040000LL, 0x0401010102060000LL},
+    };
+    const color_system* Color=nullptr;
+    const auto TransferCharacteristic=Get(0x3210);
+    const auto ColorPrimaries=Get(0x3219);
+    Present(0x3210, "Transfer Characteristic");
+    Present(0x3219, "Color Primaries");
+    if (TransferCharacteristic && ColorPrimaries)
+    {
+        for (const auto& ColorSystem : ColorSystems)
+            if (Raw_IsSame(*TransferCharacteristic, Raw_UL(ColorSystem.TransferCharacteristic_Hi, ColorSystem.TransferCharacteristic)) && Raw_IsSame(*ColorPrimaries, Raw_UL(0x060E2B3404010106LL, ColorSystem.ColorPrimaries)))
+                Color=&ColorSystem;
+        if (!Color)
+            Errors.Add("Transfer Characteristic and Color Primaries are not the ones of a COLOR.1 to COLOR.8 system (actual "+Text(TransferCharacteristic)+" and "+Text(ColorPrimaries)+')');
+    }
+    const auto CodingEquations=Get(0x321A);
+    if (IsCDCI)
+    {
+        Present(0x321A, "Coding Equations");
+        if (CodingEquations && Color && Color->CodingEquations && !Raw_IsSame(*CodingEquations, Raw_UL(0x060E2B3404010101LL, Color->CodingEquations)))
+            Errors.Add("Coding Equations is not the one of COLOR."+to_string(Color->Number)+" (actual "+Text(CodingEquations)+", expected "+Raw_Hex(Raw_UL(0x060E2B3404010101LL, Color->CodingEquations))+')');
+    }
+
+    //Mastering display metadata (7.2.7)
+    static const int64u MasteringDisplay_Keys[4]={Elements::MasteringDisplayPrimaries, Elements::MasteringDisplayWhitePointChromaticity, Elements::MasteringDisplayMaximumLuminance, Elements::MasteringDisplayMinimumLuminance};
+    ImfImage_MasteringDisplay(Properties, MasteringDisplay_Keys, "Mastering Display", Errors, Warnings);
+    if (Color && (Color->Number<=2 || Color->Number==4))
+        for (const auto Key : MasteringDisplay_Keys)
+            if (Get(Key))
+            {
+                Errors.Add("Mastering Display items are present with COLOR."+to_string(Color->Number));
+                break;
+            }
+
+    //JPEG 2000 Picture Sub-Descriptor (7.5)
+    const properties* J2k=nullptr;
+    size_t J2k_Count=0;
+    for (const auto& SubDescriptor : Image.SubDescriptors)
+        if (SetKey_Is(SubDescriptor, Groups::JPEG2000SubDescriptor)) //Also if another set of the same Header Metadata reuses its Instance UID
+        {
+            if (!J2k)
+                J2k=&SetProperties_Get(SubDescriptor, Groups::JPEG2000SubDescriptor);
+            J2k_Count++;
+        }
+    if (J2k_Count!=1)
+        Errors.Add("File Descriptor does not reference one JPEG 2000 Picture Sub-Descriptor (actual "+to_string(J2k_Count)+')');
+    const auto J2k_Get=[&](int64u Key) { return J2k?Property_Get(*J2k, Key):nullptr; };
+
+    //Bit depth, quantization and sampling
+    int8u BitDepth=0; //0 if unknown
+    int8u Quantization=0; //0 if unknown, 1 for QE.1, 2 for QE.2
+    int8u Sampling=0; //0 if unknown, 2 for 4:2:2, 3 for 4:4:4 (average count of components per pixel)
+    const auto Sizing=J2k_Get(Elements::PictureComponentSizing);
+    const auto Sizing_IsValid=Sizing && Sizing->size()>=11 && BigEndian2int32u(Sizing->data()+4)==3;
+    if (Sizing_IsValid)
+        BitDepth=(int8u)((*Sizing)[8]&0x7F)+1;
+    if (IsCDCI)
+    {
+        int64u ComponentDepth, HorizontalSubsampling;
+        if (!Raw_UInt_Get(Get(0x3301), 4, ComponentDepth))
+            Errors.Add("Component Depth is missing");
+        else
+        {
+            if (BitDepth && ComponentDepth!=BitDepth)
+                Errors.Add("Component Depth is not the bit depth of the JPEG 2000 Picture Sub-Descriptor (actual "+to_string(ComponentDepth)+", expected "+to_string(BitDepth)+')');
+            BitDepth=ComponentDepth<=32?(int8u)ComponentDepth:0xFF;
+        }
+        if (!Raw_UInt_Get(Get(0x3302), 4, HorizontalSubsampling))
+            Errors.Add("Horizontal Subsampling is missing");
+        else if (HorizontalSubsampling!=1 && HorizontalSubsampling!=2)
+            Errors.Add("Horizontal Subsampling is wrong (actual "+to_string(HorizontalSubsampling)+", expected 1 or 2)");
+        else
+            Sampling=HorizontalSubsampling==1?3:2;
+        const vector<property_expected> List=
+        {
+            {0x3308, "Vertical Subsampling", {Raw_UInt(1, 4)}, true}, //Default value is 1
+            {0x3303, "Color Siting", {Raw_UInt(0, 1)}, false},
+        };
+        Properties_Test(Properties, List, Errors);
+        Absent(0x330B, "Reversed Byte Order");
+        Absent(0x3307, "Padding Bits");
+        Absent(0x3309, "Alpha Sample Depth");
+        Quantization=1;
+        if (Color && (BitDepth==8 || BitDepth==10 || BitDepth==12 || BitDepth==16) && !(Color->Number==4 && BitDepth>10))
+        {
+            const auto Shift=BitDepth-8;
+            const int32u ColorRange=Color->Number==4 //254 and 1013 for COLOR.1 to COLOR.3 in SMPTE ST 2067-21:2020 Am1:2020 are not the ones of QE.1 nor of the other editions
+                ?(BitDepth==8?254:1013):((224<<Shift)+1);
+            const vector<property_expected> Levels=
+            {
+                {0x3304, "Black Ref Level", {Raw_UInt(16<<Shift, 4)}, false},
+                {0x3305, "White Ref Level", {Raw_UInt(235<<Shift, 4)}, false},
+                {0x3306, "Color Range", {Raw_UInt(ColorRange, 4)}, false},
+            };
+            Properties_Test(Properties, Levels, Errors);
+        }
+        else
+        {
+            Present(0x3304, "Black Ref Level");
+            Present(0x3305, "White Ref Level");
+            Present(0x3306, "Color Range");
+        }
+    }
+    else
+    {
+        Sampling=3;
+        Absent(0x3408, "Alpha Max Ref");
+        Absent(0x3409, "Alpha Min Ref");
+        Absent(0x3403, "Palette");
+        Absent(0x3404, "Palette Layout");
+        const vector<property_expected> List=
+        {
+            {0x3405, "Scanning Direction", {Raw_UInt(0, 1)}, false},
+        };
+        Properties_Test(Properties, List, Errors);
+        int64u MaxRef, MinRef;
+        const auto MaxRef_IsPresent=Raw_UInt_Get(Get(0x3406), 4, MaxRef);
+        const auto MinRef_IsPresent=Raw_UInt_Get(Get(0x3407), 4, MinRef);
+        if (!MaxRef_IsPresent)
+            Errors.Add("Component Max Ref is missing");
+        if (!MinRef_IsPresent)
+            Errors.Add("Component Min Ref is missing");
+        if (MaxRef_IsPresent && MinRef_IsPresent)
+        {
+            for (const auto Depth : {8, 10, 12, 16})
+            {
+                if (BitDepth && BitDepth!=Depth)
+                    continue;
+                if (MaxRef==(int64u)(235<<(Depth-8)) && MinRef==(int64u)(16<<(Depth-8)))
+                    Quantization=1;
+                else if (MaxRef==(((int64u)1)<<Depth)-1 && !MinRef)
+                    Quantization=2;
+                else
+                    continue;
+                BitDepth=(int8u)Depth;
+                break;
+            }
+            if (!Quantization)
+                Errors.Add("Component Min Ref and Component Max Ref are not the ones of QE.1 or QE.2"+(BitDepth?" for a bit depth of "+to_string(BitDepth):string())+" (actual "+to_string(MinRef)+" and "+to_string(MaxRef)+')');
+        }
+    }
+
+    //Frame characteristics (6.2, Table 2)
+    int64u Width=0, Height=0;
+    Raw_UInt_Get(Get(0x3203), 4, Width);
+    Raw_UInt_Get(Get(0x3202), 4, Height);
+    if (IsInterlaced)
+        Height*=2;
+    const auto SampleRate=Get(0x3001);
+    int64u Rate_Num=0, Rate_Den=0;
+    if (SampleRate && SampleRate->size()==8)
+    {
+        Rate_Num=BigEndian2int32u(SampleRate->data());
+        Rate_Den=(int64u)BigEndian2int32u(SampleRate->data()+4)*(IsInterlaced?2:1); //Sample Rate is the field rate with I1 wrapping
+    }
+    struct frame_characteristics
+    {
+        int32u  Width;
+        int32u  Height;
+        int16u  Colors;         //Bit per COLOR system
+        int8u   BitDepths;      //Bit 0: 8, bit 1: 10, bit 2: 12, bit 3: 16
+        int8u   IsInterlaced;
+        int8u   Rates;          //Bit 0: 25, 30 and 30000/1001, bit 1: 24, 24000/1001, 50, 60 and 60000/1001, bit 2: 120
+        int8u   Sampling;       //As the Sampling variable
+        int8u   Quantizations;  //Bit 1: QE.1, bit 2: QE.2
+        int8u   Components;     //Bit 0: Y'CbCr, bit 1: R'G'B'
+    };
+    static const frame_characteristics Characteristics[]=
+    {
+        {1920, 1080, (1<<1)|(1<<2)|(1<<3), 0x03, 1, 0x01, 2, 0x02, 0x01},
+        {1920, 1080, (1<<1)|(1<<2)|(1<<3), 0x03, 0, 0x03, 2, 0x02, 0x01},
+        {1920, 1080, (1<<1)|(1<<2)|(1<<3), 0x03, 0, 0x03, 3, 0x02, 0x03},
+        {3840, 2160, (1<<4),               0x03, 0, 0x03, 2, 0x02, 0x01},
+        {7680, 4320, (1<<3),               0x0F, 0, 0x03, 2, 0x02, 0x01},
+        {7680, 4320, (1<<5)|(1<<8),        0x06, 0, 0x03, 2, 0x02, 0x01},
+        {7680, 4320, (1<<7),               0x0E, 0, 0x03, 2, 0x02, 0x01},
+        {8192, 6224, (1<<3),               0x0F, 0, 0x07, 3, 0x06, 0x02},
+        {8192, 6224, (1<<5)|(1<<8),        0x06, 0, 0x07, 3, 0x06, 0x02},
+        {8192, 6224, (1<<6)|(1<<7),        0x0E, 0, 0x07, 3, 0x06, 0x02},
+    };
+    int8u Rate=0;
+    if (Rate_Den)
+    {
+        const auto IsRate=[&](int64u Num, int64u Den) { return Rate_Num*Den==Num*Rate_Den; };
+        if (IsRate(25, 1) || IsRate(30, 1) || IsRate(30000, 1001))
+            Rate=0x01;
+        else if (IsRate(24, 1) || IsRate(24000, 1001) || IsRate(50, 1) || IsRate(60, 1) || IsRate(60000, 1001))
+            Rate=0x02;
+        else if (IsRate(120, 1))
+            Rate=0x04;
+    }
+    const int8u BitDepth_Bit=BitDepth==8?0x01:(BitDepth==10?0x02:(BitDepth==12?0x04:(BitDepth==16?0x08:0x00)));
+    if (Width && Height && Color && BitDepth && FrameLayout<=1 && Rate_Den && Sampling && Quantization)
+    {
+        //Combinations with the smallest count of characteristics not permitted
+        size_t Failures_Min=(size_t)-1;
+        set<string> Failures_Names;
+        for (const auto& Item : Characteristics)
+        {
+            vector<const char*> Failures;
+            if (Width>Item.Width || Height>Item.Height)
+                Failures.push_back("frame size");
+            if (!(Item.Colors&(1<<Color->Number)))
+                Failures.push_back("colorimetry");
+            if (!(Item.BitDepths&BitDepth_Bit))
+                Failures.push_back("bit depth");
+            if ((Item.IsInterlaced?true:false)!=IsInterlaced)
+                Failures.push_back("frame structure");
+            if (!(Item.Rates&Rate))
+                Failures.push_back("frame rate");
+            if (Item.Sampling!=Sampling)
+                Failures.push_back("sampling");
+            if (!(Item.Quantizations&(1<<Quantization)))
+                Failures.push_back("quantization");
+            if (!(Item.Components&(IsRGBA?0x02:0x01)))
+                Failures.push_back("color components");
+            if (Failures.size()>Failures_Min)
+                continue;
+            if (Failures.size()<Failures_Min)
+                Failures_Names.clear();
+            Failures_Min=Failures.size();
+            for (const auto Failure : Failures)
+                Failures_Names.insert(Failure);
+        }
+        if (Failures_Min)
+        {
+            string Names;
+            if (Failures_Min==1)
+                for (const auto& Name : Failures_Names)
+                    Names+=(Names.empty()?" because of the ":" or of the ")+Name;
+            Errors.Add("Frame characteristics are not a permitted combination"+Names+" (actual "+to_string(Width)+'x'+to_string(Height)+(IsInterlaced?" interlaced ":" progressive ")+(IsRGBA?"R'G'B' ":"Y'CbCr ")+(Sampling==3?"4:4:4 ":"4:2:2 ")+to_string(BitDepth)+"-bit COLOR."+to_string(Color->Number)+" QE."+to_string(Quantization)+" at "+Raw_Text(Mxf_Rational_Normalized(Raw_Rational((int32u)Rate_Num, (int32u)Rate_Den)), true)+')');
+        }
+    }
+
+    //JPEG 2000 Picture Sub-Descriptor items (7.5, SMPTE ST 422), components
+    int64u Rsiz=(int64u)-1;
+    const auto PictureEssenceCoding=Get(0x3201);
+    Present(0x3201, "Picture Essence Coding");
+    int64u PictureEssenceCoding_Lo=0;
+    if (PictureEssenceCoding && PictureEssenceCoding->size()==16 && Raw_IsSame(PictureEssenceCoding->substr(0, 8)+string(8, '\0'), Raw_UL(0x060E2B3404010101LL, 0)))
+        PictureEssenceCoding_Lo=BigEndian2int64u(PictureEssenceCoding->data()+8);
+    const auto IsHT=PictureEssenceCoding_Lo==0x0401020203010801LL;
+    if (J2k)
+    {
+        static const struct { int64u Key; const char* Name; } J2k_Required[]=
+        {
+            {Elements::Rsiz, "Rsiz"},
+            {Elements::Xsiz, "Xsiz"},
+            {Elements::Ysiz, "Ysiz"},
+            {Elements::XOsiz, "XOsiz"},
+            {Elements::YOsiz, "YOsiz"},
+            {Elements::XTsiz, "XTsiz"},
+            {Elements::YTsiz, "YTsiz"},
+            {Elements::XTOsiz, "XTOsiz"},
+            {Elements::YTOsiz, "YTOsiz"},
+            {Elements::Csiz, "Csiz"},
+            {Elements::PictureComponentSizing, "Picture Component Sizing"},
+            {Elements::CodingStyleDefault, "Coding Style Default"},
+            {Elements::J2CLayout, "J2C Layout"},
+        };
+        for (const auto& Item : J2k_Required)
+            if (!Property_Get(*J2k, Item.Key))
+                Errors.Add(string(Item.Name)+" of the JPEG 2000 Picture Sub-Descriptor is missing");
+        if (IsHT && !Property_Get(*J2k, Elements::J2KExtendedCapabilities))
+            Errors.Add("J2K Extended Capabilities of the JPEG 2000 Picture Sub-Descriptor is missing");
+        Raw_UInt_Get(J2k_Get(Elements::Rsiz), 2, Rsiz);
+        const auto J2CLayout=J2k_Get(Elements::J2CLayout);
+        if (J2CLayout && BitDepth)
+        {
+            string Expected(16, '\0');
+            for (size_t i=0; i<3; i++)
+            {
+                Expected[i*2]=(IsRGBA?"RGB":"YUV")[i];
+                Expected[i*2+1]=(char)BitDepth;
+            }
+            if (*J2CLayout!=Expected)
+                Errors.Add("J2C Layout of the JPEG 2000 Picture Sub-Descriptor is wrong (actual "+Raw_Hex(*J2CLayout)+", expected "+Raw_Hex(Expected)+')');
+        }
+        int64u Csiz;
+        if (Raw_UInt_Get(J2k_Get(Elements::Csiz), 2, Csiz) && Csiz!=3)
+            Errors.Add("Csiz of the JPEG 2000 Picture Sub-Descriptor is not 3 (actual "+to_string(Csiz)+')');
+        if (Sizing_IsValid && Sampling && BitDepth)
+        {
+            string Expected=Raw_UInt(3, 4)+Raw_UInt(3, 4);
+            for (size_t i=0; i<3; i++)
+            {
+                Expected+=(char)(BitDepth-1);
+                Expected+=(char)((i && Sampling==2)?2:1);
+                Expected+=(char)1;
+            }
+            if (*Sizing!=Expected)
+                Errors.Add("Picture Component Sizing of the JPEG 2000 Picture Sub-Descriptor is wrong (actual "+Raw_Hex(*Sizing)+", expected "+Raw_Hex(Expected)+')');
+        }
+        for (size_t i=0; i<2; i++)
+        {
+            int64u Size, Offset, Stored;
+            if (Raw_UInt_Get(J2k_Get(i?Elements::Ysiz:Elements::Xsiz), 4, Size) && Raw_UInt_Get(J2k_Get(i?Elements::YOsiz:Elements::XOsiz), 4, Offset) && Raw_UInt_Get(Get(i?0x3202:0x3203), 4, Stored) && Size-Offset!=Stored)
+                Errors.Add(string("Stored ")+(i?"Height":"Width")+" is not the one of the JPEG 2000 Picture Sub-Descriptor (actual "+to_string(Stored)+", expected "+to_string((int64s)(Size-Offset))+')');
+        }
+    }
+
+    //JPEG 2000 profile (6.5.2, 7.2.5)
+    const auto Rsiz_FromLabel=Mxf_Jp2k_Rsiz_FromLabel(PictureEssenceCoding_Lo);
+    if (PictureEssenceCoding && !Rsiz_FromLabel && !IsHT)
+        Errors.Add("Picture Essence Coding is not a Broadcast Contribution, IMF or HTJ2K label (actual "+Text(PictureEssenceCoding)+')');
+    else if (PictureEssenceCoding && Rsiz!=(int64u)-1 && (IsHT?!(Rsiz&0x4000):Rsiz!=Rsiz_FromLabel))
+        Errors.Add("Picture Essence Coding does not reflect the Rsiz of the JPEG 2000 Picture Sub-Descriptor (actual "+(IsHT?string("HTJ2K"):Jpeg2000_Rsiz(Rsiz_FromLabel))+", expected "+Jpeg2000_Rsiz((int16u)Rsiz)+')');
+    if (IsHT && Width && Width<=8192 && Height>(Width<=2048?2160:(Width<=4096?3112:6224)))
+        Errors.Add("Image frame is not in the range of HTJ2K (actual "+to_string(Width)+'x'+to_string(Height)+", expected up to "+(Width<=2048?"2048x2160":(Width<=4096?"4096x3112":"8192x6224"))+')');
+    if (!IsHT && Rsiz_FromLabel)
+    {
+        const auto Profile=Mxf_Jp2k_Profile(Rsiz_FromLabel);
+        auto Level_IsValid=true;
+        switch (Profile.Family)
+        {
+            case Jp2k_BCS :
+            case Jp2k_BCMR :
+                if (Width>3840 || Height>2160)
+                    Errors.Add("Image frame is too large for a Broadcast Contribution profile (actual "+to_string(Width)+'x'+to_string(Height)+", expected up to 3840x2160)");
+                if (BitDepth>12 && BitDepth!=0xFF)
+                    Errors.Add("Bit depth is not supported by a Broadcast Contribution profile (actual "+to_string(BitDepth)+", expected 8 to 12)");
+                break;
+            default :
+            {
+                const auto Is2k=Profile.Width_Max==2048;
+                const int32u Height_Max=Is2k?1556:(Profile.Width_Max==4096?3112:6224);
+                if (Width && Height && (Width>Profile.Width_Max || (!Is2k && Width<=Profile.Width_Max/2) || Height>Height_Max))
+                    Errors.Add("Image frame is not in the range of the IMF profile (actual "+to_string(Width)+'x'+to_string(Height)+", expected "+(Is2k?string("1"):to_string(Profile.Width_Max/2+1))+".."+to_string(Profile.Width_Max)+" x 1.."+to_string(Height_Max)+')');
+                const int8u MainLevel_Max=Is2k?6:(Profile.Width_Max==4096?8:10);
+                Level_IsValid=Profile.MainLevel && Profile.MainLevel<=MainLevel_Max;
+                if (!Level_IsValid)
+                    Errors.Add("Mainlevel of the IMF profile is not permitted (actual "+to_string(Profile.MainLevel)+", expected 1 to "+to_string(MainLevel_Max)+')');
+                if (Profile.Family==Jp2k_IMFMR?Profile.SubLevel:!Profile.SubLevel)
+                    Errors.Add("Sublevel of the IMF profile is not permitted (actual "+to_string(Profile.SubLevel)+", expected "+(Profile.Family==Jp2k_IMFMR?"0":"1 or more")+')');
+            }
+        }
+        const auto SamplingRate_Max=Mxf_Jp2k_SamplingRate_Max(Profile);
+        if (Level_IsValid && SamplingRate_Max && Rate_Den && Sampling && Width<=0x10000 && Height<=0x10000 && Width*Height*Sampling*Rate_Num>SamplingRate_Max*1000000*Rate_Den)
+            Errors.Add("Components sampling rate is more than the maximum of the level (actual "+to_string((Width*Height*Sampling*Rate_Num+Rate_Den*1000000-1)/(Rate_Den*1000000))+" MSamples/s, expected up to "+to_string(SamplingRate_Max)+')');
+    }
+}
+
+//---------------------------------------------------------------------------
+// Codestream of an Image Track File of IMF Application #2E, against its JPEG 2000 Picture Sub-Descriptor and the restrictions of its profile
+void File_Mxf::CompliantWith_St206721_Codestream (const imf_image& Image, conformance_errors& Errors, conformance_errors& Warnings)
+{
+    #if defined(MEDIAINFO_JPEG_YES)
+        //Parser of the essence
+        const auto Essence=Essences.find(Image.TrackNumber);
+        if (Essence==Essences.end() || Essence->second.Parsers.size()!=1 || !Essence->second.Element_Count)
+            return; //No complete essence element parsed, or essence not parsed as JPEG 2000 (e.g. encrypted)
+        if (Essence->second.Parsers[0]->ParserName!="JPEG 2000")
+        {
+            Errors.Add("JPEG 2000 codestream is not found or its main header is not valid");
+            return;
+        }
+        const auto Parser=(File_Jpeg*)Essence->second.Parsers[0];
+        const auto& MainHeader=Parser->Jp2k_MainHeader;
+        const auto& Differences=Parser->Jp2k_MainHeader_Differences;
+        const auto SIZ=MainHeader.find(0xFF51);
+        if (SIZ==MainHeader.end() || SIZ->second.size()<39 || SIZ->second.size()!=36+(size_t)BigEndian2int16u(SIZ->second.data()+34)*3)
+        {
+            Errors.Add("JPEG 2000 codestream is not found or its main header is not valid");
+            return;
+        }
+        if (Parser->Jp2k_Codestream_Count>Essence->second.Element_Count+1) //A codestream may be in an element parsed partially
+            Errors.Add("Several JPEG 2000 codestreams are in an essence element (actual "+to_string(Parser->Jp2k_Codestream_Count)+" codestreams in "+to_string(Essence->second.Element_Count)+" elements)");
+
+        //Values of the JPEG 2000 Picture Sub-Descriptor are copies of the ones of the codestream (SMPTE ST 422)
+        for (const auto& SubDescriptor : Image.SubDescriptors)
+        {
+            if (!SetKey_Is(SubDescriptor, Groups::JPEG2000SubDescriptor)) //Also if another set of the same Header Metadata reuses its Instance UID
+                continue;
+            const auto& J2k=SetProperties_Get(SubDescriptor, Groups::JPEG2000SubDescriptor);
+            const auto Test=[&](int64u Key, const char* Name, const string& Expected) {
+                const auto Value=Property_Get(J2k, Key);
+                if (Value && *Value!=Expected && Value->size()<256) //Longer values are truncated
+                    Errors.Add(string(Name)+" of the JPEG 2000 Picture Sub-Descriptor is not the one of the codestream (actual "+(Value->size()<=4?Raw_Text(*Value):Raw_Hex(*Value))+", expected "+(Expected.size()<=4?Raw_Text(Expected):Raw_Hex(Expected))+')');
+            };
+            static const struct { int64u Key; const char* Name; size_t Offset; size_t Size; } List[]=
+            {
+                {Elements::Rsiz, "Rsiz", 0, 2},
+                {Elements::Xsiz, "Xsiz", 2, 4},
+                {Elements::Ysiz, "Ysiz", 6, 4},
+                {Elements::XOsiz, "XOsiz", 10, 4},
+                {Elements::YOsiz, "YOsiz", 14, 4},
+                {Elements::XTsiz, "XTsiz", 18, 4},
+                {Elements::YTsiz, "YTsiz", 22, 4},
+                {Elements::XTOsiz, "XTOsiz", 26, 4},
+                {Elements::YTOsiz, "YTOsiz", 30, 4},
+                {Elements::Csiz, "Csiz", 34, 2},
+            };
+            for (const auto& Item : List)
+                Test(Item.Key, Item.Name, SIZ->second.substr(Item.Offset, Item.Size));
+            Test(Elements::PictureComponentSizing, "Picture Component Sizing", Raw_UInt(BigEndian2int16u(SIZ->second.data()+34), 4)+Raw_UInt(3, 4)+SIZ->second.substr(36));
+            const auto COD=MainHeader.find(0xFF52);
+            if (COD!=MainHeader.end())
+                Test(Elements::CodingStyleDefault, "Coding Style Default", COD->second);
+            const auto QCD=MainHeader.find(0xFF5C);
+            if (QCD!=MainHeader.end())
+                Test(Elements::QuantizationDefault, "Quantization Default", QCD->second);
+            const auto CAP=MainHeader.find(0xFF50);
+            if (CAP!=MainHeader.end() && CAP->second.size()>=4)
+                Test(Elements::J2KExtendedCapabilities, "J2K Extended Capabilities", CAP->second.substr(0, 4)+Raw_UInt((CAP->second.size()-4)/2, 4)+Raw_UInt(2, 4)+CAP->second.substr(4));
+            const auto ExtendedCapabilities=Property_Get(J2k, Elements::J2KExtendedCapabilities);
+            if (CAP==MainHeader.end() && ExtendedCapabilities && (ExtendedCapabilities->size()<4 || BigEndian2int32u(ExtendedCapabilities->data())))
+                Errors.Add("J2K Extended Capabilities of the JPEG 2000 Picture Sub-Descriptor is present but the codestream has no CAP marker segment");
+            if (Property_Get(J2k, Elements::QuantizationDefault) && Differences.find(0xFF5C)!=Differences.end())
+                Errors.Add("Quantization Default of the JPEG 2000 Picture Sub-Descriptor is present but JPEG 2000 codestreams do not have the same QCD marker segment");
+        }
+        for (const auto Marker : Differences)
+            switch (Marker)
+            {
+                case 0xFF50 : Errors.Add("JPEG 2000 codestreams do not have the same CAP marker segment"); break;
+                case 0xFF51 : Errors.Add("JPEG 2000 codestreams do not have the same SIZ marker segment"); break;
+                case 0xFF52 : Errors.Add("JPEG 2000 codestreams do not have the same COD marker segment"); break;
+                case 0xFF55 : if (MainHeader.find(Marker)!=MainHeader.end()) Errors.Add("JPEG 2000 codestreams do not all have a TLM marker segment"); break;
+                case 0xFF5E : if (MainHeader.find(Marker)==MainHeader.end()) Errors.Add("JPEG 2000 codestreams: RGN marker segment is present"); break;
+                case 0xFF5F : if (MainHeader.find(Marker)==MainHeader.end()) Errors.Add("JPEG 2000 codestreams: POC marker segment is present"); break;
+                case 0xFF60 : if (MainHeader.find(Marker)==MainHeader.end()) Errors.Add("JPEG 2000 codestreams: PPM marker segment is present"); break;
+                default     : ;
+            }
+
+        Jp2k_Restrictions(MainHeader, Errors, Warnings);
+    #endif //defined(MEDIAINFO_JPEG_YES)
+}
+
+//---------------------------------------------------------------------------
+File_Mxf::conformance_errors File_Mxf::CompliantWith_St206721 (conformance_errors& Warnings)
+{
+    const auto& St20675=CompliantWith_St20675();
+    auto Errors=St20675.TrackFile_Errors;
+    Warnings.insert(Warnings.end(), St20675.TrackFile_Warnings.begin(), St20675.TrackFile_Warnings.end());
+    imf_image Image;
+    if (!ImfImage_Get(Image))
+        return Errors;
+    const auto StreamID_Save=Warnings.StreamID;
+    if (Image.TrackID!=(int32u)-1)
+        Errors.StreamID=Warnings.StreamID=to_string(Image.TrackID);
+    if ((Image.EssenceContainer.lo&0xFFFFFFFFFFFF0000LL)!=Labels::MXFGCJPEG2000PictureMappings)
+        Errors.Add("Essence is not JPEG 2000");
+    else
+    {
+        CompliantWith_St206721_Descriptors(Image, Errors, Warnings);
+        CompliantWith_St206721_Codestream(Image, Errors, Warnings);
+    }
+    Warnings.StreamID=StreamID_Save;
+    return Errors;
+}
+
+//---------------------------------------------------------------------------
+// Candidate for an Image Track File of IMF Application #2E: JPEG 2000 with P1 or I1 wrapping and all descriptor items as expected
+bool File_Mxf::CompliantWith_St206721_IsCandidate ()
+{
+    imf_image Image;
+    if (!ImfImage_Get(Image) || (Image.EssenceContainer.lo!=(Labels::MXFGCJPEG2000PictureMappings|0x0600) && Image.EssenceContainer.lo!=(Labels::MXFGCJPEG2000PictureMappings|0x0300)))
+        return false;
+    conformance_errors Errors, Warnings;
+    CompliantWith_St206721_Descriptors(Image, Errors, Warnings);
+    return Errors.empty();
+}
+
+//---------------------------------------------------------------------------
+// ACES images in MXF (SMPTE ST 2065-5:2016 and SMPTE ST 2065-5:2023, items required to be absent or present by the first one and ignored by the second one are accepted)
+// Not checked: ACES image headers
+void File_Mxf::CompliantWith_St20655 (const imf_image& Image, conformance_errors& Errors)
+{
+    const auto& Properties=*Image.Properties;
+    const auto Get=[&](int64u Key) { return Property_Get(Properties, Key); };
+
+    //Essence elements (5.1, 4.2)
+    const auto IsFrameWrapped=Image.EssenceContainer.lo==(Labels::MXFGCACESPictures|0x0100);
+    const auto IsClipWrapped=Image.EssenceContainer.lo==(Labels::MXFGCACESPictures|0x0200);
+    if (!IsFrameWrapped && !IsClipWrapped)
+        Errors.Add("Essence Container is not frame-wrapped or clip-wrapped ACES images (actual "+Raw_Hex(Raw_UL(Image.EssenceContainer.hi, Image.EssenceContainer.lo))+')');
+    else if (Image.TrackNumber && Image.TrackNumber!=(int32u)-1 && (Image.TrackNumber&0xFF00FF00)!=(int32u)(IsFrameWrapped?0x15001200:0x15001300))
+        Errors.Add("Track Number is not the one of a "+string(IsFrameWrapped?"frame":"clip")+"-wrapped ACES Picture Element (actual "+Raw_Hex(Raw_UInt(Image.TrackNumber, 4))+')');
+    const auto Essence=Essences.find(Image.TrackNumber);
+    if (IsFrameWrapped && Essence!=Essences.end() && Essence->second.Element_Size_Constant==(int64u)-1)
+        Errors.Add("ACES images do not have the same size");
+
+    //Constrained Generic Container (4.1, SMPTE ST 379-2)
+    auto ContainerConstraints_IsPresent=false;
+    for (const auto& SubDescriptor : Image.SubDescriptors)
+        if (SetKey_Is(SubDescriptor, Groups::ContainerConstraintsSubDescriptor)) //Also if another set of the same Header Metadata reuses its Instance UID
+            ContainerConstraints_IsPresent=true;
+    if (!ContainerConstraints_IsPresent && !Image.IsInMultipleDescriptor) //Else it may be referenced by the Multiple Descriptor
+        Errors.Add("Container Constraints Sub-Descriptor (SMPTE ST 379-2) is missing");
+
+    if (Image.DescriptorKey!=Groups::RGBADescriptor)
+    {
+        Errors.Add("File Descriptor is not a RGBA Picture Essence Descriptor");
+        return;
+    }
+    ImfImage_Generic(Image, Errors);
+    static const struct { int64u Key; const char* Name; } Absents[]=
+    {
+        {0x3217, "Display F2 Offset"},
+        {0x320F, "Alpha Transparency"},
+        {0x3212, "Field Dominance"},
+        {0x3406, "Component Max Ref"},
+        {0x3407, "Component Min Ref"},
+        {0x3408, "Alpha Max Ref"},
+        {0x3409, "Alpha Min Ref"},
+        {0x3403, "Palette"},
+        {0x3404, "Palette Layout"},
+    };
+    for (const auto& Item : Absents)
+        if (Get(Item.Key))
+            Errors.Add(string(Item.Name)+" is present");
+    const auto Coding_WithoutAlpha=Raw_UL(0x060E2B340401010DLL, 0x0401020203040100LL);
+    const auto Coding_WithAlpha=Raw_UL(0x060E2B340401010DLL, 0x0401020203040200LL);
+    const vector<property_expected> List=
+    {
+        {0x320C, "Frame Layout", {Raw_UInt(0, 1)}, false},
+        {0x3210, "Transfer Characteristic", {Raw_UL(0x060E2B3404010106LL, 0x0401010101060000LL)}, false},
+        {0x3219, "Color Primaries", {Raw_UL(0x060E2B340401010DLL, 0x0401010103070000LL)}, false},
+        {0x3201, "Picture Essence Coding", {Coding_WithoutAlpha, Coding_WithAlpha}, false},
+        {0x3405, "Scanning Direction", {Raw_UInt(0, 1)}, false},
+    };
+    Properties_Test(Properties, List, Errors);
+    const string Layout_WithoutAlpha("B\xFDG\xFDR\xFD\0\0\0\0\0\0\0\0\0\0", 16);
+    const string Layout_WithAlpha("A\xFD" "B\xFDG\xFDR\xFD\0\0\0\0\0\0\0\0", 16);
+    const auto PixelLayout=Get(0x3401);
+    if (!PixelLayout)
+        Errors.Add("Pixel Layout is missing");
+    else if (*PixelLayout!=Layout_WithoutAlpha && *PixelLayout!=Layout_WithAlpha)
+        Errors.Add("Pixel Layout is wrong (actual "+Raw_Hex(*PixelLayout)+", expected "+Raw_Hex(Layout_WithoutAlpha)+" or "+Raw_Hex(Layout_WithAlpha)+')');
+    else
+    {
+        const auto Coding=Get(0x3201);
+        if (Coding && Raw_IsSame(*Coding, *PixelLayout==Layout_WithAlpha?Coding_WithoutAlpha:Coding_WithAlpha))
+            Errors.Add("Picture Essence Coding does not indicate the presence of alpha of the Pixel Layout");
+    }
+}
+
+//---------------------------------------------------------------------------
+// ACES Picture Sub-Descriptors and Target Frame Sub-Descriptors (SMPTE ST 2067-50:2018 8.2.4 and 8.2.5), returns true if one is present
+// Not checked: value of the Ancillary Resource ID (Version 5 UUID of the hash of the resource), content of the Target Frames, Target Frame Color Primaries
+bool File_Mxf::CompliantWith_St206750_SubDescriptors (const imf_image& Image, conformance_errors& Errors, conformance_errors& Warnings)
+{
+    set<int128u> AcesSubDescriptors;
+    vector<int128u> TargetFrames;
+    for (const auto& SubDescriptor : Image.SubDescriptors)
+    {
+        if (SetKey_Is(SubDescriptor, Groups::ACESPictureSubDescriptor)) //Also if another set of the same Header Metadata reuses its Instance UID
+            AcesSubDescriptors.insert(SubDescriptor);
+        if (SetKey_Is(SubDescriptor, Groups::TargetFrameSubDescriptor))
+            TargetFrames.push_back(SubDescriptor);
+    }
+    static const int64u Keys[4]={Elements::ACESMasteringDisplayPrimaries, Elements::ACESMasteringDisplayWhitePointChromaticity, Elements::ACESMasteringDisplayMaximumLuminance, Elements::ACESMasteringDisplayMinimumLuminance};
+    for (const auto& Aces : AcesSubDescriptors)
+        ImfImage_MasteringDisplay(SetProperties_Get(Aces, Groups::ACESPictureSubDescriptor), Keys, "ACES Mastering Display", Errors, Warnings);
+    if (TargetFrames.size()>500)
+        Errors.Add("Target Frames count is more than 500 (actual "+to_string(TargetFrames.size())+')');
+    int64u Duration=(int64u)-1;
+    Raw_UInt_Get(Image.Duration, 8, Duration);
+    set<int64u> StreamIDs;
+    for (const auto& TargetFrame : TargetFrames)
+    {
+        const auto& Properties=SetProperties_Get(TargetFrame, Groups::TargetFrameSubDescriptor);
+        static const struct { int64u Key; const char* Name; size_t Size; } List[]=
+        {
+            {Elements::TargetFrameAncillaryResourceID, "Target Frame Ancillary Resource ID", 16},
+            {Elements::MediaType, "Media Type", 0},
+            {Elements::TargetFrameIndex, "Target Frame Index", 8},
+            {Elements::TargetFrameTransferCharacteristic, "Target Frame Transfer Characteristic", 16},
+            {Elements::TargetFrameColorPrimaries, "Target Frame Color Primaries", 16},
+            {Elements::TargetFrameComponentMaxRef, "Target Frame Component Max Ref", 4},
+            {Elements::TargetFrameComponentMinRef, "Target Frame Component Min Ref", 4},
+            {Elements::TargetFrameEssenceStreamID, "Target Frame Essence Stream ID", 4},
+        };
+        for (const auto& Item : List)
+        {
+            const auto Value=Property_Get(Properties, Item.Key);
+            if (!Value)
+                Errors.Add(string(Item.Name)+" of a Target Frame Sub-Descriptor is missing");
+            else if (Item.Size && Value->size()!=Item.Size)
+                Errors.Add(string(Item.Name)+" of a Target Frame Sub-Descriptor does not have the expected size (actual "+to_string(Value->size())+", expected "+to_string(Item.Size)+')');
+            else if ((Item.Key==Elements::TargetFrameTransferCharacteristic || Item.Key==Elements::TargetFrameColorPrimaries) && Value->compare(0, 5, "\x06\x0E\x2B\x34\x04", 5))
+                Errors.Add(string(Item.Name)+" of a Target Frame Sub-Descriptor is not a label (actual "+Raw_Hex(*Value)+')');
+        }
+        const auto MediaType=Raw_UTF16_Get(Property_Get(Properties, Elements::MediaType));
+        if (Property_Get(Properties, Elements::MediaType) && MediaType!="image/tiff" && MediaType!="image/png")
+            Errors.Add("Media Type of a Target Frame Sub-Descriptor is wrong (actual \""+MediaType+"\", expected \"image/tiff\" or \"image/png\")");
+        int64u Value;
+        if (Raw_UInt_Get(Property_Get(Properties, Elements::TargetFrameIndex), 8, Value) && Duration!=(int64u)-1 && Value>=Duration)
+            Errors.Add("Target Frame Index is not in the image essence (actual "+to_string(Value)+", expected less than "+to_string(Duration)+')');
+        if (Raw_UInt_Get(Property_Get(Properties, Elements::TargetFrameEssenceStreamID), 4, Value))
+        {
+            if (!StreamIDs.insert(Value).second)
+                Errors.Add("Target Frame Essence Stream ID is the one of another Target Frame Sub-Descriptor (actual "+to_string(Value)+')');
+            size_t Count=0;
+            for (const auto& Entry : RandomIndexPack_Entries)
+                if (Entry.BodySID==Value)
+                    Count++;
+            auto IsGenericStream=true; //Partitions not parsed are accepted
+            for (const auto& Partition : Partitions)
+                if (Partition.BodySID==Value && Partition.Status!=0x11)
+                    IsGenericStream=false;
+            if (!Value || !IsGenericStream || (!Count && !RandomIndexPack_Entries.empty()))
+                Errors.Add("Target Frame Essence Stream ID is not the one of a Generic Stream Partition (actual "+to_string(Value)+')');
+            else if (Count>1)
+                Errors.Add("Target Frame Essence Stream ID is the one of several partitions (actual "+to_string(Value)+')');
+        }
+        const auto AcesInstanceID=Property_Get(Properties, Elements::ACESPictureSubDescriptorInstanceID);
+        if (AcesInstanceID)
+        {
+            int128u UID;
+            UID.hi=0;
+            UID.lo=0;
+            if (AcesInstanceID->size()==16)
+            {
+                UID.hi=BigEndian2int64u(AcesInstanceID->data());
+                UID.lo=BigEndian2int64u(AcesInstanceID->data()+8);
+            }
+            if (AcesSubDescriptors.find(UID)==AcesSubDescriptors.end())
+                Errors.Add("ACES Picture Sub-Descriptor Instance ID of a Target Frame Sub-Descriptor is not the one of an ACES Picture Sub-Descriptor (actual "+Raw_Hex(*AcesInstanceID)+')');
+        }
+        const auto ViewingEnvironment=Property_Get(Properties, Elements::TargetFrameViewingEnvironment);
+        if (ViewingEnvironment && !Raw_IsSame(*ViewingEnvironment, Raw_UL(0x060E2B340401010DLL, 0x0410010101010000LL)) && !Raw_IsSame(*ViewingEnvironment, Raw_UL(0x060E2B340401010DLL, 0x0410010101020000LL)) && !Raw_IsSame(*ViewingEnvironment, Raw_UL(0x060E2B340401010DLL, 0x0410010101030000LL)))
+            Errors.Add("Target Frame Viewing Environment is wrong (actual "+Raw_Hex(*ViewingEnvironment)+')');
+    }
+    return !AcesSubDescriptors.empty() || !TargetFrames.empty();
+}
+
+//---------------------------------------------------------------------------
+// Image Track File of IMF Application #5 (SMPTE ST 2067-50:2018)
+File_Mxf::conformance_errors File_Mxf::CompliantWith_St206750 (conformance_errors& Warnings)
+{
+    const auto& St20675=CompliantWith_St20675();
+    auto Errors=St20675.TrackFile_Errors;
+    Warnings.insert(Warnings.end(), St20675.TrackFile_Warnings.begin(), St20675.TrackFile_Warnings.end());
+    imf_image Image;
+    if (!ImfImage_Get(Image))
+        return Errors;
+    const auto StreamID_Save=Warnings.StreamID;
+    if (Image.TrackID!=(int32u)-1)
+        Errors.StreamID=Warnings.StreamID=to_string(Image.TrackID);
+    if ((Image.EssenceContainer.lo&0xFFFFFFFFFFFF0000LL)!=Labels::MXFGCACESPictures)
+        Errors.Add("Essence is not ACES images");
+    else
+    {
+        if (Image.EssenceContainer.lo!=(Labels::MXFGCACESPictures|0x0100))
+            Errors.Add("ACES images are not frame-wrapped");
+        CompliantWith_St20655(Image, Errors);
+        CompliantWith_St206750_SubDescriptors(Image, Errors, Warnings);
+    }
+    Warnings.StreamID=StreamID_Save;
+    return Errors;
+}
+
+//---------------------------------------------------------------------------
+// Candidate for an Image Track File of IMF Application #5: frame-wrapped ACES images
+bool File_Mxf::CompliantWith_St206750_IsCandidate ()
+{
+    imf_image Image;
+    return ImfImage_Get(Image) && Image.EssenceContainer.lo==(Labels::MXFGCACESPictures|0x0100);
+}
+
+//---------------------------------------------------------------------------
+// Image Track Files: IMF Application #2E and IMF Application #5
+void File_Mxf::Streams_Finish_CompliantWith_ImfImage ()
+{
+    if (St206721_IsRequested || CompliantWith_St206721_IsCandidate())
+    {
+        conformance_errors Warnings;
+        const auto Errors=CompliantWith_St206721(Warnings);
+        if (Errors.empty())
+            Fill(Stream_General, 0, General_CompliantWith, "SMPTE_ST_2067-21");
+        if (St206721_IsRequested) //Conformance errors and warnings only if this profile is requested
+        {
+            Fill_Conformance_Specification("MXF MxfProfile", "SMPTE_ST_2067-21", Errors);
+            Fill_Conformance_Specification("MXF MxfProfile", "SMPTE_ST_2067-21", Warnings, Conformance_Warning);
+        }
+    }
+    //SMPTE ST 2065-5 is declared by the Essence Container label, and the sub-descriptors are defined by SMPTE ST 2067-50: their compliance is mandatory, it is checked without request, and SMPTE ST 2067-50 is not listed unless requested if there are such sub-descriptors
+    auto St206750_IsDeclared=false;
+    vector<imf_image> Images;
+    imf_image Image_Main;
+    const auto Image_Main_IsPresent=ImfImage_Get(Image_Main);
+    if (Image_Main_IsPresent)
+        Images.push_back(Image_Main);
+    else
+    {
+        const auto InUse=Descriptors_InUse();
+        for (const auto& Descriptor : Descriptors)
+        {
+            imf_image Image;
+            Image.DescriptorKey=SetKey_FileDescriptor_Get(Descriptor.first);
+            if (!Image.DescriptorKey || Image.DescriptorKey==Groups::MultipleDescriptor || (!InUse.empty() && InUse.find(Descriptor.first)==InUse.end()))
+                continue;
+            Image.EssenceContainer=Descriptor.second.EssenceContainer;
+            Image.Properties=&SetProperties_Get(Descriptor.first, Image.DescriptorKey);
+            Image.SubDescriptors=SubDescriptors_Get(Descriptor.first);
+            Image.TrackID=Descriptor.second.LinkedTrackID;
+            Image.IsInMultipleDescriptor=true;
+            Images.push_back(Image);
+        }
+    }
+    for (const auto& Image : Images)
+    {
+        if ((Image.EssenceContainer.lo&0xFFFFFFFFFFFF0000LL)!=Labels::MXFGCACESPictures)
+            continue;
+        conformance_errors Aces_Errors, SubDescriptors_Errors, SubDescriptors_Warnings;
+        if (Image.TrackID!=(int32u)-1)
+            Aces_Errors.StreamID=SubDescriptors_Errors.StreamID=SubDescriptors_Warnings.StreamID=to_string(Image.TrackID);
+        CompliantWith_St20655(Image, Aces_Errors);
+        if (CompliantWith_St206750_SubDescriptors(Image, SubDescriptors_Errors, SubDescriptors_Warnings))
+            St206750_IsDeclared=true;
+        if (St206750_IsRequested && Image_Main_IsPresent)
+            continue; //Reported with the profile
+        Fill_Conformance_Specification("MXF AcesPictures", "SMPTE_ST_2065-5", Aces_Errors);
+        Fill_Conformance_Specification("MXF AcesSubDescriptors", "SMPTE_ST_2067-50", SubDescriptors_Errors);
+        Fill_Conformance_Specification("MXF AcesSubDescriptors", "SMPTE_ST_2067-50", SubDescriptors_Warnings, Conformance_Warning);
+    }
+    if (St206750_IsRequested || CompliantWith_St206750_IsCandidate())
+    {
+        conformance_errors Warnings;
+        const auto Errors=CompliantWith_St206750(Warnings);
+        if (Errors.empty() && (St206750_IsRequested || !St206750_IsDeclared))
+            Fill(Stream_General, 0, General_CompliantWith, "SMPTE_ST_2067-50");
+        if (St206750_IsRequested) //Conformance errors and warnings only if this profile is requested
+        {
+            Fill_Conformance_Specification("MXF MxfProfile", "SMPTE_ST_2067-50", Errors);
+            Fill_Conformance_Specification("MXF MxfProfile", "SMPTE_ST_2067-50", Warnings, Conformance_Warning);
+        }
+    }
+}
+
+//---------------------------------------------------------------------------
 void File_Mxf::Streams_Finish_Conformance_References ()
 {
     for (const auto& Reference : Conformance_References)
@@ -9431,6 +10616,7 @@ void File_Mxf::Streams_Finish_CompliantWith ()
                 Fill_Conformance_Specification("MXF MxfProfile", "SMPTE_ST_2067-5", St20675.EssenceComponent_Warnings, Conformance_Warning);
             }
         }
+        Streams_Finish_CompliantWith_ImfImage();
     #endif //MEDIAINFO_CONFORMANCE
 }
 
@@ -10680,10 +11866,11 @@ bool File_Mxf::CompliantWith_ArdZdf_IsCandidate (bool AllProfiles)
 }
 
 //---------------------------------------------------------------------------
-bool File_Mxf::CompliantWith_St20672_IsTested (bool WithSt2067204)
+bool File_Mxf::CompliantWith_St20672_IsTested (bool WithApplications)
 {
     #if MEDIAINFO_CONFORMANCE
-        return St20672_IsRequested || St20675_IsRequested || (WithSt2067204 && St2067204_IsRequested) || CompliantWith_St20672_IsCandidate();
+        return St20672_IsRequested || St20675_IsRequested || CompliantWith_St20672_IsCandidate()
+            || (WithApplications && (St2067204_IsRequested || St206721_IsRequested || St206750_IsRequested || CompliantWith_St206721_IsCandidate() || CompliantWith_St206750_IsCandidate()));
     #else //MEDIAINFO_CONFORMANCE
         return false;
     #endif //MEDIAINFO_CONFORMANCE
@@ -13951,6 +15138,8 @@ void File_Mxf::Data_Parse()
     GROUP(DCTimedTextDescriptor)
     GROUP(DCTimedTextResourceSubDescriptor)
     GROUP(ContainerConstraintsSubDescriptor)
+    GROUP(ACESPictureSubDescriptor)
+    GROUP(TargetFrameSubDescriptor)
     GROUP(MPEG4VisualSubDescriptor)
     GROUP(AudioChannelLabelSubDescriptor)
     GROUP(SoundfieldGroupLabelSubDescriptor)
@@ -16430,6 +17619,24 @@ void File_Mxf::DCTimedTextResourceSubDescriptor()
 void File_Mxf::ContainerConstraintsSubDescriptor()
 {
     GenerationInterchangeObject();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::ACESPictureSubDescriptor()
+{
+    if (Code2==0x3C0A || Code2==0x0102) //Instance UID and Generation UID
+        GenerationInterchangeObject();
+    else
+        UnknownGroupItem();
+}
+
+//---------------------------------------------------------------------------
+void File_Mxf::TargetFrameSubDescriptor()
+{
+    if (Code2==0x3C0A || Code2==0x0102) //Instance UID and Generation UID
+        GenerationInterchangeObject();
+    else
+        UnknownGroupItem();
 }
 
 //---------------------------------------------------------------------------

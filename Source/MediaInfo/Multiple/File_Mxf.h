@@ -132,7 +132,7 @@ protected :
     bool CompliantWith_St20672_IsDeclared (); //SMPTE ST 2067-2 declared by the file (Channel Assignment label)
     bool CompliantWith_St20672_IsCandidate (); //Candidate for an IMF Track File (Audio or Timed Text)
     #endif //MEDIAINFO_CONFORMANCE
-    bool CompliantWith_St20672_IsTested (bool WithSt2067204=false); //IMF Track File or IMF Essence Component requested (or ADM Audio Track File if WithSt2067204), or candidate for an IMF Track File
+    bool CompliantWith_St20672_IsTested (bool WithApplications=false); //IMF Track File or IMF Essence Component requested or candidate for an IMF Track File, also ADM Audio Track File requested or Image Track File requested or candidate if WithApplications
 
     //Buffer - Global
     void Read_Buffer_Init ();
@@ -235,6 +235,8 @@ protected :
     void DCTimedTextDescriptor();
     void DCTimedTextResourceSubDescriptor();
     void ContainerConstraintsSubDescriptor();
+    void ACESPictureSubDescriptor();
+    void TargetFrameSubDescriptor();
     void MPEG4VisualSubDescriptor();
     void AudioChannelLabelSubDescriptor();
     void SoundfieldGroupLabelSubDescriptor();
@@ -1744,6 +1746,32 @@ protected :
         st20675_results             St20675_Results;
         bool                        St20672_IsRequested; //SMPTE ST 2067-2 requested by the user, conformance errors are reported
         bool                        St20675_IsRequested; //SMPTE ST 2067-5 requested by the user, conformance errors are reported
+        bool                        St206721_IsRequested; //SMPTE ST 2067-21 requested by the user, conformance errors are reported
+        bool                        St206750_IsRequested; //SMPTE ST 2067-50 requested by the user, conformance errors are reported
+        struct imf_image
+        {
+            const std::string*      Duration=nullptr; //Of the Picture Track
+            const properties*       Properties=nullptr; //Of the File Descriptor
+            bool                    IsInMultipleDescriptor=false;
+            int64u                  DescriptorKey=0;
+            int128u                 EssenceContainer;
+            std::vector<int128u>    SubDescriptors;
+            int32u                  TrackID=(int32u)-1;
+            int32u                  TrackNumber=0;
+        };
+        bool ImfImage_Get (imf_image& Image); //File Descriptor and Picture Track of the Top-Level File Package, returns false if there is no File Descriptor
+        void ImfImage_Generic (const imf_image& Image, conformance_errors& Errors);
+        void ImfImage_MasteringDisplay (const properties& Properties, const int64u* Keys, const char* Prefix, conformance_errors& Errors, conformance_errors& Warnings); //4 keys
+        void Jp2k_Restrictions (const std::map<int16u, std::string>& MainHeader, conformance_errors& Errors, conformance_errors& Warnings); //Codestream restrictions of the JPEG 2000 profiles
+        void CompliantWith_St206721_Descriptors (const imf_image& Image, conformance_errors& Errors, conformance_errors& Warnings);
+        void CompliantWith_St206721_Codestream (const imf_image& Image, conformance_errors& Errors, conformance_errors& Warnings);
+        conformance_errors CompliantWith_St206721 (conformance_errors& Warnings); //Image Track File of IMF Application #2E, Warnings are filled with the recommendations not followed
+        bool CompliantWith_St206721_IsCandidate (); //Candidate for an Image Track File of IMF Application #2E (all descriptor items as expected)
+        void CompliantWith_St20655 (const imf_image& Image, conformance_errors& Errors); //ACES images
+        bool CompliantWith_St206750_SubDescriptors (const imf_image& Image, conformance_errors& Errors, conformance_errors& Warnings); //Returns true if there are sub-descriptors of SMPTE ST 2067-50
+        conformance_errors CompliantWith_St206750 (conformance_errors& Warnings); //Image Track File of IMF Application #5, Warnings are filled with the recommendations not followed
+        bool CompliantWith_St206750_IsCandidate (); //Candidate for an Image Track File of IMF Application #5 (frame-wrapped ACES images)
+        void Streams_Finish_CompliantWith_ImfImage ();
         size_t                      RiffChunks_ErrorCount; //Count of SMPTE ST 2131 errors
         size_t                      McaLabels_ErrorCount; //Count of SMPTE ST 377-4 errors on Audio Channel, Soundfield Group and Group of Soundfield Groups labels
         void                        CompliantWith_St20672_Audio(const descriptor& Sound, const properties& Sound_Properties, conformance_errors& Errors, conformance_errors& Warnings); //Audio Track File constraints, except the Channel Assignment and the audio labeling

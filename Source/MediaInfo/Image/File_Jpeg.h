@@ -40,6 +40,13 @@ public :
     float64  FrameRate;
     #endif //MEDIAINFO_DEMUX
 
+    //Out
+    #if MEDIAINFO_CONFORMANCE
+    std::map<int16u, std::string> Jp2k_MainHeader; //JPEG 2000 main header of the first codestream, key is the marker, value is the content of the marker segment, empty if only the presence is needed
+    std::set<int16u> Jp2k_MainHeader_Differences; //Markers whose segment is not the same in the next codestreams
+    int64u Jp2k_Codestream_Count = 0; //Count of JPEG 2000 codestreams parsed
+    #endif //MEDIAINFO_CONFORMANCE
+
     //Constructor/Destructor
     File_Jpeg();
     ~File_Jpeg();
@@ -219,6 +226,9 @@ private :
     void Jp2k_SPcod(bool PrecinctUsed, int8u& Transformation);
     void Jp2k_Compression_Mode();
     bool Jp2k_Passes_Parse();
+    #if MEDIAINFO_CONFORMANCE
+    void Jp2k_MainHeader_Parse();
+    #endif //MEDIAINFO_CONFORMANCE
 
     //Temp
     int64u Data_Size = 0;
@@ -232,6 +242,10 @@ private :
     int16u Jp2k_COC_Count = 0; // In main header
     std::unique_ptr<jp2k_passes> Jp2k_Passes; // First codestream, before its data
     bool  CME_Text_Parsed = false;
+    #if MEDIAINFO_CONFORMANCE
+    std::map<int16u, std::string> Jp2k_MainHeader_Current;
+    bool  Jp2k_MainHeader_IsCurrent = false;
+    #endif //MEDIAINFO_CONFORMANCE
     int64u GContainerItems_Offset = 0;
     size_t Seek_Items_PrimaryStreamPos = 0;
     string Seek_Items_PrimaryImageType;
