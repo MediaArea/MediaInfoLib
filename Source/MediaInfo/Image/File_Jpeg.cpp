@@ -1135,14 +1135,13 @@ void File_Jpeg::CAP()
             case 15:
                 {
                 int8u MAGB;
-                bool HTIRV;
                 BS_Begin();
                 Skip_S1(2,                                      "HTONLY HTDECLARED MIXED");
                 Skip_SB(                                        "MULTIHT");
                 Skip_SB(                                        "RGN");
                 Skip_SB(                                        "HETEROGENEOUS");
                 Skip_S1(5,                                      "Reserved");
-                Get_SB (   HTIRV,                               "HTIRV");
+                Skip_SB(                                        "HTIRV");
                 Get_S1 (5, MAGB,                                "MAGB");
                 if (!MAGB)
                     MAGB = 8;
@@ -1153,7 +1152,6 @@ void File_Jpeg::CAP()
                 else
                     MAGB = 74;
                 Param_Info1(MAGB);
-                Fill(StreamKind_Last, StreamPos_Last, "Compression_Mode", HTIRV?"Lossy":"Lossless", Unlimited, true, true); // TODO: "Lossy" not sure, spec says "can be used with irreversible transforms"
                 BS_End();
                 }
                 break;
@@ -1184,6 +1182,11 @@ void File_Jpeg::SIZ()
     Skip_B4(                                                    "XTOsiz - Upper-left tile offset X");
     Skip_B4(                                                    "YTOsiz - Upper-left tile offset Y");
     Get_B2 (Count,                                              "Components and initialize related arrays");
+    Jp2k_Components_Count=Count;
+    Jp2k_COC_Count=0;
+    Jp2k_COC_IsIrreversible=false;
+    Jp2k_COD_Transformation=(int8u)-1;
+    Jp2k_SOT_Parsed=false;
     for (int16u Pos=0; Pos<Count; Pos++)
     {
         Element_Begin1("Initialize related array");
@@ -1285,7 +1288,7 @@ void File_Jpeg::SIZ()
 void File_Jpeg::COD()
 {
     //Parsing
-    int8u Style, Style2, Levels, Transformation;
+    int8u Style, Transformation;
     bool PrecinctUsed;
     Get_B1 (Style,                                              "Scod - Style");
         Get_Flags (Style, 0, PrecinctUsed,                      "Precinct used");
@@ -1294,6 +1297,55 @@ void File_Jpeg::COD()
     Skip_B1(                                                    "Progression order");
     Skip_B2(                                                    "Number of layers");
     Skip_B1(                                                    "Multiple component transform");
+    Jp2k_SPcod(PrecinctUsed, Transformation);
+
+    FILLING_BEGIN();
+        if (Frame_Count==0 && Field_Count==0)
+        {
+            if (!Jp2k_SOT_Parsed)
+                Jp2k_COD_Transformation=Transformation;
+            else if (!Transformation)
+                Jp2k_COC_IsIrreversible=true;
+            Jp2k_Compression_Mode();
+        }
+    FILLING_END();
+
+    Data_Common();
+}
+
+//---------------------------------------------------------------------------
+void File_Jpeg::COC()
+{
+    //Parsing
+    int8u Style, Transformation;
+    bool PrecinctUsed;
+    if (Jp2k_Components_Count<257)
+        Skip_B1(                                                "Ccoc - Component index");
+    else
+        Skip_B2(                                                "Ccoc - Component index");
+    Get_B1 (Style,                                              "Scoc - Style");
+        Get_Flags (Style, 0, PrecinctUsed,                      "Precinct used");
+    Jp2k_SPcod(PrecinctUsed, Transformation);
+
+    FILLING_BEGIN();
+        if (Frame_Count==0 && Field_Count==0)
+        {
+            if (!Jp2k_SOT_Parsed)
+                Jp2k_COC_Count++;
+            if (!Transformation)
+                Jp2k_COC_IsIrreversible=true;
+            Jp2k_Compression_Mode();
+        }
+    FILLING_END();
+
+    Data_Common();
+}
+
+//---------------------------------------------------------------------------
+void File_Jpeg::Jp2k_SPcod(bool PrecinctUsed, int8u& Transformation)
+{
+    //Parsing
+    int8u Style2, Levels;
     Get_B1 (Levels,                                             "Number of decomposition levels");
     Info_B1(DimX,                                               "Code-blocks dimensions X (2^(n+2))"); Param_Info2(1<<(DimX+2), " pixels");
     Info_B1(DimY,                                               "Code-blocks dimensions Y (2^(n+2))"); Param_Info2(1<<(DimY+2), " pixels");
@@ -1321,20 +1373,20 @@ void File_Jpeg::COD()
             Element_End0();
         }
     }
+}
 
-    FILLING_BEGIN();
-        if (Frame_Count==0 && Field_Count==0)
-        {
-            switch (Transformation)
-            {
-                case 0x01 : Fill(StreamKind_Last, StreamPos_Last, "Compression_Mode", "Lossless", Unlimited, true, true); break;
-                case 0x02 : Fill(StreamKind_Last, StreamPos_Last, "Compression_Mode", "Lossy", Unlimited, true, true); break;
-                default   : ;
-            }
-        }
-    FILLING_END();
-
-    Data_Common();
+//---------------------------------------------------------------------------
+void File_Jpeg::Jp2k_Compression_Mode()
+{
+    auto Transformation=Jp2k_COC_Count && Jp2k_COC_Count>=Jp2k_Components_Count?(int8u)1:Jp2k_COD_Transformation; //The COD is not used if all components have a COC
+    if (Jp2k_COC_IsIrreversible)
+        Transformation=0;
+    switch (Transformation)
+    {
+        case 0x00 : Fill(StreamKind_Last, StreamPos_Last, "Compression_Mode", "Lossy", Unlimited, true, true); break; //9-7 irreversible
+        case 0x01 : Fill(StreamKind_Last, StreamPos_Last, "Compression_Mode", "Lossless", Unlimited, true, true); break; //5-3 reversible
+        default   : ;
+    }
 }
 
 //---------------------------------------------------------------------------

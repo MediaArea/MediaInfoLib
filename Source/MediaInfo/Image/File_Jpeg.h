@@ -107,7 +107,7 @@ private :
     void CAP ();
     void SIZ ();
     void COD ();
-    void COC () { Data_Common(); };
+    void COC ();
     void TLM () { Data_Common(); };
     void PLM () { Data_Common(); };
     void PLT () { Data_Common(); };
@@ -125,7 +125,7 @@ private :
     void ESD () { Data_Common(); };
     void EPC () { Data_Common(); };
     void RED () { Data_Common(); };
-    void SOT () { Data_Common(); };
+    void SOT () { Jp2k_SOT_Parsed=true; Data_Common(); };
     void SOP () { Data_Common(); };
     void EPH () { Data_Common(); };
     void SOD ();
@@ -213,12 +213,19 @@ private :
     //Helpers
     void Data_Common();
     void GainMap_Merge(size_t StreamPos);
+    void Jp2k_SPcod(bool PrecinctUsed, int8u& Transformation);
+    void Jp2k_Compression_Mode();
 
     //Temp
     int64u Data_Size = 0;
     int8u APPE_Adobe0_transform = 0;
     bool  APP0_JFIF_Parsed = false;
     bool  SOS_SOD_Parsed = false;
+    bool  Jp2k_SOT_Parsed = false; // After the main header
+    bool  Jp2k_COC_IsIrreversible = false; // From at least one COC or tile-part COD
+    int8u Jp2k_COD_Transformation = (int8u)-1; // From main header COD
+    int16u Jp2k_Components_Count = 0;
+    int16u Jp2k_COC_Count = 0; // In main header
     bool  CME_Text_Parsed = false;
     int64u GContainerItems_Offset = 0;
     size_t Seek_Items_PrimaryStreamPos = 0;
