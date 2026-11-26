@@ -27,6 +27,8 @@ namespace MediaInfoLib
 // Class File_Jpeg
 //***************************************************************************
 
+class jp2k_passes;
+
 class File_Jpeg : public File__Analyze
 {
 public :
@@ -40,6 +42,7 @@ public :
 
     //Constructor/Destructor
     File_Jpeg();
+    ~File_Jpeg();
 
 private :
     struct seek_item {
@@ -215,6 +218,7 @@ private :
     void GainMap_Merge(size_t StreamPos);
     void Jp2k_SPcod(bool PrecinctUsed, int8u& Transformation);
     void Jp2k_Compression_Mode();
+    bool Jp2k_Passes_Parse();
 
     //Temp
     int64u Data_Size = 0;
@@ -226,6 +230,7 @@ private :
     int8u Jp2k_COD_Transformation = (int8u)-1; // From main header COD
     int16u Jp2k_Components_Count = 0;
     int16u Jp2k_COC_Count = 0; // In main header
+    std::unique_ptr<jp2k_passes> Jp2k_Passes; // First codestream, before its data
     bool  CME_Text_Parsed = false;
     int64u GContainerItems_Offset = 0;
     size_t Seek_Items_PrimaryStreamPos = 0;
