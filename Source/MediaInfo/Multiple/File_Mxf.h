@@ -779,6 +779,10 @@ protected :
     bool   FooterPartitionAddress_Jumped;
     bool   PartitionPack_Parsed;
     bool   HeaderPartition_IsOpen;
+    bool   Data_IsSkipped; //Content of the current element is not needed, it may be not read
+    int64u Data_Skipped_End; //End of the element with content not read
+    size_t Data_Skipped_Hint;
+    bool   Data_Skipped_DataMustAlwaysBeComplete;
     bool   Is1001;
     size_t IdIsAlwaysSame_Offset;
 
@@ -1487,6 +1491,8 @@ protected :
     #endif //defined(MEDIAINFO_REFERENCES_YES)
     void NextRandomIndexPack();
     void NextRandomIndexPack_GoTo(bool IsInHeader=false);
+    bool Essence_IsNotNeeded();
+    int64u Element_Size_AsIfRead();
     bool BookMark_Needed();
     bool ProbeCaption_IsPossible();
 
