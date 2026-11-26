@@ -80,10 +80,7 @@ bool File_SequenceInfo::FileHeader_Begin()
             {
                 //Names from the folder of the file, as the other names of references
                 Ztring ToAdd=Ztring(1, PathSeparator)+Base;
-                Ztring DirectoryBase;
-                if (Base.find(__T(':'))==1)
-                    DirectoryBase=Ztring(__T("."))+PathSeparator; //Not a name from a drive
-                DirectoryBase+=Base;
+                Ztring DirectoryBase=Base;
                 DirectoryBase+=__T('_');
 
                 size_t DirNumberCount=1;

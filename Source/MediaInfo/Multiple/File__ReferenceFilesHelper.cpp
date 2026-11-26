@@ -180,14 +180,10 @@ static bool File__ReferenceFilesHelper_IsCircular(const ZtringList& Names, size_
 }
 
 //---------------------------------------------------------------------------
-// The listed name is from the folder of the file which lists it, not from the root, a drive, a server or an URL
+// The listed name is from the folder of the file which lists it, not from the root, a drive or a server (on Windows) or an URL
 static bool File__ReferenceFilesHelper_IsRelative(const Ztring& Name)
 {
-    #ifdef __WINDOWS__
-        if (Name.find(__T('\\'))==0)
-            return false; //From the root of a drive or from a server
-    #endif //__WINDOWS__
-    return Name.find(__T(':'))!=1 && Name.find(__T("/"))!=0 && Name.find(__T("\\\\"))!=0 && Name.find(__T("://"))==string::npos;
+    return FileName::Root_Get(Name).empty() && Name.find(__T("://"))==string::npos;
 }
 
 //---------------------------------------------------------------------------
@@ -255,7 +251,8 @@ static Ztring File__ReferenceFilesHelper_ReferencedSourcePath(const sequence* Se
 
 //---------------------------------------------------------------------------
 // Names given by a referenced file (e.g. "a.wav / b.wav"), from the folder of the file which references it: the folder of the referenced
-// file from there (Folder_Path, e.g. "sub/") is added to the names from the folder of the referenced file
+// file from there (Folder_Path, e.g. "sub/") is added to the names from the folder of the referenced file; outside Windows, the names from
+// a drive or a server written in a Windows file ("C:\name", "C:/name", "\\server\share\name") are kept as listed, as on Windows
 static Ztring File__ReferenceFilesHelper_FromReferencedFolder(const Ztring& Names, const Ztring& Folder_Path)
 {
     if (Folder_Path.empty())
@@ -265,8 +262,16 @@ static Ztring File__ReferenceFilesHelper_FromReferencedFolder(const Ztring& Name
     List.Quote_Set(Ztring());
     List.Write(Names);
     for (size_t Pos=0; Pos<List.size(); Pos++)
-        if (File__ReferenceFilesHelper_IsRelative(List[Pos]) && List[Pos].compare(0, 4, __T("urn:"))) //Not the identifier of a DCP/IMF asset missing in the asset map
-            List[Pos].insert(0, Folder_Path);
+    {
+        const Ztring& Name=List[Pos];
+        if (!File__ReferenceFilesHelper_IsRelative(Name) || !Name.compare(0, 4, __T("urn:"))) //Also the identifier of a DCP/IMF asset missing in the asset map
+            continue;
+        #ifndef __WINDOWS__
+            if (!Name.compare(0, 2, __T("\\\\")) || (Name.size()>=3 && Name[1]==__T(':') && (Name[2]==__T('\\') || Name[2]==__T('/'))))
+                continue;
+        #endif //__WINDOWS__
+        List[Pos].insert(0, Folder_Path);
+    }
     return List.Read();
 }
 
