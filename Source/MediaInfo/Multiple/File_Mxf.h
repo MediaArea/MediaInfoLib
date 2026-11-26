@@ -115,9 +115,10 @@ protected :
     void Streams_Finish_CommercialNames ();
     void Streams_Finish_CompliantWith ();
     conformance_errors CompliantWith_ArdZdf (size_t Profile_Pos, bool IsCandidateTest=false, bool StopAtFirst=false); //Profile_Pos is the position in the list of ARD/ZDF profiles, candidate test is done before parsing all partitions, without tests needing all partitions or the essence, only the first error is returned if StopAtFirst or IsCandidateTest
-    bool CompliantWith_ArdZdf_IsCandidate (); //Candidate for an ARD/ZDF profile with Body Partitions
+    bool CompliantWith_ArdZdf_IsCandidate (bool AllProfiles=false); //Candidate for an ARD/ZDF profile with Body Partitions, or for any ARD/ZDF profile
     size_t CompliantWith_ArdZdf_FromContent (std::string& Content); //Position of the ARD/ZDF profile matching the kind of content, (size_t)-1 if none, Content is filled with a description of the content
     #if MEDIAINFO_CONFORMANCE
+    bool CompliantWith_St2067204_IsCandidate (); //Candidate for an ADM Audio Track File, from the kinds of sub-descriptors
     conformance_errors CompliantWith_St2067204 (conformance_errors& Warnings); //ADM Audio Track File, to be done before filling the ADM content, Warnings are filled with the recommendations not followed
     struct st20675_results
     {
@@ -754,6 +755,9 @@ protected :
     };
     std::deque<randomindexpack>      RandomIndexPacks; //Front is removed when the partition is parsed
     bool                             RandomIndexPacks_AlreadyParsed;
+    bool                             Partitions_AreFiltered; //Not all partitions are parsed, compliance with specifications is then checked on at least one Body Partition and one Index Table Segment if it may be claimed
+    bool                             CompliantWith_BodyPartition_IsSearched;
+    bool                             CompliantWith_IndexTableSegment_IsSearched;
     std::set<int64u>                 PartitionPack_AlreadyParsed;
     size_t Streams_Count;
     int128u Code;
@@ -773,6 +777,7 @@ protected :
     bool   ProbeCaption_IsParsingPartitions; //Before the jump of the caption probe
     bool   Track_Number_IsAvailable;
     bool   IsParsingEnd;
+    bool   FirstPass_IsEnded; //The first pass ended before the end of the file, IsParsingEnd may be reset after it
     bool   IsCheckingRandomAccessTable;
     bool   IsCheckingFooterPartitionAddress;
     bool   IsSearchingFooterPartitionAddress;
@@ -1495,6 +1500,10 @@ protected :
     int64u Element_Size_AsIfRead();
     bool BookMark_Needed();
     bool ProbeCaption_IsPossible();
+    bool Partitions_IsAllNeeded(); //Partitions to parse are not filtered (full parsing, Index Tables needed)
+    bool Partitions_AreAllParsed(); //For tests needing all partitions
+    bool CompliantWith_IsPossible(); //Compliance with a specification may be claimed
+    bool CompliantWith_Partitions_Search(); //Parsing of one partition if a Body Partition or an Index Table Segment is needed, returns true if it is parsed
 
     //Temp
     int128u EssenceContainer_FromPartitionMetadata;
