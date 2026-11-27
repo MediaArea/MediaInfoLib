@@ -2155,6 +2155,67 @@ bool File_Avc::Header_Parser_Fill_Size()
 }
 
 //---------------------------------------------------------------------------
+bool File_Avc::PartialFrames_HeadIsEnough(const int8u* Head, size_t Head_Size, int64u Head_Offset)
+{
+    //Frame parsed up to its first slice header in Header_Parse(), after the fill (the size of the frames is used before it)
+    if (!PartialFrames || !FrameIsAlwaysComplete || SizedBlocks || MustParse_SPS_PPS || !Status[IsFilled] || FirstFrame_Offset==(int64u)-1 || FirstFrame_Offset==Head_Offset || FirstFrame_Pictures!=1)
+        return false;
+    for (const auto Item : seq_parameter_sets)
+        if (Item && !Item->frame_mbs_only_flag)
+            return false;
+
+    //NAL units before the first slice, complete in the head, then the first slice with more bytes than its header can have
+    if (Head_Size<4 || Head[0] || Head[1] || (Head[2]!=1 && (Head[2] || Head[3]!=1)))
+        return false; //Not beginning with a start code
+    size_t Pos=Head[2]?3:4;
+    for (;;)
+    {
+        if (Pos>=Head_Size || (Head[Pos]&0x80))
+            return false; //No NAL unit header, or forbidden_zero_bit
+        const auto nal_unit_type=Head[Pos]&0x1F;
+        if (nal_unit_type==1 || nal_unit_type==5)
+            return Head_Size-Pos>=16*1024; //Much more than the maximum size of a slice header
+        switch (nal_unit_type)
+        {
+            case 0x06 : //sei
+            case 0x07 : //seq_parameter_set
+            case 0x08 : //pic_parameter_set
+            case 0x09 : //access_unit_delimiter
+            case 0x0C : //filler_data
+            case 0x0D : //seq_parameter_set_extension
+            case 0x0E : //prefix_nal_unit
+            case 0x0F : //subset_seq_parameter_set
+                        break;
+            default   : return false; //Other slices (e.g. data partitioning), end of sequence...
+        }
+
+        //End of the NAL unit, at the next start code
+        auto End=Pos+1;
+        while (End+3<=Head_Size && (Head[End] || Head[End+1] || Head[End+2]!=1))
+            End++;
+        if (End+3>Head_Size)
+            return false;
+
+        //A SPS must be one already parsed, so the pictures stay progressive (content compared as in ParameterSet_Compare())
+        if (nal_unit_type==0x07)
+        {
+            auto Size=End-(Pos+1);
+            const auto Content=Head+Pos+1;
+            while (Size && (!Content[Size-1] || (Size>=3 && Content[Size-1]==0x03 && !Content[Size-2] && !Content[Size-3])))
+                Size--;
+            auto IsKnown=false;
+            for (const auto& Item : ParameterSets_Content[0])
+                if (Item.size()==Size && !memcmp(Item.data(), Content, Size))
+                    IsKnown=true;
+            if (!IsKnown)
+                return false;
+        }
+
+        Pos=End+3;
+    }
+}
+
+//---------------------------------------------------------------------------
 bool File_Avc::Header_Parser_QuickSearch()
 {
     while (       Buffer_Offset+6<=Buffer_Size

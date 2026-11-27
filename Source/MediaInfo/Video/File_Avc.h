@@ -44,6 +44,9 @@ public :
     bool   SizedBlocks_Probe; //Sized blocks or Annex B decided by the content of the first complete block, e.g. no usable configuration record
     bool   PartialFrames; //Complete frames parsed only up to their first slice header if the first frame (parsed with all its slices, for the slice count) has one progressive picture, e.g. by the probe of captions (in SEI messages)
 
+    //Partial frames, the beginning of a complete frame (Head_Offset is its offset) has all the content of the frame parsed with PartialFrames, the container may then not read the rest
+    bool   PartialFrames_HeadIsEnough(const int8u* Head, size_t Head_Size, int64u Head_Offset);
+
     //Constructor/Destructor
     File_Avc();
     ~File_Avc();
