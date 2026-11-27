@@ -158,6 +158,9 @@ string Jpeg2000_Rsiz(int16u Rsiz)
 #include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #include "ThirdParty/fmt/format.h"
 #include "ZenLib/Utils.h"
+#include <algorithm>
+#include <map>
+#include <tuple>
 #include <vector>
 using namespace ZenLib;
 using namespace std;
@@ -293,6 +296,826 @@ struct Jpeg_samplingfactor
 };
 
 //***************************************************************************
+// JPEG 2000 coding passes
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+// Reversible transformation: is there at least one code-block without all its coding passes?
+// Only the packet headers (ISO/IEC 15444-1 B.10, ISO/IEC 15444-15 for HT) are parsed
+class jp2k_passes
+{
+public :
+    enum result
+    {
+        Result_Unknown, //No missing coding pass found, or not supported, or not coherent
+        Result_NeedMoreData,
+        Result_Lossy,
+    };
+
+    //Marker segment of the main header and of the header of the first tile-part
+    void Segment(int16u Code, const int8u* Data, size_t Size);
+
+    //Data after the SOD marker of the first tile-part
+    result Parse(const int8u* Data, size_t Size);
+
+private :
+    //Protection against huge counts of elements in small contents
+    static const size_t Precincts_Max=1<<16; //Per tile
+    static const int64u Work_Max=1<<22;
+
+    struct style
+    {
+        int8u Levels;
+        int8u Width;
+        int8u Height;
+        int8u Style;
+        int8u Transformation;
+        vector<int8u> Precincts;
+    };
+    struct params
+    {
+        bool HasCOD=false;
+        int8u Progression=0;
+        int16u Layers=0;
+        style COD;
+        map<int16u, style> COC;
+        vector<int8u> QCD;
+        map<int16u, vector<int8u> > QCC;
+    };
+    struct tile : params
+    {
+        vector<pair<const int8u*, size_t> > Data;
+        bool HasPPT=false;
+        vector<int8u> PPT;
+    };
+    struct component
+    {
+        int8u X;
+        int8u Y;
+    };
+
+    struct bits
+    {
+        const int8u* Data;
+        size_t Size;
+        size_t Pos;
+        int8u Current=0;
+        int8u Remaining=0;
+        bool IsTruncated=false;
+
+        bits(const int8u* Data_, size_t Size_, size_t Pos_)
+            : Data(Data_)
+            , Size(Size_)
+            , Pos(Pos_)
+        {
+        }
+
+        bool Get1()
+        {
+            if (!Remaining)
+            {
+                if (Pos>=Size)
+                {
+                    IsTruncated=true;
+                    return false;
+                }
+                Remaining=Current==0xFF?7:8; //Bit stuffing
+                Current=Data[Pos++];
+            }
+            Remaining--;
+            return (Current>>Remaining)&1;
+        }
+
+        int32u Get(int32u Count)
+        {
+            int32u Value=0;
+            for (; Count; Count--)
+                Value=(Value<<1)|(int32u)Get1();
+            return Value;
+        }
+
+        void Align()
+        {
+            if (Current==0xFF)
+                Pos++;
+        }
+    };
+
+    struct tagtree
+    {
+        struct node
+        {
+            int32u Value=0;
+            bool IsKnown=false;
+        };
+        struct level
+        {
+            size_t Width;
+            size_t Offset;
+        };
+        vector<level> Levels;
+        vector<node> Nodes;
+
+        void Init(size_t Width, size_t Height)
+        {
+            size_t Offset=0;
+            for (;;)
+            {
+                Levels.push_back({Width, Offset});
+                Offset+=Width*Height;
+                if (Width*Height<=1)
+                    break;
+                Width=(Width+1)/2;
+                Height=(Height+1)/2;
+            }
+            Nodes.resize(Offset);
+        }
+
+        //Is the value less than the threshold?
+        bool Parse(bits& BS, size_t X, size_t Y, int32u Threshold)
+        {
+            int32u Low=0;
+            bool IsKnown=false;
+            for (size_t i=Levels.size(); i; i--)
+            {
+                auto& Node=Nodes[Levels[i-1].Offset+(Y>>(i-1))*Levels[i-1].Width+(X>>(i-1))];
+                if (Node.Value<Low)
+                    Node.Value=Low;
+                while (!Node.IsKnown && Node.Value<Threshold)
+                {
+                    if (BS.Get1())
+                        Node.IsKnown=true;
+                    else
+                        Node.Value++;
+                }
+                Low=Node.Value;
+                IsKnown=Node.IsKnown;
+            }
+            return IsKnown && Low<Threshold;
+        }
+    };
+
+    struct block
+    {
+        int32u Passes=0; //0 if not yet included
+        int8u ZeroPlanes=0;
+        int8u LengthBits=3;
+    };
+    struct band
+    {
+        size_t Width;
+        size_t Height;
+        int8u Planes;
+        tagtree Inclusion;
+        tagtree ZeroPlanes;
+        vector<block> Blocks;
+    };
+    struct precinct
+    {
+        int8u Resolution;
+        int16u Component;
+        int64u X;
+        int64u Y;
+        const style* Style;
+        vector<band> Bands;
+    };
+
+    static int64u CeilDiv(int64u Value, int64u Divisor)
+    {
+        return (Value+Divisor-1)/Divisor;
+    }
+    static int32u Log2(int32u Value)
+    {
+        int32u Result=0;
+        while (Value>>=1)
+            Result++;
+        return Result;
+    }
+
+    void Segment_SIZ(const int8u* Data, size_t Size);
+    bool Segment_Style(const int8u* Data, size_t Size, bool HasPrecincts, style& Style);
+    void Segment_Params(int16u Code, const int8u* Data, size_t Size, params& Params);
+    void Segment_Tile(int16u Code, const int8u* Data, size_t Size, tile& Tile);
+    result Parse_Tile(int16u Number, const tile& Tile);
+    bool Parse_Tile_Precincts(int16u Number, const tile& Tile, size_t Count_Max, vector<precinct>& Precincts, bool& IsIrreversible);
+    bool Parse_Packet(precinct& Precinct, int16u Layer, bits& BS, int64u& Length);
+
+    bool IsSupported=true;
+    int64u Work=0;
+    int64u X0=0, Y0=0, X1=0, Y1=0; //Image
+    int64u TileX0=0, TileY0=0, TileWidth=0, TileHeight=0;
+    vector<component> Components;
+    params Main;
+    map<int16u, tile> Tiles;
+    bool TilePart_First=false;
+    int16u TilePart_First_Tile=0;
+    int32u TilePart_First_Size=0;
+    size_t TilePart_First_HeaderSize=0;
+};
+
+//---------------------------------------------------------------------------
+void jp2k_passes::Segment(int16u Code, const int8u* Data, size_t Size)
+{
+    switch (Code)
+    {
+        case Elements::SIZ :
+                            Segment_SIZ(Data, Size);
+                            break;
+        case Elements::SOT :
+                            if (Size!=8)
+                            {
+                                IsSupported=false;
+                                break;
+                            }
+                            TilePart_First=true;
+                            TilePart_First_HeaderSize=12;
+                            TilePart_First_Tile=BigEndian2int16u(Data);
+                            TilePart_First_Size=BigEndian2int32u(Data+2);
+                            break;
+        default            :
+                            if (TilePart_First)
+                            {
+                                TilePart_First_HeaderSize+=4+Size;
+                                Segment_Tile(Code, Data, Size, Tiles[TilePart_First_Tile]);
+                            }
+                            else
+                                Segment_Params(Code, Data, Size, Main);
+    }
+}
+
+//---------------------------------------------------------------------------
+void jp2k_passes::Segment_SIZ(const int8u* Data, size_t Size)
+{
+    if (Size<36)
+    {
+        IsSupported=false;
+        return;
+    }
+    size_t Count=BigEndian2int16u(Data+34);
+    X1=BigEndian2int32u(Data+2);
+    Y1=BigEndian2int32u(Data+6);
+    X0=BigEndian2int32u(Data+10);
+    Y0=BigEndian2int32u(Data+14);
+    TileWidth=BigEndian2int32u(Data+18);
+    TileHeight=BigEndian2int32u(Data+22);
+    TileX0=BigEndian2int32u(Data+26);
+    TileY0=BigEndian2int32u(Data+30);
+    if ((Data[0]&0x80) //Extensions of ISO/IEC 15444-2
+     || !Count || Size<36+3*Count
+     || X0>=X1 || Y0>=Y1
+     || TileX0>X0 || TileY0>Y0
+     || TileX0+TileWidth<=X0 || TileY0+TileHeight<=Y0)
+    {
+        IsSupported=false;
+        return;
+    }
+    for (size_t i=0; i<Count; i++)
+    {
+        component Component;
+        Component.X=Data[36+3*i+1];
+        Component.Y=Data[36+3*i+2];
+        if (!Component.X || !Component.Y)
+        {
+            IsSupported=false;
+            return;
+        }
+        Components.push_back(Component);
+    }
+}
+
+//---------------------------------------------------------------------------
+bool jp2k_passes::Segment_Style(const int8u* Data, size_t Size, bool HasPrecincts, style& Style)
+{
+    if (Size<5)
+        return false;
+    Style.Levels=Data[0];
+    Style.Width=(Data[1]&0xF)+2;
+    Style.Height=(Data[2]&0xF)+2;
+    Style.Style=Data[3];
+    Style.Transformation=Data[4];
+    if (Style.Levels>32
+     || Style.Width>10 || Style.Height>10
+     || Style.Transformation>1
+     || (Style.Style&0x80)) //HT mixed with non HT
+        return false;
+    Style.Precincts.clear();
+    if (HasPrecincts)
+    {
+        if (Size<(size_t)6+Style.Levels)
+            return false;
+        Style.Precincts.assign(Data+5, Data+6+Style.Levels);
+    }
+    return true;
+}
+
+//---------------------------------------------------------------------------
+void jp2k_passes::Segment_Params(int16u Code, const int8u* Data, size_t Size, params& Params)
+{
+    int16u Component=0;
+    if (Code==Elements::COC || Code==Elements::QCC)
+    {
+        size_t Component_Size=Components.size()<257?1:2;
+        if (Size<=Component_Size)
+        {
+            IsSupported=false;
+            return;
+        }
+        Component=Component_Size==1?*Data:BigEndian2int16u(Data);
+        Data+=Component_Size;
+        Size-=Component_Size;
+    }
+    switch (Code)
+    {
+        case Elements::COD :
+                            if (Size<5 || !Segment_Style(Data+5, Size-5, Data[0]&1, Params.COD))
+                            {
+                                IsSupported=false;
+                                break;
+                            }
+                            Params.HasCOD=true;
+                            Params.Progression=Data[1];
+                            Params.Layers=BigEndian2int16u(Data+2);
+                            if (Params.Progression>4 || !Params.Layers)
+                                IsSupported=false;
+                            break;
+        case Elements::COC :
+                            if (!Segment_Style(Data+1, Size-1, Data[0]&1, Params.COC[Component]))
+                                IsSupported=false;
+                            break;
+        case Elements::QCD :
+                            Params.QCD.assign(Data, Data+Size);
+                            break;
+        case Elements::QCC :
+                            Params.QCC[Component].assign(Data, Data+Size);
+                            break;
+        case Elements::RGN : //Bit-planes are shifted
+        case Elements::POC :
+        case Elements::PPM :
+        case Elements::PPT : //Is not in the main header
+                            IsSupported=false;
+                            break;
+        default            : ;
+    }
+}
+
+//---------------------------------------------------------------------------
+void jp2k_passes::Segment_Tile(int16u Code, const int8u* Data, size_t Size, tile& Tile)
+{
+    if (Code==Elements::PPT && Size)
+    {
+        Tile.HasPPT=true;
+        Tile.PPT.insert(Tile.PPT.end(), Data+1, Data+Size);
+    }
+    else
+        Segment_Params(Code, Data, Size, Tile);
+}
+
+//---------------------------------------------------------------------------
+jp2k_passes::result jp2k_passes::Parse(const int8u* Data, size_t Size)
+{
+    if (!IsSupported || !TilePart_First || Components.empty())
+        return Result_Unknown;
+
+    //List of tile-parts
+    struct tilepart
+    {
+        int16u Tile;
+        size_t Offset;
+        size_t End;
+    };
+    vector<tilepart> TileParts;
+    tilepart TilePart={TilePart_First_Tile, 0, 0};
+    size_t TilePart_Size=TilePart_First_Size;
+    bool TilePart_IsUpToEnd=!TilePart_Size;
+    if (TilePart_Size)
+    {
+        auto HeaderSize=TilePart_First_HeaderSize+2; //With the SOD marker
+        if (TilePart_Size<HeaderSize)
+            return Result_Unknown;
+        TilePart_Size-=HeaderSize;
+    }
+    for (;;)
+    {
+        if (TilePart_IsUpToEnd)
+        {
+            //Up to the EOC marker (same value as EOI), which can not be in packets
+            while (TilePart.Offset+TilePart_Size+2<=Size && BigEndian2int16u(Data+TilePart.Offset+TilePart_Size)!=Elements::EOI)
+                TilePart_Size++;
+        }
+        if (Size<2 || TilePart_Size>Size-2-TilePart.Offset)
+            return Result_NeedMoreData;
+        TilePart.End=TilePart.Offset+TilePart_Size;
+        TileParts.push_back(TilePart);
+        auto Code=BigEndian2int16u(Data+TilePart.End);
+        if (Code==Elements::EOI)
+            break;
+        if (Code!=Elements::SOT)
+            return Result_Unknown;
+        if (Size-TilePart.End<14)
+            return Result_NeedMoreData;
+        TilePart.Offset=TilePart.End;
+        TilePart.Tile=BigEndian2int16u(Data+TilePart.Offset+4);
+        TilePart_Size=BigEndian2int32u(Data+TilePart.Offset+6);
+        TilePart_IsUpToEnd=!TilePart_Size;
+        if (BigEndian2int16u(Data+TilePart.Offset+2)!=10)
+            return Result_Unknown;
+        if (TilePart_Size<14)
+        {
+            if (TilePart_Size)
+                return Result_Unknown;
+            TilePart_Size=12;
+        }
+    }
+
+    //Headers of tile-parts
+    for (size_t i=0; i<TileParts.size(); i++)
+    {
+        auto& Tile=Tiles[TileParts[i].Tile];
+        auto Offset=TileParts[i].Offset;
+        auto End=TileParts[i].End;
+        if (i)
+        {
+            Offset+=12;
+            for (;;)
+            {
+                if (End-Offset<2)
+                    return Result_Unknown;
+                auto Code=BigEndian2int16u(Data+Offset);
+                Offset+=2;
+                if (Code==Elements::SOD)
+                    break;
+                if (End-Offset<2)
+                    return Result_Unknown;
+                size_t Segment_Size=BigEndian2int16u(Data+Offset);
+                if (Segment_Size<2 || Segment_Size>End-Offset)
+                    return Result_Unknown;
+                Segment_Tile(Code, Data+Offset+2, Segment_Size-2, Tile);
+                Offset+=Segment_Size;
+            }
+        }
+        Tile.Data.push_back(make_pair(Data+Offset, End-Offset));
+    }
+    if (!IsSupported)
+        return Result_Unknown;
+
+    //Tiles
+    for (const auto& Tile : Tiles)
+    {
+        if (Parse_Tile(Tile.first, Tile.second)==Result_Lossy)
+            return Result_Lossy;
+        if (Work>Work_Max)
+            break;
+    }
+    return Result_Unknown;
+}
+
+//---------------------------------------------------------------------------
+jp2k_passes::result jp2k_passes::Parse_Tile(int16u Number, const tile& Tile)
+{
+    //Data
+    const params& Params=Tile.HasCOD?(const params&)Tile:Main;
+    if (!Params.HasCOD)
+        return Result_Unknown;
+    vector<int8u> Data_Merged;
+    auto Data=Tile.Data[0].first;
+    auto Size=Tile.Data[0].second;
+    if (Tile.Data.size()>1)
+    {
+        for (const auto& Part : Tile.Data)
+            Data_Merged.insert(Data_Merged.end(), Part.first, Part.first+Part.second);
+        Data=Data_Merged.data();
+        Size=Data_Merged.size();
+    }
+    auto Headers=Tile.HasPPT?Tile.PPT.data():Data;
+    auto Headers_Size=Tile.HasPPT?Tile.PPT.size():Size;
+
+    //Precincts, in the order of the packets
+    vector<precinct> Precincts;
+    bool IsIrreversible=false;
+    if (!Parse_Tile_Precincts(Number, Tile, min(Headers_Size/Params.Layers, (size_t)Precincts_Max), Precincts, IsIrreversible)) //Each packet has at least 1 byte of header
+        return IsIrreversible?Result_Lossy:Result_Unknown;
+    auto Progression=Params.Progression;
+    stable_sort(Precincts.begin(), Precincts.end(), [Progression](const precinct& A, const precinct& B)
+    {
+        switch (Progression)
+        {
+            case 0 : //LRCP
+            case 1 : //RLCP
+                    return tie(A.Resolution, A.Component)<tie(B.Resolution, B.Component);
+            case 2 : //RPCL
+                    return tie(A.Resolution, A.Y, A.X, A.Component)<tie(B.Resolution, B.Y, B.X, B.Component);
+            case 3 : //PCRL
+                    return tie(A.Y, A.X, A.Component, A.Resolution)<tie(B.Y, B.X, B.Component, B.Resolution);
+            default: //CPRL
+                    return tie(A.Component, A.Y, A.X, A.Resolution)<tie(B.Component, B.Y, B.X, B.Resolution);
+        }
+    });
+
+    //Packets
+    size_t Pos=0, Headers_Pos=0;
+    for (size_t First=0; First<Precincts.size();)
+    {
+        //Precincts sharing the loop on layers
+        auto Last=First+1;
+        if (Progression<=1)
+            while (Last<Precincts.size() && (!Progression || Precincts[Last].Resolution==Precincts[First].Resolution))
+                Last++;
+
+        for (int32u Layer=0; Layer<Params.Layers; Layer++)
+            for (auto i=First; i<Last; i++)
+            {
+                if (Size-Pos>=6 && BigEndian2int16u(Data+Pos)==Elements::SOP)
+                    Pos+=6;
+                if (!Tile.HasPPT)
+                    Headers_Pos=Pos;
+                bits BS(Headers, Headers_Size, Headers_Pos);
+                int64u Length=0;
+                if (!Parse_Packet(Precincts[i], (int16u)Layer, BS, Length))
+                    return Result_Unknown;
+                BS.Align();
+                Headers_Pos=BS.Pos;
+                if (BS.IsTruncated || Headers_Pos>Headers_Size)
+                    return Result_Unknown;
+                if (Headers_Size-Headers_Pos>=2 && BigEndian2int16u(Headers+Headers_Pos)==Elements::EPH)
+                    Headers_Pos+=2;
+                if (!Tile.HasPPT)
+                    Pos=Headers_Pos;
+                if (Length>Size-Pos)
+                    return Result_Unknown;
+                Pos+=(size_t)Length;
+            }
+        First=Last;
+    }
+    if (Pos!=Size || (Tile.HasPPT && Headers_Pos!=Headers_Size))
+        return Result_Unknown; //Not coherent
+
+    //Coding passes
+    auto Result=Result_Unknown;
+    for (const auto& Precinct : Precincts)
+        for (const auto& Band : Precinct.Bands)
+            for (const auto& Block : Band.Blocks)
+            {
+                if (!Block.Passes)
+                    continue; //Nothing coded, it is not possible to know if all bits are 0
+                if (Block.ZeroPlanes>=Band.Planes)
+                    return Result_Unknown; //Not coherent
+                int32u Planes=Band.Planes-Block.ZeroPlanes;
+                if (Precinct.Style->Style&0x40)
+                {
+                    //HT, 1 HT set (cleanup, then optionally the 2 refinement passes of the next bit-plane) after placeholders of 3 passes
+                    auto Sets=(Block.Passes-1)/3;
+                    if (Sets>=Planes)
+                        return Result_Unknown; //Not coherent
+                    auto Missing=Planes-Sets-1;
+                    if (Missing>1 || (Missing && Block.Passes-3*Sets<3))
+                        Result=Result_Lossy;
+                }
+                else
+                {
+                    auto Passes=3*Planes-2;
+                    if (Block.Passes>Passes)
+                        return Result_Unknown; //Not coherent
+                    if (Block.Passes<Passes)
+                        Result=Result_Lossy;
+                }
+            }
+    return Result;
+}
+
+//---------------------------------------------------------------------------
+bool jp2k_passes::Parse_Tile_Precincts(int16u Number, const tile& Tile, size_t Count_Max, vector<precinct>& Precincts, bool& IsIrreversible)
+{
+    //Tile
+    auto Tiles_X=CeilDiv(X1-TileX0, TileWidth);
+    auto Tiles_Y=CeilDiv(Y1-TileY0, TileHeight);
+    auto Tile_X=Number%Tiles_X;
+    auto Tile_Y=Number/Tiles_X;
+    if (Tile_Y>=Tiles_Y)
+        return false;
+    auto Tile_X0=max(TileX0+Tile_X*TileWidth, X0);
+    auto Tile_Y0=max(TileY0+Tile_Y*TileHeight, Y0);
+    auto Tile_X1=min(TileX0+(Tile_X+1)*TileWidth, X1);
+    auto Tile_Y1=min(TileY0+(Tile_Y+1)*TileHeight, Y1);
+
+    for (size_t c=0; c<Components.size(); c++)
+    {
+        //Parameters
+        auto Component=(int16u)c;
+        const style* Style=&Main.COD;
+        auto Tile_COC=Tile.COC.find(Component);
+        auto Main_COC=Main.COC.find(Component);
+        if (Tile_COC!=Tile.COC.end())
+            Style=&Tile_COC->second;
+        else if (Tile.HasCOD)
+            Style=&Tile.COD;
+        else if (Main_COC!=Main.COC.end())
+            Style=&Main_COC->second;
+        if (!Style->Transformation)
+        {
+            IsIrreversible=true;
+            return false;
+        }
+        const vector<int8u>* Quantization=&Main.QCD;
+        auto Tile_QCC=Tile.QCC.find(Component);
+        auto Main_QCC=Main.QCC.find(Component);
+        if (Tile_QCC!=Tile.QCC.end())
+            Quantization=&Tile_QCC->second;
+        else if (!Tile.QCD.empty())
+            Quantization=&Tile.QCD;
+        else if (Main_QCC!=Main.QCC.end())
+            Quantization=&Main_QCC->second;
+        if (Quantization->size()<(size_t)2+3*Style->Levels || (Quantization->front()&0x1F)) //Reversible transformation is without quantization
+            return false;
+        int8u GuardBits=Quantization->front()>>5;
+
+        //Tile-component
+        int64u X=Components[c].X;
+        int64u Y=Components[c].Y;
+        auto C_X0=CeilDiv(Tile_X0, X);
+        auto C_Y0=CeilDiv(Tile_Y0, Y);
+        auto C_X1=CeilDiv(Tile_X1, X);
+        auto C_Y1=CeilDiv(Tile_Y1, Y);
+
+        for (int8u r=0; r<=Style->Levels; r++)
+        {
+            Work++;
+            if (Work>Work_Max)
+                return false;
+
+            //Resolution
+            auto Scale=((int64u)1)<<(Style->Levels-r);
+            auto R_X0=CeilDiv(C_X0, Scale);
+            auto R_Y0=CeilDiv(C_Y0, Scale);
+            auto R_X1=CeilDiv(C_X1, Scale);
+            auto R_Y1=CeilDiv(C_Y1, Scale);
+            if (R_X0>=R_X1 || R_Y0>=R_Y1)
+                continue;
+            int8u P_Width=15, P_Height=15;
+            if (!Style->Precincts.empty())
+            {
+                P_Width=Style->Precincts[r]&0xF;
+                P_Height=Style->Precincts[r]>>4;
+            }
+            int8u Shift=r?1:0;
+            if (P_Width<Shift || P_Height<Shift)
+                return false;
+            auto P_X0=R_X0>>P_Width;
+            auto P_Y0=R_Y0>>P_Height;
+            auto P_X1=CeilDiv(R_X1, ((int64u)1)<<P_Width);
+            auto P_Y1=CeilDiv(R_Y1, ((int64u)1)<<P_Height);
+            if (P_X1-P_X0>Count_Max || P_Y1-P_Y0>Count_Max || (P_X1-P_X0)*(P_Y1-P_Y0)>Count_Max-Precincts.size())
+                return false;
+
+            //Precincts
+            for (auto p_y=P_Y0; p_y<P_Y1; p_y++)
+                for (auto p_x=P_X0; p_x<P_X1; p_x++)
+                {
+                    Work++;
+                    Precincts.emplace_back();
+                    auto& Precinct=Precincts.back();
+                    Precinct.Resolution=r;
+                    Precinct.Component=Component;
+                    Precinct.X=max(Tile_X0, (p_x<<P_Width)*Scale*X);
+                    Precinct.Y=max(Tile_Y0, (p_y<<P_Height)*Scale*Y);
+                    Precinct.Style=Style;
+
+                    //Sub-bands
+                    for (int8u b=Shift; b<(r?4:1); b++)
+                    {
+                        auto B_X=[&](int64u Value)
+                        {
+                            auto Offset=(b&1)?Scale:0;
+                            return Value>Offset?CeilDiv(Value-Offset, Scale<<Shift):0;
+                        };
+                        auto B_Y=[&](int64u Value)
+                        {
+                            auto Offset=(b>>1)?Scale:0;
+                            return Value>Offset?CeilDiv(Value-Offset, Scale<<Shift):0;
+                        };
+                        auto B_X0=max(B_X(C_X0), (p_x<<P_Width)>>Shift);
+                        auto B_Y0=max(B_Y(C_Y0), (p_y<<P_Height)>>Shift);
+                        auto B_X1=min(B_X(C_X1), ((p_x+1)<<P_Width)>>Shift);
+                        auto B_Y1=min(B_Y(C_Y1), ((p_y+1)<<P_Height)>>Shift);
+                        if (B_X0>=B_X1 || B_Y0>=B_Y1)
+                            continue;
+                        auto Width=min(Style->Width, (int8u)(P_Width-Shift));
+                        auto Height=min(Style->Height, (int8u)(P_Height-Shift));
+                        auto Planes=GuardBits+((*Quantization)[1+(r?3*(r-1)+b:0)]>>3);
+                        Precinct.Bands.emplace_back();
+                        auto& Band=Precinct.Bands.back();
+                        Band.Width=(size_t)(CeilDiv(B_X1, ((int64u)1)<<Width)-(B_X0>>Width));
+                        Band.Height=(size_t)(CeilDiv(B_Y1, ((int64u)1)<<Height)-(B_Y0>>Height));
+                        Band.Planes=(int8u)(Planes?Planes-1:0);
+                    }
+                }
+        }
+    }
+    return true;
+}
+
+//---------------------------------------------------------------------------
+bool jp2k_passes::Parse_Packet(precinct& Precinct, int16u Layer, bits& BS, int64u& Length)
+{
+    if (!BS.Get1())
+        return true; //Empty packet
+    auto Style=Precinct.Style->Style;
+    for (auto& Band : Precinct.Bands)
+    {
+        Work+=(int64u)Band.Width*Band.Height;
+        if (Work>Work_Max)
+            return false;
+        if (Band.Blocks.empty())
+        {
+            Band.Inclusion.Init(Band.Width, Band.Height);
+            Band.ZeroPlanes.Init(Band.Width, Band.Height);
+            Band.Blocks.resize(Band.Width*Band.Height);
+        }
+        for (size_t i=0; i<Band.Blocks.size(); i++)
+        {
+            auto& Block=Band.Blocks[i];
+
+            //Inclusion
+            if (Block.Passes)
+            {
+                if (!BS.Get1())
+                    continue;
+            }
+            else
+            {
+                auto X=i%Band.Width;
+                auto Y=i/Band.Width;
+                if (!Band.Inclusion.Parse(BS, X, Y, (int32u)Layer+1))
+                    continue;
+                while (!Band.ZeroPlanes.Parse(BS, X, Y, (int32u)Block.ZeroPlanes+1))
+                {
+                    Block.ZeroPlanes++;
+                    if (Block.ZeroPlanes>80)
+                        return false;
+                }
+            }
+
+            //Count of coding passes
+            int32u Passes=1;
+            if (BS.Get1())
+            {
+                Passes++;
+                if (BS.Get1())
+                {
+                    auto Value=BS.Get(2);
+                    Passes=3+Value;
+                    if (Value==3)
+                    {
+                        Value=BS.Get(5);
+                        Passes=6+Value;
+                        if (Value==31)
+                            Passes=37+BS.Get(7);
+                    }
+                }
+            }
+
+            //Length
+            while (BS.Get1())
+            {
+                Block.LengthBits++;
+                if (Block.LengthBits>=24)
+                    return false;
+            }
+            if (Style&0x40)
+            {
+                //HT, only the last HT set has data, in 1 or 2 segments (cleanup pass, then refinement passes)
+                if (Block.Passes)
+                    return false; //Not supported
+                auto Sets=(Passes-1)/3;
+                auto Passes_Last=Passes-3*Sets;
+                Length+=BS.Get(Block.LengthBits+Log2(3*Sets+1));
+                if (Passes_Last>1)
+                    Length+=BS.Get(Block.LengthBits+Passes_Last-2);
+                Block.Passes=Passes;
+                continue;
+            }
+            while (Passes)
+            {
+                auto Count=Passes; //In the same codeword segment
+                if (Style&0x04) //Termination on each coding pass
+                    Count=1;
+                else if (Style&0x01) //Selective arithmetic coding bypass
+                {
+                    if (Block.Passes<10)
+                        Count=10-Block.Passes;
+                    else
+                        Count=(Block.Passes-10)%3?1:2;
+                    Count=min(Count, Passes);
+                }
+                Length+=BS.Get(Block.LengthBits+Log2(Count));
+                Block.Passes+=Count;
+                Passes-=Count;
+            }
+        }
+    }
+    return true;
+}
+
+//***************************************************************************
 // Constructor/Destructor
 //***************************************************************************
 
@@ -317,6 +1140,11 @@ File_Jpeg::File_Jpeg()
     #if MEDIAINFO_DEMUX
     FrameRate=0;
     #endif //MEDIAINFO_DEMUX
+}
+
+//---------------------------------------------------------------------------
+File_Jpeg::~File_Jpeg()
+{
 }
 
 //***************************************************************************
@@ -1109,6 +1937,9 @@ void File_Jpeg::Data_Parse()
                   Skip_XX(Element_Size,                         "Data");
                   Data_Size = (int64u)-1;
     }
+
+    if (Jp2k_Passes && Element_Code!=Elements::SOD)
+        Jp2k_Passes->Segment((int16u)Element_Code, Buffer+Buffer_Offset, (size_t)Element_Size);
 }
 
 //***************************************************************************
@@ -1135,14 +1966,13 @@ void File_Jpeg::CAP()
             case 15:
                 {
                 int8u MAGB;
-                bool HTIRV;
                 BS_Begin();
                 Skip_S1(2,                                      "HTONLY HTDECLARED MIXED");
                 Skip_SB(                                        "MULTIHT");
                 Skip_SB(                                        "RGN");
                 Skip_SB(                                        "HETEROGENEOUS");
                 Skip_S1(5,                                      "Reserved");
-                Get_SB (   HTIRV,                               "HTIRV");
+                Skip_SB(                                        "HTIRV");
                 Get_S1 (5, MAGB,                                "MAGB");
                 if (!MAGB)
                     MAGB = 8;
@@ -1153,7 +1983,6 @@ void File_Jpeg::CAP()
                 else
                     MAGB = 74;
                 Param_Info1(MAGB);
-                Fill(StreamKind_Last, StreamPos_Last, "Compression_Mode", HTIRV?"Lossy":"Lossless", Unlimited, true, true); // TODO: "Lossy" not sure, spec says "can be used with irreversible transforms"
                 BS_End();
                 }
                 break;
@@ -1184,6 +2013,13 @@ void File_Jpeg::SIZ()
     Skip_B4(                                                    "XTOsiz - Upper-left tile offset X");
     Skip_B4(                                                    "YTOsiz - Upper-left tile offset Y");
     Get_B2 (Count,                                              "Components and initialize related arrays");
+    Jp2k_Components_Count=Count;
+    Jp2k_COC_Count=0;
+    Jp2k_COC_IsIrreversible=false;
+    Jp2k_COD_Transformation=(int8u)-1;
+    Jp2k_SOT_Parsed=false;
+    if (Frame_Count==0 && Field_Count==0)
+        Jp2k_Passes.reset(new jp2k_passes);
     for (int16u Pos=0; Pos<Count; Pos++)
     {
         Element_Begin1("Initialize related array");
@@ -1285,15 +2121,65 @@ void File_Jpeg::SIZ()
 void File_Jpeg::COD()
 {
     //Parsing
-    int8u Style, Style2, Levels, MultipleComponentTransform;
+    int8u Style, Transformation;
     bool PrecinctUsed;
     Get_B1 (Style,                                              "Scod - Style");
         Get_Flags (Style, 0, PrecinctUsed,                      "Precinct used");
         Skip_Flags(Style, 1,                                    "Use SOP (start of packet)");
         Skip_Flags(Style, 2,                                    "Use EPH (end of packet header)");
-    Get_B1 (Levels,                                             "Number of decomposition levels");
     Skip_B1(                                                    "Progression order");
     Skip_B2(                                                    "Number of layers");
+    Skip_B1(                                                    "Multiple component transform");
+    Jp2k_SPcod(PrecinctUsed, Transformation);
+
+    FILLING_BEGIN();
+        if (Frame_Count==0 && Field_Count==0)
+        {
+            if (!Jp2k_SOT_Parsed)
+                Jp2k_COD_Transformation=Transformation;
+            else if (!Transformation)
+                Jp2k_COC_IsIrreversible=true;
+            Jp2k_Compression_Mode();
+        }
+    FILLING_END();
+
+    Data_Common();
+}
+
+//---------------------------------------------------------------------------
+void File_Jpeg::COC()
+{
+    //Parsing
+    int8u Style, Transformation;
+    bool PrecinctUsed;
+    if (Jp2k_Components_Count<257)
+        Skip_B1(                                                "Ccoc - Component index");
+    else
+        Skip_B2(                                                "Ccoc - Component index");
+    Get_B1 (Style,                                              "Scoc - Style");
+        Get_Flags (Style, 0, PrecinctUsed,                      "Precinct used");
+    Jp2k_SPcod(PrecinctUsed, Transformation);
+
+    FILLING_BEGIN();
+        if (Frame_Count==0 && Field_Count==0)
+        {
+            if (!Jp2k_SOT_Parsed)
+                Jp2k_COC_Count++;
+            if (!Transformation)
+                Jp2k_COC_IsIrreversible=true;
+            Jp2k_Compression_Mode();
+        }
+    FILLING_END();
+
+    Data_Common();
+}
+
+//---------------------------------------------------------------------------
+void File_Jpeg::Jp2k_SPcod(bool PrecinctUsed, int8u& Transformation)
+{
+    //Parsing
+    int8u Style2, Levels;
+    Get_B1 (Levels,                                             "Number of decomposition levels");
     Info_B1(DimX,                                               "Code-blocks dimensions X (2^(n+2))"); Param_Info2(1<<(DimX+2), " pixels");
     Info_B1(DimY,                                               "Code-blocks dimensions Y (2^(n+2))"); Param_Info2(1<<(DimY+2), " pixels");
     Get_B1 (Style2,                                             "Style of the code-block coding passes");
@@ -1303,38 +2189,68 @@ void File_Jpeg::COD()
         Skip_Flags(Style2, 3,                                   "Vertically stripe-causal context formation");
         Skip_Flags(Style2, 4,                                   "Error resilience info is embedded on MQ termination");
         Skip_Flags(Style2, 5,                                   "Segmentation marker is to be inserted at the end of each normalization coding pass");
-    Skip_B1(                                                    "Transform");
-    Get_B1(MultipleComponentTransform,                          "Multiple component transform");
+    Get_B1 (Transformation,                                     "Transformation");
     if (PrecinctUsed)
     {
         BS_Begin();
-        Skip_S1(4,                                              "LL sub-band width");
         Skip_S1(4,                                              "LL sub-band height");
+        Skip_S1(4,                                              "LL sub-band width");
         BS_End();
         for (int16u Pos=0; Pos<Levels; Pos++)
         {
             Element_Begin1("Decomposition level");
             BS_Begin();
-            Skip_S1(4,                                          "decomposition level width");
             Skip_S1(4,                                          "decomposition level height");
+            Skip_S1(4,                                          "decomposition level width");
             BS_End();
             Element_End0();
         }
     }
+}
 
-    FILLING_BEGIN();
-        if (Frame_Count==0 && Field_Count==0)
-        {
-            switch (MultipleComponentTransform)
+//---------------------------------------------------------------------------
+void File_Jpeg::Jp2k_Compression_Mode()
+{
+    auto Transformation=Jp2k_COC_Count && Jp2k_COC_Count>=Jp2k_Components_Count?(int8u)1:Jp2k_COD_Transformation; //The COD is not used if all components have a COC
+    if (Jp2k_COC_IsIrreversible)
+        Transformation=0;
+    switch (Transformation)
+    {
+        case 0x00 : Fill(StreamKind_Last, StreamPos_Last, "Compression_Mode", "Lossy", Unlimited, true, true); break; //9-7 irreversible
+        case 0x01 : Fill(StreamKind_Last, StreamPos_Last, "Compression_Mode", "Lossless", Unlimited, true, true); break; //5-3 reversible
+        default   : ;
+    }
+}
+
+//---------------------------------------------------------------------------
+// Reversible transformation is not enough for being lossless, the last coding passes may be removed
+// Return false if more data is needed
+bool File_Jpeg::Jp2k_Passes_Parse()
+{
+    if (Frame_Count || Field_Count || Retrieve_Const(StreamKind_Last, StreamPos_Last, "Compression_Mode")!=__T("Lossless"))
+        return true;
+
+    const size_t Size_Max=64*1024*1024; //Arbitrary
+    auto Size=Buffer_Size-(Buffer_Offset+(size_t)Element_Size);
+    switch (Jp2k_Passes->Parse(Buffer+Buffer_Offset+(size_t)Element_Size, Size))
+    {
+        case jp2k_passes::Result_Lossy :
+            Fill(StreamKind_Last, StreamPos_Last, "Compression_Mode", "Lossy", Unlimited, true, true);
+            break;
+        case jp2k_passes::Result_NeedMoreData :
+            if (!IsSub && File_Size!=(int64u)-1 && Size<Size_Max) //If in a container, the frame is expected to be in the buffer
             {
-                case 0x01 : Fill(StreamKind_Last, StreamPos_Last, "Compression_Mode", "Lossless", Unlimited, true, true); break;
-                case 0x02 : Fill(StreamKind_Last, StreamPos_Last, "Compression_Mode", "Lossy", Unlimited, true, true); break;
-                default   : ;
+                auto End=Config->File_Sizes.empty()?File_Size:Config->File_Sizes[0];
+                if (File_Offset+Buffer_Size<End)
+                {
+                    Buffer_MaximumSize=2*Size_Max;
+                    return false;
+                }
             }
-        }
-    FILLING_END();
-
-    Data_Common();
+            break;
+        default:;
+    }
+    return true;
 }
 
 //---------------------------------------------------------------------------
@@ -1387,6 +2303,16 @@ void File_Jpeg::CME()
 //---------------------------------------------------------------------------
 void File_Jpeg::SOD()
 {
+    if (Jp2k_Passes)
+    {
+        if (!Jp2k_Passes_Parse())
+        {
+            Element_WaitForMoreData();
+            return;
+        }
+        Jp2k_Passes.reset();
+    }
+
     SOS_SOD_Parsed=true;
     if (Data_Size != (int64u)-1) {
         Data_Size += IsSub ? (Buffer_Size - (Buffer_Offset + Element_Size)) : (File_Size - (File_Offset + Buffer_Offset + Element_Size));
@@ -1463,7 +2389,7 @@ void File_Jpeg::SOF_(int8u Encoding)
             case 0x7:
             case 0xB:
             case 0xF:
-                Fill(StreamKind_Last, StreamPos_Last, Image_Compression_Mode, "Lossless", Unlimited, true, true);
+                Fill(StreamKind_Last, StreamPos_Last, Fill_Parameter(StreamKind_Last, Generic_Compression_Mode), "Lossless", Unlimited, true, true);
                 break;
             default:
                 break;
