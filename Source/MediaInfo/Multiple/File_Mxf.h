@@ -1757,6 +1757,7 @@ protected :
         bool                        St2067201_IsRequested; //SMPTE ST 2067-201 requested by the user, conformance errors are reported
         bool                        St2067202_IsRequested; //SMPTE ST 2067-202 requested by the user, conformance errors are reported
         bool                        St2067203_IsRequested; //SMPTE ST 2067-203 requested by the user, conformance errors are reported
+        std::string                 MxfProfiles_Declared; //Profiles declared by a playlist referencing the file (e.g. an IMF Composition Playlist): conformance errors are reported, not listed in CompliantWith unless requested
         struct imf_image
         {
             const std::string*      Duration=nullptr; //Of the Essence Track

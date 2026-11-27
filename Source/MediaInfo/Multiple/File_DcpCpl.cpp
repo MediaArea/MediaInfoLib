@@ -90,6 +90,60 @@ static bool IsSmpteSt2067_3(const char* Ns)
 
 }
 
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
+//Profiles of the Track Files of an IMF Sequence, declared by the Composition Playlist
+static string Imf_DeclaredProfiles(const char* Name, const char* NameSpace, const string& ApplicationIds)
+{
+    if (!NameSpace)
+        return {};
+    if (IsSmpteSt2067_2(NameSpace))
+    {
+        if (!strcmp(Name, "MainImageSequence"))
+        {
+            string Profiles("SMPTE_ST_2067-2");
+            if (ApplicationIds.find("/2067-21/")!=string::npos) //Application #2E
+                Profiles+=",SMPTE_ST_2067-21";
+            if (ApplicationIds.find("/2067-50/")!=string::npos) //Application #5
+                Profiles+=",SMPTE_ST_2067-50";
+            return Profiles;
+        }
+        static const char* const TrackFileSequences[]=
+        {
+            "MainAudioSequence",
+            "SubtitlesSequence",
+            "HearingImpairedCaptionsSequence",
+            "VisuallyImpairedTextSequence",
+            "CommentarySequence",
+            "KaraokeSequence",
+            "ForcedNarrativeSequence",
+            "AncillaryDataSequence",
+        };
+        for (const auto TrackFileSequence : TrackFileSequences)
+            if (!strcmp(Name, TrackFileSequence))
+                return "SMPTE_ST_2067-2";
+        return {};
+    }
+    struct plugin
+    {
+        const char* Name;
+        const char* NameSpace;
+        const char* Profiles;
+    };
+    static const plugin Plugins[]=
+    {
+        { "IABSequence",            "http://www.smpte-ra.org/ns/2067-201/", "SMPTE_ST_2067-2,SMPTE_ST_2067-201" },
+        { "ISXDSequence",           "http://www.smpte-ra.org/ns/2067-202/", "SMPTE_ST_2067-2,SMPTE_ST_2067-202" },
+        { "MGASADMSignalSequence",  "http://www.smpte-ra.org/ns/2067-203/", "SMPTE_ST_2067-2,SMPTE_ST_2067-203" },
+        { "ADMAudioSequence",       "http://www.smpte-ra.org/ns/2067-204/", "SMPTE_ST_2067-204" }, //Includes the overall Track File constraints
+    };
+    for (const auto& Plugin : Plugins)
+        if (!strcmp(Name, Plugin.Name) && !strncmp(NameSpace, Plugin.NameSpace, strlen(Plugin.NameSpace)))
+            return Plugin.Profiles;
+    return {};
+}
+#endif //MEDIAINFO_CONFORMANCE
+
 //***************************************************************************
 // Buffer - File header
 //***************************************************************************
@@ -137,6 +191,22 @@ bool File_DcpCpl::FileHeader_Begin()
     ReferenceFiles_Accept(this, Config);
 
     vector<size_t> AssetCountPerReel;
+    #if MEDIAINFO_CONFORMANCE
+        string ApplicationIds; //Application IDs of SMPTE ST 2067-2, for the profiles of the Track Files
+        if (IsImf)
+            for (XMLElement* Item=Root->FirstChildElement(); Item; Item=Item->NextSiblingElement())
+                if (MatchQName(Item, "ExtensionProperties", NameSpace))
+                    for (XMLElement* Property=Item->FirstChildElement(); Property; Property=Property->NextSiblingElement())
+                    {
+                        const char* Property_NameSpace;
+                        const char* Property_Name=LocalName(Property, Property_NameSpace);
+                        if (IsSmpteSt2067_2(Property_NameSpace) && !strcmp(Property_Name, "ApplicationIdentification") && Property->GetText())
+                        {
+                            ApplicationIds+=Property->GetText();
+                            ApplicationIds+=' ';
+                        }
+                    }
+    #endif //MEDIAINFO_CONFORMANCE
                         
     //Parsing main elements
     for (XMLElement* CompositionPlaylist_Item=Root->FirstChildElement(); CompositionPlaylist_Item; CompositionPlaylist_Item=CompositionPlaylist_Item->NextSiblingElement())
@@ -311,6 +381,16 @@ bool File_DcpCpl::FileHeader_Begin()
                                 {
                                     sequence* Sequence=new sequence;
                                     Ztring Asset_Id;
+                                    #if MEDIAINFO_CONFORMANCE
+                                        if (IsImf)
+                                        {
+                                            //Track Files checked with the profiles of the Sequence, their compliance is mandatory
+                                            const auto Profiles=Imf_DeclaredProfiles(AlItemName, AlItemNs, ApplicationIds);
+                                            if (!Profiles.empty())
+                                                Sequence->Config["File_Mxf_DeclaredProfiles"].From_UTF8(Profiles);
+                                            Sequence->ConformanceFromGeneral=true;
+                                        }
+                                    #endif //MEDIAINFO_CONFORMANCE
 
                                     if (IsDcp && !strcmp(NameSpace, AlItemNs))
                                     {

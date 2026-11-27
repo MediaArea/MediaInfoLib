@@ -3217,6 +3217,26 @@ void File_Mxf::Streams_Finish()
 
     //Compliance with specifications
     Streams_Finish_CompliantWith();
+    #if MEDIAINFO_CONFORMANCE
+        if (!MxfProfiles_Declared.empty()) //Profiles declared by a playlist referencing the file are not listed unless requested, as their compliance is mandatory
+        {
+            const auto Requested=','+MediaInfoLib::Config.MxfProfile()+',';
+            const auto Declared=','+MxfProfiles_Declared+',';
+            ZtringList CompliantWith;
+            CompliantWith.Separator_Set(0, __T(" / "));
+            CompliantWith.Write(Retrieve_Const(Stream_General, 0, General_CompliantWith));
+            for (size_t Pos=CompliantWith.size(); Pos--;)
+            {
+                const auto Name=','+CompliantWith[Pos].To_UTF8()+',';
+                if (Declared.find(Name)!=string::npos && Requested.find(Name)==string::npos)
+                    CompliantWith.erase(CompliantWith.begin()+Pos);
+            }
+            if (CompliantWith.empty())
+                Clear(Stream_General, 0, General_CompliantWith);
+            else
+                Fill(Stream_General, 0, General_CompliantWith, CompliantWith.Read(), true);
+        }
+    #endif //MEDIAINFO_CONFORMANCE
 
     #if MEDIAINFO_CONFORMANCE
         Streams_Finish_Conformance_References();
@@ -13293,6 +13313,21 @@ void File_Mxf::Read_Buffer_Init()
 
     //Config
     TimeCodeFromMaterialPackage=Config->File_Mxf_TimeCodeFromMaterialPackage_Get();
+    #if MEDIAINFO_CONFORMANCE
+        MxfProfiles_Declared=Config->File_Mxf_DeclaredProfiles_Get();
+        if (!MxfProfiles_Declared.empty())
+        {
+            const auto Declared=','+MxfProfiles_Declared+',';
+            const auto IsDeclared=[&Declared](const char* Name) { return Declared.find(string(1, ',')+Name+',')!=string::npos; };
+            St2067204_IsRequested|=IsDeclared("SMPTE_ST_2067-204");
+            St20672_IsRequested|=IsDeclared("SMPTE_ST_2067-2");
+            St206721_IsRequested|=IsDeclared("SMPTE_ST_2067-21");
+            St206750_IsRequested|=IsDeclared("SMPTE_ST_2067-50");
+            St2067201_IsRequested|=IsDeclared("SMPTE_ST_2067-201");
+            St2067202_IsRequested|=IsDeclared("SMPTE_ST_2067-202");
+            St2067203_IsRequested|=IsDeclared("SMPTE_ST_2067-203");
+        }
+    #endif //MEDIAINFO_CONFORMANCE
 }
 
 //---------------------------------------------------------------------------
