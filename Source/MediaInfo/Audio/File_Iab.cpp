@@ -22,6 +22,7 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Audio/File_Iab.h"
+#include "MediaInfo/MediaInfo_Config_MediaInfo.h"
 #include <algorithm>
 using namespace std;
 //---------------------------------------------------------------------------
@@ -548,9 +549,18 @@ void File_Iab::Streams_Fill()
 //---------------------------------------------------------------------------
 void File_Iab::Read_Buffer_Continue()
 {
-    if (Frame_Count)
+    if (Frame_Count && Config->ParseSpeed<1.0) // All frames only if requested
         Skip_XX(Element_Size,                                   "Data"); // TODO: management of frame wrapped IAB
 }
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
+void File_Iab::Read_Buffer_Unsynched()
+{
+    if (Checks.Frame_Count)
+        Checks_IsStopped=true;
+}
+#endif //MEDIAINFO_CONFORMANCE
 
 //***************************************************************************
 // Buffer - Per element
@@ -608,13 +618,23 @@ void File_Iab::Data_Parse()
         case 0x00000020: Element_Name("Bed Remap"); BedRemap(); break;
         case 0x00000040: Element_Name("Object Definition"); ObjectDefinition(); break;
         case 0x00000400: Element_Name("Audio Data PCM"); AudioDataPCM(); break;
-        default: Element_Name(Ztring().From_CC4((int32u)Element_Code)); Skip_XX(Element_Size, "Data");
+        default:
+                #if MEDIAINFO_CONFORMANCE
+                    if (Element_Code==0x00000200 && !Checks_IsStopped)
+                        Checks.Dlc_IsPresent=true;
+                #endif //MEDIAINFO_CONFORMANCE
+                Element_Name(Ztring().From_CC4((int32u)Element_Code)); Skip_XX(Element_Size, "Data");
     }
 
     if ((Element_Code!=0x00000008 || Element_Offset==Element_Size) && Element_Size>=Element_TotalSize_Get(Element_Level-1))
     {
-        Frame.Objects=std::move(F.Objects);
+        if (!Frame_Count)
+            Frame.Objects=std::move(F.Objects);
+        F.Objects.clear();
         Frame_Count++;
+        #if MEDIAINFO_CONFORMANCE
+            Checks_Frame_Finish();
+        #endif //MEDIAINFO_CONFORMANCE
         if (!Status[IsFilled] && Frame_Count>=Frame_Count_Valid)
             Finish();
     }
@@ -636,7 +656,29 @@ void File_Iab::IAFrame()
         Get_Plex8 (MaxRendered,                                     "MaxRendered");
         Get_Plex8 (SubElementCount,                                 "SubElementCount");
         Element_ThisIsAList();
-        Frame.Objects=std::move(F.Objects);
+        F.Objects.clear();
+
+        #if MEDIAINFO_CONFORMANCE
+            FILLING_BEGIN();
+                const auto Checks_SampleRate=Iab_SampleRate[SampleRate];
+                const auto Checks_BitDepth=Iab_BitDepth[BitDepth];
+                static const int32u FrameRates[]={24, 25, 30, 48, 50, 60, 96, 100, 120, 24000};
+                const auto FrameRate_Num=FrameRate<sizeof(FrameRates)/sizeof(*FrameRates)?FrameRates[FrameRate]:0;
+                if (Checks_IsStarted && !Checks_IsStopped && (Checks.SampleRate!=Checks_SampleRate || Checks.BitDepth!=Checks_BitDepth || Checks.FrameRate_Num!=FrameRate_Num))
+                    Checks.Characteristics_AreNotConstant=true;
+                if (!Checks_IsStarted)
+                {
+                    Checks_IsStarted=true;
+                    Checks.SampleRate=Checks_SampleRate;
+                    Checks.BitDepth=Checks_BitDepth;
+                    Checks.FrameRate_Num=FrameRate_Num;
+                    Checks.FrameRate_Den=FrameRate_Num==24000?1001:1;
+                }
+                Checks_Beds.clear();
+                Checks_Objects.clear();
+                Checks_Objects_Count=0;
+            FILLING_END();
+        #endif //MEDIAINFO_CONFORMANCE
     }
     else
         Skip_XX(Element_Size-Element_Offset,                        "Unknown");
@@ -648,15 +690,16 @@ void File_Iab::BedDefinition()
     F.Objects.resize(F.Objects.size()+1);
 
     //Parsing
-    int32u ChannelCount;
-    int8u AudioDescription;
+    int32u MetaID, ChannelCount, SubElementCount;
+    int8u AudioDescription, BedUseCase=0xFF;
+    string AudioDescriptionText;
     bool ConditionalBed;
-    Skip_Plex8(                                                 "MetaID");
+    Get_Plex8 (MetaID,                                          "MetaID");
     BS_Begin();
     Get_SB (ConditionalBed,                                     "ConditionalBed");
     if (ConditionalBed)
     {
-        Skip_S1(8,                                              "BedUseCase");
+        Get_S1 (8, BedUseCase,                                  "BedUseCase");
     }
     Get_Plex(4, ChannelCount,                                   "ChannelCount");
     for (int32u n=0; n<ChannelCount; n++)
@@ -692,12 +735,32 @@ void File_Iab::BedDefinition()
         size_t Pos=(size_t)Element_Offset;
         while (Pos<Element_Size && Buffer[Buffer_Offset+Pos])
             Pos++;
-        Skip_String(Pos-Element_Offset,                         "AudioDescriptionText");
+        Get_String(Pos-Element_Offset, AudioDescriptionText,    "AudioDescriptionText");
         if (Element_Offset<Element_Size)
             Element_Offset++; //NULL terminator
     }
-    Skip_Plex8(                                                 "SubElementCount");
+    Get_Plex8 (SubElementCount,                                 "SubElementCount");
     Element_ThisIsAList();
+
+    #if MEDIAINFO_CONFORMANCE
+        FILLING_BEGIN();
+            checks::bed Bed;
+            Bed.ChannelIDs.assign(F.Objects.back().ChannelLayout.begin(), F.Objects.back().ChannelLayout.end());
+            Bed.AudioDescription=AudioDescription;
+            Bed.AudioDescriptionText=AudioDescriptionText;
+            Bed.Signature=string(ConditionalBed?"1 ":"0 ")+to_string(BedUseCase);
+            for (const auto ChannelID : Bed.ChannelIDs)
+                Bed.Signature+=' '+to_string(ChannelID);
+            if (Checks_IsStopped)
+                return;
+            if (SubElementCount)
+                Checks.SubElements_ArePresent=true;
+            if (ConditionalBed && BedUseCase!=0xFF)
+                Checks.Conditional_IsNotAlways=true;
+            if (!Checks_Beds.emplace(MetaID, Bed).second)
+                Checks.MetaID_IsDuplicated=true;
+        FILLING_END();
+    #endif //MEDIAINFO_CONFORMANCE
 }
 
 //---------------------------------------------------------------------------
@@ -706,16 +769,18 @@ void File_Iab::ObjectDefinition()
     F.Objects.resize(F.Objects.size()+1);
 
     //Parsing
-    int8u AudioDescription;
+    int32u MetaID, SubElementCount;
+    int8u AudioDescription, ObjectUseCase=0xFF;
+    string AudioDescriptionText;
     bool ConditionalObject;
-    Skip_Plex8(                                                 "MetaID");
+    Get_Plex8 (MetaID,                                          "MetaID");
     Skip_Plex8(                                                 "AudioDataID");
     BS_Begin();
     Get_SB (ConditionalObject,                                  "ConditionalObject");
     if (ConditionalObject)
     {
         Skip_SB(                                                "1");
-        Skip_S1(8,                                              "ObjectUseCase");
+        Get_S1 (8, ObjectUseCase,                               "ObjectUseCase");
     }
     Skip_SB(                                                    "0");
     int32u NumPanSubBlocks=(FrameRate<16 && Iab_NumPanSubBlocks[FrameRate])?Iab_NumPanSubBlocks[FrameRate]:8;
@@ -798,17 +863,40 @@ void File_Iab::ObjectDefinition()
         size_t Pos=(size_t)Element_Offset;
         while (Pos<Element_Size && Buffer[Buffer_Offset+Pos])
             Pos++;
-        Skip_String(Pos-Element_Offset,                         "AudioDescriptionText");
+        Get_String(Pos-Element_Offset, AudioDescriptionText,    "AudioDescriptionText");
         if (Element_Offset<Element_Size)
             Element_Offset++; //NULL terminator
     }
-    Skip_Plex8(                                                 "SubElementCount");
+    Get_Plex8 (SubElementCount,                                 "SubElementCount");
     //Element_ThisIsAList(); // TODO: handle SubElements here
+
+    #if MEDIAINFO_CONFORMANCE
+        FILLING_BEGIN();
+            if (Checks_IsStopped)
+                return;
+            if (SubElementCount)
+                Checks.SubElements_ArePresent=true;
+            if (ConditionalObject && ObjectUseCase!=0xFF)
+                Checks.Conditional_IsNotAlways=true;
+            if (!Checks_Objects.insert(MetaID).second)
+                Checks.MetaID_IsDuplicated=true;
+            Checks_Objects_Count++;
+            if (Checks.Objects.size()>=0x1000 && Checks.Objects.find(MetaID)==Checks.Objects.end())
+                return; //Arbitrary limit
+            const auto Signature=string(ConditionalObject?"1 ":"0 ")+to_string(ObjectUseCase)+' '+to_string(AudioDescription)+' '+AudioDescriptionText;
+            if (Checks.Objects.emplace(MetaID, Signature).first->second!=Signature)
+                Checks.Objects_AreNotConstant=true;
+        FILLING_END();
+    #endif //MEDIAINFO_CONFORMANCE
 }
 
 //---------------------------------------------------------------------------
 void File_Iab::BedRemap()
 {
+    #if MEDIAINFO_CONFORMANCE
+        if (!Checks_IsStopped)
+            Checks.BedRemap_IsPresent=true;
+    #endif //MEDIAINFO_CONFORMANCE
     int32u SourceChannels, DestinationChannels;
     Skip_Plex8(                                                 "MetaID");
     Skip_B1 (                                                   "RemapUseCase");
@@ -854,6 +942,34 @@ void File_Iab::AudioDataPCM()
 //***************************************************************************
 // Helpers
 //***************************************************************************
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
+void File_Iab::Checks_Frame_Finish()
+{
+    if (Checks_IsStopped)
+        return;
+    if (Checks_Objects_Count>Checks.Objects_Max)
+        Checks.Objects_Max=Checks_Objects_Count;
+    if (!Checks.Frame_Count)
+        Checks.Beds=Checks_Beds;
+    else
+    {
+        auto IsSame=Checks.Beds.size()==Checks_Beds.size();
+        for (const auto& Bed : Checks_Beds)
+        {
+            const auto First=Checks.Beds.find(Bed.first);
+            if (First==Checks.Beds.end() || First->second.Signature!=Bed.second.Signature)
+                IsSame=false;
+            else if (First->second.AudioDescription!=Bed.second.AudioDescription || First->second.AudioDescriptionText!=Bed.second.AudioDescriptionText)
+                Checks.Beds_DescriptionsAreNotConstant=true;
+        }
+        if (!IsSame)
+            Checks.Beds_AreNotConstant=true;
+    }
+    Checks.Frame_Count++;
+}
+#endif //MEDIAINFO_CONFORMANCE
 
 //---------------------------------------------------------------------------
 void File_Iab::Get_Plex(int8u Bits, int32u& Info, const char* Name)

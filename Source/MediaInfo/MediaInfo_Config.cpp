@@ -3945,6 +3945,9 @@ static const char* const MxfProfile_Names[]=
     "ARD_ZDF_XDF-01",
     "ARD_ZDF_XDF-02",
     "SMPTE_ST_2067-2", //IMF Track File (Image, Audio, Timed Text or Ancillary Data)
+    "SMPTE_ST_2067-201", //IAB Track File (IMF)
+    "SMPTE_ST_2067-202", //ISXD Track File (IMF)
+    "SMPTE_ST_2067-203", //MGA S-ADM Track File (IMF), with Operational Mode A
     "SMPTE_ST_2067-204", //ADM Audio Track File (IMF), with Operational Mode A
     "SMPTE_ST_2067-21", //Image Track File of IMF Application #2E (JPEG 2000)
     "SMPTE_ST_2067-5", //IMF Essence Component
