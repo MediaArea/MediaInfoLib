@@ -103,8 +103,9 @@ protected :
     void Streams_Finish_Track (const int128u TrackUID);
     void Streams_Finish_Track_ForTimeCode (const int128u TrackUID, bool IsSourcePackage);
     void Streams_Finish_Track_ForAS11 (const int128u TrackUID);
-    void Streams_Finish_Essence (int32u EssenceUID, int128u TrackUID);
-    void Streams_Finish_Essence_FillID (int32u EssenceUID, int128u TrackUID);
+    void Streams_Finish_Playlists (const int128u ContentStorageUID);
+    void Streams_Finish_Essence (int64u EssenceUID, int128u TrackUID);
+    void Streams_Finish_Essence_FillID (int64u EssenceUID, int128u TrackUID);
     void Streams_Finish_Descriptor (const int128u DescriptorUID, const int128u PackageUID);
     void Streams_Finish_Locator (const int128u DescriptorUID, const int128u LocatorUID);
     void Fill_PreChargeRollOut(stream_t StreamKind, size_t StreamPos, int64u PreCharge, int64u RollOut);
@@ -877,7 +878,35 @@ protected :
     };
     typedef std::map<int128u, track> tracks; //Key is InstanceUID of the track
     tracks Tracks;
-    int32u TrackID_FromTrackNumber(int32u TrackNumber);
+    int32u TrackID_FromTrackNumber(int32u TrackNumber, int32u BodySID);
+
+    //Essence container data, the same Track ID and Track Number may be used in the packages of several bodies
+    struct essencedata
+    {
+        int256u PackageUID;
+        int32u  BodySID;
+
+        essencedata()
+        {
+            BodySID=0;
+        }
+    };
+    typedef std::map<int128u, essencedata> essencedatas; //Key is InstanceUID of the essence container data
+    essencedatas EssenceDatas;
+    struct trackid_unique
+    {
+        int32u  TrackID; //In the file
+        int32u  TrackID_Unique; //Unique in all the packages with essence in the file
+    };
+    std::map<int128u, trackid_unique> TrackIDs_Unique; //Key is InstanceUID of the track
+    bool   EssenceDatas_HasSeveralBodies() const; //Bodies of different packages
+    bool   EssenceDatas_IsLinked(int32u BodySID, const package& Package) const;
+    bool   EssenceDatas_HasTrackNumber(int32u BodySID, int32u TrackNumber); //In a package having this body
+    int32u BodySID_Get() const; //Of the element being parsed, 0 if unknown
+    int64u Essence_Key(int32u TrackNumber, int32u BodySID); //Key in Essences of an element
+    int64u Essence_Key(const int128u& TrackUID); //Key in Essences of the essence of a track
+    void   TrackIDs_SetUnique(); //If Track IDs are reused in several packages with essence in the file
+    void   TrackIDs_Restore();
 
     //Essence
     typedef std::vector<File__Analyze*> parsers;
@@ -892,6 +921,7 @@ protected :
         int64u Element_Size_Constant; //Size of parsed elements if it is always the same, 0 if no element is parsed, (int64u)-1 if not constant
         int64u Element_Count; //Count of parsed complete elements
         int32u TrackID;
+        int32u BodySID;
         bool   TrackID_WasLookedFor;
         bool   Stream_Finish_Done;
         bool   Track_Number_IsMappedToTrack; //if !Track_Number_IsAvailable, is true when it was euristicly mapped
@@ -915,6 +945,7 @@ protected :
             Element_Size_Constant=0;
             Element_Count=0;
             TrackID=(int32u)-1;
+            BodySID=0;
             TrackID_WasLookedFor=false;
             Stream_Finish_Done=false;
             Track_Number_IsMappedToTrack=false;
@@ -938,7 +969,7 @@ protected :
                 delete Parsers[Pos];
         }
     };
-    typedef std::map<int32u, essence> essences; //Key is TrackNumber
+    typedef std::map<int64u, essence> essences; //Key is TrackNumber, with BodySID in the high part if the TrackNumber is already the one of an essence of another package in another body
     essences Essences;
     struct streamsize_fromelements
     {
@@ -1530,7 +1561,7 @@ protected :
     bool   MayHaveCaptionsInStream;
     bool   StereoscopicPictureSubDescriptor_IsPresent;
     bool   UserDefinedAcquisitionMetadata_UdamSetIdentifier_IsSony;
-    int32u Essences_UsedForFrameCount;
+    int64u Essences_UsedForFrameCount;
     int64u FirstPass_ContentPackage_First; //Offset of the first element of the first content package
     int64u FirstPass_ContentPackage_End; //Offset of the end of the first element of the last content package
     int64u FirstPass_ContentPackage_Count;
@@ -1843,6 +1874,7 @@ protected :
     };
     std::map<int64u, generic_stream_data_element_key> MXFGenericStreamDataElementKey; // Key is file offset
     std::vector<File__Analyze*> ToMergeLater;
+    Ztring ToMergeLater_ID; //ID of the stream of the first one
     int64u ExtraMetadata_Offset;
     std::set<int32u> ExtraMetadata_SID;
     File__Analyze* DolbyAudioMetadata;
