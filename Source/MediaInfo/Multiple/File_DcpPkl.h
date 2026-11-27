@@ -36,7 +36,7 @@ public :
     //Streams
     struct stream
     {
-        stream_t    StreamKind; // With special cases: Stream_Max+1 means CPL, Stream_Max+2 means PKL
+        size_t      StreamKind; // stream_t, with special cases: Stream_Max+1 means CPL, Stream_Max+2 means PKL
         string      Id;
         string      OriginalFileName;
         string      Type;

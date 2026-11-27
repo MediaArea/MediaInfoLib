@@ -172,7 +172,7 @@ bool File_DcpPkl::FileHeader_Begin()
                             else if (!strcmp(Text, "application/x-smpte-mxf;asdcpKind=Sound"))
                                 Stream.StreamKind=Stream_Audio;
                             else if (!strcmp(Text, "text/xml") || !strcmp(Text, "text/xml;asdcpKind=CPL"))
-                                Stream.StreamKind=(stream_t)(Stream_Max+1); // Means CPL
+                                Stream.StreamKind=Stream_Max+1; // Means CPL
                             else
                                 Stream.StreamKind=Stream_Other;
                         }
@@ -221,7 +221,7 @@ bool File_DcpPkl::FileHeader_Begin()
                 && (MI.Get(Stream_General, 0, General_Format)==__T("DCP AM")
                 || MI.Get(Stream_General, 0, General_Format)==__T("IMF AM")))
             {
-                MergeFromAm(((File_DcpPkl*)MI.Info)->Streams);
+                MergeFromAm(((File_DcpAm*)MI.Info)->Streams);
                 #if MEDIAINFO_CONFORMANCE
                     AssetMap_IsParsed=true;
                 #endif //MEDIAINFO_CONFORMANCE
@@ -237,7 +237,7 @@ bool File_DcpPkl::FileHeader_Begin()
     if (!Config->File_IsReferenced_Get())
     {
         for (File_DcpPkl::streams::iterator Stream=Streams.begin(); Stream!=Streams.end(); ++Stream)
-            if (Stream->StreamKind==(stream_t)(Stream_Max+1) && Stream->ChunkList.size()==1) // Means CPL
+            if (Stream->StreamKind==Stream_Max+1 && Stream->ChunkList.size()==1) // Means CPL
             {
                 sequence* Sequence=new sequence;
                 Sequence->FileNames.push_back(Ztring().From_UTF8(Stream->ChunkList[0].Path));
@@ -267,7 +267,7 @@ void File_DcpPkl::MergeFromAm (File_DcpPkl::streams &StreamsToMerge)
         for (File_DcpPkl::streams::iterator StreamToMerge=StreamsToMerge.begin(); StreamToMerge!=StreamsToMerge.end(); ++StreamToMerge)
             if (StreamToMerge->Id==Stream->Id)
             {
-                stream_t StreamKind=Stream->StreamKind; //Keeping StreamKind from PKL
+                size_t StreamKind=Stream->StreamKind; //Keeping StreamKind from PKL
                 *Stream=*StreamToMerge;
                 Stream->StreamKind=StreamKind; //Keeping StreamKind from PKL
             }
