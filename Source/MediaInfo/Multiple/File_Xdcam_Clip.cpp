@@ -63,6 +63,8 @@ bool File_Xdcam_Clip::FileHeader_Begin()
             Element=Root->FirstChildElement("LastUpdate");
             if (Element)
                 Fill(Stream_General, 0, General_Tagged_Date, Element->Attribute("value"));
+            else
+                Fill(Stream_General, 0, General_Tagged_Date, Root->Attribute("lastUpdate"));
 
             //Duration
             Ztring Duration, EditUnit;
