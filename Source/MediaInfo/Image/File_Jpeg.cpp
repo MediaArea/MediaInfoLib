@@ -307,9 +307,10 @@ class jp2k_passes
 public :
     enum result
     {
-        Result_Unknown, //No missing coding pass found, or not supported, or not coherent
+        Result_Unknown, //No missing coding pass found, or not supported
         Result_NeedMoreData,
         Result_Lossy,
+        Result_Invalid, //Not coherent
     };
 
     //Marker segment of the main header and of the header of the first tile-part
@@ -332,6 +333,15 @@ private :
         int8u Transformation;
         vector<int8u> Precincts;
     };
+    struct progression
+    {
+        int8u  Resolution_Begin;
+        int8u  Resolution_End;
+        int16u Component_Begin;
+        int16u Component_End;
+        int16u Layer_End;
+        int8u  Order;
+    };
     struct params
     {
         bool HasCOD=false;
@@ -341,12 +351,16 @@ private :
         map<int16u, style> COC;
         vector<int8u> QCD;
         map<int16u, vector<int8u> > QCC;
+        map<int16u, int8u> RGN;
+        vector<progression> POC;
     };
     struct tile : params
     {
         vector<pair<const int8u*, size_t> > Data;
         bool HasPPT=false;
-        vector<int8u> PPT;
+        bool HasHeaders=false; //Packet headers are in PPM or PPT marker segments
+        vector<int8u> Headers;
+        map<int8u, vector<int8u> > PPT; //Of the current tile-part header
     };
     struct component
     {
@@ -386,11 +400,11 @@ private :
             return (Current>>Remaining)&1;
         }
 
-        int32u Get(int32u Count)
+        int64u Get(int32u Count)
         {
-            int32u Value=0;
+            int64u Value=0;
             for (; Count; Count--)
-                Value=(Value<<1)|(int32u)Get1();
+                Value=(Value<<1)|(int64u)Get1();
             return Value;
         }
 
@@ -455,17 +469,25 @@ private :
         }
     };
 
+    enum kind : int8u
+    {
+        Kind_Part1, //ISO/IEC 15444-1 block coder
+        Kind_HT_Placeholders, //HT, no HT cleanup pass yet
+        Kind_HT,
+    };
     struct block
     {
         int32u Passes=0; //0 if not yet included
-        int8u ZeroPlanes=0;
+        int32u Cleanup=0; //HT: 1 + index of the last HT cleanup pass with data
+        int16u ZeroPlanes=0;
         int8u LengthBits=3;
+        kind Kind=Kind_Part1;
     };
     struct band
     {
         size_t Width;
         size_t Height;
-        int8u Planes;
+        int16u Planes;
         tagtree Inclusion;
         tagtree ZeroPlanes;
         vector<block> Blocks;
@@ -491,21 +513,30 @@ private :
             Result++;
         return Result;
     }
+    bool Invalid()
+    {
+        IsInvalid=true;
+        return false;
+    }
 
     void Segment_SIZ(const int8u* Data, size_t Size);
     bool Segment_Style(const int8u* Data, size_t Size, bool HasPrecincts, style& Style);
+    void Segment_POC(const int8u* Data, size_t Size, vector<progression>& POC);
     void Segment_Params(int16u Code, const int8u* Data, size_t Size, params& Params);
     void Segment_Tile(int16u Code, const int8u* Data, size_t Size, tile& Tile);
+    void Segment_Tile_End(tile& Tile);
     result Parse_Tile(int16u Number, const tile& Tile);
     bool Parse_Tile_Precincts(int16u Number, const tile& Tile, size_t Count_Max, vector<precinct>& Precincts, bool& IsIrreversible);
     bool Parse_Packet(precinct& Precinct, int16u Layer, bits& BS, int64u& Length);
 
     bool IsSupported=true;
+    bool IsInvalid=false;
     int64u Work=0;
     int64u X0=0, Y0=0, X1=0, Y1=0; //Image
     int64u TileX0=0, TileY0=0, TileWidth=0, TileHeight=0;
     vector<component> Components;
     params Main;
+    map<int8u, vector<int8u> > PPM;
     map<int16u, tile> Tiles;
     bool TilePart_First=false;
     int16u TilePart_First_Tile=0;
@@ -524,7 +555,7 @@ void jp2k_passes::Segment(int16u Code, const int8u* Data, size_t Size)
         case Elements::SOT :
                             if (Size!=8)
                             {
-                                IsSupported=false;
+                                Invalid();
                                 break;
                             }
                             TilePart_First=true;
@@ -538,6 +569,15 @@ void jp2k_passes::Segment(int16u Code, const int8u* Data, size_t Size)
                                 TilePart_First_HeaderSize+=4+Size;
                                 Segment_Tile(Code, Data, Size, Tiles[TilePart_First_Tile]);
                             }
+                            else if (Code==Elements::PPM)
+                            {
+                                if (!Size || PPM.find(Data[0])!=PPM.end())
+                                {
+                                    Invalid();
+                                    break;
+                                }
+                                PPM[Data[0]].assign(Data+1, Data+Size);
+                            }
                             else
                                 Segment_Params(Code, Data, Size, Main);
     }
@@ -548,7 +588,7 @@ void jp2k_passes::Segment_SIZ(const int8u* Data, size_t Size)
 {
     if (Size<36)
     {
-        IsSupported=false;
+        Invalid();
         return;
     }
     size_t Count=BigEndian2int16u(Data+34);
@@ -560,13 +600,17 @@ void jp2k_passes::Segment_SIZ(const int8u* Data, size_t Size)
     TileHeight=BigEndian2int32u(Data+22);
     TileX0=BigEndian2int32u(Data+26);
     TileY0=BigEndian2int32u(Data+30);
-    if ((Data[0]&0x80) //Extensions of ISO/IEC 15444-2
-     || !Count || Size<36+3*Count
+    if (Data[0]&0x80) //Extensions of ISO/IEC 15444-2
+    {
+        IsSupported=false;
+        return;
+    }
+    if (!Count || Size<36+3*Count
      || X0>=X1 || Y0>=Y1
      || TileX0>X0 || TileY0>Y0
      || TileX0+TileWidth<=X0 || TileY0+TileHeight<=Y0)
     {
-        IsSupported=false;
+        Invalid();
         return;
     }
     for (size_t i=0; i<Count; i++)
@@ -576,7 +620,7 @@ void jp2k_passes::Segment_SIZ(const int8u* Data, size_t Size)
         Component.Y=Data[36+3*i+2];
         if (!Component.X || !Component.Y)
         {
-            IsSupported=false;
+            Invalid();
             return;
         }
         Components.push_back(Component);
@@ -587,40 +631,82 @@ void jp2k_passes::Segment_SIZ(const int8u* Data, size_t Size)
 bool jp2k_passes::Segment_Style(const int8u* Data, size_t Size, bool HasPrecincts, style& Style)
 {
     if (Size<5)
-        return false;
+        return Invalid();
     Style.Levels=Data[0];
     Style.Width=(Data[1]&0xF)+2;
     Style.Height=(Data[2]&0xF)+2;
     Style.Style=Data[3];
     Style.Transformation=Data[4];
-    if (Style.Levels>32
-     || Style.Width>10 || Style.Height>10
-     || Style.Transformation>1
-     || (Style.Style&0x80)) //HT mixed with non HT
+    if (Style.Transformation>1) //Wavelet transformations of ISO/IEC 15444-2
+    {
+        IsSupported=false;
         return false;
+    }
+    if (Style.Levels>32
+     || Style.Width+Style.Height>12
+     || (Style.Style&0xC0)==0x80) //Mixed without HT
+        return Invalid();
     Style.Precincts.clear();
     if (HasPrecincts)
     {
         if (Size<(size_t)6+Style.Levels)
-            return false;
+            return Invalid();
         Style.Precincts.assign(Data+5, Data+6+Style.Levels);
     }
     return true;
 }
 
 //---------------------------------------------------------------------------
+void jp2k_passes::Segment_POC(const int8u* Data, size_t Size, vector<progression>& POC)
+{
+    size_t Component_Size=Components.size()<257?1:2;
+    size_t Entry_Size=5+2*Component_Size;
+    if (!Size || Size%Entry_Size)
+    {
+        Invalid();
+        return;
+    }
+    for (; Size; Data+=Entry_Size, Size-=Entry_Size)
+    {
+        progression Progression;
+        Progression.Resolution_Begin=Data[0];
+        Progression.Component_Begin=Component_Size==1?Data[1]:BigEndian2int16u(Data+1);
+        Progression.Layer_End=BigEndian2int16u(Data+1+Component_Size);
+        Progression.Resolution_End=Data[3+Component_Size];
+        Progression.Component_End=Component_Size==1?Data[4+Component_Size]:BigEndian2int16u(Data+4+Component_Size);
+        Progression.Order=Data[4+2*Component_Size];
+        if (!Progression.Component_End)
+            Progression.Component_End=Component_Size==1?256:16384;
+        if (Progression.Resolution_Begin>=Progression.Resolution_End || Progression.Resolution_End>33
+         || Progression.Component_Begin>=Progression.Component_End
+         || !Progression.Layer_End
+         || Progression.Order>4)
+        {
+            Invalid();
+            return;
+        }
+        POC.push_back(Progression);
+    }
+}
+
+//---------------------------------------------------------------------------
 void jp2k_passes::Segment_Params(int16u Code, const int8u* Data, size_t Size, params& Params)
 {
     int16u Component=0;
-    if (Code==Elements::COC || Code==Elements::QCC)
+    if (Code==Elements::COC || Code==Elements::QCC || Code==Elements::RGN)
     {
         size_t Component_Size=Components.size()<257?1:2;
         if (Size<=Component_Size)
         {
-            IsSupported=false;
+            Invalid();
             return;
         }
         Component=Component_Size==1?*Data:BigEndian2int16u(Data);
+        if (Component>=Components.size())
+        {
+            Invalid();
+            return;
+        }
         Data+=Component_Size;
         Size-=Component_Size;
     }
@@ -629,18 +715,18 @@ void jp2k_passes::Segment_Params(int16u Code, const int8u* Data, size_t Size, pa
         case Elements::COD :
                             if (Size<5 || !Segment_Style(Data+5, Size-5, Data[0]&1, Params.COD))
                             {
-                                IsSupported=false;
+                                if (Size<5)
+                                    Invalid();
                                 break;
                             }
                             Params.HasCOD=true;
                             Params.Progression=Data[1];
                             Params.Layers=BigEndian2int16u(Data+2);
                             if (Params.Progression>4 || !Params.Layers)
-                                IsSupported=false;
+                                Invalid();
                             break;
         case Elements::COC :
-                            if (!Segment_Style(Data+1, Size-1, Data[0]&1, Params.COC[Component]))
-                                IsSupported=false;
+                            Segment_Style(Data+1, Size-1, Data[0]&1, Params.COC[Component]);
                             break;
         case Elements::QCD :
                             Params.QCD.assign(Data, Data+Size);
@@ -648,11 +734,20 @@ void jp2k_passes::Segment_Params(int16u Code, const int8u* Data, size_t Size, pa
         case Elements::QCC :
                             Params.QCC[Component].assign(Data, Data+Size);
                             break;
-        case Elements::RGN : //Bit-planes are shifted
+        case Elements::RGN :
+                            if (Size!=2 || Data[0]) //Only the implicit ROI (maximum shift) is defined
+                            {
+                                Invalid();
+                                break;
+                            }
+                            Params.RGN[Component]=Data[1]; //Bit-planes are shifted
+                            break;
         case Elements::POC :
-        case Elements::PPM :
+                            Segment_POC(Data, Size, Params.POC);
+                            break;
+        case Elements::PPM : //Is only in the main header
         case Elements::PPT : //Is not in the main header
-                            IsSupported=false;
+                            Invalid();
                             break;
         default            : ;
     }
@@ -661,20 +756,44 @@ void jp2k_passes::Segment_Params(int16u Code, const int8u* Data, size_t Size, pa
 //---------------------------------------------------------------------------
 void jp2k_passes::Segment_Tile(int16u Code, const int8u* Data, size_t Size, tile& Tile)
 {
-    if (Code==Elements::PPT && Size)
+    if (Code==Elements::PPT)
     {
+        if (!Size)
+        {
+            Invalid();
+            return;
+        }
+        if (Tile.PPT.find(Data[0])!=Tile.PPT.end())
+        {
+            Invalid();
+            return;
+        }
         Tile.HasPPT=true;
-        Tile.PPT.insert(Tile.PPT.end(), Data+1, Data+Size);
+        Tile.HasHeaders=true;
+        Tile.PPT[Data[0]].assign(Data+1, Data+Size);
     }
     else
         Segment_Params(Code, Data, Size, Tile);
 }
 
 //---------------------------------------------------------------------------
+void jp2k_passes::Segment_Tile_End(tile& Tile)
+{
+    //Packet headers of the tile-part, in the order of the PPT marker segments
+    for (const auto& Item : Tile.PPT)
+        Tile.Headers.insert(Tile.Headers.end(), Item.second.begin(), Item.second.end());
+    Tile.PPT.clear();
+}
+
+//---------------------------------------------------------------------------
 jp2k_passes::result jp2k_passes::Parse(const int8u* Data, size_t Size)
 {
-    if (!IsSupported || !TilePart_First || Components.empty())
+    if (IsInvalid)
+        return Result_Invalid;
+    if (!IsSupported || !TilePart_First)
         return Result_Unknown;
+    if (Components.empty())
+        return Result_Invalid;
 
     //List of tile-parts
     struct tilepart
@@ -691,7 +810,7 @@ jp2k_passes::result jp2k_passes::Parse(const int8u* Data, size_t Size)
     {
         auto HeaderSize=TilePart_First_HeaderSize+2; //With the SOD marker
         if (TilePart_Size<HeaderSize)
-            return Result_Unknown;
+            return Result_Invalid;
         TilePart_Size-=HeaderSize;
     }
     for (;;)
@@ -710,7 +829,7 @@ jp2k_passes::result jp2k_passes::Parse(const int8u* Data, size_t Size)
         if (Code==Elements::EOI)
             break;
         if (Code!=Elements::SOT)
-            return Result_Unknown;
+            return Result_Invalid;
         if (Size-TilePart.End<14)
             return Result_NeedMoreData;
         TilePart.Offset=TilePart.End;
@@ -718,11 +837,11 @@ jp2k_passes::result jp2k_passes::Parse(const int8u* Data, size_t Size)
         TilePart_Size=BigEndian2int32u(Data+TilePart.Offset+6);
         TilePart_IsUpToEnd=!TilePart_Size;
         if (BigEndian2int16u(Data+TilePart.Offset+2)!=10)
-            return Result_Unknown;
+            return Result_Invalid;
         if (TilePart_Size<14)
         {
             if (TilePart_Size)
-                return Result_Unknown;
+                return Result_Invalid;
             TilePart_Size=12;
         }
     }
@@ -739,34 +858,66 @@ jp2k_passes::result jp2k_passes::Parse(const int8u* Data, size_t Size)
             for (;;)
             {
                 if (End-Offset<2)
-                    return Result_Unknown;
+                    return Result_Invalid;
                 auto Code=BigEndian2int16u(Data+Offset);
                 Offset+=2;
                 if (Code==Elements::SOD)
                     break;
                 if (End-Offset<2)
-                    return Result_Unknown;
+                    return Result_Invalid;
                 size_t Segment_Size=BigEndian2int16u(Data+Offset);
                 if (Segment_Size<2 || Segment_Size>End-Offset)
-                    return Result_Unknown;
+                    return Result_Invalid;
                 Segment_Tile(Code, Data+Offset+2, Segment_Size-2, Tile);
                 Offset+=Segment_Size;
             }
         }
+        Segment_Tile_End(Tile);
         Tile.Data.push_back(make_pair(Data+Offset, End-Offset));
     }
+    if (IsInvalid)
+        return Result_Invalid;
     if (!IsSupported)
         return Result_Unknown;
 
+    //Packet headers in the main header, for each tile-part in the order of the codestream
+    if (!PPM.empty())
+    {
+        vector<int8u> Headers;
+        for (const auto& Item : PPM)
+            Headers.insert(Headers.end(), Item.second.begin(), Item.second.end());
+        size_t Pos=0;
+        for (const auto& Item : TileParts)
+        {
+            auto& Tile=Tiles[Item.Tile];
+            if (Headers.size()-Pos<4 || Tile.HasPPT)
+                return Result_Invalid;
+            size_t Count=BigEndian2int32u(Headers.data()+Pos);
+            Pos+=4;
+            if (Count>Headers.size()-Pos)
+                return Result_Invalid;
+            Tile.HasHeaders=true;
+            Tile.Headers.insert(Tile.Headers.end(), Headers.begin()+Pos, Headers.begin()+Pos+Count);
+            Pos+=Count;
+        }
+        if (Pos!=Headers.size())
+            return Result_Invalid;
+    }
+
     //Tiles
+    auto Result=Result_Unknown;
     for (const auto& Tile : Tiles)
     {
-        if (Parse_Tile(Tile.first, Tile.second)==Result_Lossy)
-            return Result_Lossy;
+        switch (Parse_Tile(Tile.first, Tile.second))
+        {
+            case Result_Invalid : return Result_Invalid;
+            case Result_Lossy   : Result=Result_Lossy; break;
+            default             : ;
+        }
         if (Work>Work_Max)
             break;
     }
-    return Result_Unknown;
+    return Result;
 }
 
 //---------------------------------------------------------------------------
@@ -775,7 +926,7 @@ jp2k_passes::result jp2k_passes::Parse_Tile(int16u Number, const tile& Tile)
     //Data
     const params& Params=Tile.HasCOD?(const params&)Tile:Main;
     if (!Params.HasCOD)
-        return Result_Unknown;
+        return Result_Invalid;
     vector<int8u> Data_Merged;
     auto Data=Tile.Data[0].first;
     auto Size=Tile.Data[0].second;
@@ -786,68 +937,102 @@ jp2k_passes::result jp2k_passes::Parse_Tile(int16u Number, const tile& Tile)
         Data=Data_Merged.data();
         Size=Data_Merged.size();
     }
-    auto Headers=Tile.HasPPT?Tile.PPT.data():Data;
-    auto Headers_Size=Tile.HasPPT?Tile.PPT.size():Size;
+    auto Headers=Tile.HasHeaders?Tile.Headers.data():Data;
+    auto Headers_Size=Tile.HasHeaders?Tile.Headers.size():Size;
 
-    //Precincts, in the order of the packets
+    //Precincts
     vector<precinct> Precincts;
     bool IsIrreversible=false;
     if (!Parse_Tile_Precincts(Number, Tile, min(Headers_Size/Params.Layers, (size_t)Precincts_Max), Precincts, IsIrreversible)) //Each packet has at least 1 byte of header
-        return IsIrreversible?Result_Lossy:Result_Unknown;
-    auto Progression=Params.Progression;
-    stable_sort(Precincts.begin(), Precincts.end(), [Progression](const precinct& A, const precinct& B)
-    {
-        switch (Progression)
-        {
-            case 0 : //LRCP
-            case 1 : //RLCP
-                    return tie(A.Resolution, A.Component)<tie(B.Resolution, B.Component);
-            case 2 : //RPCL
-                    return tie(A.Resolution, A.Y, A.X, A.Component)<tie(B.Resolution, B.Y, B.X, B.Component);
-            case 3 : //PCRL
-                    return tie(A.Y, A.X, A.Component, A.Resolution)<tie(B.Y, B.X, B.Component, B.Resolution);
-            default: //CPRL
-                    return tie(A.Component, A.Y, A.X, A.Resolution)<tie(B.Component, B.Y, B.X, B.Resolution);
-        }
-    });
+        return IsInvalid?Result_Invalid:(IsIrreversible?Result_Lossy:Result_Unknown);
+
+    //Progression volumes, from the POC marker segments else from the COD marker segment
+    const auto& POC=Tile.POC.empty()?Main.POC:Tile.POC;
+    vector<progression> Volumes(POC);
+    if (Volumes.empty())
+        Volumes.push_back({0, 33, 0, 16384, Params.Layers, Params.Progression});
 
     //Packets
+    vector<int16u> Layer_Next(Precincts.size());
+    vector<size_t> Order;
     size_t Pos=0, Headers_Pos=0;
-    for (size_t First=0; First<Precincts.size();)
+    for (const auto& Volume : Volumes)
     {
-        //Precincts sharing the loop on layers
-        auto Last=First+1;
-        if (Progression<=1)
-            while (Last<Precincts.size() && (!Progression || Precincts[Last].Resolution==Precincts[First].Resolution))
-                Last++;
-
-        for (int32u Layer=0; Layer<Params.Layers; Layer++)
-            for (auto i=First; i<Last; i++)
+        //Precincts in the volume, in the order of the packets
+        Order.clear();
+        for (size_t i=0; i<Precincts.size(); i++)
+        {
+            const auto& Precinct=Precincts[i];
+            if (Precinct.Resolution>=Volume.Resolution_Begin && Precinct.Resolution<Volume.Resolution_End
+             && Precinct.Component>=Volume.Component_Begin && Precinct.Component<Volume.Component_End)
+                Order.push_back(i);
+        }
+        auto Layer_End=min(Volume.Layer_End, Params.Layers);
+        Work+=Precincts.size()+(int64u)Order.size()*Layer_End;
+        if (Work>Work_Max)
+            return Result_Unknown;
+        auto Progression=Volume.Order;
+        stable_sort(Order.begin(), Order.end(), [&](size_t A_Index, size_t B_Index)
+        {
+            const auto& A=Precincts[A_Index];
+            const auto& B=Precincts[B_Index];
+            switch (Progression)
             {
-                if (Size-Pos>=6 && BigEndian2int16u(Data+Pos)==Elements::SOP)
-                    Pos+=6;
-                if (!Tile.HasPPT)
-                    Headers_Pos=Pos;
-                bits BS(Headers, Headers_Size, Headers_Pos);
-                int64u Length=0;
-                if (!Parse_Packet(Precincts[i], (int16u)Layer, BS, Length))
-                    return Result_Unknown;
-                BS.Align();
-                Headers_Pos=BS.Pos;
-                if (BS.IsTruncated || Headers_Pos>Headers_Size)
-                    return Result_Unknown;
-                if (Headers_Size-Headers_Pos>=2 && BigEndian2int16u(Headers+Headers_Pos)==Elements::EPH)
-                    Headers_Pos+=2;
-                if (!Tile.HasPPT)
-                    Pos=Headers_Pos;
-                if (Length>Size-Pos)
-                    return Result_Unknown;
-                Pos+=(size_t)Length;
+                case 0 : //LRCP
+                case 1 : //RLCP
+                        return tie(A.Resolution, A.Component)<tie(B.Resolution, B.Component);
+                case 2 : //RPCL
+                        return tie(A.Resolution, A.Y, A.X, A.Component)<tie(B.Resolution, B.Y, B.X, B.Component);
+                case 3 : //PCRL
+                        return tie(A.Y, A.X, A.Component, A.Resolution)<tie(B.Y, B.X, B.Component, B.Resolution);
+                default: //CPRL
+                        return tie(A.Component, A.Y, A.X, A.Resolution)<tie(B.Component, B.Y, B.X, B.Resolution);
             }
-        First=Last;
+        });
+
+        for (size_t First=0; First<Order.size();)
+        {
+            //Precincts sharing the loop on layers
+            auto Last=First+1;
+            if (Progression<=1)
+                while (Last<Order.size() && (!Progression || Precincts[Order[Last]].Resolution==Precincts[Order[First]].Resolution))
+                    Last++;
+
+            for (int16u Layer=0; Layer<Layer_End; Layer++)
+                for (auto j=First; j<Last; j++)
+                {
+                    auto i=Order[j];
+                    if (Layer_Next[i]!=Layer)
+                        continue; //Packets already included are not included again
+                    if (!POC.empty() && Pos==Size && (!Tile.HasHeaders || Headers_Pos==Headers_Size))
+                        goto Packets_End; //The last progression volume may be incomplete
+                    if (Size-Pos>=6 && BigEndian2int16u(Data+Pos)==Elements::SOP)
+                        Pos+=6;
+                    if (!Tile.HasHeaders)
+                        Headers_Pos=Pos;
+                    bits BS(Headers, Headers_Size, Headers_Pos);
+                    int64u Length=0;
+                    if (!Parse_Packet(Precincts[i], Layer, BS, Length))
+                        return IsInvalid?Result_Invalid:Result_Unknown;
+                    BS.Align();
+                    Headers_Pos=BS.Pos;
+                    if (BS.IsTruncated || Headers_Pos>Headers_Size)
+                        return Result_Invalid;
+                    if (Headers_Size-Headers_Pos>=2 && BigEndian2int16u(Headers+Headers_Pos)==Elements::EPH)
+                        Headers_Pos+=2;
+                    if (!Tile.HasHeaders)
+                        Pos=Headers_Pos;
+                    if (Length>Size-Pos)
+                        return Result_Invalid;
+                    Pos+=(size_t)Length;
+                    Layer_Next[i]++;
+                }
+            First=Last;
+        }
     }
-    if (Pos!=Size || (Tile.HasPPT && Headers_Pos!=Headers_Size))
-        return Result_Unknown; //Not coherent
+    Packets_End:
+    if (Pos!=Size || (Tile.HasHeaders && Headers_Pos!=Headers_Size))
+        return Result_Invalid;
 
     //Coding passes
     auto Result=Result_Unknown;
@@ -855,26 +1040,23 @@ jp2k_passes::result jp2k_passes::Parse_Tile(int16u Number, const tile& Tile)
         for (const auto& Band : Precinct.Bands)
             for (const auto& Block : Band.Blocks)
             {
-                if (!Block.Passes)
+                if (!Block.Passes || Block.Kind==Kind_HT_Placeholders)
                     continue; //Nothing coded, it is not possible to know if all bits are 0
                 if (Block.ZeroPlanes>=Band.Planes)
-                    return Result_Unknown; //Not coherent
-                int32u Planes=Band.Planes-Block.ZeroPlanes;
-                if (Precinct.Style->Style&0x40)
+                    continue; //No bit-plane, all bits are 0
+                auto Passes=3*(int32u)(Band.Planes-Block.ZeroPlanes)-2; //Up to the cleanup pass of the last bit-plane
+                if (Block.Kind==Kind_HT)
                 {
-                    //HT, 1 HT set (cleanup, then optionally the 2 refinement passes of the next bit-plane) after placeholders of 3 passes
-                    auto Sets=(Block.Passes-1)/3;
-                    if (Sets>=Planes)
-                        return Result_Unknown; //Not coherent
-                    auto Missing=Planes-Sets-1;
-                    if (Missing>1 || (Missing && Block.Passes-3*Sets<3))
+                    //HT, the last HT set with data is decoded, it is complete if its HT cleanup pass is for the last bit-plane
+                    if (Block.Passes>Passes+2)
+                        return Result_Invalid;
+                    if (Block.Cleanup<Passes)
                         Result=Result_Lossy;
                 }
                 else
                 {
-                    auto Passes=3*Planes-2;
                     if (Block.Passes>Passes)
-                        return Result_Unknown; //Not coherent
+                        return Result_Invalid;
                     if (Block.Passes<Passes)
                         Result=Result_Lossy;
                 }
@@ -891,7 +1073,7 @@ bool jp2k_passes::Parse_Tile_Precincts(int16u Number, const tile& Tile, size_t C
     auto Tile_X=Number%Tiles_X;
     auto Tile_Y=Number/Tiles_X;
     if (Tile_Y>=Tiles_Y)
-        return false;
+        return Invalid();
     auto Tile_X0=max(TileX0+Tile_X*TileWidth, X0);
     auto Tile_Y0=max(TileY0+Tile_Y*TileHeight, Y0);
     auto Tile_X1=min(TileX0+(Tile_X+1)*TileWidth, X1);
@@ -924,9 +1106,22 @@ bool jp2k_passes::Parse_Tile_Precincts(int16u Number, const tile& Tile, size_t C
             Quantization=&Tile.QCD;
         else if (Main_QCC!=Main.QCC.end())
             Quantization=&Main_QCC->second;
-        if (Quantization->size()<(size_t)2+3*Style->Levels || (Quantization->front()&0x1F)) //Reversible transformation is without quantization
+        if (Quantization->empty() || (Quantization->front()&0x1F)) //Reversible transformation is without quantization
+        {
+            if (Quantization->empty())
+                Invalid();
             return false;
+        }
+        if (Quantization->size()<(size_t)2+3*Style->Levels)
+            return Invalid();
         int8u GuardBits=Quantization->front()>>5;
+        int8u Shift_ROI=0;
+        auto Tile_RGN=Tile.RGN.find(Component);
+        auto Main_RGN=Main.RGN.find(Component);
+        if (Tile_RGN!=Tile.RGN.end())
+            Shift_ROI=Tile_RGN->second;
+        else if (Main_RGN!=Main.RGN.end())
+            Shift_ROI=Main_RGN->second;
 
         //Tile-component
         int64u X=Components[c].X;
@@ -958,7 +1153,7 @@ bool jp2k_passes::Parse_Tile_Precincts(int16u Number, const tile& Tile, size_t C
             }
             int8u Shift=r?1:0;
             if (P_Width<Shift || P_Height<Shift)
-                return false;
+                return Invalid();
             auto P_X0=R_X0>>P_Width;
             auto P_Y0=R_Y0>>P_Height;
             auto P_X1=CeilDiv(R_X1, ((int64u)1)<<P_Width);
@@ -1005,7 +1200,7 @@ bool jp2k_passes::Parse_Tile_Precincts(int16u Number, const tile& Tile, size_t C
                         auto& Band=Precinct.Bands.back();
                         Band.Width=(size_t)(CeilDiv(B_X1, ((int64u)1)<<Width)-(B_X0>>Width));
                         Band.Height=(size_t)(CeilDiv(B_Y1, ((int64u)1)<<Height)-(B_Y0>>Height));
-                        Band.Planes=(int8u)(Planes?Planes-1:0);
+                        Band.Planes=(int16u)((Planes?Planes-1:0)+Shift_ROI); //ROI coefficients are above the other ones
                     }
                 }
         }
@@ -1019,6 +1214,7 @@ bool jp2k_passes::Parse_Packet(precinct& Precinct, int16u Layer, bits& BS, int64
     if (!BS.Get1())
         return true; //Empty packet
     auto Style=Precinct.Style->Style;
+    bool IsMixed=(Style&0xC0)==0xC0;
     for (auto& Band : Precinct.Bands)
     {
         Work+=(int64u)Band.Width*Band.Height;
@@ -1049,9 +1245,11 @@ bool jp2k_passes::Parse_Packet(precinct& Precinct, int16u Layer, bits& BS, int64
                 while (!Band.ZeroPlanes.Parse(BS, X, Y, (int32u)Block.ZeroPlanes+1))
                 {
                     Block.ZeroPlanes++;
-                    if (Block.ZeroPlanes>80)
-                        return false;
+                    if (Block.ZeroPlanes>Band.Planes)
+                        return Invalid();
                 }
+                if (Style&0x40)
+                    Block.Kind=Kind_HT_Placeholders;
             }
 
             //Count of coding passes
@@ -1061,14 +1259,14 @@ bool jp2k_passes::Parse_Packet(precinct& Precinct, int16u Layer, bits& BS, int64
                 Passes++;
                 if (BS.Get1())
                 {
-                    auto Value=BS.Get(2);
+                    auto Value=(int32u)BS.Get(2);
                     Passes=3+Value;
                     if (Value==3)
                     {
-                        Value=BS.Get(5);
+                        Value=(int32u)BS.Get(5);
                         Passes=6+Value;
                         if (Value==31)
-                            Passes=37+BS.Get(7);
+                            Passes=37+(int32u)BS.Get(7);
                     }
                 }
             }
@@ -1078,21 +1276,68 @@ bool jp2k_passes::Parse_Packet(precinct& Precinct, int16u Layer, bits& BS, int64
             {
                 Block.LengthBits++;
                 if (Block.LengthBits>=24)
-                    return false;
+                    return Invalid();
             }
-            if (Style&0x40)
+            if (Block.Kind==Kind_HT_Placeholders)
             {
-                //HT, only the last HT set has data, in 1 or 2 segments (cleanup pass, then refinement passes)
-                if (Block.Passes)
-                    return false; //Not supported
-                auto Sets=(Passes-1)/3;
-                auto Passes_Last=Passes-3*Sets;
-                Length+=BS.Get(Block.LengthBits+Log2(3*Sets+1));
-                if (Passes_Last>1)
-                    Length+=BS.Get(Block.LengthBits+Passes_Last-2);
-                Block.Passes=Passes;
+                //Placeholder passes then the first HT cleanup pass, or only placeholder passes (no data), or a block coded with ISO/IEC 15444-1 if mixed
+                //The first HT cleanup pass is the last one with an index multiple of 3, with a length not starting with 0 if mixed
+                auto Cleanup_Passes=Passes-(Block.Passes+Passes-1)%3;
+                int32u Bits=0;
+                int64u Value=0;
+                if (Cleanup_Passes && Cleanup_Passes<=Passes)
+                {
+                    Bits=Block.LengthBits+Log2(Cleanup_Passes);
+                    Value=BS.Get(Bits);
+                }
+                if (Value && (!IsMixed || (Block.LengthBits>3 && Value>1 && !(Value>>(Bits-1)))))
+                {
+                    if (Value<2)
+                        return Invalid();
+                    Length+=Value;
+                    Block.Passes+=Cleanup_Passes;
+                    Block.Cleanup=Block.Passes;
+                    Block.Kind=Kind_HT;
+                    Passes-=Cleanup_Passes;
+                }
+                else
+                {
+                    //All passes in 1 codeword segment
+                    auto Bits_Total=Block.LengthBits+Log2(Passes);
+                    Value=(Value<<(Bits_Total-Bits))|BS.Get(Bits_Total-Bits);
+                    if (Value)
+                    {
+                        if (!IsMixed)
+                            return Invalid(); //Placeholder passes have no data
+                        Length+=Value;
+                        Block.Kind=Kind_Part1;
+                    }
+                    Block.Passes+=Passes;
+                    continue;
+                }
+            }
+            if (Block.Kind==Kind_HT)
+            {
+                //HT sets: HT cleanup pass in a codeword segment, then HT SigProp and HT MagRef passes in another one
+                while (Passes)
+                {
+                    auto Index=Block.Passes%3;
+                    auto Count=Index?min(3-Index, Passes):1;
+                    auto Value=BS.Get(Block.LengthBits+Log2(Count));
+                    if (!Index && Value)
+                    {
+                        if (Value<2)
+                            return Invalid();
+                        Block.Cleanup=Block.Passes+1;
+                    }
+                    Length+=Value;
+                    Block.Passes+=Count;
+                    Passes-=Count;
+                }
                 continue;
             }
+            if (IsMixed)
+                Style&=~0x05; //Neither selective arithmetic coding bypass nor termination on each coding pass with mixed
             while (Passes)
             {
                 auto Count=Passes; //In the same codeword segment
@@ -2292,6 +2537,9 @@ bool File_Jpeg::Jp2k_Passes_Parse()
     {
         case jp2k_passes::Result_Lossy :
             Fill(StreamKind_Last, StreamPos_Last, "Compression_Mode", "Lossy", Unlimited, true, true);
+            break;
+        case jp2k_passes::Result_Invalid :
+            Clear(StreamKind_Last, StreamPos_Last, "Compression_Mode");
             break;
         case jp2k_passes::Result_NeedMoreData :
             if (!IsSub && File_Size!=(int64u)-1 && Size<Size_Max) //If in a container, the frame is expected to be in the buffer
