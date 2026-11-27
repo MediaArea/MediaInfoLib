@@ -5046,15 +5046,32 @@ size_t File__Analyze::Merge(File__Analyze &ToAdd, stream_t StreamKind, size_t St
             if (!FramesPerContainerBlock.empty())
                 FrameRate_Temp.From_Number(FrameRate_Temp.To_float64()*FramesPerContainerBlock.To_float64());
         }
-        if ((!FrameRate_Temp.empty() && FrameRate_Temp!=Retrieve(Stream_Video, StreamPos_To, Video_FrameRate))
-         || (!FrameRate_Num_Temp.empty() && FrameRate_Num_Temp!=Retrieve(Stream_Video, StreamPos_To, Video_FrameRate_Num))
-         || (!FrameRate_Den_Temp.empty() && FrameRate_Den_Temp!=Retrieve(Stream_Video, StreamPos_To, Video_FrameRate_Den)))
+        const auto FrameRate_IsRounding=[&]() //Same frame rate in another form, e.g. 30000/1001 and 29970/1000
+        {
+            if (FrameRate_Temp!=Retrieve_Const(Stream_Video, StreamPos_To, Video_FrameRate))
+                return false;
+            const auto Num=FrameRate_Num_Temp.To_float64(), Den=FrameRate_Den_Temp.To_float64();
+            const auto Num_Stream=Retrieve_Const(Stream_Video, StreamPos_To, Video_FrameRate_Num).To_float64(), Den_Stream=Retrieve_Const(Stream_Video, StreamPos_To, Video_FrameRate_Den).To_float64();
+            if (!Num || !Den || !Num_Stream || !Den_Stream)
+                return false;
+            const auto FrameRate=Num/Den, FrameRate_Stream=Num_Stream/Den_Stream;
+            return FrameRate>FrameRate_Stream*0.99999 && FrameRate<FrameRate_Stream*1.00001; //1/1000 rounding of a 1/1001 rate is 1/1000000
+        };
+        if (((!FrameRate_Temp.empty() && FrameRate_Temp!=Retrieve(Stream_Video, StreamPos_To, Video_FrameRate))
+          || (!FrameRate_Num_Temp.empty() && FrameRate_Num_Temp!=Retrieve(Stream_Video, StreamPos_To, Video_FrameRate_Num))
+          || (!FrameRate_Den_Temp.empty() && FrameRate_Den_Temp!=Retrieve(Stream_Video, StreamPos_To, Video_FrameRate_Den)))
+         && !FrameRate_IsRounding())
         {
             Fill(Stream_Video, StreamPos_To, Video_FrameRate_Original, ToAdd.Retrieve(Stream_Video, StreamPos_To, Video_FrameRate), true);
             Fill(Stream_Video, StreamPos_To, Video_FrameRate_Original_Num, ToAdd.Retrieve(Stream_Video, StreamPos_To, Video_FrameRate_Num), true);
             Fill(Stream_Video, StreamPos_To, Video_FrameRate_Original_Den, ToAdd.Retrieve(Stream_Video, StreamPos_To, Video_FrameRate_Den), true);
             Fill(Stream_Video, StreamPos_To, Video_FrameRate, FrameRate_Temp, true);
             Fill(Stream_Video, StreamPos_To, Video_FrameRate_Num, FrameRate_Num_Temp, true);
+            Fill(Stream_Video, StreamPos_To, Video_FrameRate_Den, FrameRate_Den_Temp, true);
+        }
+        else if (!FrameRate_Num_Temp.empty() && FrameRate_IsRounding())
+        {
+            Fill(Stream_Video, StreamPos_To, Video_FrameRate_Num, FrameRate_Num_Temp, true); //Container value
             Fill(Stream_Video, StreamPos_To, Video_FrameRate_Den, FrameRate_Den_Temp, true);
         }
         if (!FrameRate_Mode_Temp.empty() && FrameRate_Mode_Temp!=Retrieve(Stream_Video, StreamPos_To, Video_FrameRate_Mode))
