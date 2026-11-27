@@ -52,6 +52,11 @@ private :
     //PKL
     size_t PKL_Pos;
     void MergeFromPkl (File_DcpPkl::streams &StreamsToMerge);
+
+    //Conformance
+    #if MEDIAINFO_CONFORMANCE
+    void Conformance_AssetMap(const tinyxml2::XMLElement* AssetMap, const char* NameSpace);
+    #endif //MEDIAINFO_CONFORMANCE
 };
 
 } //NameSpace

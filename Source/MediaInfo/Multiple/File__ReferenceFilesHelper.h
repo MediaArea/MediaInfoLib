@@ -67,6 +67,9 @@ private :
     void ParseReference ();
     void ParseReference_Finalize ();
     void ParseReference_Finalize_PerStream ();
+    #if MEDIAINFO_CONFORMANCE
+    void ParseReference_Finalize_Conformance (File__Analyze& Source);
+    #endif //MEDIAINFO_CONFORMANCE
     void Open_Buffer_Unsynch() {Read_Buffer_Unsynched();}
 
     //Buffer - Global

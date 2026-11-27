@@ -1299,6 +1299,9 @@ void File__ReferenceFilesHelper::ParseReference_Finalize ()
     }
 
     bool StreamFound=false;
+    #if MEDIAINFO_CONFORMANCE
+        bool StreamFound_Conformance=false;
+    #endif //MEDIAINFO_CONFORMANCE
     for (size_t StreamKind=Stream_General+1; StreamKind<Stream_Max; StreamKind++)
     {
         Ztring Title_Temp;
@@ -1328,6 +1331,11 @@ void File__ReferenceFilesHelper::ParseReference_Finalize ()
             StreamPos_From=StreamPos;
 
             ParseReference_Finalize_PerStream();
+            #if MEDIAINFO_CONFORMANCE
+                if (!StreamFound_Conformance && Sequences[Sequences_Current]->ConformanceFromGeneral && Sequences[Sequences_Current]->MI->Info)
+                    ParseReference_Finalize_Conformance(*Sequences[Sequences_Current]->MI->Info);
+                StreamFound_Conformance=true;
+            #endif //MEDIAINFO_CONFORMANCE
         }
     }
 
@@ -1339,6 +1347,32 @@ void File__ReferenceFilesHelper::ParseReference_Finalize ()
         MI->Fill(Sequences[Sequences_Current]->StreamKind, Sequences[Sequences_Current]->StreamPos, "MuxingMode", Sequences[Sequences_Current]->MI->Info->Get(Stream_General, 0, General_Format)+MuxingMode, true);
     }
 }
+
+//---------------------------------------------------------------------------
+#if MEDIAINFO_CONFORMANCE
+void File__ReferenceFilesHelper::ParseReference_Finalize_Conformance (File__Analyze& Source)
+{
+    //Conformance items of the General stream of the referenced file, added to the first stream of this file
+    const auto Count=Source.Count_Get(Stream_General, 0);
+    for (size_t Pos=0; Pos<Count; Pos++)
+    {
+        const auto& Name=Source.Retrieve_Const(Stream_General, 0, Pos, Info_Name);
+        if (Name.rfind(__T("ConformanceErrors"), 0) && Name.rfind(__T("ConformanceWarnings"), 0) && Name.rfind(__T("ConformanceInfos"), 0))
+            continue;
+        auto Value=Source.Retrieve_Const(Stream_General, 0, Pos);
+        const auto& Options=Source.Retrieve_Const(Stream_General, 0, Pos, Info_Options);
+        const auto Name_UTF8=Name.To_UTF8();
+        const auto& Current=MI->Retrieve_Const(StreamKind_Last, StreamPos_To, Name_UTF8.c_str());
+        if (Name.find(__T(' '))==string::npos)
+            Value.From_Number(Current.To_int64u()+Value.To_int64u()); //Count of items
+        else if (!Current.empty() && Current!=Value)
+            Value=Current+__T(" / ")+Value;
+        MI->Fill(StreamKind_Last, StreamPos_To, Name_UTF8.c_str(), Value, true);
+        if (!Options.empty())
+            MI->Fill_SetOptions(StreamKind_Last, StreamPos_To, Name_UTF8.c_str(), Options.To_UTF8().c_str());
+    }
+}
+#endif //MEDIAINFO_CONFORMANCE
 
 //---------------------------------------------------------------------------
 void File__ReferenceFilesHelper::ParseReference_Finalize_PerStream ()

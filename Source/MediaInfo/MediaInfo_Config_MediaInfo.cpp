@@ -1179,6 +1179,11 @@ Ztring MediaInfo_Config_MediaInfo::Option (const String &Option, const String &V
     {
         return File_Mxf_TimeCodeFromMaterialPackage_Get()?"1":"0";
     }
+    else if (Option_Lower==__T("file_mxf_declaredprofiles"))
+    {
+        File_Mxf_DeclaredProfiles_Set(Ztring(Value).To_UTF8());
+        return __T("");
+    }
     else if (Option_Lower==__T("file_mxf_parseindex"))
     {
         File_Mxf_ParseIndex_Set(!(Value==__T("0") || Value.empty()));
@@ -3535,6 +3540,19 @@ bool MediaInfo_Config_MediaInfo::File_Mxf_TimeCodeFromMaterialPackage_Get ()
 {
     CriticalSectionLocker CSL(CS);
     return File_Mxf_TimeCodeFromMaterialPackage;
+}
+
+//---------------------------------------------------------------------------
+void MediaInfo_Config_MediaInfo::File_Mxf_DeclaredProfiles_Set (const string& NewValue)
+{
+    CriticalSectionLocker CSL(CS);
+    File_Mxf_DeclaredProfiles=NewValue;
+}
+
+string MediaInfo_Config_MediaInfo::File_Mxf_DeclaredProfiles_Get ()
+{
+    CriticalSectionLocker CSL(CS);
+    return File_Mxf_DeclaredProfiles;
 }
 
 //---------------------------------------------------------------------------

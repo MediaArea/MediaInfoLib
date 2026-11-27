@@ -368,6 +368,8 @@ public :
     bool          File_Mxf_TimeCodeFromMaterialPackage_Get ();
     void          File_Mxf_ParseIndex_Set (bool NewValue);
     bool          File_Mxf_ParseIndex_Get ();
+    void          File_Mxf_DeclaredProfiles_Set (const string& NewValue);
+    string        File_Mxf_DeclaredProfiles_Get ();
     void          File_Bdmv_ParseTargetedFile_Set (bool NewValue);
     bool          File_Bdmv_ParseTargetedFile_Get ();
     #if defined(MEDIAINFO_DVDIF_YES)
@@ -633,6 +635,7 @@ private :
     bool                    File_MpegTs_RealTime;
     bool                    File_Mxf_TimeCodeFromMaterialPackage;
     bool                    File_Mxf_ParseIndex;
+    string                  File_Mxf_DeclaredProfiles; //Profiles declared by a playlist referencing the file, e.g. an IMF Composition Playlist
     bool                    File_Bdmv_ParseTargetedFile;
     #if defined(MEDIAINFO_DVDIF_YES)
     bool                    File_DvDif_DisableAudioIfIsInContainer;

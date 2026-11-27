@@ -45,6 +45,7 @@ public:
     bool                            IsMain;
     bool                            PathOnly; //The file is searched only at its path, not with its name alone next to the referencing file (the same name may be in several folders)
     std::map<std::string, Ztring>   Config;
+    bool                            ConformanceFromGeneral=false; //Conformance items of the General stream of the referenced file are added to the first stream of this file
     std::map<std::string, Ztring>   Infos;
     stream_t                        Infos_StreamKind; //Infos only for the streams of this kind, Stream_Max for all streams
     void                            FrameRate_Set(float64 NewFrameRate);
