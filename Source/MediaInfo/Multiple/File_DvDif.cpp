@@ -459,7 +459,9 @@ void File_DvDif::Streams_Fill()
                     break;
         default   : ;
     }
-    Fill(Stream_Video, 0, Video_FrameRate, (system?25.000:29.970)*FrameRate_Multiplicator);
+    Fill(Stream_Video, 0, Video_FrameRate, (system?25.000:(30000.0/1001))*FrameRate_Multiplicator);
+    Fill(Stream_Video, 0, Video_FrameRate_Num, (system?25:30000)*(int)FrameRate_Multiplicator, 10, true);
+    Fill(Stream_Video, 0, Video_FrameRate_Den, system?1:1001, 10, true);
     Fill(Stream_Video, 0, Video_FrameRate_Mode, "CFR");
     if (video_sourcecontrol_IsParsed)
     {
