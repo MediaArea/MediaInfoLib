@@ -109,7 +109,13 @@ bool File_Xdcam_Clip::FileHeader_Begin()
                     if (MI.Open(MXF_File))
                     {
                         //MediaInfo::Option_Static(__T("ReadByHuman"), ReadByHuman?__T("1"):__T("0"));
+                        Ztring Recorded_Date_Temp=Retrieve(Stream_General, 0, General_Recorded_Date);
+                        Ztring Tagged_Date_Temp=Retrieve(Stream_General, 0, General_Tagged_Date);
                         Merge(MI);
+                        if (Retrieve_Const(Stream_General, 0, General_Recorded_Date).empty())
+                            Fill(Stream_General, 0, General_Recorded_Date, Recorded_Date_Temp);
+                        if (Retrieve_Const(Stream_General, 0, General_Tagged_Date).empty())
+                            Fill(Stream_General, 0, General_Tagged_Date, Tagged_Date_Temp);
                         Fill(Stream_Video, StreamPos_Last, "Source", MXF_File);
                         File_Size_Total+=Ztring(MI.Get(Stream_General, 0, General_FileSize)).To_int64u();
 
