@@ -13,8 +13,23 @@
         <script type="text/javascript">
             // Load the WebAssembly MediaInfo module if the browser supports it,
             // otherwise load the asmjs module
+            var supportsMediaInfoWasm = function() {
+              if (typeof WebAssembly !== 'object' || typeof Promise === 'undefined' ||
+                  typeof BigInt === 'undefined')
+                return false;
+
+              var match, userAgent = navigator.userAgent;
+              if ((match = userAgent.match(/(?:Chrome|Chromium|CriOS)\/(\d+)/)))
+                return parseInt(match[1], 10) >= 85;
+              if ((match = userAgent.match(/Firefox\/(\d+)/)))
+                return parseInt(match[1], 10) >= 79;
+              if ((match = userAgent.match(/Version\/(\d+).*Safari\//)))
+                return parseInt(match[1], 10) >= 15;
+              return true;
+            };
+
             var MediaInfoJs = document.createElement('script');
-            if ('WebAssembly' in window && typeof Promise  !== 'undefined') {
+            if (supportsMediaInfoWasm()) {
               MediaInfoJs.src = "MediaInfoWasm.js";
             } else {
               MediaInfoJs.src = "MediaInfo.js";
