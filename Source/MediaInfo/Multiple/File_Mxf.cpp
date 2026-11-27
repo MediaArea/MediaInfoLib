@@ -12963,9 +12963,9 @@ void File_Mxf::Header_Parse()
 
         if (Buffer_Begin==(int64u)-1)
         {
-            //Content not needed is not read if the buffers stay the same as if it was read
+            //Content not needed is not read if the buffers stay the same as if it was read, the content in the buffer may be the only content needed (head of a frame)
             const auto Data_End=File_Offset+Buffer_Offset+Element_Offset+Length;
-            bool CanJump=Data_IsSkipped && Status[IsAccepted] && !IsSub && Config->File_IsSeekable_Get() && File_Buffer_Size_Hint_Pointer && File_Size!=(int64u)-1
+            bool CanJump=Status[IsAccepted] && !IsSub && Config->File_IsSeekable_Get() && File_Buffer_Size_Hint_Pointer && File_Size!=(int64u)-1
                       && Length<=File_Size/2 && Element_Offset+Length<=Buffer_MaximumSize && Element_Offset+Length+24<=Config->File_Buffer_Size_Max && Data_End+24<=File_Size //In one read with the next 24 bytes, without changing the buffer size
                       && Buffer_Offset+Element_Offset+Length-Buffer_Size>=0x100000 //Faster than reading it
                       && Data_End<IsParsingMiddle_MaxOffset //Caption probe not ending in it (its end is tested after each read)
@@ -12996,6 +12996,8 @@ void File_Mxf::Header_Parse()
                 if (Next>=File_Size || Next_IsNear(File_Offset+Buffer_Size) || Next_IsNear(Data_End+24))
                     CanJump=false;
             }
+            if (CanJump && !Data_IsSkipped && (!IsEssence || !Essence_HeadIsEnough()))
+                CanJump=false; //Content needed, the content in the buffer is parsed as the beginning of the element
             if (CanJump)
             {
                 Data_Skipped_End=Data_End;
@@ -24560,7 +24562,38 @@ bool File_Mxf::Essence_IsNotNeeded()
             return ((const File_Pcm*)Parser)->IsComplete(); //No detection after the first frames, except Auro-3D detection
     #endif //defined(MEDIAINFO_PCM_YES)
     return Parser->ParserName=="ProRes" //Only the first frame is used
-        || Parser->ParserName=="VC-3"; //Frames are skipped once filled
+        || Parser->ParserName=="VC-3" //Frames are skipped once filled
+        || Parser->ParserName=="Unknown"; //Nothing is parsed (e.g. uncompressed video), it is finished again after one frame when the parsing starts again (caption probe)
+}
+
+//---------------------------------------------------------------------------
+bool File_Mxf::Essence_HeadIsEnough()
+{
+    //The parser uses only the beginning of the current essence element, it is in the buffer (e.g. AVC frames of the caption probe are parsed up to their first slice header)
+    if (IsSub || IsArriExperimental || Config->ParseSpeed>=1.0)
+        return false;
+    #if MEDIAINFO_DEMUX
+        if (Config_Demux)
+            return false;
+    #endif //MEDIAINFO_DEMUX
+    #if MEDIAINFO_TRACE
+        if (Config_Trace_Level!=0)
+            return false; //All the content is shown in the trace
+    #endif //MEDIAINFO_TRACE
+    const auto EssenceKey=Essence_Key((int32u)Code.lo, BodySID_Get());
+    if (ProbeCaption_IsInContentPackage && EssenceKey==Essences_UsedForFrameCount)
+        return false; //The frame of the caption probe is computed at this element, parsers may start again from it
+    const auto Essence=Essences.find(EssenceKey);
+    if (Essence==Essences.end() || Essence->second.Parsers.size()!=1 || Buffer_Offset+(size_t)Element_Offset>Buffer_Size)
+        return false;
+    const auto Parser=Essence->second.Parsers[0];
+    if (Parser->Status[IsFinished])
+        return false;
+    #if defined(MEDIAINFO_AVC_YES)
+        if (Parser->ParserName=="AVC")
+            return ((File_Avc*)Parser)->PartialFrames_HeadIsEnough(Buffer+Buffer_Offset+(size_t)Element_Offset, Buffer_Size-(Buffer_Offset+(size_t)Element_Offset), File_Offset+Buffer_Offset+Element_Offset);
+    #endif //defined(MEDIAINFO_AVC_YES)
+    return false;
 }
 
 //---------------------------------------------------------------------------

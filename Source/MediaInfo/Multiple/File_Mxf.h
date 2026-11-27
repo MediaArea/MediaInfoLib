@@ -1528,6 +1528,7 @@ protected :
     void NextRandomIndexPack();
     void NextRandomIndexPack_GoTo(bool IsInHeader=false);
     bool Essence_IsNotNeeded();
+    bool Essence_HeadIsEnough(); //Only the content of the current essence element already in the buffer is needed by the parser
     int64u Element_Size_AsIfRead();
     bool BookMark_Needed();
     bool ProbeCaption_IsPossible();
