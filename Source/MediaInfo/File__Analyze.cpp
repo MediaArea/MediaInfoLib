@@ -323,6 +323,17 @@ void conformance::Merge_Conformance(bool FromConfig)
         for (const auto& FieldValue : Conformance) {
             auto Current = find(Conformance_Total.begin(), Conformance_Total.end(), FieldValue);
             if (Current != Conformance_Total.end()) {
+                if (!FromConfig && !Current->FramePoss.empty()) {
+                    const auto& Last = Current->FramePoss.back();
+                    if (Last.Frame_Count_Min == Frame_Count
+                     && Last.Frame_Count_NotParsedIncluded_Min == Frame_Count_NotParsedIncluded
+                     && Last.SubFramePos_Min == FieldValue.FramePoss[0].SubFramePos_Min
+                     && Last.PTS_Min == PTS
+                     && Last.File_Offset_Min == File_Offset
+                     && Last.Frame_Count_Max == (int64u)-1) {
+                        continue; //Same position, e.g. an element parsed again when more data is available
+                    }
+                }
                 if (Current->FramePoss.size() < Limit) {
                     if (FromConfig) {
                         auto Pos = Current->FramePoss.begin();
