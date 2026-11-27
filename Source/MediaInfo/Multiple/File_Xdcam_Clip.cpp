@@ -132,14 +132,10 @@ bool File_Xdcam_Clip::FileHeader_Begin()
                 const char* manufacturer=Element->Attribute("manufacturer");
                 if (manufacturer)
                 {
-                    string manufacturer_modelName(manufacturer);
+                    Fill(Stream_General, 0, General_Encoded_Hardware_CompanyName, manufacturer, Unlimited, true, true);
                     const char* modelName=Element->Attribute("modelName");
                     if (modelName)
-                    {
-                        manufacturer_modelName+=' ';
-                        manufacturer_modelName+=modelName;
-                    }
-                    Fill(Stream_General, 0, General_Encoded_Application, manufacturer_modelName, true, true);
+                        Fill(Stream_General, 0, General_Encoded_Hardware_Model, modelName, Unlimited, true, true);
                 }
             }
 

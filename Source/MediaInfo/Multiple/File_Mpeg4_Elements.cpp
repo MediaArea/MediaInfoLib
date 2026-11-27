@@ -5679,12 +5679,9 @@ void File_Mpeg4::moov_meta_xml_NonRealTimeMeta(const char* Xml, size_t Xml_Size)
             }
             if (manufacturer_IsFound)
             {
+                Fill(Stream_General, 0, General_Encoded_Hardware_CompanyName, manufacturer, true, false);
                 if (modelName_IsFound)
-                {
-                    manufacturer+=' ';
-                    manufacturer+=modelName;
-                }
-                Fill(Stream_General, 0, General_Encoded_Application, manufacturer, true, false);
+                    Fill(Stream_General, 0, General_Encoded_Hardware_Model, modelName, true, false);
             }
         }
         else if (!Lens_IsParsed && !tfsxml_strcmp_charp(b, "Lens"))
