@@ -436,6 +436,9 @@ static const char* Vc3_SSC_FromCID (int32u CompressionID)
 File_Vc3::File_Vc3()
 :File__Analyze()
 {
+    //Configuration
+    ParserName="VC-3";
+
     //In
     Frame_Count_Valid=0;
     FrameRate=0;
