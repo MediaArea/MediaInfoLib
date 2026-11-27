@@ -24544,9 +24544,10 @@ bool File_Mxf::Essence_IsNotNeeded()
     //Parsers having nothing more to say
     if (Config->ParseSpeed>=1.0)
         return false;
-    if (ProbeCaption_IsInContentPackage && (int32u)Code.lo==Essences_UsedForFrameCount)
+    const auto EssenceKey=Essence_Key((int32u)Code.lo, BodySID_Get());
+    if (ProbeCaption_IsInContentPackage && EssenceKey==Essences_UsedForFrameCount)
         return false; //The frame of the caption probe is computed at this element, parsers may start again from it
-    essences::iterator Essence=Essences.find((int32u)Code.lo);
+    essences::iterator Essence=Essences.find(EssenceKey);
     if (Essence==Essences.end() || Essence->second.Parsers.size()!=1)
         return false;
     const File__Analyze* Parser=Essence->second.Parsers[0];
