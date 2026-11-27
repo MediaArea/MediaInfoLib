@@ -55,6 +55,11 @@ private :
 
     //PKL
     size_t PKL_Pos;
+
+    //Conformance
+    #if MEDIAINFO_CONFORMANCE
+    void Conformance_Composition(const tinyxml2::XMLElement* Root, const char* NameSpace);
+    #endif //MEDIAINFO_CONFORMANCE
     void MergeFromAm (File_DcpPkl::streams &StreamsToMerge);
 
     //Temp
