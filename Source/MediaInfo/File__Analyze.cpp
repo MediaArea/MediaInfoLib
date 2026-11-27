@@ -5161,6 +5161,7 @@ void File__Analyze::Fill_Conformance_Specification(const char* Field, const stri
         return;
 
     //Errors are about a whole stream, no offset is provided
+    Merge_Conformance(true); //Errors not merged yet keep their position
     const auto File_Offset_Save=File_Offset;
     File_Offset=(int64u)-1-(Buffer_Offset+Element_Offset);
     for (const auto& Error : Errors)

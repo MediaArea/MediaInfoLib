@@ -11448,12 +11448,13 @@ void File_Mpeg4::stream::ctts_Add(int32u SampleCount, int32s SampleOffset)
 }
 
 //---------------------------------------------------------------------------
-void File_Mpeg4::stream::PresentationTimes(int64u File_Size, int64s& First, int64u& Duration_Min, int64u& Duration_Max) const
+void File_Mpeg4::stream::PresentationTimes(int64u File_Size, int64s& First, int64u& Duration_Min, int64u& Duration_Max, int64u& Duplicates) const
 {
     //Presentation time of each sample from the decoding times and the composition offsets, in the media time scale
     First=INT64_MAX;
     Duration_Min=(int64u)-1;
     Duration_Max=0;
+    Duplicates=0;
     if (stts.empty() || ctts.empty())
         return;
     int64u SampleCount_Max=std::max(stsz_Total.size(), stsz.size());
@@ -11490,7 +11491,10 @@ void File_Mpeg4::stream::PresentationTimes(int64u File_Size, int64s& First, int6
     {
         int64u Duration=(int64u)(Times[Pos]-Times[Pos-1]);
         if (!Duration)
-            continue; //Same presentation time, not a frame duration
+        {
+            Duplicates++; //Same presentation time as the previous sample, not a frame duration
+            continue;
+        }
         if (Duration_Min>Duration)
             Duration_Min=Duration;
         if (Duration_Max<Duration)

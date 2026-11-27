@@ -509,6 +509,7 @@ void File_Mpeg4::Streams_Finish()
         }
     #if MEDIAINFO_CONFORMANCE
         conformance_errors pixi_Errors; //Pixel information boxes not matching the bit depth of their stream, filled once the streams are final
+        conformance_errors ctts_Errors; //Composition offsets giving several samples the same presentation time, filled once the streams are final
     #endif //MEDIAINFO_CONFORMANCE
     streams::iterator Temp=Streams.begin();
     while (Temp!=Streams.end())
@@ -926,9 +927,9 @@ void File_Mpeg4::Streams_Finish()
 
         //Presentation times
         int64s PresentationTime_First=INT64_MAX;
-        int64u PresentationDuration_Min=(int64u)-1, PresentationDuration_Max=0;
+        int64u PresentationDuration_Min=(int64u)-1, PresentationDuration_Max=0, PresentationTime_Duplicates=0;
         if (Temp->second.ctts_HasOffset)
-            Temp->second.PresentationTimes(File_Size, PresentationTime_First, PresentationDuration_Min, PresentationDuration_Max);
+            Temp->second.PresentationTimes(File_Size, PresentationTime_First, PresentationDuration_Min, PresentationDuration_Max, PresentationTime_Duplicates);
         else if (!Temp->second.stts.empty())
             PresentationTime_First=(int64s)Temp->second.tfdt_First; //Same as the decoding time
 
@@ -994,25 +995,37 @@ void File_Mpeg4::Streams_Finish()
         if (StreamKind_Last==Stream_Video && Temp->second.TimeCode==NULL)
         {
             //Frame durations from the presentation times if there are composition offsets, else from the decoding times
+            //Presentation times shared by several samples are not reliable for frame durations, the decoding times are used then
             int64u Duration_Min=Temp->second.stts_Min, Duration_Max=Temp->second.stts_Max;
-            if (PresentationDuration_Max)
+            if (PresentationDuration_Max && !PresentationTime_Duplicates)
             {
                 Duration_Min=PresentationDuration_Min;
                 Duration_Max=PresentationDuration_Max;
             }
             if (Temp->second.mdhd_TimeScale && Duration_Min && Duration_Max)
             {
-                if (Duration_Min!=Duration_Max && ((float)Temp->second.mdhd_TimeScale)/Duration_Min-((float)Temp->second.mdhd_TimeScale)/Duration_Max>=0.001)
+                //Count of frames for the average frame rate from the decoding durations, their total does not include the display of the last sample if its duration is 0
+                int64u FrameCount=Temp->second.stts_FrameCount;
+                if (FrameCount>1 && !Temp->second.stts.empty() && !Temp->second.stts.back().SampleDuration)
+                    FrameCount--;
+
+                //Durations of 1 tick around the frame duration are a constant frame rate, e.g. a frame duration which is not a multiple of the tick
+                bool IsJitter=Duration_Max-Duration_Min<=2 && (Duration_Max-Duration_Min)*10<=Duration_Min;
+
+                if (!IsJitter && ((float)Temp->second.mdhd_TimeScale)/Duration_Min-((float)Temp->second.mdhd_TimeScale)/Duration_Max>=0.001)
                 {
                     Fill(Stream_Video, StreamPos_Last, Video_FrameRate_Minimum, ((float)Temp->second.mdhd_TimeScale)/Duration_Max, 3, true);
                     Fill(Stream_Video, StreamPos_Last, Video_FrameRate_Maximum, ((float)Temp->second.mdhd_TimeScale)/Duration_Min, 3, true);
                     if (Temp->second.stts_Duration)
-                        Fill(Stream_Video, StreamPos_Last, Video_FrameRate,         ((float)Temp->second.stts_FrameCount)/Temp->second.stts_Duration*Temp->second.mdhd_TimeScale, 3, true);
+                        Fill(Stream_Video, StreamPos_Last, Video_FrameRate,         ((float)FrameCount)/Temp->second.stts_Duration*Temp->second.mdhd_TimeScale, 3, true);
                     Fill(Stream_Video, StreamPos_Last, Video_FrameRate_Mode,    "VFR", Unlimited, true, true);
                 }
                 else
                 {
-                    Fill(Stream_Video, StreamPos_Last, Video_FrameRate,         ((float)Temp->second.mdhd_TimeScale)/Duration_Max, 3, true);
+                    if (Duration_Min!=Duration_Max && Temp->second.stts_Duration)
+                        Fill(Stream_Video, StreamPos_Last, Video_FrameRate,     ((float64)FrameCount)*Temp->second.mdhd_TimeScale/Temp->second.stts_Duration, 3, true); //Exact for a whole count of frames per second
+                    else
+                        Fill(Stream_Video, StreamPos_Last, Video_FrameRate,     ((float)Temp->second.mdhd_TimeScale)/Duration_Max, 3, true);
                     Fill(Stream_Video, StreamPos_Last, Video_FrameRate_Mode,    "CFR", Unlimited, true, true);
                 }
             }
@@ -1636,6 +1649,13 @@ void File_Mpeg4::Streams_Finish()
                     pixi_Errors.Add("MP4 pixi bits_per_channel does not match the bit depth of the stream (actual "+std::to_string(Temp->second.pixi_BitDepth)+", expected "+std::to_string(BitDepth)+')');
                 }
             }
+
+            //Samples with the presentation time of another sample
+            if (PresentationTime_Duplicates)
+            {
+                ctts_Errors.StreamID=Retrieve_Const(StreamKind_Last, StreamPos_Last, General_ID).To_UTF8();
+                ctts_Errors.Add("MP4 ctts gives samples the presentation time of another sample (count "+std::to_string(PresentationTime_Duplicates)+')');
+            }
         #endif //MEDIAINFO_CONFORMANCE
 
         ++Temp;
@@ -1682,6 +1702,7 @@ void File_Mpeg4::Streams_Finish()
     Streams_Finish_Grid(Image_StreamPos, Grids);
     #if MEDIAINFO_CONFORMANCE
         Fill_Conformance_Specification("Crosscheck pixi bits_per_channel", string(), pixi_Errors);
+        Fill_Conformance_Specification("ctts sample_offset", string(), ctts_Errors);
     #endif //MEDIAINFO_CONFORMANCE
     if (Vendor!=0x00000000 && Vendor!=0xFFFFFFFF)
     {
