@@ -505,6 +505,7 @@ private :
     int32u                                  moof_traf_default_sample_duration;
     int32u                                  moof_traf_default_sample_size;
     int32u                                  MajorBrand;
+    bool                                    ftyp_IsBeyondFileEnd;
     bool                                    IsSecondPass;
     bool                                    IsParsing_mdat;
     bool                                    IsFragmented;

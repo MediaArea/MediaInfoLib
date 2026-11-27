@@ -1957,6 +1957,8 @@ void File_Mpeg4::ftyp()
         Param_Info1(Ztring().From_CC4(MajorBrandVersion));
         ftyps.push_back(MajorBrandVersion);
     }
+    if (ftyp_IsBeyondFileEnd) //The size of the box is wrong, the list of compatible brands has no known end
+        Skip_XX(Element_Size-Element_Offset,                    "Unknown");
     while (Element_Offset<Element_Size)
     {
         int32u CompatibleBrand;

@@ -60,6 +60,7 @@ namespace MediaInfoLib
 namespace Elements
 {
     const int64u free=0x66726565;
+    const int64u ftyp=0x66747970;
     const int64u mdat=0x6D646174;
     const int64u moov_meta______=0x2D2D2D2D;
     const int64u moov_meta___ART=0xA9415254;
@@ -353,6 +354,7 @@ File_Mpeg4::File_Mpeg4()
     LastMdatPos=0;
     FirstMoovPos=(int64u)-1;
     MajorBrand=0x00000000;
+    ftyp_IsBeyondFileEnd=false;
     IsSecondPass=false;
     IsParsing_mdat=false;
     IsFragmented=false;
@@ -2541,7 +2543,11 @@ void File_Mpeg4::Header_Parse()
 
     //Incoherencies
     if (Element_Level<=2 && File_Offset+Buffer_Offset+Size>File_Size)
+    {
         IsTruncated(File_Offset+Buffer_Offset+Size, false, "MPEG-4");
+        if (Name==Elements::ftyp)
+            ftyp_IsBeyondFileEnd=true;
+    }
 }
 
 //---------------------------------------------------------------------------
