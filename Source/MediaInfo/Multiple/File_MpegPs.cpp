@@ -614,9 +614,34 @@ void File_MpegPs::Streams_Finish()
 //---------------------------------------------------------------------------
 void File_MpegPs::Streams_Finish_PerStream(size_t StreamID, ps_stream &Temp, kindofstream KindOfStream)
 {
+    //End of the data, the parser may wait for it for its last element (e.g. a picture whose size is known only at the start of the next one)
+    bool EndOfData_IsGiven=false;
+    const auto EndOfData_Give=[&]()
+    {
+        Temp.Parsers[0]->ShouldContinueParsing=false;
+        int64u File_Size_Temp=File_Size;
+        File_Size=File_Offset+Buffer_Offset+Element_Offset;
+        #if MEDIAINFO_EVENTS
+            Temp.Parsers[0]->PES_FirstByte_IsAvailable=false;
+        #endif //MEDIAINFO_EVENTS
+        Open_Buffer_Continue(Temp.Parsers[0], Buffer, 0, false);
+        File_Size=File_Size_Temp;
+        EndOfData_IsGiven=true;
+    };
+
     //By the parser
     if (Temp.StreamKind==Stream_Max && !Temp.Parsers.empty() && Temp.Parsers[0])
+    {
+        if (!Temp.Parsers[0]->Status[IsFinished])
+        {
+            EndOfData_Give();
+            #if MEDIAINFO_DEMUX
+                if (Config->Demux_EventWasSent)
+                    return;
+            #endif //MEDIAINFO_DEMUX
+        }
         Streams_Fill_PerStream(StreamID, Temp, KindOfStream);
+    }
 
     //Init
     if (Temp.StreamKind==Stream_Max && (FromTS?FromTS_format_identifier:Streams[stream_id].format_identifier)!=0x56414E43)
@@ -629,14 +654,8 @@ void File_MpegPs::Streams_Finish_PerStream(size_t StreamID, ps_stream &Temp, kin
     {
         if (!Temp.Parsers[0]->Status[IsFinished])
         {
-            Temp.Parsers[0]->ShouldContinueParsing=false;
-            int64u File_Size_Temp=File_Size;
-            File_Size=File_Offset+Buffer_Offset+Element_Offset;
-            #if MEDIAINFO_EVENTS
-                Temp.Parsers[0]->PES_FirstByte_IsAvailable=false;
-            #endif //MEDIAINFO_EVENTS
-            Open_Buffer_Continue(Temp.Parsers[0], Buffer, 0, false);
-            File_Size=File_Size_Temp;
+            if (!EndOfData_IsGiven)
+                EndOfData_Give();
             Finish(Temp.Parsers[0]);
             #if MEDIAINFO_DEMUX
                 if (Config->Demux_EventWasSent)
