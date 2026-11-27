@@ -70,6 +70,11 @@ private :
 
     //AM
     void MergeFromAm (File_DcpPkl::streams &StreamsToMerge);
+
+    //Conformance
+    #if MEDIAINFO_CONFORMANCE
+    void Conformance_PackingList(const tinyxml2::XMLElement* PackingList, const char* NameSpace, bool AssetMap_IsParsed);
+    #endif //MEDIAINFO_CONFORMANCE
 };
 
 } //NameSpace
