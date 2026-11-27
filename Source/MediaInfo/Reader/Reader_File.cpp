@@ -290,8 +290,6 @@ size_t Reader_File::Format_Test_PerParser(MediaInfo_Internal* MI, const String &
             Partial_Begin=float64_int64s(MI->Config.File_Size*Config_Partial_Begin.To_float64()/100);
         else
             Partial_Begin=Config_Partial_Begin.To_int64u();
-        if (Partial_Begin)
-            F.GoTo(Partial_Begin);
     }
     else
         Partial_Begin=0;
@@ -309,6 +307,10 @@ size_t Reader_File::Format_Test_PerParser(MediaInfo_Internal* MI, const String &
         Partial_Begin=0; //Wrong value
     if (Partial_Begin>Partial_End)
         Partial_Begin=0; //Wrong value
+    if (Partial_End>=MI->Config.File_Size)
+        Partial_End=(int64u)-1; //Up to the end of the file, which may grow
+    if (Partial_Begin)
+        F.GoTo(Partial_Begin);
     CountOfSeconds=0;
 
     //Parser
@@ -623,7 +625,11 @@ size_t Reader_File::Format_Test_PerParser_Continue (MediaInfo_Internal* MI)
                 else
             #endif //MEDIAINFO_READTHREAD
             {
-                size_t SizeToRead=(F.Position_Get()+MI->Config.File_Buffer_Size_ToRead<(Partial_End<=MI->Config.File_Size?Partial_End:MI->Config.File_Size))?MI->Config.File_Buffer_Size_ToRead:((size_t)((Partial_End<=MI->Config.File_Size?Partial_End:MI->Config.File_Size)-F.Position_Get()));
+                int64u End=MI->Config.File_Size==(int64u)-1?(int64u)-1:(Partial_Begin+MI->Config.File_Size); //File_Size is the size of the partial window
+                if (End>Partial_End)
+                    End=Partial_End;
+                int64u Position=F.Position_Get();
+                size_t SizeToRead=Position>=End?0:(End-Position<MI->Config.File_Buffer_Size_ToRead?(size_t)(End-Position):MI->Config.File_Buffer_Size_ToRead);
                 if (MI->Config.File_Buffer_Size_Max>MI->Info->Buffer_Size)
                 {
                     size_t SizeToRead_Max=MI->Config.File_Buffer_Size_Max-MI->Info->Buffer_Size;
@@ -667,7 +673,7 @@ size_t Reader_File::Format_Test_PerParser_Continue (MediaInfo_Internal* MI)
                         MI->Config.File_IsGrowing=true;
                     */
                 }
-                if (MI->Config.File_Names.size()==1)
+                if (MI->Config.File_Names.size()==1 && !Partial_Begin && Partial_End==(int64u)-1) //File_Size is not the file size with a partial window
                 {
                     int64u Growing_Temp=F.Size_Get();
                     if (MI->Config.File_Size!=Growing_Temp)
