@@ -1543,6 +1543,7 @@ void File__ReferenceFilesHelper::ParseReference_Finalize_PerStream ()
     {
         MI->Fill(Stream_General, 0, General_Format, Sequences[Sequences_Current]->MI->Get(Stream_General, 0, General_Format) , true);
         MI->Fill(Stream_General, 0, General_CompleteName, Sequences[Sequences_Current]->MI->Get(Stream_General, 0, General_CompleteName) , true);
+        MI->Config->File_Environment_CompleteName_Set(Sequences[Sequences_Current]->MI->Config.File_Environment_CompleteName_Get());
         MI->Fill(Stream_General, 0, General_FileExtension, Sequences[Sequences_Current]->MI->Get(Stream_General, 0, General_FileExtension) , true);
         HasMainFile=true;
         HasMainFile_Filled=true;

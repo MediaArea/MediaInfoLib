@@ -3036,6 +3036,16 @@ size_t File__Analyze::Stream_Prepare (stream_t KindOfStream, size_t StreamPos)
         #endif //defined(MEDIAINFO_FILE_YES)
     }
 
+    //Kept apart, a parser may replace them with values read in the file (Inform_HideEnvironment); empty without file name, not left from a previous file
+    if (!IsSub && KindOfStream==Stream_General)
+    {
+        Config->File_Environment_CompleteName_Set(Retrieve(Stream_General, 0, General_CompleteName));
+        ZtringList Dates;
+        for (size_t Parameter=General_File_Created_Date; Parameter<=General_File_Modified_Date_Local; Parameter++)
+            Dates.push_back(Retrieve(Stream_General, 0, Parameter));
+        Config->File_Environment_Dates_Set(Dates);
+    }
+
     //File size
     if (((!IsSub || !File_Name.empty()) && KindOfStream==Stream_General && File_Size!=(int64u)-1))
         Fill (Stream_General, 0, General_FileSize, File_Size);
@@ -3584,6 +3594,10 @@ void File__Analyze::Fill (stream_t StreamKind, size_t StreamPos, size_t Paramete
         Target+=Value;
     }
     Status[IsUpdated]=true;
+
+    //Inform_HideEnvironment: a date filled after Stream_Prepare kept the file system ones apart (e.g. read in a MediaInfo XML file) is no longer from the file system, even with the same value
+    if (!IsSub && StreamKind==Stream_General && !StreamPos && Parameter>=General_File_Created_Date && Parameter<=General_File_Modified_Date_Local)
+        Config->File_Environment_Date_Clear(Parameter-General_File_Created_Date);
 
     //Deprecated
     if (Parameter==Fill_Parameter(StreamKind, Generic_BitDepth))

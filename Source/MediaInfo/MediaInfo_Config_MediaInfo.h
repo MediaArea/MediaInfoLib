@@ -222,6 +222,12 @@ public :
     void          File_FileNameFormat_Set (const Ztring &NewValue);
     Ztring        File_FileNameFormat_Get ();
 
+    void          File_Environment_CompleteName_Set (const Ztring &NewValue);
+    Ztring        File_Environment_CompleteName_Get ();
+    void          File_Environment_Dates_Set (const ZtringList &NewValue);
+    void          File_Environment_Date_Clear (size_t Pos);
+    Ztring        File_Environment_Date_Get (size_t Pos);
+
     void          File_TimeToLive_Set (float64 NewValue);
     float64       File_TimeToLive_Get ();
 
@@ -540,6 +546,8 @@ private :
     #endif //defined(MEDIAINFO_REFERENCES_YES)
     Ztring                  File_FileName;
     Ztring                  File_FileNameFormat;
+    Ztring                  File_Environment_CompleteName; //As filled from the file system, for Inform_HideEnvironment
+    ZtringList              File_Environment_Dates;
     float64                 File_TimeToLive;
     Ztring                  File_Partial_Begin;
     Ztring                  File_Partial_End;

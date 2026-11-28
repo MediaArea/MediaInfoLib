@@ -1426,6 +1426,8 @@ void EbuCore_Transform_Metadata(Node* Parent, MediaInfo_Internal &MI, size_t Str
 Ztring Export_EbuCore::Transform(MediaInfo_Internal &MI, version Version, acquisitiondataoutputmode AcquisitionDataOutputMode, format Format, const Ztring& ExternalMetadataValues, const Ztring& ExternalMetaDataConfig)
 {
     bool UseExternalMetaData=(!ExternalMetaDataConfig.empty() && !ExternalMetadataValues.empty());
+    bool HideEnvironment=MediaInfoLib::Config.Inform_HideEnvironment_Get();
+    bool HideFileName=HideEnvironment && Field_IsEnvironment(MI, Stream_General, General_CompleteName);
 
     //Current date/time is ISO format
     time_t Seconds=time(NULL);
@@ -1476,12 +1478,16 @@ Ztring Export_EbuCore::Transform(MediaInfo_Internal &MI, version Version, acquis
         Node_CoreMain->Add_Attribute("xsi:schemaLocation", string("urn:ebu:metadata-schema:ebucore http")+string(MediaInfoLib::Config.Https_Get()?"s":"")+"://www.ebu.ch/metadata/schemas/EBUCore/20171009/ebucore.xsd");
         Node_CoreMain->Add_Attribute("version", "1.8");
         Node_CoreMain->Add_Attribute("writingLibraryName", "MediaInfoLib");
-        Node_CoreMain->Add_Attribute("writingLibraryVersion", MediaInfoLib::Config.Info_Version_Get().SubString(__T(" - v"), Ztring()));
+        if (!HideEnvironment)
+            Node_CoreMain->Add_Attribute("writingLibraryVersion", MediaInfoLib::Config.Info_Version_Get().SubString(__T(" - v"), Ztring()));
     }
-    Ztring Date=DateTime.substr(0, 10);
-    Node_CoreMain->Add_Attribute("dateLastModified", Date);
-    Ztring Time=DateTime.substr(11);
-    Node_CoreMain->Add_Attribute("timeLastModified", Time);
+    if (!HideEnvironment)
+    {
+        Ztring Date=DateTime.substr(0, 10);
+        Node_CoreMain->Add_Attribute("dateLastModified", Date);
+        Ztring Time=DateTime.substr(11);
+        Node_CoreMain->Add_Attribute("timeLastModified", Time);
+    }
 
     //coreMetadata
     Node* Node_CoreMetadata=Node_CoreMain->Add_Child("ebucore:coreMetadata", true);
@@ -1749,7 +1755,7 @@ Ztring Export_EbuCore::Transform(MediaInfo_Internal &MI, version Version, acquis
     Node_Format->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_FileSize, "ebucore:fileSize", true);
 
     //format - fileName
-    if (!MI.Get(Stream_General, 0, General_FileName).empty())
+    if (!HideFileName && !MI.Get(Stream_General, 0, General_FileName).empty())
     {
         Ztring Name=MI.Get(Stream_General, 0, General_FileName);
         if (!MI.Get(Stream_General, 0, General_FileExtension).empty())
@@ -1761,7 +1767,8 @@ Ztring Export_EbuCore::Transform(MediaInfo_Internal &MI, version Version, acquis
     }
 
     //format - locator
-    Node_Format->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_CompleteName, "ebucore:locator", true);
+    if (!HideFileName)
+        Node_Format->Add_Child_IfNotEmpty(MI, Stream_General, 0, General_CompleteName, "ebucore:locator", true);
 
     //format - technicalAttributeString - AudioLoudnessStandard
     Add_TechnicalAttributeString_IfNotEmpty(MI, Stream_Other, As11_UkDpp_Pos, "AudioLoudnessStandard", Node_Format, "AudioLoudnessStandard");

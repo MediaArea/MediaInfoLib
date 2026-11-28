@@ -660,7 +660,9 @@ Ztring Export_Graph::Transform(MediaInfo_Internal &MI, Export_Graph::graph Graph
     bool ExpandSub_Old=MI.Config.File_ExpandSubs_Get();
     MI.Config.File_ExpandSubs_Set(false);
 
-    Ztring FileName=XML_Encode(MI.Get(Stream_General, 0, General_FileNameExtension));
+    Ztring FileName;
+    if (!(MediaInfoLib::Config.Inform_HideEnvironment_Get() && Field_IsEnvironment(MI, Stream_General, General_FileNameExtension)))
+        FileName=XML_Encode(MI.Get(Stream_General, 0, General_FileNameExtension));
     if (FileName.empty())
         FileName=__T("&nbsp;");
 

@@ -2220,6 +2220,42 @@ Ztring MediaInfo_Config_MediaInfo::File_FileNameFormat_Get ()
 }
 
 //***************************************************************************
+// File environment
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+void MediaInfo_Config_MediaInfo::File_Environment_CompleteName_Set (const Ztring &NewValue)
+{
+    CriticalSectionLocker CSL(CS);
+    File_Environment_CompleteName=NewValue;
+}
+
+Ztring MediaInfo_Config_MediaInfo::File_Environment_CompleteName_Get ()
+{
+    CriticalSectionLocker CSL(CS);
+    return File_Environment_CompleteName;
+}
+
+//---------------------------------------------------------------------------
+void MediaInfo_Config_MediaInfo::File_Environment_Dates_Set (const ZtringList &NewValue)
+{
+    CriticalSectionLocker CSL(CS);
+    File_Environment_Dates=NewValue;
+}
+
+void MediaInfo_Config_MediaInfo::File_Environment_Date_Clear (size_t Pos)
+{
+    CriticalSectionLocker CSL(CS);
+    File_Environment_Dates.Write(Ztring(), Pos);
+}
+
+Ztring MediaInfo_Config_MediaInfo::File_Environment_Date_Get (size_t Pos)
+{
+    CriticalSectionLocker CSL(CS);
+    return File_Environment_Dates.Read(Pos);
+}
+
+//***************************************************************************
 // Time to live
 //***************************************************************************
 

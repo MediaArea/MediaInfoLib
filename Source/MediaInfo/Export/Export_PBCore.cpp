@@ -186,9 +186,10 @@ void PBCore_Transform(Node *Parent, MediaInfo_Internal &MI, stream_t StreamKind,
         Node_EssenceTrack->Add_Child("essenceTrackLanguage", MediaInfoLib::Config.Iso639_2_Get(MI.Get(StreamKind, StreamPos, __T("Language"))));
 
     //essenceTrackAnnotation - all fields (except *_String*) separated by |
+    bool HideEnvironment=MediaInfoLib::Config.Inform_HideEnvironment_Get();
     Ztring Temp;
     for (size_t Pos=0; Pos<MI.Count_Get(StreamKind, StreamPos); Pos++)
-        if (MI.Get(StreamKind, StreamPos, Pos, Info_Name).find(__T("String"))==std::string::npos && !MI.Get(StreamKind, StreamPos, Pos).empty())
+        if (MI.Get(StreamKind, StreamPos, Pos, Info_Name).find(__T("String"))==std::string::npos && !MI.Get(StreamKind, StreamPos, Pos).empty() && !(HideEnvironment && Field_IsEnvironment(MI, StreamKind, Pos)))
             Temp+=MI.Get(StreamKind, StreamPos, Pos, Info_Name)+__T(": ")+MI.Get(StreamKind, StreamPos, Pos)+__T('|');
     if (!Temp.empty())
     {
@@ -200,7 +201,7 @@ void PBCore_Transform(Node *Parent, MediaInfo_Internal &MI, stream_t StreamKind,
 //---------------------------------------------------------------------------
 Ztring Export_PBCore::Transform(MediaInfo_Internal &MI)
 {
-
+    bool HideFileName=MediaInfoLib::Config.Inform_HideEnvironment_Get() && Field_IsEnvironment(MI, Stream_General, General_CompleteName);
 
     Node Node_Main("PBCoreDescriptionDocument");
     Node_Main.Add_Attribute("xsi:schemaLocation", "http://www.pbcore.org/PBCore/PBCoreNamespace.html http://www.pbcore.org/PBCore/PBCoreXSD_Ver_1-2-1.xsd");
@@ -221,7 +222,7 @@ Ztring Export_PBCore::Transform(MediaInfo_Internal &MI)
     //pbcoreFormatID
     Node* Node_FormatID = Node_Instantiation->Add_Child("pbcoreFormatID");
     //formatIdentifier
-    Node_FormatID->Add_Child("formatIdentifier", MI.Get(Stream_General, 0, General_FileName));
+    Node_FormatID->Add_Child("formatIdentifier", HideFileName?Ztring():MI.Get(Stream_General, 0, General_FileName));
     //formatIdentifierSource
     Node_FormatID->Add_Child("formatIdentifierSource", "File Name", "version", "PBCoreXSD_Ver_1.2_D1");
 
@@ -241,7 +242,7 @@ Ztring Export_PBCore::Transform(MediaInfo_Internal &MI)
     Node_Instantiation->Add_Child("formatDigital", Format);
 
     //formatLocation
-    Node_Instantiation->Add_Child("formatLocation", MI.Get(Stream_General, 0, General_CompleteName));
+    Node_Instantiation->Add_Child("formatLocation", HideFileName?Ztring():MI.Get(Stream_General, 0, General_CompleteName));
 
     //dateCreated
     if (!MI.Get(Stream_General, 0, General_Encoded_Date).empty())
