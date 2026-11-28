@@ -426,6 +426,10 @@ public :
     bool          File_IsGrowing;
     bool          File_IsNotGrowingAnymore;
     bool          File_IsImageSequence;
+    #if defined(MEDIAINFO_REFERENCES_YES)
+    ZtringList    File_Names_Referencing; //Real names of the file which references this file, of the file which references it...
+    bool          File_IsSideCarDxw; //The file is the DXW built in memory for the side-car files of the opened file, not a file, so not a level of referenced files
+    #endif //defined(MEDIAINFO_REFERENCES_YES)
     #if defined(MEDIAINFO_EIA608_YES)
     bool          File_Scte20_IsPresent;
     #endif //defined(MEDIAINFO_EIA608_YES)
@@ -451,7 +455,7 @@ public :
     MediaInfo_Config_PerPackage* Config_PerPackage;
     bool          Config_PerPackage_IsOwned; //Else it is the one of the referencing file
     bool          Events_TimestampShift_Disabled;
-    Ztring        File_Names_RootDirectory;
+    Ztring        File_Names_RootDirectory; //Folder of the referencing file with its path separator, removed from the names of the events
     #endif //MEDIAINFO_EVENTS
     #if MEDIAINFO_DEMUX
     bool          Demux_EventWasSent;

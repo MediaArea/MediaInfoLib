@@ -24,6 +24,7 @@
 #if defined(MEDIAINFO_DIRECTORY_YES)
 #include "ZenLib/Dir.h"
 #endif //defined(MEDIAINFO_DIRECTORY_YES)
+#include "ZenLib/FileName.h"
 #include "MediaInfo/Reader/Reader_Directory.h"
 #include "MediaInfo/File__Analyse_Automatic.h"
 #include <algorithm>
@@ -98,14 +99,10 @@ size_t MediaInfoList_Internal::Open(const String &File_Name, const fileoptions_t
             if (MediaInfoLib::Config.ParseOnlyKnownExtensions_IsSet())
             {
                 set<Ztring> ExtensionsList=MediaInfoLib::Config.ParseOnlyKnownExtensions_GetList_Set();
-                bool AcceptNoExtension=ExtensionsList.find(Ztring())!=ExtensionsList.end();
                 for (size_t i=List.size()-1; i!=(size_t)-1; i--)
                 {
-                    const Ztring& Name=List[i];
-                    size_t Extension_Pos=Name.rfind(__T('.'));
-                    if (Extension_Pos!=string::npos && ExtensionsList.find(Name.substr(Extension_Pos+1))==ExtensionsList.end()
-                     || Extension_Pos==string::npos && !AcceptNoExtension)
-                            List.erase(List.begin()+i);
+                    if (ExtensionsList.find(FileName::Extension_Get(List[i]))==ExtensionsList.end())
+                        List.erase(List.begin()+i);
                 }
             }
         #endif //MEDIAINFO_ADVANCED
@@ -156,8 +153,11 @@ size_t MediaInfoList_Internal::Open(const String &File_Name, const fileoptions_t
 }
 
 #if defined(MEDIAINFO_FILE_YES)
-static size_t RemoveFilesFromList(std::queue<String>& ToParse, Ztring CompleteName_Begin, const Ztring &CompleteName_Last)
+static size_t RemoveFilesFromList(std::queue<String>& ToParse, const Ztring &CompleteName_First, const Ztring &CompleteName_Last_)
 {
+    //Names from the root, the names in the list and the names given by the parser may be in different forms
+    Ztring CompleteName_Begin=ZenLib::FileName::Absolute_Get(CompleteName_First);
+    Ztring CompleteName_Last=ZenLib::FileName::Absolute_Get(CompleteName_Last_);
     size_t Removed=0;
     size_t Pos=0;
     for (; Pos<CompleteName_Begin.size(); Pos++)
@@ -170,7 +170,7 @@ static size_t RemoveFilesFromList(std::queue<String>& ToParse, Ztring CompleteNa
     if (Pos<CompleteName_Begin.size())
     {
         CompleteName_Begin.resize(Pos);
-        while (!ToParse.empty() && ToParse.front().find(CompleteName_Begin)==0)
+        while (!ToParse.empty() && ZenLib::FileName::Absolute_Get(ToParse.front()).find(CompleteName_Begin)==0)
         {
             ToParse.pop();
             Removed++;
@@ -201,9 +201,10 @@ void MediaInfoList_Internal::Entry()
             ToParse.pop();
             #if defined(MEDIAINFO_FILE_YES)
                 bool Skip=false;
+                const Ztring FileName_FromRoot=ToParse_ToIgnore.empty()?Ztring():ZenLib::FileName::Absolute_Get(FileName);
                 for (size_t i=0; i<ToParse_ToIgnore.size(); i++)
                 {
-                    if (ToParse_ToIgnore[i]==FileName)
+                    if (ToParse_ToIgnore[i]==FileName_FromRoot)
                     {
                         ToParse_ToIgnore.erase(ToParse_ToIgnore.begin()+i);
                         ToParse_AlreadyDone++;
@@ -266,13 +267,7 @@ void MediaInfoList_Internal::Entry()
                                 {
                                     Ztring Dir=MI->Get(Stream_General, 0, General_CompleteName);
                                     if (!Dir.empty() && Dir[Dir.size()-1]!=__T('/') && Dir[Dir.size()-1]!=__T('\\'))
-                                    {
-                                        size_t Separator_Pos=Dir.find_last_of(__T("\\/"));
-                                        if (Separator_Pos!=string::npos)
-                                            Dir.resize(Separator_Pos+1);
-                                        else
-                                            Dir.clear();
-                                    }
+                                        Dir=ZenLib::FileName::FromFolder_Get(Dir, Ztring());
                                     size_t i;
                                     if (PathSeparator!=__T('/'))
                                         while ((i=Source.find(__T('/')))!=string::npos)
@@ -280,10 +275,10 @@ void MediaInfoList_Internal::Entry()
                                     if (PathSeparator!=__T('\\'))
                                         while ((i=Source.find(__T('\\')))!=string::npos)
                                             Source[i]=PathSeparator;
-                                    Source=Dir+Source;
+                                    Source=ZenLib::FileName::Absolute_Get(Dir+Source);
                                     i=0;
                                     for (; i<Info.size(); i++)
-                                        if (Info[i]->Get(Stream_General, 0, General_CompleteName)==Source)
+                                        if (ZenLib::FileName::Absolute_Get(Info[i]->Get(Stream_General, 0, General_CompleteName))==Source)
                                         {
                                             delete Info[i];
                                             Info.erase(Info.begin()+i);

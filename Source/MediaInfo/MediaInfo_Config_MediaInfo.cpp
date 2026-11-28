@@ -270,6 +270,9 @@ MediaInfo_Config_MediaInfo::MediaInfo_Config_MediaInfo()
     File_IsGrowing=false;
     File_IsNotGrowingAnymore=false;
     File_IsImageSequence=false;
+    #if defined(MEDIAINFO_REFERENCES_YES)
+    File_IsSideCarDxw=false;
+    #endif //defined(MEDIAINFO_REFERENCES_YES)
     #if defined(MEDIAINFO_EIA608_YES)
     File_Scte20_IsPresent=false;
     #endif //defined(MEDIAINFO_EIA608_YES)
@@ -3379,7 +3382,7 @@ void MediaInfo_Config_MediaInfo::Event_SubFile_Start(const Ztring &FileName_Abso
     Ztring FileName_Relative;
     if (File_Names_RootDirectory.empty())
     {
-        FileName FN(FileName_Absolute);
+        FileName FN(FileName::FullName_Get(FileName_Absolute)); //Without the folder and the drive
         FileName_Relative=FN.Name_Get();
         if (!FN.Extension_Get().empty())
         {
@@ -3389,7 +3392,7 @@ void MediaInfo_Config_MediaInfo::Event_SubFile_Start(const Ztring &FileName_Abso
     }
     else
     {
-        Ztring Root=File_Names_RootDirectory+PathSeparator;
+        const Ztring& Root=File_Names_RootDirectory; //With its path separator
         FileName_Relative=FileName_Absolute;
         if (FileName_Relative.find(Root)==0)
             FileName_Relative.erase(0, Root.size());
@@ -3438,7 +3441,7 @@ void MediaInfo_Config_MediaInfo::Event_SubFile_Missing_Absolute(const Ztring &Fi
     Ztring FileName_Relative;
     if (File_Names_RootDirectory.empty())
     {
-        FileName FN(FileName_Absolute);
+        FileName FN(FileName::FullName_Get(FileName_Absolute)); //Without the folder and the drive
         FileName_Relative=FN.Name_Get();
         if (!FN.Extension_Get().empty())
         {
@@ -3448,7 +3451,7 @@ void MediaInfo_Config_MediaInfo::Event_SubFile_Missing_Absolute(const Ztring &Fi
     }
     else
     {
-        Ztring Root=File_Names_RootDirectory+PathSeparator;
+        const Ztring& Root=File_Names_RootDirectory; //With its path separator
         FileName_Relative=FileName_Absolute;
         if (FileName_Relative.find(Root)==0)
             FileName_Relative.erase(0, Root.size());

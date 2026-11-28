@@ -75,14 +75,12 @@ bool File_SequenceInfo::FileHeader_Begin()
             sequence* Sequence=new sequence;
             Sequence->StreamKind=Stream_Video;
 
-            FileName FN(File_Name);
-            Ztring Base=FN.Path_Get();
-            size_t Pos=Base.rfind(PathSeparator);
-            if (Pos!=string::npos)
+            Ztring Base=FileName::FolderName_Get(File_Name);
+            if (!Base.empty())
             {
-                Ztring ToAdd=Base.substr(Pos, string::npos);
+                //Names from the folder of the file, as the other names of references
+                Ztring ToAdd=Ztring(1, PathSeparator)+Base;
                 Ztring DirectoryBase=Base;
-                DirectoryBase+=ToAdd;
                 DirectoryBase+=__T('_');
 
                 size_t DirNumberCount=1;
@@ -90,7 +88,7 @@ bool File_SequenceInfo::FileHeader_Begin()
                 for (; DirNumberCount<9; DirNumberCount++)
                 {
                     Directory+=__T('0');
-                    if (Dir::Exists(Directory))
+                    if (Dir::Exists(FileName::FromFolder_Get(File_Name, Directory)))
                         break;
                 }
 
@@ -105,7 +103,7 @@ bool File_SequenceInfo::FileHeader_Begin()
 
                         Directory=DirectoryBase;
                         Directory+=Number;
-                        if (!Dir::Exists(Directory))
+                        if (!Dir::Exists(FileName::FromFolder_Get(File_Name, Directory)))
                             break;
 
                         Ztring FileBase=Directory;
@@ -121,7 +119,7 @@ bool File_SequenceInfo::FileHeader_Begin()
                             FullFile.insert(FullFile.begin()+FullFile.size()-Extension.size()-1, __T('0'));
                             if (Extension.empty())
                             {
-                                ZtringList List=Dir::GetAllFileNames(FullFile+__T('*'));
+                                ZtringList List=Dir::GetAllFileNames(FileName::FromFolder_Get(File_Name, FullFile+__T('*')));
                                 if (List.size()>=2)
                                 {
                                     FileNumberCount=(size_t)-1; //Problem, which one to choose?
@@ -136,7 +134,7 @@ bool File_SequenceInfo::FileHeader_Begin()
                                     break;
                                 }
                             }
-                            else if (File::Exists(FullFile))
+                            else if (File::Exists(FileName::FromFolder_Get(File_Name, FullFile)))
                                     break;
                         }
                         bool FromZero=true;
@@ -147,13 +145,13 @@ bool File_SequenceInfo::FileHeader_Begin()
                             FullFile=FileBase;
                             FullFile.insert(FullFile.size()-Extension.size()-1, Number);
                             FileNumberCount=Number.size();
-                            if (!File::Exists(FullFile))
+                            if (!File::Exists(FileName::FromFolder_Get(File_Name, FullFile)))
                             {
                                 FileNumberCount++;
                                 for (; FileNumberCount<10; FileNumberCount++)
                                 {
                                     FullFile.insert(FullFile.begin()+FullFile.size()-Extension.size()-Number.size()-1, __T('0'));
-                                    if (File::Exists(FullFile))
+                                    if (File::Exists(FileName::FromFolder_Get(File_Name, FullFile)))
                                     {
                                         FromZero=false;
                                         break;
@@ -175,7 +173,7 @@ bool File_SequenceInfo::FileHeader_Begin()
 
                                 FullFile=FileBase;
                                 FullFile.insert(FullFile.size()-Extension.size()-1, Number);
-                                if (!File::Exists(FullFile))
+                                if (!File::Exists(FileName::FromFolder_Get(File_Name, FullFile)))
                                     break;
 
                                 Sequence->AddFileName(FullFile);

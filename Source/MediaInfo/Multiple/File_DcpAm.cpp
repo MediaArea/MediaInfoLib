@@ -203,9 +203,8 @@ bool File_DcpAm::FileHeader_Begin()
     }
 
     //Merging with PKL
-    if (PKL_Pos<Streams.size() && Streams[PKL_Pos].ChunkList.size()==1)
+    if (RelatedFiles_CanBeSearched(File_Name) && PKL_Pos<Streams.size() && Streams[PKL_Pos].ChunkList.size()==1)
     {
-        FileName Directory(File_Name);
         Ztring PKL_FileName; PKL_FileName.From_UTF8(Streams[PKL_Pos].ChunkList[0].Path);
         if (PKL_FileName.find(__T("file://"))==0 && PKL_FileName.find(__T("file:///"))==string::npos)
             PKL_FileName.erase(0, 7); //TODO: better handling of relative and absolute file naes
@@ -216,10 +215,7 @@ bool File_DcpAm::FileHeader_Begin()
         MI.Option(__T("ParseSpeed"), __T("0"));
         MI.Option(__T("Demux"), Ztring());
         MI.Option(__T("File_IsReferenced"), __T("1"));
-        Ztring DirPath = Directory.Path_Get();
-        if (!DirPath.empty())
-            DirPath += PathSeparator;
-        size_t MiOpenResult=MI.Open(DirPath+PKL_FileName);
+        size_t MiOpenResult=ReferenceFiles->Open_Related(MI, FileName::FromFolder_Get(File_Name, PKL_FileName));
         MI.Option(__T("ParseSpeed"), ParseSpeed_Save); //This is a global value, need to reset it. TODO: local value
         MI.Option(__T("Demux"), Demux_Save); //This is a global value, need to reset it. TODO: local value
         if (MiOpenResult

@@ -22,8 +22,13 @@
 
 //---------------------------------------------------------------------------
 #include "MediaInfo/Reader/Reader_Directory.h"
+#if defined(MEDIAINFO_FILE_YES)
+    #include "MediaInfo/Reader/Reader_File.h"
+#endif //defined(MEDIAINFO_FILE_YES)
+#include "MediaInfo/File__Analyse_Automatic.h"
 #include "ZenLib/Dir.h"
 #include "ZenLib/FileName.h"
+#include <algorithm>
 using namespace ZenLib;
 //---------------------------------------------------------------------------
 
@@ -33,18 +38,18 @@ namespace MediaInfoLib
 size_t Reader_Directory::Format_Test(MediaInfo_Internal* MI, String File_Name)
 {
     #ifdef MEDIAINFO_BDMV_YES
-        if (Dir::Exists(File_Name) && File_Name.find(Ztring(1, PathSeparator)+__T("BDMV"))+5==File_Name.size())
+        if (Dir::Exists(File_Name) && FileName::FolderName_Get(File_Name+PathSeparator)==__T("BDMV"))
             return Bdmv_Format_Test(MI, File_Name);
     #endif //MEDIAINFO_BDMV_YES
 
     #ifdef MEDIAINFO_P2_YES
-        if (Dir::Exists(File_Name) && File_Name.rfind(Ztring(1, PathSeparator)+__T("CONTENT"))+8==File_Name.size())
-            return P2_Format_Test(MI, File_Name);
+        if (Dir::Exists(File_Name) && P2_Format_Test(MI, File_Name))
+            return 1;
     #endif //MEDIAINFO_P2_YES
 
     #ifdef MEDIAINFO_XDCAM_YES
-        if (Dir::Exists(File_Name) && File_Name.rfind(Ztring(1, PathSeparator)+__T("XDCAM"))+5==File_Name.size())
-            return Xdcam_Format_Test(MI, File_Name);
+        if (Dir::Exists(File_Name) && Xdcam_Format_Test(MI, File_Name))
+            return 1;
     #endif //MEDIAINFO_XDCAM_YES
 
     return 0;
@@ -65,6 +70,50 @@ void Reader_Directory::Directory_Cleanup(ZtringList &List)
         Xdcam_Directory_Cleanup(List);
     #endif //MEDIAINFO_XDCAM_YES
 }
+
+//***************************************************************************
+// Clips
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+// Analysis of a P2 card or of an XDCAM disc given as a directory: its longest clip, as the longest playlist of a Blu-ray disc
+#if defined(MEDIAINFO_P2_YES) || defined(MEDIAINFO_XDCAM_YES)
+int Reader_Directory::Clips_Format_Test(MediaInfo_Internal* MI, const ZtringList &Clips, const Char* Format)
+{
+    size_t MaxDuration_Pos=(size_t)-1;
+    float64 MaxDuration=-1;
+    for (size_t Pos=0; Pos<Clips.size(); Pos++)
+    {
+        MediaInfo_Internal MI_Clip;
+        if (!MI_Clip.Open(Clips[Pos]) || MI_Clip.Get(Stream_General, 0, General_Format)!=Format)
+            continue;
+        float64 Duration=MI_Clip.Get(Stream_General, 0, General_Duration).To_float64();
+        if (Duration>MaxDuration)
+        {
+            MaxDuration=Duration;
+            MaxDuration_Pos=Pos;
+        }
+    }
+    if (MaxDuration_Pos==(size_t)-1)
+        return 0;
+
+    //As a file given to this MediaInfo, without Open() which would wait for the end of the analysis in progress (in its thread with the Thread
+    //option, the one running this code)
+    #if defined(MEDIAINFO_FILE_YES)
+        {
+        CriticalSectionLocker CSL(MI->CS);
+        if (MI->Reader)
+            return 0; //There is a problem
+        MI->Config.File_Names.clear();
+        MI->Config.File_Names.push_back(Clips[MaxDuration_Pos]);
+        MI->Reader=new Reader_File();
+        }
+        return MI->Reader->Format_Test(MI, Clips[MaxDuration_Pos])?1:0;
+    #else //defined(MEDIAINFO_FILE_YES)
+        return 0;
+    #endif //defined(MEDIAINFO_FILE_YES)
+}
+#endif //defined(MEDIAINFO_P2_YES) || defined(MEDIAINFO_XDCAM_YES)
 
 //***************************************************************************
 // Blu-ray stuff
@@ -91,29 +140,27 @@ int Reader_Directory::Bdmv_Format_Test(MediaInfo_Internal* MI, const String &Fil
 #ifdef MEDIAINFO_BDMV_YES
 void Reader_Directory::Bdmv_Directory_Cleanup(ZtringList &List)
 {
-    //if there is a BDMV folder, this is blu-ray
-    Ztring ToSearch=Ztring(1, PathSeparator)+__T("BDMV")+PathSeparator+__T("index.bdmv"); //"\BDMV\index.bdmv"
+    //if there is a BDMV folder, this is blu-ray, for each disc of the list
     for (size_t File_Pos=0; File_Pos<List.size(); File_Pos++)
     {
-        size_t BDMV_Pos=List[File_Pos].find(ToSearch);
-        if (BDMV_Pos!=string::npos && BDMV_Pos!=0 && BDMV_Pos+16==List[File_Pos].size())
+        size_t Name_Pos=List[File_Pos].size()-FileName::FullName_Get(List[File_Pos]).size();
+        if (Name_Pos && Name_Pos+10==List[File_Pos].size() && !List[File_Pos].compare(Name_Pos, 10, __T("index.bdmv")) && FileName::FolderName_Get(List[File_Pos])==__T("BDMV"))
         {
             //This is a BDMV index, parsing the directory only if index and movie objects are BOTH present
-            ToSearch=List[File_Pos];
-            ToSearch.resize(ToSearch.size()-10);
-            ToSearch+=__T("MovieObject.bdmv");  //"%CompletePath%\BDMV\MovieObject.bdmv"
-            if (List.Find(ToSearch)!=string::npos)
+            Ztring Path=List[File_Pos].substr(0, Name_Pos); //"%CompletePath%\BDMV\"
+            if (List.Find(Path+__T("MovieObject.bdmv"))!=string::npos)
             {
                 //We want the folder instead of the files
-                List[File_Pos].resize(List[File_Pos].size()-11); //only %CompletePath%\BDMV
-                ToSearch=List[File_Pos];
+                List[File_Pos]=FileName::FolderPath_Get(List[File_Pos]); //only %CompletePath%\BDMV
 
                 for (size_t Pos=0; Pos<List.size(); Pos++)
                 {
-                    if (List[Pos].find(ToSearch)==0 && List[Pos]!=ToSearch) //Remove all subdirs of ToSearch but not ToSearch
+                    if (!List[Pos].compare(0, Path.size(), Path)) //Remove all subdirs of the BDMV folder, not the ones of a folder whose name starts with BDMV
                     {
                         //Removing the file in the blu-ray directory
                         List.erase(List.begin()+Pos);
+                        if (Pos<File_Pos)
+                            File_Pos--;
                         Pos--;
                     }
                 }
@@ -131,12 +178,66 @@ void Reader_Directory::Bdmv_Directory_Cleanup(ZtringList &List)
 #ifdef MEDIAINFO_P2_YES
 int Reader_Directory::P2_Format_Test(MediaInfo_Internal* MI, const String &File_Name)
 {
-    if (!MI->SelectFromExtension(__T("P2_Clip")))
+    //CONTENTS folder, the clip files are in its CLIP folder, the names of the folders being in upper or lower case as the P2 Clip parser
+    //accepts them
+    Ztring Folder=FileName::FolderName_Get(File_Name+PathSeparator);
+    Folder.MakeUpperCase();
+    if (Folder!=__T("CONTENTS"))
         return 0;
+    ZtringList Files, Clips;
+    ZtringList Dirs=Dir::GetAllFileNames(File_Name, Dir::Include_Dirs);
+    for (size_t Dirs_Pos=0; Dirs_Pos<Dirs.size(); Dirs_Pos++)
+    {
+        Ztring Name=FileName::FullName_Get(Dirs[Dirs_Pos]);
+        Name.MakeUpperCase();
+        if (Name==__T("CLIP"))
+            Files+=Dir::GetAllFileNames(Dirs[Dirs_Pos], Dir::Include_Files);
+    }
+    for (size_t Files_Pos=0; Files_Pos<Files.size(); Files_Pos++)
+    {
+        Ztring Extension=FileName(Files[Files_Pos]).Extension_Get();
+        Extension.MakeUpperCase();
+        if (FileName::FullName_Get(Files[Files_Pos]).size()==10 && Extension==__T("XML")) //e.g. "0001AB.XML"
+            Clips.push_back(Files[Files_Pos]);
+    }
+    std::sort(Clips.begin(), Clips.end());
 
-    MI->Open(File_Name+__T("CLIP")+PathSeparator+__T("0013MM.XML"));
+    int ToReturn=Clips_Format_Test(MI, Clips, __T("P2 Clip"));
+    Dir::ReleaseFileNames(Dirs);
+    Dir::ReleaseFileNames(Files);
+    return ToReturn;
+}
+#endif //MEDIAINFO_P2_YES
 
-    return 1;
+//---------------------------------------------------------------------------
+// The file (name of 10 characters) is a clip file in the CONTENTS/CLIP folder of a P2 card; in another case than the one of the folders of a
+// card, as the P2 Clip parser accepts them, the card must also have its VIDEO or AUDIO folder
+#ifdef MEDIAINFO_P2_YES
+static bool P2_IsClip(const Ztring &File_Name)
+{
+    Ztring Extension=FileName(File_Name).Extension_Get();
+    Extension.MakeUpperCase();
+    if (Extension!=__T("XML"))
+        return false;
+    Ztring Clip_Folder=FileName::FolderName_Get(File_Name);
+    Ztring Contents_Folder=FileName::FolderName_Get(File_Name, 1);
+    if (Clip_Folder==__T("CLIP") && Contents_Folder==__T("CONTENTS"))
+        return true;
+    Clip_Folder.MakeUpperCase();
+    Contents_Folder.MakeUpperCase();
+    if (Clip_Folder!=__T("CLIP") || Contents_Folder!=__T("CONTENTS"))
+        return false;
+    ZtringList Dirs=Dir::GetAllFileNames(FileName::FolderPath_Get(File_Name, 1), Dir::Include_Dirs);
+    bool ToReturn=false;
+    for (size_t Pos=0; Pos<Dirs.size(); Pos++)
+    {
+        Ztring Name=FileName::FullName_Get(Dirs[Pos]);
+        Name.MakeUpperCase();
+        if (Name==__T("VIDEO") || Name==__T("AUDIO"))
+            ToReturn=true;
+    }
+    Dir::ReleaseFileNames(Dirs); //Only their names are used
+    return ToReturn;
 }
 #endif //MEDIAINFO_P2_YES
 
@@ -145,20 +246,20 @@ int Reader_Directory::P2_Format_Test(MediaInfo_Internal* MI, const String &File_
 void Reader_Directory::P2_Directory_Cleanup(ZtringList &List)
 {
     //if there is a CONTENTS/CLIP folder, this is P2
-    Ztring ToSearch=Ztring(1, PathSeparator)+__T("CONTENTS")+PathSeparator+__T("CLIP")+PathSeparator; //"/CONTENTS/CLIP/"
     for (size_t File_Pos=0; File_Pos<List.size(); File_Pos++)
     {
-        size_t P2_Pos=List[File_Pos].find(ToSearch);
-        if (P2_Pos!=string::npos && P2_Pos!=0 && P2_Pos+1+8+1+4+1+10==List[File_Pos].size())
+        Ztring Clip_Path=FileName::FromFolder_Get(List[File_Pos], Ztring()); //"%CompletePath%/CONTENTS/CLIP/"
+        if (Clip_Path.size()+10!=List[File_Pos].size())
+            continue;
+        if (P2_IsClip(List[File_Pos]))
         {
-            //This is a P2 CLIP
-            Ztring Path_Begin=List[File_Pos];
-            Path_Begin.resize(Path_Begin.size()-(1+8+1+4+1+10));
-            Path_Begin+=Ztring(1, PathSeparator);
+            //This is a P2 CLIP, all the listed files are in the card if its folder is not in their names (e.g. "." for CONTENTS)
+            Ztring Card_Path=FileName::FromFolder_Get(List[File_Pos], Ztring(), 2);
+            Ztring Path_Begin=List[File_Pos].compare(0, Card_Path.size(), Card_Path)?Ztring():Card_Path;
             bool HasChanged=false;
             for (size_t Pos=0; Pos<List.size(); Pos++)
             {
-                if (List[Pos].find(Path_Begin)==0 && List[Pos].find(Path_Begin+__T("CONTENTS")+PathSeparator+__T("CLIP")+PathSeparator)==string::npos) //Remove all subdirs of Path_Begin but not with CLIP
+                if (List[Pos].find(Path_Begin)==0 && List[Pos].find(Clip_Path)!=0) //Remove all subdirs of Path_Begin but not with CLIP
                 {
                     //Removing the file in the P2 directory
                     List.erase(List.begin()+Pos);
@@ -181,12 +282,20 @@ void Reader_Directory::P2_Directory_Cleanup(ZtringList &List)
 #ifdef MEDIAINFO_XDCAM_YES
 int Reader_Directory::Xdcam_Format_Test(MediaInfo_Internal* MI, const String &File_Name)
 {
-    if (!MI->SelectFromExtension(__T("Xdcam_Clip")))
+    //Folder of the disc, the clip files are in its Clip folder
+    Ztring Disc_Path=File_Name+PathSeparator;
+    if (!Dir::Exists(Disc_Path+__T("Clip")) || !Dir::Exists(Disc_Path+__T("Edit")) || !Dir::Exists(Disc_Path+__T("General")) || !Dir::Exists(Disc_Path+__T("Sub")))
         return 0;
+    ZtringList Clips;
+    ZtringList Files=Dir::GetAllFileNames(Disc_Path+__T("Clip"), Dir::Include_Files);
+    for (size_t Files_Pos=0; Files_Pos<Files.size(); Files_Pos++)
+        if (FileName(Files[Files_Pos]).Extension_Get()==__T("XML"))
+            Clips.push_back(Files[Files_Pos]);
+    std::sort(Clips.begin(), Clips.end());
 
-    MI->Open(File_Name+__T("CLIP")+PathSeparator+__T("0013MM.XML"));
-
-    return 1;
+    int ToReturn=Clips_Format_Test(MI, Clips, __T("XDCAM Clip"));
+    Dir::ReleaseFileNames(Files);
+    return ToReturn;
 }
 #endif //MEDIAINFO_XDCAM_YES
 
@@ -195,23 +304,22 @@ int Reader_Directory::Xdcam_Format_Test(MediaInfo_Internal* MI, const String &Fi
 void Reader_Directory::Xdcam_Directory_Cleanup(ZtringList &List)
 {
     //if there is a XDCAM/Clip folder, this is Xdcam
-    Ztring ToSearch=Ztring(1, PathSeparator)+__T("Clip")+PathSeparator; //"/Clip/"
     for (size_t File_Pos=0; File_Pos<List.size(); File_Pos++)
     {
-        size_t Xdcam_Pos=List[File_Pos].find(ToSearch);
         FileName Xdcam_FileName(List[File_Pos]);
-        if (Xdcam_Pos!=string::npos && Xdcam_Pos!=0 && (Xdcam_FileName.Extension_Get()==__T("XML")) && Xdcam_Pos+1+4+1+Xdcam_FileName.Name_Get().size()+4==List[File_Pos].size())
+        if ((Xdcam_FileName.Extension_Get()==__T("XML")) && FileName::FolderName_Get(List[File_Pos])==__T("Clip"))
         {
             //This is a XDCAM CLIP
-            Ztring Path_Begin=List[File_Pos];
-            Path_Begin.resize(Xdcam_Pos);
-            Path_Begin+=Ztring(1, PathSeparator);
-            if (Dir::Exists(Path_Begin+__T("Edit")) && Dir::Exists(Path_Begin+__T("General")) && Dir::Exists(Path_Begin+__T("Sub")))
+            Ztring Disc_Path=FileName::FromFolder_Get(List[File_Pos], Ztring(), 1);
+            if (Dir::Exists(Disc_Path+__T("Edit")) && Dir::Exists(Disc_Path+__T("General")) && Dir::Exists(Disc_Path+__T("Sub")))
             {
+                //All the listed files are in the disc if its folder is not in their names (e.g. "." for Clip)
+                Ztring Path_Begin=List[File_Pos].compare(0, Disc_Path.size(), Disc_Path)?Ztring():Disc_Path;
+                Ztring Clip_Path=FileName::FromFolder_Get(List[File_Pos], Ztring());
                 bool HasChanged=false;
                 for (size_t Pos=0; Pos<List.size(); Pos++)
                 {
-                    if (List[Pos].find(Path_Begin)==0 && (List[Pos].find(Path_Begin+__T("Clip")+PathSeparator)==string::npos || (List[Pos].find(__T(".XML"))!=List[Pos].size()-4))) //Remove all subdirs of Path_Begin but not with the right XML
+                    if (List[Pos].find(Path_Begin)==0 && (List[Pos].find(Clip_Path)!=0 || FileName(List[Pos]).Extension_Get()!=__T("XML"))) //Remove all subdirs of Path_Begin but not with the right XML
                     {
                         //Removing the file in the XDCAM directory
                         List.erase(List.begin()+Pos);

@@ -192,19 +192,18 @@ bool File_DcpPkl::FileHeader_Begin()
     {
         ReferenceFiles_Accept(this, Config);
 
-        FileName Directory(File_Name);
-        Ztring DirPath = Directory.Path_Get();
-        if (!DirPath.empty())
-            DirPath += PathSeparator;
-        Ztring Assetmap_FileName=DirPath+__T("ASSETMAP.xml");
+        Ztring Assetmap_FileName=FileName::FromFolder_Get(File_Name, __T("ASSETMAP.xml"));
         bool IsOk=false;
-        if (File::Exists(Assetmap_FileName))
-            IsOk=true;
-        else
+        if (RelatedFiles_CanBeSearched(File_Name))
         {
-            Assetmap_FileName.resize(Assetmap_FileName.size()-4); //Old fashion, without ".xml"
             if (File::Exists(Assetmap_FileName))
                 IsOk=true;
+            else
+            {
+                Assetmap_FileName=FileName::FromFolder_Get(File_Name, __T("ASSETMAP")); //Old fashion, without ".xml"
+                if (File::Exists(Assetmap_FileName))
+                    IsOk=true;
+            }
         }
         if (IsOk)
         {
@@ -215,7 +214,7 @@ bool File_DcpPkl::FileHeader_Begin()
             MI.Option(__T("ParseSpeed"), __T("0"));
             MI.Option(__T("Demux"), Ztring());
             MI.Option(__T("File_IsReferenced"), __T("1"));
-            size_t MiOpenResult=MI.Open(Assetmap_FileName);
+            size_t MiOpenResult=ReferenceFiles->Open_Related(MI, Assetmap_FileName);
             MI.Option(__T("ParseSpeed"), ParseSpeed_Save); //This is a global value, need to reset it. TODO: local value
             MI.Option(__T("Demux"), Demux_Save); //This is a global value, need to reset it. TODO: local value
             if (MiOpenResult

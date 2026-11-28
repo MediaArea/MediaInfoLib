@@ -28,6 +28,7 @@
 #include "MediaInfo/TimeCode.h"
 #if defined(MEDIAINFO_DIRECTORY_YES)
 #include "ZenLib/Dir.h"
+#include "ZenLib/FileName.h"
 #endif //defined(MEDIAINFO_DIRECTORY_YES)
 #include <memory>
 #include <algorithm>
@@ -696,6 +697,24 @@ static const char* Mpeg_Psi_splice_command_type(int8u splice_command_type)
     }
 };
 
+//---------------------------------------------------------------------------
+// The file is in the BDMV/STREAM/SSIF folder of a Blu-ray disc, the playlists are in BDMV/PLAYLIST
+#if defined(MEDIAINFO_DIRECTORY_YES)
+static bool Mpeg_Psi_IsInSsifFolder(const Ztring& File_Name)
+{
+    if (!RelatedFiles_CanBeSearched(File_Name))
+        return false;
+    static const Char* const Folders[]={__T("SSIF"), __T("STREAM"), __T("BDMV")};
+    for (size_t Levels_Up=0; Levels_Up<sizeof(Folders)/sizeof(*Folders); Levels_Up++)
+    {
+        Ztring Folder=FileName::FolderName_Get(File_Name, Levels_Up);
+        Folder.MakeUpperCase();
+        if (Folder!=Folders[Levels_Up])
+            return false;
+    }
+    return true;
+}
+#endif //defined(MEDIAINFO_DIRECTORY_YES)
 
 
 //***************************************************************************
@@ -1231,12 +1250,10 @@ void File_Mpeg_Psi::Table_02()
         FILLING_BEGIN();
             //Searching for hidden Stereoscopic stream
             #if defined(MEDIAINFO_DIRECTORY_YES)
-            if (stream_type==0x20 && File_Name_WithoutDemux.size()>=4+1+6+1+4+1+10 && Config->File_Bdmv_ParseTargetedFile_Get())
+            if (stream_type==0x20 && Config->File_Bdmv_ParseTargetedFile_Get() && Mpeg_Psi_IsInSsifFolder(File_Name_WithoutDemux))
             {
                 //Searching the playlist with the pid
-                Ztring Name=File_Name_WithoutDemux;
-                Name.resize(Name.size()-(4+1+6+1+4+1+10)); //Removing BDMV/STREAM/SSIF/xxxxx.ssif
-                ZtringList List=Dir::GetAllFileNames(Name+__T("BDMV")+PathSeparator+__T("PLAYLIST")+PathSeparator+__T("*.mpls"), Dir::Include_Files);
+                ZtringList List=Dir::GetAllFileNames(FileName::FromFolder_Get(File_Name_WithoutDemux, Ztring(__T("PLAYLIST"))+PathSeparator+__T("*.mpls"), 2), Dir::Include_Files);
                 std::vector<MediaInfo_Internal*> MIs;
                 MIs.resize(List.size());
                 size_t FileWithRightPID_Pos=(size_t)-1;

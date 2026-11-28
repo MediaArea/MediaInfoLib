@@ -2548,7 +2548,7 @@ void File__Analyze::TestContinuousFileNames(size_t CountOfFiles, Ztring FileExte
     #ifdef WIN32
         FileToTest.FindAndReplace(__T("/"), __T("\\"), 0, Ztring_Recursive); // "/" is sometimes used on Windows and it is considered as valid
     #endif //WIN32
-    Ztring FileToTest_Name=FileToTest.Name_Get();
+    Ztring FileToTest_Name=FileName(FileToTest.FullName_Get()).Name_Get(); //Without the folder and the drive
     Ztring FileToTest_Name_After=FileToTest_Name;
     size_t FileNameToTest_End=FileToTest_Name.size();
     while (FileNameToTest_End && !(FileToTest_Name[FileNameToTest_End-1]>=__T('0') && FileToTest_Name[FileNameToTest_End-1]<=__T('9')))
@@ -2578,7 +2578,7 @@ void File__Analyze::TestContinuousFileNames(size_t CountOfFiles, Ztring FileExte
         */
 
         //Detecting with a smarter algo (but missing frames are not detected)
-        Ztring FileToTest_Name_Begin=FileToTest.Path_Get()+PathSeparator+FileToTest_Name;
+        Ztring FileToTest_Name_Begin=FileToTest.FromFolder_Get(FileToTest_Name);
         Ztring FileToTest_Name_End=FileToTest_Name_After+__T('.')+(FileExtension.empty()?FileToTest.Extension_Get():FileExtension);
         Pos_Base = (size_t)Pos;
         size_t Pos_Add_Max = 1;
@@ -2714,8 +2714,8 @@ void File__Analyze::TestContinuousFileNames(size_t CountOfFiles, Ztring FileExte
     #if MEDIAINFO_ADVANCED
         if (Config->File_Source_List_Get())
         {
-            Ztring SourcePath=FileName::Path_Get(Retrieve(Stream_General, 0, General_CompleteName));
-            size_t SourcePath_Size=SourcePath.size()+1; //Path size + path separator size
+            const Ztring& CompleteName=Retrieve_Const(Stream_General, 0, General_CompleteName);
+            size_t SourcePath_Size=CompleteName.size()-FileName::FullName_Get(CompleteName).size();
             for (size_t Pos=0; Pos<Config->File_Names.size(); Pos++)
             {
                 Ztring Temp=Config->File_Names[Pos];
@@ -2744,30 +2744,19 @@ static void PotentialAudioNames_Scenario1(const Ztring& DpxName, Ztring& Contain
     if (DpxName.substr(DpxName.size()-4)!=__T(".dpx"))
         return;
 
-    size_t PathSeparator_Pos1=DpxName.find_last_of(__T("\\/"));
-    if (PathSeparator_Pos1==string::npos)
+    size_t Name_Pos=DpxName.size()-FileName::FullName_Get(DpxName).size();
+    size_t TitleSeparator_Pos=FileName::FullName_RFind(DpxName, __T('_'));
+    if (TitleSeparator_Pos==string::npos)
         return;
 
-    size_t PathSeparator_Pos2=DpxName.find_last_of(__T("\\/"), PathSeparator_Pos1-1);
-    if (PathSeparator_Pos2==string::npos)
+    if (FileName::FolderName_Get(DpxName)!=__T("dpx"))
         return;
 
-    size_t PathSeparator_Pos3=DpxName.find_last_of(__T("\\/"), PathSeparator_Pos2-1); //string::npos is accepted (relative path) 
-
-    size_t TitleSeparator_Pos=DpxName.find_last_of(__T('_'));
-    if (TitleSeparator_Pos==string::npos || TitleSeparator_Pos<=PathSeparator_Pos1)
+    Ztring TitleDpx=DpxName.substr(Name_Pos, TitleSeparator_Pos-Name_Pos);
+    if (TitleDpx!=FileName::FolderName_Get(DpxName, 1))
         return;
 
-    Ztring DirDpx=DpxName.substr(PathSeparator_Pos2+1, PathSeparator_Pos1-(PathSeparator_Pos2+1));
-    if (DirDpx!=__T("dpx"))
-        return;
-
-    Ztring TitleDpx=DpxName.substr(PathSeparator_Pos1+1, TitleSeparator_Pos-(PathSeparator_Pos1+1));
-    Ztring TitleDir=DpxName.substr(PathSeparator_Pos3+1, PathSeparator_Pos2-(PathSeparator_Pos3+1));
-    if (TitleDpx!=TitleDir)
-        return;
-
-    ContainerDirName=DpxName.substr(0, PathSeparator_Pos2+1);
+    ContainerDirName=FileName::FromFolder_Get(DpxName, Ztring(), 1);
     List.push_back(ContainerDirName+TitleDpx+__T(".wav"));
 }
 void File__Analyze::TestDirectory()
@@ -2815,12 +2804,17 @@ void File__Analyze::TestDirectory()
         Ztring VideoFileName=Retrieve(Stream_General, 0, General_CompleteName);
         Ztring VideoFileName_Last=Retrieve(Stream_General, 0, General_CompleteName_Last);
         Ztring VideoMuxingMode=Retrieve_Const(Stream_General, 0, General_Format);
-        if (VideoFileName.size()>ContainerDirName.size())
-            Fill(Stream_Video, 0, "Source", VideoFileName.substr(ContainerDirName.size()));
-        if (VideoFileName_Last.size()>ContainerDirName.size())
-            Fill(Stream_Video, 0, "Source_Last", VideoFileName_Last.substr(ContainerDirName.size()));
+        if (!VideoFileName.empty())
+            Fill(Stream_Video, 0, "Source", FileName::FolderName_Get(VideoFileName)+PathSeparator+FileName::FullName_Get(VideoFileName));
+        if (!VideoFileName_Last.empty())
+            Fill(Stream_Video, 0, "Source_Last", FileName::FolderName_Get(VideoFileName_Last)+PathSeparator+FileName::FullName_Get(VideoFileName_Last));
         Fill(Stream_Video, 0, Video_MuxingMode, VideoMuxingMode);
 
+        if (ContainerDirName.empty())
+        {
+            ContainerDirName=__T(".");
+            ContainerDirName+=PathSeparator;
+        }
         Fill(Stream_General, 0, General_CompleteName, ContainerDirName, true);
         Fill(Stream_General, 0, General_FileSize, File_Size, 10, true);
         Fill(Stream_General, 0, General_Format, "Directory", Unlimited, true, true);

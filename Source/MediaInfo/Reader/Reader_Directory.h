@@ -40,6 +40,9 @@ public :
     void Directory_Cleanup(ZtringList &List);
 
 private :
+    //P2 and XDCAM
+    int  Clips_Format_Test(MediaInfo_Internal* MI, const ZtringList &Clips, const Char* Format);
+
     //Bdmv
     int  Bdmv_Format_Test(MediaInfo_Internal* MI, const String &File_Name);
     void Bdmv_Directory_Cleanup(ZtringList &List);
