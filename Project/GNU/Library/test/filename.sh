@@ -24,8 +24,8 @@ for config in ${locale_configs} ; do
     done
 done
 
-# pymediainfo if installed (its Python process calls setlocale()), with the library of this build and the files of the
-# program above: pymediainfo uses the wide API and the names can be encoded with these locales
+# pymediainfo if installed (its Python process calls setlocale()), with the library of this build (with or without Unicode) and the
+# files of the program above: pymediainfo uses the wide API and the names can be encoded with these locales
 
 python=
 for command in python3 python ; do
@@ -45,10 +45,6 @@ for file in "${PATH_SCRIPT}/../.libs/libmediainfo.so" "${PATH_SCRIPT}/../.libs/l
         break
     fi
 done
-
-if [ -e "${PATH_SCRIPT}/../Makefile" ] && ! grep -q -e '-DUNICODE' "${PATH_SCRIPT}/../Makefile" ; then
-    library= # pymediainfo uses the C API, which is only in the Unicode build
-fi
 
 if [ -n "${python}" ] && [ -n "${library}" ] ; then
     title=$'caf\xC3\xA9 \xE6\xB5\x8B\xE8\xAF\x95 \xF0\x9F\x8E\xB5'
