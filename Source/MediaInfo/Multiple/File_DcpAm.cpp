@@ -180,7 +180,7 @@ bool File_DcpAm::FileHeader_Begin()
                             Asset_Item->GetText() && !strcmp(Asset_Item->GetText(), "true"))
                         {
                             PKL_Pos=Streams.size();
-                            Stream.StreamKind=(stream_t)(Stream_Max+2); // Means PKL
+                            Stream.StreamKind=Stream_Max+2; // Means PKL
                         }
                     }
 
@@ -236,7 +236,7 @@ bool File_DcpAm::FileHeader_Begin()
     if (!Config->File_IsReferenced_Get())
     {
         for (File_DcpPkl::streams::iterator Stream=Streams.begin(); Stream!=Streams.end(); ++Stream)
-            if (Stream->StreamKind==(stream_t)(Stream_Max+1) && Stream->ChunkList.size()==1) // Means CPL
+            if (Stream->StreamKind==Stream_Max+1 && Stream->ChunkList.size()==1) // Means CPL
             {
                 sequence* Sequence=new sequence;
                 Sequence->FileNames.push_back(Ztring().From_UTF8(Stream->ChunkList[0].Path));

@@ -398,10 +398,10 @@ void File_Pac::Data_Parse()
             break;
         }
         case Format_16bit: {
-            auto Current = (int16u*)(Buffer + Buffer_Offset + (size_t)Element_Offset);
-            auto End = Current + Size / 2;
-            for (; Current < End; ++Current) {
-                Content.back() += (wchar_t)*Current; // Content reading not supported but no need for counting, we need only the values < 0x80
+            auto Current = Buffer + Buffer_Offset + (size_t)Element_Offset;
+            auto End = Current + Size / 2 * 2;
+            for (; Current < End; Current += 2) {
+                Content.back() += (wchar_t)LittleEndian2int16u((const char*)Current); // Content reading not supported but no need for counting, we need only the values < 0x80
             }
             Skip_XX(Size,                                       "W16 content");
             Count_2byte++;
